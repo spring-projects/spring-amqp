@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="erlang">
+  <title>Erlang integration</title>
+
+  <section id="erlang-introduction">
+    <title>Introduction</title>
+
+    <para>JInterface ease of use issues. </para>
+  </section>
+
+  <section>
+    <title>Communicating with Erlang processes</title>
+
+    <para>Introduction.... </para>
+
+    <section>
+      <title>Connection Management</title>
+
+      <para>ConnectionFactory</para>
+    </section>
+
+    <section>
+      <title>Executing RPC</title>
+
+      <para></para>
+    </section>
+
+    <section>
+      <title>ErlangConverter</title>
+
+      <para>ErlangConverter</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Exceptions</title>
+
+    <para>Runtime exception hierarchy</para>
+
+    <para></para>
+  </section>
+</chapter>

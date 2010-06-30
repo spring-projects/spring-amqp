@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="stockServiceGateway" class="org.springframework.amqp.rabbit.stocks.gateway.RabbitStockServiceGateway">
+		<property name="rabbitTemplate" ref="rabbitTemplate" />
+	    <property name="defaultReplyToQueue" value="#{traderJoeQueue.name}" />
+	</bean>
+
+	<bean id="messageListenerContainer" class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
+		<property name="connectionFactory" ref="connectionFactory" />
+		<property name="queueName" value="#{marketDataQueue.name},#{traderJoeQueue.name}"/>
+	    <property name="concurrentConsumers" value="5" />
+	    <property name="messageListener" ref="messageListenerAdapter" />
+	</bean>
+
+	<bean id="messageListenerAdapter" class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter">
+		<property name="delegate" ref="clientHandler" />
+		<property name="messageConverter" ref="jsonMessageConverter" />
+	</bean>
+
+</beans>

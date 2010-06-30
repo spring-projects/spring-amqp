@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="sample-apps">
+  <title>Sample Applications</title>
+
+  <section>
+    <title>Introduction</title>
+
+    <para>Introduction</para>
+  </section>
+
+  <section>
+    <title>Hello World</title>
+
+    <section id="direct-exchange">
+      <title>Direct Exchange - P2P</title>
+
+      <para>Direct exchange</para>
+    </section>
+
+    <section>
+      <title>Topic Exchange - Pub/Sub</title>
+
+      <para>Topic Exchange</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Stock Trading</title>
+
+    <para>Stock Trading</para>
+  </section>
+</chapter>

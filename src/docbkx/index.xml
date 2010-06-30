@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+        "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<book xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <bookinfo>
+        <title>Spring AMQP - Reference Documentation</title>
+        <releaseinfo>&version;</releaseinfo>
+
+        <authorgroup>
+            <author>
+                <firstname>Mark</firstname>
+                <surname>Pollack</surname>
+            </author>
+            <author>
+                <firstname>Mark</firstname>
+                <surname>Fisher</surname>
+            </author>
+            <author>
+                <firstname>Oleg</firstname>
+                <surname>Zhurakousky</surname>
+            </author>
+        </authorgroup>
+
+        <legalnotice>
+            <para>
+                Copies of this document may be made for your own use and for distribution
+                to others, provided that you do not charge any fee for such copies and
+                further provided that each copy contains this Copyright Notice, whether
+                distributed in print or electronically.
+            </para>
+        </legalnotice>
+    </bookinfo>
+
+    <toc/>
+
+    <xi:include href="preface.xml"/>
+    <part>
+        <title>Introduction</title>
+        <partintro>
+            <para>
+                This first part of the reference documentation
+                <link linkend="what-is-spring-amqp">is an overview</link> of
+                Spring AMQP and the underlying concepts.
+            </para>
+        </partintro>
+        <xi:include href="quick-tour.xml"/>
+    </part>
+    <part>
+        <title>Reference</title>
+        <partintro>
+            <para>
+                This part of the reference documentation details the various components
+                that comprise Spring AMQP. The <link linkend="amqp">main chapter</link>
+		covers the core classes to develop an AMQP application.  It part also
+		includes a chapter on <link lnkend="erlang">integration with
+		Erlang</link> and a chapter 
+		about the <link linkend="sample-apps">sample applications</link>.
+            </para>
+        </partintro>
+        <xi:include href="amqp.xml"/>
+        <xi:include href="erlang.xml"/>
+        <xi:include href="sample-apps.xml"/>
+    </part>
+    <part>
+        <title>Spring Integration - Reference</title>
+        <partintro>
+            <para>
+                This part of the reference documentation details the 
+		integration with the Spring Integration project.
+            </para>
+        </partintro>
+        <xi:include href="si-amqp.xml"/>      
+    </part>
+    <part id="resources">
+        <title>Other Resources</title>
+        <partintro>
+            <para>
+                In addition to this reference documentation, there exist a number of
+                other resources that may help you learn about AMQP.
+                These additional, third-party resources are enumerated in this section.
+            </para>
+        </partintro>
+        <xi:include href="bibliography.xml"/>
+    </part>
+</book>

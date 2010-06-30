@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="spring-integration-amqp">
+  <title>Spring Integration AMQP Support</title>
+
+  <section id="spring-integration-amqp-introduction">
+    <title>Introduction</title>
+
+    <para>AMQP support</para>
+  </section>
+
+  <section>
+    <title>Inbound Channel Adapter</title>
+
+    <para>Introduction....</para>
+  </section>
+
+  <section>
+    <title>Message-Driven Channel Adapter</title>
+
+    <para>message-driven channel adapter</para>
+  </section>
+
+  <section>
+    <title>Outbound Channel Adapter</title>
+
+    <para>outbound channel adapter</para>
+  </section>
+
+  <section>
+    <title>Inbound Gateway</title>
+
+    <para>inbound gateway</para>
+  </section>
+
+  <section>
+    <title>Outbound Gateway</title>
+
+    <para>outbound gateway</para>
+  </section>
+
+  <section>
+    <title>AMQP Samples</title>
+
+    <para>samples</para>
+  </section>
+</chapter>

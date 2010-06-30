@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://www.springframework.org/schema/rabbit"
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:tool="http://www.springframework.org/schema/tool"
+		targetNamespace="http://www.springframework.org/schema/rabbit"
+		elementFormDefault="qualified"
+		attributeFormDefault="unqualified">
+		
+  <xs:element name="rabbit-admin">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="queues"/>
+        <xs:element ref="routes"/>
+        <xs:element ref="exchanges"/>
+        <xs:element ref="users"/>
+        <xs:element ref="vhosts"/>
+        <xs:element ref="permissions"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="queues">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="drop-queue"/>
+        <xs:element maxOccurs="unbounded" ref="queue"/>
+      </xs:sequence>
+      <xs:attribute name="default-autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="default-durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="default-exclusive" use="optional" type="xs:boolean"/>
+      <xs:attribute name="default-passive" use="optional" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="drop-queue">
+    <xs:complexType>
+      <xs:attribute name="if-empty" use="optional" type="xs:boolean"/>
+      <xs:attribute name="if-unused" use="optional" type="xs:boolean"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="queue">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="queue-arguments"/>
+      </xs:sequence>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="exclusive" use="optional" type="xs:boolean"/>
+      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="queue-arguments" type="map"/>
+  <xs:element name="exchanges">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="drop-exchange"/>
+        <xs:element maxOccurs="unbounded" ref="fanout-exchange"/>
+        <xs:element maxOccurs="unbounded" ref="direct-exchange"/>
+        <xs:element maxOccurs="unbounded" ref="topic-exchange"/>
+      </xs:sequence>
+      <xs:attribute name="default-autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="default-durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="default-passive" use="optional" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="drop-exchange">
+    <xs:complexType>
+      <xs:attribute name="if-unused" use="optional" type="xs:boolean"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="fanout-exchange">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="exchange-arguments"/>
+        <xs:element ref="routes"/>
+      </xs:sequence>
+      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
+      <xs:attribute name="route-to-queue" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="direct-exchange">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="exchange-arguments"/>
+        <xs:element ref="routes"/>
+      </xs:sequence>
+      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
+      <xs:attribute name="route-to-queue" use="optional"/>
+      <xs:attribute name="routing-key" use="optional" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="topic-exchange">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="exchange-arguments"/>
+        <xs:element ref="routes"/>
+      </xs:sequence>
+      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
+      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
+      <xs:attribute name="route-to-queue" use="optional"/>
+      <xs:attribute name="routing-key" use="optional"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="users">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="drop-user"/>
+        <xs:element maxOccurs="unbounded" ref="user"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="drop-user">
+    <xs:complexType>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="user">
+    <xs:complexType>
+      <xs:attribute name="name" use="required" type="xs:NCName"/>
+      <xs:attribute name="password" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="vhosts">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="drop-vhost"/>
+        <xs:element maxOccurs="unbounded" ref="vhost"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="drop-vhost">
+    <xs:complexType>
+      <xs:attribute name="path" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="vhost">
+    <xs:complexType>
+      <xs:attribute name="path" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="permissions">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="drop-permissions"/>
+        <xs:element maxOccurs="unbounded" ref="grant"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="drop-permissions">
+    <xs:complexType>
+      <xs:attribute name="user-name" use="required" type="xs:NCName"/>
+      <xs:attribute name="vhost-path" use="optional" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="grant">
+    <xs:complexType>
+      <xs:attribute name="configure" use="required" type="xs:NCName"/>
+      <xs:attribute name="read" use="required" type="xs:NCName"/>
+      <xs:attribute name="user-name" use="required" type="xs:NCName"/>
+      <xs:attribute name="vhost-path" use="optional" type="xs:NCName"/>
+      <xs:attribute name="write" use="required" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="map">
+    <xs:sequence>
+      <xs:element ref="map"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="map">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:attribute name="key" use="required"/>
+      <xs:attribute name="value"/>
+      <xs:attribute name="value-ref" type="xs:NCName"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="routes">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element maxOccurs="unbounded" ref="route"/>
+        <xs:element maxOccurs="unbounded" ref="unbind-route"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="route">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="route-arguments">
+          <xs:attribute name="queue" use="required"/>
+          <xs:attribute name="routing-key"/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="unbind-route">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="route-arguments">
+          <xs:attribute name="exchange" use="required" type="xs:NCName"/>
+          <xs:attribute name="queue" use="required" type="xs:NCName"/>
+          <xs:attribute name="routing-key" use="required" type="xs:NCName"/>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="exchange-arguments" type="map"/>
+  <xs:complexType name="route-arguments">
+    <xs:sequence>
+      <xs:element ref="route-arguments"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="route-arguments" type="map"/>
+</xs:schema>

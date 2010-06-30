@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="quick-tour">
+  <title>Quick Tour for the impatient</title>
+
+  <section>
+    <title>Introduction</title>
+
+    <para>This is the 5 minute tour to get started with Spring AMQP.</para>
+  </section>
+</chapter>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="amqp">
+  <title>Using Spring AMQP</title>
+
+  <para>In this chapter, we will explore interface and classes that are the
+  essential components for developing applications with Spring AMQP.</para>
+
+  <sect1>
+    <title>AMQP Abstractions</title>
+
+    <para>Discuss classes in the org.springframework.amqp.core package such as
+    Queue, Binding, Message MessageProperties etc.</para>
+  </sect1>
+
+  <sect1>
+    <title>Connection and resource management</title>
+
+    <para>Discuss CachingConnectionFactory and future support for failove of
+    connections.</para>
+  </sect1>
+
+  <sect1>
+    <title>Sending messages</title>
+
+    <para>Use of RabbitTemplate to send a message</para>
+  </sect1>
+
+  <sect1>
+    <title>Receiving messages</title>
+
+    <para>Use of RabbitTemplate for sync recieve and MessageListenerContiner
+    for async</para>
+
+    <sect2>
+      <title>Synchronous Reception</title>
+
+      <para>RabbitTemplate</para>
+    </sect2>
+
+    <sect2>
+      <title>Asynchronous Reception</title>
+
+      <para>Simple Message Listner container</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Message Converters</title>
+
+    <para>Simple and JSON</para>
+  </sect1>
+
+  <sect1>
+    <title>Configuring the broker</title>
+
+    <para>AbstractRabbitConfiguraiton BindingBuilder...</para>
+  </sect1>
+
+  <sect1>
+    <title>Exception Handling</title>
+
+    <para>Runtime exception hierarchy.</para>
+  </sect1>
+
+  <sect1>
+    <title>JMX Monitoring</title>
+
+    <para>RabbitAdminTemplate</para>
+  </sect1>
+</chapter>
