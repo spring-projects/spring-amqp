@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.otp.erlang.connection.ConnectionParameters;
+
 import org.springframework.otp.erlang.connection.SimpleConnectionFactory;
 import org.springframework.otp.erlang.core.ErlangTemplate;
 
@@ -19,7 +19,7 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
-//@Ignore("manual integration test only.")
+@Ignore("manual integration test only.")
 public class JInterfaceIntegrationTests {
 
 	@Test
