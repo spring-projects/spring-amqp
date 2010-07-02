@@ -3,7 +3,6 @@ package org.springframework.amqp.rabbit.admin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.Constants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,7 +16,7 @@ public class RabbitProducerConfiguration extends TestRabbitConfiguration {
 
 	@Bean
 	public Queue fooQueue() {		
-		return declare(new Queue(Constants.QUEUE_NAME));
+		return declare(new Queue(TestConstants.QUEUE_NAME));
 				
 	}
 		
@@ -31,6 +30,6 @@ public class RabbitProducerConfiguration extends TestRabbitConfiguration {
 	@Bean 
 	public Binding fooBinding()
 	{		
-		return declare(new Binding(fooQueue(), directExchange(), Constants.ROUTING_KEY));		
+		return declare(new Binding(fooQueue(), directExchange(), TestConstants.ROUTING_KEY));		
 	}
 }

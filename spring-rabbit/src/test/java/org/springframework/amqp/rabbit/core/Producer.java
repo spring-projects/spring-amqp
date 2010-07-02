@@ -27,11 +27,11 @@ public class Producer {
 		template.setChannelTransacted(true);
 		template.afterPropertiesSet();
 
-		final String routingKey = Constants.ROUTING_KEY;
+		final String routingKey = TestConstants.ROUTING_KEY;
 		QueueUtils.declareTestQueue(template, routingKey);
 
 		// send message		
-		sendMessages(template, Constants.EXCHANGE_NAME, routingKey, Constants.NUM_MESSAGES);
+		sendMessages(template, TestConstants.EXCHANGE_NAME, routingKey, TestConstants.NUM_MESSAGES);
 	}
 
 	private static void sendMessages(RabbitTemplate template,

@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.Constants;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -52,7 +51,7 @@ public class RabbitTemplateConsumerExample {
 			ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(
 					TestRabbitConfiguration.class);
 			RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
-			receiveSync(template, Constants.NUM_MESSAGES);
+			receiveSync(template, TestConstants.NUM_MESSAGES);
 		} else {
 			ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(
 					RabbitConsumerConfiguration.class);
@@ -78,7 +77,7 @@ public class RabbitTemplateConsumerExample {
 	private static void receiveSync(RabbitTemplate template, int numMessages) {
 		// receive response
 		for (int i = 0; i < numMessages; i++) {
-			Message message = template.receive(Constants.QUEUE_NAME);
+			Message message = template.receive(TestConstants.QUEUE_NAME);
 			if (message == null) {
 				System.out.println("Thread [" + Thread.currentThread().getId()
 						+ "] Received Null Message!");

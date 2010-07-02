@@ -1,6 +1,5 @@
 package org.springframework.amqp.rabbit.admin;
 
-import org.springframework.amqp.rabbit.core.Constants;
 import org.springframework.amqp.rabbit.core.PojoHandler;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -14,7 +13,7 @@ public class RabbitConsumerConfiguration extends TestRabbitConfiguration  {
 	public SimpleMessageListenerContainer simpleMessageListenerContainer() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory());
-		container.setQueueName(Constants.QUEUE_NAME);
+		container.setQueueName(TestConstants.QUEUE_NAME);
 		container.setConcurrentConsumers(5);
 		
 		MessageListenerAdapter adapter = new MessageListenerAdapter();
