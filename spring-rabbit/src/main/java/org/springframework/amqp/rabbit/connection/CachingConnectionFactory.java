@@ -29,14 +29,13 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionParameters;
 
 /**
  * A {@link ConnectionFactory} implementation that returns the same Connections from all
@@ -49,12 +48,13 @@ import com.rabbitmq.client.ConnectionParameters;
  * 
  * <p><b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its
  * shared Connection.</b>  This is the usual recommendation for native Rabbit access code anyway.
- * However, with this ConnectionFactory, its use is mandator in order to actually allow for Channel reuse.
+ * However, with this ConnectionFactory, its use is mandatory in order to actually allow for Channel reuse.
  * 
  * @author Mark Pollack
+ * @author Mark Fisher
  */
 //TODO are there heartbeats and/or exception thrown if a connection is broken?
-public class CachingConnectionFactory implements ConnectionFactory, InitializingBean, DisposableBean {
+public class CachingConnectionFactory implements ConnectionFactory, DisposableBean {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -64,7 +64,7 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 
 	private int channelCacheSize = 1;
 
-	private com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
+	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 	
 	/** Raw Rabbit Connection */
 	private Connection targetConnection;
@@ -79,13 +79,14 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 	
 	private volatile boolean active = true;
 
+
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the 
 	 * value returned from InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws
 	 * an exception.
 	 */
 	public CachingConnectionFactory() {
-		this.hostName = initializeDefaultHostName();			
+		this.hostName = initializeDefaultHostName();
 		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();		
 	}
 
@@ -95,15 +96,6 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 	 */
 	public CachingConnectionFactory(String hostName) {
 		this(new com.rabbitmq.client.ConnectionFactory(), hostName);
-	}
-
-	/**
-	 * Create a new CachingConnectionFactory given ConnectionParameters and the host name.
-	 * @param connectionParameters the connection parameters to use when creating a connection 
-	 * @param hostName the host name to connect to
-	 */
-	public CachingConnectionFactory(ConnectionParameters connectionParameters, String hostName)	{
-		this(new com.rabbitmq.client.ConnectionFactory(connectionParameters), hostName);
 	}
 
 	/**
@@ -118,30 +110,24 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 		this.rabbitConnectionFactory = rabbitConnectionFactory;
 		this.hostName = hostName;
 	} 
-	
-	public com.rabbitmq.client.ConnectionFactory getRabbitConnectionFactory() {
-		return this.rabbitConnectionFactory;
-	}
+
 
 	public void setUsername(String username) {
-		this.rabbitConnectionFactory.getParameters().setUsername(username);
+		this.rabbitConnectionFactory.setUsername(username);
 	}
 
 	public void setPassword(String password) {
-		this.rabbitConnectionFactory.getParameters().setPassword(password);
+		this.rabbitConnectionFactory.setPassword(password);
 	}
 
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
 	}
-	
-	
 
 	public int getChannelCacheSize() {
 		return this.channelCacheSize;
 	}
-
 
 	public String getHostName() {
 		return hostName;
@@ -182,17 +168,7 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 				new CachedChannelInvocationHandler(target, channelList));
 	}
 
-	/**
-	 * Make sure a Connection or ConnectionFactory has been set.
-	 */
-	public void afterPropertiesSet() {
-		if (getRabbitConnectionFactory() == null) {
-			throw new IllegalArgumentException("Connection or 'RabbitConnectionFactory' is required");
-		}
-	}
-
 	public Connection createConnection() throws IOException {
-		
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
 				initConnection();
@@ -200,20 +176,8 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 			return this.connection;
 		}
 	}
-	
-	public ConnectionParameters getParameters() {
-		return this.rabbitConnectionFactory.getParameters();
-	}
-	
-	
-	
-
 
 	public void initConnection() throws IOException {
-		if (getRabbitConnectionFactory() == null) {
-			throw new IllegalStateException(
-					"'rabbitConnectionFactory' is required for lazily initializing a Connection");
-		}
 		synchronized (this.connectionMonitor) {
 			if (this.targetConnection != null) {
 				closeConnection(this.targetConnection);
@@ -226,9 +190,7 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 			this.connection = getSharedConnectionProxy(this.targetConnection);
 		}
 	}
-	
-	
-	
+
 	/**
 	 * Close the underlying shared connection.
 	 * The provider of this ConnectionFactory needs to care for proper shutdown.
@@ -237,8 +199,7 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 	 */
 	public void destroy() {
 		resetConnection();
-	}
-		
+	}	
 
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
@@ -249,14 +210,14 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 			for (Channel channel : cachedChannels) {
 				try {
 					channel.close();
-				} catch (Throwable ex) {
+				}
+				catch (Throwable ex) {
 					logger.trace("Could not close cached Rabbit Channel", ex);
 				}
 			}						
 			this.cachedChannels.clear();
 		}
 		this.active = true;
-		
 		synchronized (this.connectionMonitor) {
 			if (this.targetConnection != null) {
 				closeConnection(this.targetConnection);
@@ -265,49 +226,50 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 			this.connection = null;
 		}
 	}
+
 	/**
 	 * Close the given Connection.
-	 * @param con the Connection to close
+	 * @param connection the Connection to close
 	 */
-	protected void closeConnection(Connection con) {
+	protected void closeConnection(Connection connection) {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Closing shared Rabbit Connection: " + this.targetConnection);
 		}
 		try {
 			//TODO there are other close overloads close(int closeCode, java.lang.String closeMessage, int timeout) 
-			con.close();			
+			connection.close();			
 		}
 		catch (Throwable ex) {
 			logger.debug("Could not close shared Rabbit Connection", ex);
 		}
 	}
-	
+
 	/**
 	 * Create a Rabbit Connection via this class's ConnectionFactory.
 	 * @return the new Rabbit Connection
 	 */
 	protected Connection doCreateConnection() throws IOException {	
-		//TODO there are other overloaded .newConnection methods 				
-		return getRabbitConnectionFactory().newConnection(this.hostName, this.portNumber);		
+		return this.rabbitConnectionFactory.newConnection();	
 	}
 
 	protected void prepareConnection(Connection con) throws IOException {
 		//TODO configure ShutdownListener, investigate reconnection exceptions
 	}
-	
+
 	protected String initializeDefaultHostName() {
 		String temp;
 		try {
 			InetAddress localMachine = InetAddress.getLocalHost();
 			temp = localMachine.getHostName();
 			logger.debug("Using hostname [" + temp + "] for hostname.");
-		} catch (UnknownHostException e) {
+		}
+		catch (UnknownHostException e) {
 			logger.warn("Could not get host name, using 'localhost' as default value", e);
 			temp = "localhost";
 		}
 		return temp;
 	}
-	
+
 	/**
 	 * Wrap the given Connection with a proxy that delegates every method call to it
 	 * but suppresses close calls. This is useful for allowing application code to
@@ -317,14 +279,22 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 	 * @return the wrapped Connection
 	 */
 	protected Connection getSharedConnectionProxy(Connection target) {
-		List<Class> classes = new ArrayList<Class>(1);
+		List<Class<?>> classes = new ArrayList<Class<?>>(1);
 		classes.add(Connection.class);		
 		return (Connection) Proxy.newProxyInstance(
 				Connection.class.getClassLoader(),
 				classes.toArray(new Class[classes.size()]),
 				new SharedConnectionInvocationHandler(target));
 	}
-	
+
+	@Override
+	public String toString() {
+		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize
+				+ ", hostName=" + hostName + ", portNumber=" + portNumber
+				+ ", active=" + active + "]";
+	}
+
+
 	/**
 	 * Invocation handler for a cached Rabbit Connection proxy.
 	 */
@@ -379,8 +349,7 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 		}
 	}
 
-	
-	
+
 	public class CachedChannelInvocationHandler implements InvocationHandler {
 
 		private final Channel target;
@@ -433,8 +402,8 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 				throw ex.getTargetException();
 			}
 		}
+
 		private void logicalClose(Channel proxy) throws Exception {
-			
 			// Allow for multiple close calls...
 			if (!this.channelList.contains(proxy)) {
 				if (logger.isTraceEnabled()) {
@@ -451,15 +420,6 @@ public class CachingConnectionFactory implements ConnectionFactory, Initializing
 			this.target.close();			
 		}
 
-	}
-
-
-
-	@Override
-	public String toString() {
-		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize
-				+ ", hostName=" + hostName + ", portNumber=" + portNumber
-				+ ", active=" + active + "]";
 	}
 
 }

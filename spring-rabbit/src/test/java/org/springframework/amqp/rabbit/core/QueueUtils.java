@@ -9,7 +9,7 @@ public class QueueUtils {
 		// declare and bind queue
 		template.execute(new ChannelCallback<String>() {
 			public String doInRabbit(Channel channel) throws Exception {
-				Queue.DeclareOk res = channel.queueDeclare(TestConstants.QUEUE_NAME);
+				Queue.DeclareOk res = channel.queueDeclarePassive(TestConstants.QUEUE_NAME);
 				String queueName = res.getQueue();
 				System.out.println("Queue Name = " + queueName);
 				channel.queueBind(queueName, TestConstants.EXCHANGE_NAME, routingKey);

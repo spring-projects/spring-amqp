@@ -103,8 +103,11 @@ public class RabbitAdminTemplate implements RabbitAdminOperations {
 		return rabbitTemplate.execute(new ChannelCallback<AMQP.Queue.DeclareOk>() {
 			public AMQP.Queue.DeclareOk doInRabbit(Channel channel) throws Exception {
 				logger.debug("Declaring queue [" + queue.getName() + "]");
-				return channel.queueDeclare(queue.getName(), queue.isPassive(), queue.isDurable(),
-						queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
+				if (queue.isPassive()) {
+					return channel.queueDeclarePassive(queue.getName());
+				}
+				return channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(),
+						queue.isAutoDelete(), queue.getArguments());
 			}
 		});
 	}
@@ -113,14 +116,16 @@ public class RabbitAdminTemplate implements RabbitAdminOperations {
 		return rabbitTemplate.execute(new ChannelCallback<AMQP.Exchange.DeclareOk>() {
 			public AMQP.Exchange.DeclareOk doInRabbit(Channel channel) throws Exception {
 				logger.debug("Declaring exchange [" + exchange.getName() + "]");
-				return channel.exchangeDeclare(exchange.getName(), exchange.getExchangeType().name(), 
-											   exchange.isPassive(), 
+				if (exchange.isPassive()) {
+					return channel.exchangeDeclarePassive(exchange.getName());
+				}
+				return channel.exchangeDeclare(exchange.getName(),
+											   exchange.getExchangeType().name(), 
 											   exchange.isDurable(),
 											   exchange.isAutoDelete(), 
 											   exchange.getArguments());
 			}
 		});
-		
 	}
 
 	public AMQP.Queue.BindOk declareBinding(final Binding binding) {

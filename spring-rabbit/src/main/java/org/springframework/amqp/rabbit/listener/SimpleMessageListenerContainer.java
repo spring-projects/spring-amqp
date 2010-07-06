@@ -211,7 +211,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		
 		String[] queue = StringUtils.commaDelimitedListToStringArray(queueNames);
 		for (int i = 0; i < queue.length; i++) {
-			channel.queueDeclare(queue[i]);
+			channel.queueDeclarePassive(queue[i]);
 			String consumerTag = channel.basicConsume(queue[i], autoAck, consumer);
 			consumer.setConsumerTag(consumerTag);
 		}

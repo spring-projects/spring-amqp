@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionParameters;
 
 /**
  * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection}s.
@@ -31,8 +30,7 @@ import com.rabbitmq.client.ConnectionParameters;
 public interface ConnectionFactory {
 
 	Connection createConnection() throws IOException;
-	
-	ConnectionParameters getParameters();
-	
+
 	String getHostName();
+
 }
