@@ -16,6 +16,7 @@
 	</description>
 	<properties>
 		<maven.test.failure.ignore>true</maven.test.failure.ignore>
+		<rabbitmq.version>1.8.0</rabbitmq.version>
 		<spring.framework.version>3.0.3.RELEASE</spring.framework.version>
 		<spring.amqp.version>1.0.0.BUILD-SNAPSHOT</spring.amqp.version>
 	</properties>
@@ -48,7 +49,7 @@
 		<dependency>
   			<groupId>com.rabbitmq</groupId>
   			<artifactId>amqp-client</artifactId>
-  			<version>1.7.2</version>
+  			<version>${rabbitmq.version}</version>
 		</dependency>
 
 		<dependency>
@@ -72,6 +73,11 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-oxm</artifactId>
 			<version>${spring.framework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>aspectj</groupId>

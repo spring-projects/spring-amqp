@@ -7,7 +7,6 @@ import java.io.IOException;
 import junit.framework.Assert;
 
 import org.junit.Test;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -23,11 +22,10 @@ public class CachingConnectionFactoryTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 		
-		when(mockConnectionFactory.newConnection("localhost", RabbitUtils.DEFAULT_PORT)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 				
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
-		ccf.afterPropertiesSet();
 		Connection con = ccf.createConnection();
 		
 		Channel channel = con.createChannel();
@@ -53,13 +51,12 @@ public class CachingConnectionFactoryTests {
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 		
-		when(mockConnectionFactory.newConnection("localhost", RabbitUtils.DEFAULT_PORT)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection.createChannel()).thenReturn(mockChannel2);
 				
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
 		ccf.setChannelCacheSize(2);
-		ccf.afterPropertiesSet();
 		
 		Connection con = ccf.createConnection();
 		
@@ -99,13 +96,12 @@ public class CachingConnectionFactoryTests {
 		
 		Assert.assertNotSame(mockChannel1, mockChannel2);
 		
-		when(mockConnectionFactory.newConnection("localhost", RabbitUtils.DEFAULT_PORT)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		//You can't repeat 'when' statements for stubbing consecutive calls to the same method to returning different values.
 		stub(mockConnection.createChannel()).toReturn(mockChannel1).toReturn(mockChannel2);
 				
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
 		ccf.setChannelCacheSize(2);
-		ccf.afterPropertiesSet();
 		
 		Connection con = ccf.createConnection();
 		

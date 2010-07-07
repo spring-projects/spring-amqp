@@ -134,7 +134,6 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 			}
 			ccf.setUsername(username);
 			ccf.setPassword(password);
-			ccf.afterPropertiesSet();
 			rabbitAdminTemplate = new RabbitAdminTemplate(ccf);			
 		}		
 	}

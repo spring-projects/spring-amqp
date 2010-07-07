@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.connection;
-
-import java.io.IOException;
-
-import com.rabbitmq.client.Connection;
+package org.springframework.amqp.rabbit.admin;
 
 /**
- * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection}s.
- * 
- * <p>NOTE: The Rabbit API contains a ConnectionFactory class (same name).
- * 
- * @author Mark Fisher
+ * Exchange, queue, and routing key constants for the testing code.
  */
-public interface ConnectionFactory {
+public class TestConstants {
 
-	Connection createConnection() throws IOException;
+	public static String EXCHANGE_NAME = "";
 
-	String getHostName();
+	public static String QUEUE_NAME = "foo";
+
+	public static String ROUTING_KEY = "foo";
+
+	public static int NUM_MESSAGES = 500;
 
 }

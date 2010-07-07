@@ -18,9 +18,8 @@ package org.springframework.amqp.rabbit.core;
 
 /**
  * Exchange, queue, and routing key constants for the testing code.
- *
  */
-public class Constants {
+public class TestConstants {
 
 	public static String EXCHANGE_NAME = "";
 

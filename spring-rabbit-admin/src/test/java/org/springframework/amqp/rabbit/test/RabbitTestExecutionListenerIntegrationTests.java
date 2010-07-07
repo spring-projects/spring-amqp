@@ -1,12 +1,15 @@
 package org.springframework.amqp.rabbit.test;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.test.context.ContextConfiguration;
 
 @RunWith(SpringRabbitJUnit4ClassRunner.class)
 @ContextConfiguration
 @RabbitConfiguration
+@Ignore // only works on Windows at the moment
 public class RabbitTestExecutionListenerIntegrationTests {
 
 	private static int count;
