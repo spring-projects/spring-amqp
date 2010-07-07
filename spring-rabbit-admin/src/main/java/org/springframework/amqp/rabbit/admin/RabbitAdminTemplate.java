@@ -80,13 +80,6 @@ public class RabbitAdminTemplate implements RabbitAdminOperations {
 		initializeDefaultErlangTemplate(rabbitTemplate);
 	}
 
-/*
-	public RabbitAdminTemplate(RabbitTemplate rabbitTemplate, ErlangTemplate erlangTemplate) {
-		this.rabbitTemplate = rabbitTemplate;
-		this.erlangTemplate = erlangTemplate;
-	}
-	*/
-
 	public AMQP.Queue.DeclareOk declareQueue() {
 		return rabbitTemplate.execute(new ChannelCallback<AMQP.Queue.DeclareOk>() {
 			public AMQP.Queue.DeclareOk doInRabbit(Channel channel) throws Exception {
@@ -114,13 +107,12 @@ public class RabbitAdminTemplate implements RabbitAdminOperations {
 			public AMQP.Exchange.DeclareOk doInRabbit(Channel channel) throws Exception {
 				logger.debug("Declaring exchange [" + exchange.getName() + "]");
 				return channel.exchangeDeclare(exchange.getName(), exchange.getExchangeType().name(), 
-											   exchange.isPassive(), 
+											   false, 
 											   exchange.isDurable(),
 											   exchange.isAutoDelete(), 
 											   exchange.getArguments());
 			}
-		});
-		
+		});		
 	}
 
 	public AMQP.Queue.BindOk declareBinding(final Binding binding) {
