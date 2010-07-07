@@ -32,15 +32,14 @@ import com.rabbitmq.client.AMQP;
 
 /**
  * Performs administration tasks for broker administration.  
- * <p>Goal is to support full CRUD of Exchages, Queues, Bindings, User, VHosts, etc.
- * <p>Current implementations expose operations with basic typics via JMX.
+ * <p>Goal is to support full CRUD of Exchanges, Queues, Bindings, User, VHosts, etc.
+ * <p>Current implementations expose operations with basic type arguments via JMX.
  * 
  * @author Mark Pollack
  *
  */
 public interface RabbitAdminOperations {
 
-	//TODO the method naming is opposite to that in the channel interface...switch to Channel API style?
 	
 	// Declaration/Creation
 	
@@ -76,6 +75,9 @@ public interface RabbitAdminOperations {
 	 AMQP.Queue.UnbindOk unbindQueue(String queue, String exchange, String routingKey);
 	 
 	 AMQP.Queue.UnbindOk unbindQueue(String queue, String exchange, String routingKey, Map<String,Object> arguments);
+	 
+	 // Rabbit Specific stuff.
+	 
 	 
 	 // Message Delivery
 	 
