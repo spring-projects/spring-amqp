@@ -21,40 +21,31 @@ package org.springframework.amqp.core;
  * Used in conjunction with RabbitAdminTemplate.
  * 
  * @author Mark Pollack
- * @see RabbitAdminTemplate
+ * @see AmqpAdmin
  */
 public class Queue  {
 
-	private String name;
-	
-	private boolean passive;
-	
-	private boolean durable;
-	
-	private boolean exclusive;
-	
-	private boolean autoDelete;
-	
-	private java.util.Map<java.lang.String,java.lang.Object> arguments;
+	private final String name;
+
+	private volatile boolean durable;
+
+	private volatile boolean exclusive;
+
+	private volatile boolean autoDelete;
+
+	private volatile java.util.Map<java.lang.String,java.lang.Object> arguments;
+
 
 	public Queue(String name) {
 		this.name = name;
 	}
 
 	public String getName() {
-		return name;
-	}
-
-	public boolean isPassive() {
-		return passive;
-	}
-
-	public void setPassive(boolean passive) {
-		this.passive = passive;
+		return this.name;
 	}
 
 	public boolean isDurable() {
-		return durable;
+		return this.durable;
 	}
 
 	public void setDurable(boolean durable) {
@@ -62,7 +53,7 @@ public class Queue  {
 	}
 
 	public boolean isExclusive() {
-		return exclusive;
+		return this.exclusive;
 	}
 
 	public void setExclusive(boolean exclusive) {
@@ -70,7 +61,7 @@ public class Queue  {
 	}
 
 	public boolean isAutoDelete() {
-		return autoDelete;
+		return this.autoDelete;
 	}
 
 	public void setAutoDelete(boolean autoDelete) {
@@ -78,14 +69,11 @@ public class Queue  {
 	}
 
 	public java.util.Map<java.lang.String, java.lang.Object> getArguments() {
-		return arguments;
+		return this.arguments;
 	}
 
-	public void setArguments(
-			java.util.Map<java.lang.String, java.lang.Object> arguments) {
+	public void setArguments(java.util.Map<java.lang.String, java.lang.Object> arguments) {
 		this.arguments = arguments;
 	}
-	
-	
-	
+
 }
