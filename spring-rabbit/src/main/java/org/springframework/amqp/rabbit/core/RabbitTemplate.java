@@ -24,7 +24,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageCreator;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
@@ -54,18 +53,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	// TODO configure defaults
 	// void basicQos(int prefetchSize, int prefetchCount, boolean global)
 
-	private volatile String defaultExchange = DEFAULT_EXCHANGE;
+	private volatile String exchange = DEFAULT_EXCHANGE;
 
-	private volatile String defaultRoutingKey = DEFAULT_ROUTING_KEY;
+	private volatile String routingKey = DEFAULT_ROUTING_KEY;
 
 	// The default queue name that will be used for synchronous receives.
-	private volatile String defaultReceiveQueueName;
+	private volatile String queue;
 
 	private volatile boolean mandatoryPublish;
 
 	private volatile boolean immediatePublish;
 
-	private volatile boolean requireAckOnReceive = false;
+	private volatile boolean requireAck = false;
 
 
 	/**
@@ -92,22 +91,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		setMessageConverter(new SimpleMessageConverter());
 	}
 
-	public void setDefaultExchange(String exchange) {
-		this.defaultExchange = (exchange != null) ? exchange : DEFAULT_EXCHANGE;
+	public void setExchange(String exchange) {
+		this.exchange = (exchange != null) ? exchange : DEFAULT_EXCHANGE;
 	}
 
-	public void setDefaultRoutingKey(String defaultRoutingKey) {
-		this.defaultRoutingKey = defaultRoutingKey;
+	public void setRoutingKey(String routingKey) {
+		this.routingKey = routingKey;
 	}
 
-	public void setDefaultReceiveQueueName(String defaultQueueName) {
-		this.defaultReceiveQueueName = defaultQueueName;
+	public void setQueue(String queue) {
+		this.queue = queue;
 	}
 	
-	public void setDefaultReceiveQueue(Queue defaultQueue) {
-		this.defaultReceiveQueueName = defaultQueue.getName();
-	}
-
 	public void setMandatoryPublish(boolean mandatoryPublish) {
 		this.mandatoryPublish = mandatoryPublish;
 	}
@@ -116,8 +111,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		this.immediatePublish = immediatePublish;
 	}
 
-	public void setRequireAckOnReceive(boolean requireAckOnReceive) {
-		this.requireAckOnReceive = requireAckOnReceive;
+	public void setRequireAck(boolean requireAck) {
+		this.requireAck = requireAck;
 	}
 
 	/**
@@ -168,11 +163,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void send(MessageCreator messageCreator) throws AmqpException {
-		send(this.defaultExchange, this.defaultRoutingKey, messageCreator);
+		send(this.exchange, this.routingKey, messageCreator);
 	}
 
 	public void send(String routingKey, MessageCreator messageCreator) throws AmqpException {
-		send(this.defaultExchange, routingKey, messageCreator);
+		send(this.exchange, routingKey, messageCreator);
 	}
 
 	public void send(final String exchange, final String routingKey, final MessageCreator messageCreator) throws AmqpException {
@@ -185,11 +180,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void convertAndSend(Object object) throws AmqpException {
-		convertAndSend(this.defaultExchange, this.defaultRoutingKey, object);
+		convertAndSend(this.exchange, this.routingKey, object);
 	}
 
 	public void convertAndSend(String routingKey, final Object object) throws AmqpException {
-		convertAndSend(this.defaultExchange, routingKey, object);
+		convertAndSend(this.exchange, routingKey, object);
 	}
 
 	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
@@ -201,11 +196,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
-		convertAndSend(this.defaultExchange, this.defaultRoutingKey, message, messagePostProcessor);
+		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor);
 	}
 
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
-		convertAndSend(this.defaultExchange, routingKey, message, messagePostProcessor);
+		convertAndSend(this.exchange, routingKey, message, messagePostProcessor);
 	}
 
 	public void convertAndSend(String exchange, String routingKey,
@@ -221,14 +216,14 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Message receive() throws AmqpException {
-		String queueName = getRequiredDefaultQueueName();
-		return this.receive(queueName);
+		String queue = this.getRequiredQueue();
+		return this.receive(queue);
 	}
 
 	public Message receive(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws IOException {
-				GetResponse response = channel.basicGet(queueName, !requireAckOnReceive);
+				GetResponse response = channel.basicGet(queueName, !requireAck);
 				//TODO - check for null of response - got it when sending from .NET client, investigate
 				if (response != null) {					
 					MessageProperties messageProps = new RabbitMessageProperties(response.getProps(), 
@@ -245,7 +240,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Object receiveAndConvert() throws AmqpException {
-		return receiveAndConvert(getRequiredDefaultQueueName());
+		return receiveAndConvert(this.getRequiredQueue());
 	}
 
 	public Object receiveAndConvert(String queueName) throws AmqpException {
@@ -309,13 +304,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			}
 			
 			if (exchange == null) {
-				// try to send to default exchange
-				exchange = this.defaultExchange;
+				// try to send to configured exchange
+				exchange = this.exchange;
 			}
 
 			if (routingKey == null) {
-				// try to send to default routing key
-				routingKey = this.defaultRoutingKey;
+				// try to send to configured routing key
+				routingKey = this.routingKey;
 			}
 			//TODO parameterize out default encoding				
 			channel.basicPublish(exchange, routingKey,
@@ -359,11 +354,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return converter;
 	}
 
-	private String getRequiredDefaultQueueName() throws IllegalStateException {
-		String name = this.defaultReceiveQueueName;
+	private String getRequiredQueue() throws IllegalStateException {
+		String name = this.queue;
 		if (name == null) {
 			throw new AmqpIllegalStateException(
-					"No 'defaultQueueName' specified. Check configuration of RabbitTemplate.");
+					"No 'queue' specified. Check configuration of RabbitTemplate.");
 		}
 		return name;
 	}

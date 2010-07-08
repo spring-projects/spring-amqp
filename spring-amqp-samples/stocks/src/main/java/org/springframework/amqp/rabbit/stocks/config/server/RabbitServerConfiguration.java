@@ -36,7 +36,7 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
 	 * {@link AbstractStockAppRabbitConfiguration#MARKET_DATA_EXCHANGE_NAME}.
 	 */
 	public void configureRabbitTemplate(RabbitTemplate rabbitTemplate) {
-		rabbitTemplate.setDefaultExchange(MARKET_DATA_EXCHANGE_NAME);		
+		rabbitTemplate.setExchange(MARKET_DATA_EXCHANGE_NAME);		
 	}
 
 	/**

@@ -11,8 +11,8 @@ public class TestRabbitConfiguration extends AbstractRabbitConfiguration {
 	@Bean 
 	public RabbitTemplate rabbitTemplate() {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory());
-		template.setDefaultExchange(TestConstants.EXCHANGE_NAME);
-		template.setDefaultRoutingKey(TestConstants.ROUTING_KEY);	
+		template.setExchange(TestConstants.EXCHANGE_NAME);
+		template.setRoutingKey(TestConstants.ROUTING_KEY);	
 		return template;
 	}
 

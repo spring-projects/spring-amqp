@@ -16,13 +16,9 @@
 
 package org.springframework.amqp.rabbit.stocks.config.client;
 
-import javax.annotation.PostConstruct;
 
 import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.UniquelyNamedQueue;
 
-import static org.springframework.amqp.core.BindingBuilder.*;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -67,7 +63,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	 */
 	@Override
 	public void configureRabbitTemplate(RabbitTemplate rabbitTemplate) {
-		rabbitTemplate.setDefaultRoutingKey(STOCK_REQUEST_QUEUE_NAME);		
+		rabbitTemplate.setRoutingKey(STOCK_REQUEST_QUEUE_NAME);		
 	}
 	
 	@Bean

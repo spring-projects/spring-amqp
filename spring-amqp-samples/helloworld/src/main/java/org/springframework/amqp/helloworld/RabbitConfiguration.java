@@ -28,13 +28,14 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 	public RabbitTemplate rabbitTemplate() {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory());
 		//The routing key is set to the name of the queue by the broker for the default exchange.
-		template.setDefaultRoutingKey(helloWorldQueue.getName());
+		template.setRoutingKey(helloWorldQueue.getName());
 		//Where we will synchronously receive messages from
-		template.setDefaultReceiveQueue(helloWorldQueue);
+		template.setQueue(helloWorldQueue.getName());
 		return template;
 	}
 	
 	@PostConstruct
+	@SuppressWarnings("unused")
 	private void configureBroker() {
 		declare(helloWorldQueue);
 	}
