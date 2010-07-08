@@ -34,7 +34,7 @@ import org.springframework.otp.erlang.OtpIOException;
 /**
  * @author Mark Pollack
  */
-public class RabbitBrokerAdminTests {
+public class RabbitBrokerAdminIntegrationTests {
 
 	private static RabbitBrokerAdmin brokerAdmin;
 	
