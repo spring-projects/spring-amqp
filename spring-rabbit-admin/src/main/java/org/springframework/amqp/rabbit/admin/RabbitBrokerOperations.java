@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.admin;
 
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.amqp.core.AmqpAdmin;
@@ -42,10 +41,8 @@ public interface RabbitBrokerOperations extends AmqpAdmin {
 	void removeBinding(Binding binding);
 	 
 	// Queue operations
-	
-	public Map<String, String> getQueueInfo(String name);
-	
-	public Map<String, Map<String, String>> getQueueInfo();
+		
+	public List<QueueInfo>  getQueues();
 	
 	 // Message Delivery
 	 

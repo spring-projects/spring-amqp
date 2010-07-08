@@ -111,9 +111,10 @@ public class RabbitBrokerAdminTests {
 	}
 	
 	@Test
-	public void testGetQueueInfo() {
+	public void testGetQueues() {
 		assertEquals("/", connectionFactory.getVirtualHost());
-		Map<String, Map<String, String>> response = brokerAdmin.getQueueInfo();
+		List<QueueInfo> queues = brokerAdmin.getQueues();
+		System.out.println(queues);
 	}
 
 	private void assertBrokerAppRunning(RabbitStatus status) {

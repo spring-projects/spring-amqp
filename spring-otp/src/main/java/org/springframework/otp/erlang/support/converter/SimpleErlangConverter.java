@@ -29,6 +29,7 @@ import com.ericsson.otp.erlang.OtpErlangInt;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangRangeException;
 import com.ericsson.otp.erlang.OtpErlangShort;
 import com.ericsson.otp.erlang.OtpErlangString;
@@ -112,7 +113,7 @@ public class SimpleErlangConverter implements ErlangConverter {
 			} else if (erlangObject instanceof OtpErlangBinary) {
 				return ((OtpErlangBinary) erlangObject).binaryValue();
 			} else if (erlangObject instanceof OtpErlangBoolean) {
-				return ((OtpErlangBoolean) erlangObject).booleanValue();
+				return extractBoolean(erlangObject);
 			} else if (erlangObject instanceof OtpErlangByte) {
 				return ((OtpErlangByte) erlangObject).byteValue();
 			} else if (erlangObject instanceof OtpErlangChar) {
@@ -128,7 +129,9 @@ public class SimpleErlangConverter implements ErlangConverter {
 			} else if (erlangObject instanceof OtpErlangShort) {
 				return ((OtpErlangShort) erlangObject).shortValue();
 			} else if (erlangObject instanceof OtpErlangString) {
-				return ((OtpErlangString) erlangObject).stringValue();								
+				return ((OtpErlangString) erlangObject).stringValue();		
+			} else if (erlangObject instanceof OtpErlangPid) {
+				return ((OtpErlangPid) erlangObject).toString();		
 			} else {
 				throw new ErlangConversionException(
 						"Could not convert Erlang object ["
@@ -139,5 +142,17 @@ public class SimpleErlangConverter implements ErlangConverter {
 					"Could not convert Erlang object ["
 							+ erlangObject.getClass() + "] to Java type.", e);
 		}
+	}
+
+	public static boolean extractBoolean(OtpErlangObject erlangObject) {
+		return ((OtpErlangBoolean) erlangObject).booleanValue();
+	}
+	
+	public static String extractPid(OtpErlangObject value) {
+		return ((OtpErlangPid)value).toString();
+	}
+
+	public static long extractLong(OtpErlangObject value) {
+		return ((OtpErlangLong)value).longValue();
 	}
 }

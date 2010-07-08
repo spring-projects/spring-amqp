@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.admin;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -143,16 +144,11 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		rabbitAdmin.purgeQueue(queueName, noWait);
 
 	}
-	
-	public Map<String, String> getQueueInfo(String name) {
-		// TODO: is there a more efficient way (direct RPC) to retrieve info for a single queue by name?
-		Map<String, Map<String, String>> queues = this.getQueueInfo();
-		return queues.get(name);
-	}
+
 	
 	@SuppressWarnings("unchecked")
-	public Map<String, Map<String, String>> getQueueInfo() { 
-		return (Map<String, Map<String, String>>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", virtualHost.getBytes());
+	public List<QueueInfo>  getQueues() { 
+		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", virtualHost.getBytes());
 	}
 	
 	// Binding operations 

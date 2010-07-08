@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.admin;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +31,12 @@ import org.springframework.otp.erlang.support.converter.ErlangConversionExceptio
 import org.springframework.otp.erlang.support.converter.ErlangConverter;
 import org.springframework.otp.erlang.support.converter.SimpleErlangConverter;
 
+import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangBinary;
 import com.ericsson.otp.erlang.OtpErlangList;
+import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /***
@@ -155,42 +159,102 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 		}	
 	}
 
+	public enum QueueInfoField {
+		transactions, acks_uncommitted, consumers, pid, durable, messages, memory, auto_delete, messages_ready,
+		arguments, name, messages_unacknowledged, messages_uncommitted, NOVALUE;
+		
+		public static QueueInfoField toQueueInfoField(String str)
+	    {
+	        try {
+	            return valueOf(str);
+	        } 
+	        catch (Exception ex) {
+	            return NOVALUE;
+	        }
+	    } 
+	}
+	
 	public class QueueInfoAllConverter extends SimpleErlangConverter {
 
 		@Override
 		public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {
-			Map<String, Map<String, String>> allQueuesMap = new HashMap<String, Map<String,String>>();
+			List<QueueInfo> queueInfoList = new ArrayList<QueueInfo>();
 			if (erlangObject instanceof OtpErlangList) {
 				OtpErlangList erlangList = (OtpErlangList) erlangObject;
 				for (OtpErlangObject element : erlangList.elements()) {
-					String queueName = null;
-					Map<String, String> queueMap = new HashMap<String, String>();
 					QueueInfo queueInfo = new QueueInfo();
 					OtpErlangList itemList = (OtpErlangList) element;
 					for (OtpErlangObject item : itemList.elements()) {
-						OtpErlangTuple tuple = (OtpErlangTuple) item;
+						OtpErlangTuple tuple = (OtpErlangTuple) item;						
 						if (tuple.arity() == 2) {
 							String key = tuple.elementAt(0).toString();
-							Object value = tuple.elementAt(1);
-							if ("name".equals(key)) {
-								// arity should be 4 for the 'name' tuple, we want the last element
-								Object nameElement = ((OtpErlangTuple) value).elementAt(3);
-								queueName = new String(((OtpErlangBinary) nameElement).binaryValue());
-								value = queueName;
-								queueInfo.setName(queueName);
-							}
-							if (tuple.elementAt(0).toString().equals("transactions")) {
-								queueInfo.setTransations(Long.parseLong(value.toString()));
-							}
-							queueMap.put(tuple.elementAt(0).toString(), value.toString());
+							OtpErlangObject value = tuple.elementAt(1);
+							switch (QueueInfoField.toQueueInfoField(key)) {
+							case name:
+								queueInfo.setName(extractNameValueFromTuple((OtpErlangTuple)value));
+								break;
+							case transactions:
+								queueInfo.setTransations(extractLong(value));
+								break;
+							case acks_uncommitted:
+								queueInfo.setAcksUncommitted(extractLong(value));
+								break;
+							case consumers:
+								queueInfo.setConsumers(extractLong(value));
+								break;
+							case pid:
+								queueInfo.setPid(extractPid(value));
+								break;
+							case durable:
+								queueInfo.setDurable(extractAtomBoolean(value));
+								break;
+							case messages:
+								queueInfo.setMessages(extractLong(value));
+								break;
+							case memory:
+								queueInfo.setMemory(extractLong(value));
+								break;
+							case auto_delete:
+								queueInfo.setAutoDelete(extractAtomBoolean(value));
+								break;
+							case messages_ready:
+								queueInfo.setMessagesReady(extractLong(value));
+								break;
+							case arguments:
+								OtpErlangList list = (OtpErlangList)value;
+								if (list != null) {
+									String[] args = new String[list.arity()];
+									for (int i = 0; i < list.arity(); i++) {
+										OtpErlangObject obj = list.elementAt(i);
+										args[i] = obj.toString();
+									}
+									queueInfo.setArguments(args);
+								}
+								break;			
+							case messages_unacknowledged:
+								queueInfo.setMessagesUnacknowledged(extractLong(value));
+								break;
+							case messages_uncommitted:
+								queueInfo.setMessageUncommitted(extractLong(value));
+								break;
+							default:
+								break;
+							} 																		
 						}
 					}
-					if (queueMap != null) {
-						allQueuesMap.put(queueName, queueMap);
-					}
+					queueInfoList.add(queueInfo);					
 				}
 			}
-			return allQueuesMap;
+			return queueInfoList;
+		}
+
+		private boolean extractAtomBoolean(OtpErlangObject value) {			
+			return ((OtpErlangAtom) value).booleanValue();
+		}
+
+		private String extractNameValueFromTuple(OtpErlangTuple value) {
+			Object nameElement = value.elementAt(3);
+			return new String(((OtpErlangBinary) nameElement).binaryValue());
 		}
 	}
 
