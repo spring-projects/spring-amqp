@@ -20,12 +20,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.otp.erlang.OtpIOException;
 
@@ -34,29 +36,31 @@ import org.springframework.otp.erlang.OtpIOException;
  */
 public class RabbitBrokerAdminTests {
 
-	private static RabbitBrokerAdmin adminTemplate;
+	private static RabbitBrokerAdmin brokerAdmin;
+	
+	private static CachingConnectionFactory connectionFactory;
 
 	@BeforeClass
 	public static void setUp() {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		connectionFactory.setChannelCacheSize(10);
-		adminTemplate = new RabbitBrokerAdmin(connectionFactory);
+		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
 	}
 
 	@Test
 	@Ignore
 	public void integrationTestsUserCrud() {
-		List<String> users = adminTemplate.listUsers();
+		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
-			adminTemplate.deleteUser("joe");
+			brokerAdmin.deleteUser("joe");
 		}
-		adminTemplate.addUser("joe", "trader");
-		adminTemplate.changeUserPassword("joe", "sales");
-		users = adminTemplate.listUsers();
+		brokerAdmin.addUser("joe", "trader");
+		brokerAdmin.changeUserPassword("joe", "sales");
+		users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
-			adminTemplate.deleteUser("joe");
+			brokerAdmin.deleteUser("joe");
 		}
 	}
 
@@ -65,7 +69,7 @@ public class RabbitBrokerAdminTests {
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
 		// "info_all", "/".getBytes());
 		// System.out.println(result);
-		List<String> users = adminTemplate.listUsers();
+		List<String> users = brokerAdmin.listUsers();
 		System.out.println(users);
 	}
 
@@ -73,7 +77,7 @@ public class RabbitBrokerAdminTests {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_access_control",
 		// "delete_user", "joe".getBytes());
-		adminTemplate.deleteUser("joe");
+		brokerAdmin.deleteUser("joe");
 		// System.out.println(result.getClass());
 		// System.out.println(result);
 	}
@@ -81,15 +85,15 @@ public class RabbitBrokerAdminTests {
 	@Test
 	@Ignore
 	public void testStatusAndBrokerLifecycle() {
-		RabbitStatus status = adminTemplate.getStatus();
+		RabbitStatus status = brokerAdmin.getStatus();
 		assertBrokerAppRunning(status);		
 		
-		adminTemplate.stopBrokerApplication();
-		status = adminTemplate.getStatus();
+		brokerAdmin.stopBrokerApplication();
+		status = brokerAdmin.getStatus();
 		assertEquals(0, status.getRunningNodes().size());
 		
-		adminTemplate.startBrokerApplication();
-		status = adminTemplate.getStatus();
+		brokerAdmin.startBrokerApplication();
+		status = brokerAdmin.getStatus();
 		assertBrokerAppRunning(status);				
 	}
 	
@@ -97,15 +101,20 @@ public class RabbitBrokerAdminTests {
 	@Ignore("NEEDS RABBITMQ_HOME to be set.")
 	public void testStartNode() {
 		try {
-			adminTemplate.stopNode();
+			brokerAdmin.stopNode();
 		} catch (OtpIOException e) {
 			//assume it is not running.
 		}
-		adminTemplate.startNode();
+		brokerAdmin.startNode();
 		assertEquals(1,1);
-		adminTemplate.stopNode();
+		brokerAdmin.stopNode();
 	}
-		
+	
+	@Test
+	public void testGetQueueInfo() {
+		assertEquals("/", connectionFactory.getVirtualHost());
+		Map<String, Map<String, String>> response = brokerAdmin.getQueueInfo();
+	}
 
 	private void assertBrokerAppRunning(RabbitStatus status) {
 		assertEquals(1, status.getRunningNodes().size());

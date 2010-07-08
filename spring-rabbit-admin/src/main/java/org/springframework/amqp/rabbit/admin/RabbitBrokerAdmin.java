@@ -58,10 +58,13 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 	private ErlangTemplate erlangTemplate;
 	
-	public RabbitBrokerAdmin(ConnectionFactory rabbitConnectionFactory) {
-		this.rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
+	private String virtualHost;
+	
+	public RabbitBrokerAdmin(ConnectionFactory connectionFactory) {
+		this.virtualHost = connectionFactory.getVirtualHost();
+		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
 		this.rabbitAdmin = new RabbitAdmin(rabbitTemplate);
-		initializeDefaultErlangTemplate(rabbitTemplate);
+		initializeDefaultErlangTemplate(rabbitTemplate);		
 	}
 	
 	
@@ -149,8 +152,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 	@SuppressWarnings("unchecked")
 	public Map<String, Map<String, String>> getQueueInfo() { 
-		// TODO: pass virtual host... currently hardcoded to default ("/").. need to parse off connection string.
-		return (Map<String, Map<String, String>>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", "/".getBytes());
+		return (Map<String, Map<String, String>>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", virtualHost.getBytes());
 	}
 	
 	// Binding operations 
@@ -223,8 +225,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 
 	@Override
-	public void setPermissions(String username, Pattern configure,
-			Pattern read, Pattern write, String vhostPath) {
+	public void setPermissions(String username, Pattern configure, Pattern read, Pattern write, String vhostPath) {
 		// TODO Auto-generated method stub
 	
 	}
