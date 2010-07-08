@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.core;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
@@ -27,11 +29,9 @@ import org.springframework.jmx.export.annotation.ManagedOperation;
 import com.rabbitmq.client.Channel;
 
 /**
- * RabbitMQ implementation of portable AMQP administrative operations for AMQP
- * >= 0.8
+ * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.8
  * 
  * @author Mark Pollack
- * 
  */
 public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
@@ -40,6 +40,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	private RabbitTemplate rabbitTemplate;
 
+
 	public RabbitAdmin() {
 	}
 
@@ -47,13 +48,19 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		this.rabbitTemplate = rabbitTemplate;
 	}
 
+
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
 
+	public void afterPropertiesSet() {
+		if (getRabbitTemplate() == null) {
+			throw new IllegalArgumentException("'RabbitTemplate' is required");
+		}
+	}
+
 	// Exchange operations
 
-	@Override
 	public void declareExchange(final AbstractExchange exchange) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
@@ -65,10 +72,8 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		});
 	}
 
-	@Override
 	@ManagedOperation
 	public void deleteExchange(final String exchangeName) {
-
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.exchangeDelete(exchangeName);
@@ -79,7 +84,6 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	// Queue operations
 
-	@Override
 	@ManagedOperation
 	public void declareQueue(final Queue queue) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -92,7 +96,6 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		});
 	}
 
-	@Override
 	@ManagedOperation
 	public void deleteQueue(final String queueName) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -103,10 +106,8 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		});
 	}
 
-	@Override
 	@ManagedOperation
-	public void deleteQueue(final String queueName, final boolean unused,
-			final boolean empty) {
+	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queueDelete(queueName, unused, empty);
@@ -115,7 +116,6 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		});
 	}
 
-	@Override
 	@ManagedOperation
 	public void purgeQueue(final String queueName, final boolean noWait) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -127,25 +127,16 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	}
 
 	// Binding
-	@Override
 	@ManagedOperation
 	public void declareBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-
 				logger.debug("Binding queue to exchange with routing key");
 				channel.queueBind(binding.getQueue(), binding.getExchange(),
 						binding.getRoutingKey(), binding.getArguments());
 				return null;
 			}
 		});
-	}
-
-	@Override
-	public void afterPropertiesSet() {
-		if (getRabbitTemplate() == null) {
-			throw new IllegalArgumentException("'RabbitTemplate' is required");
-		}
 	}
 
 }
