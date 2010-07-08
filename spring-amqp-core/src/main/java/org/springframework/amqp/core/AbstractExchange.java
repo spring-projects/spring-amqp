@@ -20,57 +20,102 @@ import java.util.Map;
 
 
 /**
- * Define common properties for all exchange types.
+ * Common properties that describe all exchange types.  
+ * <p>Subclasses of this class are typically used with administrative operations that declare an exchange.
  * 
  * @author Mark Pollack
+ * 
+ * @see AmqpAdmin
  */
 public abstract class AbstractExchange {
 
 	protected String name;
 
-	private boolean passive = false;
-
 	private boolean durable = false;
 
 	private boolean autoDelete = false;
 
-	private Map<String, Object> arguments = null;
+	private Map<String, Object> arguments = null;	
 
+	/**
+	 * Construct a new Exchange for bean usage. 
+	 * @param name the name of the exchange.
+	 */
+	public AbstractExchange(String name) {
+		this.name = name;
+	}
+	
+	/**
+	 * Construct a new Exchange, given a name, durability flag, and auto-delete flag. 
+	 * @param name the name of the exchange.
+	 * @param durable true if we are declaring a durable exchange (the exchange will survive a server restart)
+	 * @param autoDelete true if the server should delete the exchange when it is no longer in use
+	 */
+	public AbstractExchange(String name, boolean durable, boolean autoDelete) {
+		super();
+		this.name = name;
+		this.durable = durable;
+		this.autoDelete = autoDelete;
+	}
 
 	public abstract ExchangeType getExchangeType();
 
+	/**
+	 * Return the name specified for this exchange.
+	 * @return the name of the exchange.
+	 */
 	public String getName() {
 		return name;
 	}
 
-	public boolean isPassive() {
-		return passive;
-	}
-
-	public void setPassive(boolean passive) {
-		this.passive = passive;
-	}
-
+	/**
+	 * Return whether or not this exchange definition is durable.
+	 * @return true if we are declaring a durable exchange (the exchange will survive a server restart), false otherwise.
+	 */
 	public boolean isDurable() {
 		return durable;
 	}
 
+	/**
+	 * Set the durability of this exchange definition.
+	 * @param durable true if describing a durable exchange (the exchange will survive a server restart)
+	 */
 	public void setDurable(boolean durable) {
 		this.durable = durable;
 	}
 
+	/**
+	 * Return whether or not this exchange definition has an auto-delete lifecycle.
+	 * <p>
+	 * Auto-deleted message queues last until they are no longer used. 
+	 * An non-auto-deleted exchange lasts until the server is shut down.
+	 * @return true if describing an auto-delete queue.
+	 */
 	public boolean isAutoDelete() {
 		return autoDelete;
 	}
 
+	/**
+	 * Set the auto-delete lifecycle of this exchange. 
+	 * An non-auto-deleted exchange lasts until the server is shut down.
+	 * @param autoDelete true if the server should delete the exchange when it is no longer in use.
+	 */
 	public void setAutoDelete(boolean autoDelete) {
 		this.autoDelete = autoDelete;
 	}
 
+	/**
+	 * Return the collection of arbitrary arguments to use when declaring an exchange.
+	 * @return the collection of arbitrary arguments to use when declaring an exchange.
+	 */
 	public Map<String, Object> getArguments() {
 		return arguments;
 	}
 
+	/**
+	 * Set the collection of arbitrary arguments to use when declaring an exchange.
+	 * @param arguments A collection of arbitrary arguments to use when declaring an exchange.
+	 */
 	public void setArguments(Map<String, Object> arguments) {
 		this.arguments = arguments;
 	}
@@ -79,7 +124,6 @@ public abstract class AbstractExchange {
 	public String toString() {
 		return "Exchange [name=" + name + 
 						 ", type=" + getExchangeType().name() +
-						 ", passive=" + passive + 
 						 ", durable=" + durable +
 						 ", autoDelete=" + autoDelete + 
 						 ", arguments="	+ arguments + "]";

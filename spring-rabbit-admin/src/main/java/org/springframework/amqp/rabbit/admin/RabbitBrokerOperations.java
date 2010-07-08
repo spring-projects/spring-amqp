@@ -16,72 +16,39 @@
 
 package org.springframework.amqp.rabbit.admin;
 
-/**
- * Performs broker administration.  Uses {@link Queue}, {@link org.springframework.amqp.rabbit.config.Exchange},
- * and {@link Binding} as conveniences for code based configuration in Spring.
- */
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.springframework.amqp.core.AbstractExchange;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.Queue;
 
 import com.rabbitmq.client.AMQP;
 
 /**
- * Performs administration tasks for broker administration.  
- * <p>Goal is to support full CRUD of Exchages, Queues, Bindings, User, VHosts, etc.
- * <p>Current implementations expose operations with basic typics via JMX.
+ * Performs administration tasks for RabbitMQ broker administration.  
+ * <p>Goal is to support full CRUD of Exchanges, Queues, Bindings, User, VHosts, etc.
+ * <p>Current implementations expose operations with basic type arguments via JMX.
  * 
  * @author Mark Pollack
  *
  */
-public interface RabbitAdminOperations {
+public interface RabbitBrokerOperations extends AmqpAdmin {
 
-	//TODO the method naming is opposite to that in the channel interface...switch to Channel API style?
+	// Exchange Operations
 	
-	// Declaration/Creation
+	AMQP.Exchange.DeleteOk deleteExchange(String exchangeName, boolean ifUnused); 
+		
+	void removeBinding(Binding binding);
+	 
+	// Queue operations
+		
+	public List<QueueInfo>  getQueues();
 	
-	 AMQP.Queue.DeclareOk declareQueue(Queue queue);
-	 
-	 AMQP.Exchange.DeclareOk declareExchange(AbstractExchange exchange);
-	 	
-	 AMQP.Queue.BindOk declareBinding(Binding binding);
-	 
-	 
-	 
-	 // Can be used with JMX as the expose simple arguments.
-	 
-	 // Deletion
-	 
-	 AMQP.Queue.DeleteOk deleteQueue(String queueName);
-	 
-	 AMQP.Queue.DeleteOk deleteQueue(String queueName, boolean ifUnused, boolean ifEmpty);
-	 
-	 AMQP.Exchange.DeleteOk deleteExchange(String exchange);
-	 
-	 AMQP.Exchange.DeleteOk deleteExchange(String exchange, boolean ifUnused); 
-
-	 
-	 // Purge
-	 
-	 AMQP.Queue.PurgeOk purgeQueue(String queueName);
-	 
-	 AMQP.Queue.PurgeOk purgeQueue(String queueName, boolean nowait);
-	 
-	 // Unbind
-	 
-	 AMQP.Queue.UnbindOk unbindQueue(String queue, String exchange, String routingKey);
-	 
-	 AMQP.Queue.UnbindOk unbindQueue(String queue, String exchange, String routingKey, Map<String,Object> arguments);
-	 
 	 // Message Delivery
 	 
 	 void recoverAsync(boolean requeue);
 	 
-	 // Misc
+	 // User management
 	 
 	 void addUser(String username, String password);
 	 
@@ -91,11 +58,13 @@ public interface RabbitAdminOperations {
 	 
 	 List<String> listUsers();
 	 
+	 // VHost management
+	 
 	 int addVhost(String vhostPath);
 	 
 	 int deleteVhost(String vhostPath);
 	 
-	 // TODO permissions
+	 // permissions
 	 
 	 void setPermissions(String username, Pattern configure, Pattern read, Pattern write);
 	 
@@ -112,7 +81,7 @@ public interface RabbitAdminOperations {
 	 List<String> listUserPermissions(String username);
 	 
 	 
-	 // Start/Stop/Re	 
+	 // Start/Stop/Reset broker 
 	 
 	 /**
 	  * Starts the RabbitMQ application on an already running node. This command is typically run after performing other 
@@ -161,6 +130,4 @@ public interface RabbitAdminOperations {
 	  * @return status of the node.
 	  */
 	 RabbitStatus getStatus();
-		
-	 
 }

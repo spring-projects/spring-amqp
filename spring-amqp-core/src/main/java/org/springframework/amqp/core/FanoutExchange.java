@@ -20,17 +20,27 @@ package org.springframework.amqp.core;
 
 /**
  * Simple container collecting information to describe a fanout exchange.
- * Used in conjunction with RabbitAdminTemplate.
+ * Used in conjunction with administrative operations.
+ * @see AmqpAdmin
  * 
  * @author Mark Pollack
- * @see RabbitAdminTemplate
  */
 public class FanoutExchange extends AbstractExchange {
 
+	
+	
 	public FanoutExchange(String name) {
-		this.name = name;
+		super(name);		
 	}
 	
+	
+
+	public FanoutExchange(String name, boolean durable, boolean autoDelete) {
+		super(name, durable, autoDelete);
+	}
+
+
+
 	public ExchangeType getExchangeType() {
 		return ExchangeType.fanout;
 	}

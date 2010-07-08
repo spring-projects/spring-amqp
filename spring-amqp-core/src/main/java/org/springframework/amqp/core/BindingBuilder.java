@@ -54,6 +54,7 @@ public final class BindingBuilder  {
 		return new Binding(this.queue, this.exchange, this.routingKey);
 	}
 
+	@SuppressWarnings("unchecked")
 	public Binding with(Enum routingKeyEnum) {
 		this.routingKey = routingKeyEnum.toString();
 		return new Binding(this.queue, this.exchange, this.routingKey);

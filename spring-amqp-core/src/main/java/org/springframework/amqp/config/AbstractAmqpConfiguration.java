@@ -13,67 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.amqp.config;
 
-package org.springframework.amqp.rabbit.admin.config;
-
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.admin.RabbitAdminTemplate;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
-
 /**
- * Abstract base class for code based configuration of Spring managed Rabbit broker infrastructure,
- * i.e. Queues, Exchanges, Bindings.
- * <p>Subclasses are required to provide an implementation of rabbitTemplate from which the the bean 
- * 'rabbitAdminTemplate' will be created.
+ * Abstract base class for code based configuration of Spring managed AMQP infrastructure,
+ * i.e. Exchanges, Queues, and Bindings.
+ * <p>Subclasses are required to provide an implementation of AmqpAdmin and randomNameQueueDefinition.
  * <p>There are several convenience 'declare' methods to make the configuration in subclasses
  * more terse and readable.
- * <p>Builder classes to make the configuration more fluent are under development. Look in the 
- * StockApp sample for an example of a fluent API to declare a binding.
+ * <p>The BindingBuilder class can be used to provide a fluent API to declare bindings.
+ * 
  *
  * @author Mark Pollack
+ * @see AbstractExhange
+ * @see Queue
+ * @see Binding
+ * @see BindingBuilder
  */
 @Configuration
-public abstract class AbstractRabbitConfiguration {
-
-	@Bean 
-	public abstract RabbitTemplate rabbitTemplate();
+public abstract class AbstractAmqpConfiguration {
 
 	@Bean
-	public RabbitAdminTemplate rabbitAdminTemplate() {
-		return new RabbitAdminTemplate(rabbitTemplate());
-	}
+	public abstract AmqpAdmin amqpAdmin();
 
-	public Queue declareQueue() {
-		DeclareOk result = rabbitAdminTemplate().declareQueue();
-		Queue queue = new Queue(result.getQueue());
-		queue.setExclusive(true);
-		queue.setAutoDelete(true);
-		queue.setDurable(false);
-		return queue;
-	}
-
+	@Bean
+	public abstract Queue randomNameQueueDefinition();
+	
 	public DirectExchange defaultDirectExchange() {
 		return new DirectExchange("");  // server already has declared it.
 	}
-	
+
 	public Queue declare(Queue queue) {
-		rabbitAdminTemplate().declareQueue(queue);			
+		amqpAdmin().declareQueue(queue);			
 		return queue;
 	}
 
 	public Binding declare(Binding binding) {
-		rabbitAdminTemplate().declareBinding(binding);
+		amqpAdmin().declareBinding(binding);
 		return binding;
 	}
-	
+
 	/**
 	 * Provides the same as {@link declare(Binding)} but is better to use in conjunction with
 	 * BindingBuilder so the fluent API reads better.
@@ -86,23 +74,22 @@ public abstract class AbstractRabbitConfiguration {
 	 * @return
 	 */
 	public Binding declareBinding(Binding binding) {
-		rabbitAdminTemplate().declareBinding(binding);
+		amqpAdmin().declareBinding(binding);
 		return binding;
 	}
 
 	public DirectExchange declare(DirectExchange directExchange) {
-		rabbitAdminTemplate().declareExchange(directExchange);
+		amqpAdmin().declareExchange(directExchange);
 		return directExchange;
 	}
 
 	public TopicExchange declare(TopicExchange topicExchange) {
-		rabbitAdminTemplate().declareExchange(topicExchange);
+		amqpAdmin().declareExchange(topicExchange);
 		return topicExchange;
 	}
 
 	public FanoutExchange declare(FanoutExchange fanoutExchange) {
-		rabbitAdminTemplate().declareExchange(fanoutExchange);
+		amqpAdmin().declareExchange(fanoutExchange);
 		return fanoutExchange;
 	}
-
 }

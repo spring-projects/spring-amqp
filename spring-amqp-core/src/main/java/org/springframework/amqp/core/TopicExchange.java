@@ -20,17 +20,23 @@ package org.springframework.amqp.core;
 
 /**
  * Simple container collecting information to describe a topic exchange.
- * Used in conjunction with RabbitAdminTemplate.
+ * Used in conjunction with administrative operations.
  * 
  * @author Mark Pollack
- * @see RabbitAdminTemplate
+ * 
+ * @see AmqpAdmin
  */
 public class TopicExchange extends AbstractExchange {
 
 	public TopicExchange(String name) {
-		this.name = name;
+		super(name);
 	}
 	
+	public TopicExchange(String name, boolean durable, boolean autoDelete) {
+		super(name, durable, autoDelete);		
+	}
+
+
 	public ExchangeType getExchangeType() {
 		return ExchangeType.topic;
 	}

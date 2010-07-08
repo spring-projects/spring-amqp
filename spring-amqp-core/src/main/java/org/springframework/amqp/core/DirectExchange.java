@@ -20,19 +20,27 @@ package org.springframework.amqp.core;
 
 /**
  * Simple container collecting information to describe a direct exchange.
- * Used in conjunction with RabbitAdminTemplate.
+ * Used in conjunction with administrative operations.
+ * 
+ * @see AmqpAdmin
  * 
  * @author Mark Pollack
- * @see RabbitAdminTemplate
  */
 public class DirectExchange extends AbstractExchange {
 
 	public static final DirectExchange DEFAULT = new DirectExchange("");
+
 	
 	public DirectExchange(String name) {
-		this.name = name;
+		super(name);
 	}
-	
+
+	public DirectExchange(String name, boolean durable, boolean autoDelete) {
+		super(name, durable, autoDelete);
+	}
+
+
+
 	public ExchangeType getExchangeType() {
 		return ExchangeType.direct;
 	}

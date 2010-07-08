@@ -42,8 +42,6 @@ public abstract class NamespaceUtils {
 	static final String REF_ATTRIBUTE = "ref";
 	static final String METHOD_ATTRIBUTE = "method";
 	static final String ORDER = "order";
-	
-
 
 	/**
 	 * Populates the specified bean definition property with the value
