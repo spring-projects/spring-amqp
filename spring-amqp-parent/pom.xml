@@ -305,6 +305,7 @@
 					</includes>
 					<excludes>
 						<exclude>**/Abstract*.java</exclude>
+						<exclude>**/*IntegrationTests.java</exclude>
 					</excludes>
 					<junitArtifactName>junit:junit</junitArtifactName>
 				</configuration>
