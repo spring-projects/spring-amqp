@@ -73,7 +73,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 	protected void initializeConverterMap() {		
 		registerConverter("rabbit_access_control", "list_users", new ListUsersConverter());	
 		registerConverter("rabbit", "status", new StatusConverter());
-		registerConverter("rabbit_amqqueue", "info_all", new InfoAllConverter());
+		registerConverter("rabbit_amqqueue", "info_all", new QueueInfoAllConverter());
 	}
 	
 	protected void registerConverter(String module, String function, ErlangConverter listUsersConverter) {
@@ -155,7 +155,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 		}	
 	}
 
-	public class InfoAllConverter extends SimpleErlangConverter {
+	public class QueueInfoAllConverter extends SimpleErlangConverter {
 
 		@Override
 		public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {
@@ -165,6 +165,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 				for (OtpErlangObject element : erlangList.elements()) {
 					String queueName = null;
 					Map<String, String> queueMap = new HashMap<String, String>();
+					QueueInfo queueInfo = new QueueInfo();
 					OtpErlangList itemList = (OtpErlangList) element;
 					for (OtpErlangObject item : itemList.elements()) {
 						OtpErlangTuple tuple = (OtpErlangTuple) item;
@@ -176,6 +177,10 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 								Object nameElement = ((OtpErlangTuple) value).elementAt(3);
 								queueName = new String(((OtpErlangBinary) nameElement).binaryValue());
 								value = queueName;
+								queueInfo.setName(queueName);
+							}
+							if (tuple.elementAt(0).toString().equals("transactions")) {
+								queueInfo.setTransations(Long.parseLong(value.toString()));
 							}
 							queueMap.put(tuple.elementAt(0).toString(), value.toString());
 						}
