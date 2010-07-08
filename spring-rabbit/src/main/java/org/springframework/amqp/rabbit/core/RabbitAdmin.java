@@ -22,6 +22,7 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.jmx.export.annotation.ManagedOperation;
 
 import com.rabbitmq.client.Channel;
 
@@ -65,6 +66,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	}
 
 	@Override
+	@ManagedOperation
 	public void deleteExchange(final String exchangeName) {
 
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -78,6 +80,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	// Queue operations
 
 	@Override
+	@ManagedOperation
 	public void declareQueue(final Queue queue) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
@@ -90,6 +93,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	}
 
 	@Override
+	@ManagedOperation
 	public void deleteQueue(final String queueName) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
@@ -100,6 +104,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	}
 
 	@Override
+	@ManagedOperation
 	public void deleteQueue(final String queueName, final boolean unused,
 			final boolean empty) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -111,6 +116,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	}
 
 	@Override
+	@ManagedOperation
 	public void purgeQueue(final String queueName, final boolean noWait) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
@@ -122,6 +128,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	// Binding
 	@Override
+	@ManagedOperation
 	public void declareBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
