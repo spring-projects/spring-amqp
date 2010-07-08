@@ -17,13 +17,12 @@
 package org.springframework.amqp.rabbit.admin;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Queue;
@@ -44,9 +43,9 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.AMQP.Exchange.DeleteOk;
 
 /**
- * Rabbit broker administration implementation exposed via JMX annotations. 
+ * Rabbit broker administration implementation exposed via JMX annotations.
+ *  
  * @author Mark Pollack
- *
  */
 public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
@@ -71,7 +70,6 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 	// Exchange Operations
 
-	@Override	
 	public void declareExchange(AbstractExchange exchange) {
 		rabbitAdmin.declareExchange(exchange);
 	}
@@ -97,7 +95,6 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		});
 	}
 	
-	@Override
 	@ManagedOperation(description="Delete a exchange, without regard for whether it is in use or has messages on it")
 	@ManagedOperationParameters(@ManagedOperationParameter(name = "exchange", description = "the name of the exchange"))
 	public void deleteExchange(String exchangeName) {
@@ -105,7 +102,6 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	}
 	
-	@Override
 	@ManagedOperation
 	public DeleteOk deleteExchange(final String exchangeName, final boolean ifUnused) {
 		return rabbitTemplate.execute(new ChannelCallback<DeleteOk>() {
@@ -119,46 +115,38 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	// Queue Operations
 	
-	@Override
 	@ManagedOperation
 	public void declareQueue(Queue queue) {
 		rabbitAdmin.declareQueue(queue);
 	}
 
-	@Override
 	@ManagedOperation
 	public void deleteQueue(String queueName) {
 		rabbitAdmin.deleteQueue(queueName);
 	}
 
-	@Override
 	@ManagedOperation
 	public void deleteQueue(String queueName, boolean unused, boolean empty) {
 		rabbitAdmin.deleteQueue(queueName, unused, empty);
 
 	}
 
-	@Override
 	@ManagedOperation
 	public void purgeQueue(String queueName, boolean noWait) {
 		rabbitAdmin.purgeQueue(queueName, noWait);
 
 	}
 
-	
 	@SuppressWarnings("unchecked")
 	public List<QueueInfo>  getQueues() { 
 		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", virtualHost.getBytes());
 	}
 	
 	// Binding operations 
-	@Override
 	public void declareBinding(Binding binding) {
 		rabbitAdmin.declareBinding(binding);	
 	}
 
-
-	@Override
 	public void removeBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
@@ -168,123 +156,86 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		});
 	}
 	
+	// User management
 	
-	 // User management
-
-	
-	@Override
 	@ManagedOperation()	
 	public void addUser(String username, String password) {
 		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "add_user", username.getBytes(), password.getBytes());
 	}
 
-	@Override
 	@ManagedOperation
 	public void deleteUser(String username) {
 		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "delete_user", username.getBytes());	
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void changeUserPassword(String username, String newPassword) {
 		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "change_password", username.getBytes(), newPassword.getBytes());		
 	}
 
-
-	@Override
 	@SuppressWarnings("unchecked")	
 	@ManagedOperation
 	public List<String> listUsers() {
 		return (List<String>) erlangTemplate.executeAndConvertRpc("rabbit_access_control", "list_users");	
 	}
 
-
-	@Override
 	public int addVhost(String vhostPath) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 	
-	@Override
 	public int deleteVhost(String vhostPath) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	@Override
-	public void setPermissions(String username, Pattern configure,
-			Pattern read, Pattern write) {
+	public void setPermissions(String username, Pattern configure, Pattern read, Pattern write) {
 		// TODO Auto-generated method stub
-	
 	}
 
-
-	@Override
 	public void setPermissions(String username, Pattern configure, Pattern read, Pattern write, String vhostPath) {
 		// TODO Auto-generated method stub
-	
 	}
 
-
-	@Override
 	public void clearPermissions(String username) {
 		// TODO Auto-generated method stub
-
 	}
 
-	@Override
 	public void clearPermissions(String username, String vhostPath) {
 		// TODO Auto-generated method stub
-
 	}
 
-
-
-	@Override
 	public List<String> listPermissions() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-
-	@Override
 	public List<String> listPermissions(String vhostPath) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-
-	@Override
 	public List<String> listUserPermissions(String username) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	
-
-	@Override
 	@ManagedOperation
 	public void startBrokerApplication() {
 		logger.debug("Starting Rabbit Application.");
 		erlangTemplate.executeAndConvertRpc("rabbit", "start");
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void stopBrokerApplication() {
 		logger.debug("Stopping Rabbit Application.");
 		erlangTemplate.executeAndConvertRpc("rabbit", "stop");
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void startNode() {
 		logger.debug("Staring RabbitMQ node by shelling out command line.");
 		final Execute execute = new Execute();
-
 		String rabbitStartCommand = null;
 		if (Os.isFamily("windows")) {
 			String rabbitHome = System.getenv("RABBITMQ_HOME");
@@ -297,63 +248,55 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 					+ System.getProperty("file.separator") + "sbin"
 					+ System.getProperty("file.separator")
 					+ "rabbitmq-server.bat";
-		} else {
+		}
+		else {
 			// TODO abstract out install location and Win/Unix shell script name differencese
 			throw new IllegalArgumentException("Only support for windows OS family at the moment...");
 		}
 
 		if (rabbitStartCommand != null) {
 			execute.setCommandline(new String[] { rabbitStartCommand });
-		} else {
+		}
+		else {
 			throw new IllegalArgumentException(
 					"Could determine OS to create rabbit start command");
 		}
-
 		SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
 		executor.execute(new Runnable() {
 			public void run() {
 				try {
 					execute.execute();
 				} catch (Exception e) {
-					logger.error("Could start node", e);
+					logger.error("failed to start node", e);
 				}
 			}
 		});
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void stopNode() {
 		logger.debug("Stopping RabbitMQ node.");
 		erlangTemplate.executeAndConvertRpc("rabbit", "stop_and_halt");
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void resetNode() {
 		erlangTemplate.executeAndConvertRpc("rabbit_mnesia", "reset");
 	}
 
-
-	@Override
 	@ManagedOperation
 	public void forceResetNode() {
 		erlangTemplate.executeAndConvertRpc("rabbit_mnesia", "force_reset");
 
 	}
 
-	@Override
 	@ManagedOperation
 	public RabbitStatus getStatus() {
 		return (RabbitStatus) getErlangTemplate().executeAndConvertRpc("rabbit", "status");
 	}
 
-	@Override
 	public void recoverAsync(boolean requeue) {
 		// TODO Auto-generated method stub
-
 	}
 
 	public ErlangTemplate getErlangTemplate() {
@@ -373,7 +316,5 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter());
 		erlangTemplate.afterPropertiesSet();
 	}
-
-
 
 }
