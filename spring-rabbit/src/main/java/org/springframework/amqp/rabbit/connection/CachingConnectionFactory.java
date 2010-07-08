@@ -132,6 +132,10 @@ public class CachingConnectionFactory implements ConnectionFactory, DisposableBe
 	public String getHostName() {
 		return hostName;
 	}
+	
+	public String getVirtualHost() {
+		return rabbitConnectionFactory.getVirtualHost();
+	}
 
 	protected Channel getChannel(Connection connection) throws Exception {
 		LinkedList<Channel> channelList = this.cachedChannels;

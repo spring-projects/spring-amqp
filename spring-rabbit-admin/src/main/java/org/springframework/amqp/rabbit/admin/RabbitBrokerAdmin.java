@@ -1,3 +1,19 @@
+/*
+ * Copyright 2002-2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.amqp.rabbit.admin;
 
 import java.util.HashMap;
@@ -16,21 +32,21 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
-import org.springframework.jmx.export.annotation.ManagedOperationParameters;
 import org.springframework.jmx.export.annotation.ManagedOperationParameter;
-import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.jmx.export.annotation.ManagedOperationParameters;
 import org.springframework.otp.erlang.connection.SimpleConnectionFactory;
 import org.springframework.otp.erlang.core.ErlangTemplate;
-import org.springframework.util.Assert;
 import org.springframework.util.exec.Execute;
 import org.springframework.util.exec.Os;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.AMQP.Exchange.DeleteOk;
-import com.rabbitmq.client.AMQP.Queue.PurgeOk;
-import com.rabbitmq.client.AMQP.Queue.UnbindOk;
 
+/**
+ * Rabbit broker administration implementation exposed via JMX annotations. 
+ * @author Mark Pollack
+ *
+ */
 public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	/** Logger available to subclasses */
@@ -70,7 +86,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public void declareExchange(final String exchangeName, final String exchangeType, final boolean durable, final boolean autoDelete) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.exchangeDeclare(exchangeName, exchangeType, false, durable,
+				channel.exchangeDeclare(exchangeName, exchangeType, durable,
 						autoDelete, new HashMap<String,Object>());
 				return null;
 			}

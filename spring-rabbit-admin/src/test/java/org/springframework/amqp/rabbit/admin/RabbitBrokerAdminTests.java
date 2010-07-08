@@ -32,9 +32,9 @@ import org.springframework.otp.erlang.OtpIOException;
 /**
  * @author Mark Pollack
  */
-public class RabbitAdminTemplateTests {
+public class RabbitBrokerAdminTests {
 
-	private static RabbitAdminTemplate adminTemplate;
+	private static RabbitBrokerAdmin adminTemplate;
 
 	@BeforeClass
 	public static void setUp() {
@@ -42,8 +42,7 @@ public class RabbitAdminTemplateTests {
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		connectionFactory.setChannelCacheSize(10);
-		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		adminTemplate = new RabbitAdminTemplate(template);
+		adminTemplate = new RabbitBrokerAdmin(connectionFactory);
 	}
 
 	@Test

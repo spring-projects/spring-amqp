@@ -20,6 +20,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.admin.RabbitAdminTemplate;
+import org.springframework.amqp.rabbit.admin.RabbitBrokerAdmin;
 import org.springframework.amqp.rabbit.admin.RabbitStatus;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -40,7 +41,7 @@ import org.springframework.test.context.transaction.TransactionConfigurationAttr
 public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 	
 	private static final Log logger = LogFactory.getLog(RabbitTestExecutionListener.class);
-	private RabbitAdminTemplate rabbitAdminTemplate;
+	private RabbitBrokerAdmin rabbitAdminTemplate;
 	private boolean startedNode;
 	
 
@@ -134,7 +135,7 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 			}
 			ccf.setUsername(username);
 			ccf.setPassword(password);
-			rabbitAdminTemplate = new RabbitAdminTemplate(ccf);			
+			rabbitAdminTemplate = new RabbitBrokerAdmin(ccf);			
 		}		
 	}
 

@@ -12,7 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */package org.springframework.amqp.core;
+ */
+
+package org.springframework.amqp.core;
 
 /**
  * Specifies a basic set of portable AMQP administrative operations for AMQP >= 0.8

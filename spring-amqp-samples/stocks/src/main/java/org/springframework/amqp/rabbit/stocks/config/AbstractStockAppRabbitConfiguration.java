@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.stocks.config;
 
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.admin.config.AbstractRabbitConfiguration;
+import org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

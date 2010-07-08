@@ -3,7 +3,7 @@ package org.springframework.amqp.helloworld;
 import javax.annotation.PostConstruct;
 
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.admin.config.AbstractRabbitConfiguration;
+import org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

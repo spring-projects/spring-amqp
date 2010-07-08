@@ -26,7 +26,7 @@ import org.springframework.beans.factory.InitializingBean;
 import com.rabbitmq.client.Channel;
 
 /**
- * RabbitMQ implementation of portable AMQP administrative operations for AMQP 
+ * RabbitMQ implementation of portable AMQP administrative operations for AMQP
  * >= 0.8
  * 
  * @author Mark Pollack
@@ -49,7 +49,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
-	
+
 	// Exchange operations
 
 	@Override
@@ -57,7 +57,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.exchangeDeclare(exchange.getName(), exchange
-						.getExchangeType().name(), false, exchange.isDurable(),
+						.getExchangeType().name(), exchange.isDurable(),
 						exchange.isAutoDelete(), exchange.getArguments());
 				return null;
 			}
@@ -66,7 +66,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@Override
 	public void deleteExchange(final String exchangeName) {
-	
+
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.exchangeDelete(exchangeName);
@@ -74,16 +74,16 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 			}
 		});
 	}
-	
+
 	// Queue operations
 
 	@Override
 	public void declareQueue(final Queue queue) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueDeclare(queue.getName(), false, queue.isDurable(),
-						queue.isExclusive(), queue.isAutoDelete(), queue
-								.getArguments());
+				channel.queueDeclare(queue.getName(), queue.isDurable(), queue
+						.isExclusive(), queue.isAutoDelete(), queue
+						.getArguments());
 				return null;
 			}
 		});
@@ -120,7 +120,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 		});
 	}
 
-	// Binding 
+	// Binding
 	@Override
 	public void declareBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -133,7 +133,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 			}
 		});
 	}
-	
+
 	@Override
 	public void afterPropertiesSet() {
 		if (getRabbitTemplate() == null) {

@@ -26,7 +26,10 @@ import org.springframework.amqp.core.Binding;
 import com.rabbitmq.client.AMQP;
 
 /**
- * Rabbit broker administrative operations.
+ * Performs administration tasks for RabbitMQ broker administration.  
+ * <p>Goal is to support full CRUD of Exchanges, Queues, Bindings, User, VHosts, etc.
+ * <p>Current implementations expose operations with basic type arguments via JMX.
+ * 
  * @author Mark Pollack
  *
  */
