@@ -15,5 +15,4 @@
 		class="org.springframework.amqp.rabbit.stocks.service.stubs.TradingServiceStub">
 	</bean>
 	
-	
 </beans>
