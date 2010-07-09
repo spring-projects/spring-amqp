@@ -45,9 +45,7 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
 	 */
 	@Bean
 	public Queue stockRequestQueue() {		
-		return declare(new Queue(STOCK_REQUEST_QUEUE_NAME));	
+		return new Queue(STOCK_REQUEST_QUEUE_NAME);	
 	}
-	
-	
 
 }

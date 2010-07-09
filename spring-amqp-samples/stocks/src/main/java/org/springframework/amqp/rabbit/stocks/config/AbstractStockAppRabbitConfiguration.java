@@ -52,8 +52,6 @@ public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbit
 	 */
 	protected static String STOCK_REQUEST_ROUTING_KEY = STOCK_REQUEST_QUEUE_NAME;
 	
-	//protected static TopicExchange MARKET_DATA_EXCHANGE = new TopicExchange(MARKET_DATA_EXCHANGE_NAME);
-
 
 	protected abstract void configureRabbitTemplate(RabbitTemplate template);
 
@@ -80,19 +78,9 @@ public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbit
 		return new JsonMessageConverter();
 	}
 	
-	
-//	@PostConstruct
-//	public void declareExchange()
-//	{
-//		declare(this.MARKET_DATA_EXCHANGE);
-//	}
-	
-	
 	@Bean
 	public TopicExchange marketDataExchange() {
-		return declare(new TopicExchange(MARKET_DATA_EXCHANGE_NAME));
+		return new TopicExchange(MARKET_DATA_EXCHANGE_NAME);
 	}
-	
-
 
 }

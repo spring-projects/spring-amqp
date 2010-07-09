@@ -16,12 +16,19 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.Collection;
+
 import org.springframework.amqp.config.AbstractAmqpConfiguration;
+import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,16 +42,29 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
  * 'amqpAdmin' will be created.
  *
  * @author Mark Pollack
+ * @author Mark Fisher
  */
 @Configuration
-public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration {
+public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {
+
+	private volatile AmqpAdmin amqpAdmin;
+
+	private volatile ApplicationContext applicationContext;
+
+	private volatile boolean running;
+
 
 	@Bean 
 	public abstract RabbitTemplate rabbitTemplate();
 
 	@Bean
 	public AmqpAdmin amqpAdmin() {
-		return new RabbitAdmin(rabbitTemplate());
+		this.amqpAdmin = new RabbitAdmin(rabbitTemplate());
+		return this.amqpAdmin;
+	}
+
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
 	}
 
 	/**
@@ -63,6 +83,49 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 		queue.setAutoDelete(true);
 		queue.setDurable(false);
 		return queue;
+	}
+
+
+	// SmartLifecycle implementation
+
+	public boolean isAutoStartup() {
+		return true;
+	}
+
+	public boolean isRunning() {
+		return this.running;
+	}
+
+	@Override
+	public void start() {
+		synchronized (this) {
+			if (this.running) {
+				return;
+			}
+			Collection<AbstractExchange> exchanges = this.applicationContext.getBeansOfType(AbstractExchange.class).values();
+			for (AbstractExchange exchange : exchanges) {
+				this.amqpAdmin.declareExchange(exchange);
+			}
+			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
+			for (Queue queue : queues) {
+				this.amqpAdmin.declareQueue(queue);
+			}
+			Collection<Binding> bindings = this.applicationContext.getBeansOfType(Binding.class).values();
+			for (Binding binding : bindings) {
+				this.amqpAdmin.declareBinding(binding);
+			}
+			this.running = true;
+		}
+	}
+
+	public void stop() {
+	}
+
+	public void stop(Runnable callback) {
+	}
+
+	public int getPhase() {
+		return Integer.MIN_VALUE;
 	}
 
 }

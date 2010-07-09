@@ -47,49 +47,13 @@ public abstract class AbstractAmqpConfiguration {
 
 	@Bean
 	public abstract Queue randomNameQueueDefinition();
-	
-	public DirectExchange defaultDirectExchange() {
-		return new DirectExchange("");  // server already has declared it.
-	}
 
-	public Queue declare(Queue queue) {
-		amqpAdmin().declareQueue(queue);			
-		return queue;
-	}
-
-	public Binding declare(Binding binding) {
-		amqpAdmin().declareBinding(binding);
-		return binding;
-	}
 
 	/**
-	 * Provides the same as {@link declare(Binding)} but is better to use in conjunction with
-	 * BindingBuilder so the fluent API reads better.
-	 * <p>
-	 * For example, 
-	 * "declareBinding(from(marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey));" 
-	 * instead of 
-	 * "declare(from(marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey));"
-	 * @param binding
-	 * @return
+	 * Provides convenient access to the default exchange which is always declared on the broker.
 	 */
-	public Binding declareBinding(Binding binding) {
-		amqpAdmin().declareBinding(binding);
-		return binding;
+	public DirectExchange defaultExchange() {
+		return new DirectExchange("");
 	}
 
-	public DirectExchange declare(DirectExchange directExchange) {
-		amqpAdmin().declareExchange(directExchange);
-		return directExchange;
-	}
-
-	public TopicExchange declare(TopicExchange topicExchange) {
-		amqpAdmin().declareExchange(topicExchange);
-		return topicExchange;
-	}
-
-	public FanoutExchange declare(FanoutExchange fanoutExchange) {
-		amqpAdmin().declareExchange(fanoutExchange);
-		return fanoutExchange;
-	}
 }

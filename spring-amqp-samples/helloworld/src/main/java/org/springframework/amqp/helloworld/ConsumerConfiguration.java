@@ -12,7 +12,7 @@ public class ConsumerConfiguration extends RabbitConfiguration {
 	public SimpleMessageListenerContainer listenerContainer() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory());
-		container.setQueueName(helloWorldQueue.getName());
+		container.setQueueName(this.helloWorldQueueName);
 		container.setMessageListener(new MessageListenerAdapter(new HelloWorldHandler()));
 		return container;
 	}

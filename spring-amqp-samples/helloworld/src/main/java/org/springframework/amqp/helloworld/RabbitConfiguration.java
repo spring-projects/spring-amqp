@@ -1,20 +1,17 @@
 package org.springframework.amqp.helloworld;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitConfiguration extends AbstractRabbitConfiguration {
 
-	protected Queue helloWorldQueue = new Queue("hello.world.queue");
+	protected final String helloWorldQueueName = "hello.world.queue";
 	
 	@Bean
 	public ConnectionFactory connectionFactory() {
@@ -28,24 +25,16 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 	public RabbitTemplate rabbitTemplate() {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory());
 		//The routing key is set to the name of the queue by the broker for the default exchange.
-		template.setRoutingKey(helloWorldQueue.getName());
+		template.setRoutingKey(this.helloWorldQueueName);
 		//Where we will synchronously receive messages from
-		template.setQueue(helloWorldQueue.getName());
+		template.setQueue(this.helloWorldQueueName);
 		return template;
 	}
-	
-	@PostConstruct
-	@SuppressWarnings("unused")
-	private void configureBroker() {
-		declare(helloWorldQueue);
-	}
-	
-	/*
+
 	@Bean
-	public Queue helloWorldQueue()
-	{
-		return declare(helloWorldQueue);
-	}*/
+	public Queue helloWorldQueue() {
+		return new Queue(this.helloWorldQueueName);
+	}
 
 	/*
 	//Each queue is bound to the default direct exchange

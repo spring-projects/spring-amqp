@@ -143,7 +143,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void doInitialize() throws Exception  {
 		establishSharedConnection();
-		initializeConsumers();
+		//initializeConsumers();
 	}
 	
 	/**
