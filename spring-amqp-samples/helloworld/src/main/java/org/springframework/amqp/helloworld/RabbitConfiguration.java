@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfiguration extends AbstractRabbitConfiguration {
 
 	protected final String helloWorldQueueName = "hello.world.queue";
-	
+
 	@Bean
 	public ConnectionFactory connectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
@@ -20,7 +20,7 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 		connectionFactory.setPassword("guest");
 		return connectionFactory;
 	}
-	
+
 	@Override
 	public RabbitTemplate rabbitTemplate() {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory());
@@ -50,7 +50,6 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 	}*/
 	
 	/*
-	
 	public Queue declareUniqueQueue(String namePrefix) {
 		Queue queue = new Queue(namePrefix + "-" + UUID.randomUUID());
 		rabbitAdminTemplate().declareQueue(queue);
@@ -73,7 +72,5 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 	@Bean Binding declarePubSubBinding(String queuePrefix, TopicExchange exchange, String routingKey) {
 		return declare(new Binding(declareUniqueQueue(queuePrefix), exchange, routingKey));
 	}*/
-
-
 
 }
