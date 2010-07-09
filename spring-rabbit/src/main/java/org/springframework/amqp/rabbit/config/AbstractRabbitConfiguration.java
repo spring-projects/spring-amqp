@@ -96,7 +96,6 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 		return this.running;
 	}
 
-	@Override
 	public void start() {
 		synchronized (this) {
 			if (this.running) {
