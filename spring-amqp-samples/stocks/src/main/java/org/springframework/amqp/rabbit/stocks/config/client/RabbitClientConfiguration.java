@@ -105,7 +105,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	
 	@Bean
 	public Queue marketDataQueue() {		
-		return randomNameQueueDefinition();
+		return generatedQueue();
 	}
 	
 	/**
@@ -125,7 +125,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	 */	
 	@Bean
 	public Queue traderJoeQueue() {	
-		return randomNameQueueDefinition();		
+		return generatedQueue();		
 	}
 
 }

@@ -72,7 +72,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 	 * exclusive=true, auto-delete = true, and durable = false;
 	 * @return
 	 */
-	public Queue randomNameQueueDefinition() {
+	public Queue generatedQueue() {
 		DeclareOk declareOk = rabbitTemplate().execute(new ChannelCallback<DeclareOk>() {
 			public DeclareOk doInRabbit(Channel channel) throws Exception {
 				return channel.queueDeclare();

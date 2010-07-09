@@ -46,7 +46,7 @@ public abstract class AbstractAmqpConfiguration {
 	public abstract AmqpAdmin amqpAdmin();
 
 	@Bean
-	public abstract Queue randomNameQueueDefinition();
+	public abstract Queue generatedQueue();
 
 
 	/**
