@@ -27,7 +27,7 @@ public final class BindingBuilder  {
 
 	private Queue queue;
 
-	private AbstractExchange exchange;
+	private Exchange exchange;
 
 	private String routingKey;
 
@@ -43,7 +43,7 @@ public final class BindingBuilder  {
 	}
 
 	//return intermediate object that only allows to call 'with' to configure the binding.
-	public BindingBuilder to(AbstractExchange exchange) {
+	public BindingBuilder to(Exchange exchange) {
 		this.exchange = exchange;
 		return this;
 	}

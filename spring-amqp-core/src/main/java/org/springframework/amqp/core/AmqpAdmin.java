@@ -20,39 +20,36 @@ package org.springframework.amqp.core;
  * Specifies a basic set of portable AMQP administrative operations for AMQP >= 0.8
  * 
  * @author Mark Pollack
- *
  */
 public interface AmqpAdmin {
 
-
-	
 	/**
 	 * Declare an exchange
 	 * @param exchange the exchange to declare.
 	 */
 	////Note declaring an exchange with auto-delete and non-durable flags is not easily exposed in QPID Java or .NET bindings
-	void declareExchange(AbstractExchange exchange);
-	
+	void declareExchange(Exchange exchange);
+
 	/**
 	 * Delete an exchange.  Look at implementation specific subclass for implementation specific behavior, for example
 	 * for RabbitMQ this will delete the exchange without regard for whether it is in use or not.
 	 * @param exchangeName the name of the exchange
 	 */
 	void deleteExchange(String exchangeName);
-	
-	
+
+
 	// Queue Operations
-	
+
 	void declareQueue(Queue queue);
-	
+
 	/**
 	 * Delete a queue, without regard for whether it is in use or has messages on it 
 	 * @param queueName the name of the queue
 	 */
 	void deleteQueue(String queueName);
-    
+
 	// Note that nowait option is not readily exposed in Rabbit Java API but is for Rabbit .NET API. 
-	
+
 	/**
 	 * Delete a queue
 	 * @param queueName the name of the queue
@@ -60,8 +57,7 @@ public interface AmqpAdmin {
 	 * @param empty true if the queue should be deleted only if empty 
 	 */
 	void deleteQueue(String queueName, boolean unused, boolean empty);
-	
-	
+
 	/**
 	 * Purges the contents of the given queue. 
 	 * @param queueName the name of the queue
@@ -69,15 +65,15 @@ public interface AmqpAdmin {
 	 */
 	void purgeQueue(String queueName, boolean noWait);
 
+
 	// Binding opertaions
-		
+
 	/**
 	 * Declare a binding of a queue to an exchange.
 	 * @param binding a description of the binding to declare.
 	 */
 	void declareBinding(Binding binding);
-	
-	
+
 	//Note unbindQueue/removeBinding was not introduced until 0.9 of the specification.
-	
+
 }

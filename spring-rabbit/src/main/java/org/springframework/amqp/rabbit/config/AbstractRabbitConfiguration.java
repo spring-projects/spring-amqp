@@ -22,6 +22,7 @@ import org.springframework.amqp.config.AbstractAmqpConfiguration;
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -101,8 +102,8 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 			if (this.running) {
 				return;
 			}
-			Collection<AbstractExchange> exchanges = this.applicationContext.getBeansOfType(AbstractExchange.class).values();
-			for (AbstractExchange exchange : exchanges) {
+			Collection<Exchange> exchanges = this.applicationContext.getBeansOfType(Exchange.class).values();
+			for (Exchange exchange : exchanges) {
 				this.amqpAdmin.declareExchange(exchange);
 			}
 			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();

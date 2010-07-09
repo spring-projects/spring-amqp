@@ -23,8 +23,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
@@ -70,7 +70,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 	// Exchange Operations
 
-	public void declareExchange(AbstractExchange exchange) {
+	public void declareExchange(Exchange exchange) {
 		rabbitAdmin.declareExchange(exchange);
 	}
 

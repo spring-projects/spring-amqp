@@ -38,12 +38,12 @@ public class Binding {
 
 
 	//Is this really worth the syntax sugar?
-	public static Binding binding(Queue queue, AbstractExchange exchange, String routingKey) {
+	public static Binding binding(Queue queue, Exchange exchange, String routingKey) {
 		return new Binding(queue, exchange, routingKey);		
 	}
 
 	//TODO would be good to remove this because invalid bindings can be specified (fanout with routing key)
-	Binding(Queue queue, AbstractExchange exchange, String routingKey) {
+	Binding(Queue queue, Exchange exchange, String routingKey) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
 		this.routingKey = routingKey;

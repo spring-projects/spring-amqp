@@ -27,7 +27,7 @@ import java.util.Map;
  * 
  * @see AmqpAdmin
  */
-public abstract class AbstractExchange {
+public abstract class AbstractExchange implements Exchange {
 
 	protected String name;
 
@@ -60,18 +60,10 @@ public abstract class AbstractExchange {
 
 	public abstract ExchangeType getExchangeType();
 
-	/**
-	 * Return the name specified for this exchange.
-	 * @return the name of the exchange.
-	 */
 	public String getName() {
 		return name;
 	}
 
-	/**
-	 * Return whether or not this exchange definition is durable.
-	 * @return true if we are declaring a durable exchange (the exchange will survive a server restart), false otherwise.
-	 */
 	public boolean isDurable() {
 		return durable;
 	}
@@ -84,13 +76,6 @@ public abstract class AbstractExchange {
 		this.durable = durable;
 	}
 
-	/**
-	 * Return whether or not this exchange definition has an auto-delete lifecycle.
-	 * <p>
-	 * Auto-deleted message queues last until they are no longer used. 
-	 * An non-auto-deleted exchange lasts until the server is shut down.
-	 * @return true if describing an auto-delete queue.
-	 */
 	public boolean isAutoDelete() {
 		return autoDelete;
 	}

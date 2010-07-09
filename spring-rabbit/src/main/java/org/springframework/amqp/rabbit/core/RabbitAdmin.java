@@ -19,9 +19,9 @@ package org.springframework.amqp.rabbit.core;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedOperation;
@@ -61,12 +61,11 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	// Exchange operations
 
-	public void declareExchange(final AbstractExchange exchange) {
+	public void declareExchange(final Exchange exchange) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.exchangeDeclare(exchange.getName(), exchange
-						.getExchangeType().name(), exchange.isDurable(),
-						exchange.isAutoDelete(), exchange.getArguments());
+				channel.exchangeDeclare(exchange.getName(), exchange.getExchangeType().name(),
+						exchange.isDurable(), exchange.isAutoDelete(), exchange.getArguments());
 				return null;
 			}
 		});
