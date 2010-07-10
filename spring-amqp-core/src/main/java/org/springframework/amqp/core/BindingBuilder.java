@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.core;
 
-
 /**
  * Basic builder class to create bindings for a more fluent API style in code based configuration.
  * 
@@ -25,39 +24,64 @@ package org.springframework.amqp.core;
  */
 public final class BindingBuilder  {
 
-	private Queue queue;
-
-	private Exchange exchange;
-
-	private String routingKey;
-
-	//return intermediate object that only allows to call 'to' to configure the binding.
-	public static BindingBuilder from(Queue queue) {
-		return new BindingBuilder(queue);
+	public static ExchangeConfigurer from(Queue queue) {
+		return new ExchangeConfigurer(queue);
 	}
 
 
-	private BindingBuilder(Queue queue) {
-		super();
-		this.queue = queue;
+	public static class ExchangeConfigurer {
+
+		private final Queue queue;
+
+		private ExchangeConfigurer(Queue queue) {
+			this.queue = queue;
+		}
+
+		public Binding to(FanoutExchange exchange) {
+			return new Binding(this.queue, exchange);
+		}
+
+		public DirectExchangeRoutingKeyConfigurer to(DirectExchange exchange) {
+			return new DirectExchangeRoutingKeyConfigurer(this.queue, exchange);
+		}
+
+		public RoutingKeyConfigurer to(Exchange exchange) {
+			return new RoutingKeyConfigurer(this.queue, exchange);
+		}
 	}
 
-	//return intermediate object that only allows to call 'with' to configure the binding.
-	public BindingBuilder to(Exchange exchange) {
-		this.exchange = exchange;
-		return this;
+
+	public static class RoutingKeyConfigurer {
+
+		protected final Queue queue;
+
+		protected final Exchange exchange;
+
+		private RoutingKeyConfigurer(Queue queue, Exchange exchange) {
+			this.queue = queue;
+			this.exchange = exchange;
+		}
+
+		public Binding with(String routingKey) {
+			return new Binding(this.queue, this.exchange, routingKey);
+		}
+
+		@SuppressWarnings("unchecked")
+		public Binding with(Enum routingKeyEnum) {
+			return new Binding(this.queue, this.exchange, routingKeyEnum.toString());
+		}
 	}
 
-	// creates the product.
-	public Binding with(String routingKey) {
-		this.routingKey = routingKey;		
-		return new Binding(this.queue, this.exchange, this.routingKey);
-	}
 
-	@SuppressWarnings("unchecked")
-	public Binding with(Enum routingKeyEnum) {
-		this.routingKey = routingKeyEnum.toString();
-		return new Binding(this.queue, this.exchange, this.routingKey);
+	public static class DirectExchangeRoutingKeyConfigurer extends RoutingKeyConfigurer {
+
+		private DirectExchangeRoutingKeyConfigurer(Queue queue, Exchange exchange) {
+			super(queue, exchange);
+		}
+
+		public Binding withQueueName() {
+			return new Binding(this.queue, this.exchange, this.queue.getName());
+		}
 	}
 
 }
