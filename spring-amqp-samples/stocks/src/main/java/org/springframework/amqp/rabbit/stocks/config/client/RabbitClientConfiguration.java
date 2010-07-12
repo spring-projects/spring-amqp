@@ -78,10 +78,9 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	public SimpleMessageListenerContainer messageListenerContainer() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());		
 		container.setQueues(marketDataQueue(), traderJoeQueue());
-		//container.setConcurrentConsumers(5);  // note, now set to size of channel cache in CachingConnectionFactory by default
 		container.setMessageListener(messageListenerAdapter());
 		return container;
-		
+
 		//container(using(connectionFactory()).listenToQueues(marketDataQueue(), traderJoeQueue()).withListener(messageListenerAdapter()).
 	}
 	

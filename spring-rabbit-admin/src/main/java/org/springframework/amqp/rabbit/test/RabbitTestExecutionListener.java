@@ -21,7 +21,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.admin.RabbitBrokerAdmin;
 import org.springframework.amqp.rabbit.admin.RabbitStatus;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.otp.erlang.OtpIOException;
 import org.springframework.test.context.TestContext;
@@ -35,14 +35,15 @@ import org.springframework.test.context.transaction.TransactionConfigurationAttr
  * the node will be stopped after the test methods are executed .
  * 
  * @author Mark Pollack
- *
  */
 public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 	
 	private static final Log logger = LogFactory.getLog(RabbitTestExecutionListener.class);
+
 	private RabbitBrokerAdmin rabbitAdminTemplate;
+
 	private boolean startedNode;
-	
+
 
 	@Override
 	public void beforeTestClass(TestContext testContext) throws Exception {				
@@ -52,13 +53,12 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 	
 	@Override
 	public void afterTestClass(TestContext testContext) throws Exception {
-		
 		if (startedNode) {
 			rabbitAdminTemplate.stopNode();
 			startedNode = false;
 		}
 	}
-	
+
 	private void recycleBrokerApp() {
 		try {
 			RabbitStatus status = rabbitAdminTemplate.getStatus();
@@ -66,22 +66,19 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 			rabbitAdminTemplate.stopBrokerApplication();
 			rabbitAdminTemplate.resetNode();
 			rabbitAdminTemplate.startBrokerApplication();
-			
-		} catch (OtpIOException e) {
+		}
+		catch (OtpIOException e) {
 			// Can't connect because broker node isn't running.
 			rabbitAdminTemplate.startNode();
 			startedNode = true;
 			//TODO - need to wait on output for 'broker running'
 			try {
 				Thread.sleep(2000);
-			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
+			}
+			catch (InterruptedException e1) {
 				logger.error("Error waiting for broker to start");
 			}
 		}
-			
-		
-	
 	}
 
 	/**
@@ -105,7 +102,6 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 			if (logger.isDebugEnabled()) {
 				logger.debug("Retrieved @RabbitConfiguration [" + config + "] for test class [" + clazz + "]");
 			}
-
 			String hostname;
 			String username;
 			String password;
@@ -124,17 +120,17 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 						String.format("Retrieved hostname=[%s] username=[%s], password=[%s] for class [%s]",
 								hostname, username, password, clazz));
 			}
-			
-			CachingConnectionFactory ccf;
+			SingleConnectionFactory connectionFactory;
 			if (hostname.equals("localhost")) {
 				//This will try to get the local host name
-				ccf = new CachingConnectionFactory();
-			} else {
-				ccf = new CachingConnectionFactory(hostname);
+				connectionFactory = new SingleConnectionFactory();
 			}
-			ccf.setUsername(username);
-			ccf.setPassword(password);
-			rabbitAdminTemplate = new RabbitBrokerAdmin(ccf);			
+			else {
+				connectionFactory = new SingleConnectionFactory(hostname);
+			}
+			connectionFactory.setUsername(username);
+			connectionFactory.setPassword(password);
+			rabbitAdminTemplate = new RabbitBrokerAdmin(connectionFactory);			
 		}		
 	}
 

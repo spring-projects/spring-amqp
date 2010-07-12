@@ -8,7 +8,7 @@
 		<constructor-arg ref="connectionFactory"/>		
 	</bean>
 	
-	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
 		<property name="password" value="guest"/>
 		<property name="username" value="guest"/>
 	</bean>

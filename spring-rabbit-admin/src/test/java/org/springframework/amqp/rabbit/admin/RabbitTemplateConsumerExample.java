@@ -21,57 +21,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 
 /**
  * @author Mark Fisher
  * @author Mark Pollack
  */
-@SuppressWarnings("unused")
 public class RabbitTemplateConsumerExample {
 
-	private static Log log = LogFactory
-			.getLog(RabbitTemplateConsumerExample.class);
+	private static Log log = LogFactory.getLog(RabbitTemplateConsumerExample.class);
 
 	public static void main(String[] args) throws Exception {
-
 		boolean sync = true;
 		if (sync) {
 			ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(
 					TestRabbitConfiguration.class);
 			RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 			receiveSync(template, TestConstants.NUM_MESSAGES);
-		} else {
+		}
+		else {
 			ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(
 					RabbitConsumerConfiguration.class);
 			receiveAsync(ctx);
 		}
-
 	}
 
-	private static void receiveAsync(ConfigurableApplicationContext ctx)
-			throws InterruptedException {
-
-		SimpleMessageListenerContainer container = ctx
-				.getBean(SimpleMessageListenerContainer.class);
-
+	private static void receiveAsync(ConfigurableApplicationContext ctx) throws InterruptedException {
+		ctx.getBean(SimpleMessageListenerContainer.class);
 		log.debug("Main execution thread sleeping 5 seconds...");
 		Thread.sleep(500000);
 		log.debug("Application exiting.");
-
 		System.exit(0);
-
 	}
 
 	private static void receiveSync(RabbitTemplate template, int numMessages) {
@@ -81,13 +67,13 @@ public class RabbitTemplateConsumerExample {
 			if (message == null) {
 				System.out.println("Thread [" + Thread.currentThread().getId()
 						+ "] Received Null Message!");
-			} else {
+			}
+			else {
 				System.out.println("Thread [" + Thread.currentThread().getId()
 						+ "] Received Message = "
 						+ new String(message.getBody()));
 				Map<String, Object> headers = message.getMessageProperties()
 						.getHeaders();
-
 				Object objFloat = headers.get("float");
 				Object objcp = headers.get("object");
 				System.out.println("float header type = " + objFloat.getClass());
@@ -95,6 +81,7 @@ public class RabbitTemplateConsumerExample {
 			}
 		}
 	}
+
 
 	public static class SimpleMessageListener implements MessageListener {
 
@@ -107,4 +94,5 @@ public class RabbitTemplateConsumerExample {
 					+ ", = " + new String(message.getBody()));
 		}
 	}
+
 }

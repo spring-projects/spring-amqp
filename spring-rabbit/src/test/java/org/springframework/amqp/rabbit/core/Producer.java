@@ -9,7 +9,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageCreator;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 
 public class Producer {
 
@@ -17,10 +17,9 @@ public class Producer {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
-		connectionFactory.setChannelCacheSize(10);
 
 		RabbitTemplate template = new RabbitTemplate();
 		template.setConnectionFactory(connectionFactory);
