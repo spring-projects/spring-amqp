@@ -15,9 +15,29 @@
   </sect1>
 
   <sect1>
-    <title>Connection and resource management</title>
+    <title>Connection and Resource Management</title>
 
-    <para>TODO: Discuss the ConnectionFactory interface, the SingleConnectionFactory implementation and future support for failover of connections.</para>
+    <para>Whereas the AMQP model we described in the previous section is generic and applicable to all implementations, when we get into the management of resources, the details are specific to the broker implementation. Therefore, in this section, we will be focusing on code that exists only within our "spring-rabbit" module since at this point, RabbitMQ is the only supported implementation.</para>
+
+    <para>The central component for managing a connection to the RabbitMQ broker is the <interfacename>ConnectionFactory</interfacename> interface. The responsibility of a <interfacename>ConnectionFactory</interfacename> implementation is to provide an instance of <classname>com.rabbitmq.client.Connection</classname>. The simplest implementation we provide is <classname>SingleConnectionFactory</classname> which establishes a single connection that can be shared by the application. Sharing of the connection is possible since the "unit of work" for messaging with AMQP is actually a "channel" (in some ways, this is similar to the relationship between a Connection and a Session in JMS). As you can imagine, the connection instance provides a <methodname>createChannel</methodname> method. When creating an instance of <classname>SingleConnectionFactory</classname>, the 'hostname' can be provided via the constructor. The 'username' and 'password' properties should be provided as well.</para>
+
+    <programlisting language="java"><![CDATA[SingleConnectionFactory connectionFactory = new SingleConnectionFactory("somehost");
+connectionFactory.setUsername("guest");
+connectionFactory.setPassword("guest");
+
+Connection connection = connectionFactory.createConnection();]]></programlisting>
+
+    <para>When using XML, the configuration might look like this:</para>
+
+      <programlisting language="xml"><![CDATA[<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
+    <constructor-arg value="somehost"/>
+    <property name="username" value="guest"/>
+    <property name="password" value="guest"/>
+</bean>]]></programlisting>
+
+    <para>
+      <note>You may also discover the <classname>CachingConnectionFactory</classname> implementation, but at this time, that code is considered <emphasis>experimental</emphasis>. We recommend sticking with <classname>SingleConnectionFactory</classname> for now. In the future, we will most likely evolve the caching implementation. We also plan to add support for failover of connections.</note>
+    </para>
   </sect1>
 
   <sect1>
