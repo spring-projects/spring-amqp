@@ -29,6 +29,10 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
 /**
+ * NOTE: this ConnectionFactory implementation is considered <b>experimental</b> at this stage.
+ * There are concerns to be addressed in relation to the statefulness of channels. Therefore, we
+ * recommend using {@link SingleConnectionFactory} for now.
+ * 
  * A {@link ConnectionFactory} implementation that returns the same Connections from all
  * {@link #createConnection()} calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and
  * caches {@link com.rabbitmq.client.Channel}.
