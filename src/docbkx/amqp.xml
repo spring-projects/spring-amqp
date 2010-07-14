@@ -25,7 +25,34 @@
     <sect2>
       <title>Message</title>
 
-      <para>TODO: cover Message and MessageProperties</para>
+      <para>The AMQP specification does not really define a "Message" per se. Instead, when performing an operation
+        such as 'basicPublish', the content is passed as a byte-array argument and additional properties are passed
+        in a separate argument. We decided to define our own Message class as part of our AMQP domain model representation.
+        The purpose of that class is to simply encapsulate the body and properties within a single instance so that the
+        API can in turn be simpler. Our Message class definition is quite straightforward.</para>
+
+        <programlisting language="java"><![CDATA[public class Message {
+
+    private final MessageProperties messageProperties;
+
+    private final byte[] body;
+
+    public Message(byte[] body, MessageProperties messageProperties) {
+        this.body = body;
+        this.messageProperties = messageProperties;
+    }
+
+    public byte[] getBody() {
+        return this.body;
+    }
+
+    public MessageProperties getMessageProperties() {
+        return this.messageProperties;
+}]]></programlisting>
+
+      <para>The <interfacename>MessageProperties<interfacename> interface defines several common properties such as
+        'messageId', 'timestamp', 'contentType', and several more. Those properties can also be extended with
+         user-defined 'headers' by calling the <methodname>setHeader(String key, Object value)</methodname> method.</para>
     </sect2>
 
     <sect2>
@@ -118,7 +145,7 @@
 
       <para>We also provide a <classname>BindingBuilder</classname> to facilitate a "fluent API" style.</para>
 
-	  <programlisting language="java"><![CDATA[BindingBuilder.from(someQueue).to(someTopicExchange).with("foo.*");]]></programlisting>
+	  <programlisting language="java"><![CDATA[Binding b = BindingBuilder.from(someQueue).to(someTopicExchange).with("foo.*");]]></programlisting>
 
       <note><para>The BindingBuilder class is shown above for clarity, but this style works well when
         using a static import for the 'from()' method.</para></note>

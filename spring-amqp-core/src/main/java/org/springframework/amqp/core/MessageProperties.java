@@ -24,103 +24,105 @@ import java.util.Map;
  * 
  * @author Mark Fisher
  * @author Mark Pollack
- *
  */
 public interface MessageProperties {
 
 	public static final String CONTENT_TYPE_BYTES = "application/octet-stream";
+
 	public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+
 	public static final String CONTENT_TYPE_SERIALIZED_OBJECT = "application/x-java-serialized-object";
+
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
-	public abstract Map<String, Object> getHeaders();
 
-	public abstract void setHeader(String key, Object value);
+	Map<String, Object> getHeaders();
+
+	void setHeader(String key, Object value);
 
 	//NOTE qpid java timestamp is long, presumably can convert to Date.
-	public abstract Date getTimestamp();
+	Date getTimestamp();
 
-	public abstract void setAppId(String appId);
+	void setAppId(String appId);
 
-	public abstract String getAppId();
+	String getAppId();
 
-	public abstract void setUserId(String userId);
+	void setUserId(String userId);
 
 	//NOTE Note forward compatible with qpid 1.0 .NET
 	//     qpid 0.8 .NET/java: is a string
 	//     qpid 1.0 .NET: getUserId is byte[]
-	public abstract String getUserId();
+	String getUserId();
 
-	public abstract void setType(String type);
+	void setType(String type);
 
 	//TODO what is this?  is it stuctureType - int in qpid
-	public abstract String getType();
+	String getType();
 
 	//NOTE Not forward compatible with qpid 1.0 .NET
 	//     qpid 0.8 .NET/Java: is a string
 	//     qpid 1.0 .NET: MessageId property on class MessageProperties and is UUID 
 	//                    There is an 'ID' stored IMessage class and is an int.
-	public abstract void setMessageId(String id);
+	void setMessageId(String id);
 
-	public abstract String getMessageId();
+	String getMessageId();
 
-	
 	//NOTE not foward compatible with qpid 1.0 .NET
 	//     qpid 0.8 .NET/Java: is a string
 	//     qpid 1.0 .NET: is not present
-	public abstract void setClusterId(String id);
+	void setClusterId(String id);
 
-	public abstract String getClusterId();
+	String getClusterId();
 
-	public abstract void setCorrelationId(byte[] correlationId);
+	void setCorrelationId(byte[] correlationId);
 
-	public abstract byte[] getCorrelationId();
+	byte[] getCorrelationId();
 
-	public abstract void setReplyTo(Address replyTo);
+	void setReplyTo(Address replyTo);
 
-	//TODO - create Address/ReplyTo class to encapsulate exchangType/exchange/routingkey ? 
+	//TODO - create Address/ReplyTo class to encapsulate exchangeType/exchange/routingkey ? 
 	//       qpid 0.8/1.0 .NET don't use a single string, but a pair.  
 	//       qpid 0.8 Java uses a single string
 	//
 	//       See RabbitMQ .NET developer guide for more details on conventions for this string
-	public abstract Address getReplyTo();
+	Address getReplyTo();
 
-	public abstract void setContentType(String contentType);
+	void setContentType(String contentType);
 
-	public abstract String getContentType();
+	String getContentType();
 
-	public abstract void setContentEncoding(String contentEncoding);
+	void setContentEncoding(String contentEncoding);
 
-	public abstract String getContentEncoding();
+	String getContentEncoding();
 
-	public abstract void setContentLength(long contentLength);
+	void setContentLength(long contentLength);
 
-	public abstract long getContentLength();
+	long getContentLength();
 
-	public abstract void setDefaultCharset(String charSet);
+	void setDefaultCharset(String charSet);
 
-	public abstract void setDeliveryMode(MessageDeliveryMode deliveryMode);
+	void setDeliveryMode(MessageDeliveryMode deliveryMode);
 
-	public abstract MessageDeliveryMode getDeliveryMode();
+	MessageDeliveryMode getDeliveryMode();
 
-	public abstract void setExpiration(String expiration);
+	void setExpiration(String expiration);
 
 	//NOTE qpid Java broker qpid 0.8/1.0 .NET: is a long.  
 	//     0.8 Spec has:  expiration (shortstr) 
-	public abstract String getExpiration();
+	String getExpiration();
 
-	public abstract void setPriority(Integer priority);
+	void setPriority(Integer priority);
 
-	public abstract Integer getPriority();
+	Integer getPriority();
 
-	public abstract String getReceivedExchange();
+	String getReceivedExchange();
 
-	public abstract String getReceivedRoutingKey();
+	String getReceivedRoutingKey();
 
-	public abstract Boolean isRedelivered();
+	Boolean isRedelivered();
 
-	public abstract long getDeliveryTag();
+	long getDeliveryTag();
 
-	public abstract Integer getMessageCount();
+	Integer getMessageCount();
 
 }
