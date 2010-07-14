@@ -10,8 +10,19 @@
   <sect1>
     <title>AMQP Abstractions</title>
 
-    <para>TODO: Discuss classes in the org.springframework.amqp.core package such as
-    Queue, Binding, Message, MessageProperties etc.</para>
+    <para>The Spring AMQP project consists of a handful of modules, each represented by a JAR in the distribution.
+      These modules are: spring-amqp-core, spring-rabbit, spring-otp, and spring-rabbit-admin. The 'spring-amqp-core'
+      module contains the org.springframework.amqp.core package. Within that package, you will find the classes that
+      represent the core AMQP "model". Our intention is to provide generic abstractions that do not rely on any
+      particular AMQP broker implementation or client library. Those abstractions are then used and/or implemented by
+      broker-specific modules, such as 'spring-rabbit'. As of M1, that is the only implementation, but the rationale
+      behind the AMQP abstraction layer is to enable extension for other implementations while end-user code can be
+      developed against the abstraction layer only.</para>
+
+    <para>The overview here assumes that you are already familiar with the basics of the AMQP specification already.
+      If you are not, then have a look at the resources listed in <xref linkend="resources"/></para>
+
+    <para>TODO: discuss Queue, Binding, Message, MessageProperties etc.</para>
   </sect1>
 
   <sect1>
