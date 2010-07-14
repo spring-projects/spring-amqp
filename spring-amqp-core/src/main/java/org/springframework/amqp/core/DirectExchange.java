@@ -39,8 +39,6 @@ public class DirectExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
-
-
 	public ExchangeType getExchangeType() {
 		return ExchangeType.direct;
 	}

@@ -19,15 +19,12 @@ package org.springframework.amqp.core;
 import org.springframework.amqp.AmqpException;
 
 /**
- * Specifies a basic set of AMQP operations
- * 
- * Implemented by {@link RabbitTemplate}.  Not often used but a useful option to
- * enhance testability, as it can easily be mocked or stubbed.
+ * Specifies a basic set of AMQP operations.
  * 
  * Provides synchronous send an receive methods.  The convertAndSend and receiveAndConvert
- * methods allow let you send and receive POJO objects.  RabbitTemplate delegates to
- * an instance of {@link org.springframework.support.converter.MessageConverter} to perform
- * conversion to and from Rabbit's byte[] payload type.
+ * methods allow let you send and receive POJO objects.  Implementations are expected to
+ * delegate to an instance of {@link org.springframework.support.converter.MessageConverter} to perform
+ * conversion to and from AMQP byte[] payload type.
  * 
  * @author Mark Pollack
  * @author Mark Fisher

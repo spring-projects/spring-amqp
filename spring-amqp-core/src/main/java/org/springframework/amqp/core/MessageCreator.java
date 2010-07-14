@@ -17,7 +17,7 @@
 package org.springframework.amqp.core;
 
 /**
- * Strategy interface for creating RabbitMQ messages.
+ * Strategy interface for creating AMQP messages.
  *
  * @author Mark Fisher
  */
