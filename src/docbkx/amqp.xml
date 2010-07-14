@@ -10,8 +10,131 @@
   <sect1>
     <title>AMQP Abstractions</title>
 
-    <para>TODO: Discuss classes in the org.springframework.amqp.core package such as
-    Queue, Binding, Message, MessageProperties etc.</para>
+    <para>The Spring AMQP project consists of a handful of modules, each represented by a JAR in the distribution.
+      These modules are: spring-amqp-core, spring-rabbit, spring-otp, and spring-rabbit-admin. The 'spring-amqp-core'
+      module contains the org.springframework.amqp.core package. Within that package, you will find the classes that
+      represent the core AMQP "model". Our intention is to provide generic abstractions that do not rely on any
+      particular AMQP broker implementation or client library. Those abstractions are then used and/or implemented by
+      broker-specific modules, such as 'spring-rabbit'. As of M1, that is the only implementation, but the rationale
+      behind the AMQP abstraction layer is to enable extension for other implementations while end-user code can be
+      developed against the abstraction layer only.</para>
+
+    <para>The overview here assumes that you are already familiar with the basics of the AMQP specification already.
+      If you are not, then have a look at the resources listed in <xref linkend="resources"/></para>
+
+    <sect2>
+      <title>Message</title>
+
+      <para>TODO: cover Message and MessageProperties</para>
+    </sect2>
+
+    <sect2>
+      <title>Exchange</title>
+
+      <para>The <interfacename>Exchange</interfacename> interface represents an AMQP Exchange, which is what a
+        Message Producer sends to. Each Exchange within a virtual host of a broker will have a unique name as well
+        as a few other properties:</para>
+      <programlisting language="java"><![CDATA[public interface Exchange {
+
+    String getName();
+
+    ExchangeType getExchangeType();
+
+    boolean isDurable();
+
+    boolean isAutoDelete();
+
+    Map<String, Object> getArguments();
+
+}]]></programlisting>
+
+      <para>As you can see, an Exchange also has a 'type'. The basic types are: Direct, Topic and Fanout. In the
+        core package you will find implementations of the <interfacename>Exchange</interfacename> interface for each
+        of those types. The behavior varies across these Exchange types in terms of how they handle bindings to Queues.
+        A Direct exchange allows for a Queue to be bound by a fixed routing key (often the Queue's name). A Topic
+        exchange supports bindings with routing patterns that may include the '*' and '#' wildcards for 'exactly-one'
+        and 'zero-or-more', respectively. The Fanout exchange publishes to all Queues that are bound to it without
+        taking any routing key into consideration. For much more information about Exchange types, check out
+        <xref linkend="resources"/>.</para>
+
+      <note><para>The AMQP specification also requires that any broker provide a "default" Direct Exchange that has no
+        name. All Queues that are declared will be bound to that default Exchange with their names as routing keys.
+        You will learn more about the default Exchange's usage within Spring AMQP in <xref linkend="amqp-template"/>.
+      </para></note>
+    </sect2>
+
+    <sect2>
+      <title>Queue</title>
+
+      <para>The <classname>Queue</classname> class represents the component from which a Message Consumer receives
+        Messages. Like the various Exchange classes, our implementation is intended to be an abstract representation
+        of this core AMQP type.</para>
+
+      <programlisting language="java"><![CDATA[public class Queue  {
+
+    private final String name;
+
+    private volatile boolean durable;
+
+    private volatile boolean exclusive;
+
+    private volatile boolean autoDelete;
+
+    private volatile Map<String, Object> arguments;
+
+    public Queue(String name) {
+        this.name = name;
+    }
+
+    // Getters and Setters omitted for brevity
+
+]]></programlisting>
+
+      <para>Notice that the constructor takes the Queue name. Depending on the implementation, the admin template may
+        provide methods for generating a uniquely named Queue. Such Queues can be useful as a "reply-to" address or
+        other <emphasis>temporary</emphasis> situations. For that reason, the 'exclusive' and 'autoDelete' properties
+        of an auto-generated Queue would both be set to 'true'.</para>
+    </sect2>
+
+    <sect2>
+      <title>Binding</title>
+
+      <para>Given that a producer sends to an Exchange and a consumer receives from a Queue, the bindings
+        that connect Queues to Exchanges are obviously critical for connecting those producers and consumers via
+        messaging. In Spring AMQP, we define a <classname>Binding</classname> class to represent those connections.
+		Let's review the basic options for binding Queues to Exchanges.</para>
+
+      <para>You can bind a Queue to a DirectExchange with a fixed routing key.</para>
+
+      <programlisting language="java"><![CDATA[new Binding(someQueue, someDirectExchange, "foo.bar")]]></programlisting>
+
+      <para>You can bind a Queue to a TopicExchange with a routing pattern.</para>
+
+      <programlisting language="java"><![CDATA[new Binding(someQueue, someTopicExchange, "foo.*")]]></programlisting>
+
+      <para>You can bind a Queue to a FanoutExchange with no routing key.</para>
+
+      <programlisting language="java"><![CDATA[new Binding(someQueue, someFanoutExchange)]]></programlisting>
+
+      <para>We also provide a <classname>BindingBuilder</classname> to facilitate a "fluent API" style.</para>
+
+	  <programlisting language="java"><![CDATA[BindingBuilder.from(someQueue).to(someTopicExchange).with("foo.*");]]></programlisting>
+
+      <note><para>The BindingBuilder class is shown above for clarity, but this style works well when
+        using a static import for the 'from()' method.</para></note>
+
+      <para>By itself, an instance of the Binding class is just holding the data about a connection. In other words,
+        it is not an "active" component. However, as you will see later in <xref linkend="broker-configuration"/>,
+        Binding instances can be used by the <interfacename>AmqpAdmin</interfacename> to actually trigger the binding
+        actions on the broker. Also, as you will see in that same section, the Binding instances can be defined using Spring's
+        @Bean-style within @Configuration classes. In fact, there is a convenient base class which further simplifies that
+        approach for generating AMQP-related bean definitions and recognizes the Queues, Exchanges, and Bindings so that they
+        will all be declared on the AMQP broker upon startup.</para>
+    </sect2>
+
+    <para>The <interfacename>AmqpTemplate</interfacename> is also defined within the core package. As one of the main
+      components involved in actual AMQP messaging, it is discussed in detail in its own section (see 
+      <xref linkend="amqp-template"/>).</para>
   </sect1>
 
   <sect1>
@@ -40,7 +163,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     </para>
   </sect1>
 
-  <sect1>
+  <sect1 id="amqp-template">
     <title>AmqpTemplate</title>
 
     <para>As with many other high-level abstractions provided by the Spring Framework and related projects, Spring AMQP provides a "template" that plays a central role. The interface that defines the main operations is called <interfacename>AmqpTemplate</interfacename>. Those operations cover the general behavior for sending and receiving Messages. In other words, they are not unique to any implementation, hence the "AMQP" in the name. On the other hand, there are implementations of that interface that are tied to implementations of the AMQP protocol. Unlike JMS, which is an interface-level API itself, AMQP is a wire-level protocol. The implementations of that protocol provide their own client libraries, so each implementation of the template interface will depend on a particular client library. Currently, there is only a single implementation: <classname>RabbitTemplate</classname>. In the examples that follow, you will often see usage of an "AmqpTemplate", but when you look at the configuration examples, or any code excerpts where the template is instantiated and/or setters are invoked, you will see the implementation type (e.g. "RabbitTemplate").</para>
@@ -280,7 +403,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </sect2>
   </sect1>
 
-  <sect1>
+  <sect1 id="broker-configuration">
     <title>Configuring the broker</title>
 
     <para>TODO: AbstractRabbitConfiguraiton, BindingBuilder...</para>

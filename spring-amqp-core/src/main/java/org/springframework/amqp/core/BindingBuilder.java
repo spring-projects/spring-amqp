@@ -45,21 +45,29 @@ public final class BindingBuilder  {
 			return new DirectExchangeRoutingKeyConfigurer(this.queue, exchange);
 		}
 
-		public RoutingKeyConfigurer to(Exchange exchange) {
-			return new RoutingKeyConfigurer(this.queue, exchange);
+		public TopicExchangeRoutingKeyConfigurer to(TopicExchange exchange) {
+			return new TopicExchangeRoutingKeyConfigurer(this.queue, exchange);
 		}
 	}
 
 
-	public static class RoutingKeyConfigurer {
+	private static abstract class AbstractRoutingKeyConfigurer<E extends Exchange> {
 
 		protected final Queue queue;
 
-		protected final Exchange exchange;
+		protected final E exchange;
 
-		private RoutingKeyConfigurer(Queue queue, Exchange exchange) {
+		private AbstractRoutingKeyConfigurer(Queue queue, E exchange) {
 			this.queue = queue;
 			this.exchange = exchange;
+		}
+	}
+
+
+	public static class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
+
+		private TopicExchangeRoutingKeyConfigurer(Queue queue, TopicExchange exchange) {
+			super(queue, exchange);
 		}
 
 		public Binding with(String routingKey) {
@@ -73,10 +81,19 @@ public final class BindingBuilder  {
 	}
 
 
-	public static class DirectExchangeRoutingKeyConfigurer extends RoutingKeyConfigurer {
+	public static class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
 
-		private DirectExchangeRoutingKeyConfigurer(Queue queue, Exchange exchange) {
+		private DirectExchangeRoutingKeyConfigurer(Queue queue, DirectExchange exchange) {
 			super(queue, exchange);
+		}
+
+		public Binding with(String routingKey) {
+			return new Binding(this.queue, this.exchange, routingKey);
+		}
+
+		@SuppressWarnings("unchecked")
+		public Binding with(Enum routingKeyEnum) {
+			return new Binding(this.queue, this.exchange, routingKeyEnum.toString());
 		}
 
 		public Binding withQueueName() {

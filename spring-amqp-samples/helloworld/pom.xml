@@ -16,7 +16,7 @@
 	</description>
 	<properties>
 		<maven.test.failure.ignore>true</maven.test.failure.ignore>
-		<rabbitmq.version>1.8.0</rabbitmq.version>
+		<rabbitmq.version>1.8.1</rabbitmq.version>
 		<spring.framework.version>3.0.3.RELEASE</spring.framework.version>
 		<spring.amqp.version>1.0.0.BUILD-SNAPSHOT</spring.amqp.version>
 	</properties>
