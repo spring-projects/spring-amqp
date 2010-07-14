@@ -2,8 +2,8 @@ package org.springframework.amqp.helloworld;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +15,7 @@ public class RabbitConfiguration extends AbstractRabbitConfiguration {
 
 	@Bean
 	public ConnectionFactory connectionFactory() {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		return connectionFactory;

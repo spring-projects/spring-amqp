@@ -20,15 +20,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.otp.erlang.OtpIOException;
 
 /**
@@ -37,15 +34,14 @@ import org.springframework.otp.erlang.OtpIOException;
 public class RabbitBrokerAdminIntegrationTests {
 
 	private static RabbitBrokerAdmin brokerAdmin;
-	
-	private static CachingConnectionFactory connectionFactory;
+
+	private static SingleConnectionFactory connectionFactory;
 
 	@BeforeClass
 	public static void setUp() {
-		connectionFactory = new CachingConnectionFactory();
+		connectionFactory = new SingleConnectionFactory();
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
-		connectionFactory.setChannelCacheSize(10);
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
 	}
 
@@ -121,4 +117,5 @@ public class RabbitBrokerAdminIntegrationTests {
 		assertEquals(1, status.getRunningNodes().size());
 		assertTrue(status.getRunningNodes().get(0).getName().contains("rabbit"));
 	}
+
 }

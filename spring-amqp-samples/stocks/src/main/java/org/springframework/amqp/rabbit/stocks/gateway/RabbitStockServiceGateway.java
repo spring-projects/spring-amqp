@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.stocks.gateway;
 
 import java.io.UnsupportedEncodingException;
@@ -23,18 +24,15 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.support.RabbitGatewaySupport;
 import org.springframework.amqp.rabbit.stocks.domain.TradeRequest;
 
 /**
- * Rabbit implementation of {@link StockServiceGateway} to send trade requests to an external
- * process.
+ * Rabbit implementation of {@link StockServiceGateway} to send trade requests to an external process.
+ * 
  * @author Mark Pollack
- *
  */
-public class RabbitStockServiceGateway extends RabbitGatewaySupport implements
-		StockServiceGateway {
+public class RabbitStockServiceGateway extends RabbitGatewaySupport implements StockServiceGateway {
 
 	private String defaultReplyToQueue;
 	
@@ -46,25 +44,19 @@ public class RabbitStockServiceGateway extends RabbitGatewaySupport implements
 		this.defaultReplyToQueue = defaultReplyToQueue.getName();
 	}
 
-
 	public void send(TradeRequest tradeRequest) {
-				
 		getRabbitTemplate().convertAndSend(tradeRequest, new MessagePostProcessor() {
-			
 			public Message postProcessMessage(Message message) throws AmqpException {
 				message.getMessageProperties().setReplyTo(new Address(defaultReplyToQueue));
-				//bytes = ((String) object).getBytes(this.defaultCharset);
 				try {
 					message.getMessageProperties().setCorrelationId(UUID.randomUUID().toString().getBytes("UTF-8"));
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
+				}
+				catch (UnsupportedEncodingException e) {
 					e.printStackTrace();
 				}
 				return message;
 			}
-			
 		});
-
 	}
 
 }

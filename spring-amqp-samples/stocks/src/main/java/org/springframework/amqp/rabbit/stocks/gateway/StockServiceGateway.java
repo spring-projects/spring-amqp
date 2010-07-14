@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.stocks.gateway;
 
 import org.springframework.amqp.rabbit.stocks.domain.TradeRequest;
 
 /**
  * Gateway interface that sends trades to an external process.
+ * 
  * @author Mark Pollack
- *
  */
 public interface StockServiceGateway {
 
-	
 	void send(TradeRequest tradeRequest);
+
 }
