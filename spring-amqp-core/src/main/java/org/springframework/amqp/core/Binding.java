@@ -20,10 +20,11 @@ import java.util.Map;
 
 /**
  * Simple container collecting information to describe a queue binding. Takes Queue and Exchange
- * class as arguments to facilitate wiring using @Bean code based configuration.
+ * instances as arguments to facilitate wiring using @Bean code based configuration.
  * Used in conjunction with AmqpAdmin.
  * 
  * @author Mark Pollack
+ * @author Mark Fisher
  * @see AmqpAdmin
  */
 public class Binding {
@@ -34,69 +35,45 @@ public class Binding {
 
 	private String routingKey;
 
-	private Map<java.lang.String,java.lang.Object> arguments;
+	private Map<String, Object> arguments;
 
-
-	//Is this really worth the syntax sugar?
-	public static Binding binding(Queue queue, Exchange exchange, String routingKey) {
-		return new Binding(queue, exchange, routingKey);		
-	}
-
-	//TODO would be good to remove this because invalid bindings can be specified (fanout with routing key)
-	Binding(Queue queue, Exchange exchange, String routingKey) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = routingKey;
-	}
 
 	public Binding(Queue queue, FanoutExchange exchange) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
 		this.routingKey = "";
 	}
-	
+
 	public Binding(Queue queue, DirectExchange exchange, String routingKey) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
 		this.routingKey = routingKey;
 	}
-	
-	public Binding(Queue queue, DirectExchange exchange) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
-	}
-	
 
 	public Binding(Queue queue, TopicExchange exchange, String routingKey) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
 		this.routingKey = routingKey;
 	}
-	
-	public Binding(Queue queue, TopicExchange exchange) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
-	}
-	
+
+
 	public String getQueue() {
-		return queue;
+		return this.queue;
 	}
 
 	public String getExchange() {
-		return exchange;
+		return this.exchange;
 	}
 
 	public String getRoutingKey() {
-		return routingKey;
+		return this.routingKey;
 	}
 
-	public Map<java.lang.String, java.lang.Object> getArguments() {
-		return arguments;
+	public Map<String, Object> getArguments() {
+		return this.arguments;
 	}
 
-	public void setArguments(Map<java.lang.String, java.lang.Object> arguments) {
+	public void setArguments(Map<String, Object> arguments) {
 		this.arguments = arguments;
 	}
 
