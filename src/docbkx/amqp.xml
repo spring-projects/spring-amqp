@@ -50,7 +50,7 @@
         return this.messageProperties;
 }]]></programlisting>
 
-      <para>The <interfacename>MessageProperties<interfacename> interface defines several common properties such as
+      <para>The <interfacename>MessageProperties</interfacename> interface defines several common properties such as
         'messageId', 'timestamp', 'contentType', and several more. Those properties can also be extended with
          user-defined 'headers' by calling the <methodname>setHeader(String key, Object value)</methodname> method.</para>
     </sect2>
