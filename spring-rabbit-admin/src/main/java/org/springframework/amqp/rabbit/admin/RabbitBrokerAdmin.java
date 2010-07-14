@@ -36,6 +36,7 @@ import org.springframework.jmx.export.annotation.ManagedOperationParameter;
 import org.springframework.jmx.export.annotation.ManagedOperationParameters;
 import org.springframework.otp.erlang.connection.SimpleConnectionFactory;
 import org.springframework.otp.erlang.core.ErlangTemplate;
+import org.springframework.util.Assert;
 import org.springframework.util.exec.Execute;
 import org.springframework.util.exec.Os;
 
@@ -234,39 +235,30 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	@ManagedOperation
 	public void startNode() {
-		logger.debug("Staring RabbitMQ node by shelling out command line.");
+		logger.debug("Starting RabbitMQ node by shelling out command line.");
 		final Execute execute = new Execute();
-		String rabbitStartCommand = null;
-		if (Os.isFamily("windows")) {
-			String rabbitHome = System.getenv("RABBITMQ_HOME");
-			// TODO remove any trailing directory separators on rabbit home var.
-			if (rabbitHome == null) {
-				throw new IllegalArgumentException(
-						"RABBITMQ_HOME environment variable not set.");
-			}
-			rabbitStartCommand = rabbitHome
-					+ System.getProperty("file.separator") + "sbin"
-					+ System.getProperty("file.separator")
-					+ "rabbitmq-server.bat";
+		String rabbitStartScript = null;
+		if (Os.isFamily("windows") || Os.isFamily("dos")) {
+			rabbitStartScript = "rabbitmq-server.bat";
 		}
-		else {
-			// TODO abstract out install location and Win/Unix shell script name differencese
-			throw new IllegalArgumentException("Only support for windows OS family at the moment...");
+		else if (Os.isFamily("unix") || Os.isFamily("mac")) {
+			rabbitStartScript = "rabbitmq-server";
 		}
-
-		if (rabbitStartCommand != null) {
-			execute.setCommandline(new String[] { rabbitStartCommand });
-		}
-		else {
-			throw new IllegalArgumentException(
-					"Could determine OS to create rabbit start command");
-		}
+		Assert.notNull(rabbitStartScript, "unsupported OS family");
+		String rabbitHome = System.getenv("RABBITMQ_HOME");
+		// TODO remove any trailing directory separators on rabbit home var.
+		Assert.notNull(rabbitHome, "RABBITMQ_HOME environment variable not set.");
+		String rabbitStartCommand = rabbitHome + System.getProperty("file.separator")
+				+ "sbin" + System.getProperty("file.separator")
+				+ rabbitStartScript;
+		execute.setCommandline(new String[] { rabbitStartCommand });
 		SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
 		executor.execute(new Runnable() {
 			public void run() {
 				try {
 					execute.execute();
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					logger.error("failed to start node", e);
 				}
 			}
