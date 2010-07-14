@@ -77,9 +77,9 @@
             <para>
                 In addition to this reference documentation, there exist a number of
                 other resources that may help you learn about AMQP.
-                These additional, third-party resources are enumerated in this section.
             </para>
         </partintro>
+        <xi:include href="further-reading.xml"/>
         <xi:include href="bibliography.xml"/>
     </part>
 </book>

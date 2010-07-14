@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<chapter id="further-reading">
+  <title>Further Reading</title>
+
+  <para>
+    For those who are not familiar with AMQP, the
+    <ulink url="http://www.amqp.org/confluence/display/AMQP/AMQP+Specification">specification</ulink>
+    is actually quite readable. It is of course the authoritative source of information, and the Spring
+    AMQP code should be very easy to understand for anyone who is familiar with the spec. Our current
+    implementation of the RabbitMQ support is based on their 1.8.x version, and it officially supports
+    AMQP 0.8. However, we recommend reading the 0.9.1 document. The differences are minor (mostly
+    clarifications in fact), and the document itself is more readable.
+  </para>
+
+  <para>
+    There are many great articles, presentations, and blogs available on the
+    RabbitMQ <ulink url="http://www.rabbitmq.com/how.html">Getting Started</ulink> page.
+    Since that is currently the only supported implementation for Spring AMQP, we also
+    recommend that as a general starting point for all broker-related concerns.
+  </para>
+
+  <para>
+    Finally, be sure to visit the Spring AMQP
+    <ulink url="http://forum.springsource.org/forumdisplay.php?f=74">Forum</ulink> if you have questions
+          or suggestions. With this first milestone release, we are looking forward to a lot of community feedback!
+  </para>
+
+</chapter>
