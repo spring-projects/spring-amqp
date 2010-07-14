@@ -7,42 +7,49 @@
   <section id="spring-integration-amqp-introduction">
     <title>Introduction</title>
 
-    <para>AMQP support</para>
+    <para>The <ulink url="http://springsource.org/spring-integration">Spring Integration</ulink> project
+      will include AMQP Channel Adapters and Gateways that build upon the Spring AMQP project as soon
+      as the Spring AMQP project has a GA release. For now, those adapters are under development in the
+      Spring Integration <ulink url="https://src.springsource.org/svn/spring-integration/sandbox/spring-integration-amqp/">sandbox</ulink>.
+      In Spring Integration, "Channel Adapters" are unidirectional (one-way) whereas "Gateways" are
+      bidirectional (request-reply). Ultimately, we will be providing an inbound-channel-adapter,
+      outbound-channel-adapter, inbound-gateway, and outbound-gateway. As of the time of the Spring AMQP 1.0
+      Milestone 1 release, the 2 Channel Adapters are available. As mentioned, they are still in the "sandbox"
+      and as such are subject to change and should not be depended upon in a production environment. That said,
+      if you check out the project, you should be able to build it with Maven and experiment for yourself.</para>
+
+    <para>When the AMQP adapters are part of an official Spring Integration release, the documentation
+      will be available as part of the Spring Integration distribution. In the meantime, we will just
+      provide a quick overview of the current state of that development here.</para>
   </section>
 
   <section>
     <title>Inbound Channel Adapter</title>
 
-    <para>Introduction....</para>
-  </section>
+    <para>To receive AMQP Messages from a Queue, configure an &lt;inbound-channel-adapter&gt;</para>
 
-  <section>
-    <title>Message-Driven Channel Adapter</title>
-
-    <para>message-driven channel adapter</para>
+    <programlisting language="xml"><![CDATA[<amqp:inbound-channel-adapter queue-name="some.queue" channel="fromAMQP" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
   </section>
 
   <section>
     <title>Outbound Channel Adapter</title>
 
-    <para>outbound channel adapter</para>
+    <para>To send AMQP Messages to an Exchange, configure an &lt;outbound-channel-adapter&gt;.
+      A 'routing-key' may optionally be provided in addition to the exchange name.</para>
+
+    <programlisting language="xml"><![CDATA[<amqp:outbound-channel-adapter channel="toAMQP" exchange-name="some.exchange" routing-key="foo" amqp-template="rabbitTemplate"/>]]></programlisting>
   </section>
 
   <section>
     <title>Inbound Gateway</title>
 
-    <para>inbound gateway</para>
+    <para>Coming Soon</para>
   </section>
 
   <section>
     <title>Outbound Gateway</title>
 
-    <para>outbound gateway</para>
+    <para>Coming Soon</para>
   </section>
 
-  <section>
-    <title>AMQP Samples</title>
-
-    <para>samples</para>
-  </section>
 </chapter>
