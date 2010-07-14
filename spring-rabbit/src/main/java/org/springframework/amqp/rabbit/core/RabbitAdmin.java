@@ -29,7 +29,7 @@ import org.springframework.jmx.export.annotation.ManagedOperation;
 import com.rabbitmq.client.Channel;
 
 /**
- * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.8
+ * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.9.1
  * 
  * @author Mark Pollack
  */

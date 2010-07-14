@@ -305,7 +305,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 	protected void initializeDefaultErlangTemplate(RabbitTemplate rabbitTemplate) {	
 		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHostName();
-		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName);
+		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpCf = new SimpleConnectionFactory("rabbit-spring-monitor", peerNodeName);
 		otpCf.afterPropertiesSet();
 		createErlangTemplate(otpCf);

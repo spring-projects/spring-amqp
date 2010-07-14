@@ -17,7 +17,7 @@
 package org.springframework.amqp.core;
 
 /**
- * Specifies a basic set of portable AMQP administrative operations for AMQP >= 0.8
+ * Specifies a basic set of portable AMQP administrative operations for AMQP > 0.8
  * 
  * @author Mark Pollack
  */
@@ -27,7 +27,6 @@ public interface AmqpAdmin {
 	 * Declare an exchange
 	 * @param exchange the exchange to declare.
 	 */
-	////Note declaring an exchange with auto-delete and non-durable flags is not easily exposed in QPID Java or .NET bindings
 	void declareExchange(Exchange exchange);
 
 	/**

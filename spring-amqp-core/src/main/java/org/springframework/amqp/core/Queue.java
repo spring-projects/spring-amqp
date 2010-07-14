@@ -18,7 +18,7 @@ package org.springframework.amqp.core;
 
 /**
  * Simple container collecting information to describe a queue.
- * Used in conjunction with RabbitAdminTemplate.
+ * Used in conjunction with AmqpAdmin.
  * 
  * @author Mark Pollack
  * @see AmqpAdmin
@@ -74,6 +74,14 @@ public class Queue  {
 
 	public void setArguments(java.util.Map<java.lang.String, java.lang.Object> arguments) {
 		this.arguments = arguments;
+	}
+	
+
+	@Override
+	public String toString() {
+		return "Queue [name=" + name + ", durable=" + durable + ", autoDelete="
+				+ autoDelete + ", exclusive=" + exclusive + ", arguments="
+				+ arguments + "]";
 	}
 
 }

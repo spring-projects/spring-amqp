@@ -131,14 +131,13 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 	}
 	
 	/**
-	 * Convert the specified checked {@link javax.jms.JMSException JMSException} to
-	 * a Spring runtime {@link org.springframework.jms.JmsException JmsException}
-	 * equivalent.
+	 * Convert the specified checked exception to
+	 * a Spring runtime exception equivalent.
 	 * <p>The default implementation delegates to the
-	 * {@link org.springframework.jms.support.JmsUtils#convertJmsAccessException} method.
-	 * @param ex the original checked {@link JMSException} to convert
-	 * @return the Spring runtime {@link JmsException} wrapping <code>ex</code>
-	 * @see org.springframework.jms.support.JmsUtils#convertJmsAccessException
+	 * {@link org.springframework.otp.erlang.support.ErlangUtils#convertOtpAccessException} method.
+	 * @param ex the original checked {@link Exception} to convert
+	 * @return the Spring runtime wrapping <code>ex</code>
+	 * @see org.springframework.otp.erlang.support.ErlangUtils#convertOtpAccessException
 	 */
 	protected OtpException convertOtpAccessException(Exception ex) {
 		return ErlangUtils.convertOtpAccessException(ex);

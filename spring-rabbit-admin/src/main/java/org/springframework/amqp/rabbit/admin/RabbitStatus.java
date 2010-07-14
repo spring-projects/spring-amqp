@@ -22,7 +22,7 @@ import org.springframework.otp.erlang.core.Application;
 import org.springframework.otp.erlang.core.Node;
 
 /**
- * The status object returned from querying the broker via the
+ * The status object returned from querying the broker
  *  
  * @author Mark Pollack
  *

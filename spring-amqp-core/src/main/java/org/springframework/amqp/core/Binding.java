@@ -21,10 +21,10 @@ import java.util.Map;
 /**
  * Simple container collecting information to describe a queue binding. Takes Queue and Exchange
  * class as arguments to facilitate wiring using @Bean code based configuration.
- * Used in conjunction with RabbitAdminTemplate.
+ * Used in conjunction with AmqpAdmin.
  * 
  * @author Mark Pollack
- * @see RabbitAdminTemplate
+ * @see AmqpAdmin
  */
 public class Binding {
 
@@ -34,7 +34,7 @@ public class Binding {
 
 	private String routingKey;
 
-	Map<java.lang.String,java.lang.Object> arguments;
+	private Map<java.lang.String,java.lang.Object> arguments;
 
 
 	//Is this really worth the syntax sugar?
