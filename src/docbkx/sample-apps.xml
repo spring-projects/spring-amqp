@@ -65,7 +65,55 @@ public Queue helloWorldQueue() {
     <section id="hello-world-async">
       <title>Asynchronous Example</title>
 
-      <para>Topic Exchange</para>
+      <para>Now that we've walked through the synchronous Hello World sample, it's time to move on to a slightly more advanced but significantly more powerful option. With a few modifications, the Hello World sample can provide an example of asynchronous reception, a.k.a. <emphasis>Message-driven POJOs</emphasis>. In fact, there is a sub-package that provides exactly that: org.springframework.amqp.samples.helloworld.async.</para>
+
+      <para>Once again, we will start with the sending side. Open the ProducerConfiguration class and notice that it creates a "connectionFactory" and "rabbitTemplate" bean. This time, since the configuration is dedicated to the message sending side, we don't even need any Queue definitions, and the RabbitTemplate only has the 'routingKey' property set. Recall that messages are sent to an Exchange rather than being sent directly to a Queue. The AMQP default Exchange is a direct Exchange with no name. All Queues are bound to that default Exchange with their name as the routing key. That is why we only need to provide the routing key here.</para>
+
+      <programlisting language="java"><![CDATA[public RabbitTemplate rabbitTemplate() {
+    RabbitTemplate template = new RabbitTemplate(connectionFactory());
+    template.setRoutingKey(this.helloWorldQueueName);
+    return template;
+}]]></programlisting>
+
+      <para>Since this sample will be demonstrating asynchronous message reception, the producing side is designed to continuously send messages (if it were a message-per-execution model like the synchronous version, it would not be quite so obvious that it is in fact a message-driven consumer). The component responsible for sending messages continuously is defined as an inner class within the ProducerConfiguration. It is configured to execute every 3 seconds.</para>
+
+      <programlisting language="java"><![CDATA[static class ScheduledProducer {
+
+    @Autowired
+    private volatile RabbitTemplate rabbitTemplate;
+
+    private final AtomicInteger counter = new AtomicInteger();
+
+    @Scheduled(fixedRate = 3000)
+    public void sendMessage() {
+        rabbitTemplate.convertAndSend("Hello World " + counter.incrementAndGet());
+    }
+}]]></programlisting>
+
+      <para>You don't need to understand all of the details since the real focus should be on the receiving side (which we will cover momentarily). However, if you are not yet familiar with Spring 3.0 task scheduling support, you can learn more <ulink url="http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/htmlsingle/spring-framework-reference.html#scheduling-annotation-support">here</ulink>. The short story is that the "postProcessor" bean in the ProducerConfiguration is registering the task with a scheduler.</para>
+
+      <para>Now, let's turn to the receiving side. To emphasize the Message-driven POJO behavior will start with the component that is reacting to the messages. The class is called HelloWorldHandler.</para>
+
+      <programlisting language="java"><![CDATA[public class HelloWorldHandler {
+
+    public void handleMessage(String text) {
+        System.out.println("Received: " + text);
+    }
+
+}]]></programlisting>
+
+      <para>Clearly, that <emphasis>is</emphasis> a POJO. It does not extend any base class, it doesn't implement any interfaces, and it doesn't even contain any imports. It is being "adapted" to the MessageListener interface by the Spring AMQP MessageListenerAdapter. That adapter can then be configured on a SimpleMessageListenerContainer. For this sample, the container is created in the ConsumerConfiguration class. You can see the POJO wrapped in the adapter there.</para>
+
+      <programlisting language="java"><![CDATA[@Bean
+public SimpleMessageListenerContainer listenerContainer() {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    container.setConnectionFactory(connectionFactory());
+    container.setQueueName(this.helloWorldQueueName);
+    container.setMessageListener(new MessageListenerAdapter(new HelloWorldHandler()));
+    return container;
+}]]></programlisting>
+
+      <para>The SimpleMessageListenerContainer is a Spring lifecycle component and will start automatically by default. If you look in the Consumer class, you will see that its main() method consists of nothing more than a one-line bootstrap to create the ApplicationContext. The Producer's main() method is also a one-line bootstrap, since the component whose method is annotated with @Scheduled will also start executing automatically. You can start the Producer and Consumer in any order, and you should see messages being sent and received every 3 seconds.</para>
     </section>
   </section>
 
