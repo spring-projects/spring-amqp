@@ -7,20 +7,43 @@
   <section>
     <title>Introduction</title>
 
-    <para>Introduction</para>
+    <para>The Spring AMQP project includes two sample applications. The first is a simple "Hello World" example that demonstrates both synchronous and asynchronous message reception. It provides an excellent starting point for acquiring an understanding of the essential components. The second sample is based on a stock-trading use case to demonstrate the types of interaction that would be common in real world applications. In this chapter, we will provide a quick walk-through of each sample so that you can focus on the most important components. The samples are available in the distribution, and they are both Maven-based, so you should be able to import them directly into any Maven-aware IDE (such as <ulink url="http://www.springsource.com/products/sts">SpringSource Tool Suite</ulink>).</para>
   </section>
 
   <section>
     <title>Hello World</title>
 
-    <section id="direct-exchange">
-      <title>Direct Exchange - P2P</title>
+    <para>The Hello World sample demonstrates both synchronous and asynchronous message reception. You can import the 'spring-rabbit-helloworld' sample into the IDE and then follow the discussion below.</para>
 
-      <para>Direct exchange</para>
-    </section>
+    <section id="hello-world-sync">
+      <title>Synchronous Example</title>
 
-    <section>
-      <title>Topic Exchange - Pub/Sub</title>
+      <para>Within the 'src/main/java' directory, navigate to the 'org.springframework.amqp.helloworld' package. Open the HelloWorldConfiguration class and notice that it contains the @Configuration annotation at class-level and some @Bean annotations at method-level. This is an example of Spring's Java-based configuration. You can read more about that <ulink url="http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/htmlsingle/spring-framework-reference.html#beans-java">here</ulink>.</para>
+
+      <para>You will see that the RabbitConfiguration class extends a framework-provided class called AbstractRabbitConfiguration. That forces it to implement the abstract rabbitTemplate() method while the base class itself then creates an 'amqpAdmin' bean. The "rabbitTemplate" bean in turn depends upon the bean that is created by the connectionFactory() method. There, we are providing the 'username' and 'password' properties as well as the 'hostname' constructor argument. The base class also provides a mechanism that will recognize any Exchange, Queue, or Binding  bean definitions and then declare them on the broker. In fact, the "helloWorldQueue" bean that is generated in HelloWorldConfiguration is an example simply because it is an instance of Queue.</para>
+
+      <programlisting language="java"><![CDATA[@Bean
+public Queue helloWorldQueue() {
+    return new Queue(this.helloWorldQueueName);
+}]]></programlisting>
+
+      <para>Looking back at the "rabbitTemplate" bean configuration, you will see that it has the helloWorldQueue's name set as its "queue" property (for receiving Messages) and for its "routingKey" property (for sending Messages).</para>
+
+      <para>Now that we've explored the configuration, let's look at the code that actually uses these components. First, open the Producer class from within the same package. It contains a main() method where the Spring ApplicationContext is created.</para>
+
+      <programlisting language="java"><![CDATA[public static void main(String[] args) {
+    ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
+    AmqpTemplate amqpTemplate = context.getBean(AmqpTemplate.class);
+    amqpTemplate.convertAndSend("Hello World");
+    System.out.println("Sent: Hello World");
+}]]></programlisting>
+
+    <para>The AmqpTemplate bean is then retrieved and used for sending a Message. Since the client code should rely on interfaces whenever possible, the type is AmqpTemplate rather than RabbitTemplate. Even though the bean created in HelloWorldConfiguration is an instance of RabbitTemplate, relying on the interface means that this code is more portable (the configuration can be changed independently of the code). Since the convertAndSend() method is invoked, the template will be delegating to its MessageConverter instance. In this case, it's using the default SimpleMessageConverter, but a different implementation could be provided to the "rabbitTemplate" bean as defined in HelloWorldConfiguration.</para>
+
+</section>
+
+    <section id="hello-world-async">
+      <title>Asynchronous Example</title>
 
       <para>Topic Exchange</para>
     </section>
