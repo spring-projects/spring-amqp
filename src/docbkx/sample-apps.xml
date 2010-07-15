@@ -7,22 +7,113 @@
   <section>
     <title>Introduction</title>
 
-    <para>Introduction</para>
+    <para>The Spring AMQP project includes two sample applications. The first is a simple "Hello World" example that demonstrates both synchronous and asynchronous message reception. It provides an excellent starting point for acquiring an understanding of the essential components. The second sample is based on a stock-trading use case to demonstrate the types of interaction that would be common in real world applications. In this chapter, we will provide a quick walk-through of each sample so that you can focus on the most important components. The samples are available in the distribution, and they are both Maven-based, so you should be able to import them directly into any Maven-aware IDE (such as <ulink url="http://www.springsource.com/products/sts">SpringSource Tool Suite</ulink>).</para>
   </section>
 
   <section>
     <title>Hello World</title>
 
-    <section id="direct-exchange">
-      <title>Direct Exchange - P2P</title>
+    <para>The Hello World sample demonstrates both synchronous and asynchronous message reception. You can import the 'spring-rabbit-helloworld' sample into the IDE and then follow the discussion below.</para>
 
-      <para>Direct exchange</para>
-    </section>
+    <section id="hello-world-sync">
+      <title>Synchronous Example</title>
 
-    <section>
-      <title>Topic Exchange - Pub/Sub</title>
+      <para>Within the 'src/main/java' directory, navigate to the 'org.springframework.amqp.helloworld' package. Open the HelloWorldConfiguration class and notice that it contains the @Configuration annotation at class-level and some @Bean annotations at method-level. This is an example of Spring's Java-based configuration. You can read more about that <ulink url="http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/htmlsingle/spring-framework-reference.html#beans-java">here</ulink>.</para>
 
-      <para>Topic Exchange</para>
+      <para>You will see that the RabbitConfiguration class extends a framework-provided class called AbstractRabbitConfiguration. That forces it to implement the abstract rabbitTemplate() method while the base class itself then creates an 'amqpAdmin' bean. The "rabbitTemplate" bean in turn depends upon the bean that is created by the connectionFactory() method. There, we are providing the 'username' and 'password' properties as well as the 'hostname' constructor argument to an instance of SingleConnectionFactory.</para>
+
+      <programlisting language="java"><![CDATA[@Bean
+public ConnectionFactory connectionFactory() {
+    SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
+    connectionFactory.setUsername("guest");
+    connectionFactory.setPassword("guest");
+    return connectionFactory;
+}]]></programlisting>
+
+      <para>The base class also provides a mechanism that will recognize any Exchange, Queue, or Binding  bean definitions and then declare them on the broker. In fact, the "helloWorldQueue" bean that is generated in HelloWorldConfiguration is an example simply because it is an instance of Queue.</para>
+
+      <programlisting language="java"><![CDATA[@Bean
+public Queue helloWorldQueue() {
+    return new Queue(this.helloWorldQueueName);
+}]]></programlisting>
+
+      <para>Looking back at the "rabbitTemplate" bean configuration, you will see that it has the helloWorldQueue's name set as its "queue" property (for receiving Messages) and for its "routingKey" property (for sending Messages).</para>
+
+      <para>Now that we've explored the configuration, let's look at the code that actually uses these components. First, open the Producer class from within the same package. It contains a main() method where the Spring ApplicationContext is created.</para>
+
+      <programlisting language="java"><![CDATA[public static void main(String[] args) {
+    ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
+    AmqpTemplate amqpTemplate = context.getBean(AmqpTemplate.class);
+    amqpTemplate.convertAndSend("Hello World");
+    System.out.println("Sent: Hello World");
+}]]></programlisting>
+
+    <para>As you can see in the example above, the AmqpTemplate bean is retrieved and used for sending a Message. Since the client code should rely on interfaces whenever possible, the type is AmqpTemplate rather than RabbitTemplate. Even though the bean created in HelloWorldConfiguration is an instance of RabbitTemplate, relying on the interface means that this code is more portable (the configuration can be changed independently of the code). Since the convertAndSend() method is invoked, the template will be delegating to its MessageConverter instance. In this case, it's using the default SimpleMessageConverter, but a different implementation could be provided to the "rabbitTemplate" bean as defined in HelloWorldConfiguration.</para>
+
+    <para>Now open the Consumer class. It actually shares the same configuration base class which means it will be sharing the "rabbitTemplate" bean. That's why we configured that template with both a "routingKey" (for sending) and "queue" (for receiving). As you saw in <xref linkend="amqp-template"/>, you could instead pass the 'routingKey' argument to the send method and the 'queue' argument to the receive method. The Consumer code is basically a mirror image of the Producer, calling receiveAndConvert() rather than convertAndSend().</para>
+
+      <programlisting language="java"><![CDATA[public static void main(String[] args) {
+    ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
+    AmqpTemplate amqpTemplate = context.getBean(AmqpTemplate.class);
+    System.out.println("Received: " + amqpTemplate.receiveAndConvert());
+}]]></programlisting>
+
+    <para>If you run the Producer, and then run the Consumer, you should see the message "Received: Hello World" in the console output.</para>
+
+  </section>
+
+    <section id="hello-world-async">
+      <title>Asynchronous Example</title>
+
+      <para>Now that we've walked through the synchronous Hello World sample, it's time to move on to a slightly more advanced but significantly more powerful option. With a few modifications, the Hello World sample can provide an example of asynchronous reception, a.k.a. <emphasis>Message-driven POJOs</emphasis>. In fact, there is a sub-package that provides exactly that: org.springframework.amqp.samples.helloworld.async.</para>
+
+      <para>Once again, we will start with the sending side. Open the ProducerConfiguration class and notice that it creates a "connectionFactory" and "rabbitTemplate" bean. This time, since the configuration is dedicated to the message sending side, we don't even need any Queue definitions, and the RabbitTemplate only has the 'routingKey' property set. Recall that messages are sent to an Exchange rather than being sent directly to a Queue. The AMQP default Exchange is a direct Exchange with no name. All Queues are bound to that default Exchange with their name as the routing key. That is why we only need to provide the routing key here.</para>
+
+      <programlisting language="java"><![CDATA[public RabbitTemplate rabbitTemplate() {
+    RabbitTemplate template = new RabbitTemplate(connectionFactory());
+    template.setRoutingKey(this.helloWorldQueueName);
+    return template;
+}]]></programlisting>
+
+      <para>Since this sample will be demonstrating asynchronous message reception, the producing side is designed to continuously send messages (if it were a message-per-execution model like the synchronous version, it would not be quite so obvious that it is in fact a message-driven consumer). The component responsible for sending messages continuously is defined as an inner class within the ProducerConfiguration. It is configured to execute every 3 seconds.</para>
+
+      <programlisting language="java"><![CDATA[static class ScheduledProducer {
+
+    @Autowired
+    private volatile RabbitTemplate rabbitTemplate;
+
+    private final AtomicInteger counter = new AtomicInteger();
+
+    @Scheduled(fixedRate = 3000)
+    public void sendMessage() {
+        rabbitTemplate.convertAndSend("Hello World " + counter.incrementAndGet());
+    }
+}]]></programlisting>
+
+      <para>You don't need to understand all of the details since the real focus should be on the receiving side (which we will cover momentarily). However, if you are not yet familiar with Spring 3.0 task scheduling support, you can learn more <ulink url="http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/htmlsingle/spring-framework-reference.html#scheduling-annotation-support">here</ulink>. The short story is that the "postProcessor" bean in the ProducerConfiguration is registering the task with a scheduler.</para>
+
+      <para>Now, let's turn to the receiving side. To emphasize the Message-driven POJO behavior will start with the component that is reacting to the messages. The class is called HelloWorldHandler.</para>
+
+      <programlisting language="java"><![CDATA[public class HelloWorldHandler {
+
+    public void handleMessage(String text) {
+        System.out.println("Received: " + text);
+    }
+
+}]]></programlisting>
+
+      <para>Clearly, that <emphasis>is</emphasis> a POJO. It does not extend any base class, it doesn't implement any interfaces, and it doesn't even contain any imports. It is being "adapted" to the MessageListener interface by the Spring AMQP MessageListenerAdapter. That adapter can then be configured on a SimpleMessageListenerContainer. For this sample, the container is created in the ConsumerConfiguration class. You can see the POJO wrapped in the adapter there.</para>
+
+      <programlisting language="java"><![CDATA[@Bean
+public SimpleMessageListenerContainer listenerContainer() {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    container.setConnectionFactory(connectionFactory());
+    container.setQueueName(this.helloWorldQueueName);
+    container.setMessageListener(new MessageListenerAdapter(new HelloWorldHandler()));
+    return container;
+}]]></programlisting>
+
+      <para>The SimpleMessageListenerContainer is a Spring lifecycle component and will start automatically by default. If you look in the Consumer class, you will see that its main() method consists of nothing more than a one-line bootstrap to create the ApplicationContext. The Producer's main() method is also a one-line bootstrap, since the component whose method is annotated with @Scheduled will also start executing automatically. You can start the Producer and Consumer in any order, and you should see messages being sent and received every 3 seconds.</para>
     </section>
   </section>
 

@@ -2,7 +2,6 @@ package org.springframework.amqp.helloworld.async;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -23,7 +22,6 @@ public class ProducerConfiguration extends AbstractRabbitConfiguration {
 	public RabbitTemplate rabbitTemplate() {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory());
 		template.setRoutingKey(this.helloWorldQueueName);
-		template.setQueue(this.helloWorldQueueName);
 		return template;
 	}
 
@@ -33,11 +31,6 @@ public class ProducerConfiguration extends AbstractRabbitConfiguration {
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		return connectionFactory;
-	}
-
-	@Bean
-	public Queue helloWorldQueue() {
-		return new Queue(this.helloWorldQueueName);
 	}
 
 	@Bean
