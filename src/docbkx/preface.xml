@@ -4,5 +4,5 @@
 <preface id="preface">
   <title>Preface</title>
 
-  <para>Overivew of AMQP and goals of Spring AMQP project.</para>
+  <para>The Spring AMQP project applies core Spring concepts to the development of AMQP-based messaging solutions. We provide a "template" as a high-level abstraction for sending and receiving messages. We also provide support for Message-driven POJOs. These libraries facilitate management of AMQP resources while promoting the use of dependency injection and declarative configuration. In all of these cases, you will see similarities to the JMS support in the Spring Framework. The project consists of both Java and .NET versions. This manual is dedicated to the Java version. For links to the .NET version's manual or any other project-related information visit the Spring AMQP project <ulink url="http://springsource.org/spring-amqp">homepage</ulink>.</para>
 </preface>
