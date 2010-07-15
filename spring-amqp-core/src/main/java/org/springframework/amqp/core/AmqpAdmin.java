@@ -38,7 +38,17 @@ public interface AmqpAdmin {
 
 
 	// Queue Operations
+	
+	/**
+	 * Declare a queue whose name is automatically created and 
+	 * exclusive = true, autoDelete=true, and durable = false.
+	 */
+	Queue declareQueue();
 
+	/**
+	 * Declare the given queue
+	 * @param queue the queue to declare
+	 */
 	void declareQueue(Queue queue);
 
 	/**
@@ -72,6 +82,7 @@ public interface AmqpAdmin {
 	 * @param binding a description of the binding to declare.
 	 */
 	void declareBinding(Binding binding);
+
 
 	//Note unbindQueue/removeBinding was not introduced until 0.9 of the specification.
 

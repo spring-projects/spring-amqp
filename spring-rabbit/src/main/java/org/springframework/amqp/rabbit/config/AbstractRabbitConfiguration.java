@@ -16,28 +16,15 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.Collection;
-
 import org.springframework.amqp.config.AbstractAmqpConfiguration;
-import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpAdmin;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.Exchange;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
-
 /**
- * Abstract base class for code based configuration of Spring managed Rabbit broker infrastructure,
+ * Abstract base class for code based configuration of Spring managed Rabbit based broker infrastructure,
  * i.e. Queues, Exchanges, Bindings.
  * <p>Subclasses are required to provide an implementation of rabbitTemplate from which the the bean 
  * 'amqpAdmin' will be created.
@@ -46,86 +33,21 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
  * @author Mark Fisher
  */
 @Configuration
-public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {
+public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration {
 
-	private volatile AmqpAdmin amqpAdmin;
-
-	private volatile ApplicationContext applicationContext;
-
-	private volatile boolean running;
-
-
+	/**
+	 * Create a bean definition for RabbitTemplate.  Since there are several properties
+	 * one may want to set after creating a RabbitTemplate from a ConnectionFactory, this
+	 * abstact method is provided to allow for that flexibility as compared to
+	 * automatically creating a RabbitTemplate by specifying a ConnectionFactory.
+	 * @return
+	 */
 	@Bean 
 	public abstract RabbitTemplate rabbitTemplate();
 
 	@Bean
 	public AmqpAdmin amqpAdmin() {
-		this.amqpAdmin = new RabbitAdmin(rabbitTemplate());
+		this.amqpAdmin = new RabbitAdmin(rabbitTemplate().getConnectionFactory());
 		return this.amqpAdmin;
 	}
-
-	public void setApplicationContext(ApplicationContext applicationContext) {
-		this.applicationContext = applicationContext;
-	}
-
-	/**
-	 * Create a queue declaration with a name generated from the RabbitMQ broker,   
-	 * exclusive=true, auto-delete = true, and durable = false;
-	 * @return
-	 */
-	public Queue generatedQueue() {
-		DeclareOk declareOk = rabbitTemplate().execute(new ChannelCallback<DeclareOk>() {
-			public DeclareOk doInRabbit(Channel channel) throws Exception {
-				return channel.queueDeclare();
-			}
-		});			
-		Queue queue = new Queue(declareOk.getQueue());
-		queue.setExclusive(true);
-		queue.setAutoDelete(true);
-		queue.setDurable(false);
-		return queue;
-	}
-
-
-	// SmartLifecycle implementation
-
-	public boolean isAutoStartup() {
-		return true;
-	}
-
-	public boolean isRunning() {
-		return this.running;
-	}
-
-	public void start() {
-		synchronized (this) {
-			if (this.running) {
-				return;
-			}
-			Collection<Exchange> exchanges = this.applicationContext.getBeansOfType(Exchange.class).values();
-			for (Exchange exchange : exchanges) {
-				this.amqpAdmin.declareExchange(exchange);
-			}
-			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
-			for (Queue queue : queues) {
-				this.amqpAdmin.declareQueue(queue);
-			}
-			Collection<Binding> bindings = this.applicationContext.getBeansOfType(Binding.class).values();
-			for (Binding binding : bindings) {
-				this.amqpAdmin.declareBinding(binding);
-			}
-			this.running = true;
-		}
-	}
-
-	public void stop() {
-	}
-
-	public void stop(Runnable callback) {
-	}
-
-	public int getPhase() {
-		return Integer.MIN_VALUE;
-	}
-
 }

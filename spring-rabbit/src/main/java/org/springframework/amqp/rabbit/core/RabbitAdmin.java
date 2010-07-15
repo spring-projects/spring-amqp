@@ -23,10 +23,12 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 
 /**
  * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.9.1
@@ -38,25 +40,32 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	private ConnectionFactory connectionFactory; 
+	
 	private RabbitTemplate rabbitTemplate;
 
 
 	public RabbitAdmin() {
 	}
+	
+	public RabbitAdmin(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
+	}
+	
 
 	public RabbitAdmin(RabbitTemplate rabbitTemplate) {
 		this.rabbitTemplate = rabbitTemplate;
 	}
 
-
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
 
-	public void afterPropertiesSet() {
-		if (getRabbitTemplate() == null) {
-			throw new IllegalArgumentException("'RabbitTemplate' is required");
+	public void afterPropertiesSet() {		
+		if (connectionFactory == null) {
+			throw new IllegalArgumentException("'connectionFactory' is required");
 		}
+		rabbitTemplate = new RabbitTemplate(connectionFactory);
 	}
 
 	// Exchange operations
@@ -93,6 +102,20 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 				return null;
 			}
 		});
+	}
+	
+	@ManagedOperation
+	public Queue declareQueue() {
+		DeclareOk declareOk = rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
+			public DeclareOk doInRabbit(Channel channel) throws Exception {
+				return channel.queueDeclare();
+			}
+		});			
+		Queue queue = new Queue(declareOk.getQueue());
+		queue.setExclusive(true);
+		queue.setAutoDelete(true);
+		queue.setDurable(false);
+		return queue;
 	}
 
 	@ManagedOperation

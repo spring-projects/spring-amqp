@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beansProjectDescription>
 	<version>1</version>
-	<pluginVersion><![CDATA[2.2.7.200909012107-CI-R3397-B453]]></pluginVersion>
+	<pluginVersion><![CDATA[2.3.3.201005160334-M1]]></pluginVersion>
 	<configSuffixes>
 		<configSuffix><![CDATA[xml]]></configSuffix>
 	</configSuffixes>
 	<enableImports><![CDATA[true]]></enableImports>
 	<configs>
+		<config>src/main/resources/rabbitConfiguration.xml</config>
 	</configs>
 	<configSets>
 		<configSet>

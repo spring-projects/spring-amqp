@@ -64,7 +64,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public RabbitBrokerAdmin(ConnectionFactory connectionFactory) {
 		this.virtualHost = connectionFactory.getVirtualHost();
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
-		this.rabbitAdmin = new RabbitAdmin(rabbitTemplate);
+		this.rabbitAdmin = new RabbitAdmin(connectionFactory);
 		initializeDefaultErlangTemplate(rabbitTemplate);		
 	}
 	
@@ -115,6 +115,11 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	
 
 	// Queue Operations
+	
+	@ManagedOperation
+	public Queue declareQueue() {
+		return rabbitAdmin.declareQueue();
+	}
 	
 	@ManagedOperation
 	public void declareQueue(Queue queue) {

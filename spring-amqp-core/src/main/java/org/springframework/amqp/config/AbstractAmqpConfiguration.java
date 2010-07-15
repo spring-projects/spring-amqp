@@ -16,10 +16,16 @@
 
 package org.springframework.amqp.config;
 
+import java.util.Collection;
+
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,26 +38,74 @@ import org.springframework.context.annotation.Configuration;
  * <p>The BindingBuilder class can be used to provide a fluent API to declare bindings.
  * 
  * @author Mark Pollack
+ * @author Mark Fisher
  * @see AbstractExhange
  * @see Queue
  * @see Binding
  * @see BindingBuilder
  */
 @Configuration
-public abstract class AbstractAmqpConfiguration {
+public abstract class AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {
 
+	protected volatile AmqpAdmin amqpAdmin;
+
+	private volatile ApplicationContext applicationContext;
+
+	private volatile boolean running;
+	
 	@Bean
 	public abstract AmqpAdmin amqpAdmin();
-
-	@Bean
-	public abstract Queue generatedQueue();
-
 
 	/**
 	 * Provides convenient access to the default exchange which is always declared on the broker.
 	 */
 	public DirectExchange defaultExchange() {
 		return new DirectExchange("");
+	}
+	
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
+
+	// SmartLifecycle implementation
+
+	public boolean isAutoStartup() {
+		return true;
+	}
+
+	public boolean isRunning() {
+		return this.running;
+	}
+
+	public void start() {
+		synchronized (this) {
+			if (this.running) {
+				return;
+			}
+			Collection<Exchange> exchanges = this.applicationContext.getBeansOfType(Exchange.class).values();
+			for (Exchange exchange : exchanges) {
+				this.amqpAdmin.declareExchange(exchange);
+			}
+			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
+			for (Queue queue : queues) {
+				this.amqpAdmin.declareQueue(queue);
+			}
+			Collection<Binding> bindings = this.applicationContext.getBeansOfType(Binding.class).values();
+			for (Binding binding : bindings) {
+				this.amqpAdmin.declareBinding(binding);
+			}
+			this.running = true;
+		}
+	}
+
+	public void stop() {
+	}
+
+	public void stop(Runnable callback) {
+	}
+
+	public int getPhase() {
+		return Integer.MIN_VALUE;
 	}
 
 }

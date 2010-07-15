@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.stocks.config.client;
 
 
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -92,7 +93,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	
 	// Broker Configuration
 	
-//	@PostConstruct
+//	@PostContruct
 //	public void declareClientBrokerConfiguration() {
 //		declare(marketDataQueue);
 //		declare(new Binding(marketDataQueue, MARKET_DATA_EXCHANGE, marketDataRoutingKey));
@@ -104,7 +105,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	
 	@Bean
 	public Queue marketDataQueue() {		
-		return generatedQueue();
+		return amqpAdmin().declareQueue();
 	}
 	
 	/**
@@ -112,11 +113,8 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	 * @return
 	 */	
 	@Bean
-	public Binding marketDataBinding() {
-		return new Binding(marketDataQueue(), marketDataExchange(), marketDataRoutingKey);
-	
-		// Using BindingBuilder
-		//return declareBinding(from(marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey));
+	public Binding marketDataBinding() {		
+		return BindingBuilder.from(marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
 	}
 
 	/**
@@ -124,7 +122,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	 */	
 	@Bean
 	public Queue traderJoeQueue() {	
-		return generatedQueue();		
+		return amqpAdmin().declareQueue();		
 	}
 
 }
