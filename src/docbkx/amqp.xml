@@ -11,18 +11,18 @@
     <title>AMQP Abstractions</title>
 
     <para>The Spring AMQP project consists of a handful of modules, each
-    represented by a JAR in the distribution. These modules are:
-    spring-amqp, spring-rabbit, spring-erlang, and spring-rabbit-admin. The
-    'spring-amqp' module contains the org.springframework.amqp.core
-    package. Within that package, you will find the classes that represent the
-    core AMQP "model". Our intention is to provide generic abstractions that
-    do not rely on any particular AMQP broker implementation or client
-    library. End user code will be more portable across vendor implementations
-    as it can be developed against the abstraction layer only. These
-    abstractions are then used implemented by broker-specific modules, such as
-    'spring-rabbit'. For the M1 release there is only a RabbitMQ
-    implementation however the abstractions have been vetted in .NET using
-    Apache Qpid in addition to RabbitMQ.</para>
+    represented by a JAR in the distribution. These modules are: spring-amqp,
+    spring-rabbit, spring-erlang, and spring-rabbit-admin. The 'spring-amqp'
+    module contains the org.springframework.amqp.core package. Within that
+    package, you will find the classes that represent the core AMQP "model".
+    Our intention is to provide generic abstractions that do not rely on any
+    particular AMQP broker implementation or client library. End user code
+    will be more portable across vendor implementations as it can be developed
+    against the abstraction layer only. These abstractions are then used
+    implemented by broker-specific modules, such as 'spring-rabbit'. For the
+    M1 release there is only a RabbitMQ implementation however the
+    abstractions have been vetted in .NET using Apache Qpid in addition to
+    RabbitMQ.</para>
 
     <para>The overview here assumes that you are already familiar with the
     basics of the AMQP specification already. If you are not, then have a look
@@ -215,7 +215,7 @@
     management of resources, the details are specific to the broker
     implementation. Therefore, in this section, we will be focusing on code
     that exists only within our "spring-rabbit" module since at this point,
-    RabbitMQ is the only supported implementation. </para>
+    RabbitMQ is the only supported implementation.</para>
 
     <para>The central component for managing a connection to the RabbitMQ
     broker is the <interfacename>ConnectionFactory</interfacename> interface.
@@ -249,7 +249,7 @@ Connection connection = connectionFactory.createConnection();</programlisting>
 &lt;/bean&gt;</programlisting>
 
     <para><note>
-        You may also discover the 
+         You may also discover the 
 
         <classname>CachingConnectionFactory</classname>
 
@@ -257,11 +257,11 @@ Connection connection = connectionFactory.createConnection();</programlisting>
 
         <emphasis>experimental</emphasis>
 
-        . We recommend sticking with 
+         . We recommend sticking with 
 
         <classname>SingleConnectionFactory</classname>
 
-         for now as the caching implementation will most likely evolve.  Support for failover of connections is also planned.
+         for now as the caching implementation will most likely evolve. Support for failover of connections is also planned. 
       </note></para>
   </sect1>
 
@@ -469,7 +469,7 @@ Message receive(String queueName) throws AmqpException;</programlisting>
 
       <classname>SimpleMessageListenerContainer</classname>
 
-      : 
+       : 
 
       <programlisting language="java">SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 container.setConnectionFactory(rabbitConnectionFactory);
@@ -687,12 +687,12 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
     management functions are broker specific and not included in the AMQP
     specification, the interface RabbitBrokerOperations and its implementation
     RabbitBrokerAdmin located in the org.springframework.amqp.rabbit.admin
-    package is provided to fill that gap. </para>
+    package is provided to fill that gap.</para>
 
     <para>The AmqpAdmin interface is based on using the Spring AMQP domain
     abstractions and is shown below:</para>
 
-    <programlisting language="java"><![CDATA[public interface AmqpAdmin {
+    <programlisting language="java">public interface AmqpAdmin {
 
     // Exchange Operations 
 
@@ -716,7 +716,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
 
     void declareBinding(Binding binding);
 
-}]]></programlisting>
+}</programlisting>
 
     <para>The declareQueue() method defined a queue on the broker whose name
     is automatically created. The additional properties of this auto-generated
@@ -726,7 +726,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
       </note></para>
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
-    when configured using Spring XML would look like this:<programlisting language="xml">&lt;bean id="cf" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory"&gt;
+    when configured using Spring XML would look like this:<programlisting
+    language="xml">&lt;bean id="cf" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory"&gt;
     &lt;constructor-arg value="localhost"/&gt;
     &lt;property name="username" value="guest"/&gt;
     &lt;property name="password" value="guest"/&gt;
@@ -741,14 +742,14 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
     AbstractAmqpConfiguration is located in the package
     org.springframework.amqp.config and is shown in part below.</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
+    <programlisting language="java">@Configuration
 public abstract class AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {
 
   @Bean
   public abstract AmqpAdmin amqpAdmin();
 
   // the rest omitted for brevity.
-}]]></programlisting>
+}</programlisting>
 
     <para>The part that is omitted is related to the implementation of
     SmartLifecycle which is responsible for querying the container for all
@@ -762,7 +763,7 @@ public abstract class AbstractAmqpConfiguration implements ApplicationContextAwa
     @Configuration class can be used to bootstrap an implementation of
     AmqpAdmin as shown below</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
+    <programlisting language="java">@Configuration
 public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration {
 
   @Bean 
@@ -773,7 +774,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
     this.amqpAdmin = new RabbitAdmin(rabbitTemplate().getConnectionFactory());
     return this.amqpAdmin;
   }
-}]]></programlisting>
+}</programlisting>
 
     <para>This leaves it up to you to provide an implementation of the
     rabbitTemplate method in your application specific subclass. For example,
@@ -782,7 +783,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
     RabbitClientConfiguration and RabbitServerConfiguration subclasses. The
     code for AbstractStockRabbitConfiguration is show below</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
+    <programlisting language="java">@Configuration
 public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbitConfiguration {
 
     @Bean
@@ -813,32 +814,32 @@ public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbit
 
     // additional code omitted for brevity
 
-}]]></programlisting>
+}</programlisting>
 
     <para>In the Stock application, the server is configured using the
     following @Configuration class</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
+    <programlisting language="java">@Configuration
 public class RabbitServerConfiguration extends AbstractStockAppRabbitConfiguration  {
 
     @Bean
     public Queue stockRequestQueue() {		
         return new Queue("app.stock.request");	
     }
-}]]></programlisting>
+}</programlisting>
 
     <para>This is the end of the whole inheritance chain of @Configuration
     classes. The end result is the the TopicExchange and Queue will be
-    declared to the broker upon application startup. There is no binding of the
-    TopicExchange to a queue in the server configuration, as that is done in
-    the client application. The stock request queue however is automatically
-    bound to the AMQP default exchange - this behavior is defined by the
-    specification.</para>
+    declared to the broker upon application startup. There is no binding of
+    the TopicExchange to a queue in the server configuration, as that is done
+    in the client application. The stock request queue however is
+    automatically bound to the AMQP default exchange - this behavior is
+    defined by the specification.</para>
 
     <para>The client @Configuration class is a little more interesting and is
     show below.</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
+    <programlisting language="java">@Configuration
 public class RabbitClientConfiguration extends AbstractStockAppRabbitConfiguration {
 
     @Value("${stocks.quote.pattern}")
@@ -860,11 +861,11 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 
     // additional code omitted for brevity
 
-}]]></programlisting>
+}</programlisting>
 
-    <para>The client is declaring another queue via the declareQueue() method on the AmqpAdmin,
-      and it binds that queue to the market data exchange with a routing pattern that is
-      externalized in a properties file.</para>
+    <para>The client is declaring another queue via the declareQueue() method
+    on the AmqpAdmin, and it binds that queue to the market data exchange with
+    a routing pattern that is externalized in a properties file.</para>
   </sect1>
 
   <sect1>
@@ -876,7 +877,9 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
   <sect1>
     <title>JMX Monitoring</title>
 
-    <para>TODO: Document the JMX @ManagedOperations available on the RabbitBrokerAdmin.</para>
+    <para>All the methods in the RabbitBrokerAdmin class are exposed through
+    JMX through the use of the @ManagedOperations annotation. Please refer to
+    the sample application for how to configure spring to export the
+    RabbitBro</para>
   </sect1>
-
 </chapter>
