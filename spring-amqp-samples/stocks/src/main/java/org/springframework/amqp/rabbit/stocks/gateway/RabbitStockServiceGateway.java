@@ -52,7 +52,7 @@ public class RabbitStockServiceGateway extends RabbitGatewaySupport implements S
 					message.getMessageProperties().setCorrelationId(UUID.randomUUID().toString().getBytes("UTF-8"));
 				}
 				catch (UnsupportedEncodingException e) {
-					e.printStackTrace();
+					throw new AmqpException(e);
 				}
 				return message;
 			}
