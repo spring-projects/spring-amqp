@@ -127,14 +127,14 @@ public SimpleMessageListenerContainer listenerContainer() {
     <para>The Server-specific configuration consists of 2 things. First, it configures the market data exchange on the RabbitTemplate so that it does not need to provide that exchange name with every call to send a Message. It does this within an abstract callback method defined in the base configuration class.</para>
 
     <programlisting language="java"><![CDATA[public void configureRabbitTemplate(RabbitTemplate rabbitTemplate) {
-    rabbitTemplate.setExchange(MARKET_DATA_EXCHANGE_NAME);		
+    rabbitTemplate.setExchange(MARKET_DATA_EXCHANGE_NAME);
 }]]></programlisting>
 
     <para>Secondly, the stock request queue is declared. It does not require any explicit bindings in this case, because it will be bound to the default no-name exchange with its own name as the routing key. As mentioned earlier, the AMQP specification defines that behavior.</para>
 
     <programlisting language="java"><![CDATA[@Bean
-public Queue stockRequestQueue() {		
-    return new Queue(STOCK_REQUEST_QUEUE_NAME);	
+public Queue stockRequestQueue() {
+    return new Queue(STOCK_REQUEST_QUEUE_NAME);
 }]]></programlisting>
 
     <para>Now that you've seen the configuration of the Server's AMQP resources, navigate to the 'org.springframework.amqp.rabbit.stocks' package under the 'src/test/java' directory. There you will see the actual Server class that provides a main() method. It creates an ApplicationContext based on the 'server-bootstrap.xml' config file. In there you will see the scheduled task that publishes dummy market data. That configuration relies upon Spring 3.0's "task" namespace support. The bootstrap config file also imports a few other files. The most interesting one is 'server-messaging.xml' which is directly under 'src/main/resources'. In there you will see the "messageListenerContainer" bean that is responsible for handling the stock trade requests. Finally have a look at the "serverHandler" bean that is defined in "server-handlers.xml" (also in 'src/main/resources'). That bean is an instance of the ServerHandler class and is a good example of a Message-driven POJO that is also capable of sending reply Messages. Notice that it is not itself coupled to the framework or any of the AMQP concepts. It simply accepts a TradeRequest and returns a TradeResponse.</para>
@@ -144,22 +144,22 @@ public Queue stockRequestQueue() {
     <para>Now that we've seen the most important configuration and code for the Server, let's turn to the Client. The best starting point is probably RabbitClientConfiguration within the 'org.springframework.amqp.rabbit.stocks.config.client' package. Notice that it declares two queues without providing explicit names.</para>
 
     <programlisting language="java"><![CDATA[@Bean
-public Queue marketDataQueue() {		
+public Queue marketDataQueue() {
     return amqpAdmin().declareQueue();
 }
 
 @Bean
-public Queue traderJoeQueue() {	
-    return amqpAdmin().declareQueue();		
+public Queue traderJoeQueue() {
+    return amqpAdmin().declareQueue();
 }]]></programlisting>
 
     <para>Those are private queues, and unique names will be generated automatically. The first generated queue is used by the Client to bind to the market data exchange that has been exposed by the Server. Recall that in AMQP, consumers interact with Queues while producers interact with Exchanges. The "binding" of Queues to Exchanges is what instructs the broker to deliver, or route, messages from a given Exchange to a Queue. Since the market data exchange is a Topic Exchange, the binding can be expressed with a routing pattern. The RabbitClientConfiguration declares that with a Binding object, and that object is generated with the BindingBuilder's fluent API.</para>
 
     <programlisting language="java"><![CDATA[@Value("${stocks.quote.pattern}")
 private String marketDataRoutingKey;
-	
+
 @Bean
-public Binding marketDataBinding() {		
+public Binding marketDataBinding() {
     return BindingBuilder.from(
             marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
 }]]></programlisting>

@@ -249,19 +249,19 @@ Connection connection = connectionFactory.createConnection();</programlisting>
 &lt;/bean&gt;</programlisting>
 
     <para><note>
-         You may also discover the 
+         You may also discover the
 
         <classname>CachingConnectionFactory</classname>
 
-         implementation, but at this time, that code is considered 
+         implementation, but at this time, that code is considered
 
         <emphasis>experimental</emphasis>
 
-         . We recommend sticking with 
+         . We recommend sticking with
 
         <classname>SingleConnectionFactory</classname>
 
-         for now as the caching implementation will most likely evolve. Support for failover of connections is also planned. 
+         for now as the caching implementation will most likely evolve. Support for failover of connections is also planned.
       </note></para>
   </sect1>
 
@@ -406,11 +406,11 @@ Message receive(String queueName) throws AmqpException;</programlisting>
     </sect2>
 
     <sect2>
-       
+
 
       <title>Asynchronous Reception</title>
 
-       
+
 
       <para>For asynchronous Message reception, a dedicated component other
       than the <interfacename>AmqpTemplate</interfacename> is involved. That
@@ -421,7 +421,7 @@ Message receive(String queueName) throws AmqpException;</programlisting>
       for the callback. The simplest of these is to implement the
       <interfacename>MessageListener</interfacename> interface:</para>
 
-       
+
 
       <programlisting language="java">public interface MessageListener {
 
@@ -429,14 +429,14 @@ Message receive(String queueName) throws AmqpException;</programlisting>
 
 }</programlisting>
 
-       
+
 
       <para>If your callback logic depends upon the AMQP Channel instance for
       any reason, you may instead use the
       <interfacename>ChannelAwareMessageListener</interfacename>. It looks
       similar but with an extra parameter:</para>
 
-       
+
 
       <programlisting language="java">public interface ChannelAwareMessageListener&lt;M extends Message&gt; {
 
@@ -444,7 +444,7 @@ Message receive(String queueName) throws AmqpException;</programlisting>
 
 }</programlisting>
 
-       
+
 
       <para>If you prefer to maintain a stricter separation between your
       application logic and the messaging API, you can rely upon an adapter
@@ -453,30 +453,30 @@ Message receive(String queueName) throws AmqpException;</programlisting>
       need to provide a reference to the instance that the adapter itself
       should invoke.</para>
 
-       
+
 
       <programlisting language="java">MessageListener listener = new MessageListenerAdapter(somePojo);</programlisting>
 
-       Now that you've seen the various options for the Message-listening callback, we can turn our attention to the container. Basically, the container handles the "active" responsibilities so that the listener callback can remain passive. The container is an example of a "lifecycle" component. It provides methods for starting and stopping. When configuring the container, you are essentially bridging the gap between an AMQP Queue and the 
+       Now that you've seen the various options for the Message-listening callback, we can turn our attention to the container. Basically, the container handles the "active" responsibilities so that the listener callback can remain passive. The container is an example of a "lifecycle" component. It provides methods for starting and stopping. When configuring the container, you are essentially bridging the gap between an AMQP Queue and the
 
       <interfacename>MessageListener</interfacename>
 
-       instance. You must provide a reference to the 
+       instance. You must provide a reference to the
 
       <interfacename>ConnectionFactory</interfacename>
 
-       and the queue name or Queue instance(s) from which that listener should consume Messages. Here is the most basic example using the default implementation, 
+       and the queue name or Queue instance(s) from which that listener should consume Messages. Here is the most basic example using the default implementation,
 
       <classname>SimpleMessageListenerContainer</classname>
 
-       : 
+       :
 
       <programlisting language="java">SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 container.setConnectionFactory(rabbitConnectionFactory);
 container.setQueueName("some.queue");
 container.setMessageListener(someListener);</programlisting>
 
-       As an "active" component, it's most common to create the listener container with a bean definition so that it can simply run in the background. This can be done via XML: 
+       As an "active" component, it's most common to create the listener container with a bean definition so that it can simply run in the background. This can be done via XML:
 
       <programlisting language="xml">&lt;bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer"&gt;
     &lt;property name="connectionFactory" ref="rabbitConnectionFactory"/&gt;
@@ -484,13 +484,13 @@ container.setMessageListener(someListener);</programlisting>
     &lt;property name="messageListener" ref="someListener"/&gt;
 &lt;/bean&gt;</programlisting>
 
-       Or, you may prefer to use the @Configuration style which will look very similar to the actual code snippet above: 
+       Or, you may prefer to use the @Configuration style which will look very similar to the actual code snippet above:
 
       <programlisting language="java">@Configuration
 public class ExampleAmqpConfiguration {
 
     @Bean
-    public MessageListenerContainer messageListenerContainer { 
+    public MessageListenerContainer messageListenerContainer {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitConnectionFactory());
         container.setQueueName("some.queue");
@@ -516,7 +516,7 @@ public class ExampleAmqpConfiguration {
     }
 }</programlisting>
 
-       
+
     </sect2>
   </sect1>
 
@@ -694,7 +694,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
 
     <programlisting language="java">public interface AmqpAdmin {
 
-    // Exchange Operations 
+    // Exchange Operations
 
     void declareExchange(Exchange exchange);
 
@@ -766,7 +766,7 @@ public abstract class AbstractAmqpConfiguration implements ApplicationContextAwa
     <programlisting language="java">@Configuration
 public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration {
 
-  @Bean 
+  @Bean
   public abstract RabbitTemplate rabbitTemplate();
 
   @Bean
@@ -794,7 +794,7 @@ public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbit
         return connectionFactory;
     }
 
-    @Bean 
+    @Bean
     public RabbitTemplate rabbitTemplate() {
         RabbitTemplate template = new RabbitTemplate(connectionFactory());
         template.setMessageConverter(jsonMessageConverter());

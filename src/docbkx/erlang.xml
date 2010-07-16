@@ -46,7 +46,7 @@
 
     Object executeAndConvertRpc(String module, String function,
             ErlangConverter converterToUse, Object... args) throws OtpException;
-	
+
     // Sweet!
     <emphasis role="bold">Object executeAndConvertRpc(String module, String function, Object... args)
             throws OtpException;</emphasis>
@@ -66,7 +66,7 @@
       <programlisting language="java"><![CDATA[@ManagedOperation
 public void deleteUser(String username) {
     erlangTemplate.executeAndConvertRpc(
-            "rabbit_access_control", "delete_user", username.getBytes());	
+            "rabbit_access_control", "delete_user", username.getBytes());
 }]]></programlisting>
 
       <para>As the JInterface library uses specific classes such as
