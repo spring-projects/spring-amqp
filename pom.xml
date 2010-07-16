@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.springframework.amqp</groupId>
 	<artifactId>spring-amqp-dist</artifactId>
-	<name>Spring AMQP Project</name>
+	<name>Spring AMQP Distribution</name>
 	<version>1.0.0.BUILD-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
