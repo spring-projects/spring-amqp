@@ -160,7 +160,8 @@ private String marketDataRoutingKey;
 	
 @Bean
 public Binding marketDataBinding() {		
-    return BindingBuilder.from(marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
+    return BindingBuilder.from(
+            marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
 }]]></programlisting>
 
     <para>Notice that the actual value has been externalized in a properties file ("client.properties" under src/main/resources), and that we are using Spring's @Value annotation to inject that value. This is generally a good idea, since otherwise the value would have been hardcoded in a class and unmodifiable without recompilation. In this case, it makes it much easier to run multiple versions of the Client while making changes to the routing pattern used for binding. Let's try that now.</para>
@@ -174,7 +175,8 @@ public Binding marketDataBinding() {
             public Message postProcessMessage(Message message) throws AmqpException {
                 message.getMessageProperties().setReplyTo(new Address(defaultReplyToQueue));
                 try {
-                    message.getMessageProperties().setCorrelationId(UUID.randomUUID().toString().getBytes("UTF-8"));
+                    message.getMessageProperties().setCorrelationId(
+                            UUID.randomUUID().toString().getBytes("UTF-8"));
                 }
                 catch (UnsupportedEncodingException e) {
                     throw new AmqpException(e);

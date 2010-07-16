@@ -28,7 +28,9 @@
 
     <para>To receive AMQP Messages from a Queue, configure an &lt;inbound-channel-adapter&gt;</para>
 
-    <programlisting language="xml"><![CDATA[<amqp:inbound-channel-adapter queue-name="some.queue" channel="fromAMQP" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
+    <programlisting language="xml"><![CDATA[<amqp:inbound-channel-adapter queue-name="some.queue"
+                              channel="fromAMQP"
+                              connection-factory="rabbitConnectionFactory"/>]]></programlisting>
   </section>
 
   <section>
@@ -37,7 +39,10 @@
     <para>To send AMQP Messages to an Exchange, configure an &lt;outbound-channel-adapter&gt;.
       A 'routing-key' may optionally be provided in addition to the exchange name.</para>
 
-    <programlisting language="xml"><![CDATA[<amqp:outbound-channel-adapter channel="toAMQP" exchange-name="some.exchange" routing-key="foo" amqp-template="rabbitTemplate"/>]]></programlisting>
+    <programlisting language="xml"><![CDATA[<amqp:outbound-channel-adapter channel="toAMQP"
+                               exchange-name="some.exchange"
+                               routing-key="foo"
+                               amqp-template="rabbitTemplate"/>]]></programlisting>
   </section>
 
   <section>

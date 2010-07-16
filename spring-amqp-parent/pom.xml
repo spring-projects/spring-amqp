@@ -40,36 +40,37 @@
 			<id>staging</id>
 			<distributionManagement>
 				<site>
-					<id>staging</id>
-					<url>file:///${java.io.tmpdir}/target/site</url>
+					<id>spring-site-staging</id>
+					<url>file:///${java.io.tmpdir}/spring-amqp/docs</url>
 				</site>
 				<repository>
-					<id>staging</id>
-					<url>file:///${java.io.tmpdir}/target/repository</url>
+					<id>spring-milestone-staging</id>
+					<url>file:///${java.io.tmpdir}/spring-amqp/milestone</url>
 				</repository>
 				<snapshotRepository>
-					<id>staging</id>
-					<url>file:///${java.io.tmpdir}/target/snapshotRepository</url>
+					<id>spring-snapshot-staging</id>
+					<url>file:///${java.io.tmpdir}/spring-amqp/snapshot</url>
 				</snapshotRepository>
 			</distributionManagement>
 		</profile>
 	</profiles>
 	<distributionManagement>
 		<!-- see 'staging' profile for dry-run deployment settings -->
-		<downloadUrl>http://static.springframework.org/spring-amqp/site/downloads/releases.html</downloadUrl>
+		<downloadUrl>http://www.springsource.com/download/community</downloadUrl>
+		<site>
+			<id>spring-docs</id>
+			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-amqp/docs/${project.version}</url>
+		</site>
 		<repository>
-			<id>local</id>
-			<url>file://${java.io.tmpdir}/spring-amqp-repo</url>
+			<id>spring-milestone</id>
+			<name>Spring Milestone Repository</name>
+			<url>s3://maven.springsource.org/milestone</url>
 		</repository>
 		<snapshotRepository>
 			<id>spring-snapshot</id>
 			<name>Spring Snapshot Repository</name>
 			<url>s3://maven.springframework.org/snapshot</url>
 		</snapshotRepository>
-		<site>
-			<id>static.springframework.org</id>
-			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-amqp/sites/${project.version}</url>
-		</site>
 	</distributionManagement>
 	<dependencyManagement><!--
 		inheritable <dependency> declarations for child poms. children still must
