@@ -1,13 +1,13 @@
 package org.springframework.amqp.helloworld.async;
 
-import org.springframework.amqp.helloworld.RabbitConfiguration;
+import org.springframework.amqp.helloworld.HelloWorldConfiguration;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class ConsumerConfiguration extends RabbitConfiguration {
+public class ConsumerConfiguration extends HelloWorldConfiguration {
 
 	@Bean
 	public SimpleMessageListenerContainer listenerContainer() {

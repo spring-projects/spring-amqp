@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class RabbitConfiguration extends AbstractRabbitConfiguration {
+public class HelloWorldConfiguration extends AbstractRabbitConfiguration {
 
 	protected final String helloWorldQueueName = "hello.world.queue";
 
