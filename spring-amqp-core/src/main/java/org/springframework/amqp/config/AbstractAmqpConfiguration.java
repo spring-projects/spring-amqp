@@ -88,7 +88,9 @@ public abstract class AbstractAmqpConfiguration implements ApplicationContextAwa
 			}
 			Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
 			for (Queue queue : queues) {
-				this.amqpAdmin.declareQueue(queue);
+				if (queue.getName() != null && !queue.getName().startsWith("amq.")) {
+					this.amqpAdmin.declareQueue(queue);
+				}
 			}
 			Collection<Binding> bindings = this.applicationContext.getBeansOfType(Binding.class).values();
 			for (Binding binding : bindings) {
