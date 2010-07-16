@@ -12,13 +12,13 @@
 
     <para>The Spring AMQP project consists of a handful of modules, each
     represented by a JAR in the distribution. These modules are:
-    spring-amqp-core, spring-rabbit, spring-otp, and spring-rabbit-admin. The
-    'spring-amqp-core' module contains the org.springframework.amqp.core
+    spring-amqp, spring-rabbit, spring-erlang, and spring-rabbit-admin. The
+    'spring-amqp' module contains the org.springframework.amqp.core
     package. Within that package, you will find the classes that represent the
     core AMQP "model". Our intention is to provide generic abstractions that
     do not rely on any particular AMQP broker implementation or client
     library. End user code will be more portable across vendor implementations
-    as it can be devfeloped against the abstraction layer only. These
+    as it can be developed against the abstraction layer only. These
     abstractions are then used implemented by broker-specific modules, such as
     'spring-rabbit'. For the M1 release there is only a RabbitMQ
     implementation however the abstractions have been vetted in .NET using
@@ -261,7 +261,7 @@ Connection connection = connectionFactory.createConnection();</programlisting>
 
         <classname>SingleConnectionFactory</classname>
 
-         for now as the caching implemention will most likely evolve.  Support for failover of connections is also planned.
+         for now as the caching implementation will most likely evolve.  Support for failover of connections is also planned.
       </note></para>
   </sect1>
 
@@ -723,7 +723,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;</programlisting
       </note></para>
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
-    when configured using Spring XML would look liek this:<programlisting>&lt;bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory"&gt;
+    when configured using Spring XML would look like this:<programlisting>&lt;bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory"&gt;
     &lt;constructor-arg value="localhost"/&gt;
     &lt;property name="username" value="guest"/&gt;
     &lt;property name="password" value="guest"/&gt;
@@ -748,7 +748,7 @@ public abstract class AbstractAmqpConfiguration implements ApplicationContextAwa
 }</programlisting>
 
     <para>The part that is omitted is related to the implementation of
-    SmartLifecycle which is responsbile for querying the container for all
+    SmartLifecycle which is responsible for querying the container for all
     Queues, Exchanges, and Bindings that are defined in the DI container and
     declaring them to the broker. Thus if you are using the @Configuration
     style of configuration, you can simply create Queue, Exchange, and Binding
@@ -827,8 +827,8 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
 }</programlisting>
 
     <para>This is the end of the whole inheritance chain of @Configuration
-    classes. The end resutl is the the TopicExchange and Queue will be
-    declared to the broker upon applicaton startup. There is no binding of the
+    classes. The end result is the the TopicExchange and Queue will be
+    declared to the broker upon application startup. There is no binding of the
     TopicExchange to a queue in the server configuration, as that is done in
     the client application. The stock request queue however is automatically
     bound to the AMQP default exchange - this behavior is defined by the
