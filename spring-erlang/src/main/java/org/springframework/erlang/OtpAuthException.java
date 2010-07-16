@@ -14,35 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.connection;
-
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.ericsson.otp.erlang.OtpConnection;
+package org.springframework.erlang;
 
 /**
+ * Runtime exception mirroring the OTP OtpAuthException.
+ * 
  * @author Mark Pollack
  */
-public class ConnectionFactoryUtils {
+public class OtpAuthException extends OtpException {
 
-	private static final Log logger = LogFactory.getLog(ConnectionFactoryUtils.class);
-
-
-	/**
-	 * Release the given Connection by closing it.
-	 */
-	public static void releaseConnection(OtpConnection con, ConnectionFactory cf) {
-		if (con == null) {
-			return;
-		}
-		try {
-			con.close();
-		}
-		catch (Throwable ex) {
-			logger.debug("Could not close Otp Connection", ex);
-		}
+	public OtpAuthException(com.ericsson.otp.erlang.OtpAuthException cause) {
+		super(cause);
 	}
-	
+
 }

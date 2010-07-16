@@ -31,11 +31,11 @@ import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.erlang.connection.SimpleConnectionFactory;
+import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedOperationParameter;
 import org.springframework.jmx.export.annotation.ManagedOperationParameters;
-import org.springframework.otp.erlang.connection.SimpleConnectionFactory;
-import org.springframework.otp.erlang.core.ErlangTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.exec.Execute;
 import org.springframework.util.exec.Os;
@@ -308,7 +308,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		createErlangTemplate(otpCf);
 	}
 
-	protected void createErlangTemplate(org.springframework.otp.erlang.connection.ConnectionFactory otpCf) {
+	protected void createErlangTemplate(org.springframework.erlang.connection.ConnectionFactory otpCf) {
 		erlangTemplate = new ErlangTemplate(otpCf);
 		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter());
 		erlangTemplate.afterPropertiesSet();

@@ -14,35 +14,20 @@
  * limitations under the License.
  */
 
+package org.springframework.erlang.core;
 
-package org.springframework.otp.erlang.connection;
-
-import com.ericsson.otp.erlang.OtpPeer;
-import com.ericsson.otp.erlang.OtpSelf;
+import com.ericsson.otp.erlang.OtpConnection;
 
 /**
- * Encapsulate properties to create a OtpConnection
+ * Basic callback for use in ErlangTemplate
  * @author Mark Pollack
- *
  */
-public class ConnectionParameters {
+public interface ConnectionCallback<T> {
 
-	private OtpSelf otpSelf;
-	
-	private OtpPeer otpPeer;
-	
-	public ConnectionParameters(OtpSelf otpSelf, OtpPeer otpPeer) {
-		//TODO assert not null...
-		this.otpSelf = otpSelf;
-		this.otpPeer = otpPeer;
-	}
-
-	public OtpSelf getOtpSelf() {
-		return otpSelf;
-	}
-
-	public OtpPeer getOtpPeer() {
-		return otpPeer;
-	}
+	/**
+	 * Execute any number of operations against the supplied OTP connection, 
+	 * possibly returning a result.
+	 */
+	T doInConnection(OtpConnection connection) throws Exception;  //Not sure everything it throws
 
 }

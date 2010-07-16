@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.core;
+package org.springframework.erlang;
 
-import com.ericsson.otp.erlang.OtpConnection;
+import java.io.IOException;
 
 /**
- * Basic callback for use in ErlangTemplate
+ * RuntimeException wrapper for an {@link IOException} which
+ * can be commonly thrown from OTP operations.
+ * 
  * @author Mark Pollack
+ * @author Mark Fisher
  */
-public interface ConnectionCallback<T> {
+public class OtpIOException extends OtpException {
 
-	/**
-	 * Execute any number of operations against the supplied OTP connection, 
-	 * possibly returning a result.
-	 */
-	T doInConnection(OtpConnection connection) throws Exception;  //Not sure everything it throws
+	public OtpIOException(IOException cause) {
+		super(cause);
+	}
+
+	public OtpIOException(String message, IOException cause) {
+		super(message, cause);
+	}
 
 }

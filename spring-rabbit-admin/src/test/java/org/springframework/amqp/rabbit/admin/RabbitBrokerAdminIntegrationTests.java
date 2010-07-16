@@ -26,7 +26,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.otp.erlang.OtpIOException;
+import org.springframework.erlang.OtpIOException;
 
 /**
  * @author Mark Pollack

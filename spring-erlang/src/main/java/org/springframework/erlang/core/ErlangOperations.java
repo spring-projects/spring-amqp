@@ -15,10 +15,10 @@
  */
 
 
-package org.springframework.otp.erlang.core;
+package org.springframework.erlang.core;
 
-import org.springframework.otp.erlang.OtpException;
-import org.springframework.otp.erlang.support.converter.ErlangConverter;
+import org.springframework.erlang.OtpException;
+import org.springframework.erlang.support.converter.ErlangConverter;
 
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;

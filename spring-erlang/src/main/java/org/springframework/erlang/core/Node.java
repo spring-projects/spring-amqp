@@ -13,36 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.otp.erlang;
-
-import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
- * Exception thrown when an 'badrpc' is received from an Erlang RPC call.
+ * Describes an Erlang node. 
+ */
+package org.springframework.erlang.core;
+
+/**
+ * Simple description class for an Erlang node.
+ * 
  * @author Mark Pollack
  *
  */
-public class ErlangBadRpcException extends OtpException {
+public class Node {
 
-	private OtpErlangTuple reasonTuple;
-	
-	public ErlangBadRpcException(String reason) {
-		super(reason);
-	}
-	
-	public ErlangBadRpcException(OtpErlangTuple tuple) {
-		super(tuple.toString());
-		this.reasonTuple = tuple;
+	private String name;
+
+	public Node(String name) {
+		this.name = name;
 	}
 
-	public OtpErlangTuple getReasonTuple() {
-		return reasonTuple;
+	public String getName() {
+		return name;
 	}
 
+	@Override
+	public String toString() {
+		return "Node [name=" + name + "]";
+	}
 	
-
-
-
-	
-
 }

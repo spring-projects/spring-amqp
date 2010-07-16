@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.support;
+package org.springframework.erlang.support;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -23,8 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.otp.erlang.OtpException;
-import org.springframework.otp.erlang.connection.ConnectionFactory;
+import org.springframework.erlang.OtpException;
+import org.springframework.erlang.connection.ConnectionFactory;
 
 import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpConnection;

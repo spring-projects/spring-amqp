@@ -14,25 +14,35 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang;
+
+package org.springframework.erlang.connection;
+
+import com.ericsson.otp.erlang.OtpPeer;
+import com.ericsson.otp.erlang.OtpSelf;
 
 /**
- * Base RuntimeException for errors that occur when executing OTP operations.
- * 
+ * Encapsulate properties to create a OtpConnection
  * @author Mark Pollack
+ *
  */
-public class OtpException extends RuntimeException {
+public class ConnectionParameters {
 
-	public OtpException(String message) {
-		super(message);
+	private OtpSelf otpSelf;
+	
+	private OtpPeer otpPeer;
+	
+	public ConnectionParameters(OtpSelf otpSelf, OtpPeer otpPeer) {
+		//TODO assert not null...
+		this.otpSelf = otpSelf;
+		this.otpPeer = otpPeer;
 	}
 
-	public OtpException(Throwable cause) {
-		super(cause);
+	public OtpSelf getOtpSelf() {
+		return otpSelf;
 	}
 
-	public OtpException(String message, Throwable cause) {
-		super(message, cause);
+	public OtpPeer getOtpPeer() {
+		return otpPeer;
 	}
 
 }

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.support;
+package org.springframework.erlang.support;
 
 import java.io.IOException;
 
-import org.springframework.otp.erlang.OtpException;
-import org.springframework.otp.erlang.OtpIOException;
-import org.springframework.otp.erlang.UncategorizedOtpException;
+import org.springframework.erlang.OtpException;
+import org.springframework.erlang.OtpIOException;
+import org.springframework.erlang.UncategorizedOtpException;
 import org.springframework.util.Assert;
 
 import com.ericsson.otp.erlang.OtpConnection;

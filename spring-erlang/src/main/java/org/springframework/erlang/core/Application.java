@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.core;
+package org.springframework.erlang.core;
 
 /**
  * Describes an Erlang application.  Only three fields are supported as that is the level

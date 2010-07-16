@@ -7,8 +7,8 @@ import java.net.UnknownHostException;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.springframework.otp.erlang.connection.SimpleConnectionFactory;
-import org.springframework.otp.erlang.core.ErlangTemplate;
+import org.springframework.erlang.connection.SimpleConnectionFactory;
+import org.springframework.erlang.core.ErlangTemplate;
 
 import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpConnection;

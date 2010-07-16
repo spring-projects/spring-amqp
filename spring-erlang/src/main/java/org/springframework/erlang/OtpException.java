@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-/**
- * Describes an Erlang node. 
- */
-package org.springframework.otp.erlang.core;
+package org.springframework.erlang;
 
 /**
- * Simple description class for an Erlang node.
+ * Base RuntimeException for errors that occur when executing OTP operations.
  * 
  * @author Mark Pollack
- *
  */
-public class Node {
+public class OtpException extends RuntimeException {
 
-	private String name;
-
-	public Node(String name) {
-		this.name = name;
+	public OtpException(String message) {
+		super(message);
 	}
 
-	public String getName() {
-		return name;
+	public OtpException(Throwable cause) {
+		super(cause);
 	}
 
-	@Override
-	public String toString() {
-		return "Node [name=" + name + "]";
+	public OtpException(String message, Throwable cause) {
+		super(message, cause);
 	}
-	
+
 }

@@ -14,23 +14,35 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.connection;
+package org.springframework.erlang.connection;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
 
-import com.ericsson.otp.erlang.OtpAuthException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.ericsson.otp.erlang.OtpConnection;
 
 /**
- * An interface based ConnectionFactory for creating {@link OtpConnection}s.
- * 
- * <p>NOTE: The Rabbit API contains a ConnectionFactory class (same name).
- * 
  * @author Mark Pollack
  */
-public interface ConnectionFactory {
+public class ConnectionFactoryUtils {
 
-	OtpConnection createConnection() throws UnknownHostException, OtpAuthException, IOException; 
+	private static final Log logger = LogFactory.getLog(ConnectionFactoryUtils.class);
 
+
+	/**
+	 * Release the given Connection by closing it.
+	 */
+	public static void releaseConnection(OtpConnection con, ConnectionFactory cf) {
+		if (con == null) {
+			return;
+		}
+		try {
+			con.close();
+		}
+		catch (Throwable ex) {
+			logger.debug("Could not close Otp Connection", ex);
+		}
+	}
+	
 }

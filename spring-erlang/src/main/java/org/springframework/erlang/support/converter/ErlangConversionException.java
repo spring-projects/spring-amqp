@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang;
+package org.springframework.erlang.support.converter;
+
+import org.springframework.erlang.OtpException;
 
 /**
- * Runtime exception mirroring the OTP OtpAuthException.
- * 
  * @author Mark Pollack
  */
-public class OtpAuthException extends OtpException {
+public class ErlangConversionException extends OtpException {
 
-	public OtpAuthException(com.ericsson.otp.erlang.OtpAuthException cause) {
-		super(cause);
+	public ErlangConversionException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public ErlangConversionException(String message) {
+		super(message);
 	}
 
 }

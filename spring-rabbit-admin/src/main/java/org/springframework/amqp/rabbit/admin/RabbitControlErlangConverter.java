@@ -25,11 +25,11 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.otp.erlang.core.Application;
-import org.springframework.otp.erlang.core.Node;
-import org.springframework.otp.erlang.support.converter.ErlangConversionException;
-import org.springframework.otp.erlang.support.converter.ErlangConverter;
-import org.springframework.otp.erlang.support.converter.SimpleErlangConverter;
+import org.springframework.erlang.core.Application;
+import org.springframework.erlang.core.Node;
+import org.springframework.erlang.support.converter.ErlangConversionException;
+import org.springframework.erlang.support.converter.ErlangConverter;
+import org.springframework.erlang.support.converter.SimpleErlangConverter;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangBinary;

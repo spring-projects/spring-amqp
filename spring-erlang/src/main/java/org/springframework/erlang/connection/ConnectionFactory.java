@@ -13,31 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.otp.erlang;
 
-import com.ericsson.otp.erlang.OtpErlangTuple;
+package org.springframework.erlang.connection;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+
+import com.ericsson.otp.erlang.OtpAuthException;
+import com.ericsson.otp.erlang.OtpConnection;
 
 /**
- * Exception thrown when an 'error' is received from an Erlang RPC call
+ * An interface based ConnectionFactory for creating {@link OtpConnection}s.
+ * 
+ * <p>NOTE: The Rabbit API contains a ConnectionFactory class (same name).
+ * 
  * @author Mark Pollack
- *
  */
-public class ErlangErrorRpcException extends OtpException {
+public interface ConnectionFactory {
 
-	private OtpErlangTuple reasonTuple;
-	
-	public ErlangErrorRpcException(String message) {
-		super(message);
-	}
-	
-	public ErlangErrorRpcException(OtpErlangTuple tuple) {
-		super(tuple.toString());
-		this.reasonTuple = tuple;
-	}
+	OtpConnection createConnection() throws UnknownHostException, OtpAuthException, IOException; 
 
-	public OtpErlangTuple getReasonTuple() {
-		return reasonTuple;
-	}
-
-	
 }

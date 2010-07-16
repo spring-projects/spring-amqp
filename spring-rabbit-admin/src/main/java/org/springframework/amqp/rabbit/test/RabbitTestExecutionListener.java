@@ -23,7 +23,7 @@ import org.springframework.amqp.rabbit.admin.RabbitBrokerAdmin;
 import org.springframework.amqp.rabbit.admin.RabbitStatus;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.otp.erlang.OtpIOException;
+import org.springframework.erlang.OtpIOException;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.springframework.test.context.transaction.TransactionConfiguration;

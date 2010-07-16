@@ -13,26 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.erlang;
 
-package org.springframework.otp.erlang;
-
-import java.io.IOException;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
- * RuntimeException wrapper for an {@link IOException} which
- * can be commonly thrown from OTP operations.
- * 
+ * Exception thrown when an 'error' is received from an Erlang RPC call
  * @author Mark Pollack
- * @author Mark Fisher
+ *
  */
-public class OtpIOException extends OtpException {
+public class ErlangErrorRpcException extends OtpException {
 
-	public OtpIOException(IOException cause) {
-		super(cause);
+	private OtpErlangTuple reasonTuple;
+	
+	public ErlangErrorRpcException(String message) {
+		super(message);
+	}
+	
+	public ErlangErrorRpcException(OtpErlangTuple tuple) {
+		super(tuple.toString());
+		this.reasonTuple = tuple;
 	}
 
-	public OtpIOException(String message, IOException cause) {
-		super(message, cause);
+	public OtpErlangTuple getReasonTuple() {
+		return reasonTuple;
 	}
 
+	
 }

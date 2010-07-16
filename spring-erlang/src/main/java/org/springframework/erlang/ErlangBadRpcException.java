@@ -13,22 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.erlang;
 
-package org.springframework.otp.erlang.support.converter;
-
-import org.springframework.otp.erlang.OtpException;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
+ * Exception thrown when an 'badrpc' is received from an Erlang RPC call.
  * @author Mark Pollack
+ *
  */
-public class ErlangConversionException extends OtpException {
+public class ErlangBadRpcException extends OtpException {
 
-	public ErlangConversionException(String message, Throwable cause) {
-		super(message, cause);
+	private OtpErlangTuple reasonTuple;
+	
+	public ErlangBadRpcException(String reason) {
+		super(reason);
+	}
+	
+	public ErlangBadRpcException(OtpErlangTuple tuple) {
+		super(tuple.toString());
+		this.reasonTuple = tuple;
 	}
 
-	public ErlangConversionException(String message) {
-		super(message);
+	public OtpErlangTuple getReasonTuple() {
+		return reasonTuple;
 	}
+
+	
+
+
+
+	
 
 }

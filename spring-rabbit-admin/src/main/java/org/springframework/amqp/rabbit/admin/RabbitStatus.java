@@ -18,8 +18,8 @@ package org.springframework.amqp.rabbit.admin;
 
 import java.util.List;
 
-import org.springframework.otp.erlang.core.Application;
-import org.springframework.otp.erlang.core.Node;
+import org.springframework.erlang.core.Application;
+import org.springframework.erlang.core.Node;
 
 /**
  * The status object returned from querying the broker

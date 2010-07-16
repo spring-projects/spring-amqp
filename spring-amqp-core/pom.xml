@@ -9,7 +9,7 @@
 	</parent>
 	<artifactId>spring-amqp-core</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AMQP Core</name>
+	<name>Spring AMQP Abstraction Layer</name>
 	<dependencies>
 		<!--  Spring -->
 		<dependency>

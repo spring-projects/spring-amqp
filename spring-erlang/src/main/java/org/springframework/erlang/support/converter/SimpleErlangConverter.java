@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.support.converter;
+package org.springframework.erlang.support.converter;
 
 import java.util.ArrayList;
 

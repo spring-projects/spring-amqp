@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang;
+package org.springframework.erlang;
 
 /**
  * A "catch-all" exception type within the OtpException hierarchy

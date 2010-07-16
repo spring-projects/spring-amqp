@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.springframework.otp.erlang.core;
+package org.springframework.erlang.core;
 
-import org.springframework.otp.erlang.ErlangErrorRpcException;
-import org.springframework.otp.erlang.ErlangBadRpcException;
-import org.springframework.otp.erlang.OtpException;
-import org.springframework.otp.erlang.connection.ConnectionFactory;
-import org.springframework.otp.erlang.support.ErlangAccessor;
-import org.springframework.otp.erlang.support.ErlangUtils;
-import org.springframework.otp.erlang.support.converter.ErlangConverter;
-import org.springframework.otp.erlang.support.converter.SimpleErlangConverter;
+import org.springframework.erlang.ErlangBadRpcException;
+import org.springframework.erlang.ErlangErrorRpcException;
+import org.springframework.erlang.OtpException;
+import org.springframework.erlang.connection.ConnectionFactory;
+import org.springframework.erlang.support.ErlangAccessor;
+import org.springframework.erlang.support.ErlangUtils;
+import org.springframework.erlang.support.converter.ErlangConverter;
+import org.springframework.erlang.support.converter.SimpleErlangConverter;
 import org.springframework.util.Assert;
 
 import com.ericsson.otp.erlang.*;
@@ -122,7 +122,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 			throw convertOtpAccessException(ex);			
 		}
 		finally {		
-			org.springframework.otp.erlang.connection.ConnectionFactoryUtils.releaseConnection(con, getConnectionFactory());			
+			org.springframework.erlang.connection.ConnectionFactoryUtils.releaseConnection(con, getConnectionFactory());			
 		}
 		
 		
@@ -134,10 +134,10 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 	 * Convert the specified checked exception to
 	 * a Spring runtime exception equivalent.
 	 * <p>The default implementation delegates to the
-	 * {@link org.springframework.otp.erlang.support.ErlangUtils#convertOtpAccessException} method.
+	 * {@link org.springframework.erlang.support.ErlangUtils#convertOtpAccessException} method.
 	 * @param ex the original checked {@link Exception} to convert
 	 * @return the Spring runtime wrapping <code>ex</code>
-	 * @see org.springframework.otp.erlang.support.ErlangUtils#convertOtpAccessException
+	 * @see org.springframework.erlang.support.ErlangUtils#convertOtpAccessException
 	 */
 	protected OtpException convertOtpAccessException(Exception ex) {
 		return ErlangUtils.convertOtpAccessException(ex);
