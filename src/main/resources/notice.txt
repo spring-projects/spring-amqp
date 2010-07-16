@@ -15,7 +15,7 @@
    Alternatively, this acknowledgement may appear in the software itself,
    if and wherever such third-party acknowledgements normally appear.
 
-   The names "Spring", "Spring Framework", and "Spring Integration" must
+   The names "Spring", "Spring Framework", and "Spring AMQP" must
    not be used to endorse or promote products derived from this software
    without prior written permission. For written permission, please contact
    enquiries@springsource.com.
