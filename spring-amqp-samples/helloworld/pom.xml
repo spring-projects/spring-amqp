@@ -33,7 +33,7 @@
 
 		<dependency>
   			<groupId>org.springframework.amqp</groupId>
-  			<artifactId>spring-amqp-core</artifactId>
+  			<artifactId>spring-amqp</artifactId>
   			<version>${spring.amqp.version}</version>
 		</dependency>
 		<dependency>
