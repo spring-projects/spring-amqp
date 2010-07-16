@@ -7,37 +7,110 @@
   <section id="erlang-introduction">
     <title>Introduction</title>
 
-    <para>JInterface ease of use issues. </para>
+    <para>There is an open source project called JInterface that provides a
+    way for Java applications to communicate with an Erlang process. The API
+    is very low level and rather tedious to use and throws checked excpetions.
+    The Spring Elang module makes accessing functions in Erlang from Java
+    easy, often they can be one liners. </para>
   </section>
 
   <section>
     <title>Communicating with Erlang processes</title>
 
-    <para>Introduction.... </para>
+    <para>TODO</para>
 
     <section>
       <title>Connection Management</title>
 
-      <para>ConnectionFactory</para>
+      <para>TODO</para>
     </section>
 
     <section>
       <title>Executing RPC</title>
 
-      <para></para>
+      <para>The interface ErlangOperations is the high level API for
+      interacting with an Erlang process. </para>
+
+      <programlisting>public interface ErlangOperations {
+
+	&lt;T&gt; T execute(ConnectionCallback&lt;T&gt; action) throws OtpException;
+	
+	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args) throws OtpException;
+	
+	
+	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args) throws OtpException;
+	
+	
+	OtpErlangObject executeRpc(String module, String function, Object... args) throws OtpException;
+	
+	Object executeAndConvertRpc(String module, String function, ErlangConverter converterToUse, Object... args) throws OtpException;
+	
+ // Sweet!
+	<emphasis role="bold">Object executeAndConvertRpc(String module, String function, Object... args) throws OtpException;</emphasis>
+}
+</programlisting>
+
+      <para>The class that implements this interface is called
+      <classname>ErlangTemplate</classname>. There are a few convenience
+      methods, most notably <methodname>executeAndConvertRpc</methodname>, as
+      well as the <methodname>execute</methodname> method which gives you
+      access to the 'native' API of the JInterface project. For simple
+      functions, you can invoke <methodname>executeAndConvertRpc</methodname>
+      with the appropriate Erlang module name, function, and arguments in a
+      one-liner. For example, here is the implementation of the
+      RabbitBrokerAdmin method 'DeleteUser'</para>
+
+      <programlisting> @ManagedOperation
+	public void deleteUser(String username) {
+		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "delete_user", username.getBytes());	
+	}</programlisting>
+
+      <para>As the JInterface library uses specific classes such as
+      OtpErlangDouble, OtpErlangString to represent the primitive types in
+      Erlang RPC calls, there is a converter class that works in concert with
+      ErlangTemplate that knows how to translate from Java primitive types to
+      their Erlang class equivalents. You can also create custom converters
+      and register them with the ErlangTemplate to handle more complex data
+      format translations.</para>
     </section>
 
     <section>
       <title>ErlangConverter</title>
 
-      <para>ErlangConverter</para>
+      <para>The ErlangConverter interface is show below</para>
+
+      <programlisting>public interface ErlangConverter {
+
+	/**
+	 * Convert a Java object to a Erlang data type.
+	 * @param object the object to convert
+	 * @return the Erlang data type
+	 * @throws ErlangConversionException in case of conversion failure
+	 */
+	OtpErlangObject toErlang(Object object) throws ErlangConversionException;
+
+	/**
+	 * Convert from a Erlang data type to a Java object.
+	 * @param erlangObject the Elang object to convert
+	 * @return the converted Java object
+	 * @throws ErlangConversionException in case of conversion failure
+	 */
+	Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException;
+
+	/**
+  * The return value from executing the Erlang RPC.
+  */
+	Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject) throws ErlangConversionException;
+}</programlisting>
     </section>
   </section>
 
   <section>
     <title>Exceptions</title>
 
-    <para>Runtime exception hierarchy</para>
+    <para>The JInterface checked exception hierarchy is translated into a
+    parallel runtime exception hierarchy when executing operations through
+    ErelangTemplate.</para>
 
     <para></para>
   </section>

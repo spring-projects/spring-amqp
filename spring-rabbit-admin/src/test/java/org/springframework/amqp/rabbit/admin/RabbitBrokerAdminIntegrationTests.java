@@ -113,7 +113,7 @@ public class RabbitBrokerAdminIntegrationTests {
 		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();
-		System.out.println(queues);
+		assertEquals("test.queue", queues.get(0).getName());
 	}
 
 	private void assertBrokerAppRunning(RabbitStatus status) {
