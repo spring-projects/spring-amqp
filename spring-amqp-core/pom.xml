@@ -7,7 +7,7 @@
 		<version>1.0.0.BUILD-SNAPSHOT</version>
 		<relativePath>../spring-amqp-parent/pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-amqp-core</artifactId>
+	<artifactId>spring-amqp</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AMQP Core</name>
 	<dependencies>
