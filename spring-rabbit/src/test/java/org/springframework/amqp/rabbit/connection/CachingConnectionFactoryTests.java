@@ -25,7 +25,7 @@ public class CachingConnectionFactoryTests {
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 				
-		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		Connection con = ccf.createConnection();
 		
 		Channel channel = con.createChannel();
@@ -55,7 +55,7 @@ public class CachingConnectionFactoryTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection.createChannel()).thenReturn(mockChannel2);
 				
-		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(2);
 		
 		Connection con = ccf.createConnection();
@@ -100,7 +100,7 @@ public class CachingConnectionFactoryTests {
 		//You can't repeat 'when' statements for stubbing consecutive calls to the same method to returning different values.
 		stub(mockConnection.createChannel()).toReturn(mockChannel1).toReturn(mockChannel2);
 				
-		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory, "localhost");
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(2);
 		
 		Connection con = ccf.createConnection();
