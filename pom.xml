@@ -8,10 +8,10 @@
 	<version>1.0.0.BUILD-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules>
-		<module>spring-amqp-core</module>
 		<module>spring-amqp-parent</module>
-		<module>spring-otp</module>
+		<module>spring-amqp-core</module>
 		<module>spring-rabbit</module>
+		<module>spring-erlang</module>
 		<module>spring-rabbit-admin</module>
 	</modules>
 	<properties>

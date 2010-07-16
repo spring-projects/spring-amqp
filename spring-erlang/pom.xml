@@ -7,9 +7,9 @@
 		<version>1.0.0.BUILD-SNAPSHOT</version>
 		<relativePath>../spring-amqp-parent/pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-otp</artifactId>
+	<artifactId>spring-erlang</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring OTP Support</name>
+	<name>Spring Erlang Support</name>
 	<dependencies>
 
 		<!--  Spring -->
