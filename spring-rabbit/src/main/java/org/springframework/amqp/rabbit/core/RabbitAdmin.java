@@ -26,6 +26,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedOperation;
+import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -50,6 +51,9 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
+		Assert.notNull(this.connectionFactory, "ConnectionFactory is required");
+		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
+		
 	}
 	
 

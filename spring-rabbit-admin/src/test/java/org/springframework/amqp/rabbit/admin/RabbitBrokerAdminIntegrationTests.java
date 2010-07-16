@@ -25,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.erlang.OtpIOException;
 
@@ -109,6 +110,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	
 	@Test
 	public void testGetQueues() {
+		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();
 		System.out.println(queues);
