@@ -109,6 +109,10 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return rabbitConnectionFactory.getVirtualHost();
 	}
 
+	public void setPort(int port) {
+		this.rabbitConnectionFactory.setPort(port);
+	}
+
 	protected int getPort() {
 		return this.port;
 	}
