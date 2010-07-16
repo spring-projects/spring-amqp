@@ -34,6 +34,8 @@
     <toc/>
 
     <xi:include href="preface.xml"/>
+
+    <!--
     <part>
         <title>Introduction</title>
         <partintro>
@@ -45,6 +47,8 @@
         </partintro>
         <xi:include href="quick-tour.xml"/>
     </part>
+    -->
+
     <part>
         <title>Reference</title>
         <partintro>
