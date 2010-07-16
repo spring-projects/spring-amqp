@@ -1,2 +1,11 @@
-SPRING AMQP CHANGELOG
-============================
+Spring AMQP 1.0.0 Milestone 1 (July 16, 2010)
+=============================================
+
+New Features
+   * AMQP domain abstractions (Message, Queue, Exchange, etc.)
+   * AMQP/Rabbit Configuration base classes
+   * Rabbit ConnectionFactory
+   * RabbitTemplate 
+   * SimpleMessageListenerContainer for Rabbit
+   * Erlang helper library
+   * Rabbit Broker Administration

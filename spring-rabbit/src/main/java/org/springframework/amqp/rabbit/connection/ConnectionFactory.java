@@ -31,7 +31,7 @@ public interface ConnectionFactory {
 
 	Connection createConnection() throws IOException;
 
-	String getHostName();
+	String getHost();
 	
 	String getVirtualHost();
 

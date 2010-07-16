@@ -148,7 +148,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	@Override
 	public String toString() {
 		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize
-				+ ", hostName=" + this.getHostName() + ", portNumber=" + this.getPortNumber()
+				+ ", host=" + this.getHost() + ", port=" + this.getPort()
 				+ ", active=" + active + "]";
 	}
 

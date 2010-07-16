@@ -48,7 +48,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private volatile int portNumber = RabbitUtils.DEFAULT_PORT;
+	private volatile int port = RabbitUtils.DEFAULT_PORT;
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 	
@@ -101,7 +101,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		this.rabbitConnectionFactory.setPassword(password);
 	}
 
-	public String getHostName() {
+	public String getHost() {
 		return this.rabbitConnectionFactory.getHost();
 	}
 
@@ -109,8 +109,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return rabbitConnectionFactory.getVirtualHost();
 	}
 
-	protected int getPortNumber() {
-		return this.portNumber;
+	protected int getPort() {
+		return this.port;
 	}
 
 	protected Channel getChannel(Connection connection) throws Exception {
@@ -230,7 +230,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	@Override
 	public String toString() {
-		return "SingleConnectionFactory [hostName=" + rabbitConnectionFactory.getHost() + ", portNumber=" + portNumber + "]";
+		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port=" + port + "]";
 	}
 
 

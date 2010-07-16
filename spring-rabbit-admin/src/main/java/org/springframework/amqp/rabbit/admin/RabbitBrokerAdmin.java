@@ -299,15 +299,15 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public ErlangTemplate getErlangTemplate() {
 		return this.erlangTemplate;
 	}	
-	
+
 	protected void initializeDefaultErlangTemplate(RabbitTemplate rabbitTemplate) {	
-		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHostName();
+		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHost();
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpCf = new SimpleConnectionFactory("rabbit-spring-monitor", peerNodeName);
 		otpCf.afterPropertiesSet();
 		createErlangTemplate(otpCf);
 	}
-	
+
 	protected void createErlangTemplate(org.springframework.otp.erlang.connection.ConnectionFactory otpCf) {
 		erlangTemplate = new ErlangTemplate(otpCf);
 		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter());
