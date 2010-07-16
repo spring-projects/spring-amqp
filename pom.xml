@@ -193,5 +193,10 @@
 			<name>Spring Framework Maven Release Repository</name>
 			<url>http://maven.springframework.org/release</url>
 		</repository>
+		<repository>
+			<id>repository.springframework.maven.milestone</id>
+			<name>Spring Framework Maven Milestone Repository</name>
+			<url>http://maven.springframework.org/milestone</url>
+		</repository>
 	</repositories>
 </project>
