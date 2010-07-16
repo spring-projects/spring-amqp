@@ -31,7 +31,7 @@ public class QueueInfo {
 	 *                   messages_unacknowledged=0, messages_uncommitted=0}, 
 	 */
 
-	private long transations;
+	private long transactions;
 	
 	private long acksUncommitted;
 	
@@ -57,12 +57,12 @@ public class QueueInfo {
 	
 	private long messageUncommitted;
 
-	public long getTransations() {
-		return transations;
+	public long getTransactions() {
+		return transactions;
 	}
 
-	public void setTransations(long transations) {
-		this.transations = transations;
+	public void setTransactions(long transations) {
+		this.transactions = transations;
 	}
 
 	public long getAcksUncommitted() {
@@ -166,7 +166,7 @@ public class QueueInfo {
 		return "QueueInfo [name=" + name + ", durable=" + durable
 				+ ", autoDelete=" + autoDelete + ", arguments=" + arguments
 				+ ", memory=" + memory + ", messages=" + messages
-				+ ", consumers=" + consumers + ", transations=" + transations
+				+ ", consumers=" + consumers + ", transations=" + transactions
 				+ ", acksUncommitted=" + acksUncommitted + ", messagesReady="
 				+ messagesReady + ", messageUncommitted=" + messageUncommitted
 				+ ", messagesUnacknowledged=" + messagesUnacknowledged
