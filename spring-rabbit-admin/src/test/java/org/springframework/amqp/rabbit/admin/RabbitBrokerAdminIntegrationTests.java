@@ -46,7 +46,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void integrationTestsUserCrud() {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
@@ -60,6 +60,7 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
+	
 	public void integrationTestListUsers() {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
@@ -79,7 +80,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	@Ignore
+	//
 	public void testStatusAndBrokerLifecycle() {
 		RabbitStatus status = brokerAdmin.getStatus();
 		assertBrokerAppRunning(status);		
@@ -94,7 +95,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	@Ignore("NEEDS RABBITMQ_HOME to be set.")
+	//@Ignore("NEEDS RABBITMQ_HOME to be set.")
 	public void testStartNode() {
 		try {
 			brokerAdmin.stopNode();
