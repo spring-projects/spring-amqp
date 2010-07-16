@@ -9,8 +9,8 @@
 
     <para>There is an open source project called JInterface that provides a
     way for Java applications to communicate with an Erlang process. The API
-    is very low level and rather tedious to use and throws checked excpetions.
-    The Spring Elang module makes accessing functions in Erlang from Java
+    is very low level and rather tedious to use and throws checked exceptions.
+    The Spring Erlang module makes accessing functions in Erlang from Java
     easy, often they can be one liners. </para>
   </section>
 
@@ -31,24 +31,27 @@
       <para>The interface ErlangOperations is the high level API for
       interacting with an Erlang process. </para>
 
-      <programlisting>public interface ErlangOperations {
+      <programlisting language="java">public interface ErlangOperations {
 
-	&lt;T&gt; T execute(ConnectionCallback&lt;T&gt; action) throws OtpException;
+    &lt;T&gt; T execute(ConnectionCallback&lt;T&gt; action) throws OtpException;
+
+    OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args)
+            throws OtpException;
+
+    OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args)
+            throws OtpException;
+
+    OtpErlangObject executeRpc(String module, String function, Object... args)
+            throws OtpException;
+
+    Object executeAndConvertRpc(String module, String function,
+            ErlangConverter converterToUse, Object... args) throws OtpException;
 	
-	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args) throws OtpException;
-	
-	
-	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args) throws OtpException;
-	
-	
-	OtpErlangObject executeRpc(String module, String function, Object... args) throws OtpException;
-	
-	Object executeAndConvertRpc(String module, String function, ErlangConverter converterToUse, Object... args) throws OtpException;
-	
- // Sweet!
-	<emphasis role="bold">Object executeAndConvertRpc(String module, String function, Object... args) throws OtpException;</emphasis>
-}
-</programlisting>
+    // Sweet!
+    <emphasis role="bold">Object executeAndConvertRpc(String module, String function, Object... args)
+            throws OtpException;</emphasis>
+
+}</programlisting>
 
       <para>The class that implements this interface is called
       <classname>ErlangTemplate</classname>. There are a few convenience
@@ -60,10 +63,11 @@
       one-liner. For example, here is the implementation of the
       RabbitBrokerAdmin method 'DeleteUser'</para>
 
-      <programlisting> @ManagedOperation
-	public void deleteUser(String username) {
-		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "delete_user", username.getBytes());	
-	}</programlisting>
+      <programlisting language="java"><![CDATA[@ManagedOperation
+public void deleteUser(String username) {
+    erlangTemplate.executeAndConvertRpc(
+            "rabbit_access_control", "delete_user", username.getBytes());	
+}]]></programlisting>
 
       <para>As the JInterface library uses specific classes such as
       OtpErlangDouble, OtpErlangString to represent the primitive types in
@@ -79,29 +83,30 @@
 
       <para>The ErlangConverter interface is show below</para>
 
-      <programlisting>public interface ErlangConverter {
+      <programlisting language="java"><![CDATA[public interface ErlangConverter {
 
-	/**
-	 * Convert a Java object to a Erlang data type.
-	 * @param object the object to convert
-	 * @return the Erlang data type
-	 * @throws ErlangConversionException in case of conversion failure
-	 */
-	OtpErlangObject toErlang(Object object) throws ErlangConversionException;
+    /**
+     * Convert a Java object to a Erlang data type.
+     * @param object the object to convert
+     * @return the Erlang data type
+     * @throws ErlangConversionException in case of conversion failure
+     */
+    OtpErlangObject toErlang(Object object) throws ErlangConversionException;
 
-	/**
-	 * Convert from a Erlang data type to a Java object.
-	 * @param erlangObject the Elang object to convert
-	 * @return the converted Java object
-	 * @throws ErlangConversionException in case of conversion failure
-	 */
-	Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException;
+    /**
+     * Convert from a Erlang data type to a Java object.
+     * @param erlangObject the Elang object to convert
+     * @return the converted Java object
+     * @throws ErlangConversionException in case of conversion failure
+     */
+    Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException;
 
-	/**
-  * The return value from executing the Erlang RPC.
-  */
-	Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject) throws ErlangConversionException;
-}</programlisting>
+    /**
+     * The return value from executing the Erlang RPC.
+     */
+    Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject)
+            throws ErlangConversionException;
+}]]></programlisting>
     </section>
   </section>
 
@@ -110,8 +115,8 @@
 
     <para>The JInterface checked exception hierarchy is translated into a
     parallel runtime exception hierarchy when executing operations through
-    ErelangTemplate.</para>
+    ErlangTemplate.</para>
 
-    <para></para>
   </section>
+
 </chapter>

@@ -871,7 +871,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
   <sect1>
     <title>Exception Handling</title>
 
-    <para>TODO: Add documentation for the runtime exception hierarchy.</para>
+    <para>Many operations with the RabbitMQ Java client can throw checked Exceptions. For example, there are a lot of cases where IOExceptions may be thrown. The RabbitTemplate, SimpleMessageListenerContainer, and other Spring AMQP components will catch those Exceptions and convert into one of the Exceptions within our runtime hierarchy. Those are defined in the 'org.springframework.amqp' package, and AmqpException is the base of the hierarchy.</para>
   </sect1>
 
   <sect1>
@@ -880,6 +880,6 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     <para>All the methods in the RabbitBrokerAdmin class are exposed through
     JMX through the use of the @ManagedOperations annotation. Please refer to
     the sample application for how to configure spring to export the
-    RabbitBro</para>
+    RabbitBrokerAdmin.</para>
   </sect1>
 </chapter>
