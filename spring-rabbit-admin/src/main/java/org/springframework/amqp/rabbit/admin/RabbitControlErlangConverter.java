@@ -194,7 +194,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 								queueInfo.setName(extractNameValueFromTuple((OtpErlangTuple)value));
 								break;
 							case transactions:
-								queueInfo.setTransations(extractLong(value));
+								queueInfo.setTransactions(extractLong(value));
 								break;
 							case acks_uncommitted:
 								queueInfo.setAcksUncommitted(extractLong(value));

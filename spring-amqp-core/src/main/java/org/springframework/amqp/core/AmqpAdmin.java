@@ -40,7 +40,7 @@ public interface AmqpAdmin {
 	// Queue Operations
 	
 	/**
-	 * Declare a queue whose name is automatically created and 
+	 * Declare a queue whose name is automatically named.  It is created with 
 	 * exclusive = true, autoDelete=true, and durable = false.
 	 */
 	Queue declareQueue();
