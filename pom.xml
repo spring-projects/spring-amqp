@@ -46,7 +46,7 @@
 		<repository>
 			<id>spring-milestone</id>
 			<name>Spring Milestone Repository</name>
-			<url>s3://maven.springsource.org/milestone</url>
+			<url>s3://maven.springframework.org/milestone</url>
 		</repository>
 		<snapshotRepository>
 			<id>spring-snapshot</id>
