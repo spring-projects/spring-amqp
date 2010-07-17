@@ -149,9 +149,20 @@
 							<groups>
 								<group>
 									<title>Spring AMQP</title>
-									<packages>org.springframework.amqp.core</packages>
+									<packages>org.springframework.amqp:org.springframework.amqp.*</packages>
 								</group>
-								<!-- TODO: fill in other groups -->
+								<group>
+									<title>Spring Rabbit</title>
+									<packages>org.springframework.amqp.rabbit.*</packages>
+								</group>
+								<group>
+									<title>Spring Rabbit Admin</title>
+									<packages>org.springframework.amqp.rabbit.admin:org.springframework.amqp.rabbit.test</packages>
+								</group>
+								<group>
+									<title>Spring Erlang</title>
+									<packages>org.springframework.erlang:org.springframework.erlang.*:org.springframework.util.exec</packages>
+								</group>
 							</groups>
 							<excludePackageNames>org.springframework.amqp.samples</excludePackageNames>
 							<links>
