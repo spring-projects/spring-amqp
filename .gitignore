@@ -1,1 +1,5 @@
 target
+.settings
+.springBeans
+.ant-targets-build.xml
+*.swp
