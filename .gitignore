@@ -2,4 +2,5 @@ target
 .settings
 .springBeans
 .ant-targets-build.xml
+src/ant/.ant-targets-upload-dist.xml
 *.swp

@@ -1,5 +1,20 @@
 <?xml version="1.0"?>
-<project name="bogus">
+<project name="upload-dist-tasks">
+
+<!-- can be run independent of maven as follows
+ant -f src/ant/upload-dist.xml
+    -Ddist.id=spring-amqp
+    -Ddist.name='Spring AMQP'
+    -Ddist.key=AMQP
+    -Ddist.releaseType=milestone
+    -Ddist.accessKey=<access key>
+    -Ddist.secretKey=<secret key>
+    -Ddist.bucketName=dist.springframework.org
+    -Ddist.fileName=spring-amqp-1.0.0.M1.zip
+    -Ddist.filePath=../../spring-amqp-1.0.0.M1.zip
+    -Ddist.version=1.0.0.M1
+    upload-dist
+-->
 
     <taskdef resource="org/springframework/build/aws/ant/antlib.xml">
         <classpath>
@@ -10,35 +25,19 @@
             <pathelement location="/Users/cbeams/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar"/>
         </classpath>
     </taskdef>
-
     <target name="upload-dist">
-        <checksum file="../../spring-amqp-1.0.0.M1.zip" algorithm="sha1"/>
-        <s3 accessKey="0SCA5K7NAW330XGHMT02" secretKey="bogus">
-            <upload bucketName="dist.springframework.org" file="../../spring-amqp-1.0.0.M1.zip"
-                    toFile="milestone/AMQP/spring-amqp-1.0.0.M1.zip" publicRead="true">
-                <metadata name="project.name" value="AMQP"/>
-                <metadata name="release.type" value="milestone"/>
-                <metadata name="bundle.version" value="1.0.0.M1"/>
-                <metadata name="package.file.name" value="spring-amqp-1.0.0.M1.zip"/>
+        <checksum file="${dist.filePath}" algorithm="sha1"/>
+        <s3 accessKey="${dist.accessKey}" secretKey="${dist.secretKey}">
+            <upload bucketName="${dist.bucketName}" file="${dist.filePath}"
+                    toFile="${dist.releaseType}/${dist.key}/${dist.fileName}" publicRead="true">
+                <metadata name="project.name" value="${dist.name}"/>
+                <metadata name="release.type" value="${dist.releaseType}"/>
+                <metadata name="bundle.version" value="${dist.version}"/>
+                <metadata name="package.file.name" value="${dist.fileName}"/>
             </upload>
-            <upload bucketName="dist.springframework.org" file="../../spring-amqp-1.0.0.M1.zip.sha1"
-                    toFile="milestone/AMQP/spring-amqp-1.0.0.M1.zip.sha1" publicRead="true">
+            <upload bucketName="${dist.bucketName}" file="${dist.filePath}.sha1"
+                    toFile="${dist.releaseType}/${dist.key}/${dist.fileName}.sha1" publicRead="true">
             </upload>
         </s3>
-        <!--
-        <checksum file="${package.output.file}" algorithm="sha1"/>
-        <aws:s3 accessKey="${accessKey}" secretKey="${secretKey}">
-            <upload bucketName="dist.${bucket.basename}" file="${package.output.file}"
-                    toFile="${adjusted.release.type}/${project.key}/${package.file.name}" publicRead="true">
-                <metadata name="project.name" value="${project.name}"/>
-                <metadata name="release.type" value="${release.type}"/>
-                <metadata name="bundle.version" value="${bundle.version}"/>
-                <metadata name="package.file.name" value="${package.file.name}"/>
-            </upload>
-            <upload bucketName="dist.${bucket.basename}" file="${package.output.file}.sha1"
-                    toFile="${adjusted.release.type}/${project.key}/${package.file.name}.sha1" publicRead="true">
-            </upload>
-        </aws:s3>
-        -->
     </target>
 </project>
