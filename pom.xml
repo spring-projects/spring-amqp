@@ -207,6 +207,7 @@
 							<tasks>
 								<!--
 								<property name="compile_classpath" refid="maven.compile.classpath"/>
+								<property name="compile_classpath" refid="maven.compile.classpath"/>
 								-->
 								<ant antfile="${basedir}/src/ant/upload-dist.xml">
 									<target name="upload-dist"/>
@@ -218,12 +219,20 @@
 						</goals>
 					</execution>
 				</executions>
+                <!--
+				<dependencies>
+					<dependency>
+                        <groupId>org.springframework.build.aws</groupId>
+                        <artifactId>org.springframework.build.aws.ant</artifactId>
+                        <version>3.0.5.RELEASE</version>
+					</dependency>
+				</dependencies>
+                -->
 			</plugin>
 		</plugins>
 	</build>
 	<repositories>
 		<repository>
-			<!-- necessary for org.springframework.build.aws.maven dependency -->
 			<id>repository.springframework.maven.release</id>
 			<name>Spring Framework Maven Release Repository</name>
 			<url>http://maven.springframework.org/release</url>
@@ -232,6 +241,12 @@
 			<id>repository.springframework.maven.milestone</id>
 			<name>Spring Framework Maven Milestone Repository</name>
 			<url>http://maven.springframework.org/milestone</url>
+		</repository>
+		<repository>
+			<!-- necessary for org.springframework.build.aws.maven dependency -->
+			<id>repository.source.maven.release</id>
+			<name>SpringSource Maven Release Repository</name>
+			<url>http://repository.springsource.com/maven/bundles/release</url>
 		</repository>
 	</repositories>
 </project>
