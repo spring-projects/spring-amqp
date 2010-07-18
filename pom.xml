@@ -229,15 +229,18 @@
 						</goals>
 					</execution>
 				</executions>
-				<!--
 				<dependencies>
 					<dependency>
-						<groupId>org.springframework.build.aws</groupId>
+						<groupId>org.springframework.build</groupId>
 						<artifactId>org.springframework.build.aws.ant</artifactId>
 						<version>3.0.5.RELEASE</version>
 					</dependency>
+					<dependency>
+						<groupId>net.java.dev.jets3t</groupId>
+						<artifactId>jets3t</artifactId>
+						<version>0.7.2</version>
+					</dependency>
 				</dependencies>
-				-->
 			</plugin>
 		</plugins>
 		<!-- the name of this project is 'spring-amqp-dist';

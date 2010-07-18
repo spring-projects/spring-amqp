@@ -2,21 +2,25 @@
 <project name="upload-dist-tasks">
 
 <!-- can be run independent of maven as follows
-ant -f src/ant/upload-dist.xml
-    -Ddist.id=spring-amqp
-    -Ddist.name='Spring AMQP'
-    -Ddist.key=AMQP
-    -Ddist.releaseType=milestone
-    -Ddist.accessKey=<access key>
-    -Ddist.secretKey=<secret key>
-    -Ddist.bucketName=dist.springframework.org
-    -Ddist.fileName=spring-amqp-1.0.0.M1.zip
-    -Ddist.filePath=../../spring-amqp-1.0.0.M1.zip
-    -Ddist.version=1.0.0.M1
+   - classpath must be uncommented below. when run from maven,
+   - the classpath is set up for you
+
+ant -f src/ant/upload-dist.xml \
+    -Ddist.id=spring-amqp \
+    -Ddist.name='Spring AMQP' \
+    -Ddist.key=AMQP \
+    -Ddist.releaseType=milestone \
+    -Ddist.accessKey=<access key> \
+    -Ddist.secretKey=<secret key> \
+    -Ddist.bucketName=dist.springframework.org \
+    -Ddist.fileName=spring-amqp-1.0.0.M1.zip \
+    -Ddist.filePath=../../spring-amqp-1.0.0.M1.zip \
+    -Ddist.version=1.0.0.M1 \
     upload-dist
 -->
 
     <taskdef resource="org/springframework/build/aws/ant/antlib.xml">
+        <!-- see comment above
         <classpath>
             <pathelement location="/Users/cbeams/Desktop/org.springframework.build.aws.ant-3.0.5.RELEASE.jar"/>
             <pathelement location="/Users/cbeams/.m2/repository/net/java/dev/jets3t/jets3t/0.7.2/jets3t-0.7.2.jar"/>
@@ -24,6 +28,7 @@ ant -f src/ant/upload-dist.xml
             <pathelement location="/Users/cbeams/.m2/repository/commons-httpclient/commons-httpclient/3.1/commons-httpclient-3.1.jar"/>
             <pathelement location="/Users/cbeams/.m2/repository/commons-codec/commons-codec/1.3/commons-codec-1.3.jar"/>
         </classpath>
+        -->
     </taskdef>
     <target name="upload-dist">
         <checksum file="${dist.filePath}" algorithm="sha1"/>
