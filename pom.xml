@@ -195,6 +195,30 @@
 						</execution>
 					</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>upload-dist</id>
+						<phase>compile</phase> <!-- doing it during compile now, deploy later -->
+						<configuration>
+							<tasks>
+								<!--
+								<property name="compile_classpath" refid="maven.compile.classpath"/>
+								-->
+								<ant antfile="${basedir}/src/ant/upload-dist.xml">
+									<target name="upload-dist"/>
+								</ant>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	<repositories>

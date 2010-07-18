@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<project name="bogus">
+
+    <!--
+    <taskdef name="myTask" resource="org/springframework/build/aws/ant/antlib.xml"
+             classname="com.acme.MyTask" classpathref="maven.plugin.classpath"/>
+    -->
+
+    <target name="upload-dist">
+        <echo message="Test from Ant"/>
+        <!--
+        <checksum file="${package.output.file}" algorithm="sha1"/>
+        <aws:s3 accessKey="${accessKey}" secretKey="${secretKey}">
+            <upload bucketName="dist.${bucket.basename}" file="${package.output.file}"
+                    toFile="${adjusted.release.type}/${project.key}/${package.file.name}" publicRead="true">
+                <metadata name="project.name" value="${project.name}"/>
+                <metadata name="release.type" value="${release.type}"/>
+                <metadata name="bundle.version" value="${bundle.version}"/>
+                <metadata name="package.file.name" value="${package.file.name}"/>
+            </upload>
+            <upload bucketName="dist.${bucket.basename}" file="${package.output.file}.sha1"
+                    toFile="${adjusted.release.type}/${project.key}/${package.file.name}.sha1" publicRead="true">
+            </upload>
+        </aws:s3>
+        -->
+    </target>
+</project>
