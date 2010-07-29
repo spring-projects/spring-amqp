@@ -73,16 +73,10 @@ public class PumpStreamHandler implements ExecuteStreamHandler {
     public void stop() {
         if( ! running ) return;
         try {
-            //if( log.isDebugEnabled() ) log.debug("Joining it");
-            //            inputThread.interrupt();
             inputThread.join(1000);
-            //if( log.isDebugEnabled() ) log.debug("Joined" );
         } catch(InterruptedException e) {}
         try {
-            //if( log.isDebugEnabled() ) log.debug("Joining it");
-            //            errorThread.interrupt();
             errorThread.join(1000);
-            //if( log.isDebugEnabled() ) log.debug("Joined" );
         } catch(InterruptedException e) {}
         try {
             err.flush();
@@ -118,8 +112,5 @@ public class PumpStreamHandler implements ExecuteStreamHandler {
         result.setDaemon(true);
         return result;
     }
-
-    private static org.apache.commons.logging.Log log=
-        org.apache.commons.logging.LogFactory.getLog( PumpStreamHandler.class );
 
 }

@@ -112,8 +112,6 @@ public class Execute {
             return cmd;
         }
         else if ( Os.isFamily("windows") ) {
-            String osname =
-                System.getProperty("os.name").toLowerCase(Locale.US);
             String[] cmd = {"cmd", "/c", "set" };
             return cmd;
         }

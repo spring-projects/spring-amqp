@@ -15,7 +15,6 @@
  */
 package org.springframework.amqp.rabbit.admin;
 
-import java.util.Map;
 
 /**
  * This class represents a Queue that is configured on the RabbitMQ broker

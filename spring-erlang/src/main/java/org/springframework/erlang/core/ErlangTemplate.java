@@ -61,7 +61,6 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 
 		if (result instanceof OtpErlangTuple) {
 			OtpErlangTuple msg = (OtpErlangTuple)result;
-			OtpErlangObject[] elements = msg.elements();
 			if (msg.elementAt(0) instanceof OtpErlangAtom)
 			{
 				OtpErlangAtom responseAtom = (OtpErlangAtom)msg.elementAt(0);

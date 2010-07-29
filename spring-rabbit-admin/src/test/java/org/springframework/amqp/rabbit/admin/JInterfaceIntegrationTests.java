@@ -24,7 +24,6 @@ public class JInterfaceIntegrationTests {
 
 	@Test
 	public void rawApi() {
-		String markpCookie = "HRVDLVJTUELWREUSYOCA";
 		OtpConnection connection = null;
 		try {
 			OtpSelf self = new OtpSelf("rabbit-monitor");

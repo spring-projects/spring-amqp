@@ -18,13 +18,11 @@ package org.springframework.amqp.rabbit.admin;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.erlang.core.Application;
 import org.springframework.erlang.core.Node;
 import org.springframework.erlang.support.converter.ErlangConversionException;
@@ -34,9 +32,7 @@ import org.springframework.erlang.support.converter.SimpleErlangConverter;
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangBinary;
 import com.ericsson.otp.erlang.OtpErlangList;
-import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /***

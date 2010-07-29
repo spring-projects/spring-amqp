@@ -562,11 +562,11 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 
 		Address replyTo = request.getMessageProperties().getReplyTo(); 			
 		if (replyTo == null) {
-			replyTo = new Address(defaultResponseRoutingKey);
-			if (replyTo == null) {
+			if (defaultResponseRoutingKey == null) {
 				throw new AmqpException("Cannot determine ReplyTo message property value: " +
 						"Request message does not contain reply-to property, and no default ReplyTo value set.");
 			}
+			replyTo = new Address(defaultResponseRoutingKey);
 		}
 		return replyTo.toString();
 	}

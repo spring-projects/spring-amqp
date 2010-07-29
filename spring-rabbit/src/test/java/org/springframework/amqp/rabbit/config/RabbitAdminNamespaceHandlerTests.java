@@ -16,19 +16,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Map;
-
 import org.junit.Test;
-import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.core.io.Resource;
 
 /**
  *
@@ -38,16 +27,7 @@ public final class RabbitAdminNamespaceHandlerTests {
 	
 	@Test
 	public void testParse() throws Exception {
-		ApplicationContext applicationContext = new ClassPathXmlApplicationContext(
-				"rabbitAdminNamespaceHandlerTests.xml", getClass());
-		
-		/*
-		 * Map<String, PropertyPlaceholderConfigurer> beans = applicationContext
-				.getBeansOfType(PropertyPlaceholderConfigurer.class);
-		assertFalse("No PropertyPlaceHolderConfigurer found", beans.isEmpty());
-		String s = (String) applicationContext.getBean("string");
-		assertEquals("No properties replaced", "bar", s);
-		 */
+		new ClassPathXmlApplicationContext("rabbitAdminNamespaceHandlerTests.xml", getClass());
 	}
 
 }

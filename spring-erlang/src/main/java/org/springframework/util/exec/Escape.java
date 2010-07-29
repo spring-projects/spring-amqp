@@ -30,7 +30,7 @@ public class Escape {
      * (such as whitespace, quotes, slashes, etc.)
      */
     public static String escape(String in){
-        char[] inChars, outChars, resChars;
+        char[] inChars, outChars;
         int numOut;
 
         inChars  = new char[in.length()];

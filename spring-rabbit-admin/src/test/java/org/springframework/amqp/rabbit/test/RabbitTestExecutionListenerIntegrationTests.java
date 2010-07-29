@@ -12,8 +12,6 @@ import org.springframework.test.context.ContextConfiguration;
 @Ignore // only works on Windows at the moment
 public class RabbitTestExecutionListenerIntegrationTests {
 
-	private static int count;
-
 	@Test
 	public void doNothing() throws InterruptedException {
 		Thread.sleep(1000);

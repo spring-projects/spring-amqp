@@ -72,7 +72,6 @@ public class Background {
     {
         StringBuffer escaped;
         String[] execCmd;
-        Runtime r;
 
         escaped = new StringBuffer();
         for(int i=0; i<cmd.length; i++){
@@ -105,10 +104,6 @@ public class Background {
                                 File errFile, boolean appendErr)
         throws IOException
     {
-        String[] logargs;
-        String[] execCmd;
-        ArrayList tmpCmd = new ArrayList();
-        Runtime r;
         ArrayList<String> tmpCmd = new ArrayList<String>();
 
         tmpCmd.add("cmd");
@@ -126,7 +121,7 @@ public class Background {
             (appendErr == true ? ">>" : " >") +
             Escape.escape(errFile.getAbsolutePath())); 
 
-        Process p = Runtime.getRuntime().exec((String [])tmpCmd.toArray(cmd));
+        Runtime.getRuntime().exec((String [])tmpCmd.toArray(cmd));
     }
 
     public static void main(String[] args) throws Exception {
