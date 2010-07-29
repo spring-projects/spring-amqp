@@ -130,10 +130,11 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * Check the given message listener, throwing an exception
 	 * if it does not correspond to a supported listener type.
 	 * <p>By default, only a Spring {@link MessageListener} object or a
-	 * Spring {@link SessionAwareMessageListener} object will be accepted.
+	 * Spring {@link org.springframework.jms.listener.SessionAwareMessageListener}
+	 * object will be accepted.
 	 * @param messageListener the message listener object to check
 	 * @throws IllegalArgumentException if the supplied listener is not a
-	 * {@link MessageListener} or a {@link SessionAwareMessageListener}
+	 * MessageListener or SessionAwareMessageListener
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
@@ -266,11 +267,11 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * exposing a new Rabbit Session (potentially with its own transaction)
 	 * to the listener if demanded.
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
-	 * @param session the Rabbit Channel to operate on
+	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see ChannelAwareMessageListener
-	 * @see #setExposeListenerSession
+	 * @see #setExposeListenerChannel(boolean)
 	 */
 	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Message message) throws Exception {
 
@@ -309,8 +310,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * <code>onMessage</code> method.
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by RAbbit API methods
-	 * @see org.springframework.core.amq.MessageListener#onMessage
+	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
 	protected void doInvokeListener(MessageListener listener, Message message) {
 		listener.onMessage(message);
@@ -322,7 +322,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param channel the Rabbit channel to commit
 	 * @param message the Message to acknowledge
-	 * @throws Exception in case of commit failure
 	 */
 	protected void commitIfNecessary(Channel channel, Message message)  {
 		
@@ -344,8 +343,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 
 	/**
 	 * Perform a rollback, if appropriate.
-	 * @param session the Rabbit Channel to rollback
-	 * @throws Exception in case of a rollback error
+	 * @param channel the Rabbit Channel to roll back
 	 */
 	protected void rollbackIfNecessary(Channel channel)  {
 		if (this.isChannelLocallyTransacted(channel)) {
@@ -356,7 +354,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 
 	/**
 	 * Perform a rollback, handling rollback exceptions properly.
-	 * @param session the Rabbit Channel to rollback
+	 * @param channel the Rabbit Channel to roll back
 	 * @param ex the thrown application exception or error
 	 * @throws Exception in case of a rollback error
 	 */

@@ -89,8 +89,6 @@ public abstract class RabbitUtils {
 	/**
 	 * Commit the Channel if not within a JTA transaction.
 	 * @param channel the RabbitMQ Channel to commit
-	 * @throws IOException 
-	 * @throws IOException if committing failed
 	 */
 	public static void commitIfNecessary(Channel channel) {
 		Assert.notNull(channel, "Channel must not be null");

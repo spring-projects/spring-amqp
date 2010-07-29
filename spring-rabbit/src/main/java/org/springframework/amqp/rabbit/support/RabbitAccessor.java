@@ -82,7 +82,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * and its host and port values.
 	 * @return the new RabbitMQ Connection
 	 * @throws IOException if thrown by RabbitMQ API methods
-	 * @see ConnectionFactory#newConnection(String, int)
+	 * @see ConnectionFactory#createConnection
 	 */
 	protected Connection createConnection() throws IOException {
 		return getConnectionFactory().createConnection();

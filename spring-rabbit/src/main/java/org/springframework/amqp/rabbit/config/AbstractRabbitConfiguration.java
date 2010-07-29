@@ -40,7 +40,6 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 	 * one may want to set after creating a RabbitTemplate from a ConnectionFactory, this
 	 * abstact method is provided to allow for that flexibility as compared to
 	 * automatically creating a RabbitTemplate by specifying a ConnectionFactory.
-	 * @return
 	 */
 	@Bean 
 	public abstract RabbitTemplate rabbitTemplate();

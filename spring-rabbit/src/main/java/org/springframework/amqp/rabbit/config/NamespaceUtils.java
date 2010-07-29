@@ -48,7 +48,7 @@ public abstract class NamespaceUtils {
 	 * of the attribute whose name is provided if that attribute is
 	 * defined in the given element.
 	 * 
-	 * @param beanDefinition the bean definition to be configured
+	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be
 	 * used to populate the property
@@ -73,9 +73,9 @@ public abstract class NamespaceUtils {
 	 * 
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 * 
-	 * @param beanDefinition - the bean definition to be configured
-	 * @param element - the XML element where the attribute should be defined
-	 * @param attributeName - the name of the attribute whose value will be set
+	 * @param builder the bean definition builder to be configured
+	 * @param element the XML element where the attribute should be defined
+	 * @param attributeName the name of the attribute whose value will be set
 	 * on the property
 	 */
 	public static void setValueIfAttributeDefined(BeanDefinitionBuilder builder,
@@ -90,7 +90,7 @@ public abstract class NamespaceUtils {
 	 * attribute whose name is provided if that attribute is defined in
 	 * the given element.
 	 * 
-	 * @param beanDefinition the bean definition to be configured
+	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be
 	 * used as a bean reference to populate the property
@@ -115,9 +115,9 @@ public abstract class NamespaceUtils {
 	 * 
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 * 
-	 * @param beanDefinition - the bean definition to be configured
-	 * @param element - the XML element where the attribute should be defined
-	 * @param attributeName - the name of the attribute whose value will be
+	 * @param builder the bean definition builder to be configured
+	 * @param element the XML element where the attribute should be defined
+	 * @param attributeName the name of the attribute whose value will be
 	 * used as a bean reference to populate the property
 	 * 
 	 * @see Conventions#attributeNameToPropertyName(String)

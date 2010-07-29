@@ -79,7 +79,6 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * Create a new CachingConnectionFactory for the given target
 	 * ConnectionFactory.
 	 * @param rabbitConnectionFactory the target ConnectionFactory
-	 * @param hostName the host name to connect to
 	 */
 	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		super(rabbitConnectionFactory);

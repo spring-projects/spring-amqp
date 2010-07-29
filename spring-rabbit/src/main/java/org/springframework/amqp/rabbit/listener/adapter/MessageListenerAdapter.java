@@ -123,7 +123,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @see #setDelegate
  * @see #setDefaultListenerMethod
- * @see #setDefaultResponseDestination
+ * @see #setDefaultResponseExchange(String)
  * @see #setMessageConverter
  * @see org.springframework.amqp.support.converter.SimpleMessageConverter
  * @see org.springframework.amqp.rabbit.core.ChannelAwareMessageListener
@@ -302,7 +302,8 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Spring {@link SessionAwareMessageListener} entry point.
+	 * Spring {@link org.springframework.jms.listener.SessionAwareMessageListener}
+	 * entry point.
 	 * <p>Delegates the message to the target listener method, with appropriate
 	 * conversion of the message argument. If the target method returns a
 	 * non-null object, wrap in a Rabbit message and send it back.
@@ -365,8 +366,9 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * Handle the given exception that arose during listener execution.
 	 * The default implementation logs the exception at error level.
 	 * <p>This method only applies when using a Rabbit {@link MessageListener}.
-	 * In case of the Spring {@link SessionAwareMessageListener} mechanism,
-	 * exceptions get handled by the caller instead.
+	 * In case of the Spring
+	 * {@link org.springframework.jms.listener.SessionAwareMessageListener}
+	 * mechanism, exceptions get handled by the caller instead.
 	 * @param ex the exception to handle
 	 * @see #onMessage(Message)
 	 */
@@ -475,7 +477,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getResponseDestination
+	 * @see #getResponseReplyTo(Message, Message, Channel)
 	 * @see #sendResponse
 	 */
 	protected void handleResult(Object result, Message request, Channel channel) throws Exception {
@@ -545,17 +547,17 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * <p>The default implementation first checks the Rabbit Reply-To
 	 * Queue of the supplied request; if that is not <code>null</code>
 	 * it is returned; if it is <code>null</code>, then the configured
-	 * {@link #resolveDefaultResponseQueue default response destination}
-	 * is returned; if this too is <code>null</code>, then an
-	 * {@link InvalidDestinationException} is thrown.
+	 * default response destination is returned; if this too is
+	 * <code>null</code>, then an {@link AmqpException} is thrown.
 	 * @param request the original incoming Rabbit message
 	 * @param response the outgoing Rabbit message about to be sent
 	 * @param channel the Rabbit Channel to operate on
 	 * @return the response destination (never <code>null</code>)
 	 * @throws Exception if thrown by Rabbit API methods
-	 * @throws InvalidDestinationException if no {@link Destination} can be determined
-	 * @see #setDefaultResponseDestination
-	 * @see org.springframework.amqp.core.Message.getMessageProperties().getReplyTo();
+	 * @throws AmqpException if no {@link Destination} can be determined
+	 * @see #setDefaultResponseExchange(String)
+	 * @see org.springframework.amqp.core.Message#getMessageProperties()
+	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	protected String getResponseReplyTo(Message request, Message response, Channel channel)
 			throws Exception {
@@ -579,7 +581,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * @param replyTo the Rabbit ReplyTo string to use when sending.  Currently interpreted to be the routing key.
 	 * @param message the Rabbit message to send
 	 * @throws Exception if thrown by Rabbit API methods
-	 * @see #postProcessProducer
+	 * @see #postProcessResponse(Message, Message)
 	 */
 	protected void sendResponse(Channel channel, String receivedExchange, String replyTo, Message message) throws Exception {
 		
@@ -607,7 +609,6 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	/**
 	 * Post-process the given message producer before using it to send the response.
 	 * <p>The default implementation is empty.
-	 * @param producer the Rabbit Channel that will be used to send the message
 	 * @param response the outgoing Rabbit message about to be sent
 	 * @throws Exception if thrown by Rabbit API methods
 	 */

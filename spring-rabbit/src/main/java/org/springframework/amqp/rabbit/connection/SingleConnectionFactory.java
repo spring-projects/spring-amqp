@@ -74,7 +74,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	/**
 	 * Create a new SingleConnectionFactory given a host name.
-	 * @param hostName the host name to connect to
+	 * @param hostname the host name to connect to
 	 */
 	public SingleConnectionFactory(String hostname) {
 		Assert.hasText(hostname, "hostname is required");
@@ -85,7 +85,6 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
 	 * @param rabbitConnectionFactory the target ConnectionFactory
-	 * @param hostName the host name to connect to
 	 */
 	public SingleConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		Assert.notNull(rabbitConnectionFactory, "Target ConnectionFactory must not be null");

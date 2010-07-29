@@ -20,12 +20,13 @@ import org.springframework.amqp.rabbit.stocks.domain.TradeResponse;
 
 /**
  * Trading Service to process trade requests and response.  This is the place to perform
- * any trade processing after executions.  See code flow in {@link ServerHandler}.
+ * any trade processing after executions.  See code flow in
+ * {@link org.springframework.amqp.rabbit.stocks.handler.ServerHandler}
  * 
  * @author Mark Pollack
- *
  */
 public interface TradingService {
 
 	void processTrade(TradeRequest request, TradeResponse response);
+
 }

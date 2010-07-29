@@ -90,7 +90,6 @@ public class RabbitTestExecutionListener extends AbstractTestExecutionListener{
 	 * {@link TransactionConfiguration} will be used instead.
 	 * @param clazz the Class object corresponding to the test class for which
 	 * the configuration attributes should be retrieved
-	 * @return a new TransactionConfigurationAttributes instance
 	 */
 	private void initializeRabbitAdminTemplate(TestContext testContext) {		
 		

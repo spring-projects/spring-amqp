@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.stocks.config.client;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
-
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -57,7 +56,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	
 	/**
 	 * The client's template will by default send to the exchange defined 
-	 * in {@link AbstractRabbitConfiguration.rabbitTemplate()}
+	 * in {@link org.springframework.amqp.rabbit.config.AbstractRabbitConfiguration#rabbitTemplate()}
 	 * with the routing key {@link AbstractStockAppRabbitConfiguration#STOCK_REQUEST_QUEUE_NAME}
 	 * <p>
 	 * The default exchange will delivery to a queue whose name matches the routing key value.
@@ -110,7 +109,6 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 	
 	/**
 	 * Binds to the market data exchange. Interested in any stock quotes.
-	 * @return
 	 */	
 	@Bean
 	public Binding marketDataBinding() {		

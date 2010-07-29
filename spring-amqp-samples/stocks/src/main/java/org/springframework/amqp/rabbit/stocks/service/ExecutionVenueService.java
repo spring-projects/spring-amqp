@@ -19,10 +19,11 @@ import org.springframework.amqp.rabbit.stocks.domain.TradeRequest;
 import org.springframework.amqp.rabbit.stocks.domain.TradeResponse;
 
 /**
- * Executes the trade request, creating a Trade response.  See the code flow in {@link ServerHandler} for
- * its usage.
- * @author Mark Pollack
+ * Executes the trade request, creating a Trade response.  See the
+ * code flow in {@link org.springframework.amqp.rabbit.stocks.handler.ServerHandler}
+ * for its usage.
  *
+ * @author Mark Pollack
  */
 public interface ExecutionVenueService {
 

@@ -18,6 +18,7 @@ package org.springframework.amqp.config;
 
 import java.util.Collection;
 
+
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
@@ -39,10 +40,10 @@ import org.springframework.context.annotation.Configuration;
  * 
  * @author Mark Pollack
  * @author Mark Fisher
- * @see AbstractExhange
- * @see Queue
- * @see Binding
- * @see BindingBuilder
+ * @see org.springframework.amqp.core.AbstractExchange
+ * @see org.springframework.amqp.core.Binding
+ * @see org.springframework.amqp.core.Queue
+ * @see org.springframework.amqp.core.BindingBuilder
  */
 @Configuration
 public abstract class AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {

@@ -125,7 +125,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * 
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
-	 * @see org.springframework.amqp.support.converter.rabbit.support.converter.SimpleMessageConverter
+	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;

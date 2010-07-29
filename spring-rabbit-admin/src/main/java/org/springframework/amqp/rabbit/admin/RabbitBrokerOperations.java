@@ -110,18 +110,18 @@ public interface RabbitBrokerOperations extends AmqpAdmin {
 	  * Removes the node from any cluster it belongs to, removes all data from the management database, 
 	  * such as configured users and vhosts, and deletes all persistent messages. 
 	  * <p>
-	  * For {@link resetNode} and {@link forceReset} to succeed the RabbitMQ application must have
-	  * been stopped, e.g. {@link stopBroker} 
+	  * For {@link #resetNode} and {@link #forceResetNode} to succeed the RabbitMQ application must have
+	  * been stopped, e.g. {@link #stopBrokerApplication}
 	  */
 	 void resetNode();
 	 
 	 /**
-	  * The forceResetNode command differs from {@link resetNode()} in that it resets the node unconditionally, 
+	  * The forceResetNode command differs from {@link #resetNode} in that it resets the node unconditionally, 
 	  * regardless of the current management database state and cluster configuration. It should only be 
 	  * used as a last resort if the database or cluster configuration has been corrupted. 
 	  * <p>
-	  * For {@link resetNode} and {@link forceReset} to succeed the RabbitMQ application must have
-	  * been stopped, e.g. {@link stopBroker} 
+	  * For {@link #resetNode} and {@link #forceResetNode} to succeed the RabbitMQ application must have
+	  * been stopped, e.g. {@link #stopBrokerApplication}
 	  */
 	 void forceResetNode();
 	 

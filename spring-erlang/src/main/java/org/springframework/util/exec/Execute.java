@@ -211,7 +211,7 @@ public class Execute {
     /**
      * Sets the environment variables for the subprocess to launch.
      *
-     * @param commandline array of Strings, each element of which has
+     * @param env array of Strings, each element of which has
      * an environment variable settings in format <em>key=value</em>
      */
     public void setEnvironment(String[] env) {
@@ -244,8 +244,7 @@ public class Execute {
      * Runs a process defined by the command line and returns its exit status.
      *
      * @return the exit status of the subprocess or <code>INVALID</code>
-     * @exception java.io.IOExcpetion The exception is thrown, if launching
-     *            of the subprocess failed
+     * @throws Exception if launching of the subprocess failed
      */
     public int execute() throws Exception {
         process =

@@ -17,6 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import java.io.ByteArrayInputStream;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 

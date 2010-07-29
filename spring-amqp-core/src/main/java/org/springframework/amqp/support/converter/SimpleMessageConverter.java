@@ -25,9 +25,9 @@ import org.springframework.amqp.utils.SerializationUtils;
 
 /**
  * Implementation of {@link MessageConverter} that can work with Strings, Serializable instances,
- * or byte arrays. The {@link #toMessage(Object)} method simply checks the type of the provided
- * instance while the {@link #fromMessage(Message)} method relies upon the
- * {@link DefaultMessageProperties#getContentType() content-type} of the provided Message.
+ * or byte arrays. The {@link #toMessage(Object, MessageProperties)} method simply checks the
+ * type of the provided instance while the {@link #fromMessage(Message)} method relies upon the
+ * {@link MessageProperties#getContentType() content-type} of the provided Message.
  * 
  * @author Mark Fisher
  * @author Oleg Zhurakousky

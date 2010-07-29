@@ -30,12 +30,13 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * Rabbit implementation of MessageProperties that stores much of the message property
- * information in Rabbit's {@link BasicProperites} class.  Empty headers will be created on 
- * demand if they are null in the underlying BasicProperties instance.
+ * information in Rabbit's {@link BasicProperties} class. Empty headers will be created
+ * on demand if they are null in the underlying BasicProperties instance.
  * 
  * @author Mark Pollack
  * @author Mark Fisher
  */
+
 public class RabbitMessageProperties implements MessageProperties {
 
 	private static final String DEFAULT_CHARSET = "UTF-8";

@@ -37,7 +37,7 @@ public class Os {
      * Determines if the OS on which Ant is executing matches the
      * given OS family.
      *
-     * @param f      The OS family type desired<br />
+     * @param family The OS family type desired<br />
      *               Possible values:<br />
      *               <ul><li>dos</li>
      *               <li>mac</li>
