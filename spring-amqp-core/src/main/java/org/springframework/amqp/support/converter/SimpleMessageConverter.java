@@ -101,7 +101,7 @@ public class SimpleMessageConverter implements MessageConverter {
 			messageProperties.setContentEncoding(this.defaultCharset);
 		}
 		else if (object instanceof Serializable) {
-			bytes = SerializationUtils.serialize((Serializable) object);
+			bytes = SerializationUtils.serialize(object);
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
 		if (bytes != null) {

@@ -54,7 +54,7 @@ public class MarshallingMessageConverterTests {
 		converter.afterPropertiesSet();
 		Message message = new Message("UNMARSHAL TEST".getBytes(), new TestMessageProperties());
 		Object result = converter.fromMessage(message);
-		assertEquals("unmarshal test", (String) result);
+		assertEquals("unmarshal test", result);
 	}
 
 

@@ -118,7 +118,7 @@ public abstract class RabbitUtils {
 			return new AmqpIOException((IOException) ex);
 		}
 		if (ex instanceof UnsupportedEncodingException) {
-			return new AmqpUnsupportedEncodingException((UnsupportedEncodingException) ex);
+			return new AmqpUnsupportedEncodingException(ex);
 		}
 		//fallback
 		return new UncategorizedAmqpException(ex);

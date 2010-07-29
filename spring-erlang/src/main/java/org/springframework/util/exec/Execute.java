@@ -327,7 +327,7 @@ public class Execute {
             String key = env[i].substring(0, pos+1);
             int size = osEnv.size();
             for (int j = 0; j < size; j++) {
-                if (((String)osEnv.elementAt(j)).startsWith(key)) {
+                if ((osEnv.elementAt(j)).startsWith(key)) {
                     osEnv.removeElementAt(j);
                     break;
                 }

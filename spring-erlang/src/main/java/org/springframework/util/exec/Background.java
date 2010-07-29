@@ -121,7 +121,7 @@ public class Background {
             (appendErr == true ? ">>" : " >") +
             Escape.escape(errFile.getAbsolutePath())); 
 
-        Runtime.getRuntime().exec((String [])tmpCmd.toArray(cmd));
+        Runtime.getRuntime().exec(tmpCmd.toArray(cmd));
     }
 
     public static void main(String[] args) throws Exception {

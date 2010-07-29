@@ -224,7 +224,7 @@ public class RabbitMessageProperties implements MessageProperties {
 			return basicProperties.getCorrelationId().getBytes(this.defaultCharset);
 		}
 		catch (UnsupportedEncodingException ex) {
-			throw new AmqpUnsupportedEncodingException((UnsupportedEncodingException) ex);
+			throw new AmqpUnsupportedEncodingException(ex);
 		}
 	}
 
