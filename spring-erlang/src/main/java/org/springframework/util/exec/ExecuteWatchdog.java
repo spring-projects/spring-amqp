@@ -156,21 +156,6 @@ public class ExecuteWatchdog implements Runnable {
         process = null;
     }
 
-    /**
-     * This method will rethrow the exception that was possibly caught during the
-     * run of the process. It will only remains valid once the process has been
-     * terminated either by 'error', timeout or manual intervention. Information
-     * will be discarded once a new process is ran.
-     * @throws  BuildException  a wrapped exception over the one that was silently
-     * swallowed and stored during the process run.
-     */
-//     public void checkException() throws BuildException {
-//         if (caught != null) {
-//             throw new BuildException("Exception in ExecuteWatchdog.run: "
-//                                      + caught.getMessage(), caught);
-//         }
-//     }
-
     public Exception getException() {
         return caught;
     }
