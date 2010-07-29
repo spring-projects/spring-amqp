@@ -413,6 +413,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	 * shared Rabbit Connection failed. This is indicating to invokers that they need
 	 * to establish the shared Connection themselves on first access.
 	 */
+	@SuppressWarnings("serial")
 	public static class SharedConnectionNotInitializedException extends RuntimeException {
 
 		/**

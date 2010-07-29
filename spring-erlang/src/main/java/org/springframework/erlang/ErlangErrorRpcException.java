@@ -19,9 +19,10 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
  * Exception thrown when an 'error' is received from an Erlang RPC call
- * @author Mark Pollack
  *
+ * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class ErlangErrorRpcException extends OtpException {
 
 	private OtpErlangTuple reasonTuple;

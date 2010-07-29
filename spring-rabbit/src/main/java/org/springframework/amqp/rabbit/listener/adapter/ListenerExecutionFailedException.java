@@ -26,6 +26,7 @@ import org.springframework.amqp.AmqpException;
  * @since 2.0
  * @see MessageListenerAdapter
  */
+@SuppressWarnings("serial")
 public class ListenerExecutionFailedException extends AmqpException {
 
 	/**

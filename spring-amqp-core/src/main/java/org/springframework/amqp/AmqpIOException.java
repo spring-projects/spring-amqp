@@ -24,6 +24,7 @@ import java.io.IOException;
  * 
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class AmqpIOException extends AmqpException {
 
 	public AmqpIOException(IOException cause) {

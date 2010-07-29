@@ -22,6 +22,7 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
  * @author Mark Pollack
  *
  */
+@SuppressWarnings("serial")
 public class ErlangBadRpcException extends OtpException {
 
 	private OtpErlangTuple reasonTuple;

@@ -49,6 +49,7 @@ import com.jgoodies.forms.layout.FormLayout;
  * @author Mark Pollack
  * @author Mark Fisher
  */
+@SuppressWarnings("serial")
 public class StockPanel extends JPanel {
 
 	private static Log log = LogFactory.getLog(StockPanel.class);

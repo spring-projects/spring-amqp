@@ -22,6 +22,7 @@ package org.springframework.amqp;
  * 
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class UncategorizedAmqpException extends AmqpException {
 
 	public UncategorizedAmqpException(Throwable cause) {

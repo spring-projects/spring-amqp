@@ -22,6 +22,7 @@ package org.springframework.erlang;
  * 
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class UncategorizedOtpException extends OtpException {
 
 	public UncategorizedOtpException(Throwable cause) {

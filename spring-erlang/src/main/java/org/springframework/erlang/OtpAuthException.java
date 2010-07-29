@@ -21,6 +21,7 @@ package org.springframework.erlang;
  * 
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class OtpAuthException extends OtpException {
 
 	public OtpAuthException(com.ericsson.otp.erlang.OtpAuthException cause) {

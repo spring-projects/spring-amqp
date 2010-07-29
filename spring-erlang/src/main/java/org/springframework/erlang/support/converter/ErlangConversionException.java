@@ -21,6 +21,7 @@ import org.springframework.erlang.OtpException;
 /**
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class ErlangConversionException extends OtpException {
 
 	public ErlangConversionException(String message, Throwable cause) {

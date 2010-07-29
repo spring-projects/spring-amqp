@@ -25,6 +25,7 @@ import java.io.IOException;
  * @author Mark Pollack
  * @author Mark Fisher
  */
+@SuppressWarnings("serial")
 public class OtpIOException extends OtpException {
 
 	public OtpIOException(IOException cause) {

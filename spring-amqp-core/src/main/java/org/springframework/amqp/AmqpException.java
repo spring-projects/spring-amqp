@@ -21,6 +21,7 @@ package org.springframework.amqp;
  * 
  * @author Mark Fisher
  */
+@SuppressWarnings("serial")
 public class AmqpException extends RuntimeException {
 
 	public AmqpException(String message) {

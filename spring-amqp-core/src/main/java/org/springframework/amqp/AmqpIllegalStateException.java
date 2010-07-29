@@ -21,6 +21,7 @@ package org.springframework.amqp;
  *
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class AmqpIllegalStateException extends AmqpException {
 
 	public AmqpIllegalStateException(String message) {

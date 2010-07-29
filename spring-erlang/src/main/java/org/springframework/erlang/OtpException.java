@@ -21,6 +21,7 @@ package org.springframework.erlang;
  * 
  * @author Mark Pollack
  */
+@SuppressWarnings("serial")
 public class OtpException extends RuntimeException {
 
 	public OtpException(String message) {

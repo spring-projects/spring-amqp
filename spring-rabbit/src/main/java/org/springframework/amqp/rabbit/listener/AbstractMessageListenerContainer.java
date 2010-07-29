@@ -426,6 +426,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * Internal exception class that indicates a rejected message on shutdown.
 	 * Used to trigger a rollback for an external transaction manager in that case.
 	 */
+	@SuppressWarnings("serial")
 	private static class MessageRejectedWhileStoppingException extends RuntimeException {
 
 	}

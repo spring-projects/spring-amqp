@@ -21,6 +21,7 @@ import org.springframework.amqp.AmqpException;
 /**
  * @author Mark Fisher
  */
+@SuppressWarnings("serial")
 public class MessageConversionException extends AmqpException {
 
 	public MessageConversionException(String message, Throwable cause) {
