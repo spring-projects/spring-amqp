@@ -74,8 +74,7 @@ public final class BindingBuilder  {
 			return new Binding(this.queue, this.exchange, routingKey);
 		}
 
-		@SuppressWarnings("unchecked")
-		public Binding with(Enum routingKeyEnum) {
+		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(this.queue, this.exchange, routingKeyEnum.toString());
 		}
 	}
@@ -91,8 +90,7 @@ public final class BindingBuilder  {
 			return new Binding(this.queue, this.exchange, routingKey);
 		}
 
-		@SuppressWarnings("unchecked")
-		public Binding with(Enum routingKeyEnum) {
+		public Binding with(Enum<?> routingKeyEnum) {
 			return new Binding(this.queue, this.exchange, routingKeyEnum.toString());
 		}
 

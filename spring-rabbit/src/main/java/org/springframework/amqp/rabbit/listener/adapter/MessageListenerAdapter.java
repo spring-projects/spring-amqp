@@ -318,7 +318,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 		if (delegate != this) {
 			if (delegate instanceof ChannelAwareMessageListener) {
 				if (channel != null) {
-					((ChannelAwareMessageListener) delegate).onMessage(message, channel);
+					((ChannelAwareMessageListener<Message>) delegate).onMessage(message, channel);
 					return;
 				}
 				else if (!(delegate instanceof MessageListener)) {

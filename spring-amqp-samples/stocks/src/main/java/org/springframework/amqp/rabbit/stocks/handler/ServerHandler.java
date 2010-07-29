@@ -55,7 +55,7 @@ public class ServerHandler {
 	public TradeResponse handleMessage(TradeRequest tradeRequest)
 	{
         TradeResponse tradeResponse;
-        List errors = new ArrayList();
+        List<?> errors = new ArrayList<Object>();
         if (creditCheckService.canExecute(tradeRequest, errors))
         {
             tradeResponse = executionVenueService.executeTradeRequest(tradeRequest);

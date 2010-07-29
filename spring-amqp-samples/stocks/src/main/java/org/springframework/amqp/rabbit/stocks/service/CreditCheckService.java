@@ -28,5 +28,6 @@ import org.springframework.amqp.rabbit.stocks.domain.TradeRequest;
  */
 public interface CreditCheckService {
 
-	boolean canExecute(TradeRequest tradeRequest, List errors);
+	boolean canExecute(TradeRequest tradeRequest, List<?> errors);
+
 }

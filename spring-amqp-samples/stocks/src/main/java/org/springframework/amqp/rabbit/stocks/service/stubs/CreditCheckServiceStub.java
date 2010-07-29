@@ -28,7 +28,7 @@ import org.springframework.amqp.rabbit.stocks.service.CreditCheckService;
  */
 public class CreditCheckServiceStub implements CreditCheckService {
 
-	public boolean canExecute(TradeRequest tradeRequest, List errors) {
+	public boolean canExecute(TradeRequest tradeRequest, List<?> errors) {
 		return true;
 	}
 

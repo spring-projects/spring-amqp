@@ -27,7 +27,7 @@ public interface ClassMapper {
 
 	String getClassIdFieldName();
 	
-	String fromClass(Class clazz);
+	String fromClass(Class<?> clazz);
 	
-	Class toClass(String classId);
+	Class<?> toClass(String classId);
 }

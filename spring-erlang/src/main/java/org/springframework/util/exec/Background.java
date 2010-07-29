@@ -109,6 +109,7 @@ public class Background {
         String[] execCmd;
         ArrayList tmpCmd = new ArrayList();
         Runtime r;
+        ArrayList<String> tmpCmd = new ArrayList<String>();
 
         tmpCmd.add("cmd");
         tmpCmd.add("/c");

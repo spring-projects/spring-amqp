@@ -33,16 +33,16 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 	
-	private Map<String, Class> idClassMapping = new HashMap<String, Class>();
+	private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 	
-	private Map<Class, String> classIdMapping = new HashMap<Class, String>();
+	private Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
 	private String defaultHashtableTypeId = "Hashtable";
 	
-	private Class defaultHashtableClass = Hashtable.class;
+	private Class<?> defaultHashtableClass = Hashtable.class;
 
 	
-	public void setDefaultHashtableClass(Class defaultHashtableClass) {
+	public void setDefaultHashtableClass(Class<?> defaultHashtableClass) {
 		this.defaultHashtableClass = defaultHashtableClass;
 	}
 	
@@ -50,11 +50,11 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		return DEFAULT_CLASSID_FIELD_NAME;
 	}
 		
-	public void setIdClassMapping(Map<String, Class> idClassMapping) {
+	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
 		this.idClassMapping = idClassMapping;
 	}
 
-	public String fromClass(Class classOfObjectToConvert) {
+	public String fromClass(Class<?> classOfObjectToConvert) {
 		if (classIdMapping.containsKey(classOfObjectToConvert)) {
 			return classIdMapping.get(classOfObjectToConvert);
 		}
@@ -65,7 +65,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		return classOfObjectToConvert.getName();
 	}
 
-	public Class toClass(String classId) {
+	public Class<?> toClass(String classId) {
 		if (this.idClassMapping.containsKey(classId)) {
 			return idClassMapping.get(classId);
 		}
@@ -89,10 +89,10 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	}
 
 	private void validateIdTypeMapping() {
-		Map<String, Class> finalIdClassMapping = new HashMap<String, Class>();
-		for (Entry<String, Class> entry : idClassMapping.entrySet()) {
+		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
+		for (Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
 		    String id = entry.getKey();
-		    Class clazz = entry.getValue();
+		    Class<?> clazz = entry.getValue();
 		    finalIdClassMapping.put(id, clazz);
 		    classIdMapping.put(clazz, id);		    
 		}
