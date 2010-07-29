@@ -57,6 +57,7 @@ public class SpringRabbitJUnit4ClassRunner extends SpringJUnit4ClassRunner {
 		
 		Field executionListenersField = ReflectionUtils.findField(TestContextManager.class, "testExecutionListeners");
 		executionListenersField.setAccessible(true);
+		@SuppressWarnings("unchecked")
 		ArrayList<TestExecutionListener> executionListeners = 
 			(ArrayList<TestExecutionListener>) ReflectionUtils.getField(executionListenersField, mgr);
 		ArrayList<TestExecutionListener> newExecutionListeners = new ArrayList<TestExecutionListener>();
