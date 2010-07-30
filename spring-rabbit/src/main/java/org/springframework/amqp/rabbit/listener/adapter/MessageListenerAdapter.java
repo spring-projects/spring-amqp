@@ -129,7 +129,7 @@ import com.rabbitmq.client.Channel;
  * @see org.springframework.amqp.rabbit.core.ChannelAwareMessageListener
  * @see org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer#setMessageListener
  */
-public class MessageListenerAdapter	implements MessageListener, ChannelAwareMessageListener<Message> {
+public class MessageListenerAdapter	implements MessageListener, ChannelAwareMessageListener {
 
 	/**
 	 * Out-of-the-box value for the default listener method: "handleMessage".
@@ -311,7 +311,6 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * @param channel the Rabbit channel to operate on
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
-	@SuppressWarnings("unchecked")
 	public void onMessage(Message message, Channel channel) throws Exception {
 		// Check whether the delegate is a MessageListener impl itself.
 		// In that case, the adapter will simply act as a pass-through.
@@ -319,7 +318,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 		if (delegate != this) {
 			if (delegate instanceof ChannelAwareMessageListener) {
 				if (channel != null) {
-					((ChannelAwareMessageListener<Message>) delegate).onMessage(message, channel);
+					((ChannelAwareMessageListener) delegate).onMessage(message, channel);
 					return;
 				}
 				else if (!(delegate instanceof MessageListener)) {

@@ -25,7 +25,7 @@ import com.rabbitmq.client.Channel;
  *  
  * @author Mark Pollack
  */
-public interface ChannelAwareMessageListener<M extends Message> {
+public interface ChannelAwareMessageListener {
 
 	/**
 	 * Callback for processing a received Rabbit message.
@@ -35,6 +35,6 @@ public interface ChannelAwareMessageListener<M extends Message> {
 	 * @param channel the underlying Rabbit Channel (never <code>null</code>)
 	 * @throws Exception 
 	 */
-	void onMessage(M message, Channel channel) throws Exception;
+	void onMessage(Message message, Channel channel) throws Exception;
 
 }
