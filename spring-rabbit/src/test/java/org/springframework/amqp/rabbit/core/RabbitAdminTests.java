@@ -7,13 +7,15 @@ import org.junit.Test;
 public class RabbitAdminTests {
 
 	@Test
-	public void testSettingOfRabbitTemplate() {
-		RabbitAdmin rabbitAdmin = new RabbitAdmin();
+	public void testSettingOfNullRabbitTemplate() {
+		RabbitTemplate rabbitTemplate = null;
 		try {
-			rabbitAdmin.afterPropertiesSet();
+			new RabbitAdmin(rabbitTemplate);
 			fail("should have thrown IllegalStateException when RabbitTemplate is not set.");
-		} catch (IllegalArgumentException e) {
+		}
+		catch (IllegalArgumentException e) {
 			
 		}
 	}
+
 }

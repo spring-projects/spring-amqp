@@ -24,7 +24,6 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.util.Assert;
 
@@ -35,47 +34,35 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
  * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.9.1
  * 
  * @author Mark Pollack
+ * @author Mark Fisher
  */
-public class RabbitAdmin implements AmqpAdmin, InitializingBean {
+public class RabbitAdmin implements AmqpAdmin {
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private ConnectionFactory connectionFactory; 
-	
-	private RabbitTemplate rabbitTemplate;
+	private final RabbitTemplate rabbitTemplate;
 
 
-	public RabbitAdmin() {
-	}
-	
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
-		this.connectionFactory = connectionFactory;
-		Assert.notNull(this.connectionFactory, "ConnectionFactory is required");
+		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
-		
 	}
-	
 
 	public RabbitAdmin(RabbitTemplate rabbitTemplate) {
+		Assert.notNull(rabbitTemplate, "RabbitTemplate must not be null");
 		this.rabbitTemplate = rabbitTemplate;
 	}
+
 
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
 
-	public void afterPropertiesSet() {		
-		if (connectionFactory == null) {
-			throw new IllegalArgumentException("'connectionFactory' is required");
-		}
-		rabbitTemplate = new RabbitTemplate(connectionFactory);
-	}
-
 	// Exchange operations
 
 	public void declareExchange(final Exchange exchange) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.exchangeDeclare(exchange.getName(), exchange.getExchangeType().name(),
 						exchange.isDurable(), exchange.isAutoDelete(), exchange.getArguments());
@@ -86,7 +73,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@ManagedOperation
 	public void deleteExchange(final String exchangeName) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.exchangeDelete(exchangeName);
 				return null;
@@ -98,19 +85,18 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@ManagedOperation
 	public void declareQueue(final Queue queue) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueDeclare(queue.getName(), queue.isDurable(), queue
-						.isExclusive(), queue.isAutoDelete(), queue
-						.getArguments());
+				channel.queueDeclare(queue.getName(), queue.isDurable(),
+						queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
 				return null;
 			}
 		});
 	}
-	
+
 	@ManagedOperation
 	public Queue declareQueue() {
-		DeclareOk declareOk = rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
+		DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
 			public DeclareOk doInRabbit(Channel channel) throws Exception {
 				return channel.queueDeclare();
 			}
@@ -124,7 +110,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@ManagedOperation
 	public void deleteQueue(final String queueName) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queueDelete(queueName);
 				return null;
@@ -134,7 +120,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@ManagedOperation
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queueDelete(queueName, unused, empty);
 				return null;
@@ -144,7 +130,7 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 
 	@ManagedOperation
 	public void purgeQueue(final String queueName, final boolean noWait) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queuePurge(queueName, noWait);
 				return null;
@@ -155,9 +141,10 @@ public class RabbitAdmin implements AmqpAdmin, InitializingBean {
 	// Binding
 	@ManagedOperation
 	public void declareBinding(final Binding binding) {
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
+		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				logger.debug("Binding queue to exchange with routing key");
+				logger.debug("Binding queue [" + binding.getQueue() + "] to exchange [" +
+						binding.getExchange() + "] with routing key [" + binding.getRoutingKey() + "]");
 				channel.queueBind(binding.getQueue(), binding.getExchange(),
 						binding.getRoutingKey(), binding.getArguments());
 				return null;
