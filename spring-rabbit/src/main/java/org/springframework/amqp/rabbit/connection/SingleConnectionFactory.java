@@ -104,6 +104,10 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return this.rabbitConnectionFactory.getHost();
 	}
 
+	public void setVirtualHost(String virtualHost) {
+		this.rabbitConnectionFactory.setVirtualHost(virtualHost);
+	}
+
 	public String getVirtualHost() {
 		return rabbitConnectionFactory.getVirtualHost();
 	}
