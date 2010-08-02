@@ -66,21 +66,22 @@ public class Message {
 	}
 
 	private String getBodyContentAsString() {
+		if (body == null) {
+			return null;
+		}
 		String contentType = messageProperties.getContentType();
 		if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 			return (String) SerializationUtils.deserialize(body);
 		}
-		else if (MessageProperties.CONTENT_TYPE_BYTES.equals(contentType)) {
-			return body.toString();
-		}
-		else if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)) {
+		if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)) {
+			// TODO: use charset
 			return new String(body);
 		}
-		else if (MessageProperties.CONTENT_TYPE_JSON.equals(contentType)) {
+		if (MessageProperties.CONTENT_TYPE_JSON.equals(contentType)) {
 			//TODO provide JSON conversion to string
 			return body.toString();
 		}
-		return null;
+		return body.toString();
 	}
 
 }
