@@ -161,7 +161,12 @@ public class RabbitMessageProperties implements MessageProperties {
 	public void setCorrelationId(byte[] correlationId) {
 		//TODO this isn't exactly correct...
 		try {
-			basicProperties.setCorrelationId(new String(correlationId, this.defaultCharset));
+			if (correlationId == null) {
+				basicProperties.setCorrelationId(null);
+			}
+			else {
+				basicProperties.setCorrelationId(new String(correlationId, this.defaultCharset));
+			}
 		}
 		catch (UnsupportedEncodingException e) {
 			throw new AmqpUnsupportedEncodingException(e);
