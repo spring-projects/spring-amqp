@@ -26,9 +26,15 @@ import org.junit.Test;
 public class MessageTests {
 
 	@Test
-	public void toStringForEmptyMessage() {
+	public void toStringForEmptyMessageBody() {
 		Message message = new Message(new byte[0], new TestMessageProperties());
 		assertNotNull(message.toString());
+	}
+
+	@Test
+	public void toStringForNullMessageProperties() {
+		Message mesage = new Message(new byte[0], null);
+		assertNotNull(mesage.toString());
 	}
 
 }

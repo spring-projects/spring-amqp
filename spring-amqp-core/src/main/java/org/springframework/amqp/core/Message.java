@@ -54,13 +54,15 @@ public class Message {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("(");
 		buffer.append("Body:'" + this.getBodyContentAsString() + "';");
-		buffer.append("ID:" + messageProperties.getMessageId() + ";");	
-		buffer.append("Content:" + messageProperties.getContentType() + ";");
-		buffer.append("Headers:" + messageProperties.getHeaders() + ";");
-		buffer.append("Exchange:" + messageProperties.getReceivedExchange() + ";");
-		buffer.append("Routing key:" + messageProperties.getReceivedRoutingKey() + ";");
-		buffer.append("Reply:" + messageProperties.getReplyTo() + ";");
-		buffer.append("Delivery mode:" + messageProperties.getDeliveryMode() + ";");
+		if (messageProperties != null) {
+			buffer.append("ID:" + messageProperties.getMessageId() + ";");	
+			buffer.append("Content:" + messageProperties.getContentType() + ";");
+			buffer.append("Headers:" + messageProperties.getHeaders() + ";");
+			buffer.append("Exchange:" + messageProperties.getReceivedExchange() + ";");
+			buffer.append("Routing key:" + messageProperties.getReceivedRoutingKey() + ";");
+			buffer.append("Reply:" + messageProperties.getReplyTo() + ";");
+			buffer.append("Delivery mode:" + messageProperties.getDeliveryMode() + ";");
+		}
 		buffer.append(")");
 		return buffer.toString();
 	}
@@ -69,7 +71,7 @@ public class Message {
 		if (body == null) {
 			return null;
 		}
-		String contentType = messageProperties.getContentType();
+		String contentType = (messageProperties != null) ? messageProperties.getContentType() : null;
 		if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 			return (String) SerializationUtils.deserialize(body);
 		}
