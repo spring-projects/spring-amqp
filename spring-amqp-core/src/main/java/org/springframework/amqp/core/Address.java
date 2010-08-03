@@ -19,6 +19,8 @@ package org.springframework.amqp.core;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.util.StringUtils;
+
 /**
  * Represents an address for publication of an AMQP message. The AMQP 0-8 and
  * 0-9 specifications have an unstructured string that is used as a "reply to"
@@ -29,7 +31,7 @@ import java.util.regex.Pattern;
  */
 public class Address {
 
-	private static final Pattern pattern = Pattern.compile("^([^:]+)://([^/]*)/(.*)$");
+	private static final Pattern pattern = Pattern.compile("^([^:]+)://([^/]*)/?(.*)$");
 
 
 	private String unstructuredAddress;
@@ -74,9 +76,10 @@ public class Address {
 		boolean matchFound = matcher.find();			
 		if (matchFound) {
 			//TODO regex not expecting as would like with grouping.
-			String exchangeType = matcher.group(1);					
-			String routingKey = address.substring(address.lastIndexOf(matcher.group(2))+matcher.group(2).length()+1);
-			return new Address(ExchangeType.valueOf(exchangeType), matcher.group(2),routingKey);
+			String exchangeType = matcher.group(1);
+			String exchangeName = matcher.group(2);
+			String routingKey = matcher.group(3);
+			return new Address(ExchangeType.valueOf(exchangeType), exchangeName, routingKey);
 		} 
 		return new Address(address);		
 	}
@@ -98,8 +101,14 @@ public class Address {
 	}
 
 	public String toString() {
-		return this.structured ? this.exchangeType + "://" + this.exchangeName + "/" + this.routingKey
-				: this.unstructuredAddress;
+		if (!this.structured) {
+			return this.unstructuredAddress;
+		}
+		StringBuilder sb = new StringBuilder(this.exchangeType + "://" + this.exchangeName);
+		if (StringUtils.hasText(this.routingKey)) {
+			sb.append("/" + this.routingKey);
+		}
+		return sb.toString();
 	}
 
 }

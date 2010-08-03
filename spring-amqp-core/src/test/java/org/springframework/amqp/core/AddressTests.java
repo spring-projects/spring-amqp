@@ -26,24 +26,52 @@ import org.junit.Test;
 
 /**
  * @author Mark Pollack
+ * @author Mark Fisher
  */
 public class AddressTests {
 
 	@Test
-	public void parse() {
-		Address a = new Address(ExchangeType.direct, "my-exchange", "routing-key");
+	public void toStringCheck() {
+		Address address = new Address(ExchangeType.direct, "my-exchange", "routing-key");
 		String replyToUri = "direct://my-exchange/routing-key";
-		Assert.assertEquals(replyToUri, a.toString());
-		
-		Address b = Address.parse(replyToUri);
-		assertEquals(b.getExchangeType(), ExchangeType.direct);
-		assertEquals(b.getExchangeName(), "my-exchange");
-		assertEquals(b.getRoutingKey(), "routing-key");
-		assertTrue(b.isStructured());
-		
-		b = Address.parse("my-exchange/routing-key");
-		assertFalse(b.isStructured());
-		assertEquals("my-exchange/routing-key", b.toString());
+		Assert.assertEquals(replyToUri, address.toString());
+	}
+
+	@Test
+	public void parse() {
+		String replyToUri = "direct://my-exchange/routing-key";
+		Address address = Address.parse(replyToUri);
+		assertEquals(address.getExchangeType(), ExchangeType.direct);
+		assertEquals(address.getExchangeName(), "my-exchange");
+		assertEquals(address.getRoutingKey(), "routing-key");
+		assertTrue(address.isStructured());
+	}
+
+	@Test
+	public void parseUnstructured() {
+		Address address = Address.parse("my-exchange/routing-key");
+		assertFalse(address.isStructured());
+		assertEquals("my-exchange/routing-key", address.toString());
+	}
+
+	@Test
+	public void parseWithoutRoutingKey() {
+		Address address = Address.parse("fanout://my-exchange");
+		assertTrue(address.isStructured());
+		assertEquals(ExchangeType.fanout, address.getExchangeType());
+		assertEquals("my-exchange", address.getExchangeName());
+		assertEquals("", address.getRoutingKey());
+		assertEquals("fanout://my-exchange", address.toString());
+	}
+
+	@Test
+	public void parseWithDefaultExchangeAndRoutingKey() {
+		Address address = Address.parse("direct:///routing-key");
+		assertTrue(address.isStructured());
+		assertEquals(ExchangeType.direct, address.getExchangeType());
+		assertEquals("", address.getExchangeName());
+		assertEquals("routing-key", address.getRoutingKey());
+		assertEquals("direct:///routing-key", address.toString());
 	}
 
 }
