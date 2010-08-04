@@ -137,8 +137,6 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	public static final String ORIGINAL_DEFAULT_LISTENER_METHOD = "handleMessage";
 
 
-	private static final String DEFAULT_RESPONSE_EXCHANGE = "";
-
 	private static final String DEFAULT_RESPONSE_ROUTING_KEY = "";
 
 
@@ -152,9 +150,9 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 
 	private String defaultListenerMethod = ORIGINAL_DEFAULT_LISTENER_METHOD;
 
-	private String defaultResponseRoutingKey = DEFAULT_RESPONSE_ROUTING_KEY;
-	
-	private String defaultRepsonseExchange = DEFAULT_RESPONSE_EXCHANGE;
+	private String responseRoutingKey = DEFAULT_RESPONSE_ROUTING_KEY;
+
+	private String responseExchange = null;
 
 	private volatile boolean mandatoryPublish;
 
@@ -229,26 +227,26 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Set the default routing key to use when sending response messages.  This will be applied
+	 * Set the routing key to use when sending response messages. This will be applied
 	 * in case of a request message that does not carry a "ReplyTo" property
 	 * <p>Response destinations are only relevant for listener methods that return
 	 * result objects, which will be wrapped in a response message and sent to a
 	 * response destination.
 	 */
-	public void setDefaultResponseRoutingKey(String defaultResponseRoutingKey) {
-		this.defaultResponseRoutingKey = defaultResponseRoutingKey;
+	public void setResponseRoutingKey(String responseRoutingKey) {
+		this.responseRoutingKey = responseRoutingKey;
 	}
 	
 	/**
-	 * Set the default exchange to use when sending response messages.   This is only
+	 * Set the exchange to use when sending response messages. This is only
 	 * used if the exchange from the received message is null.
 	 * <p>Response destinations are only relevant for listener methods that return
 	 * result objects, which will be wrapped in a response message and sent to a
 	 * response destination.
-	 * @param defaultResponseExchange
+	 * @param responseExchange
 	 */
-	public void setDefaultResponseExchange(String defaultResponseExchange) {
-		this.defaultRepsonseExchange = defaultResponseExchange;
+	public void setResponseExchange(String responseExchange) {
+		this.responseExchange = responseExchange;
 	}
 
 	/**
@@ -487,9 +485,8 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 			}
 			Message response = buildMessage(channel, result);
 			postProcessResponse(request, response);
-			String replyTo = getResponseReplyTo(request, response, channel);
-			String receivedExchange = getReceivedExchange(request);
-			sendResponse(channel, receivedExchange, replyTo, response);
+			Address replyTo = getReplyToAddress(request);
+			sendResponse(channel, replyTo, response);
 		}
 		else if (logger.isWarnEnabled()) {
 			logger.warn("Listener method returned result [" + result +
@@ -536,40 +533,41 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 		byte[] correlation = request.getMessageProperties().getCorrelationId();
 	
 		if (correlation == null) {
-			correlation = request.getMessageProperties().getMessageId().getBytes(SimpleMessageConverter.DEFAULT_CHARSET);
+			String messageId = request.getMessageProperties().getMessageId();
+			if (messageId != null) {
+				correlation = messageId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET);
+			}
 		}
 		response.getMessageProperties().setCorrelationId(correlation);
 	}
 
 	/**
-	 * Determine a response destination for the given message.
+	 * Determine a reply-to Address for the given message.
 	 * <p>The default implementation first checks the Rabbit Reply-To
-	 * Queue of the supplied request; if that is not <code>null</code>
+	 * Address of the supplied request; if that is not <code>null</code>
 	 * it is returned; if it is <code>null</code>, then the configured
-	 * default response destination is returned; if this too is
+	 * default response Exchange and routing key are used to construct
+	 * a reply-to Address. If the responseExchange property is also
 	 * <code>null</code>, then an {@link AmqpException} is thrown.
 	 * @param request the original incoming Rabbit message
-	 * @param response the outgoing Rabbit message about to be sent
-	 * @param channel the Rabbit Channel to operate on
-	 * @return the response destination (never <code>null</code>)
+	 * @return the reply-to Address (never <code>null</code>)
 	 * @throws Exception if thrown by Rabbit API methods
-	 * @throws AmqpException if no {@link Destination} can be determined
-	 * @see #setDefaultResponseExchange(String)
+	 * @throws AmqpException if no {@link Address} can be determined
+	 * @see #setResponseExchange(String)
+	 * @see #setResponseRoutingKey(String)
 	 * @see org.springframework.amqp.core.Message#getMessageProperties()
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
-	protected String getResponseReplyTo(Message request, Message response, Channel channel)
-			throws Exception {
-
+	protected Address getReplyToAddress(Message request) throws Exception {
 		Address replyTo = request.getMessageProperties().getReplyTo(); 			
 		if (replyTo == null) {
-			if (defaultResponseRoutingKey == null) {
+			if (this.responseExchange == null) {
 				throw new AmqpException("Cannot determine ReplyTo message property value: " +
-						"Request message does not contain reply-to property, and no default ReplyTo value set.");
+						"Request message does not contain reply-to property, and no default response Exchange was set.");
 			}
-			replyTo = new Address(defaultResponseRoutingKey);
+			replyTo = new Address(null, this.responseExchange, this.responseRoutingKey);
 		}
-		return replyTo.toString();
+		return replyTo;
 	}
 
 
@@ -582,21 +580,13 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #postProcessResponse(Message, Message)
 	 */
-	protected void sendResponse(Channel channel, String receivedExchange, String replyTo, Message message) throws Exception {
-		
-		//TODO this needs to be improved to have a strategy for extracting exchange/routingKey from replyTo and incorporating a defaultReplyToExchange
-		String exchange = this.defaultRepsonseExchange;		
-		if (receivedExchange != null) {
-			exchange = receivedExchange;
-			logger.debug("Overriding defaultResponseExchange and using exchange of received message.");
-		}
-		String routingKey = replyTo;
+	protected void sendResponse(Channel channel, Address replyTo, Message message) throws Exception {
 		postProcessChannel(channel, message);
 		
 		//TODO parameterize out default encoding,  How to ensure there is a valid binding for this publish?
 		try {
-			logger.debug("Publishing response to exchanage = [" + exchange + "], routingKey = [" + routingKey + "]");			
-			channel.basicPublish(exchange, routingKey,
+			logger.debug("Publishing response to exchanage = [" + replyTo.getExchangeName() + "], routingKey = [" + replyTo.getRoutingKey() + "]");			
+			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(),
 					this.mandatoryPublish, this.immediatePublish,
 					RabbitUtils.extractBasicProperties(message, "UTF-8"),
 					message.getBody());

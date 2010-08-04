@@ -28,21 +28,18 @@ import org.springframework.util.StringUtils;
  * to follow these conventions.
  *
  * @author Mark Pollack
+ * @author Mark Fisher
  */
 public class Address {
 
 	private static final Pattern pattern = Pattern.compile("^([^:]+)://([^/]*)/?(.*)$");
 
 
-	private String unstructuredAddress;
+	private final ExchangeType exchangeType;
 
-	private ExchangeType exchangeType;
+	private final String exchangeName;
 
-	private String exchangeName;
-
-	private String routingKey;
-
-	private boolean structured;
+	private final String routingKey;
 
 
 	/**
@@ -50,9 +47,27 @@ public class Address {
 	 * @param address an unstructured string.
 	 */
 	public Address(String address) {
-		this.unstructuredAddress = address;
+		if (address == null) {
+			this.exchangeType = ExchangeType.direct;
+			this.exchangeName = "";
+			this.routingKey = "";
+		}
+		else {
+			Matcher matcher = pattern.matcher(address);
+			boolean matchFound = matcher.find();			
+			if (matchFound) {
+				this.exchangeType = ExchangeType.valueOf(matcher.group(1));
+				this.exchangeName = matcher.group(2);
+				this.routingKey = matcher.group(3);
+			}
+			else {
+				this.exchangeType = ExchangeType.direct;
+				this.exchangeName = "";
+				this.routingKey = address;				
+			}
+		} 
 	}
-
+	
 	/***
 	 * Create an Address given the exchange type, exchange name and routing key.  This
 	 * will set the 
@@ -61,52 +76,29 @@ public class Address {
 	 * @param routingKey
 	 */
 	public Address(ExchangeType exchangeType, String exchangeName, String routingKey) {		
-		this.structured = true;
 		this.exchangeType = exchangeType;
 		this.exchangeName = exchangeName;
 		this.routingKey = routingKey;
 	}
 
 
-	public static Address parse(String address) {
-		if (address == null) {
-			return null;
-		}
-		Matcher matcher = pattern.matcher(address);
-		boolean matchFound = matcher.find();			
-		if (matchFound) {
-			//TODO regex not expecting as would like with grouping.
-			String exchangeType = matcher.group(1);
-			String exchangeName = matcher.group(2);
-			String routingKey = matcher.group(3);
-			return new Address(ExchangeType.valueOf(exchangeType), exchangeName, routingKey);
-		} 
-		return new Address(address);		
-	}
-
 	public ExchangeType getExchangeType() {
-		return exchangeType;
+		return this.exchangeType;
 	}
 
 	public String getExchangeName() {
-		return exchangeName;
+		return this.exchangeName;
 	}
 
 	public String getRoutingKey() {
-		return routingKey;
+		return this.routingKey;
 	}
 
-	public boolean isStructured() {
-		return structured;
-	}
 
 	public String toString() {
-		if (!this.structured) {
-			return this.unstructuredAddress;
-		}
-		StringBuilder sb = new StringBuilder(this.exchangeType + "://" + this.exchangeName);
+		StringBuilder sb = new StringBuilder(this.exchangeType + "://" + this.exchangeName + "/");
 		if (StringUtils.hasText(this.routingKey)) {
-			sb.append("/" + this.routingKey);
+			sb.append(this.routingKey);
 		}
 		return sb.toString();
 	}

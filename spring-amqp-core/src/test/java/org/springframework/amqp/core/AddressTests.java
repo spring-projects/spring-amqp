@@ -17,9 +17,6 @@
 package org.springframework.amqp.core;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import junit.framework.Assert;
 
 import org.junit.Test;
@@ -40,34 +37,31 @@ public class AddressTests {
 	@Test
 	public void parse() {
 		String replyToUri = "direct://my-exchange/routing-key";
-		Address address = Address.parse(replyToUri);
+		Address address = new Address(replyToUri);
 		assertEquals(address.getExchangeType(), ExchangeType.direct);
 		assertEquals(address.getExchangeName(), "my-exchange");
 		assertEquals(address.getRoutingKey(), "routing-key");
-		assertTrue(address.isStructured());
 	}
 
 	@Test
-	public void parseUnstructured() {
-		Address address = Address.parse("my-exchange/routing-key");
-		assertFalse(address.isStructured());
-		assertEquals("my-exchange/routing-key", address.toString());
+	public void parseUnstructuredWithRoutingKeyOnly() {
+		Address address = new Address("my-routing-key");
+		assertEquals("my-routing-key", address.getRoutingKey());
+		assertEquals("direct:///my-routing-key", address.toString());
 	}
 
 	@Test
 	public void parseWithoutRoutingKey() {
-		Address address = Address.parse("fanout://my-exchange");
-		assertTrue(address.isStructured());
+		Address address = new Address("fanout://my-exchange");
 		assertEquals(ExchangeType.fanout, address.getExchangeType());
 		assertEquals("my-exchange", address.getExchangeName());
 		assertEquals("", address.getRoutingKey());
-		assertEquals("fanout://my-exchange", address.toString());
+		assertEquals("fanout://my-exchange/", address.toString());
 	}
 
 	@Test
 	public void parseWithDefaultExchangeAndRoutingKey() {
-		Address address = Address.parse("direct:///routing-key");
-		assertTrue(address.isStructured());
+		Address address = new Address("direct:///routing-key");
 		assertEquals(ExchangeType.direct, address.getExchangeType());
 		assertEquals("", address.getExchangeName());
 		assertEquals("routing-key", address.getRoutingKey());
