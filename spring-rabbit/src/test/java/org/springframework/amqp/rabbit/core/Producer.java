@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageCreator;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -36,15 +35,11 @@ public class Producer {
 	private static void sendMessages(RabbitTemplate template,
 			final String exchange, final String routingKey, int numMessages) {
 		for (int i = 1; i <= numMessages; i++) {
-			template.send(exchange, routingKey, new MessageCreator() {
-				public Message createMessage() {
-					byte[] bytes = "testing".getBytes();
-					MessageProperties properties = new TestMessageProperties();
-					properties.getHeaders().put("float", new Float(3.14));
-					//properties.getHeaders().put("object", new ConnectionParameters(null,null));
-					return new Message(bytes, properties);
-				}
-			});
+			byte[] bytes = "testing".getBytes();
+			MessageProperties properties = new TestMessageProperties();
+			properties.getHeaders().put("float", new Float(3.14));
+			Message message = new Message(bytes, properties);
+			template.send(exchange, routingKey, message);
 			System.out.println("sending " + i + "...");
 		}
 	}

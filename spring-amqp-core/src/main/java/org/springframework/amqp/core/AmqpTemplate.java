@@ -31,11 +31,11 @@ import org.springframework.amqp.AmqpException;
  */
 public interface AmqpTemplate {
 
-	void send(MessageCreator messageCreator) throws AmqpException;
+	void send(Message message) throws AmqpException;
 
-	void send(String routingKey, MessageCreator messageCreator) throws AmqpException;
+	void send(String routingKey, Message message) throws AmqpException;
 
-	void send(String exchange, String routingKey, MessageCreator messageCreator) throws AmqpException;
+	void send(String exchange, String routingKey, Message message) throws AmqpException;
 
 	void convertAndSend(Object message) throws AmqpException;
 

@@ -26,7 +26,6 @@ import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.ExchangeType;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageCreator;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -38,8 +37,8 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
@@ -185,18 +184,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return holder.getChannel();
 	}
 
-	public void send(MessageCreator messageCreator) throws AmqpException {
-		send(this.exchange, this.routingKey, messageCreator);
+	public void send(Message message) throws AmqpException {
+		send(this.exchange, this.routingKey, message);
 	}
 
-	public void send(String routingKey, MessageCreator messageCreator) throws AmqpException {
-		send(this.exchange, routingKey, messageCreator);
+	public void send(String routingKey, Message message) throws AmqpException {
+		send(this.exchange, routingKey, message);
 	}
 
-	public void send(final String exchange, final String routingKey, final MessageCreator messageCreator) throws AmqpException {
+	public void send(final String exchange, final String routingKey, final Message message) throws AmqpException {
 		execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				doSend(channel, exchange, routingKey, messageCreator);
+				doSend(channel, exchange, routingKey, message);
 				return null;
 			}
 		});
@@ -211,11 +210,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
-		send(exchange, routingKey, new MessageCreator() {
-			public Message createMessage() {
-				return getRequiredMessageConverter().toMessage(object, new RabbitMessageProperties());
-			}
-		});
+		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new RabbitMessageProperties()));
 	}
 
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
@@ -230,12 +225,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			final Object message,
 			final MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
-		send(exchange, routingKey, new MessageCreator() {
-			public Message createMessage() {
-				Message msg = getRequiredMessageConverter().toMessage(message, new RabbitMessageProperties());
-				return messagePostProcessor.postProcessMessage(msg);
-			}
-		});
+		Message msg = getRequiredMessageConverter().toMessage(message, new RabbitMessageProperties());
+		msg = messagePostProcessor.postProcessMessage(msg); 
+		send(exchange, routingKey, msg);
 	}
 
 	public Message receive() throws AmqpException {
@@ -355,27 +347,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			RabbitUtils.closeChannel(channelToClose);
 			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory());
 		}
-	}
-
-	/**
-	 * Send the given message to the specified exchange.
-	 * 
-	 * @param channel
-	 *            the RabbitMQ Channel to operate within
-	 * @param exchange
-	 *            the name of the RabbitMQ exchange to send to
-	 * @param routingKey
-	 *            the routing key to
-	 * @param messageCreator
-	 *            callback to create a Message
-	 * @throws IOException
-	 *             if thrown by RabbitMQ API methods
-	 */
-	protected void doSend(Channel channel,
-			String exchange, String routingKey, MessageCreator messageCreator)
-			throws Exception {
-		Assert.notNull(messageCreator, "MessageCreator must not be null");
-		this.doSend(channel, exchange, routingKey, messageCreator.createMessage());
 	}
 
 	/**
