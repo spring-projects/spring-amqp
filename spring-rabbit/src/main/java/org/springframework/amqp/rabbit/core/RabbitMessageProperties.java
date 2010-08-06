@@ -191,7 +191,8 @@ public class RabbitMessageProperties implements MessageProperties {
 	}
 
 	public Address getReplyTo() {
-		return new Address(basicProperties.getReplyTo());
+		String replyTo = basicProperties.getReplyTo();
+		return (replyTo != null) ? new Address(replyTo) : null;
 	}
 
 	public void setContentType(String contentType) {
