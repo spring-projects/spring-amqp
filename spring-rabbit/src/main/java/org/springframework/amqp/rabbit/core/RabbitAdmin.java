@@ -94,6 +94,9 @@ public class RabbitAdmin implements AmqpAdmin {
 		});
 	}
 
+	/**
+	 * Declares a server-named exclusive, autodelete, non-durable queue. 
+	 */
 	@ManagedOperation
 	public Queue declareQueue() {
 		DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
