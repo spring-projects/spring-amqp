@@ -63,7 +63,7 @@ import com.rabbitmq.client.Channel;
  * message content type such as <code>String</code> or byte array), it will get
  * wrapped in a Rabbit <code>Message</code> and sent to the exchange of the incoming message
  * with the routingKey that comes from the Rabbit ReplyTo property or via 
- * {@link #setDefaultResponseRoutingKey(String) specified routingKey}).
+ * {@link #setResponseRoutingKey(String) specified routingKey}).
  *
  * <p><b>Note:</b> The sending of response messages is only available when
  * using the {@link ChannelAwareMessageListener} entry point (typically through a
@@ -123,7 +123,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @see #setDelegate
  * @see #setDefaultListenerMethod
- * @see #setDefaultResponseExchange(String)
+ * @see #setResponseRoutingKey(String)
  * @see #setMessageConverter
  * @see org.springframework.amqp.support.converter.SimpleMessageConverter
  * @see org.springframework.amqp.rabbit.core.ChannelAwareMessageListener
@@ -474,7 +474,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getResponseReplyTo(Message, Message, Channel)
+	 * @see #getReplyToAddress(Message)
 	 * @see #sendResponse
 	 */
 	protected void handleResult(Object result, Message request, Channel channel) throws Exception {
@@ -574,7 +574,6 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	/**
 	 * Send the given response message to the given destination.
 	 * @param channel the Rabbit channel to operate on
-	 * @param receivedExchange the exchange on which the incoming message was received.b
 	 * @param replyTo the Rabbit ReplyTo string to use when sending.  Currently interpreted to be the routing key.
 	 * @param message the Rabbit message to send
 	 * @throws Exception if thrown by Rabbit API methods
