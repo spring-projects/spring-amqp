@@ -34,27 +34,29 @@ public interface AmqpTemplate {
 	void send(MessageCreator messageCreator) throws AmqpException;
 
 	void send(String routingKey, MessageCreator messageCreator) throws AmqpException;
-	
+
 	void send(String exchange, String routingKey, MessageCreator messageCreator) throws AmqpException;
-		
+
 	void convertAndSend(Object message) throws AmqpException;
 
 	void convertAndSend(String routingKey, Object message) throws AmqpException;
-	
+
 	void convertAndSend(String exchange, String routingKey, Object message) throws AmqpException;
-	
+
 	void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 	void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 	void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
-	
+
 	Message receive() throws AmqpException;
-	
+
 	Message receive(String queueName) throws AmqpException;
-	
+
 	Object receiveAndConvert() throws AmqpException;
-	
+
 	Object receiveAndConvert(String queueName) throws AmqpException;
+
+	Object convertSendAndReceive(Object message) throws AmqpException;
 
 }

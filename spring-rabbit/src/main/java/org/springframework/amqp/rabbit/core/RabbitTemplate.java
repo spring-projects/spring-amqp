@@ -17,9 +17,14 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.ExchangeType;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageCreator;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -33,8 +38,12 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 
 /**
@@ -48,6 +57,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct default exchange
 
 	private static final String DEFAULT_ROUTING_KEY = "";
+
+	private static final long DEFAULT_REPLY_TIMEOUT = 5000;
 
 
 	// TODO configure defaults
@@ -65,6 +76,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private volatile boolean immediatePublish;
 
 	private volatile boolean requireAck = false;
+
+	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
 
 	/**
@@ -113,6 +126,16 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	public void setRequireAck(boolean requireAck) {
 		this.requireAck = requireAck;
+	}
+
+	/**
+	 * Specify the timeout in milliseconds to be used when waiting for
+	 * a reply Message when using one of the sendAndReceive methods.
+	 * The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}.
+	 * A negative value indicates an indefinite timeout.
+	 */
+	public void setReplyTimeout(long replyTimeout) {
+		this.replyTimeout = replyTimeout;
 	}
 
 	/**
@@ -251,6 +274,62 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return null;
 	}
 
+	public Object convertSendAndReceive(final Object message) throws AmqpException {
+		RabbitMessageProperties messageProperties = new RabbitMessageProperties();
+		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
+		Message replyMessage = this.doSendAndReceive(requestMessage);
+		if (replyMessage == null) {
+			return null;
+		}
+		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+	}
+
+	private Message doSendAndReceive(final Message message) {
+		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+			public Message doInRabbit(Channel channel) throws Exception {
+				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
+
+				// TODO: extract this to a method
+				Address replyToAddress = message.getMessageProperties().getReplyTo();
+				if (replyToAddress == null) {
+					// TODO: first check for a replyToAddress property on this template
+					DeclareOk queueDeclaration = channel.queueDeclare();
+					replyToAddress = new Address(ExchangeType.direct, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
+					message.getMessageProperties().setReplyTo(replyToAddress);
+				}
+
+				boolean noAck = false;
+				String consumerTag = UUID.randomUUID().toString();
+				boolean noLocal = true;
+				boolean exclusive = true;
+				DefaultConsumer consumer = new DefaultConsumer(channel) {
+					@Override
+					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+							throws IOException {
+						MessageProperties messageProperties = new RabbitMessageProperties(properties,
+								envelope.getExchange(), envelope.getRoutingKey(), envelope.isRedeliver(), envelope.getDeliveryTag(), 0);
+						Message reply = new Message(body, messageProperties);
+						try {
+							replyHandoff.put(reply);
+						}
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+					}
+				};
+				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, consumer);
+				// TODO: get exchange and routing key from method args
+				//       methods that are higher in the stack can determine whether to fallback to template properties
+				doSend(channel, exchange, routingKey, message);
+				Message reply = (replyTimeout < 0) ? replyHandoff.take()
+						: replyHandoff.poll(replyTimeout, TimeUnit.MILLISECONDS);
+				channel.basicCancel(consumerTag);
+				return reply;
+			}
+		});
+		return replyMessage;
+	}
+
 	public <T> T execute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
 		Connection conToClose = null;
@@ -277,7 +356,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory());
 		}
 	}
-	
 
 	/**
 	 * Send the given message to the specified exchange.
@@ -297,8 +375,20 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			String exchange, String routingKey, MessageCreator messageCreator)
 			throws Exception {
 		Assert.notNull(messageCreator, "MessageCreator must not be null");
+		this.doSend(channel, exchange, routingKey, messageCreator.createMessage());
+	}
+
+	/**
+	 * Send the given message to the specified exchange.
+	 * 
+	 * @param channel the RabbitMQ Channel to operate within
+	 * @param exchange the name of the RabbitMQ exchange to send to
+	 * @param routingKey the routing key
+	 * @param message the Message to send
+	 * @throws IOException if thrown by RabbitMQ API methods
+	 */
+	private void doSend(Channel channel, String exchange, String routingKey, Message message) throws Exception {
 		try {
-			Message message = messageCreator.createMessage();
 			if (logger.isDebugEnabled()) {
 				logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 			}
