@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -68,7 +69,33 @@ public final class BindingBuilder  {
 			this.exchange = exchange;
 		}
 
-		public Binding with(Map<String, Object> arguments) {
+		public Binding matchingAny(String... headerKeys) {
+			Map<String, Object> arguments = new HashMap<String, Object>();
+			for (String key : headerKeys) {
+				arguments.put(key, null);
+			}
+			arguments.put("x-match", "any");
+			return new Binding(queue, exchange, arguments);
+		}
+
+		public Binding matchingAny(Map<String, Object> headerValues) {
+			Map<String, Object> arguments = new HashMap<String, Object>(headerValues);
+			arguments.put("x-match", "any");
+			return new Binding(queue, exchange, arguments);
+		}
+
+		public Binding matchingAll(String... headerKeys) {
+			Map<String, Object> arguments = new HashMap<String, Object>();
+			for (String key : headerKeys) {
+				arguments.put(key, null);
+			}
+			arguments.put("x-match", "all");
+			return new Binding(queue, exchange, arguments);
+		}
+
+		public Binding matchingAll(Map<String, Object> headerValues) {
+			Map<String, Object> arguments = new HashMap<String, Object>(headerValues);
+			arguments.put("x-match", "all");
 			return new Binding(queue, exchange, arguments);
 		}
 	}
