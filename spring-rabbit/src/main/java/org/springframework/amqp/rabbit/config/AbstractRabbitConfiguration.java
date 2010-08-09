@@ -38,7 +38,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 	/**
 	 * Create a bean definition for RabbitTemplate.  Since there are several properties
 	 * one may want to set after creating a RabbitTemplate from a ConnectionFactory, this
-	 * abstact method is provided to allow for that flexibility as compared to
+	 * abstract method is provided to allow for that flexibility as compared to
 	 * automatically creating a RabbitTemplate by specifying a ConnectionFactory.
 	 */
 	@Bean 
@@ -46,7 +46,7 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 
 	@Bean
 	public AmqpAdmin amqpAdmin() {
-		this.amqpAdmin = new RabbitAdmin(rabbitTemplate().getConnectionFactory());
-		return this.amqpAdmin;
+		return new RabbitAdmin(rabbitTemplate().getConnectionFactory());
 	}
+
 }
