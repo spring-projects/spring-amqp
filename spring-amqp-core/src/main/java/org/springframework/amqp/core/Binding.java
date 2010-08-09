@@ -44,6 +44,13 @@ public class Binding {
 		this.routingKey = "";
 	}
 
+	public Binding(Queue queue, HeadersExchange exchange, Map<String, Object> arguments) {
+		this.queue = queue.getName();
+		this.exchange = exchange.getName();
+		this.routingKey = "";
+		this.arguments = arguments;
+	}
+
 	public Binding(Queue queue, DirectExchange exchange, String routingKey) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();

@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Map;
+
 /**
  * Basic builder class to create bindings for a more fluent API style in code based configuration.
  * 
@@ -41,12 +43,33 @@ public final class BindingBuilder  {
 			return new Binding(this.queue, exchange);
 		}
 
+		public HeadersExchangeMapConfigurer to(HeadersExchange exchange) {
+			return new HeadersExchangeMapConfigurer(this.queue, exchange);
+		}
+
 		public DirectExchangeRoutingKeyConfigurer to(DirectExchange exchange) {
 			return new DirectExchangeRoutingKeyConfigurer(this.queue, exchange);
 		}
 
 		public TopicExchangeRoutingKeyConfigurer to(TopicExchange exchange) {
 			return new TopicExchangeRoutingKeyConfigurer(this.queue, exchange);
+		}
+	}
+
+
+	public static class HeadersExchangeMapConfigurer {
+
+		protected final Queue queue;
+
+		protected final HeadersExchange exchange;
+
+		private HeadersExchangeMapConfigurer(Queue queue, HeadersExchange exchange) {
+			this.queue = queue;
+			this.exchange = exchange;
+		}
+
+		public Binding with(Map<String, Object> arguments) {
+			return new Binding(queue, exchange, arguments);
 		}
 	}
 
