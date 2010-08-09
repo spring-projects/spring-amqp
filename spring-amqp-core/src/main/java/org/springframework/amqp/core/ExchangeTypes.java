@@ -13,15 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.core;
 
 /**
- * Enumeration of exchange types.
- * TODO consider 'header' type?  
+ * Constants for the standard Exchange type names.
  * 
- * @author Mark Pollack
- *
+ * @author Mark Fisher
  */
-public enum ExchangeType {
-	 fanout(), direct(), topic()
+public abstract class ExchangeTypes {
+
+	public static final String DIRECT = "direct";
+
+	public static final String TOPIC = "topic";
+
+	public static final String FANOUT = "fanout";
+
+	public static final String HEADERS = "headers";
+
+	public static final String SYSTEM = "system";
+
 }

@@ -58,7 +58,7 @@ public abstract class AbstractExchange implements Exchange {
 		this.autoDelete = autoDelete;
 	}
 
-	public abstract ExchangeType getExchangeType();
+	public abstract String getType();
 
 	public String getName() {
 		return name;
@@ -108,7 +108,7 @@ public abstract class AbstractExchange implements Exchange {
 	@Override
 	public String toString() {
 		return "Exchange [name=" + name + 
-						 ", type=" + getExchangeType().name() +
+						 ", type=" + this.getType() +
 						 ", durable=" + durable +
 						 ", autoDelete=" + autoDelete + 
 						 ", arguments="	+ arguments + "]";

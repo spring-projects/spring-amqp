@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.core;
 
-
-
 /**
  * Simple container collecting information to describe a direct exchange.
  * Used in conjunction with administrative operations.
@@ -30,7 +28,7 @@ public class DirectExchange extends AbstractExchange {
 
 	public static final DirectExchange DEFAULT = new DirectExchange("");
 
-	
+
 	public DirectExchange(String name) {
 		super(name);
 	}
@@ -39,7 +37,10 @@ public class DirectExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
-	public ExchangeType getExchangeType() {
-		return ExchangeType.direct;
+
+	@Override
+	public final String getType() {
+		return ExchangeTypes.DIRECT;
 	}
+
 }

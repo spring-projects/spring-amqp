@@ -236,7 +236,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 			if (logger.isDebugEnabled()) {
 				logger.debug("declaring Exchange '" + exchange.getName() + "'");
 			}
-			channel.exchangeDeclare(exchange.getName(), exchange.getExchangeType().name(),
+			channel.exchangeDeclare(exchange.getName(), exchange.getType(),
 					exchange.isDurable(), exchange.isAutoDelete(), exchange.getArguments());
 		}
 	}

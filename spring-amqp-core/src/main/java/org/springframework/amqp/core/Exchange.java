@@ -25,7 +25,7 @@ public interface Exchange {
 
 	String getName();
 
-	ExchangeType getExchangeType();
+	String getType();
 
 	boolean isDurable();
 

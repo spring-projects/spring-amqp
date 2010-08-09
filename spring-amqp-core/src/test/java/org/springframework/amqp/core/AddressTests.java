@@ -29,7 +29,7 @@ public class AddressTests {
 
 	@Test
 	public void toStringCheck() {
-		Address address = new Address(ExchangeType.direct, "my-exchange", "routing-key");
+		Address address = new Address(ExchangeTypes.DIRECT, "my-exchange", "routing-key");
 		String replyToUri = "direct://my-exchange/routing-key";
 		Assert.assertEquals(replyToUri, address.toString());
 	}
@@ -38,7 +38,7 @@ public class AddressTests {
 	public void parse() {
 		String replyToUri = "direct://my-exchange/routing-key";
 		Address address = new Address(replyToUri);
-		assertEquals(address.getExchangeType(), ExchangeType.direct);
+		assertEquals(address.getExchangeType(), ExchangeTypes.DIRECT);
 		assertEquals(address.getExchangeName(), "my-exchange");
 		assertEquals(address.getRoutingKey(), "routing-key");
 	}
@@ -53,7 +53,7 @@ public class AddressTests {
 	@Test
 	public void parseWithoutRoutingKey() {
 		Address address = new Address("fanout://my-exchange");
-		assertEquals(ExchangeType.fanout, address.getExchangeType());
+		assertEquals(ExchangeTypes.FANOUT, address.getExchangeType());
 		assertEquals("my-exchange", address.getExchangeName());
 		assertEquals("", address.getRoutingKey());
 		assertEquals("fanout://my-exchange/", address.toString());
@@ -62,7 +62,7 @@ public class AddressTests {
 	@Test
 	public void parseWithDefaultExchangeAndRoutingKey() {
 		Address address = new Address("direct:///routing-key");
-		assertEquals(ExchangeType.direct, address.getExchangeType());
+		assertEquals(ExchangeTypes.DIRECT, address.getExchangeType());
 		assertEquals("", address.getExchangeName());
 		assertEquals("routing-key", address.getRoutingKey());
 		assertEquals("direct:///routing-key", address.toString());

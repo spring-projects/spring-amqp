@@ -35,7 +35,7 @@ public class Address {
 	private static final Pattern pattern = Pattern.compile("^([^:]+)://([^/]*)/?(.*)$");
 
 
-	private final ExchangeType exchangeType;
+	private final String exchangeType;
 
 	private final String exchangeName;
 
@@ -48,7 +48,7 @@ public class Address {
 	 */
 	public Address(String address) {
 		if (address == null) {
-			this.exchangeType = ExchangeType.direct;
+			this.exchangeType = ExchangeTypes.DIRECT;
 			this.exchangeName = "";
 			this.routingKey = "";
 		}
@@ -56,12 +56,12 @@ public class Address {
 			Matcher matcher = pattern.matcher(address);
 			boolean matchFound = matcher.find();			
 			if (matchFound) {
-				this.exchangeType = ExchangeType.valueOf(matcher.group(1));
+				this.exchangeType = matcher.group(1);
 				this.exchangeName = matcher.group(2);
 				this.routingKey = matcher.group(3);
 			}
 			else {
-				this.exchangeType = ExchangeType.direct;
+				this.exchangeType = ExchangeTypes.DIRECT;
 				this.exchangeName = "";
 				this.routingKey = address;				
 			}
@@ -75,14 +75,14 @@ public class Address {
 	 * @param exchangeName
 	 * @param routingKey
 	 */
-	public Address(ExchangeType exchangeType, String exchangeName, String routingKey) {		
+	public Address(String exchangeType, String exchangeName, String routingKey) {		
 		this.exchangeType = exchangeType;
 		this.exchangeName = exchangeName;
 		this.routingKey = routingKey;
 	}
 
 
-	public ExchangeType getExchangeType() {
+	public String getExchangeType() {
 		return this.exchangeType;
 	}
 

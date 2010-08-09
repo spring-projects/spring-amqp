@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.core;
 
-
-
 /**
  * Simple container collecting information to describe a fanout exchange.
  * Used in conjunction with administrative operations.
@@ -27,21 +25,18 @@ package org.springframework.amqp.core;
  */
 public class FanoutExchange extends AbstractExchange {
 
-	
-	
 	public FanoutExchange(String name) {
 		super(name);		
 	}
 	
-	
-
 	public FanoutExchange(String name, boolean durable, boolean autoDelete) {
 		super(name, durable, autoDelete);
 	}
 
 
-
-	public ExchangeType getExchangeType() {
-		return ExchangeType.fanout;
+	@Override
+	public final String getType() {
+		return ExchangeTypes.FANOUT;
 	}
+
 }

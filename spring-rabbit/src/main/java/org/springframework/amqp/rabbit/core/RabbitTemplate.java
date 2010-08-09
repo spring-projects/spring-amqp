@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.ExchangeType;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
@@ -286,7 +286,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				if (replyToAddress == null) {
 					// TODO: first check for a replyToAddress property on this template
 					DeclareOk queueDeclaration = channel.queueDeclare();
-					replyToAddress = new Address(ExchangeType.direct, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
+					replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
 					message.getMessageProperties().setReplyTo(replyToAddress);
 				}
 

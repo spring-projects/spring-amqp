@@ -16,14 +16,11 @@
 
 package org.springframework.amqp.core;
 
-
-
 /**
  * Simple container collecting information to describe a topic exchange.
  * Used in conjunction with administrative operations.
  * 
  * @author Mark Pollack
- * 
  * @see AmqpAdmin
  */
 public class TopicExchange extends AbstractExchange {
@@ -31,13 +28,15 @@ public class TopicExchange extends AbstractExchange {
 	public TopicExchange(String name) {
 		super(name);
 	}
-	
+
 	public TopicExchange(String name, boolean durable, boolean autoDelete) {
 		super(name, durable, autoDelete);		
 	}
 
 
-	public ExchangeType getExchangeType() {
-		return ExchangeType.topic;
+	@Override
+	public final String getType() {
+		return ExchangeTypes.TOPIC;
 	}
+
 }
