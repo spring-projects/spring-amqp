@@ -19,6 +19,8 @@ package org.springframework.amqp.core;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.util.Assert;
+
 /**
  * Basic builder class to create bindings for a more fluent API style in code based configuration.
  * 
@@ -69,34 +71,77 @@ public final class BindingBuilder  {
 			this.exchange = exchange;
 		}
 
-		public Binding matchingAny(String... headerKeys) {
-			Map<String, Object> arguments = new HashMap<String, Object>();
-			for (String key : headerKeys) {
-				arguments.put(key, null);
+		public HeadersExchangeSingleValueBindingCreator where(String key) {
+			return new HeadersExchangeSingleValueBindingCreator(key);
+		}
+
+		public HeadersExchangeKeysBindingCreator whereAny(String... headerKeys) {
+			return new HeadersExchangeKeysBindingCreator(headerKeys, false);
+		}
+
+		public HeadersExchangeMapBindingCreator whereAny(Map<String, Object> headerValues) {
+			return new HeadersExchangeMapBindingCreator(headerValues, false);
+		}
+
+		public HeadersExchangeKeysBindingCreator whereAll(String... headerKeys) {
+			return new HeadersExchangeKeysBindingCreator(headerKeys, true);
+		}
+
+		public HeadersExchangeMapBindingCreator whereAll(Map<String, Object> headerValues) {
+			return new HeadersExchangeMapBindingCreator(headerValues, true);
+		}
+
+
+		public class HeadersExchangeSingleValueBindingCreator {
+
+			private final String key;
+
+			private HeadersExchangeSingleValueBindingCreator(String key) {
+				Assert.notNull(key, "key must not be null");
+				this.key = key;
 			}
-			arguments.put("x-match", "any");
-			return new Binding(queue, exchange, arguments);
-		}
 
-		public Binding matchingAny(Map<String, Object> headerValues) {
-			Map<String, Object> arguments = new HashMap<String, Object>(headerValues);
-			arguments.put("x-match", "any");
-			return new Binding(queue, exchange, arguments);
-		}
-
-		public Binding matchingAll(String... headerKeys) {
-			Map<String, Object> arguments = new HashMap<String, Object>();
-			for (String key : headerKeys) {
-				arguments.put(key, null);
+			public Binding exists() {
+				return new Binding(queue, exchange, createMapForKeys(this.key));
 			}
-			arguments.put("x-match", "all");
-			return new Binding(queue, exchange, arguments);
+
+			public Binding matches(Object value) {
+				Map<String, Object> map = new HashMap<String, Object>();
+				map.put(key, value);
+				return new Binding(queue, exchange, map);
+			}
 		}
 
-		public Binding matchingAll(Map<String, Object> headerValues) {
-			Map<String, Object> arguments = new HashMap<String, Object>(headerValues);
-			arguments.put("x-match", "all");
-			return new Binding(queue, exchange, arguments);
+
+		public class HeadersExchangeKeysBindingCreator {
+
+			private final Map<String, Object> headerMap;
+
+			private HeadersExchangeKeysBindingCreator(String[] headerKeys, boolean matchAll) {
+				Assert.notEmpty(headerKeys, "header key list must not be empty");
+				this.headerMap = createMapForKeys(headerKeys);
+				this.headerMap.put("x-match", (matchAll ? "all" : "any"));
+			}
+
+			public Binding exist() {
+				return new Binding(queue, exchange, this.headerMap);
+			}
+		}
+
+
+		public class HeadersExchangeMapBindingCreator {
+
+			private final Map<String, Object> headerMap;
+
+			private HeadersExchangeMapBindingCreator(Map<String, Object> headerMap, boolean matchAll) {
+				Assert.notEmpty(headerMap, "header map must not be empty");
+				this.headerMap = new HashMap<String, Object>(headerMap);
+				this.headerMap.put("x-match", (matchAll ? "all" : "any"));
+			}
+
+			public Binding match() {
+				return new Binding(queue, exchange, this.headerMap);
+			}
 		}
 	}
 
@@ -147,6 +192,15 @@ public final class BindingBuilder  {
 		public Binding withQueueName() {
 			return new Binding(this.queue, this.exchange, this.queue.getName());
 		}
+	}
+
+
+	private static Map<String, Object> createMapForKeys(String... keys) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (String key : keys) {
+			map.put(key, null);
+		}
+		return map;
 	}
 
 }
