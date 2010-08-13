@@ -26,8 +26,9 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.junit.Test;
+
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.TestMessageProperties;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.oxm.Marshaller;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.oxm.XmlMappingException;
@@ -42,7 +43,7 @@ public class MarshallingMessageConverterTests {
 		TestMarshaller marshaller = new TestMarshaller();
 		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
 		converter.afterPropertiesSet();
-		Message message = converter.toMessage("marshal test", new TestMessageProperties());
+		Message message = converter.toMessage("marshal test", new MessageProperties());
 		String response = new String(message.getBody(), "UTF-8");
 		assertEquals("MARSHAL TEST", response);
 	}
@@ -52,7 +53,7 @@ public class MarshallingMessageConverterTests {
 		TestMarshaller marshaller = new TestMarshaller();
 		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
 		converter.afterPropertiesSet();
-		Message message = new Message("UNMARSHAL TEST".getBytes(), new TestMessageProperties());
+		Message message = new Message("UNMARSHAL TEST".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
 		assertEquals("unmarshal test", result);
 	}

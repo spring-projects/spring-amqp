@@ -210,7 +210,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
-		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new RabbitMessageProperties()));
+		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new MessageProperties()));
 	}
 
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
@@ -221,13 +221,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor);
 	}
 
-	public void convertAndSend(String exchange, String routingKey,
-			final Object message,
-			final MessagePostProcessor messagePostProcessor)
-			throws AmqpException {
-		Message msg = getRequiredMessageConverter().toMessage(message, new RabbitMessageProperties());
-		msg = messagePostProcessor.postProcessMessage(msg); 
-		send(exchange, routingKey, msg);
+	public void convertAndSend(String exchange, String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+		Message messageToSend = getRequiredMessageConverter().toMessage(message, new MessageProperties());
+		messageToSend = messagePostProcessor.postProcessMessage(messageToSend); 
+		send(exchange, routingKey, messageToSend);
 	}
 
 	public Message receive() throws AmqpException {
@@ -241,12 +239,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				GetResponse response = channel.basicGet(queueName, !requireAck);
 				//TODO - check for null of response - got it when sending from .NET client, investigate
 				if (response != null) {					
-					MessageProperties messageProps = new RabbitMessageProperties(response.getProps(), 
-																				 response.getEnvelope().getExchange(),
-																				 response.getEnvelope().getRoutingKey(),
-																				 response.getEnvelope().isRedeliver(),
-																				 response.getEnvelope().getDeliveryTag(),																		   
-																				 response.getMessageCount());
+					MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(), response.getEnvelope(), "UTF-8");
+					messageProps.setMessageCount(response.getMessageCount());
 					return new Message(response.getBody(), messageProps);
 				}
 				return null;
@@ -267,7 +261,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
-		RabbitMessageProperties messageProperties = new RabbitMessageProperties();
+		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
 		Message replyMessage = this.doSendAndReceive(requestMessage);
 		if (replyMessage == null) {
@@ -296,10 +290,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				boolean exclusive = true;
 				DefaultConsumer consumer = new DefaultConsumer(channel) {
 					@Override
-					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-							throws IOException {
-						MessageProperties messageProperties = new RabbitMessageProperties(properties,
-								envelope.getExchange(), envelope.getRoutingKey(), envelope.isRedeliver(), envelope.getDeliveryTag(), 0);
+					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+						MessageProperties messageProperties = RabbitUtils.createMessageProperties(properties, envelope, "UTF-8");
 						Message reply = new Message(body, messageProperties);
 						try {
 							replyHandoff.put(reply);

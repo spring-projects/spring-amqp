@@ -27,7 +27,7 @@ public class MessageTests {
 
 	@Test
 	public void toStringForEmptyMessageBody() {
-		Message message = new Message(new byte[0], new TestMessageProperties());
+		Message message = new Message(new byte[0], new MessageProperties());
 		assertNotNull(message.toString());
 	}
 

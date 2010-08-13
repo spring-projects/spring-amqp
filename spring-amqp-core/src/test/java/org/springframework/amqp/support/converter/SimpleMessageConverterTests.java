@@ -27,7 +27,6 @@ import java.io.Serializable;
 import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.TestMessageProperties;
 import org.springframework.util.Assert;
 
 /**
@@ -38,7 +37,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		Message message = new Message("test".getBytes(), new TestMessageProperties());
+		Message message = new Message("test".getBytes(), new MessageProperties());
 		Object result = converter.fromMessage(message);
 		assertEquals(byte[].class, result.getClass());
 		assertEquals("test", new String((byte[]) result, "UTF-8"));
@@ -47,7 +46,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void messageToString() {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		Message message = new Message("test".getBytes(), new TestMessageProperties());
+		Message message = new Message("test".getBytes(), new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 		Object result = converter.fromMessage(message);
 		assertEquals(String.class, result.getClass());
@@ -57,7 +56,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void messageToBytes() {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		Message message = new Message(new byte[] { 1, 2, 3 }, new TestMessageProperties());
+		Message message = new Message(new byte[] { 1, 2, 3 }, new MessageProperties());
 		message.getMessageProperties().setContentType(MessageProperties.CONTENT_TYPE_BYTES);
 		Object result = converter.fromMessage(message);
 		assertEquals(byte[].class, result.getClass());
@@ -71,7 +70,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void messageToSerializedObject() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		MessageProperties properties = new TestMessageProperties();
+		MessageProperties properties = new MessageProperties();
 		properties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 		ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
@@ -89,7 +88,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void stringToMessage() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		Message message = converter.toMessage("test", new TestMessageProperties());
+		Message message = converter.toMessage("test", new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		String content = new String(message.getBody(),
 				message.getMessageProperties().getContentEncoding());
@@ -100,7 +99,7 @@ public class SimpleMessageConverterTests {
 	@Test
 	public void bytesToMessage() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
-		Message message = converter.toMessage(new byte[] { 1, 2, 3 }, new TestMessageProperties());
+		Message message = converter.toMessage(new byte[] { 1, 2, 3 }, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
 		assertEquals("application/octet-stream", contentType);
@@ -114,7 +113,7 @@ public class SimpleMessageConverterTests {
 	public void serializedObjectToMessage() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		TestBean testBean = new TestBean("foo");
-		Message message = converter.toMessage(testBean, new TestMessageProperties());
+		Message message = converter.toMessage(testBean, new MessageProperties());
 		String contentType = message.getMessageProperties().getContentType();
 		byte[] body = message.getBody();
 		assertEquals("application/x-java-serialized-object", contentType);

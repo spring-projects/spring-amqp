@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
-import javax.print.attribute.standard.Destination;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,8 +29,8 @@ import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.core.RabbitMessageProperties;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -509,7 +507,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	protected Message buildMessage(Channel session, Object result) throws Exception {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null) {
-			return converter.toMessage(result, new RabbitMessageProperties());
+			return converter.toMessage(result, new MessageProperties());
 		}
 		else {
 			if (!(result instanceof Message)) {
