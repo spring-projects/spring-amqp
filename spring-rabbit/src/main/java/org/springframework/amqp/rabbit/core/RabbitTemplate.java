@@ -301,7 +301,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						}
 					}
 				};
-				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, consumer);
+				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, null, consumer);
 				// TODO: get exchange and routing key from method args
 				//       methods that are higher in the stack can determine whether to fallback to template properties
 				doSend(channel, exchange, routingKey, message);
