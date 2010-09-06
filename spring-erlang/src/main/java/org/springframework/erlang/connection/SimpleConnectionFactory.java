@@ -29,6 +29,40 @@ import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
 /**
+ * Provides a more traditional API to creating a connection to a remote erlang node than
+ * the JInterface API.
+ * 
+ * <p>The following is taken from the JInterface javadocs that describe the valid
+ * node names that can be used.  These naming constraints apply to the string values
+ * you pass into the node names in SimpleConnectionFactory's constructor. 
+ * <p>
+ * About nodenames: Erlang nodenames consist of two components, an alivename and
+ * a hostname separated by '@'. Additionally, there are two nodename formats:
+ * short and long. Short names are of the form "alive@hostname", while long
+ * names are of the form "alive@host.fully.qualified.domainname". Erlang has
+ * special requirements regarding the use of the short and long formats, in
+ * particular they cannot be mixed freely in a network of communicating nodes,
+ * however Jinterface makes no distinction. See the Erlang documentation for
+ * more information about nodenames.
+ * </p>
+ * 
+ * <p>
+ * The constructors for the AbstractNode classes will create names exactly as
+ * you provide them as long as the name contains '@'. If the string you provide
+ * contains no '@', it will be treated as an alivename and the name of the local
+ * host will be appended, resulting in a shortname. Nodenames longer than 255
+ * characters will be truncated without warning.
+ * </p>
+ * 
+ * <p>
+ * Upon initialization, this class attempts to read the file .erlang.cookie in
+ * the user's home directory, and uses the trimmed first line of the file as the
+ * default cookie by those constructors lacking a cookie argument. If for any
+ * reason the file cannot be found or read, the default cookie will be set to
+ * the empty string (""). The location of a user's home directory is determined
+ * using the system property "user.home", which may not be automatically set on
+ * all platforms.
+ * </p>
  * @author Mark Pollack
  * @author Mark Fisher
  */
