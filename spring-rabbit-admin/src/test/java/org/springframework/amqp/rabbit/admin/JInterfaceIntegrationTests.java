@@ -1,12 +1,16 @@
 package org.springframework.amqp.rabbit.admin;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import junit.framework.Assert;
+
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.springframework.erlang.connection.SimpleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 
@@ -65,14 +69,13 @@ public class JInterfaceIntegrationTests {
 	}
 
 	@Test
-	public void otpTemplate() throws UnknownHostException {		
+	public void otpTemplate() throws UnknownHostException {
 		String selfNodeName = "rabbit-monitor";
-		String peerNodeName = "rabbit@"
-				+ InetAddress.getLocalHost().getHostName();
+		String peerNodeName = "rabbit@" + InetAddress.getLocalHost().getHostName();
 
-		String home = System.getProperty("user.home");
-		System.out.println("home = " + home);
-		System.out.println("peerNodeName = " + peerNodeName);
+		//String home = System.getProperty("user.home");
+		//System.out.println("home = " + home);
+		//System.out.println("peerNodeName = " + peerNodeName);
 
 		SimpleConnectionFactory cf = new SimpleConnectionFactory(selfNodeName,
 				peerNodeName);
@@ -81,10 +84,44 @@ public class JInterfaceIntegrationTests {
 		ErlangTemplate template = new ErlangTemplate(cf);
 		template.afterPropertiesSet();
 
-		OtpErlangObject result = template.executeRpc("rabbit_amqqueue",
-				"info_all", "/".getBytes());
-		System.out.println(result);
-		System.out.println(result.getClass());
+		//OtpErlangObject result = template.executeRpc("rabbit_amqqueue", "info_all", "/".getBytes());
+		//System.out.println(result);
+		//System.out.println(result.getClass());
+
+		long number = (Long) template.executeAndConvertRpc("erlang", "abs",	-161803399);
+		Assert.assertEquals(161803399, number);
+	
 
 	}
+
+	@Test
+	public void rawOtpConnect() throws Exception {
+		String cookie = readCookie();
+		OtpSelf self = new OtpSelf("rabbit-monitor", cookie);
+		OtpPeer peer = new OtpPeer("rabbit@" + InetAddress.getLocalHost().getHostName());
+		self.connect(peer);
+	}
+
+	private String readCookie() throws Exception {
+		String cookie = null;
+		final String dotCookieFilename = System.getProperty("user.home")
+				+ File.separator + ".erlang.cookie";
+		BufferedReader br = null;
+
+		try {
+			final File dotCookieFile = new File(dotCookieFilename);
+
+			br = new BufferedReader(new FileReader(dotCookieFile));
+			cookie = br.readLine().trim();
+			return cookie;
+		} finally {
+			try {
+				if (br != null) {
+					br.close();
+				}
+			} catch (final IOException e) {
+			}
+		}
+	}
+
 }
