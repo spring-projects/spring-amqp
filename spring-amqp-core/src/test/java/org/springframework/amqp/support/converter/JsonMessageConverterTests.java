@@ -24,7 +24,7 @@ import java.util.Hashtable;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.TestMessageProperties;
+import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author Mark Pollack
@@ -43,7 +43,7 @@ public class JsonMessageConverterTests {
 		trade.setTicker("VMW");
 		trade.setUserName("Joe Trader");
 		JsonMessageConverter converter = new JsonMessageConverter();
-		Message message = converter.toMessage(trade, new TestMessageProperties());
+		Message message = converter.toMessage(trade, new MessageProperties());
 		String classIdFieldName = converter.getClassMapper().getClassIdFieldName();
 		Object classIdHeaderObject = message.getMessageProperties().getHeaders().get(classIdFieldName);
 		assertEquals(String.class, classIdHeaderObject.getClass());
@@ -58,7 +58,7 @@ public class JsonMessageConverterTests {
 		hashtable.put("TICKER", "VMW");
 		hashtable.put("PRICE", "103.2");
 		JsonMessageConverter converter = new JsonMessageConverter();
-		Message message = converter.toMessage(hashtable, new TestMessageProperties());
+		Message message = converter.toMessage(hashtable, new MessageProperties());
 		Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
 		assertEquals("VMW", marhsalledHashtable.get("TICKER"));
 		assertEquals("103.2", marhsalledHashtable.get("PRICE"));
