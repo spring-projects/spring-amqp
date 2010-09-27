@@ -3,7 +3,6 @@ package org.springframework.amqp.rabbit.test;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import org.springframework.test.context.ContextConfiguration;
 
 @RunWith(SpringRabbitJUnit4ClassRunner.class)
@@ -20,7 +19,7 @@ public class RabbitTestExecutionListenerIntegrationTests {
 	}
 
 	@Test
-	public void doNothinAgain() throws InterruptedException {
+	public void doNothingAgain() throws InterruptedException {
 		Thread.sleep(1000);
 		System.out.println("inside DO AGAIN");
 		System.out.println("inside DO AGAIN");
