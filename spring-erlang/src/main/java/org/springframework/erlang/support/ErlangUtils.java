@@ -23,6 +23,7 @@ import org.springframework.erlang.OtpIOException;
 import org.springframework.erlang.UncategorizedOtpException;
 import org.springframework.util.Assert;
 
+import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpConnection;
 
 /**
@@ -46,6 +47,9 @@ public class ErlangUtils {
 		Assert.notNull(ex, "Exception must not be null");
 		if (ex instanceof IOException) {
 			return new OtpIOException((IOException) ex);
+		}		
+		if (ex instanceof OtpAuthException) {
+			return new org.springframework.erlang.OtpAuthException((OtpAuthException) ex);
 		}		
 		//fallback
 		return new UncategorizedOtpException(ex);

@@ -21,7 +21,6 @@ import java.util.Collection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Exchange;
@@ -33,8 +32,8 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import com.rabbitmq.client.Channel;
 
 /**
  * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.9.1
@@ -161,7 +160,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 	public void purgeQueue(final String queueName, final boolean noWait) {
 		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queuePurge(queueName, noWait);
+				channel.queuePurge(queueName);
 				return null;
 			}
 		});

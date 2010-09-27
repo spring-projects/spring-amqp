@@ -28,7 +28,6 @@ import org.springframework.erlang.connection.Connection;
 import org.springframework.erlang.connection.ConnectionFactory;
 
 import com.ericsson.otp.erlang.OtpAuthException;
-import com.ericsson.otp.erlang.OtpConnection;
 
 /**
  * @author Mark Pollack

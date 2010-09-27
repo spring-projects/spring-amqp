@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.erlang;
+package org.springframework.erlang.connection;
+
+import com.ericsson.otp.erlang.OtpConnection;
 
 /**
- * Runtime exception mirroring the OTP OtpAuthException.
+ * Subinterface of {@link Connection} to be implemented by Connection proxies.
+ * Allows access to the underlying target Connection
  * 
  * @author Mark Pollack
+ *
  */
-@SuppressWarnings("serial")
-public class OtpAuthException extends OtpException {
+public interface ConnectionProxy extends Connection {
 
-	public OtpAuthException(com.ericsson.otp.erlang.OtpAuthException cause) {
-		super(cause);
-	}
-
-	public OtpAuthException(String msg, com.ericsson.otp.erlang.OtpAuthException cause) {
-		super(msg, cause);
-	}
-
+	OtpConnection getTargetConnection();
 }

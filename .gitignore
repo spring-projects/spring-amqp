@@ -4,3 +4,4 @@ target
 .ant-targets-build.xml
 src/ant/.ant-targets-upload-dist.xml
 *.swp
+erl_crash.dump
