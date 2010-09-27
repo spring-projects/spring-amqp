@@ -17,55 +17,71 @@
 package org.springframework.amqp.rabbit.admin;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.erlang.OtpIOException;
 
 /**
  * @author Mark Pollack
  */
 public class RabbitBrokerAdminIntegrationTests {
+	
+	private static Log logger = LogFactory.getLog(RabbitBrokerAdminIntegrationTests.class);
 
 	private static RabbitBrokerAdmin brokerAdmin;
 
 	private static SingleConnectionFactory connectionFactory;
 
 	@BeforeClass
-	public static void setUp() {
+	public static void setUp() throws Exception {
 		connectionFactory = new SingleConnectionFactory();
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
+		logger.info("Starting broker node");
+		brokerAdmin.startNode();
+		Thread.sleep(1000L);
+	}
+
+	@AfterClass
+	public static void tearDown() {
+		logger.info("Shutting down broker node");
+		brokerAdmin.stopNode();
 	}
 
 	@Test
 	//@Ignore
-	public void integrationTestsUserCrud() {
+	public void integrationTestsUserCrud() throws Exception {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
 			brokerAdmin.deleteUser("joe");
 		}
+		Thread.sleep(1000L);
 		brokerAdmin.addUser("joe", "trader");
+		Thread.sleep(1000L);
 		brokerAdmin.changeUserPassword("joe", "sales");
+		Thread.sleep(1000L);
 		users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
+			Thread.sleep(1000L);
 			brokerAdmin.deleteUser("joe");
 		}
 	}
 
 	
-	public void integrationTestListUsers() {
+	public void integrationTestListUsers() throws Exception {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
 		// "info_all", "/".getBytes());
 		// System.out.println(result);
+		Thread.sleep(1000L);
 		List<String> users = brokerAdmin.listUsers();
 		System.out.println(users);
 	}
@@ -80,44 +96,12 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	//
-	public void testStatusAndBrokerLifecycle() {
-		RabbitStatus status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);		
-		
-		brokerAdmin.stopBrokerApplication();
-		status = brokerAdmin.getStatus();
-		assertEquals(0, status.getRunningNodes().size());
-		
-		brokerAdmin.startBrokerApplication();
-		status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);				
-	}
-	
-	@Test
-	//@Ignore("NEEDS RABBITMQ_HOME to be set.")
-	public void testStartNode() {
-		try {
-			brokerAdmin.stopNode();
-		} catch (OtpIOException e) {
-			//assume it is not running.
-		}
-		brokerAdmin.startNode();
-		assertEquals(1,1);
-		brokerAdmin.stopNode();
-	}
-	
-	@Test
-	public void testGetQueues() {
+	public void testGetQueues() throws Exception {
+		Thread.sleep(1000L);
 		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();
 		assertEquals("test.queue", queues.get(0).getName());
-	}
-
-	private void assertBrokerAppRunning(RabbitStatus status) {
-		assertEquals(1, status.getRunningNodes().size());
-		assertTrue(status.getRunningNodes().get(0).getName().contains("rabbit"));
 	}
 
 }

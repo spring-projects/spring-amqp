@@ -6,7 +6,6 @@ import java.net.UnknownHostException;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.springframework.erlang.connection.SimpleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 

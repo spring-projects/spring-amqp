@@ -28,4 +28,8 @@ public class OtpAuthException extends OtpException {
 		super(cause);
 	}
 
+	public OtpAuthException(String msg, com.ericsson.otp.erlang.OtpAuthException cause) {
+		super(msg, cause);
+	}
+
 }

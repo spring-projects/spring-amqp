@@ -46,9 +46,8 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 
 
 	public SimpleConnectionFactory(String selfNodeName, String cookie, String peerNodeName) {
-		this.selfNodeName = selfNodeName;
+		this(selfNodeName, peerNodeName);
 		this.cookie = cookie;
-		this.peerNodeName = peerNodeName;
 	}
 
 	public SimpleConnectionFactory(String selfNodeName, String peerNodeName) {
