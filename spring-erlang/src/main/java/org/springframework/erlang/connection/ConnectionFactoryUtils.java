@@ -20,8 +20,6 @@ package org.springframework.erlang.connection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.ericsson.otp.erlang.OtpConnection;
-
 /**
  * @author Mark Pollack
  */
@@ -33,7 +31,7 @@ public class ConnectionFactoryUtils {
 	/**
 	 * Release the given Connection by closing it.
 	 */
-	public static void releaseConnection(OtpConnection con, ConnectionFactory cf) {
+	public static void releaseConnection(Connection con, ConnectionFactory cf) {
 		if (con == null) {
 			return;
 		}

@@ -23,7 +23,7 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
-@Ignore("manual integration test only.")
+//@Ignore("manual integration test only.")
 public class JInterfaceIntegrationTests {
 
 	@Test
@@ -32,8 +32,8 @@ public class JInterfaceIntegrationTests {
 		try {
 			OtpSelf self = new OtpSelf("rabbit-monitor");
 
-			String hostName = "rabbit@"
-					+ InetAddress.getLocalHost().getHostName();
+			String hostName = "rabbit@vmc-ssrc-rh82";
+					//+ InetAddress.getLocalHost().getHostName();
 			OtpPeer peer = new OtpPeer(hostName);
 			connection = self.connect(peer);
 			// connection.sendRPC("erlang","date", new OtpErlangList());
@@ -94,13 +94,44 @@ public class JInterfaceIntegrationTests {
 
 	}
 
+	
 	@Test
 	public void rawOtpConnect() throws Exception {
-		String cookie = readCookie();
-		OtpSelf self = new OtpSelf("rabbit-monitor", cookie);
-		OtpPeer peer = new OtpPeer("rabbit@" + InetAddress.getLocalHost().getHostName());
-		self.connect(peer);
+		createConnection();
 	}
+	
+	
+	@Test
+	public void stressTest() throws Exception {
+		//String cookie = readCookie();
+		OtpConnection con = createConnection();
+		boolean recycleConnection = false;
+		for (int i=0; i< 100; i++) {
+			executeRpc(con, recycleConnection, "rabbit", "status");
+			executeRpc(con, recycleConnection, "rabbit", "stop");
+			executeRpc(con, recycleConnection, "rabbit", "status");
+			executeRpc(con, recycleConnection, "rabbit", "start");
+			executeRpc(con, recycleConnection, "rabbit", "status");
+			System.out.println("i = " + i);
+		}	
+	}
+	
+	public OtpConnection createConnection() throws Exception {
+		OtpSelf self = new OtpSelf("rabbit-monitor");
+		OtpPeer peer = new OtpPeer("rabbit");// + InetAddress.getLocalHost().getHostName());
+		return self.connect(peer);		
+	}
+
+	private void executeRpc(OtpConnection con, boolean recycleConnection, String module, String function) throws Exception, UnknownHostException {		
+		con.sendRPC(module,function, new OtpErlangList());
+		OtpErlangObject response = con.receiveRPC();
+		//System.out.println(module + " response received = " + response.toString());
+		if (recycleConnection) {
+			con.close();
+			con = createConnection();
+		}
+	}
+
 
 	private String readCookie() throws Exception {
 		String cookie = null;

@@ -80,10 +80,18 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 	
 	@Test
-	//
-	public void testStatusAndBrokerLifecycle() {
+	public void repeatLifecycle() throws Exception {
+		for (int i = 1; i< 100; i++) {
+			testStatusAndBrokerLifecycle();
+			System.out.println("i = " + i);
+			//Thread.sleep(1000);
+		}
+	}
+	
+	//@Test	
+	public void testStatusAndBrokerLifecycle() throws Exception {
+				
 		RabbitStatus status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);		
 		
 		brokerAdmin.stopBrokerApplication();
 		status = brokerAdmin.getStatus();
@@ -93,6 +101,8 @@ public class RabbitBrokerAdminIntegrationTests {
 		status = brokerAdmin.getStatus();
 		assertBrokerAppRunning(status);				
 	}
+	
+	
 	
 	@Test
 	//@Ignore("NEEDS RABBITMQ_HOME to be set.")

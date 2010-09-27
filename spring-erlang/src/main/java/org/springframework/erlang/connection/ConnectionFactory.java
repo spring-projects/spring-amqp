@@ -31,6 +31,6 @@ import com.ericsson.otp.erlang.OtpConnection;
  */
 public interface ConnectionFactory {
 
-	OtpConnection createConnection() throws UnknownHostException, OtpAuthException, IOException; 
+	Connection createConnection() throws UnknownHostException, OtpAuthException, IOException; 
 
 }

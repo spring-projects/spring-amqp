@@ -24,11 +24,18 @@ import org.springframework.erlang.OtpIOException;
 import org.springframework.util.Assert;
 
 import com.ericsson.otp.erlang.OtpAuthException;
-import com.ericsson.otp.erlang.OtpConnection;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
 /**
+ * A simple implementation of {@link ConnectionFactory} that return a new connection 
+ * for each invocation of the createConnection method.  
+ * 
+ * Note that use of this ConnectionFactory with ErlangTemplate has unstable behavior when
+ * invoked frequently and will be deprecated.  See {@link SingleConnectionFactory} for an
+ * alternative implementation.
+ * 
+ * 
  * Provides a more traditional API to creating a connection to a remote erlang node than
  * the JInterface API.
  * 
@@ -91,9 +98,9 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 	}
 
 
-	public OtpConnection createConnection() throws UnknownHostException, OtpAuthException, IOException {
+	public Connection createConnection() throws UnknownHostException, OtpAuthException, IOException {
 		try {
-			return otpSelf.connect(otpPeer);
+			return new DefaultConnection(otpSelf.connect(otpPeer));
 		}
 		catch (IOException ex) {
 			throw new OtpIOException("failed to connect from '" + this.selfNodeName

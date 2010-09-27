@@ -16,7 +16,7 @@
 
 package org.springframework.erlang.core;
 
-import com.ericsson.otp.erlang.OtpConnection;
+import org.springframework.erlang.connection.Connection;
 
 /**
  * Basic callback for use in ErlangTemplate
@@ -28,6 +28,6 @@ public interface ConnectionCallback<T> {
 	 * Execute any number of operations against the supplied OTP connection, 
 	 * possibly returning a result.
 	 */
-	T doInConnection(OtpConnection connection) throws Exception;  //Not sure everything it throws
+	T doInConnection(Connection connection) throws Exception;  //Not sure everything it throws
 
 }

@@ -32,6 +32,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.erlang.connection.SimpleConnectionFactory;
+import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedOperationParameter;
@@ -303,9 +304,16 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	protected void initializeDefaultErlangTemplate(RabbitTemplate rabbitTemplate) {	
 		String peerNodeName = "rabbit@" + rabbitTemplate.getConnectionFactory().getHost();
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
-		SimpleConnectionFactory otpCf = new SimpleConnectionFactory("rabbit-spring-monitor", peerNodeName);
+		createErlangTemplate(createErlangConnectionFactory(peerNodeName));
+	}
+
+
+	protected org.springframework.erlang.connection.ConnectionFactory createErlangConnectionFactory(
+			String peerNodeName) {
+		logger.debug("Creating org.springframework.erlang.connection.SingleConnectionFactory.");
+		SingleConnectionFactory otpCf = new SingleConnectionFactory("rabbit-spring-monitor", peerNodeName);
 		otpCf.afterPropertiesSet();
-		createErlangTemplate(otpCf);
+		return (org.springframework.erlang.connection.ConnectionFactory) otpCf;
 	}
 
 	protected void createErlangTemplate(org.springframework.erlang.connection.ConnectionFactory otpCf) {

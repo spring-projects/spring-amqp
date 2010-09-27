@@ -19,6 +19,7 @@ package org.springframework.erlang.core;
 import org.springframework.erlang.ErlangBadRpcException;
 import org.springframework.erlang.ErlangErrorRpcException;
 import org.springframework.erlang.OtpException;
+import org.springframework.erlang.connection.Connection;
 import org.springframework.erlang.connection.ConnectionFactory;
 import org.springframework.erlang.support.ErlangAccessor;
 import org.springframework.erlang.support.ErlangUtils;
@@ -44,7 +45,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 	
 	public OtpErlangObject executeErlangRpc(final String module, final String function, final OtpErlangList args) {
 		return execute(new ConnectionCallback<OtpErlangObject>() {
-			public OtpErlangObject doInConnection(OtpConnection connection) throws Exception {	
+			public OtpErlangObject doInConnection(Connection connection) throws Exception {	
 				logger.debug("Sending RPC for module [" + module + "] function [" + function + "] args [" + args);
 				connection.sendRPC(module, function, args);		
 				//TODO consider dedicated response object.
@@ -109,7 +110,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 	public <T> T execute(ConnectionCallback<T> action) throws OtpException {
 
 		Assert.notNull(action, "Callback object must not be null");
-		OtpConnection con = null;
+		Connection con = null;
 		try {		
 			con = createConnection();
 			return action.doInConnection(con);
