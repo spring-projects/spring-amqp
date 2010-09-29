@@ -9,9 +9,8 @@ import java.net.UnknownHostException;
 
 import junit.framework.Assert;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.erlang.connection.SimpleConnectionFactory;
+import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 
 import com.ericsson.otp.erlang.OtpAuthException;
@@ -26,14 +25,14 @@ import com.ericsson.otp.erlang.OtpSelf;
 //@Ignore("manual integration test only.")
 public class JInterfaceIntegrationTests {
 
+	private static int counter;
 	@Test
 	public void rawApi() {
 		OtpConnection connection = null;
 		try {
 			OtpSelf self = new OtpSelf("rabbit-monitor");
 
-			String hostName = "rabbit@vmc-ssrc-rh82";
-					//+ InetAddress.getLocalHost().getHostName();
+			String hostName = "rabbit@" + InetAddress.getLocalHost().getHostName();
 			OtpPeer peer = new OtpPeer(hostName);
 			connection = self.connect(peer);
 			// connection.sendRPC("erlang","date", new OtpErlangList());
@@ -77,7 +76,7 @@ public class JInterfaceIntegrationTests {
 		//System.out.println("home = " + home);
 		//System.out.println("peerNodeName = " + peerNodeName);
 
-		SimpleConnectionFactory cf = new SimpleConnectionFactory(selfNodeName,
+		SingleConnectionFactory cf = new SingleConnectionFactory(selfNodeName,
 				peerNodeName);
 
 		cf.afterPropertiesSet();
@@ -90,6 +89,8 @@ public class JInterfaceIntegrationTests {
 
 		long number = (Long) template.executeAndConvertRpc("erlang", "abs",	-161803399);
 		Assert.assertEquals(161803399, number);
+		
+		cf.destroy();
 	
 
 	}
@@ -117,8 +118,8 @@ public class JInterfaceIntegrationTests {
 	}
 	
 	public OtpConnection createConnection() throws Exception {
-		OtpSelf self = new OtpSelf("rabbit-monitor");
-		OtpPeer peer = new OtpPeer("rabbit");// + InetAddress.getLocalHost().getHostName());
+		OtpSelf self = new OtpSelf("rabbit-monitor-" + counter++);
+		OtpPeer peer = new OtpPeer("rabbit@" + InetAddress.getLocalHost().getHostName());
 		return self.connect(peer);		
 	}
 

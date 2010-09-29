@@ -23,14 +23,16 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.erlang.OtpIOException;
 
 /**
+ * 
+ * This test class assumes that you are already running the rabbitmq broker.
  * @author Mark Pollack
  */
 public class RabbitBrokerAdminIntegrationTests {
@@ -47,15 +49,6 @@ public class RabbitBrokerAdminIntegrationTests {
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
-		logger.info("Starting broker node");
-		brokerAdmin.startNode();
-		Thread.sleep(1000L);
-	}
-
-	@AfterClass
-	public static void tearDown() {
-		logger.info("Shutting down broker node");
-		brokerAdmin.stopNode();
 	}
 
 	@Test
@@ -102,7 +95,6 @@ public class RabbitBrokerAdminIntegrationTests {
 		for (int i = 1; i< 100; i++) {
 			testStatusAndBrokerLifecycle();
 			System.out.println("i = " + i);
-			//Thread.sleep(1000);
 		}
 	}
 	
@@ -123,7 +115,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	
 	
 	@Test
-	//@Ignore("NEEDS RABBITMQ_HOME to be set.")
+	@Ignore("Test Manually")
 	public void testStartNode() {
 		try {
 			brokerAdmin.stopNode();
@@ -132,12 +124,10 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 		brokerAdmin.startNode();
 		assertEquals(1,1);
-		brokerAdmin.stopNode();
 	}
 	
 	@Test
 	public void testGetQueues() throws Exception {
-		Thread.sleep(1000L);
 		brokerAdmin.declareQueue(new Queue("test.queue"));
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();

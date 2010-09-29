@@ -18,7 +18,10 @@ package org.springframework.erlang.connection;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.erlang.OtpIOException;
 import org.springframework.util.Assert;
@@ -75,6 +78,10 @@ import com.ericsson.otp.erlang.OtpSelf;
  */
 public class SimpleConnectionFactory implements ConnectionFactory, InitializingBean {
 
+	protected final Log logger = LogFactory.getLog(getClass());
+	
+	private boolean uniqueSelfNodeName = true;
+	
 	private String selfNodeName;
 
 	private String cookie;
@@ -106,22 +113,36 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 					+ "' to peer node '" + this.peerNodeName + "'", ex);
 		}
 	}
+	
+	public boolean isUniqueSelfNodeName() {
+		return uniqueSelfNodeName;
+	}
+
+	public void setUniqueSelfNodeName(boolean uniqueSelfNodeName) {
+		this.uniqueSelfNodeName = uniqueSelfNodeName;
+	}
 
 	public void afterPropertiesSet() {
 		Assert.isTrue(this.selfNodeName != null || this.peerNodeName != null,
 				"'selfNodeName' or 'peerNodeName' is required");
+		String selfNodeNameToUse = this.selfNodeName;
+		if (isUniqueSelfNodeName()) {
+			selfNodeNameToUse = this.selfNodeName + "-" + UUID.randomUUID().toString();
+			logger.debug("Creating OtpSelf with node name = [" + selfNodeNameToUse + "]");
+		}
 		try {
 			if (this.cookie == null) {
-				this.otpSelf = new OtpSelf(this.selfNodeName);
+				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim());
 			}
 			else {
-				this.otpSelf = new OtpSelf(this.selfNodeName, this.cookie);
+				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim(), this.cookie);
 			}
 		}
 		catch (IOException e) {
 			throw new OtpIOException(e);
 		}
-		this.otpPeer = new OtpPeer(this.peerNodeName);
+		this.otpPeer = new OtpPeer(this.peerNodeName.trim());
+		
 	}
 
 }

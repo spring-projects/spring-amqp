@@ -38,6 +38,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.erlang.OtpAuthException;
 import org.springframework.erlang.OtpIOException;
 import org.springframework.erlang.connection.SimpleConnectionFactory;
+import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.Application;
 import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.erlang.core.Node;
@@ -376,7 +377,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		}
 		String peerNodeName = "rabbit@" + host;
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
-		SimpleConnectionFactory otpCf = new SimpleConnectionFactory("rabbit-spring-monitor", peerNodeName);
+		SingleConnectionFactory otpCf = new SingleConnectionFactory("rabbit-spring-monitor", peerNodeName);
 		otpCf.afterPropertiesSet();
 		createErlangTemplate(otpCf);
 	}

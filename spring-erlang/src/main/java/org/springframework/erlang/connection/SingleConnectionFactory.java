@@ -24,9 +24,11 @@ import java.lang.reflect.Proxy;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.erlang.OtpIOException;
 import org.springframework.util.Assert;
@@ -78,9 +80,11 @@ import com.ericsson.otp.erlang.OtpSelf;
  * @author Mark Pollack
  */
 public class SingleConnectionFactory implements ConnectionFactory,
-		InitializingBean {
+		InitializingBean, DisposableBean {
 
 	protected final Log logger = LogFactory.getLog(getClass());
+	
+	private boolean uniqueSelfNodeName = true;
 
 	private String selfNodeName;
 
@@ -112,6 +116,14 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		this.selfNodeName = selfNodeName;
 		this.peerNodeName = peerNodeName;
 	}
+	
+	public boolean isUniqueSelfNodeName() {
+		return uniqueSelfNodeName;
+	}
+
+	public void setUniqueSelfNodeName(boolean uniqueSelfNodeName) {
+		this.uniqueSelfNodeName = uniqueSelfNodeName;
+	}
 
 	public Connection createConnection() throws UnknownHostException,
 			OtpAuthException {
@@ -142,6 +154,29 @@ public class SingleConnectionFactory implements ConnectionFactory,
 						+ this.targetConnection);
 			}
 			this.connection = getSharedConnectionProxy(this.targetConnection);
+		}
+	}
+	
+	/**
+	 * Close the underlying shared connection.
+	 * The provider of this ConnectionFactory needs to care for proper shutdown.
+	 * <p>As this bean implements DisposableBean, a bean factory will
+	 * automatically invoke this on destruction of its cached singletons.
+	 */
+	public void destroy() {
+		resetConnection();
+	}
+	
+	/**
+	 * Reset the underlying shared Connection, to be reinitialized on next access.
+	 */
+	public void resetConnection() {
+		synchronized (this.connectionMonitor) {
+			if (this.targetConnection != null) {
+				closeConnection(this.targetConnection);
+			}
+			this.targetConnection = null;
+			this.connection = null;
 		}
 	}
 
@@ -207,16 +242,21 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	public void afterPropertiesSet() {
 		Assert.isTrue(this.selfNodeName != null || this.peerNodeName != null,
 				"'selfNodeName' or 'peerNodeName' is required");
+		String selfNodeNameToUse = this.selfNodeName;
+		if (isUniqueSelfNodeName()) {
+			selfNodeNameToUse = this.selfNodeName + "-" + UUID.randomUUID().toString();
+			logger.debug("Creating OtpSelf with node name = [" + selfNodeNameToUse + "]");
+		}		
 		try {
 			if (this.cookie == null) {
-				this.otpSelf = new OtpSelf(this.selfNodeName);
+				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim());
 			} else {
-				this.otpSelf = new OtpSelf(this.selfNodeName, this.cookie);
+				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim(), this.cookie);
 			}
 		} catch (IOException e) {
 			throw new OtpIOException(e);
 		}
-		this.otpPeer = new OtpPeer(this.peerNodeName);
+		this.otpPeer = new OtpPeer(this.peerNodeName.trim());		
 	}
 
 	private class SharedConnectionInvocationHandler implements
