@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.connection;
@@ -28,17 +25,19 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
 /**
- * Rabbit resource holder, wrapping a RabbitMQ Connection and Channel.
- * RabbitTransactionManager binds instances of this class to the thread,
- * for a given Rabbit ConnectionFactory.
- *
- * <p>Note: This is an SPI class, not intended to be used by applications.
- *
+ * Rabbit resource holder, wrapping a RabbitMQ Connection and Channel. RabbitTransactionManager binds instances of this
+ * class to the thread, for a given Rabbit ConnectionFactory.
+ * 
+ * <p>
+ * Note: This is an SPI class, not intended to be used by applications.
+ * 
  * @author Mark Fisher
  * @see RabbitTransactionManager (not yet implemented)
  * @see RabbitTemplate
@@ -46,7 +45,6 @@ import com.rabbitmq.client.Connection;
 public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private static final Log logger = LogFactory.getLog(RabbitResourceHolder.class);
-
 
 	private ConnectionFactory connectionFactory;
 
@@ -56,9 +54,9 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private final List<Channel> channels = new LinkedList<Channel>();
 
-	private final Map<Connection, List<Channel>> channelsPerConnection =
-			new HashMap<Connection, List<Channel>>();
+	private final Map<Connection, List<Channel>> channelsPerConnection = new HashMap<Connection, List<Channel>>();
 
+	private MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
 
 	/**
 	 * Create a new RabbitResourceHolder that is open for resources to be added.
@@ -70,8 +68,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	/**
 	 * Create a new RabbitResourceHolder that is open for resources to be added.
-	 * @param connectionFactory the Rabbit ConnectionFactory that this
-	 * resource holder is associated with (may be <code>null</code>)
+	 * @param connectionFactory the Rabbit ConnectionFactory that this resource holder is associated with (may be
+	 * <code>null</code>)
 	 */
 	public RabbitResourceHolder(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
@@ -99,8 +97,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	/**
 	 * Create a new RabbitResourceHolder for the given Rabbit resources.
-	 * @param connectionFactory the Rabbit ConnectionFactory that this
-	 * resource holder is associated with (may be <code>null</code>)
+	 * @param connectionFactory the Rabbit ConnectionFactory that this resource holder is associated with (may be
+	 * <code>null</code>)
 	 * @param connection the Rabbit Connection
 	 * @param channel the Rabbit Channel
 	 */
@@ -110,7 +108,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		addChannel(channel, connection);
 		this.frozen = true;
 	}
-
 
 	public final boolean isFrozen() {
 		return this.frozen;
@@ -148,7 +145,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return this.channels.contains(channel);
 	}
 
-
 	public Connection getConnection() {
 		return (!this.connections.isEmpty() ? this.connections.get(0) : null);
 	}
@@ -173,9 +169,13 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return CollectionUtils.findValueOfType(channels, channelType);
 	}
 
-
 	public void commitAll() throws IOException {
 		for (Channel channel : this.channels) {
+			if (deliveryTags.containsKey(channel)) {
+				for (Long deliveryTag : deliveryTags.get(channel)) {
+					channel.basicAck(deliveryTag, false);
+				}
+			}
 			channel.txCommit();
 		}
 	}
@@ -184,8 +184,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		for (Channel channel : this.channels) {
 			try {
 				channel.close();
-			}
-			catch (Throwable ex) {
+			} catch (Throwable ex) {
 				logger.debug("Could not close synchronized Rabbit Channel after transaction", ex);
 			}
 		}
@@ -195,6 +194,24 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		this.connections.clear();
 		this.channels.clear();
 		this.channelsPerConnection.clear();
+	}
+
+	public void addDeliveryTag(Channel channel, long deliveryTag) {
+		this.deliveryTags.add(channel, deliveryTag);
+	}
+
+	public void rollbackAll() {
+		for (Channel channel : this.channels) {
+			try {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Rolling back messages to channel: "+channel);
+				}
+				channel.basicRecover(true);
+				channel.txRollback();
+			} catch (Throwable ex) {
+				logger.debug("Could not rollback received messages on Rabbit Channel after transaction", ex);
+			}
+		}
 	}
 
 }

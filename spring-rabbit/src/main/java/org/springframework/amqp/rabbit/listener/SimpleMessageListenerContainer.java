@@ -112,7 +112,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
 			if (cf.getChannelCacheSize() < this.concurrentConsumers) {
 				throw new IllegalStateException(
-						"CachingConnectionFactory's ChannelCacheSize not be less than the number of SimpleMessageListener's ConcurrentConsumers");
+						"CachingConnectionFactory's channelCacheSize can not be less than the number of concurrentConsumers");
 			}
 			// Default setting
 			if (concurrentConsumers == 1) {
