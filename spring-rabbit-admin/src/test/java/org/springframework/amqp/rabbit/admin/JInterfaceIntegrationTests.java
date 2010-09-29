@@ -14,6 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
+import org.springframework.util.exec.Os;
 
 import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpConnection;
@@ -37,7 +38,7 @@ public class JInterfaceIntegrationTests {
 		try {
 			OtpSelf self = new OtpSelf("rabbit-monitor");
 
-			String hostName = "rabbit@" + InetAddress.getLocalHost().getHostName();
+			String hostName = "rabbit@" + getHostName();
 			OtpPeer peer = new OtpPeer(hostName);
 			connection = self.connect(peer);
 			// connection.sendRPC("erlang","date", new OtpErlangList());
@@ -73,7 +74,7 @@ public class JInterfaceIntegrationTests {
 	@Test
 	public void otpTemplate() throws UnknownHostException {
 		String selfNodeName = "rabbit-monitor";
-		String peerNodeName = "rabbit@" + InetAddress.getLocalHost().getHostName();
+		String peerNodeName = "rabbit@" + getHostName();
 
 		// String home = System.getProperty("user.home");
 		// System.out.println("home = " + home);
@@ -94,6 +95,14 @@ public class JInterfaceIntegrationTests {
 
 		cf.destroy();
 
+	}
+
+	private String getHostName() throws UnknownHostException {
+		String hostName = InetAddress.getLocalHost().getHostName();
+		if (Os.isFamily("windows")) {
+			hostName = hostName.toUpperCase();
+		}
+		return hostName;
 	}
 
 	@Test
@@ -120,7 +129,7 @@ public class JInterfaceIntegrationTests {
 
 	public OtpConnection createConnection() throws Exception {
 		OtpSelf self = new OtpSelf("rabbit-monitor-" + counter++);
-		OtpPeer peer = new OtpPeer("rabbit@" + InetAddress.getLocalHost().getHostName());
+		OtpPeer peer = new OtpPeer("rabbit@" + getHostName());
 		return self.connect(peer);
 	}
 

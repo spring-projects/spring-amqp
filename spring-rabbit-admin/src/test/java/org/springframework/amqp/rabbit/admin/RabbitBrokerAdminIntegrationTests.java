@@ -24,20 +24,20 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.erlang.OtpIOException;
 
 /**
  * 
  * This test class assumes that you are already running the rabbitmq broker.
+ * 
  * @author Mark Pollack
  */
 public class RabbitBrokerAdminIntegrationTests {
-	
-	private static Log logger = LogFactory.getLog(RabbitBrokerAdminIntegrationTests.class);
+
+	private static Log logger = LogFactory
+			.getLog(RabbitBrokerAdminIntegrationTests.class);
 
 	private static RabbitBrokerAdmin brokerAdmin;
 
@@ -49,10 +49,15 @@ public class RabbitBrokerAdminIntegrationTests {
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
+		try {
+			brokerAdmin.getStatus();
+		} catch (Exception e) {
+			brokerAdmin.startNode();
+		}
 	}
 
 	@Test
-	//@Ignore
+	// @Ignore
 	public void integrationTestsUserCrud() throws Exception {
 		List<String> users = brokerAdmin.listUsers();
 		if (users.contains("joe")) {
@@ -70,7 +75,6 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
-	
 	public void integrationTestListUsers() throws Exception {
 		// OtpErlangObject result =
 		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
@@ -89,43 +93,31 @@ public class RabbitBrokerAdminIntegrationTests {
 		// System.out.println(result.getClass());
 		// System.out.println(result);
 	}
-	
+
 	@Test
 	public void repeatLifecycle() throws Exception {
-		for (int i = 1; i< 100; i++) {
+		for (int i = 1; i < 100; i++) {
 			testStatusAndBrokerLifecycle();
-			System.out.println("i = " + i);
+			if (i % 10 == 0) {
+				logger.debug("i = " + i);
+			}
 		}
 	}
-	
-	//@Test	
+
+	// @Test
 	public void testStatusAndBrokerLifecycle() throws Exception {
-				
+
 		RabbitStatus status = brokerAdmin.getStatus();
-		
+
 		brokerAdmin.stopBrokerApplication();
 		status = brokerAdmin.getStatus();
 		assertEquals(0, status.getRunningNodes().size());
-		
+
 		brokerAdmin.startBrokerApplication();
 		status = brokerAdmin.getStatus();
-		assertBrokerAppRunning(status);				
+		assertBrokerAppRunning(status);
 	}
-	
-	
-	
-	@Test
-	@Ignore("Test Manually")
-	public void testStartNode() {
-		try {
-			brokerAdmin.stopNode();
-		} catch (OtpIOException e) {
-			//assume it is not running.
-		}
-		brokerAdmin.startNode();
-		assertEquals(1,1);
-	}
-	
+
 	@Test
 	public void testGetQueues() throws Exception {
 		brokerAdmin.declareQueue(new Queue("test.queue"));
@@ -133,12 +125,10 @@ public class RabbitBrokerAdminIntegrationTests {
 		List<QueueInfo> queues = brokerAdmin.getQueues();
 		assertEquals("test.queue", queues.get(0).getName());
 	}
-	
+
 	private void assertBrokerAppRunning(RabbitStatus status) {
 		assertEquals(1, status.getRunningNodes().size());
 		assertTrue(status.getRunningNodes().get(0).getName().contains("rabbit"));
 	}
-
-	
 
 }
