@@ -13,14 +13,15 @@
 		<!-- versions for commonly-used dependencies -->
 		<cglib.version>2.2</cglib.version>
 		<commons-io.version>1.4</commons-io.version>
-		<junit.version>4.7</junit.version>
+		<junit.version>4.8.1</junit.version>
 		<log4j.version>1.2.15</log4j.version>
 		<org.mockito.version>1.8.4</org.mockito.version>
 		<org.slf4j.version>1.5.10</org.slf4j.version>
 		<org.codehaus.jackson.version>1.4.3</org.codehaus.jackson.version>
 		<org.erlang.otp.version>1.5.3</org.erlang.otp.version>
 		<com.rabbitmq.version>2.1.0</com.rabbitmq.version>
-		<org.springframework.version>3.0.3.RELEASE</org.springframework.version>
+		<org.springframework.version>3.0.3.RELEASE
+		</org.springframework.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -56,10 +57,12 @@
 	</profiles>
 	<distributionManagement>
 		<!-- see 'staging' profile for dry-run deployment settings -->
-		<downloadUrl>http://www.springsource.com/download/community</downloadUrl>
+		<downloadUrl>http://www.springsource.com/download/community
+		</downloadUrl>
 		<site>
 			<id>spring-docs</id>
-			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-amqp/docs/${project.version}</url>
+			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-amqp/docs/${project.version}
+			</url>
 		</site>
 		<repository>
 			<id>spring-milestone</id>
@@ -72,12 +75,15 @@
 			<url>s3://maven.springframework.org/snapshot</url>
 		</snapshotRepository>
 	</distributionManagement>
-	<dependencyManagement><!--
-		inheritable <dependency> declarations for child poms. children still must
-		explicitly declare the groupId/artifactId of these dependencies in order
-		for them to show up on the classpath, but metadata like <version> and
-		<scope> are inherited, which cuts down on verbosity.
-		see http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html -->
+	<dependencyManagement>
+		<!--
+			inheritable <dependency> declarations for child poms. children still
+			must explicitly declare the groupId/artifactId of these dependencies
+			in order for them to show up on the classpath, but metadata like
+			<version> and <scope> are inherited, which cuts down on verbosity.
+			see
+			http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html
+		-->
 		<dependencies>
 
 			<dependency>
@@ -114,6 +120,17 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
+				<artifactId>spring-core</artifactId>
+				<version>${org.springframework.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
 				<artifactId>spring-oxm</artifactId>
 				<version>${org.springframework.version}</version>
 			</dependency>
@@ -122,7 +139,7 @@
 				<artifactId>spring-tx</artifactId>
 				<version>${org.springframework.version}</version>
 			</dependency>
-					<dependency>
+			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-test</artifactId>
 				<version>${org.springframework.version}</version>
@@ -228,11 +245,14 @@
 
 		</dependencies>
 	</dependencyManagement>
-	<dependencies><!--
-		dependency definitions to be inherited by child poms. any <dependency>
-		declarations here will automatically show up on child project classpaths.
-		only items that are truly common across all projects (modules and samples)
-		should go here. otherwise, consider <dependencyManagement> above -->
+	<dependencies>
+		<!--
+			dependency definitions to be inherited by child poms. any
+			<dependency> declarations here will automatically show up on child
+			project classpaths. only items that are truly common across all
+			projects (modules and samples) should go here. otherwise, consider
+			<dependencyManagement> above
+		-->
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
@@ -243,7 +263,10 @@
 	<build>
 		<extensions>
 			<extension>
-				<!-- available only in the springframework maven repository. see <repositories> section below -->
+				<!--
+					available only in the springframework maven repository. see
+					<repositories> section below
+				-->
 				<groupId>org.springframework.build.aws</groupId>
 				<artifactId>org.springframework.build.aws.maven</artifactId>
 				<version>3.0.0.RELEASE</version>
@@ -327,14 +350,20 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
-				<plugin><!--
-					configures the springsource bundlor plugin, which generates OSGI-compatible MANIFEST.MF
-					files during the 'compile' phase of the maven build. this plugin is declared within
-					the pluginManagement section because not every module that inherits from this pom
-					needs bundlor's services, e.g.: spring-integration-samples and all its children. for this
-					reason, all modules that wish to use bundlor must declare it explicitly.  it is not necessary
-					to specify the <version> or <configuration> sections, but groupId and artifactId are required.
-					see http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html for more info -->
+				<plugin>
+					<!--
+						configures the springsource bundlor plugin, which generates
+						OSGI-compatible MANIFEST.MF files during the 'compile' phase of
+						the maven build. this plugin is declared within the
+						pluginManagement section because not every module that inherits
+						from this pom needs bundlor's services, e.g.:
+						spring-integration-samples and all its children. for this reason,
+						all modules that wish to use bundlor must declare it explicitly.
+						it is not necessary to specify the <version> or <configuration>
+						sections, but groupId and artifactId are required. see
+						http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html
+						for more info
+					-->
 					<groupId>com.springsource.bundlor</groupId>
 					<artifactId>com.springsource.bundlor.maven</artifactId>
 					<version>1.0.0.RELEASE</version>
@@ -355,9 +384,12 @@
 	</build>
 	<reporting>
 		<plugins>
-			<plugin><!--
-				significantly speeds up the 'Dependencies' report during site creation
-				see http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html -->
+			<plugin>
+				<!--
+					significantly speeds up the 'Dependencies' report during site
+					creation see
+					http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html
+				-->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.1</version>

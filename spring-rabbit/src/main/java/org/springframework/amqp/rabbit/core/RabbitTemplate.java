@@ -38,12 +38,12 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 
 /**
  * Helper class that simplifies synchronous RabbitMQ access code.
@@ -73,8 +73,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private volatile boolean mandatoryPublish;
 
 	private volatile boolean immediatePublish;
-
-	private volatile boolean requireAck = false;
 
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
@@ -121,10 +119,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	public void setImmediatePublish(boolean immediatePublish) {
 		this.immediatePublish = immediatePublish;
-	}
-
-	public void setRequireAck(boolean requireAck) {
-		this.requireAck = requireAck;
 	}
 
 	/**
@@ -236,9 +230,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	public Message receive(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws IOException {
-				GetResponse response = channel.basicGet(queueName, !requireAck);
+				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 				//TODO - check for null of response - got it when sending from .NET client, investigate
-				if (response != null) {					
+				if (response != null) {
+					long deliveryTag = response.getEnvelope().getDeliveryTag();
+					if (isChannelLocallyTransacted(channel)) {
+						channel.basicAck(deliveryTag, false);
+						channel.txCommit();
+					} else if (isChannelTransacted()) {
+						// Not locally transacted but it is transacted so it could be synchronized with an external transaction
+						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+					}
 					MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(), response.getEnvelope(), "UTF-8");
 					messageProps.setMessageCount(response.getMessageCount());
 					return new Message(response.getBody(), messageProps);
@@ -372,7 +374,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			// Check commit - avoid commit call within a JTA transaction.
 			// TODO: should we be able to do (via wrapper) something like:
 			// channel.getTransacted()?
-			if (isChannelTransacted() && isChannelLocallyTransacted(channel)) {
+			if (isChannelLocallyTransacted(channel)) {
 				// Transacted channel created by this template -> commit.
 				RabbitUtils.commitIfNecessary(channel);
 			}

@@ -205,6 +205,11 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 			}
 		}
 
+		/**
+		 * GUARDED by channelList
+		 * 
+		 * @param proxy the channel to close
+		 */
 		private void logicalClose(Channel proxy) throws Exception {
 			// Allow for multiple close calls...
 			if (!this.channelList.contains(proxy)) {
