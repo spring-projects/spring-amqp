@@ -18,11 +18,12 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
@@ -35,10 +36,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * @author Mark Fisher
@@ -112,6 +113,9 @@ public abstract class RabbitUtils {
 
 	public static AmqpException convertRabbitAccessException(Exception ex) {
 		Assert.notNull(ex, "Exception must not be null");
+		if (ex instanceof ConnectException) {
+			return new AmqpConnectException((ConnectException) ex);
+		}
 		if (ex instanceof IOException) {
 			return new AmqpIOException((IOException) ex);
 		}

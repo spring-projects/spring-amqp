@@ -34,9 +34,14 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-tx</artifactId>
 		</dependency>
-				<dependency>
+		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.commons</groupId>
+			<artifactId>spring-commons-retry</artifactId>
+			<version>1.0.0.BUILD-SNAPSHOT</version>
 		</dependency>
 
 		<!-- Other -->
@@ -83,7 +88,7 @@
 			</exclusions>
 			<scope>runtime</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>javax.annotation</groupId>
 			<artifactId>jsr250-api</artifactId>

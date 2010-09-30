@@ -82,7 +82,6 @@ public class RabbitTemplateIntegrationTests {
 		// Rollback of manual receive is implicit because the channel is closed...
 		try {
 			template.execute(new ChannelCallback<String>() {
-				@Override
 				public String doInRabbit(Channel channel) throws Exception {
 					// Switch off the auto-ack so the message is rolled back...
 					channel.basicGet(ROUTE, false);
@@ -107,7 +106,6 @@ public class RabbitTemplateIntegrationTests {
 	public void testSendAndReceiveInCallback() throws Exception {
 		template.convertAndSend(ROUTE, "message");
 		String result = template.execute(new ChannelCallback<String>() {
-			@Override
 			public String doInRabbit(Channel channel) throws Exception {
 				// We need noAck=false here for the message to be expicitly acked
 				GetResponse response = channel.basicGet(ROUTE, false);
@@ -128,7 +126,6 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		String result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
-					@Override
 					public String doInTransaction(TransactionStatus status) {
 						return (String) template.receiveAndConvert(ROUTE);
 					}
@@ -144,7 +141,6 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
-				@Override
 				public String doInTransaction(TransactionStatus status) {
 					template.receiveAndConvert(ROUTE);
 					throw new PlannedException();
@@ -164,7 +160,6 @@ public class RabbitTemplateIntegrationTests {
 	public void testSendInExternalTransaction() throws Exception {
 		template.setChannelTransacted(true);
 		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
-			@Override
 			public Void doInTransaction(TransactionStatus status) {
 				template.convertAndSend(ROUTE, "message");
 				return null;
@@ -181,7 +176,6 @@ public class RabbitTemplateIntegrationTests {
 		template.setChannelTransacted(true);
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
-				@Override
 				public Void doInTransaction(TransactionStatus status) {
 					template.convertAndSend(ROUTE, "message");
 					throw new PlannedException();

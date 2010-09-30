@@ -20,8 +20,7 @@
 		<org.codehaus.jackson.version>1.4.3</org.codehaus.jackson.version>
 		<org.erlang.otp.version>1.5.3</org.erlang.otp.version>
 		<com.rabbitmq.version>2.1.0</com.rabbitmq.version>
-		<org.springframework.version>3.0.3.RELEASE
-		</org.springframework.version>
+		<org.springframework.version>3.0.3.RELEASE</org.springframework.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -53,6 +52,10 @@
 					<url>file:///${java.io.tmpdir}/spring-amqp/snapshot</url>
 				</snapshotRepository>
 			</distributionManagement>
+		</profile>
+		<profile>
+			<id>bootstrap</id>
+			<!-- TODO: move the repositories in here before release -->
 		</profile>
 	</profiles>
 	<distributionManagement>
@@ -382,6 +385,31 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	<pluginRepositories>
+		<pluginRepository>
+			<!-- necessary for bundlor and utils -->
+			<id>repository.plugin.springsource.release</id>
+			<name>SpringSource Maven Repository</name>
+			<url>http://repository.springsource.com/maven/bundles/release</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<repositories>
+		<repository>
+			<id>repository.springframework.maven.release</id>
+			<name>Spring Framework Maven Release Repository</name>
+			<url>http://maven.springframework.org/release</url>
+		</repository>
+		<repository>
+			<id>repository.springframework.maven.milestone</id>
+			<name>Spring Framework Maven Milestone Repository</name>
+			<url>http://maven.springframework.org/milestone</url>
+		</repository>
+		<repository>
+			<id>repository.springframework.maven.snapshot</id>
+			<name>Spring Framework Maven Snapshot Repository</name>
+			<url>http://maven.springframework.org/snapshot</url>
+		</repository>
+	</repositories>
 	<reporting>
 		<plugins>
 			<plugin>
@@ -399,30 +427,4 @@
 			</plugin>
 		</plugins>
 	</reporting>
-	<pluginRepositories>
-		<pluginRepository>
-			<!-- necessary for bundlor and utils -->
-			<id>repository.plugin.springsource.release</id>
-			<name>SpringSource Maven Repository</name>
-			<url>http://repository.springsource.com/maven/bundles/release</url>
-		</pluginRepository>
-	</pluginRepositories>
-	<repositories>
-		<repository>
-			<!-- necessary for org.springframework.build.aws.maven dependency -->
-			<id>repository.springframework.maven.release</id>
-			<name>Spring Framework Maven Release Repository</name>
-			<url>http://maven.springframework.org/release</url>
-		</repository>
-		<repository>
-			<id>repository.springframework.maven.milestone</id>
-			<name>Spring Framework Maven Milestone Repository</name>
-			<url>http://maven.springframework.org/milestone</url>
-		</repository>
-		<repository>
-			<id>repository.springframework.maven.snapshot</id>
-			<name>Spring Framework Maven Snapshot Repository</name>
-			<url>http://maven.springframework.org/snapshot</url>
-		</repository>
-	</repositories>
 </project>
