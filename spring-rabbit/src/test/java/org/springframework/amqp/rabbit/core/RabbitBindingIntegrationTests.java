@@ -55,7 +55,6 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
-			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
@@ -91,7 +90,6 @@ public class RabbitBindingIntegrationTests {
 		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
 
 		BlockingQueueConsumer consumer = template.execute(new ChannelCallback<BlockingQueueConsumer>() {
-			@Override
 			public BlockingQueueConsumer doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
@@ -124,7 +122,6 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
-			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
@@ -145,7 +142,6 @@ public class RabbitBindingIntegrationTests {
 		});
 
 		template.execute(new ChannelCallback<Void>() {
-			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
