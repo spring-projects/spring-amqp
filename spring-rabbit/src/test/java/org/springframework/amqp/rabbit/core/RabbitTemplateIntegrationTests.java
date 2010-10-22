@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -39,6 +40,11 @@ public class RabbitTemplateIntegrationTests {
 	@Before
 	public void declareQueue() {
 		RabbitAdmin admin = new RabbitAdmin(template);
+		try {
+			admin.deleteQueue(ROUTE);
+		} catch (AmqpIOException e) {
+			// Ignore (queue didn't exist)
+		}
 		admin.declareQueue(new Queue(ROUTE));
 		admin.purgeQueue(ROUTE, false);
 	}
