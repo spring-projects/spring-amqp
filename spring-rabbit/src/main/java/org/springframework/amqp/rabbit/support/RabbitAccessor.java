@@ -22,6 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -39,6 +41,12 @@ public abstract class RabbitAccessor implements InitializingBean {
 	private volatile ConnectionFactory connectionFactory;
 
 	private volatile boolean channelTransacted;
+
+	/**
+	 * Internal ResourceFactory adapter for interacting with
+	 * ConnectionFactoryUtils
+	 */
+	private final RabbitAccessorResourceFactory transactionalResourceFactory = new RabbitAccessorResourceFactory();
 
 
 	/**
@@ -74,7 +82,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	}
 
 	public void afterPropertiesSet() {
-		Assert.notNull(getConnectionFactory(), "ConnectionFactory is required");
+		Assert.notNull(this.connectionFactory, "ConnectionFactory is required");
 	}
 
 	/**
@@ -85,9 +93,9 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * @see ConnectionFactory#createConnection
 	 */
 	protected Connection createConnection() throws IOException {
-		return getConnectionFactory().createConnection();
+		return this.connectionFactory.createConnection();
 	}
-
+	
 	/**
 	 * Create a RabbitMQ Channel for the given Connection.
 	 * @param con the RabbitMQ Connection to create a Channel for
@@ -103,8 +111,62 @@ public abstract class RabbitAccessor implements InitializingBean {
 		return channel;
 	}
 	
+	/**
+	 * Fetch an appropriate Connection from the given RabbitResourceHolder.
+	 * 
+	 * @param holder the RabbitResourceHolder
+	 * @return an appropriate Connection fetched from the holder, or
+	 * <code>null</code> if none found
+	 */
+	protected Connection getConnection(RabbitResourceHolder holder) {
+		return holder.getConnection();
+	}
+
+	/**
+	 * Fetch an appropriate Channel from the given RabbitResourceHolder.
+	 * 
+	 * @param holder the RabbitResourceHolder
+	 * @return an appropriate Channel fetched from the holder, or
+	 * <code>null</code> if none found
+	 */
+	protected Channel getChannel(RabbitResourceHolder holder) {
+		return holder.getChannel();
+	}
+
+	protected Channel getTransactionalChannel() throws IOException {
+		return ConnectionFactoryUtils.doGetTransactionalChannel(this.connectionFactory,
+				this.transactionalResourceFactory);
+	}
+
 	protected AmqpException convertRabbitAccessException(Exception ex) {
 		return RabbitUtils.convertRabbitAccessException(ex);
+	}
+
+	/**
+	 * ResourceFactory implementation that delegates to this template's
+	 * protected callback methods.
+	 */
+	private class RabbitAccessorResourceFactory implements ConnectionFactoryUtils.ResourceFactory {
+
+		public Connection getConnection(RabbitResourceHolder holder) {
+			return RabbitAccessor.this.getConnection(holder);
+		}
+
+		public Channel getChannel(RabbitResourceHolder holder) {
+			return RabbitAccessor.this.getChannel(holder);
+		}
+
+		public Connection createConnection() throws IOException {
+			return RabbitAccessor.this.createConnection();
+		}
+
+		public Channel createChannel(Connection con) throws IOException {
+			return RabbitAccessor.this.createChannel(con);
+		}
+
+		public boolean isSynchedLocalTransactionAllowed() {
+			return RabbitAccessor.this.isChannelTransacted();
+		}
 	}
 
 }

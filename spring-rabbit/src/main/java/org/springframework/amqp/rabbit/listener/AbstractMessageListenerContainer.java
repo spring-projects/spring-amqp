@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.util.Assert;
@@ -42,9 +43,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	private boolean exposeListenerChannel = true;
 	
 	private volatile Object messageListener;
-
-	protected boolean autoAck = false;
-
 
 	/**
 	 * Set the name of the queue to receive messages from.	 
@@ -77,14 +75,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected String getRequiredQueueName() {
 		Assert.notNull(this.queueName, "Queue name must not be null.");
 		return this.queueName;
-	}
-
-	public boolean isAutoAck() {
-		return this.autoAck;
-	}
-
-	public void setAutoAck(boolean autoAck) {
-		this.autoAck = autoAck;
 	}
 
 	/**
@@ -281,26 +271,20 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 			Channel channelToUse = channel;
 			if (!isExposeListenerChannel()) {
 				// We need to expose a separate Session.
-				conToClose = createConnection();
-				channelToClose = createChannel(conToClose);
-				channelToUse = channelToClose;
+				channelToUse = getTransactionalChannel();
+				if (channelToUse == null) {
+					conToClose = createConnection();
+					channelToClose = createChannel(conToClose);
+					channelToUse = channelToClose;
+				}
 			}
 			// Actually invoke the message listener...
 			listener.onMessage(message, channelToUse);
 			
-			//TODO need to figure out tx usage more.
-			/*
-			// Clean up specially exposed Channel, if any.
-			if (channelToUse != channel) {
-				if (channelToUse.getTransacted() && isChannelLocallyTransacted(channelToUse)) {
-					// Transacted session created by this container -> commit.
-					RabbitUtils.commitIfNecessary(channelToUse);
-				}
-			}*/
 		}
 		finally {
 			RabbitUtils.closeChannel(channelToClose);
-			RabbitUtils.closeConnection(conToClose);
+			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory());
 		}
 	}
 	
@@ -322,20 +306,21 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param channel the Rabbit channel to commit
 	 * @param message the Message to acknowledge
+	 * @throws IOException 
 	 */
-	protected void commitIfNecessary(Channel channel, Message message)  {
+	protected void commitIfNecessary(Channel channel, Message message) throws IOException  {
 		
-		//TODO Should probably go to doExecuteListener() of base class.
-        if (!autoAck) {
-        	if (channel.isOpen()) {
-        		try {
-					channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					logger.warn("Could not ack message with delivery tag [" + message.getMessageProperties().getDeliveryTag() + "]", e);
-				}
-        	}
-        }
+		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		if (isChannelLocallyTransacted(channel)) {
+			channel.basicAck(deliveryTag, false);
+			channel.txCommit();
+		}
+		else if (isChannelTransacted()) {
+			// Not locally transacted but it is transacted so it
+			// could be synchronized with an external transaction
+			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+		}
+
         if (this.isChannelLocallyTransacted(channel)) {
         	RabbitUtils.commitIfNecessary(channel);
         }		
@@ -366,6 +351,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 				if (logger.isDebugEnabled()) {
 					logger.debug("Initiating transaction rollback on application exception", ex);
 				}
+				channel.basicRecover(true);
 				RabbitUtils.rollbackIfNecessary(channel);
 			}
 		} catch (Exception ex2)

@@ -42,6 +42,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 /**
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
@@ -212,7 +213,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		String[] queue = StringUtils.commaDelimitedListToStringArray(queueNames);
 		for (int i = 0; i < queue.length; i++) {
 			channel.queueDeclarePassive(queue[i]);
-			String consumerTag = channel.basicConsume(queue[i], autoAck, consumer);
+			String consumerTag = channel.basicConsume(queue[i], !isChannelTransacted(), consumer);
 			consumer.setConsumerTag(consumerTag);
 		}
 		return consumer;
