@@ -234,16 +234,24 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
+		return this.convertSendAndReceive(this.exchange, this.routingKey, message);
+	}
+
+	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
+		return this.convertSendAndReceive(this.exchange, routingKey, message);
+	}
+
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message) throws AmqpException {
 		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
-		Message replyMessage = this.doSendAndReceive(requestMessage);
+		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
 		if (replyMessage == null) {
 			return null;
 		}
 		return this.getRequiredMessageConverter().fromMessage(replyMessage);
 	}
 
-	private Message doSendAndReceive(final Message message) {
+	private Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
@@ -279,9 +287,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				};
 				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, null,
 						consumer);
-				// TODO: get exchange and routing key from method args
-				// methods that are higher in the stack can determine whether to
-				// fallback to template properties
 				doSend(channel, exchange, routingKey, message);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
