@@ -58,7 +58,6 @@ public class RabbitBrokerAdminStopIntegrationTests {
 			brokerAdmin.startBrokerApplication();
 		}
 		Thread.sleep(1000L);
-		brokerAdmin.startBrokerApplication();
 		status = brokerAdmin.getStatus();
 
 		assertFalse("Broker node did not start.  Check logs for hints.", status

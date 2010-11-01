@@ -37,7 +37,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.erlang.OtpAuthException;
 import org.springframework.erlang.OtpIOException;
-import org.springframework.erlang.connection.SimpleConnectionFactory;
 import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.Application;
 import org.springframework.erlang.core.ErlangTemplate;

@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.amqp.core.Queue;
@@ -49,11 +50,18 @@ public class RabbitBrokerAdminIntegrationTests {
 		connectionFactory.setUsername("guest");
 		connectionFactory.setPassword("guest");
 		brokerAdmin = new RabbitBrokerAdmin(connectionFactory);
-		try {
-			brokerAdmin.getStatus();
-		} catch (Exception e) {
+		RabbitStatus status = brokerAdmin.getStatus();
+		if (status.getNodes().isEmpty()) {
 			brokerAdmin.startNode();
+			Thread.sleep(1000L);
+		} else {
+			brokerAdmin.startBrokerApplication();
 		}
+	}
+	
+	@AfterClass
+	public static void close() {
+		brokerAdmin.stopNode();
 	}
 
 	@Test
@@ -75,30 +83,11 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
-	public void integrationTestListUsers() throws Exception {
-		// OtpErlangObject result =
-		// adminTemplate.getErlangTemplate().executeRpc("rabbit_amqqueue",
-		// "info_all", "/".getBytes());
-		// System.out.println(result);
-		Thread.sleep(1000L);
-		List<String> users = brokerAdmin.listUsers();
-		System.out.println(users);
-	}
-
-	public void integrationTestDeleteUser() {
-		// OtpErlangObject result =
-		// adminTemplate.getErlangTemplate().executeRpc("rabbit_access_control",
-		// "delete_user", "joe".getBytes());
-		brokerAdmin.deleteUser("joe");
-		// System.out.println(result.getClass());
-		// System.out.println(result);
-	}
-
 	@Test
 	public void repeatLifecycle() throws Exception {
-		for (int i = 1; i < 100; i++) {
+		for (int i = 1; i < 20; i++) {
 			testStatusAndBrokerLifecycle();
-			if (i % 10 == 0) {
+			if (i % 5 == 0) {
 				logger.debug("i = " + i);
 			}
 		}
