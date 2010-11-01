@@ -206,7 +206,11 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Rolling back messages to channel: "+channel);
 				}
-				channel.basicRecover(true);
+				if (deliveryTags.containsKey(channel)) {
+					for (Long deliveryTag : deliveryTags.get(channel)) {
+						channel.basicReject(deliveryTag, true);
+					}
+				}
 				channel.txRollback();
 			} catch (Throwable ex) {
 				logger.debug("Could not rollback received messages on Rabbit Channel after transaction", ex);

@@ -123,6 +123,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			// container
 			Thread.sleep(300L);
 			container.shutdown();
+			Thread.sleep(300L);
 		}
 		if (transactional) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));

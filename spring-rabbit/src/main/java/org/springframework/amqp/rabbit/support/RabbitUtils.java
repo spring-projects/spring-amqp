@@ -104,7 +104,6 @@ public abstract class RabbitUtils {
 	public static void rollbackIfNecessary(Channel channel) {
 		Assert.notNull(channel, "Channel must not be null");
 		try {
-			channel.basicRecover(true);
 			channel.txRollback();
 		}
 		catch (IOException ex) {

@@ -213,6 +213,8 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 				logger.warn("Rejecting received message because of the listener container " +
 						"having been stopped in the meantime: " + message);
 			}
+			// Re-queue the message and don't get it re-delivered to the same consumer
+			channel.basicRecover(true);
 			rollbackIfNecessary(channel);
 			throw new MessageRejectedWhileStoppingException();
 		}
@@ -220,6 +222,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 			invokeListener(channel, message);
 		}
 		catch (Throwable ex) {
+			channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
 			rollbackOnExceptionIfNecessary(channel, ex);
 			throw ex;
 		}				
