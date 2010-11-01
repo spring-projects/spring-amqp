@@ -173,7 +173,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 				+ ", active=" + active + "]";
 	}
 
-	public class CachedChannelInvocationHandler implements InvocationHandler {
+	private class CachedChannelInvocationHandler implements InvocationHandler {
 
 		private volatile Channel target;
 

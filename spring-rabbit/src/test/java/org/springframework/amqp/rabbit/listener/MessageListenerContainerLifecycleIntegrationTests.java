@@ -1,6 +1,6 @@
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -27,9 +27,9 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 
 @RunWith(Parameterized.class)
-public class SimpleMessageListenerContainerIntegrationTests {
+public class MessageListenerContainerLifecycleIntegrationTests {
 
-	private static Log logger = LogFactory.getLog(SimpleMessageListenerContainerIntegrationTests.class);
+	private static Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
 
 	private Queue queue;
 
@@ -44,7 +44,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	private final int messageCount;
 
-	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency, boolean transacted) {
+	public MessageListenerContainerLifecycleIntegrationTests(int messageCount, int concurrency, boolean transacted) {
 		this.messageCount = messageCount;
 		this.concurrentConsumers = concurrency;
 		this.transactional = transacted;
@@ -53,8 +53,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	@Parameters
 	public static List<Object[]> getParameters() {
 		// return Collections.singletonList(new Object[] { 1, 1, true });
-		return Arrays.asList(new Object[] { 1, 1, true }, new Object[] { 1, 1, false }, new Object[] { 4, 1, true }, new Object[] { 2, 2, true },
-				new Object[] { 2, 2, true }, new Object[] { 20, 4, true }, new Object[] { 20, 4, false });
+		return Arrays.asList(new Object[] { 200, 4, true }, new Object[] { 200, 4, false });
 	}
 
 	@Before
@@ -89,8 +88,20 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		try {
-			boolean waited = latch.await(1, TimeUnit.SECONDS);
-			assertTrue("Timed out waiting for message", waited);
+			boolean waited = latch.await(50, TimeUnit.MILLISECONDS);
+			assertFalse("Expected time out waiting for message", waited);
+			container.stop();
+			Thread.sleep(500L);
+			container.start();
+			if (transactional) {
+				waited = latch.await(5, TimeUnit.SECONDS);
+				assertTrue("Timed out waiting for message", waited);
+			}
+			else {
+				waited = latch.await(500, TimeUnit.MILLISECONDS);
+				// If non-transactional we half expect to lose messages
+				assertFalse("Expected time out waiting for message", waited);
+			}
 		}
 		finally {
 			// Wait for broker communication to finish before trying to stop
@@ -99,37 +110,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			container.shutdown();
 		}
 		assertNull(template.receiveAndConvert(queue.getName()));
-	}
-
-	@Test
-	public void testListenerWithException() throws Exception {
-		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), i+"foo");
-		}
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
-		CountDownLatch latch = new CountDownLatch(messageCount);
-		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch, true)));
-		container.setQueueName(queue.getName());
-		container.setConcurrentConsumers(concurrentConsumers);
-		container.setChannelTransacted(transactional);
-		container.afterPropertiesSet();
-		container.start();
-		try {
-			boolean waited = latch.await(2, TimeUnit.SECONDS);
-			assertTrue("Timed out waiting for message", waited);
-		}
-		finally {
-			// Wait for broker communication to finish before trying to stop
-			// container
-			Thread.sleep(300L);
-			container.shutdown();
-		}
-		if (transactional) {
-			assertNotNull(template.receiveAndConvert(queue.getName()));
-		}
-		else {
-			assertNull(template.receiveAndConvert(queue.getName()));
-		}
 	}
 
 	public static class PojoListener {

@@ -194,6 +194,9 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	 */
 	public void start()  {
 		try {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Starting Rabbit listener container.");
+			}
 			doStart();
 		}
 		catch (Exception ex) {

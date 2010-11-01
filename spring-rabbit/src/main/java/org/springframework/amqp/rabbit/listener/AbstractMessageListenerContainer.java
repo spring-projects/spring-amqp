@@ -349,9 +349,8 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 		try {
 			if (this.isChannelLocallyTransacted(channel)) {
 				if (logger.isDebugEnabled()) {
-					logger.debug("Initiating transaction rollback on application exception", ex);
+					logger.debug("Initiating transaction rollback on application exception: "+ex);
 				}
-				channel.basicRecover(true);
 				RabbitUtils.rollbackIfNecessary(channel);
 			}
 		} catch (Exception ex2)

@@ -28,6 +28,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer.Delivery;
+import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -52,14 +53,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int concurrentConsumers = 1;
 
-	private volatile int blockingQueueConsumerCapacity = -1; // implied unlimited capacity
+	// implied unlimited capacity
+	private volatile int blockingQueueConsumerCapacity = -1;
 
 	private volatile Set<Channel> channels = null;
 
 	private volatile Set<BlockingQueueConsumer> consumers;
 
 	private final Object consumersMonitor = new Object();
-
 
 	public SimpleMessageListenerContainer() {
 	}
@@ -68,11 +69,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.setConnectionFactory(connectionFactory);
 	}
 
-
 	/**
 	 * Specify the number of concurrent consumers to create. Default is 1.
 	 * <p>
-	 * Raising the number of concurrent consumers is recommendable in order to
+	 * Raising the number of concurrent consumers is recommended in order to
 	 * scale the consumption of messages coming in from a queue. However, note
 	 * that any ordering guarantees are lost once multiple consumers are
 	 * registered. In general, stick with 1 consumer for low-volume queues.
@@ -165,18 +165,27 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	protected void doStop() {
+		doShutdown();
+		super.doStop();
+	}
+
 	@Override
 	protected void doShutdown() {
 		if (!this.isRunning()) {
 			return;
 		}
 		logger.debug("Closing Rabbit Consumers");
-		for (BlockingQueueConsumer consumer : this.consumers) {
-			RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag());
-		}
-		logger.debug("Closing Rabbit Channels");
-		for (Channel channel : this.channels) {
-			RabbitUtils.closeChannel(channel);
+		synchronized (this.consumersMonitor) {
+			for (BlockingQueueConsumer consumer : this.consumers) {
+				RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag());
+			}
+			logger.debug("Closing Rabbit Channels");
+			for (Channel channel : this.channels) {
+				RabbitUtils.closeChannel(channel);
+			}
+			this.consumers = null;
+			this.channels = null;
 		}
 	}
 
@@ -205,7 +214,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			consumer = new BlockingQueueConsumer(channel);
 		}
 		else {
-			consumer = new BlockingQueueConsumer(channel, new LinkedBlockingQueue<Delivery>(blockingQueueConsumerCapacity));
+			consumer = new BlockingQueueConsumer(channel, new LinkedBlockingQueue<Delivery>(
+					blockingQueueConsumerCapacity));
 		}
 		// Set basicQos before calling basicConsume
 		channel.basicQos(prefetchCount);
@@ -235,12 +245,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-
 	private class AsyncMessageProcessingConsumer implements Runnable {
 
 		private BlockingQueueConsumer q;
+
 		private int txSize;
+
 		private long timeLimit;
+
 		private SimpleMessageListenerContainer messageListenerContainer;
 
 		public AsyncMessageProcessingConsumer(BlockingQueueConsumer q, int txSize, int timeLimit,
@@ -261,10 +273,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			Channel channel = q.getChannel();
 			try {
 				for (; timeLimit == 0 || now < startTime + timeLimit; totalMsgCount++) {
+					logger.debug("Receiving message from consumer.");
 					Delivery delivery;
 					if (timeLimit == 0) {
 						delivery = q.nextDelivery();
-					} else {
+					}
+					else {
 						delivery = q.nextDelivery(startTime + timeLimit - now);
 						if (delivery == null)
 							break;
@@ -272,18 +286,25 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					byte[] body = delivery.getBody();
 					Envelope envelope = delivery.getEnvelope();
 
-					logger.debug("Received message from exchange [" + envelope.getExchange()
-							+ "], routing-key [" + envelope.getRoutingKey() + "]");
+					if (logger.isDebugEnabled()) {
+						logger.debug("Received message from exchange [" + envelope.getExchange() + "], routing-key ["
+								+ envelope.getRoutingKey() + "]");
+					}
 
-					MessageProperties messageProperties = RabbitUtils.createMessageProperties(
-							delivery.getProperties(), envelope, "UTF-8");
+					MessageProperties messageProperties = RabbitUtils.createMessageProperties(delivery.getProperties(),
+							envelope, "UTF-8");
 					messageProperties.setMessageCount(0);
 					Message message = new Message(body, messageProperties);
 
-					messageListenerContainer.processMessage(message, channel);
+					try {
+						messageListenerContainer.processMessage(message, channel);
+					}
+					catch (ListenerExecutionFailedException e) {
+						logger.debug("Consumer failed.");
+					}
 
-					// TODO Should probably go to doExecuteListener() of base class.
-					// TODO probably can't handle batching (txSize > 1) with current implementation
+					// TODO probably can't handle batching (txSize > 1) with
+					// current implementation
 					// TODO Need to call rollback
 					if (txSize != 0 && totalMsgCount % txSize == 0) {
 						channel.txCommit();
@@ -292,6 +313,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				// TODO should we throw here?
 			}
+			// TODO: should only rethrow if it is an error from Rabbit, not the
+			// listener
 			catch (IOException e) {
 				throw new AmqpException(e);
 			}
