@@ -7,7 +7,7 @@
 	<name>Spring AMQP Distribution</name>
 	<version>1.0.0.BUILD-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<modules>
+	<modules> 
 		<module>spring-amqp-parent</module>
 		<module>spring-amqp-core</module>
 		<module>spring-rabbit</module>
