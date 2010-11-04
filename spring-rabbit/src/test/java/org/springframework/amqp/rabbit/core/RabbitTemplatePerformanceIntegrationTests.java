@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.AmqpIOException;
@@ -28,7 +27,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	@Rule
 	// After the repeat processor, so it only runs once
 	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class);
-	
+
 	@Rule
 	// After the repeat processor, so it only runs once
 	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
@@ -44,11 +43,13 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(repeat.getConcurrency());
 		template.setConnectionFactory(connectionFactory);
+		// TODO: investigate the effects of these flags...
+		// template.setMandatoryPublish(true);
+		// template.setImmediatePublish(true);
 		RabbitAdmin admin = new RabbitAdmin(template);
 		try {
 			admin.deleteQueue(ROUTE);
-		}
-		catch (AmqpIOException e) {
+		} catch (AmqpIOException e) {
 			// Ignore (queue didn't exist)
 		}
 		admin.declareQueue(new Queue(ROUTE));
@@ -67,10 +68,17 @@ public class RabbitTemplatePerformanceIntegrationTests {
 
 	@Test
 	@Repeat(2000)
-	@Ignore // TODO: fix this
 	public void testSendAndReceive() throws Exception {
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);
+		int count = 5;
+		while (result == null && count-- > 0) {
+			/*
+			 * Retry for the purpose of non-transacted case because channel operations are async in that case
+			 */
+			Thread.sleep(10L);
+			result = (String) template.receiveAndConvert(ROUTE);
+		}
 		assertEquals("message", result);
 	}
 
