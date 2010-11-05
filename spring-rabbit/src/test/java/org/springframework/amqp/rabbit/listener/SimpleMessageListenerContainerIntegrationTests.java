@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +26,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 
 @RunWith(Parameterized.class)
 public class SimpleMessageListenerContainerIntegrationTests {
@@ -40,6 +40,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	private final int concurrentConsumers;
 
 	private final boolean transactional;
+
+	@Rule
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class, SimpleMessageListenerContainer.class);
 
 	@Rule
 	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
@@ -56,8 +59,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	public static List<Object[]> getParameters() {
 		return Arrays.asList(new Object[] { 1, 1, true }, new Object[] { 1, 1, false }, new Object[] { 4, 1, true },
 				new Object[] { 2, 2, true }, new Object[] { 2, 2, true }, new Object[] { 20, 4, true }, new Object[] {
-						20, 4, false }); // , new Object[] { 1000, 4, true },
-											// new Object[] { 1000, 4, false });
+						20, 4, false }, new Object[] { 1000, 4, true }, new Object[] { 1000, 4, false });
 	}
 
 	@Before
@@ -81,9 +83,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	@Test
 	public void testListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), i + "foo");
-		}
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setChannelTransacted(transactional);
@@ -91,6 +90,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.setQueueName(queue.getName());
 		container.afterPropertiesSet();
 		container.start();
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
 		try {
 			boolean waited = latch.await(Math.max(1, messageCount / 100), TimeUnit.SECONDS);
 			assertTrue("Timed out waiting for message", waited);
@@ -106,11 +108,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Test
 	public void testListenerWithException() throws Exception {
-		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), i + "foo");
-		}
-		Level oldLevel = LogManager.getLogger(SimpleMessageListenerContainer.class).getLevel();
-		LogManager.getLogger(SimpleMessageListenerContainer.class).setLevel(Level.ERROR);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch, true)));
@@ -119,6 +116,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.setChannelTransacted(transactional);
 		container.afterPropertiesSet();
 		container.start();
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
 		try {
 			boolean waited = latch.await(Math.max(1, messageCount / 100), TimeUnit.SECONDS);
 			assertTrue("Timed out waiting for message", waited);
@@ -129,7 +129,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			Thread.sleep(300L);
 			container.shutdown();
 			Thread.sleep(300L);
-			LogManager.getLogger(SimpleMessageListenerContainer.class).setLevel(oldLevel);
 		}
 		if (transactional) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));

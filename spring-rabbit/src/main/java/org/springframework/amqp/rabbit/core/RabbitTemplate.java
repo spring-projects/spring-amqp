@@ -103,10 +103,22 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		this.queue = queue;
 	}
 
+	/**
+	 * If the message doesn't get routed to a queue for any reason, the server
+	 * will send an async response to let me know. Possible use case: check
+	 * routing.
+	 * 
+	 * @param mandatoryPublish the flag value to set
+	 */
 	public void setMandatoryPublish(boolean mandatoryPublish) {
 		this.mandatoryPublish = mandatoryPublish;
 	}
 
+	/**
+	 * Like a rendezvous.
+	 * 
+	 * @param immediatePublish
+	 */
 	public void setImmediatePublish(boolean immediatePublish) {
 		this.immediatePublish = immediatePublish;
 	}
@@ -241,7 +253,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.convertSendAndReceive(this.exchange, routingKey, message);
 	}
 
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message) throws AmqpException {
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
+			throws AmqpException {
 		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
 		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);

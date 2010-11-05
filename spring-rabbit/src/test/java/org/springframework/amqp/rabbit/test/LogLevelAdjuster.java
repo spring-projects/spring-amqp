@@ -1,5 +1,6 @@
 package org.springframework.amqp.rabbit.test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class LogLevelAdjuster implements MethodRule {
 	public Statement apply(final Statement base, FrameworkMethod method, Object target) {
 		return new Statement() {
 			public void evaluate() throws Throwable {
-				logger.debug("Overriding log level setting for: " + classes);
+				logger.debug("Overriding log level setting for: " + Arrays.asList(classes));
 				Map<Class<?>, Level> oldLevels = new HashMap<Class<?>, Level>();
 				for (Class<?> cls : classes) {
 					oldLevels.put(cls, LogManager.getLogger(cls).getLevel());
@@ -45,7 +46,7 @@ public class LogLevelAdjuster implements MethodRule {
 					base.evaluate();
 				}
 				finally {
-					logger.debug("Restoring log level setting for: " + classes);
+					logger.debug("Restoring log level setting for: " + Arrays.asList(classes));
 					for (Class<?> cls : classes) {
 						LogManager.getLogger(cls).setLevel(oldLevels.get(cls));
 					}
