@@ -42,6 +42,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		}
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(repeat.getConcurrency());
+		// connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
 		// TODO: investigate the effects of these flags...
 		// template.setMandatoryPublish(true);

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,12 +43,15 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	private final boolean transactional;
 
 	@Rule
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class, SimpleMessageListenerContainer.class);
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+			SimpleMessageListenerContainer.class);
 
 	@Rule
 	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private final int messageCount;
+
+	private SimpleMessageListenerContainer container;
 
 	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency, boolean transacted) {
 		this.messageCount = messageCount;
@@ -66,12 +70,12 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	public void declareQueue() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
+		// connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(template);
 		try {
 			admin.deleteQueue("test.queue");
-		}
-		catch (AmqpIOException e) {
+		} catch (AmqpIOException e) {
 			// Ignore (queue didn't exist)
 		}
 		queue = new Queue("test.queue");
@@ -80,50 +84,38 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		admin.purgeQueue("test.queue", false);
 	}
 
+	@After
+	public void clear() throws Exception {
+		// Wait for broker communication to finish before trying to stop container
+		Thread.sleep(300L);
+		if (container != null) {
+			container.shutdown();
+		}
+	}
+
 	@Test
 	public void testListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
-		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
-		container.setChannelTransacted(transactional);
-		container.setConcurrentConsumers(concurrentConsumers);
-		container.setQueueName(queue.getName());
-		container.afterPropertiesSet();
-		container.start();
+		container = createContainer(new PojoListener(latch));
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
-		try {
-			boolean waited = latch.await(Math.max(1, messageCount / 100), TimeUnit.SECONDS);
-			assertTrue("Timed out waiting for message", waited);
-		}
-		finally {
-			// Wait for broker communication to finish before trying to stop
-			// container
-			Thread.sleep(300L);
-			container.shutdown();
-		}
+		boolean waited = latch.await(Math.max(1, messageCount / 100), TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
 
 	@Test
 	public void testListenerWithException() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch, true)));
-		container.setQueueName(queue.getName());
-		container.setConcurrentConsumers(concurrentConsumers);
-		container.setChannelTransacted(transactional);
-		container.afterPropertiesSet();
-		container.start();
+		container = createContainer(new PojoListener(latch, true));
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		try {
 			boolean waited = latch.await(Math.max(1, messageCount / 100), TimeUnit.SECONDS);
 			assertTrue("Timed out waiting for message", waited);
-		}
-		finally {
+		} finally {
 			// Wait for broker communication to finish before trying to stop
 			// container
 			Thread.sleep(300L);
@@ -132,10 +124,20 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 		if (transactional) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));
-		}
-		else {
+		} else {
 			assertNull(template.receiveAndConvert(queue.getName()));
 		}
+	}
+
+	private SimpleMessageListenerContainer createContainer(Object listener) {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container.setMessageListener(new MessageListenerAdapter(listener));
+		container.setQueueName(queue.getName());
+		container.setConcurrentConsumers(concurrentConsumers);
+		container.setChannelTransacted(transactional);
+		container.afterPropertiesSet();
+		container.start();
+		return container;
 	}
 
 	public static class PojoListener {
@@ -156,12 +158,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 		public void handleMessage(String value) {
 			try {
-				logger.debug(value + count.getAndIncrement());
+				int counter = count.getAndIncrement();
+				if (logger.isDebugEnabled() && counter % 500 == 0) {
+					logger.debug(value + counter);
+				}
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			}
-			finally {
+			} finally {
 				latch.countDown();
 			}
 		}
