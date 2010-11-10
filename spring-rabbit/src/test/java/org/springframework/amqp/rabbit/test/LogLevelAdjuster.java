@@ -47,7 +47,8 @@ public class LogLevelAdjuster implements MethodRule {
 				}
 				finally {
 					logger.debug("Restoring log level setting for: " + Arrays.asList(classes));
-					for (Class<?> cls : classes) {
+					// raw Class type used to avoid http://bugs.sun.com/view_bug.do?bug_id=6682380
+					for (@SuppressWarnings("rawtypes") Class cls : classes) {
 						LogManager.getLogger(cls).setLevel(oldLevels.get(cls));
 					}
 				}
