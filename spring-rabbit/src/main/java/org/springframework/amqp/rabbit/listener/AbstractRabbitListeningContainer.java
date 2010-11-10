@@ -45,7 +45,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	
 	private volatile boolean running = false;
 	
-	protected final Object lifecycleMonitor = new Object();
+	private final Object lifecycleMonitor = new Object();
 
 
 	/**
@@ -133,7 +133,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 			doInitialize();
 		}
 		catch (Exception ex) {
-			ConnectionFactoryUtils.releaseConnection(this.sharedConnection, getConnectionFactory());
+			ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
 			this.sharedConnection = null;
 			throw convertRabbitAccessException(ex);
 		}
@@ -145,22 +145,10 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	 */
 	public void shutdown() {
 		logger.debug("Shutting down Rabbit listener container");
-		boolean wasRunning = false;
 		synchronized (this.lifecycleMonitor) {
-			wasRunning = this.running;
 			this.running = false;
 			this.active = false;
 			this.lifecycleMonitor.notifyAll();
-		}
-
-		// Stop shared Connection early, if necessary.
-		if (wasRunning && sharedConnectionEnabled()) {
-			try {
-				stopSharedConnection();
-			}
-			catch (Throwable ex) {
-				logger.debug("Could not stop Rabbit Connection on shutdown", ex);
-			}
 		}
 
 		// Shut down the invokers.
@@ -172,7 +160,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 		}
 		finally {
 			if (sharedConnectionEnabled()) {				
-				ConnectionFactoryUtils.releaseConnection(this.sharedConnection, getConnectionFactory());
+				ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
 				this.sharedConnection = null;				
 			}
 		}
@@ -309,7 +297,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	 */
 	protected final void refreshSharedConnection() throws Exception {
 		ConnectionFactoryUtils.releaseConnection(
-				this.sharedConnection, getConnectionFactory());
+				this.sharedConnection);
 		this.sharedConnection = null;
 		this.sharedConnection = createSharedConnection();					
 	}

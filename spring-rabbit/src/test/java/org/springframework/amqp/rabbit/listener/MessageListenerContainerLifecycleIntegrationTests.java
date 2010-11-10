@@ -53,13 +53,14 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	@Parameters
 	public static List<Object[]> getParameters() {
 		// return Collections.singletonList(new Object[] { 1, 1, true });
-		return Arrays.asList(new Object[] { 200, 4, true }, new Object[] { 200, 4, false });
+		return Arrays.asList(new Object[] { 200, 1, true }, new Object[] { 200, 1, false });
 	}
 
 	@Before
 	public void declareQueue() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
+		connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(template);
 		try {

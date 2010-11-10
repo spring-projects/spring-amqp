@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.support;
@@ -36,10 +33,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * @author Mark Fisher
@@ -51,37 +48,33 @@ public abstract class RabbitUtils {
 
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
-
 	/**
-	 * Close the given RabbitMQ Connection and ignore any thrown exception.
-	 * This is useful for typical <code>finally</code> blocks in manual RabbitMQ code.
+	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
+	 * <code>finally</code> blocks in manual RabbitMQ code.
 	 * @param connection the RabbitMQ Connection to close (may be <code>null</code>)
 	 */
 	public static void closeConnection(Connection connection) {
 		if (connection != null) {
 			try {
 				connection.close();
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				logger.debug("Ignoring Connection exception - assuming already closed: " + ex);
 			}
 		}
 	}
 
 	/**
-	 * Close the given RabbitMQ Channel and ignore any thrown exception.
-	 * This is useful for typical <code>finally</code> blocks in manual RabbitMQ code.
+	 * Close the given RabbitMQ Channel and ignore any thrown exception. This is useful for typical <code>finally</code>
+	 * blocks in manual RabbitMQ code.
 	 * @param channel the RabbitMQ Channel to close (may be <code>null</code>)
 	 */
 	public static void closeChannel(Channel channel) {
 		if (channel != null) {
 			try {
 				channel.close();
-			}
-			catch (IOException ex) {
+			} catch (IOException ex) {
 				logger.debug("Could not close RabbitMQ Channel", ex);
-			}
-			catch (Throwable ex) {
+			} catch (Throwable ex) {
 				logger.debug("Unexpected exception on closing RabbitMQ Channel", ex);
 			}
 		}
@@ -95,9 +88,8 @@ public abstract class RabbitUtils {
 		Assert.notNull(channel, "Channel must not be null");
 		try {
 			channel.txCommit();
-		}
-		catch (IOException ex) {
-			logger.error("Could not commit RabbitMQ Channel", ex);
+		} catch (IOException ex) {
+			throw new AmqpIOException(ex);
 		}
 	}
 
@@ -105,14 +97,16 @@ public abstract class RabbitUtils {
 		Assert.notNull(channel, "Channel must not be null");
 		try {
 			channel.txRollback();
-		}
-		catch (IOException ex) {
-			logger.error("Could not rollback RabbitMQ Channel", ex);
+		} catch (IOException ex) {
+			throw new AmqpIOException(ex);
 		}
 	}
 
-	public static AmqpException convertRabbitAccessException(Exception ex) {
+	public static AmqpException convertRabbitAccessException(Throwable ex) {
 		Assert.notNull(ex, "Exception must not be null");
+		if (ex instanceof AmqpException) {
+			return (AmqpException) ex;
+		}
 		if (ex instanceof ConnectException) {
 			return new AmqpConnectException((ConnectException) ex);
 		}
@@ -122,20 +116,30 @@ public abstract class RabbitUtils {
 		if (ex instanceof UnsupportedEncodingException) {
 			return new AmqpUnsupportedEncodingException(ex);
 		}
-		//fallback
+		// fallback
 		return new UncategorizedAmqpException(ex);
 	}
 
-	public static void closeMessageConsumer(Channel channel, String consumerTag) {
-		try {
-			channel.basicCancel(consumerTag);		
+	public static void closeMessageConsumer(Channel channel, String consumerTag, boolean transactional) {
+		if (!channel.isOpen()) {
+			return;
 		}
-		catch (Exception ex) {
+		try {
+			channel.basicCancel(consumerTag);
+			if (transactional) {
+				/*
+				 * Re-queue in-flight messages if any (after the consumer is cancelled to prevent the broker from simply
+				 * sending them back to us).  Does not require a tx.commit.
+				 */
+				channel.basicRecover(true);
+			}
+		} catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
 	}
 
-	public static MessageProperties createMessageProperties(final BasicProperties source, final Envelope envelope, final String charset) {
+	public static MessageProperties createMessageProperties(final BasicProperties source, final Envelope envelope,
+			final String charset) {
 		MessageProperties target = new MessageProperties();
 		Map<String, Object> headers = source.getHeaders();
 		if (!CollectionUtils.isEmpty(headers)) {
@@ -161,8 +165,7 @@ public abstract class RabbitUtils {
 		if (correlationId != null) {
 			try {
 				target.setCorrelationId(source.getCorrelationId().getBytes(charset));
-			}
-			catch (UnsupportedEncodingException ex) {
+			} catch (UnsupportedEncodingException ex) {
 				throw new AmqpUnsupportedEncodingException(ex);
 			}
 		}
@@ -189,24 +192,23 @@ public abstract class RabbitUtils {
 		target.setHeaders(source.getHeaders());
 		target.setTimestamp(source.getTimestamp());
 		target.setMessageId(source.getMessageId());
-		target.setUserId(source.getUserId());		
+		target.setUserId(source.getUserId());
 		target.setAppId(source.getAppId());
 		target.setClusterId(source.getClusterId());
-		target.setType(source.getType());		
+		target.setType(source.getType());
 		MessageDeliveryMode deliveryMode = source.getDeliveryMode();
 		if (deliveryMode != null) {
 			target.setDeliveryMode(MessageDeliveryMode.toInt(deliveryMode));
 		}
 		target.setExpiration(source.getExpiration());
-		target.setPriority(source.getPriority());		
+		target.setPriority(source.getPriority());
 		target.setContentType(source.getContentType());
 		target.setContentEncoding(source.getContentEncoding());
 		byte[] correlationId = source.getCorrelationId();
 		if (correlationId != null && correlationId.length > 0) {
 			try {
 				target.setCorrelationId(new String(correlationId, charset));
-			}
-			catch (UnsupportedEncodingException ex) {
+			} catch (UnsupportedEncodingException ex) {
 				throw new AmqpUnsupportedEncodingException(ex);
 			}
 		}
@@ -215,6 +217,19 @@ public abstract class RabbitUtils {
 			target.setReplyTo(replyTo.toString());
 		}
 		return target;
+	}
+
+	/**
+	 * Declare to that broker that a channel is going to be used transactionally, and convert exceptions that arise.
+	 * 
+	 * @param channel the channel to use
+	 */
+	public static void declareTransactional(Channel channel) {
+		try {
+			channel.txSelect();
+		} catch (IOException e) {
+			throw RabbitUtils.convertRabbitAccessException(e);
+		}
 	}
 
 }

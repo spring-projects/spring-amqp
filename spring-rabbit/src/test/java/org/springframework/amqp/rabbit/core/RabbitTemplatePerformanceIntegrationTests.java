@@ -11,7 +11,7 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
-import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.test.annotation.Repeat;
 
@@ -26,7 +26,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 
 	@Rule
 	// After the repeat processor, so it only runs once
-	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class);
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class);
 
 	@Rule
 	// After the repeat processor, so it only runs once

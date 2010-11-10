@@ -20,15 +20,15 @@ import org.junit.runners.model.Statement;
  * @author Dave Syer
  * 
  */
-public class LogLevelAdjuster implements MethodRule {
+public class Log4jLevelAdjuster implements MethodRule {
 
-	private static final Log logger = LogFactory.getLog(LogLevelAdjuster.class);
+	private static final Log logger = LogFactory.getLog(Log4jLevelAdjuster.class);
 
 	private final Class<?>[] classes;
 
 	private final Level level;
 
-	public LogLevelAdjuster(Level level, Class<?>... classes) {
+	public Log4jLevelAdjuster(Level level, Class<?>... classes) {
 		this.level = level;
 		this.classes = classes;
 	}

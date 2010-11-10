@@ -20,13 +20,13 @@ import com.rabbitmq.utility.Utility;
  */
 public class BlockingQueueConsumer extends DefaultConsumer {
 
-		private String _consumerTag;
+		private String consumerTag;
 	
-	    private final BlockingQueue<Delivery> _queue;
+	    private final BlockingQueue<Delivery> queue;
 
 	    // When this is non-null the queue is in shutdown mode and nextDelivery should
 	    // throw a shutdown signal exception.
-	    private volatile ShutdownSignalException _shutdown;
+	    private volatile ShutdownSignalException shutdown;
 
 	    // Marker object used to signal the queue is in shutdown mode. 
 	    // It is only there to wake up consumers. The canonical representation
@@ -41,27 +41,26 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	    public BlockingQueueConsumer(Channel ch, BlockingQueue<Delivery> q)
 	    {
 	        super(ch);
-	        this._queue = q;
+	        this.queue = q;
 	    }
 	    
 	    
 
 	    public String getConsumerTag() {
-			return _consumerTag;
+			return consumerTag;
 		}
 	    
 	    public void setConsumerTag(String consumerTag) 
 	    {
-	    	_consumerTag = consumerTag;
+	    	this.consumerTag = consumerTag;
 	    }
 	    
 		@Override public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-	        _shutdown = sig; 
+	        shutdown = sig; 
 	        try {
-				_queue.put(POISON);
+				queue.put(POISON);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Thread.currentThread().interrupt();
 			}
 	    }
 
@@ -74,10 +73,9 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	    	//TODO do we want to pass on 'consumerTag'?
 	        checkShutdown();
 	        try {
-				this._queue.put(new Delivery(envelope, properties, body));
+				this.queue.put(new Delivery(envelope, properties, body));
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Thread.currentThread().interrupt();
 			}
 	    }
 
@@ -85,14 +83,14 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	     * Encapsulates an arbitrary message - simple "bean" holder structure.
 	     */
 	    public static class Delivery {
-	        private final Envelope _envelope;
-	        private final AMQP.BasicProperties _properties;
-	        private final byte[] _body;
+	        private final Envelope envelope;
+	        private final AMQP.BasicProperties properties;
+	        private final byte[] body;
 
 	        public Delivery(Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
-	            _envelope = envelope;
-	            _properties = properties;
-	            _body = body;
+	            this.envelope = envelope;
+	            this.properties = properties;
+	            this.body = body;
 	        }
 
 	        /**
@@ -100,7 +98,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	         * @return the message envelope
 	         */
 	        public Envelope getEnvelope() {
-	            return _envelope;
+	            return envelope;
 	        }
 
 	        /**
@@ -108,7 +106,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	         * @return the message properties
 	         */
 	        public BasicProperties getProperties() {
-	            return _properties;
+	            return properties;
 	        }
 
 	        /**
@@ -116,7 +114,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	         * @return the message body
 	         */
 	        public byte[] getBody() {
-	            return _body;
+	            return body;
 	        }
 	    }
 
@@ -124,7 +122,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	     * Check if we are in shutdown mode and if so throw an exception.
 	     */
 	    private void checkShutdown(){
-	      if(_shutdown != null) throw Utility.fixStackTrace(_shutdown);
+	      if(shutdown != null) throw Utility.fixStackTrace(shutdown);
 	    }
 
 	    /**
@@ -135,9 +133,9 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	     */
 	    private Delivery handle(Delivery delivery) throws InterruptedException
 	    {
-	      if(delivery == POISON || (delivery == null && _shutdown != null)){
-	        if(delivery == POISON) _queue.put(POISON);
-	        throw Utility.fixStackTrace(_shutdown);
+	      if(delivery == POISON || (delivery == null && shutdown != null)){
+	        if(delivery == POISON) queue.put(POISON);
+	        throw Utility.fixStackTrace(shutdown);
 	      }
 	      return delivery;
 	    }
@@ -151,7 +149,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	    public Delivery nextDelivery()
 	        throws InterruptedException, ShutdownSignalException
 	    {
-	        return handle(_queue.take());
+	        return handle(queue.take());
 	    }
 
 	    /**
@@ -165,7 +163,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	        throws InterruptedException, ShutdownSignalException
 	    {
 	        checkShutdown();
-	        return handle(_queue.poll(timeout, TimeUnit.MILLISECONDS));
+	        return handle(queue.poll(timeout, TimeUnit.MILLISECONDS));
 	    }
 	
 }

@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.core;
@@ -30,6 +27,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -39,7 +37,6 @@ import org.springframework.util.Assert;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
@@ -104,9 +101,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	/**
-	 * If the message doesn't get routed to a queue for any reason, the server
-	 * will send an async response to let me know. Possible use case: check
-	 * routing.
+	 * If the message doesn't get routed to a queue for any reason, the server will send an async response to let me
+	 * know. Possible use case: check routing.
 	 * 
 	 * @param mandatoryPublish the flag value to set
 	 */
@@ -124,22 +120,20 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	/**
-	 * Specify the timeout in milliseconds to be used when waiting for a reply
-	 * Message when using one of the sendAndReceive methods. The default value
-	 * is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value indicates
-	 * an indefinite timeout.
+	 * Specify the timeout in milliseconds to be used when waiting for a reply Message when using one of the
+	 * sendAndReceive methods. The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value
+	 * indicates an indefinite timeout.
 	 */
 	public void setReplyTimeout(long replyTimeout) {
 		this.replyTimeout = replyTimeout;
 	}
 
 	/**
-	 * Set the message converter for this template. Used to resolve Object
-	 * parameters to convertAndSend methods and Object results from
-	 * receiveAndConvert methods.
+	 * Set the message converter for this template. Used to resolve Object parameters to convertAndSend methods and
+	 * Object results from receiveAndConvert methods.
 	 * <p>
-	 * The default converter is a SimpleMessageConverter, which is able to
-	 * handle byte arrays, Strings, and Serializable Objects.
+	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
+	 * Objects.
 	 * 
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
@@ -210,15 +204,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws IOException {
 				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
-				// TODO - check for null of response - got it when sending from
-				// .NET client, investigate
+				// Response can be null is the case that there is no message on the queue.
 				if (response != null) {
 					long deliveryTag = response.getEnvelope().getDeliveryTag();
 					if (isChannelLocallyTransacted(channel)) {
 						channel.basicAck(deliveryTag, false);
 						channel.txCommit();
-					}
-					else if (isChannelTransacted()) {
+					} else if (isChannelTransacted()) {
 						// Not locally transacted but it is transacted so it
 						// could be synchronized with an external transaction
 						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
@@ -292,8 +284,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						Message reply = new Message(body, messageProperties);
 						try {
 							replyHandoff.put(reply);
-						}
-						catch (InterruptedException e) {
+						} catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
 					}
@@ -312,26 +303,20 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	public <T> T execute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
-		Connection conToClose = null;
-		Channel channelToClose = null;
+		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
+		Channel channel = resourceHolder.getChannel();
 		try {
-			Channel channelToUse = getTransactionalChannel();
-			if (channelToUse == null) {
-				conToClose = createConnection();
-				channelToClose = createChannel(conToClose);
-				channelToUse = channelToClose;
-			}
 			if (logger.isDebugEnabled()) {
-				logger.debug("Executing callback on RabbitMQ Channel: " + channelToUse);
+				logger.debug("Executing callback on RabbitMQ Channel: " + channel);
 			}
-			return action.doInRabbit(channelToUse);
-		}
-		catch (Exception ex) {
+			return action.doInRabbit(channel);
+		} catch (Exception ex) {
+			if (isChannelLocallyTransacted(channel)) {
+				resourceHolder.rollbackAll();
+			}
 			throw convertRabbitAccessException(ex);
-		}
-		finally {
-			RabbitUtils.closeChannel(channelToClose);
-			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory());
+		} finally {
+			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
 	}
 
@@ -345,41 +330,34 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * @throws IOException if thrown by RabbitMQ API methods
 	 */
 	private void doSend(Channel channel, String exchange, String routingKey, Message message) throws Exception {
-		try {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
-			}
-
-			if (exchange == null) {
-				// try to send to configured exchange
-				exchange = this.exchange;
-			}
-
-			if (routingKey == null) {
-				// try to send to configured routing key
-				routingKey = this.routingKey;
-			}
-			// TODO parameterize out default encoding
-			channel.basicPublish(exchange, routingKey, this.mandatoryPublish, this.immediatePublish,
-					RabbitUtils.extractBasicProperties(message, "UTF-8"), message.getBody());
-			// Check commit - avoid commit call within a JTA transaction.
-			// TODO: should we be able to do (via wrapper) something like:
-			// channel.getTransacted()?
-			if (isChannelLocallyTransacted(channel)) {
-				// Transacted channel created by this template -> commit.
-				RabbitUtils.commitIfNecessary(channel);
-			}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 		}
-		finally {
-			// RabbitUtils. .. nothing to do here? compared to
-			// session.closeMessageProducer(producer);
+
+		if (exchange == null) {
+			// try to send to configured exchange
+			exchange = this.exchange;
+		}
+
+		if (routingKey == null) {
+			// try to send to configured routing key
+			routingKey = this.routingKey;
+		}
+		// TODO parameterize out default encoding
+		channel.basicPublish(exchange, routingKey, this.mandatoryPublish, this.immediatePublish,
+				RabbitUtils.extractBasicProperties(message, "UTF-8"), message.getBody());
+		// Check commit - avoid commit call within a JTA transaction.
+		// TODO: should we be able to do (via wrapper) something like:
+		// channel.getTransacted()?
+		if (isChannelLocallyTransacted(channel)) {
+			// Transacted channel created by this template -> commit.
+			RabbitUtils.commitIfNecessary(channel);
 		}
 	}
 
 	/**
-	 * Check whether the given Channel is locally transacted, that is, whether
-	 * its transaction is managed by this template's Channel handling and not by
-	 * an external transaction coordinator.
+	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
+	 * template's Channel handling and not by an external transaction coordinator.
 	 * 
 	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted

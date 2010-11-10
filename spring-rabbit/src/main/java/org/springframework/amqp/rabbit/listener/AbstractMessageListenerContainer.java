@@ -18,10 +18,12 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.util.Assert;
@@ -185,12 +187,13 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 * @see #rollbackOnExceptionIfNecessary
 	 * @see #handleListenerException
 	 */
-	protected void executeListener(Channel channel, Message message) {
+	protected void executeListener(Channel channel, Message message) throws Throwable {
 		try {
 			doExecuteListener(channel, message);
 		}
 		catch (Throwable ex) {
 			handleListenerException(ex);
+			throw ex;
 		}
 	}
 
@@ -212,12 +215,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 				logger.warn("Rejecting received message because of the listener container "
 						+ "having been stopped in the meantime: " + message);
 			}
-			/*
-			 * Re-queue the message and don't get it re-delivered to the same
-			 * consumer, otherwise the broker just spins trying to get us to
-			 * accept the same message over and over
-			 */
-			channel.basicRecover(true);
 			rollbackIfNecessary(channel);
 			throw new MessageRejectedWhileStoppingException();
 		}
@@ -271,26 +268,20 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Message message)
 			throws Exception {
 
-		Connection conToClose = null;
-		Channel channelToClose = null;
+		RabbitResourceHolder resourceHolder = null;
 		try {
 			Channel channelToUse = channel;
 			if (!isExposeListenerChannel()) {
-				// We need to expose a separate Session.
-				channelToUse = getTransactionalChannel();
-				if (channelToUse == null) {
-					conToClose = createConnection();
-					channelToClose = createChannel(conToClose);
-					channelToUse = channelToClose;
-				}
+				// We need to expose a separate Channel.
+				resourceHolder = getTransactionalResourceHolder();
+				channelToUse = resourceHolder.getChannel();
 			}
 			// Actually invoke the message listener...
 			listener.onMessage(message, channelToUse);
 
 		}
 		finally {
-			RabbitUtils.closeChannel(channelToClose);
-			ConnectionFactoryUtils.releaseConnection(conToClose, getConnectionFactory());
+			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
 	}
 
@@ -318,7 +309,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 		if (isChannelLocallyTransacted(channel)) {
 			channel.basicAck(deliveryTag, false);
-			channel.txCommit();
+			RabbitUtils.commitIfNecessary(channel);
 		}
 		else if (isChannelTransacted()) {
 			// Not locally transacted but it is transacted so it
@@ -326,9 +317,6 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 		}
 
-		if (this.isChannelLocallyTransacted(channel)) {
-			RabbitUtils.commitIfNecessary(channel);
-		}
 	}
 
 	/**
@@ -337,6 +325,17 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	 */
 	protected void rollbackIfNecessary(Channel channel) {
 		if (this.isChannelLocallyTransacted(channel)) {
+			/*
+			 * Re-queue messages and don't get them re-delivered to the same
+			 * consumer, otherwise the broker just spins trying to get us to
+			 * accept the same message over and over
+			 */
+			try {
+				channel.basicRecover(true);
+			}
+			catch (IOException e) {
+				throw new AmqpIOException(e);
+			}
 			// Transacted channel enabled by this container -> rollback.
 			RabbitUtils.rollbackIfNecessary(channel);
 		}
@@ -353,19 +352,21 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 		// TODO not sure if the exception at this point if only from the
 		// application or from Rabbit.
 		try {
-			if (this.isChannelLocallyTransacted(channel)) {
+			if (this.isChannelTransacted()) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Initiating transaction rollback on application exception: " + ex);
 				}
+				RabbitUtils.rollbackIfNecessary(channel);
 				if (message != null) {
 					channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
+					// Need to commit the reject (=nack)
+					RabbitUtils.commitIfNecessary(channel);
 				}
-				RabbitUtils.rollbackIfNecessary(channel);
 			}
 		}
-		catch (Exception ex2) {
+		catch (Exception e) {
 			logger.error("Application exception overridden by rollback exception", ex);
-			throw ex2;
+			throw e;
 		}
 	}
 

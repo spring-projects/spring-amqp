@@ -21,7 +21,9 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -46,8 +48,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private static final Log logger = LogFactory.getLog(RabbitResourceHolder.class);
 
-	private ConnectionFactory connectionFactory;
-
 	private boolean frozen = false;
 
 	private final List<Connection> connections = new LinkedList<Connection>();
@@ -58,55 +58,20 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
 
+	private boolean transactional;
+
 	/**
 	 * Create a new RabbitResourceHolder that is open for resources to be added.
-	 * @see #addConnection
-	 * @see #addChannel
 	 */
 	public RabbitResourceHolder() {
 	}
 
 	/**
-	 * Create a new RabbitResourceHolder that is open for resources to be added.
-	 * @param connectionFactory the Rabbit ConnectionFactory that this resource holder is associated with (may be
-	 * <code>null</code>)
-	 */
-	public RabbitResourceHolder(ConnectionFactory connectionFactory) {
-		this.connectionFactory = connectionFactory;
-	}
-
-	/**
-	 * Create a new RabbitResourceHolder for the given Rabbit Channel.
-	 * @param channel the Rabbit Channel
+	 * @param channel a channel to add
 	 */
 	public RabbitResourceHolder(Channel channel) {
+		this();
 		addChannel(channel);
-		this.frozen = true;
-	}
-
-	/**
-	 * Create a new RabbitResourceHolder for the given Rabbit resources.
-	 * @param connection the Rabbit Connection
-	 * @param channel the Rabbit Channel
-	 */
-	public RabbitResourceHolder(Connection connection, Channel channel) {
-		addConnection(connection);
-		addChannel(channel, connection);
-		this.frozen = true;
-	}
-
-	/**
-	 * Create a new RabbitResourceHolder for the given Rabbit resources.
-	 * @param connectionFactory the Rabbit ConnectionFactory that this resource holder is associated with (may be
-	 * <code>null</code>)
-	 * @param connection the Rabbit Connection
-	 * @param channel the Rabbit Channel
-	 */
-	public RabbitResourceHolder(ConnectionFactory connectionFactory, Connection connection, Channel channel) {
-		this.connectionFactory = connectionFactory;
-		addConnection(connection);
-		addChannel(channel, connection);
-		this.frozen = true;
 	}
 
 	public final boolean isFrozen() {
@@ -157,18 +122,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return (!this.channels.isEmpty() ? this.channels.get(0) : null);
 	}
 
-	public Channel getChannel(Class<? extends Channel> channelType) {
-		return getChannel(channelType, null);
-	}
-
-	public Channel getChannel(Class<? extends Channel> channelType, Connection connection) {
-		List<Channel> channels = this.channels;
-		if (connection != null) {
-			channels = this.channelsPerConnection.get(connection);
-		}
-		return CollectionUtils.findValueOfType(channels, channelType);
-	}
-
 	public void commitAll() throws IOException {
 		for (Channel channel : this.channels) {
 			if (deliveryTags.containsKey(channel)) {
@@ -189,7 +142,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 			}
 		}
 		for (Connection con : this.connections) {
-			ConnectionFactoryUtils.releaseConnection(con, this.connectionFactory);
+			ConnectionFactoryUtils.releaseConnection(con);
 		}
 		this.connections.clear();
 		this.channels.clear();
@@ -202,20 +155,42 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	public void rollbackAll() {
 		for (Channel channel : this.channels) {
-			try {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rolling back messages to channel: "+channel);
-				}
-				if (deliveryTags.containsKey(channel)) {
-					for (Long deliveryTag : deliveryTags.get(channel)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Rolling back messages to channel: " + channel);
+			}
+			RabbitUtils.rollbackIfNecessary(channel);
+			if (deliveryTags.containsKey(channel)) {
+				for (Long deliveryTag : deliveryTags.get(channel)) {
+					try {
 						channel.basicReject(deliveryTag, true);
+						// Need to commit the reject (=nack)
+						RabbitUtils.commitIfNecessary(channel);
+					} catch (IOException ex) {
+						throw new AmqpIOException(ex);
 					}
 				}
-				channel.txRollback();
-			} catch (Throwable ex) {
-				logger.debug("Could not rollback received messages on Rabbit Channel after transaction", ex);
 			}
 		}
+	}
+
+	/**
+	 * Call this method (with true argument) once the channel has had {@link Channel#txSelect()} has been called
+	 * @param transactional the flag to set
+	 */
+	public void declareTransactional() {
+		if (!isSynchronizedWithTransaction() && !transactional) {
+			for (Channel channel : this.channels) {
+				RabbitUtils.declareTransactional(channel);
+			}
+			this.transactional = !channels.isEmpty();
+		}
+	}
+
+	/**
+	 * @return true if the channels in this holder are transactional
+	 */
+	public boolean isChannelTransactional() {
+		return this.transactional;
 	}
 
 }

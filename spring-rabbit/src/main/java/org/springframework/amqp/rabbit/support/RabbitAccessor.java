@@ -43,13 +43,6 @@ public abstract class RabbitAccessor implements InitializingBean {
 	private volatile boolean channelTransacted;
 
 	/**
-	 * Internal ResourceFactory adapter for interacting with
-	 * ConnectionFactoryUtils
-	 */
-	private final RabbitAccessorResourceFactory transactionalResourceFactory = new RabbitAccessorResourceFactory();
-
-
-	/**
 	 * Set the ConnectionFactory to use for obtaining RabbitMQ {@link Connection Connections}.
 	 */
 	public void setConnectionFactory(ConnectionFactory connectionFactory) {
@@ -105,9 +98,6 @@ public abstract class RabbitAccessor implements InitializingBean {
 	protected Channel createChannel(Connection con) throws IOException {
 		Assert.notNull(con, "connection must not be null");
 		Channel channel = con.createChannel();
-		if (isChannelTransacted()) {
-			channel.txSelect();
-		}
 		return channel;
 	}
 	
@@ -133,40 +123,16 @@ public abstract class RabbitAccessor implements InitializingBean {
 		return holder.getChannel();
 	}
 
-	protected Channel getTransactionalChannel() throws IOException {
-		return ConnectionFactoryUtils.doGetTransactionalChannel(this.connectionFactory,
-				this.transactionalResourceFactory);
+	protected RabbitResourceHolder getTransactionalResourceHolder() {
+		RabbitResourceHolder holder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory, this.channelTransacted);
+		if (isChannelTransacted()) {
+			holder.declareTransactional();
+		}
+		return holder;
 	}
 
 	protected AmqpException convertRabbitAccessException(Exception ex) {
 		return RabbitUtils.convertRabbitAccessException(ex);
-	}
-
-	/**
-	 * ResourceFactory implementation that delegates to this template's
-	 * protected callback methods.
-	 */
-	private class RabbitAccessorResourceFactory implements ConnectionFactoryUtils.ResourceFactory {
-
-		public Connection getConnection(RabbitResourceHolder holder) {
-			return RabbitAccessor.this.getConnection(holder);
-		}
-
-		public Channel getChannel(RabbitResourceHolder holder) {
-			return RabbitAccessor.this.getChannel(holder);
-		}
-
-		public Connection createConnection() throws IOException {
-			return RabbitAccessor.this.createConnection();
-		}
-
-		public Channel createChannel(Connection con) throws IOException {
-			return RabbitAccessor.this.createChannel(con);
-		}
-
-		public boolean isSynchedLocalTransactionAllowed() {
-			return RabbitAccessor.this.isChannelTransacted();
-		}
 	}
 
 }
