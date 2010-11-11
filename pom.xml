@@ -50,6 +50,11 @@
 			</distributionManagement>
 		</profile>
 	</profiles>
+	<scm>
+		<url>http://git.springframework.org/spring-amqp</url>
+		<connection>scm:git:git://git.springsource.org/spring-amqp/spring-amqp.git</connection>
+		<developerConnection>scm:git:git://git.springsource.org/spring-amqp/spring-amqp.git</developerConnection>
+	</scm>
 	<distributionManagement>
 		<!-- see 'staging' profile for dry-run deployment settings -->
 		<downloadUrl>http://www.springsource.com/download/community</downloadUrl>
