@@ -20,7 +20,7 @@
 		<org.codehaus.jackson.version>1.4.3</org.codehaus.jackson.version>
 		<org.erlang.otp.version>1.5.3</org.erlang.otp.version>
 		<com.rabbitmq.version>2.1.0</com.rabbitmq.version>
-		<org.springframework.version>3.0.3.RELEASE</org.springframework.version>
+		<org.springframework.version>3.0.5.RELEASE</org.springframework.version>
 	</properties>
 	<profiles>
 		<profile>
