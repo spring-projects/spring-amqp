@@ -68,6 +68,44 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	@Test
+	public void testSendAndReceiveWithNonDefaultExchange() throws Exception {
+
+		final RabbitAdmin admin = new RabbitAdmin(template);
+		final TopicExchange exchange = new TopicExchange("topic");
+		admin.declareExchange(exchange);
+
+		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
+
+		template.execute(new ChannelCallback<Void>() {
+			public Void doInRabbit(Channel channel) throws Exception {
+
+				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
+				String tag = channel.basicConsume(queue.getName(), true, consumer);
+				assertNotNull(tag);
+
+				template.convertAndSend("topic", "foo", "message");
+
+				try {
+
+					String result = getResult(consumer);
+					assertEquals(null, result);
+
+					template.convertAndSend("topic", "foo.end", "message");
+					result = getResult(consumer);
+					assertEquals("message", result);
+
+				} finally {
+					channel.basicCancel(tag);
+				}
+
+				return null;
+
+			}
+		});
+
+	}
+
+	@Test
 	// @Ignore("Not sure yet if we need to support a use case like this")
 	public void testSendAndReceiveWithTopicConsumeInBackground() throws Exception {
 
