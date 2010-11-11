@@ -24,12 +24,12 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
  * 
  * &#064;Test
  * public void testSendAndReceive() throws Exception {
- * 	// ... test using RabbitTemplate etc. 
+ * 	// ... test using RabbitTemplate etc.
  * }
  * </pre>
  * <p>
- * It is recommended to declare the rule as static so that it only has to check once for all tests in the enclosing test
- * case.
+ * The rule can be declared as static so that it only has to check once for all tests in the enclosing test case, but
+ * there isn't a lot of overhead in making it non-static.
  * </p>
  * 
  * @see Assume
@@ -40,6 +40,8 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
  */
 public class BrokerRunning extends TestWatchman {
 
+	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
+
 	private static Log logger = LogFactory.getLog(BrokerRunning.class);
 
 	private boolean brokerOnline = true;
@@ -47,6 +49,28 @@ public class BrokerRunning extends TestWatchman {
 	private boolean brokerOffline = true;
 
 	private final boolean assumeOnline;
+
+	private final boolean purge;
+
+	private Queue queue;
+
+	/**
+	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
+	 * 
+	 * @return a new rule that assumes an existing running broker
+	 */
+	public static BrokerRunning isRunningWithEmptyQueue(String queue) {
+		return new BrokerRunning(true, new Queue(queue), true);
+	}
+
+	/**
+	 * Ensure the broker is running and has an empty queue in the default exchange.
+	 * 
+	 * @return a new rule that assumes an existing running broker
+	 */
+	public static BrokerRunning isRunningWithEmptyQueue(Queue queue) {
+		return new BrokerRunning(true, queue, true);
+	}
 
 	/**
 	 * @return a new rule that assumes an existing running broker
@@ -62,13 +86,24 @@ public class BrokerRunning extends TestWatchman {
 		return new BrokerRunning(false);
 	}
 
-	private BrokerRunning(boolean assumeOnline) {
+	private BrokerRunning(boolean assumeOnline, Queue queue, boolean purge) {
 		this.assumeOnline = assumeOnline;
+		this.queue = queue;
+		this.purge = purge;
+	}
+
+	private BrokerRunning(boolean assumeOnline, Queue queue) {
+		this(assumeOnline, queue, false);
+	}
+
+	private BrokerRunning(boolean assumeOnline) {
+		this(assumeOnline, new Queue(DEFAULT_QUEUE_NAME));
 	}
 
 	@Override
 	public Statement apply(Statement base, FrameworkMethod method, Object target) {
 
+		// Check at the beginning, so this can be used as a static field
 		if (assumeOnline) {
 			Assume.assumeTrue(brokerOnline);
 		} else {
@@ -76,14 +111,30 @@ public class BrokerRunning extends TestWatchman {
 		}
 
 		try {
+
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-			admin.declareQueue(new Queue("test.broker.running"));
-			admin.deleteQueue("test.broker.running");
+
+			String queueName = queue.getName();
+
+			if (purge) {
+				logger.debug("Deleting queue: " + queueName);
+				// Delete completely - gets rid of consumers and bindings as well
+				admin.deleteQueue(queueName);
+			}
+
+			admin.declareQueue(queue);
+
+			if (isDefaultQueue(queueName)) {
+				// Just for test probe.
+				admin.deleteQueue(queueName);
+				queue = null;
+			}
 			brokerOffline = false;
 			if (!assumeOnline) {
 				Assume.assumeTrue(brokerOffline);
 			}
+
 		} catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);
 			brokerOnline = false;
@@ -92,9 +143,12 @@ public class BrokerRunning extends TestWatchman {
 			}
 		}
 
-
 		return super.apply(base, method, target);
 
+	}
+
+	private boolean isDefaultQueue(String queue) {
+		return DEFAULT_QUEUE_NAME.equals(queue);
 	}
 
 }

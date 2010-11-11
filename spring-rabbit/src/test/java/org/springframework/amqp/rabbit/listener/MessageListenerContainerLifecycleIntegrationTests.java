@@ -18,10 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -31,7 +29,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
 
-	private Queue queue;
+	private Queue queue = new Queue("test.queue");
 
 	private RabbitTemplate template = new RabbitTemplate();
 
@@ -40,7 +38,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	private final boolean transactional;
 
 	@Rule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
 
 	private final int messageCount;
 
@@ -62,17 +60,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
-		RabbitAdmin admin = new RabbitAdmin(template);
-		try {
-			admin.deleteQueue("test.queue");
-		}
-		catch (AmqpIOException e) {
-			// Ignore (queue didn't exist)
-		}
-		queue = new Queue("test.queue");
-		// Idempotent, so no problem to do this for every test
-		admin.declareQueue(queue);
-		admin.purgeQueue("test.queue", false);
 	}
 
 	@Test

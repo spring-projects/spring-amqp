@@ -11,14 +11,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
@@ -42,20 +39,7 @@ public class RabbitTemplateIntegrationTests {
 	private RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
 
 	@Rule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
-
-	@Before
-	public void declareQueue() {
-		RabbitAdmin admin = new RabbitAdmin(template);
-		try {
-			admin.deleteQueue(ROUTE);
-		}
-		catch (AmqpIOException e) {
-			// Ignore (queue didn't exist)
-		}
-		admin.declareQueue(new Queue(ROUTE));
-		admin.purgeQueue(ROUTE, false);
-	}
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
 
 	@Test
 	public void testSendAndReceive() throws Exception {

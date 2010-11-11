@@ -7,8 +7,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
@@ -30,7 +28,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 
 	@Rule
 	// After the repeat processor, so it only runs once
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
 
 	private CachingConnectionFactory connectionFactory;
 
@@ -44,17 +42,6 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		connectionFactory.setChannelCacheSize(repeat.getConcurrency());
 		// connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
-		// TODO: investigate the effects of these flags...
-		// template.setMandatoryPublish(true);
-		// template.setImmediatePublish(true);
-		RabbitAdmin admin = new RabbitAdmin(template);
-		try {
-			admin.deleteQueue(ROUTE);
-		} catch (AmqpIOException e) {
-			// Ignore (queue didn't exist)
-		}
-		admin.declareQueue(new Queue(ROUTE));
-		admin.purgeQueue(ROUTE, false);
 	}
 
 	@After

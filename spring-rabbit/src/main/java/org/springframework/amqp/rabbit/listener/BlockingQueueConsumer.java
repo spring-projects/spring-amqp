@@ -6,11 +6,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.utility.Utility;
 /**
  * Variation on QueueingConsumer in RabbitMQ, uses 'put' instead of 'add' and stored a reference to the consumerTag that
@@ -20,8 +20,6 @@ import com.rabbitmq.utility.Utility;
  */
 public class BlockingQueueConsumer extends DefaultConsumer {
 
-		private String consumerTag;
-	
 	    private final BlockingQueue<Delivery> queue;
 
 	    // When this is non-null the queue is in shutdown mode and nextDelivery should
@@ -43,18 +41,7 @@ public class BlockingQueueConsumer extends DefaultConsumer {
 	        super(ch);
 	        this.queue = q;
 	    }
-	    
-	    
 
-	    public String getConsumerTag() {
-			return consumerTag;
-		}
-	    
-	    public void setConsumerTag(String consumerTag) 
-	    {
-	    	this.consumerTag = consumerTag;
-	    }
-	    
 		@Override public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
 	        shutdown = sig; 
 	        try {
