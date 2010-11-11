@@ -66,10 +66,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	// The default queue name that will be used for synchronous receives.
 	private volatile String queue;
 
-	private volatile boolean mandatoryPublish;
-
-	private volatile boolean immediatePublish;
-
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
 	private volatile MessageConverter messageConverter = new SimpleMessageConverter();
@@ -98,25 +94,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	public void setQueue(String queue) {
 		this.queue = queue;
-	}
-
-	/**
-	 * If the message doesn't get routed to a queue for any reason, the server will send an async response to let me
-	 * know. Possible use case: check routing.
-	 * 
-	 * @param mandatoryPublish the flag value to set
-	 */
-	public void setMandatoryPublish(boolean mandatoryPublish) {
-		this.mandatoryPublish = mandatoryPublish;
-	}
-
-	/**
-	 * Like a rendezvous.
-	 * 
-	 * @param immediatePublish
-	 */
-	public void setImmediatePublish(boolean immediatePublish) {
-		this.immediatePublish = immediatePublish;
 	}
 
 	/**
@@ -344,8 +321,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			routingKey = this.routingKey;
 		}
 		// TODO parameterize out default encoding
-		channel.basicPublish(exchange, routingKey, this.mandatoryPublish, this.immediatePublish,
-				RabbitUtils.extractBasicProperties(message, "UTF-8"), message.getBody());
+		channel.basicPublish(exchange, routingKey, false, false, RabbitUtils.extractBasicProperties(message, "UTF-8"),
+				message.getBody());
 		// Check commit - avoid commit call within a JTA transaction.
 		// TODO: should we be able to do (via wrapper) something like:
 		// channel.getTransacted()?
