@@ -58,7 +58,22 @@ public class SerializationUtils {
 			return null;
 		}
 		try {
-			return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
+			return deserialize(new ObjectInputStream(new ByteArrayInputStream(bytes)));
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Could not deserialize object", e);
+		}
+	}
+
+	/**
+	 * @param stream an object stream created from a serialized object
+	 * @return the result of deserializing the bytes
+	 */
+	public static Object deserialize(ObjectInputStream stream) {
+		if (stream == null) {
+			return null;
+		}
+		try {
+			return stream.readObject();
 		}
 		catch (IOException e) {
 			throw new IllegalArgumentException("Could not deserialize object", e);

@@ -16,12 +16,19 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.remoting.rmi.CodebaseAwareObjectInputStream;
+import org.springframework.util.ClassUtils;
 
 /**
  * Implementation of {@link MessageConverter} that can work with Strings, Serializable instances,
@@ -32,13 +39,32 @@ import org.springframework.amqp.utils.SerializationUtils;
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  */
-public class SimpleMessageConverter implements MessageConverter {
+public class SimpleMessageConverter implements MessageConverter, BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
-
 	private volatile String defaultCharset = DEFAULT_CHARSET;
 
+	private String codebaseUrl;
+
+	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
+	
+	public void setBeanClassLoader(ClassLoader beanClassLoader) {
+		this.beanClassLoader = beanClassLoader;
+	}
+
+	/**
+	 * Set the codebase URL to download classes from if not found locally. Can consists of multiple URLs, separated by
+	 * spaces.
+	 * <p>
+	 * Follows RMI's codebase conventions for dynamic class download.
+	 * 
+	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
+	 * @see java.rmi.server.RMIClassLoader
+	 */
+	public void setCodebaseUrl(String codebaseUrl) {
+		this.codebaseUrl = codebaseUrl;
+	}
 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
@@ -49,7 +75,7 @@ public class SimpleMessageConverter implements MessageConverter {
 	}
 
 	/**
-	 * Converts from a Rabbit Message to an Object.
+	 * Converts from a AMQP Message to an Object.
 	 */
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object content = null;
@@ -71,7 +97,15 @@ public class SimpleMessageConverter implements MessageConverter {
 			}
 			else if (contentType != null &&
 					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
-				content = SerializationUtils.deserialize(message.getBody());
+				try {
+					content = SerializationUtils.deserialize(createObjectInputStream(new ByteArrayInputStream(message.getBody()), this.codebaseUrl));
+				} catch (IOException e) {
+					throw new MessageConversionException(
+							"failed to convert serialized Message content", e);
+				} catch (IllegalArgumentException e) {
+					throw new MessageConversionException(
+							"failed to convert serialized Message content", e);					
+				}
 			}
 		}
 		if (content == null) {
@@ -81,7 +115,7 @@ public class SimpleMessageConverter implements MessageConverter {
 	}
 
 	/**
-	 * Creates a Rabbit Mesasge from the provided Object.
+	 * Creates an AMQP Message from the provided Object.
 	 */
 	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;		
@@ -95,19 +129,37 @@ public class SimpleMessageConverter implements MessageConverter {
 			}
 			catch (UnsupportedEncodingException e) {
 				throw new MessageConversionException(
-						"failed to convert Message content", e);
+						"failed to convert to Message content", e);
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 			messageProperties.setContentEncoding(this.defaultCharset);
 		}
 		else if (object instanceof Serializable) {
-			bytes = SerializationUtils.serialize(object);
+			try {
+				bytes = SerializationUtils.serialize(object);
+			} catch (IllegalArgumentException e) {
+				throw new MessageConversionException(
+						"failed to convert to serialized Message content", e);					
+			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
 		}
 		return new Message(bytes, messageProperties);
+	}
+
+	/**
+	 * Create an ObjectInputStream for the given InputStream and codebase. The default implementation creates a
+	 * CodebaseAwareObjectInputStream.
+	 * @param is the InputStream to read from
+	 * @param codebaseUrl the codebase URL to load classes from if not found locally (can be <code>null</code>)
+	 * @return the new ObjectInputStream instance to use
+	 * @throws IOException if creation of the ObjectInputStream failed
+	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
+	 */
+	protected ObjectInputStream createObjectInputStream(InputStream is, String codebaseUrl) throws IOException {
+		return new CodebaseAwareObjectInputStream(is, this.beanClassLoader, codebaseUrl);
 	}
 
 }
