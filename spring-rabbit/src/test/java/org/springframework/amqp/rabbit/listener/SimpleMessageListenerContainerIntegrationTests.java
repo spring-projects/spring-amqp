@@ -64,10 +64,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	private SimpleMessageListenerContainer container;
 
-	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency, TransactionType transacted) {
+	private final int txSize;
+
+	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency,
+			TransactionType transacted, int txSize) {
 		this.messageCount = messageCount;
 		this.concurrentConsumers = concurrency;
 		this.transactional = transacted;
+		this.txSize = txSize;
 	}
 
 	@Parameters
@@ -76,11 +80,16 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				params(2, 4, 1, TransactionType.NATIVE), params(3, 4, 1, TransactionType.EXTERNAL),
 				params(4, 2, 2, TransactionType.NATIVE), params(5, 2, 2, TransactionType.NONE),
 				params(6, 20, 4, TransactionType.NATIVE), params(7, 20, 4, TransactionType.NONE),
-				params(8, 1000, 4, TransactionType.NATIVE), params(9, 1000, 4, TransactionType.NONE));
+				params(8, 1000, 4, TransactionType.NATIVE), params(9, 1000, 4, TransactionType.NONE),
+				params(10, 1000, 4, TransactionType.NATIVE, 10));
+	}
+
+	private static Object[] params(int i, int messageCount, int concurrency, TransactionType transacted, int txSize) {
+		return new Object[] { messageCount, concurrency, transacted, txSize };
 	}
 
 	private static Object[] params(int i, int messageCount, int concurrency, TransactionType transacted) {
-		return new Object[] { messageCount, concurrency, transacted };
+		return params(i, messageCount, concurrency, transacted, 1);
 	}
 
 	@Before
@@ -156,7 +165,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueName(queue.getName());
-		container.setPrefetchCount(1);
+		container.setTxSize(txSize);
+		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional.isTransactional());
 		if (transactional == TransactionType.EXTERNAL) {
