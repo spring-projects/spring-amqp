@@ -13,7 +13,7 @@
 		<!-- versions for commonly-used dependencies -->
 		<cglib.version>2.2</cglib.version>
 		<commons-io.version>1.4</commons-io.version>
-		<junit.version>4.8.1</junit.version>
+		<junit.version>4.8.2</junit.version>
 		<log4j.version>1.2.15</log4j.version>
 		<org.mockito.version>1.8.4</org.mockito.version>
 		<org.slf4j.version>1.5.10</org.slf4j.version>
@@ -79,14 +79,10 @@
 		</snapshotRepository>
 	</distributionManagement>
 	<dependencyManagement>
-		<!--
-			inheritable <dependency> declarations for child poms. children still
-			must explicitly declare the groupId/artifactId of these dependencies
-			in order for them to show up on the classpath, but metadata like
-			<version> and <scope> are inherited, which cuts down on verbosity.
-			see
-			http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html
-		-->
+		<!-- inheritable <dependency> declarations for child poms. children still 
+			must explicitly declare the groupId/artifactId of these dependencies in order 
+			for them to show up on the classpath, but metadata like <version> and <scope> 
+			are inherited, which cuts down on verbosity. see http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html -->
 		<dependencies>
 
 			<dependency>
@@ -110,7 +106,7 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!--  Spring -->
+			<!-- Spring -->
 			<dependency>
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-aop</artifactId>
@@ -249,13 +245,10 @@
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
-		<!--
-			dependency definitions to be inherited by child poms. any
-			<dependency> declarations here will automatically show up on child
-			project classpaths. only items that are truly common across all
-			projects (modules and samples) should go here. otherwise, consider
-			<dependencyManagement> above
-		-->
+		<!-- dependency definitions to be inherited by child poms. any <dependency> 
+			declarations here will automatically show up on child project classpaths. 
+			only items that are truly common across all projects (modules and samples) 
+			should go here. otherwise, consider <dependencyManagement> above -->
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
@@ -266,10 +259,8 @@
 	<build>
 		<extensions>
 			<extension>
-				<!--
-					available only in the springframework maven repository. see
-					<repositories> section below
-				-->
+				<!-- available only in the springframework maven repository. see <repositories> 
+					section below -->
 				<groupId>org.springframework.build.aws</groupId>
 				<artifactId>org.springframework.build.aws.maven</artifactId>
 				<version>3.0.0.RELEASE</version>
@@ -350,29 +341,29 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+					</archive>
+				</configuration>
+			</plugin>
 		</plugins>
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<!--
-						configures the springsource bundlor plugin, which generates
-						OSGI-compatible MANIFEST.MF files during the 'compile' phase of
-						the maven build. this plugin is declared within the
-						pluginManagement section because not every module that inherits
-						from this pom needs bundlor's services, e.g.:
-						spring-integration-samples and all its children. for this reason,
-						all modules that wish to use bundlor must declare it explicitly.
-						it is not necessary to specify the <version> or <configuration>
-						sections, but groupId and artifactId are required. see
-						http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html
-						for more info
-					-->
+					<!-- configures the springsource bundlor plugin, which generates OSGI-compatible 
+						MANIFEST.MF files during the 'compile' phase of the maven build. this plugin 
+						is declared within the pluginManagement section because not every module 
+						that inherits from this pom needs bundlor's services, e.g.: spring-integration-samples 
+						and all its children. for this reason, all modules that wish to use bundlor 
+						must declare it explicitly. it is not necessary to specify the <version> 
+						or <configuration> sections, but groupId and artifactId are required. see 
+						http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html 
+						for more info -->
 					<groupId>com.springsource.bundlor</groupId>
 					<artifactId>com.springsource.bundlor.maven</artifactId>
-					<version>1.0.0.RELEASE</version>
-					<configuration>
-						<failOnWarnings>true</failOnWarnings>
-					</configuration>
 					<executions>
 						<execution>
 							<id>bundlor</id>
@@ -413,11 +404,8 @@
 	<reporting>
 		<plugins>
 			<plugin>
-				<!--
-					significantly speeds up the 'Dependencies' report during site
-					creation see
-					http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html
-				-->
+				<!-- significantly speeds up the 'Dependencies' report during site creation 
+					see http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.1</version>
