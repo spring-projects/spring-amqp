@@ -21,9 +21,11 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
+import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -122,14 +124,18 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return (!this.channels.isEmpty() ? this.channels.get(0) : null);
 	}
 
-	public void commitAll() throws IOException {
-		for (Channel channel : this.channels) {
-			if (deliveryTags.containsKey(channel)) {
-				for (Long deliveryTag : deliveryTags.get(channel)) {
-					channel.basicAck(deliveryTag, false);
+	public void commitAll() throws AmqpException {
+		try {
+			for (Channel channel : this.channels) {
+				if (deliveryTags.containsKey(channel)) {
+					for (Long deliveryTag : deliveryTags.get(channel)) {
+						channel.basicAck(deliveryTag, false);
+					}
 				}
+				channel.txCommit();
 			}
-			channel.txCommit();
+		} catch (IOException e) {
+			throw new AmqpException("failed to commit RabbitMQ transaction", e);
 		}
 	}
 
