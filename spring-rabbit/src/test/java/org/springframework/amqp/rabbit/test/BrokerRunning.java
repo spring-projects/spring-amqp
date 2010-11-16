@@ -128,7 +128,6 @@ public class BrokerRunning extends TestWatchman {
 			if (isDefaultQueue(queueName)) {
 				// Just for test probe.
 				admin.deleteQueue(queueName);
-				queue = null;
 			}
 			brokerOffline = false;
 			if (!assumeOnline) {
