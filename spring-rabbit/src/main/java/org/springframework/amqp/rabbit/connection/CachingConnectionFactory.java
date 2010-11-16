@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.connection;
@@ -31,35 +28,30 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
 /**
- * NOTE: this ConnectionFactory implementation is considered <b>experimental</b>
- * at this stage. There are concerns to be addressed in relation to the
- * statefulness of channels. Therefore, we recommend using
- * {@link SingleConnectionFactory} for now.
+ * NOTE: this ConnectionFactory implementation is considered <b>experimental</b> at this stage. There are concerns to be
+ * addressed in relation to the statefulness of channels. Therefore, we recommend using {@link SingleConnectionFactory}
+ * for now.
  * 
- * A {@link ConnectionFactory} implementation that returns the same Connections
- * from all {@link #createConnection()} calls, and ignores calls to
- * {@link com.rabbitmq.client.Connection#close()} and caches
+ * A {@link ConnectionFactory} implementation that returns the same Connections from all {@link #createConnection()}
+ * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and caches
  * {@link com.rabbitmq.client.Channel}.
  * 
  * <p>
- * By default, only one single Session will be cached, with further requested
- * Channels being created and disposed on demand. Consider raising the
- * {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a
- * high-concurrency environment.
+ * By default, only one single Session will be cached, with further requested Channels being created and disposed on
+ * demand. Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
+ * environment.
  * 
  * <p>
- * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels
- * obtained form its shared Connection.</b> This is the usual recommendation for
- * native Rabbit access code anyway. However, with this ConnectionFactory, its
- * use is mandatory in order to actually allow for Channel reuse.
+ * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its shared Connection.</b>
+ * This is the usual recommendation for native Rabbit access code anyway. However, with this ConnectionFactory, its use
+ * is mandatory in order to actually allow for Channel reuse.
  * 
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
  */
 // TODO are there heartbeats and/or exception thrown if a connection is broken?
-public class CachingConnectionFactory extends SingleConnectionFactory implements
-		DisposableBean {
+public class CachingConnectionFactory extends SingleConnectionFactory implements DisposableBean {
 
 	private int channelCacheSize = 1;
 
@@ -68,9 +60,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	private volatile boolean active = true;
 
 	/**
-	 * Create a new CachingConnectionFactory initializing the hostname to be the
-	 * value returned from InetAddress.getLocalHost(), or "localhost" if
-	 * getLocalHost() throws an exception.
+	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
+	 * InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws an exception.
 	 */
 	public CachingConnectionFactory() {
 		super();
@@ -79,28 +70,23 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	/**
 	 * Create a new CachingConnectionFactory given a host name.
 	 * 
-	 * @param hostName
-	 *            the host name to connect to
+	 * @param hostName the host name to connect to
 	 */
 	public CachingConnectionFactory(String hostName) {
 		super(hostName);
 	}
 
 	/**
-	 * Create a new CachingConnectionFactory for the given target
-	 * ConnectionFactory.
+	 * Create a new CachingConnectionFactory for the given target ConnectionFactory.
 	 * 
-	 * @param rabbitConnectionFactory
-	 *            the target ConnectionFactory
+	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
-	public CachingConnectionFactory(
-			com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
+	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		super(rabbitConnectionFactory);
 	}
 
 	public void setChannelCacheSize(int sessionCacheSize) {
-		Assert.isTrue(sessionCacheSize >= 1,
-				"Channel cache size must be 1 or higher");
+		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
 	}
 
@@ -126,15 +112,13 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		return channel;
 	}
 
-	protected ChannelProxy getCachedChannelProxy(Connection connection,
-			LinkedList<ChannelProxy> channelList) {
+	protected ChannelProxy getCachedChannelProxy(Connection connection, LinkedList<ChannelProxy> channelList) {
 		Channel targetChannel = createBareChannel(connection);
 		if (logger.isDebugEnabled()) {
-			logger.debug("Creating cached Rabbit Channel");
+			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
-		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class
-				.getClassLoader(), new Class[] { ChannelProxy.class },
-				new CachedChannelInvocationHandler(connection, targetChannel,
+		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
+				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(connection, targetChannel,
 						channelList));
 	}
 
@@ -147,8 +131,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	}
 
 	/**
-	 * Reset the Channel cache and underlying shared Connection, to be
-	 * reinitialized on next access.
+	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
 	public void resetConnection() {
 		this.active = false;
@@ -168,9 +151,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 	@Override
 	public String toString() {
-		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize
-				+ ", host=" + this.getHost() + ", port=" + this.getPort()
-				+ ", active=" + active + "]";
+		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize + ", host=" + this.getHost()
+				+ ", port=" + this.getPort() + ", active=" + active + "]";
 	}
 
 	private class CachedChannelInvocationHandler implements InvocationHandler {
@@ -183,15 +165,14 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 		private final Object targetMonitor = new Object();
 
-		public CachedChannelInvocationHandler(Connection connection,
-				Channel target, LinkedList<ChannelProxy> channelList) {
+		public CachedChannelInvocationHandler(Connection connection, Channel target,
+				LinkedList<ChannelProxy> channelList) {
 			this.connection = connection;
 			this.target = target;
 			this.channelList = channelList;
 		}
 
-		public Object invoke(Object proxy, Method method, Object[] args)
-				throws Throwable {
+		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			String methodName = method.getName();
 			if (methodName.equals("equals")) {
 				// Only consider equal when proxies are identical.
@@ -217,13 +198,14 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 				physicalClose();
 				return null;
 			} else if (methodName.equals("getTargetChannel")) {
-				// Handle getTargetSession method: return underlying Channel.
+				// Handle getTargetChannel method: return underlying Channel.
 				return this.target;
-			}
-			try {
+			} try {
 				return method.invoke(this.target, args);
 			} catch (InvocationTargetException ex) {
 				if (!this.target.isOpen()) {
+					// Basic re-connection logic...
+					logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
 					synchronized (targetMonitor) {
 						if (!this.target.isOpen()) {
 							this.target = createBareChannel(connection);
@@ -237,8 +219,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		/**
 		 * GUARDED by channelList
 		 * 
-		 * @param proxy
-		 *            the channel to close
+		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
 			// Allow for multiple close calls...
