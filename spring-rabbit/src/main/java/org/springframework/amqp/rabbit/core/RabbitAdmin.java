@@ -259,10 +259,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 	private void declareBindings(final Channel channel, final Binding... bindings) throws IOException {
 		for (Binding binding : bindings) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Binding queue [" + binding.getQueue() + "] to exchange [" +
+				logger.debug("Binding queue [" + binding.getQueue().getName() + "] to exchange [" +
 						binding.getExchange() + "] with routing key [" + binding.getRoutingKey() + "]");
 			}
-			channel.queueBind(binding.getQueue(), binding.getExchange(),
+			channel.queueBind(binding.getQueue().getName(), binding.getExchange().getName(),
 					binding.getRoutingKey(), binding.getArguments());
 		}
 	}

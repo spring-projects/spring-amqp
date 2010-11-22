@@ -27,53 +27,43 @@ import java.util.Map;
  * @author Mark Fisher
  * @see AmqpAdmin
  */
-public class Binding {
+public class Binding extends Route {
 
-	private String queue;
+	private Queue queue;
 
-	private String exchange;
-
-	private String routingKey;
 
 	private Map<String, Object> arguments;
-
-
 	public Binding(Queue queue, FanoutExchange exchange) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
+		this(queue, (Exchange) exchange, "");
 	}
-
 	public Binding(Queue queue, HeadersExchange exchange, Map<String, Object> arguments) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
+		this(queue, (Exchange) exchange, "");
 		this.arguments = arguments;
 	}
 
+	public Binding(Queue queue, Exchange exchange, String routingKey) {
+		super(exchange, routingKey);
+		this.queue = queue;	
+	}
+
+	public Binding(Queue queue, Route route) {
+		super(route);	
+		this.queue = queue;
+	}
 	public Binding(Queue queue, DirectExchange exchange, String routingKey) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = routingKey;
+		this(queue, (Exchange) exchange, routingKey);
 	}
 
 	public Binding(Queue queue, TopicExchange exchange, String routingKey) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = routingKey;
+		this(queue, (Exchange) exchange, routingKey);
 	}
 
-
-	public String getQueue() {
+	public Queue getQueue() {
 		return this.queue;
 	}
 
-	public String getExchange() {
-		return this.exchange;
-	}
-
-	public String getRoutingKey() {
-		return this.routingKey;
+	public Route getRoute() {
+		return (Route) this;
 	}
 
 	public Map<String, Object> getArguments() {
