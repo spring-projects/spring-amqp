@@ -21,6 +21,7 @@ import com.rabbitmq.client.GetResponse;
 /**
  * @author Mark Pollack
  */
+
 public class CachingConnectionFactoryTests {
 
 	@Test
