@@ -28,3 +28,4 @@ None of these is essential for a pull request, but they will all help.  They can
 * Add yourself as an @author to the .java files that you modify substantially (moew than cosmetic changes).
 * Add some Javadocs and, if you change the namespace, some XSD doc elements (Spring AMQP is not stellar in this area yet, but it will have to come up to scratch one day, so you will be helping a lot).
 * A few unit tests would help a lot as well - someone has to do it.
+* If no-one else is using your branch, please rebase it against the current master (or other target branch in the main project).
