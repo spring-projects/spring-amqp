@@ -117,13 +117,14 @@ public class BrokerRunning extends TestWatchman {
 
 			String queueName = queue.getName();
 
+			admin.declareQueue(queue);
+
 			if (purge) {
 				logger.debug("Deleting queue: " + queueName);
 				// Delete completely - gets rid of consumers and bindings as well
 				admin.deleteQueue(queueName);
+				admin.declareQueue(queue);
 			}
-
-			admin.declareQueue(queue);
 
 			if (isDefaultQueue(queueName)) {
 				// Just for test probe.

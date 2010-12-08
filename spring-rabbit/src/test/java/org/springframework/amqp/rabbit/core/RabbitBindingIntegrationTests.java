@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
@@ -182,6 +183,38 @@ public class RabbitBindingIntegrationTests {
 
 				try {
 					template.convertAndSend("foo.end", "message");
+					String result = getResult(consumer);
+					assertEquals("message", result);
+				} finally {
+					channel.basicCancel(tag);
+				}
+
+				return null;
+
+			}
+		});
+
+	}
+
+	@Test
+	public void testSendAndReceiveWithFanout() throws Exception {
+
+		RabbitAdmin admin = new RabbitAdmin(template);
+		FanoutExchange exchange = new FanoutExchange("fanout");
+		admin.declareExchange(exchange);
+		template.setExchange(exchange.getName());
+
+		admin.declareBinding(BindingBuilder.from(queue).to(exchange));
+
+		template.execute(new ChannelCallback<Void>() {
+			public Void doInRabbit(Channel channel) throws Exception {
+
+				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel);
+				String tag = channel.basicConsume(queue.getName(), true, consumer);
+				assertNotNull(tag);
+
+				try {
+					template.convertAndSend("message");
 					String result = getResult(consumer);
 					assertEquals("message", result);
 				} finally {
