@@ -31,6 +31,39 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private Queue queue = new Queue("test.queue");
 
+	private enum TransactionMode {
+		ON, OFF;
+		public boolean isTransactional() {
+			return this == ON;
+		}
+	}
+
+	private enum Concurrency {
+		LOW(1);
+		private final int value;
+
+		private Concurrency(int value) {
+			this.value = value;
+		}
+
+		public int value() {
+			return this.value;
+		}
+	}
+
+	private enum MessageCount {
+		LOW(1), HIGH(200);
+		private final int value;
+
+		private MessageCount(int value) {
+			this.value = value;
+		}
+
+		public int value() {
+			return this.value;
+		}
+	}
+
 	private RabbitTemplate template = new RabbitTemplate();
 
 	private final int concurrentConsumers;
@@ -42,23 +75,28 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private final int messageCount;
 
-	public MessageListenerContainerLifecycleIntegrationTests(int messageCount, int concurrency, boolean transacted) {
-		this.messageCount = messageCount;
-		this.concurrentConsumers = concurrency;
-		this.transactional = transacted;
+	public MessageListenerContainerLifecycleIntegrationTests(MessageCount messageCount, Concurrency concurrency,
+			TransactionMode transacted) {
+		this.messageCount = messageCount.value();
+		this.concurrentConsumers = concurrency.value();
+		this.transactional = transacted.isTransactional();
 	}
 
 	@Parameters
 	public static List<Object[]> getParameters() {
-		// return Collections.singletonList(new Object[] { 1, 1, true });
-		return Arrays.asList(new Object[] { 200, 1, true }, new Object[] { 200, 1, false });
+		@SuppressWarnings("unused")
+		Object[] debug = new Object[] { MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF };
+		// return Collections.singletonList(debug);
+		return Arrays.asList( //
+				new Object[] { MessageCount.HIGH, Concurrency.LOW, TransactionMode.ON }, //
+				new Object[] { MessageCount.HIGH, Concurrency.LOW, TransactionMode.OFF });
 	}
 
 	@Before
 	public void declareQueue() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
-		connectionFactory.setPort(5673);
+		// connectionFactory.setPort(5673);
 		template.setConnectionFactory(connectionFactory);
 	}
 
@@ -66,7 +104,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	public void testListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), i+"foo");
+			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
