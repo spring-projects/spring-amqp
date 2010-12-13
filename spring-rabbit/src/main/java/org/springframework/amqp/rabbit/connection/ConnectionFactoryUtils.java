@@ -95,7 +95,7 @@ public class ConnectionFactoryUtils {
 			}
 
 			public Channel createChannel(Connection con) throws IOException {
-				return con.createChannel();
+				return con.createChannel(synchedLocalTransactionAllowed);
 			}
 
 			public boolean isSynchedLocalTransactionAllowed() {
@@ -181,7 +181,7 @@ public class ConnectionFactoryUtils {
 	public static void bindResourceToTransaction(RabbitResourceHolder resourceHolder,
 			ConnectionFactory connectionFactory, boolean synched) {
 		if (TransactionSynchronizationManager.hasResource(connectionFactory)
-				|| !TransactionSynchronizationManager.isActualTransactionActive()) {
+				|| !TransactionSynchronizationManager.isActualTransactionActive() || !synched) {
 			return;
 		}
 		TransactionSynchronizationManager.bindResource(connectionFactory, resourceHolder);

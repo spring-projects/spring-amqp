@@ -15,10 +15,11 @@ public interface Connection {
 
     /**
      * Create a new channel, using an internally allocated channel number.
+     * @param transactional TODO
      * @return a new channel descriptor, or null if none is available
      * @throws IOException if an I/O problem is encountered
      */
-    Channel createChannel() throws IOException;
+    Channel createChannel(boolean transactional) throws IOException;
 
     /**
      * Close this connection and all its channels

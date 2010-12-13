@@ -27,7 +27,7 @@ public class SimpleConnection implements Connection {
 		this.delegate = delegate;	
 	}
 
-	public Channel createChannel() throws IOException {
+	public Channel createChannel(boolean transactional) throws IOException {
 		return delegate.createChannel();
 	}
 

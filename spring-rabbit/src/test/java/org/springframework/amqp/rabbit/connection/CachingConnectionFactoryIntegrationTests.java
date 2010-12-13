@@ -29,7 +29,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	
 	@Before
 	public void open() {
-		connectionFactory.setPort(5673);
+		// connectionFactory.setPort(5673);
 	}
 
 	@After

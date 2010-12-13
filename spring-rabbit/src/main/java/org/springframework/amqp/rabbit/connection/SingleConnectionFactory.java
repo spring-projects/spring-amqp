@@ -17,14 +17,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -118,13 +112,13 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return this.port;
 	}
 
-	protected Channel getChannel(Connection connection) throws Exception {
+	protected Channel getChannel(Connection connection, boolean transactional) throws IOException {
 		return this.createChannel(connection);
 	}
 
 	private Channel createChannel(Connection connection) throws IOException {
 		//TODO overload with channel number.
-		return connection.createChannel();
+		return connection.createChannel(false);
 	}
 
 	public Connection createConnection() throws IOException {
@@ -225,12 +219,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @return the wrapped Connection
 	 */
 	protected Connection getSharedConnectionProxy(Connection target) {
-		List<Class<?>> classes = new ArrayList<Class<?>>(1);
-		classes.add(Connection.class);		
-		return (Connection) Proxy.newProxyInstance(
-				Connection.class.getClassLoader(),
-				classes.toArray(new Class[classes.size()]),
-				new SharedConnectionInvocationHandler(target));
+		return new SharedConnectionProxy(target);
 	}
 
 	@Override
@@ -238,59 +227,50 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port=" + port + "]";
 	}
 
-
-	/**
-	 * Invocation handler for a cached Rabbit Connection proxy.
-	 */
-	private class SharedConnectionInvocationHandler implements InvocationHandler {
+	private class SharedConnectionProxy implements Connection {
 
 		private final Connection target;
 
-		public SharedConnectionInvocationHandler(Connection target) {
+		public SharedConnectionProxy(Connection target) {
 			this.target = target;
 		}
 
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			if (method.getName().equals("equals")) {
-				// Only consider equal when proxies are identical.
-				return (proxy == args[0]);
-			}
-			else if (method.getName().equals("hashCode")) {
-				// Use hashCode of Connection proxy.
-				return System.identityHashCode(proxy);
-			}
-			else if (method.getName().equals("toString")) {
-				return "Shared Rabbit Connection: " + this.target;
-			}
-			//TODO investigate calling addShutdownListener
-			//TODO investigate calling of abort						
-			else if (method.getName().equals("close")) {
-				// Handle close method: don't pass the call on.
-				return null;
-			}
-			else if (method.getName().equals("createChannel")) {
-				Integer channelNumber = null;
-				if (args != null && args.length == 1) { 
-					channelNumber = (Integer) args[0];
-				}
-				//TODO take into account channel number argument
-				if (channelNumber != null) {
-					logger.warn("Ignoring channel number argument when creating channel.  To be fixed in the future.");
-				}
-				Channel channel = getChannel(this.target);
-				if (channel != null) {					
-					return channel;
-				}
-			}
-			try {
-				Object retVal = method.invoke(this.target, args);
-				//TODO investigate exception listeners
-				return retVal;				
-			}
-			catch (InvocationTargetException ex) {
-				throw ex.getTargetException();
-			}
+		public Channel createChannel(boolean transactional) throws IOException {
+			Channel channel = getChannel(this.target, transactional);
+			return channel;
 		}
+
+		public void close() throws IOException {
+		}
+
+		@Override
+		public int hashCode() {
+			return 31 + ((target == null) ? 0 : target.hashCode());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SharedConnectionProxy other = (SharedConnectionProxy) obj;
+			if (target == null) {
+				if (other.target != null)
+					return false;
+			}
+			else if (!target.equals(other.target))
+				return false;
+			return true;
+		}
+		
+		@Override
+		public String toString() {
+			return "Shared Rabbit Connection: " + this.target;
+		}
+
 	}
 
 }

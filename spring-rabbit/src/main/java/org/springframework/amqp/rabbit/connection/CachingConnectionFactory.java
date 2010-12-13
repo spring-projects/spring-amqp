@@ -20,6 +20,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
@@ -54,7 +56,9 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 	private int channelCacheSize = 1;
 
-	private final LinkedList<ChannelProxy> cachedChannels = new LinkedList<ChannelProxy>();
+	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
+
+	private final LinkedList<ChannelProxy> cachedChannelsTransactional = new LinkedList<ChannelProxy>();
 
 	private volatile boolean active = true;
 
@@ -93,8 +97,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		return this.channelCacheSize;
 	}
 
-	protected Channel getChannel(Connection connection) throws Exception {
-		LinkedList<ChannelProxy> channelList = this.cachedChannels;
+	protected Channel getChannel(Connection connection, boolean transactional) throws IOException {
+		LinkedList<ChannelProxy> channelList = transactional ? this.cachedChannelsTransactional : this.cachedChannelsNonTransactional;
 		Channel channel = null;
 		synchronized (channelList) {
 			if (!channelList.isEmpty()) {
@@ -106,24 +110,24 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 				logger.trace("Found cached Rabbit Channel");
 			}
 		} else {
-			channel = getCachedChannelProxy(connection, channelList);
+			channel = getCachedChannelProxy(connection, channelList, transactional);
 		}
 		return channel;
 	}
 
-	protected ChannelProxy getCachedChannelProxy(Connection connection, LinkedList<ChannelProxy> channelList) {
-		Channel targetChannel = createBareChannel(connection);
+	protected ChannelProxy getCachedChannelProxy(Connection connection, LinkedList<ChannelProxy> channelList, boolean transactional) {
+		Channel targetChannel = createBareChannel(connection, transactional);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
 		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
 				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(connection, targetChannel,
-						channelList));
+						channelList, transactional));
 	}
 
-	private Channel createBareChannel(Connection connection) {
+	private Channel createBareChannel(Connection connection, boolean transactional) {
 		try {
-			return connection.createChannel();
+			return connection.createChannel(transactional);
 		} catch (IOException e) {
 			throw new AmqpIOException(e);
 		}
@@ -134,15 +138,15 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 */
 	public void resetConnection() {
 		this.active = false;
-		synchronized (this.cachedChannels) {
-			for (ChannelProxy channel : cachedChannels) {
+		synchronized (this.cachedChannelsNonTransactional) {
+			for (ChannelProxy channel : cachedChannelsNonTransactional) {
 				try {
 					channel.getTargetChannel().close();
 				} catch (Throwable ex) {
 					logger.trace("Could not close cached Rabbit Channel", ex);
 				}
 			}
-			this.cachedChannels.clear();
+			this.cachedChannelsNonTransactional.clear();
 		}
 		this.active = true;
 		super.resetConnection();
@@ -164,15 +168,21 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 		private final Object targetMonitor = new Object();
 
+		private final boolean transactional;
+
 		public CachedChannelInvocationHandler(Connection connection, Channel target,
-				LinkedList<ChannelProxy> channelList) {
+				LinkedList<ChannelProxy> channelList, boolean transactional) {
 			this.connection = connection;
 			this.target = target;
 			this.channelList = channelList;
+			this.transactional = transactional;
 		}
 
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			String methodName = method.getName();
+			if (methodName.equals("txSelect") && !this.transactional) {
+				throw new OperationNotSupportedException("Cannot start transaction on non-transactional channel");
+			}
 			if (methodName.equals("equals")) {
 				// Only consider equal when proxies are identical.
 				return (proxy == args[0]);
@@ -207,7 +217,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 					logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
 					synchronized (targetMonitor) {
 						if (!this.target.isOpen()) {
-							this.target = createBareChannel(connection);
+							this.target = createBareChannel(connection, transactional);
 						}
 					}
 				}

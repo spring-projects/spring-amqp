@@ -127,6 +127,23 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveInExternalTransaction() throws Exception {
 		template.convertAndSend(ROUTE, "message");
+		template.setChannelTransacted(true);
+		String result = new TransactionTemplate(new TestTransactionManager())
+				.execute(new TransactionCallback<String>() {
+					public String doInTransaction(TransactionStatus status) {
+						return (String) template.receiveAndConvert(ROUTE);
+					}
+				});
+		assertEquals("message", result);
+		result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals(null, result);
+	}
+
+	@Test
+	public void testReceiveInExternalTransactionAutoAck() throws Exception {
+		template.convertAndSend(ROUTE, "message");
+		// Should just result in auto-ack (not synched with external tx)
+		template.setChannelTransacted(false);
 		String result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
 					public String doInTransaction(TransactionStatus status) {
@@ -140,8 +157,8 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testReceiveInExternalTransactionWithRollback() throws Exception {
-		template.setChannelTransacted(true); // Makes receive (and send in
-												// principle) transactional
+		// Makes receive (and send in principle) transactional
+		template.setChannelTransacted(true); 
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
@@ -158,6 +175,28 @@ public class RabbitTemplateIntegrationTests {
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals(null, result);
+	}
+
+	@Test
+	public void testReceiveInExternalTransactionWithNoRollback() throws Exception {
+		// Makes receive non-transactional
+		template.setChannelTransacted(false); 
+		template.convertAndSend(ROUTE, "message");
+		try {
+			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
+				public String doInTransaction(TransactionStatus status) {
+					template.receiveAndConvert(ROUTE);
+					throw new PlannedException();
+				}
+			});
+			fail("Expected PlannedException");
+		}
+		catch (PlannedException e) {
+			// Expected
+		}
+		// No rollback
+		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals(null, result);
 	}
 

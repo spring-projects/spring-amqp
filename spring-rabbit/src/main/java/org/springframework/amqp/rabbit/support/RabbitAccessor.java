@@ -97,7 +97,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 */
 	protected Channel createChannel(Connection con) throws IOException {
 		Assert.notNull(con, "connection must not be null");
-		Channel channel = con.createChannel();
+		Channel channel = con.createChannel(false);
 		return channel;
 	}
 	
@@ -124,7 +124,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	}
 
 	protected RabbitResourceHolder getTransactionalResourceHolder() {
-		RabbitResourceHolder holder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory, this.channelTransacted);
+		RabbitResourceHolder holder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory, isChannelTransacted());
 		if (isChannelTransacted()) {
 			holder.declareTransactional();
 		}
