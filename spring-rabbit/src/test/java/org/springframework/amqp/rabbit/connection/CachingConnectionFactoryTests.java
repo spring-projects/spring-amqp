@@ -1,5 +1,6 @@
 package org.springframework.amqp.rabbit.connection;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -8,11 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.List;
 
 import junit.framework.Assert;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
@@ -39,8 +41,11 @@ public class CachingConnectionFactoryTests {
 		con.close(); // should be ignored
 
 		Connection con2 = ccf.createConnection();
-		Channel channel2 = con2.createChannel(false); // will retrieve same channel object that was just put into channel
-													// cache
+		Channel channel2 = con2.createChannel(false); // will retrieve same
+														// channel object that
+														// was just put into
+														// channel
+														// cache
 		channel2.close(); // should be ignored
 		con2.close(); // should be ignored
 
@@ -78,8 +83,10 @@ public class CachingConnectionFactoryTests {
 		channel1.close(); // should be ignored, and add last into channel cache.
 		channel2.close(); // should be ignored, and add last into channel cache.
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache (channel1)
-		Channel ch2 = con.createChannel(false); // remove first entry in cache (channel2)
+		Channel ch1 = con.createChannel(false); // remove first entry in cache
+												// (channel1)
+		Channel ch2 = con.createChannel(false); // remove first entry in cache
+												// (channel2)
 
 		Assert.assertNotSame(ch1, ch2);
 		Assert.assertSame(ch1, channel1);
@@ -118,14 +125,16 @@ public class CachingConnectionFactoryTests {
 		Connection con = ccf.createConnection();
 
 		Channel channel1 = con.createChannel(false);
-		// cache size is 1, but the other connection is not released yet so this creates a new one
+		// cache size is 1, but the other connection is not released yet so this
+		// creates a new one
 		Channel channel2 = con.createChannel(false);
 		Assert.assertNotSame(channel1, channel2);
 
 		channel1.close(); // should be ignored, and add last into channel cache.
 		channel2.close(); // should be physically closed
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false); // remove first entry in cache
+												// (channel1)
 		Channel ch2 = con.createChannel(false); // create anew channel
 
 		Assert.assertNotSame(ch1, ch2);
@@ -170,7 +179,8 @@ public class CachingConnectionFactoryTests {
 		channel2.close(); // should be ignored, and add last into channel cache.
 		Assert.assertSame(channel1, channel2);
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false); // remove first entry in cache
+												// (channel1)
 		Channel ch2 = con.createChannel(false); // create new channel
 
 		Assert.assertNotSame(ch1, ch2);
@@ -191,8 +201,7 @@ public class CachingConnectionFactoryTests {
 	}
 
 	@Test
-	@Ignore // TODO: add this feature
-	public void testTransactionalAndNonTransactional() throws IOException {
+	public void testTransactionalAndNonTransactionalChannelsSegregated() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -209,22 +218,22 @@ public class CachingConnectionFactoryTests {
 
 		Connection con = ccf.createConnection();
 
-		Channel channel1 = con.createChannel(false);
+		Channel channel1 = con.createChannel(true);
 		channel1.txSelect();
 		channel1.close(); // should be ignored, and add last into channel cache.
 		/*
-		 * When a channel is created we can't assume it should be transactional, so this should create a new one.
+		 * When a channel is created as non-transactional we should create a new one.
 		 */
 		Channel channel2 = con.createChannel(false);
 		channel2.close(); // should be ignored, and add last into channel cache.
 		Assert.assertNotSame(channel1, channel2);
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(true); // remove first entry in cache (channel1)
 		Channel ch2 = con.createChannel(false); // create new channel
 
 		Assert.assertNotSame(ch1, ch2);
-		Assert.assertSame(ch1, channel2); // The non-transactional one
-		Assert.assertNotSame(ch2, channel2);
+		Assert.assertSame(ch1, channel1); // The non-transactional one
+		Assert.assertSame(ch2, channel2);
 
 		ch1.close();
 		ch2.close();
@@ -235,7 +244,14 @@ public class CachingConnectionFactoryTests {
 
 		verify(mockConnection, never()).close();
 		verify(mockChannel1, never()).close();
-		verify(mockChannel2, atLeastOnce()).close();
+		verify(mockChannel2, never()).close();
+		
+		@SuppressWarnings("unchecked")
+		List<Channel> notxlist = (List<Channel>) ReflectionTestUtils.getField(ccf, "cachedChannelsNonTransactional");
+		assertEquals(1, notxlist.size());
+		@SuppressWarnings("unchecked")
+		List<Channel> txlist = (List<Channel>) ReflectionTestUtils.getField(ccf, "cachedChannelsTransactional");
+		assertEquals(1, txlist.size());
 
 	}
 
@@ -250,7 +266,8 @@ public class CachingConnectionFactoryTests {
 		Assert.assertNotSame(mockChannel1, mockChannel2);
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
-		// You can't repeat 'when' statements for stubbing consecutive calls to the same method to returning different
+		// You can't repeat 'when' statements for stubbing consecutive calls to
+		// the same method to returning different
 		// values.
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
 
@@ -259,14 +276,19 @@ public class CachingConnectionFactoryTests {
 
 		Connection con = ccf.createConnection();
 
-		Channel channel1 = con.createChannel(false); // This will return a Spring AOP proxy that surpresses calls to close
+		Channel channel1 = con.createChannel(false); // This will return a
+														// Spring AOP proxy that
+														// surpresses calls to
+														// close
 		Channel channel2 = con.createChannel(false); // "
 
 		channel1.close(); // should be ignored, and add last into channel cache.
 		channel2.close(); // "
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache (channel1)
-		Channel ch2 = con.createChannel(false); // remove first entry in cache (channel2)
+		Channel ch1 = con.createChannel(false); // remove first entry in cache
+												// (channel1)
+		Channel ch2 = con.createChannel(false); // remove first entry in cache
+												// (channel2)
 
 		Assert.assertSame(ch1, channel1);
 		Assert.assertSame(ch2, channel2);
@@ -274,7 +296,9 @@ public class CachingConnectionFactoryTests {
 		Channel target1 = ((ChannelProxy) ch1).getTargetChannel();
 		Channel target2 = ((ChannelProxy) ch2).getTargetChannel();
 
-		Assert.assertNotSame(target1, target2); // make sure mokito returned different mocks for the channel
+		Assert.assertNotSame(target1, target2); // make sure mokito returned
+												// different mocks for the
+												// channel
 
 		ch1.close();
 		ch2.close();
