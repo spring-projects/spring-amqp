@@ -25,8 +25,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-
 /**
  * Helper class for managing a Spring based Rabbit {@link org.springframework.amqp.rabbit.connection.ConnectionFactory},
  * in particular for obtaining transactional Rabbit resources for a given ConnectionFactory.

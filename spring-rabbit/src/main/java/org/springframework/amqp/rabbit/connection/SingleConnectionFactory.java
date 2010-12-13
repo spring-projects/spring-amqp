@@ -33,7 +33,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 
 /**
  * A {@link ConnectionFactory} implementation that returns the same Connections from all
@@ -196,7 +195,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @return the new Rabbit Connection
 	 */
 	protected Connection doCreateConnection() throws IOException {	
-		return this.rabbitConnectionFactory.newConnection();	
+		return new SimpleConnection(this.rabbitConnectionFactory.newConnection());	
 	}
 
 	protected void prepareConnection(Connection con) throws IOException {

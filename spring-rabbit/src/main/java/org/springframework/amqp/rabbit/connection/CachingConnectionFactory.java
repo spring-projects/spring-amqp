@@ -25,7 +25,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 
 /**
  * NOTE: this ConnectionFactory implementation is considered <b>experimental</b> at this stage. There are concerns to be

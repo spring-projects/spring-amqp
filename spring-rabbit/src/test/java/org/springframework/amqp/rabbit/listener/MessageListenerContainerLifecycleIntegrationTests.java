@@ -29,7 +29,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerLifecycleIntegrationTests.class);
 
-	private Queue queue = new Queue("test.queue");
+	private static Queue queue = new Queue("test.queue");
 
 	private enum TransactionMode {
 		ON, OFF;

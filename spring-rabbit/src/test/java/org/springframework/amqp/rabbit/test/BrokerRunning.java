@@ -44,9 +44,11 @@ public class BrokerRunning extends TestWatchman {
 
 	private static Log logger = LogFactory.getLog(BrokerRunning.class);
 
-	private boolean brokerOnline = true;
+	// Static so that we only test once on failure: speeds up test suite
+	private static boolean brokerOnline = true;
 
-	private boolean brokerOffline = true;
+	// Static so that we only test once on failure
+	private static boolean brokerOffline = true;
 
 	private final boolean assumeOnline;
 

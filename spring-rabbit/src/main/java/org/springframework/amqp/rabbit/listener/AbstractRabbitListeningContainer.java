@@ -17,14 +17,13 @@
 package org.springframework.amqp.rabbit.listener;
 
 
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.SmartLifecycle;
-
-import com.rabbitmq.client.Connection;
 
 /**
  * @author Mark Pollack

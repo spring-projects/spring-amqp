@@ -15,7 +15,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.GetResponse;
 
 /**
@@ -26,7 +25,7 @@ public class CachingConnectionFactoryTests {
 	@Test
 	public void testWithConnectionFactoryDefaults() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
@@ -55,7 +54,7 @@ public class CachingConnectionFactoryTests {
 	@Test
 	public void testWithConnectionFactoryCacheSize() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
@@ -102,7 +101,7 @@ public class CachingConnectionFactoryTests {
 	@Test
 	public void testCacheSizeExceeded() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 		Channel mockChannel3 = mock(Channel.class);
@@ -150,7 +149,7 @@ public class CachingConnectionFactoryTests {
 	@Test
 	public void testCacheSizeExceededAfterClose() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
@@ -195,7 +194,7 @@ public class CachingConnectionFactoryTests {
 	@Ignore // TODO: add this feature
 	public void testTransactionalAndNonTransactional() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
@@ -243,7 +242,7 @@ public class CachingConnectionFactoryTests {
 	@Test
 	public void testWithConnectionFactoryDestroy() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		Connection mockConnection = mock(Connection.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);

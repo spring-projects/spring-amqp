@@ -22,7 +22,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	private CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 
 	@Rule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 	
 	@Rule
 	public ExpectedException exception = ExpectedException.none();

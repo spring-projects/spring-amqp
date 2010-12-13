@@ -22,7 +22,7 @@ import com.rabbitmq.client.Channel;
 
 public class RabbitBindingIntegrationTests {
 
-	private Queue queue = new Queue("test.queue");
+	private static Queue queue = new Queue("test.queue");
 
 	private RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
 
