@@ -1,22 +1,22 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.admin;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -152,8 +152,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	@SuppressWarnings("unchecked")
 	public List<QueueInfo> getQueues() {
-		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all", virtualHost
-				.getBytes());
+		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all",
+				virtualHost.getBytes());
 	}
 
 	// Binding operations
@@ -164,8 +164,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public void removeBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueUnbind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(), binding
-						.getArguments());
+				channel.queueUnbind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
 				return null;
 			}
 		});
@@ -175,8 +175,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	@ManagedOperation()
 	public void addUser(String username, String password) {
-		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "add_user", username.getBytes(), password
-				.getBytes());
+		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "add_user", username.getBytes(),
+				password.getBytes());
 	}
 
 	@ManagedOperation
@@ -266,10 +266,19 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		Assert.notNull(rabbitStartScript, "unsupported OS family");
 
 		String rabbitHome = System.getProperty("RABBITMQ_HOME", System.getenv("RABBITMQ_HOME"));
+		String rabbitBin = "bin";
+		if (rabbitHome == null) {
+			if (Os.isFamily("windows") || Os.isFamily("dos")) {
+				rabbitHome = findDirectoryName("c:/Program Files", "rabbitmq");
+				rabbitBin = "sbin";
+			} else if (Os.isFamily("unix") || Os.isFamily("mac")) {
+				rabbitHome = "/usr/lib/rabbitmq";
+			}
+		}
 		Assert.notNull(rabbitHome, "RABBITMQ_HOME system property (or environment variable) not set.");
 
 		rabbitHome = StringUtils.cleanPath(rabbitHome);
-		String rabbitStartCommand = rabbitHome + System.getProperty("file.separator") + "sbin"
+		String rabbitStartCommand = rabbitHome + System.getProperty("file.separator") + rabbitBin
 				+ System.getProperty("file.separator") + rabbitStartScript;
 
 		List<String> env = new ArrayList<String>();
@@ -316,6 +325,38 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	}
 
+	/**
+	 * Find a directory whose name starts with a substring in a given parent directory. If there is none return null,
+	 * otherwise sort the results and return the best match (an exact match if there is one or the last one in a lexical
+	 * sort).
+	 * 
+	 * @param parent
+	 * @param child
+	 * @return the full name of a directory
+	 */
+	private String findDirectoryName(String parent, String child) {
+		String result = null;
+		String[] names = new File(parent).list(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.equals("rabbitmq") && new File(dir, name).isDirectory();
+			}
+		});
+		if (names.length == 1) {
+			result = new File(parent, names[0]).getAbsolutePath();
+			return result;
+		}
+		List<String> sorted = Arrays.asList(new File(parent).list(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.startsWith("rabbitmq") && new File(dir, name).isDirectory();
+			}
+		}));
+		Collections.sort(sorted, Collections.reverseOrder());
+		if (!sorted.isEmpty()) {
+			result = new File(parent, sorted.get(0)).getAbsolutePath();
+		}
+		return result;
+	}
+
 	private void addEnvironment(List<String> env, String key) {
 		String value = System.getProperty(key);
 		if (value != null) {
@@ -351,8 +392,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 			return (RabbitStatus) getErlangTemplate().executeAndConvertRpc("rabbit", "status");
 		} catch (OtpIOException e) {
 			logger.info("Ignoring OtpIOException (assuming that the broker is simply not running)");
-			return new RabbitStatus(Collections.<Application> emptyList(), Collections.<Node> emptyList(), Collections
-					.<Node> emptyList());
+			return new RabbitStatus(Collections.<Application> emptyList(), Collections.<Node> emptyList(),
+					Collections.<Node> emptyList());
 		} catch (OtpAuthException e) {
 			throw new RabbitAdminAuthException(
 					"Could not authorise connection to Erlang process. This can happen if the broker is running, "

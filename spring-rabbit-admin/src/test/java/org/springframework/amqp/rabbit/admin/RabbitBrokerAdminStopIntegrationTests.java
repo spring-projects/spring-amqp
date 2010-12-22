@@ -18,6 +18,11 @@ package org.springframework.amqp.rabbit.admin;
 
 import static org.junit.Assert.assertFalse;
 
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.erlang.OtpIOException;
@@ -27,6 +32,19 @@ import org.springframework.erlang.OtpIOException;
  * @author Dave Syer
  */
 public class RabbitBrokerAdminStopIntegrationTests {
+	
+	@Before
+	public void init() throws Exception {
+		FileUtils.deleteDirectory(new File("target/rabbitmq"));
+		System.setProperty("RABBITMQ_LOG_BASE", "target/rabbitmq/log");
+		System.setProperty("RABBITMQ_MNESIA_BASE", "target/rabbitmq/mnesia");
+	}
+
+	@After
+	public void close() throws Exception {
+		System.clearProperty("RABBITMQ_LOG_BASE");
+		System.clearProperty("RABBITMQ_MNESIA_BASE");
+	}
 
 	@Test
 	// @Ignore("NEEDS RABBITMQ_HOME to be set.")
