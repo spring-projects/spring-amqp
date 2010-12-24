@@ -155,7 +155,7 @@
 						</goals>
 						<phase>package</phase>
 						<configuration>
-							<javadoc:aggregate>true</javadoc:aggregate>
+							<aggregate>true</aggregate>
 							<breakiterator>true</breakiterator>
 							<header>Spring AMQP</header>
 							<source>1.5</source>
