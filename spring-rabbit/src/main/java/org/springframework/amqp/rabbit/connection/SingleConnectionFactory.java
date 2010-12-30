@@ -31,7 +31,7 @@ import com.rabbitmq.client.Channel;
 /**
  * A {@link ConnectionFactory} implementation that returns the same Connections from all
  * {@link #createConnection()} calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()}.
- * 
+ *
  * @author Mark Fisher
  * @author Mark Pollack
  */
@@ -43,19 +43,19 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	private volatile int port = RabbitUtils.DEFAULT_PORT;
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
-	
+
 	/** Raw Rabbit Connection */
 	private Connection targetConnection;
 
 	/** Proxy Connection */
 	private Connection connection;
-	
+
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
 
 
 	/**
-	 * Create a new SingleConnectionFactory initializing the hostname to be the 
+	 * Create a new SingleConnectionFactory initializing the hostname to be the
 	 * value returned from InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws
 	 * an exception.
 	 */
@@ -116,10 +116,16 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return this.createChannel(connection);
 	}
 
-	private Channel createChannel(Connection connection) throws IOException {
-		//TODO overload with channel number.
-		return connection.createChannel(false);
-	}
+    private Channel createChannel(Connection connection) throws IOException {
+        //TODO overload with channel number.
+        try {
+            return connection.createChannel(false);
+        } catch (com.rabbitmq.client.AlreadyClosedException ace) {
+            logger.info("Connection to RabbitMQ will be re-tried due to AlreadyClosedException.");
+            initConnection();
+            return connection.createChannel(false);
+        }
+    }
 
 	public Connection createConnection() throws IOException {
 		synchronized (this.connectionMonitor) {
@@ -152,7 +158,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 */
 	public void destroy() {
 		resetConnection();
-	}	
+	}
 
 	/**
 	 * Reset the underlying shared Connection, to be reinitialized on next access.
@@ -176,8 +182,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 			logger.debug("Closing shared Rabbit Connection: " + this.targetConnection);
 		}
 		try {
-			//TODO there are other close overloads close(int closeCode, java.lang.String closeMessage, int timeout) 
-			connection.close();			
+			//TODO there are other close overloads close(int closeCode, java.lang.String closeMessage, int timeout)
+			connection.close();
 		}
 		catch (Throwable ex) {
 			logger.debug("Could not close shared Rabbit Connection", ex);
@@ -188,8 +194,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * Create a Rabbit Connection via this class's ConnectionFactory.
 	 * @return the new Rabbit Connection
 	 */
-	protected Connection doCreateConnection() throws IOException {	
-		return new SimpleConnection(this.rabbitConnectionFactory.newConnection());	
+	protected Connection doCreateConnection() throws IOException {
+		return new SimpleConnection(this.rabbitConnectionFactory.newConnection());
 	}
 
 	protected void prepareConnection(Connection con) throws IOException {
@@ -265,7 +271,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				return false;
 			return true;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "Shared Rabbit Connection: " + this.target;
