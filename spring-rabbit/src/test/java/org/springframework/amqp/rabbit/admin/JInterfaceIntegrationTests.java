@@ -11,84 +11,66 @@ import junit.framework.Assert;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.util.exec.Os;
 
-import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpConnection;
 import com.ericsson.otp.erlang.OtpErlangBinary;
-import com.ericsson.otp.erlang.OtpErlangExit;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
-// @Ignore("manual integration test only.")
+@Ignore("Manual integration test only.")
 public class JInterfaceIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(JInterfaceIntegrationTests.class);
 
 	private static int counter;
 
-	@Test
-	public void rawApi() {
-		OtpConnection connection = null;
-		try {
-			OtpSelf self = new OtpSelf("rabbit-monitor");
+	private OtpConnection connection = null;
 
-			String hostName = "rabbit@" + getHostName();
-			OtpPeer peer = new OtpPeer(hostName);
-			connection = self.connect(peer);
-			// connection.sendRPC("erlang","date", new OtpErlangList());
-			// connection.sendRPC("rabbit_access_control", "list_vhosts", new
-			// OtpErlangList());
-			OtpErlangObject[] objectArray = { new OtpErlangBinary("/".getBytes()) };
-
-			connection.sendRPC("rabbit_amqqueue", "info_all", new OtpErlangList(objectArray));
-
-			// connection.sendRPC("rabbit_amqqueue", "stat_all", new
-			// OtpErlangList());
-
-			OtpErlangObject received = connection.receiveRPC();
-			System.out.println(received);
-			System.out.println(received.getClass());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (OtpAuthException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (OtpErlangExit e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			if (connection != null) {
-				connection.close();
-			}
+	@After
+	public void close() {
+		if (connection != null) {
+			connection.close();
 		}
+	}
+
+	@Test
+	public void testRawApi() throws Exception {
+
+		OtpSelf self = new OtpSelf("rabbit-monitor");
+
+		String hostName = "rabbit@" + getHostName();
+		OtpPeer peer = new OtpPeer(hostName);
+		connection = self.connect(peer);
+
+		OtpErlangObject[] objectArray = { new OtpErlangBinary("/".getBytes()) };
+
+		connection.sendRPC("rabbit_amqqueue", "info_all", new OtpErlangList(objectArray));
+
+		OtpErlangObject received = connection.receiveRPC();
+		System.out.println(received);
+		System.out.println(received.getClass());
 
 	}
 
 	@Test
 	public void otpTemplate() throws UnknownHostException {
+
 		String selfNodeName = "rabbit-monitor";
 		String peerNodeName = "rabbit@" + getHostName();
-
-		// String home = System.getProperty("user.home");
-		// System.out.println("home = " + home);
-		// System.out.println("peerNodeName = " + peerNodeName);
 
 		SingleConnectionFactory cf = new SingleConnectionFactory(selfNodeName, peerNodeName);
 
 		cf.afterPropertiesSet();
 		ErlangTemplate template = new ErlangTemplate(cf);
 		template.afterPropertiesSet();
-
-		// OtpErlangObject result = template.executeRpc("rabbit_amqqueue", "info_all", "/".getBytes());
-		// System.out.println(result);
-		// System.out.println(result.getClass());
 
 		long number = (Long) template.executeAndConvertRpc("erlang", "abs", -161803399);
 		Assert.assertEquals(161803399, number);
@@ -106,13 +88,14 @@ public class JInterfaceIntegrationTests {
 	}
 
 	@Test
-	public void rawOtpConnect() throws Exception {
+	public void testRawOtpConnect() throws Exception {
 		createConnection();
 	}
 
 	@Test
 	public void stressTest() throws Exception {
-		// String cookie = readCookie();
+		String cookie = readCookie();
+		logger.info("Cookie: "+cookie);
 		OtpConnection con = createConnection();
 		boolean recycleConnection = false;
 		for (int i = 0; i < 100; i++) {
@@ -137,7 +120,7 @@ public class JInterfaceIntegrationTests {
 			throws Exception, UnknownHostException {
 		con.sendRPC(module, function, new OtpErlangList());
 		OtpErlangObject response = con.receiveRPC();
-		// System.out.println(module + " response received = " + response.toString());
+		logger.debug(module + " response received = " + response.toString());
 		if (recycleConnection) {
 			con.close();
 			con = createConnection();

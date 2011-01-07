@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.admin;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.springframework.erlang.core.Application;
@@ -27,22 +28,42 @@ import org.springframework.erlang.core.Node;
  * @author Mark Pollack
  *
  */
-public class RabbitStatus {
+@SuppressWarnings("serial")
+public class RabbitStatus implements Serializable {
 
 	private List<Application> runningApplications;
 	
 	private List<Node> nodes;
 	
 	private List<Node> runningNodes;
-	
-	
-	
+		
 	public RabbitStatus(List<Application> runningApplications,
 			List<Node> nodes, List<Node> runningNodes) {
 		super();
 		this.runningApplications = runningApplications;
 		this.nodes = nodes;
 		this.runningNodes = runningNodes;
+	}
+
+	/**
+	 * @return true if the broker process is running but not necessarily the application
+	 */
+	public boolean isAlive() {
+		return !nodes.isEmpty();
+	}
+
+	/**
+	 * @return true if the broker process is running
+	 */
+	public boolean isRunning() {
+		return !runningNodes.isEmpty();
+	}
+
+	/**
+	 * @return true if the broker application is running
+	 */
+	public boolean isReady() {
+		return isRunning() && !runningApplications.isEmpty();
 	}
 
 	public List<Application> getRunningApplications() {
@@ -63,7 +84,4 @@ public class RabbitStatus {
 				+ ", runningNodes=" + runningNodes + ", nodes=" + nodes + "]";
 	}
 
-
-	
-	
 }

@@ -177,6 +177,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 		});
 	}
 
+	@ManagedOperation
+	public void removeBinding(final Binding binding) {
+		rabbitTemplate.execute(new ChannelCallback<Object>() {
+			public Object doInRabbit(Channel channel) throws Exception {
+				channel.queueUnbind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
+				return null;
+			}
+		});		
+	}
 
 	// Lifecycle implementation
 

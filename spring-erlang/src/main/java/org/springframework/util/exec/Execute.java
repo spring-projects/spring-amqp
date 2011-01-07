@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.util.exec;
@@ -24,21 +21,22 @@ import java.io.StringReader;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-/* Derived from ant exec task. All the 'backward compat with jdk1.1, 1.2'
- removed. Since jdk1.3 supports working dir, no need for scripts.
-
- All ant-specific code has been removed as well, this is a completely
- independent component.
-
- Costin
- */
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
- * Runs an external program.
+ * Runs an external program. Derived from ant exec task. All the 'backward compat with jdk1.1, 1.2' removed. Since
+ * jdk1.3 supports working dir, no need for scripts. All ant-specific code has been removed as well, this is a
+ * completely independent component.
+ * 
  * 
  * @author thomas.haas@softwired-inc.com
+ * @author Costin Leau
  */
 public class Execute {
+
+	private static Log log = LogFactory.getLog(Execute.class);
+
 	/** Invalid exit code. **/
 	public final static int INVALID = Integer.MAX_VALUE;
 
@@ -72,8 +70,7 @@ public class Execute {
 				// Just try to use what we got
 			}
 
-			BufferedReader in = new BufferedReader(new StringReader(
-					out.toString()));
+			BufferedReader in = new BufferedReader(new StringReader(out.toString()));
 			String var = null;
 			String line, lineSep = System.getProperty("line.separator");
 			while ((line = in.readLine()) != null) {
@@ -128,8 +125,7 @@ public class Execute {
 	}
 
 	/**
-	 * Creates a new execute object using <code>PumpStreamHandler</code> for
-	 * stream handling.
+	 * Creates a new execute object using <code>PumpStreamHandler</code> for stream handling.
 	 */
 	public Execute() {
 		this(new PumpStreamHandler(), null);
@@ -138,9 +134,7 @@ public class Execute {
 	/**
 	 * Creates a new execute object.
 	 * 
-	 * @param streamHandler
-	 *            the stream handler used to handle the input and output streams
-	 *            of the subprocess.
+	 * @param streamHandler the stream handler used to handle the input and output streams of the subprocess.
 	 */
 	public Execute(ExecuteStreamHandler streamHandler) {
 		this(streamHandler, null);
@@ -149,12 +143,8 @@ public class Execute {
 	/**
 	 * Creates a new execute object.
 	 * 
-	 * @param streamHandler
-	 *            the stream handler used to handle the input and output streams
-	 *            of the subprocess.
-	 * @param watchdog
-	 *            a watchdog for the subprocess or <code>null</code> to to
-	 *            disable a timeout for the subprocess.
+	 * @param streamHandler the stream handler used to handle the input and output streams of the subprocess.
+	 * @param watchdog a watchdog for the subprocess or <code>null</code> to to disable a timeout for the subprocess.
 	 */
 	public Execute(ExecuteStreamHandler streamHandler, ExecuteWatchdog watchdog) {
 		this.streamHandler = streamHandler;
@@ -177,8 +167,7 @@ public class Execute {
 	/**
 	 * Sets the commandline of the subprocess to launch.
 	 * 
-	 * @param commandline
-	 *            the commandline of the subprocess to launch
+	 * @param commandline the commandline of the subprocess to launch
 	 */
 	public void setCommandline(String[] commandline) {
 		cmdl = commandline;
@@ -187,8 +176,7 @@ public class Execute {
 	/**
 	 * Set whether to propagate the default environment or not.
 	 * 
-	 * @param newenv
-	 *            whether to propagate the process environment.
+	 * @param newenv whether to propagate the process environment.
 	 */
 	public void setNewenvironment(boolean newenv) {
 		newEnvironment = newenv;
@@ -208,9 +196,8 @@ public class Execute {
 	/**
 	 * Sets the environment variables for the subprocess to launch.
 	 * 
-	 * @param env
-	 *            array of Strings, each element of which has an environment
-	 *            variable settings in format <em>key=value</em>
+	 * @param env array of Strings, each element of which has an environment variable settings in format
+	 * <em>key=value</em>
 	 */
 	public void setEnvironment(String[] env) {
 		this.env = env;
@@ -219,13 +206,10 @@ public class Execute {
 	/**
 	 * Sets the working directory of the process to execute.
 	 * 
-	 * <p>
-	 * This is emulated using the antRun scripts unless the OS is Windows NT in
-	 * which case a cmd.exe is spawned, or MRJ and setting user.dir works, or
-	 * JDK 1.3 and there is official support in java.lang.Runtime.
+	 * <p> This is emulated using the antRun scripts unless the OS is Windows NT in which case a cmd.exe is spawned, or
+	 * MRJ and setting user.dir works, or JDK 1.3 and there is official support in java.lang.Runtime.
 	 * 
-	 * @param wd
-	 *            the working directory of the process.
+	 * @param wd the working directory of the process.
 	 */
 	public void setWorkingDirectory(File wd) {
 		workingDirectory = wd;
@@ -235,12 +219,10 @@ public class Execute {
 	 * Runs a process defined by the command line and returns its exit status.
 	 * 
 	 * @return the exit status of the subprocess or <code>INVALID</code>
-	 * @throws Exception
-	 *             if launching of the subprocess failed
+	 * @throws Exception if launching of the subprocess failed
 	 */
 	public int execute() throws Exception {
-		process = Runtime.getRuntime().exec(getCommandline(), getEnvironment(),
-				workingDirectory);
+		process = Runtime.getRuntime().exec(getCommandline(), getEnvironment(), workingDirectory);
 		try {
 			streamHandler.setProcessInputStream(process.getOutputStream());
 			streamHandler.setProcessOutputStream(process.getInputStream());
@@ -251,23 +233,29 @@ public class Execute {
 		}
 		streamHandler.start();
 
-		if (watchdog != null)
+		if (watchdog != null) {
 			watchdog.start(process, Thread.currentThread());
+		}
 
-		if (log.isTraceEnabled())
+		if (log.isTraceEnabled()) {
 			log.trace("Waiting process ");
+		}
 		waitFor(process);
 		process = null;
 
-		if (log.isTraceEnabled())
+		if (log.isTraceEnabled()) {
 			log.trace("End waiting, stop threads ");
-		if (watchdog != null)
+		}
+		if (watchdog != null) {
 			watchdog.stop();
-		if (log.isTraceEnabled())
+		}
+		if (log.isTraceEnabled()) {
 			log.trace("Watchdog stopped ");
+		}
 		streamHandler.stop();
-		if (log.isTraceEnabled())
+		if (log.isTraceEnabled()) {
 			log.trace("Stream handler stopped ");
+		}
 		if (watchdog != null) {
 			Exception ex = watchdog.getException();
 			if (ex != null)
@@ -302,6 +290,7 @@ public class Execute {
 			setExitValue(process.exitValue());
 		} catch (InterruptedException e) {
 			log.info("waitFor() interrupted ");
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -312,8 +301,7 @@ public class Execute {
 	/**
 	 * query the exit value of the process.
 	 * 
-	 * @return the exit value, 1 if the process was killed, or Project.INVALID
-	 *         if no exit value has been received
+	 * @return the exit value, 1 if the process was killed, or Project.INVALID if no exit value has been received
 	 */
 	public int getExitValue() {
 		return exitValue;
@@ -355,25 +343,19 @@ public class Execute {
 		return execute(envVars, v, baseDir);
 	}
 
-	public static int execute(Vector<String> envVars, Vector<String> cmd,
-			File baseDir) {
+	public static int execute(Vector<String> envVars, Vector<String> cmd, File baseDir) {
 		return execute(envVars, cmd, baseDir, 10000 /* default time to wait */);
 	}
 
 	/**
 	 * Wrapper for common execution patterns
 	 * 
-	 * @param envVars
-	 *            Environment variables to execute with (optional)
-	 * @param cmd
-	 *            a vector of the commands to execute
-	 * @param baseDir
-	 *            the base directory to run from (optional)
-	 * @param timeToWait
-	 *            milliseconds to wait for completion
+	 * @param envVars Environment variables to execute with (optional)
+	 * @param cmd a vector of the commands to execute
+	 * @param baseDir the base directory to run from (optional)
+	 * @param timeToWait milliseconds to wait for completion
 	 */
-	public static int execute(Vector<String> envVars, Vector<String> cmd,
-			File baseDir, int timeToWait) {
+	public static int execute(Vector<String> envVars, Vector<String> cmd, File baseDir, int timeToWait) {
 		try {
 			// We can collect the out or provide in if needed
 			ExecuteWatchdog watchdog = new ExecuteWatchdog(timeToWait);
@@ -407,13 +389,9 @@ public class Execute {
 			log.debug("Exit value " + status);
 			return status;
 		} catch (Exception ex) {
-			// ex.printStackTrace();
 			System.err.println("An error has occurred in Execute.");
 			return -1;
 		}
 	}
-
-	private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory
-			.getLog(Execute.class);
 
 }

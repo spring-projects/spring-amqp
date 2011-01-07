@@ -15,7 +15,7 @@ public interface Connection {
 
     /**
      * Create a new channel, using an internally allocated channel number.
-     * @param transactional TODO
+     * @param transactional true if the channel should support transactions
      * @return a new channel descriptor, or null if none is available
      * @throws IOException if an I/O problem is encountered
      */

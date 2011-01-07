@@ -19,13 +19,16 @@
  */
 package org.springframework.erlang.core;
 
+import java.io.Serializable;
+
 /**
  * Simple description class for an Erlang node.
  * 
  * @author Mark Pollack
  *
  */
-public class Node {
+@SuppressWarnings("serial")
+public class Node implements Serializable {
 
 	private String name;
 

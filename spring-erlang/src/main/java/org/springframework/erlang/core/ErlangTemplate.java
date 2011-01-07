@@ -124,9 +124,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 		finally {		
 			org.springframework.erlang.connection.ConnectionFactoryUtils.releaseConnection(con, getConnectionFactory());			
 		}
-		
-		
-		
+		// TODO: physically close and reopen the connection if there is an exception
 		
 	}
 	

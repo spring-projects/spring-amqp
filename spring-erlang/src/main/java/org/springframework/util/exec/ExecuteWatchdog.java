@@ -103,7 +103,7 @@ public class ExecuteWatchdog implements Runnable {
 
 
     /**
-     * Watches the process and terminates it, if it runs for to long.
+     * Watches the process and terminates it, if it runs for too long.
      */
     public synchronized void run() {
         try {
@@ -117,7 +117,7 @@ public class ExecuteWatchdog implements Runnable {
                 } catch (InterruptedException e) {}
             }
 
-            // if we are here, either someone stopped the watchdog,
+            // If we are here, either someone stopped the watchdog,
             // we are on timeout and the process must be killed, or
             // we are on timeout and the process has already stopped.
             try {
@@ -125,13 +125,11 @@ public class ExecuteWatchdog implements Runnable {
                 // before being here
                 process.exitValue();
             } catch (IllegalThreadStateException e){
-                // the process is not terminated, if this is really
+                // The process is not terminated, if this is really
                 // a timeout and not a manual stop then kill it.
-                //System.out.println("ExecuteWatchdog: timeout");
                 if (watch){
                     killedProcess = true;
                     if( ! dontkill ) {
-                        //System.out.println("ExecuteWatchdog: destroying process");
                         process.destroy();
                     }
                     if( execThread != null ) {
@@ -144,7 +142,6 @@ public class ExecuteWatchdog implements Runnable {
         } finally {
             cleanUp();
         }
-        //System.out.println("ExecuteWatchdog: done");
     }
     
 

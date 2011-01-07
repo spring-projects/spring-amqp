@@ -17,6 +17,8 @@
 
 package org.springframework.erlang.connection;
 
+import org.springframework.util.Assert;
+
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
@@ -32,7 +34,8 @@ public class ConnectionParameters {
 	private OtpPeer otpPeer;
 	
 	public ConnectionParameters(OtpSelf otpSelf, OtpPeer otpPeer) {
-		//TODO assert not null...
+		Assert.notNull(otpSelf, "OtpSelf must be non-null");
+		Assert.notNull(otpPeer, "OtpPeer must be non-null");		
 		this.otpSelf = otpSelf;
 		this.otpPeer = otpPeer;
 	}

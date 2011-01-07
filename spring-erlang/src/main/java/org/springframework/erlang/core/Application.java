@@ -16,6 +16,8 @@
 
 package org.springframework.erlang.core;
 
+import java.io.Serializable;
+
 /**
  * Describes an Erlang application.  Only three fields are supported as that is the level
  * of information that rabbitmq returns when performing a status request.
@@ -25,7 +27,8 @@ package org.springframework.erlang.core;
  * @author Mark Pollack
  *
  */
-public class Application {
+@SuppressWarnings("serial")
+public class Application implements Serializable {
 
 	private String description;
 	
