@@ -11,7 +11,6 @@
 		<module>spring-amqp-core</module>
 		<module>spring-rabbit</module>
 		<module>spring-erlang</module>
-		<module>spring-rabbit-admin</module>
 	</modules>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
