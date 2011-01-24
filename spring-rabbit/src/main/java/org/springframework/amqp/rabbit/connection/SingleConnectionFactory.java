@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -34,6 +35,7 @@ import com.rabbitmq.client.Channel;
  * 
  * @author Mark Fisher
  * @author Mark Pollack
+ * @author Dave Syer
  */
 //TODO are there heartbeats and/or exception thrown if a connection is broken?
 public class SingleConnectionFactory implements ConnectionFactory, DisposableBean {
@@ -69,7 +71,9 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @param hostname the host name to connect to
 	 */
 	public SingleConnectionFactory(String hostname) {
-		Assert.hasText(hostname, "hostname is required");
+		if (!StringUtils.hasText(hostname)) {
+			hostname = getDefaultHostName();
+		}
 		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
 		this.rabbitConnectionFactory.setHost(hostname);
 	}
