@@ -22,6 +22,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.erlang.OtpIOException;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.ericsson.otp.erlang.OtpAuthException;
 import com.ericsson.otp.erlang.OtpPeer;
@@ -84,7 +85,7 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 
 	private OtpPeer otpPeer;
 
-	public SimpleConnectionFactory(String selfNodeName, String cookie, String peerNodeName) {
+	public SimpleConnectionFactory(String selfNodeName, String peerNodeName, String cookie) {
 		this(selfNodeName, peerNodeName);
 		this.cookie = cookie;
 	}
@@ -121,10 +122,10 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 			logger.debug("Creating OtpSelf with node name = [" + selfNodeNameToUse + "]");
 		}
 		try {
-			if (this.cookie == null) {
-				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim());
-			} else {
+			if (StringUtils.hasText(cookie)) {
 				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim(), this.cookie);
+			} else {
+				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim());
 			}
 		} catch (IOException e) {
 			throw new OtpIOException(e);

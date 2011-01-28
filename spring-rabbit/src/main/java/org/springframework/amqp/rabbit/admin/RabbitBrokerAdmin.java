@@ -74,6 +74,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	private final String hostName;
 
+	private final String cookie;
+
 	// TODO: RABBITMQ_NODE_PORT=5672
 
 	static {
@@ -89,9 +91,14 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	}
 
 	public RabbitBrokerAdmin(String hostName) {
+		this(hostName, null);
+	}
+	
+	public RabbitBrokerAdmin(String hostName, String cookie) {
 		if (Os.isFamily("windows") && !DEFAULT_HOST.equals(hostName)) {
 			hostName = hostName.toUpperCase();
 		}
+		this.cookie = cookie;
 		this.hostName = hostName;
 		this.executor.setDaemon(true);
 		initializeDefaultErlangTemplate(hostName);
@@ -514,7 +521,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		String peerNodeName = "rabbit@" + host;
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpConnectionFactory = new SimpleConnectionFactory("rabbit-spring-monitor",
-				peerNodeName);
+				peerNodeName, this.cookie);
 		otpConnectionFactory.afterPropertiesSet();
 		createErlangTemplate(otpConnectionFactory);
 	}
