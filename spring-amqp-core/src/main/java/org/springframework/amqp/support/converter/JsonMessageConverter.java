@@ -95,17 +95,8 @@ public class JsonMessageConverter implements MessageConverter {
 				}
 				try {
 					//content = new String(message.getBody(), encoding);
-					Map<String, Object> headers =  message.getMessageProperties().getHeaders();
-					Object classIdFieldNameValue = headers.get(classMapper.getClassIdFieldName());
-					String classId = null;
-					if (classIdFieldNameValue != null) {
-						classId = classIdFieldNameValue.toString();
-					}					
-					if (classId == null) {
-						throw new MessageConversionException(
-								"failed to convert json-based Message content. Could not resolve classId in header");
-					}
-					Class<?> targetClass = classMapper.toClass(classId);
+					
+					Class<?> targetClass = classMapper.toClass(message.getMessageProperties());
 					content = convertBytesToObject(message.getBody(), encoding, targetClass);
 				}
 				catch (UnsupportedEncodingException e) {
@@ -136,7 +127,6 @@ public class JsonMessageConverter implements MessageConverter {
 		String contentAsString = new String(body, encoding);
 		return jsonObjectMapper.readValue(contentAsString, targetClass);	
 	}
-
 	public Message toMessage(Object objectToConvert, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;
 		try {
@@ -160,8 +150,7 @@ public class JsonMessageConverter implements MessageConverter {
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
 		}
-		Map<String, Object> headers =  messageProperties.getHeaders();
-		headers.put(classMapper.getClassIdFieldName(), classMapper.fromClass(objectToConvert.getClass()));
+		classMapper.fromClass(objectToConvert.getClass(), messageProperties);
 		return new Message(bytes, messageProperties);
 	}
 
