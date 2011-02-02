@@ -40,9 +40,7 @@ public class JsonMessageConverterTests {
 		trade.setUserName("Joe Trader");
 		JsonMessageConverter converter = new JsonMessageConverter();
 		Message message = converter.toMessage(trade, new MessageProperties());
-		String classIdFieldName = converter.getClassMapper().getClassIdFieldName();
-		Object classIdHeaderObject = message.getMessageProperties().getHeaders().get(classIdFieldName);
-		assertEquals(String.class, classIdHeaderObject.getClass());
+		
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
 		assertEquals(trade, marshalledTrade);
 	}
@@ -53,9 +51,7 @@ public class JsonMessageConverterTests {
 		bar.getFoo().setName("spam");
 		JsonMessageConverter converter = new JsonMessageConverter();
 		Message message = converter.toMessage(bar, new MessageProperties());
-		String classIdFieldName = converter.getClassMapper().getClassIdFieldName();
-		Object classIdHeaderObject = message.getMessageProperties().getHeaders().get(classIdFieldName);
-		assertEquals(String.class, classIdHeaderObject.getClass());
+		
 		Bar marshalled = (Bar) converter.fromMessage(message);
 		assertEquals(bar, marshalled);
 	}

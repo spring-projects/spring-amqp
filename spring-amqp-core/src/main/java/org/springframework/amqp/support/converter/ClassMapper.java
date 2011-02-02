@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.support.converter;
 
+import org.springframework.amqp.core.MessageProperties;
+
 /**
  * Strategy for setting metadata on messages such that one can create the class that needs to 
  * be instantiated when receiving a message.
@@ -24,10 +26,7 @@ package org.springframework.amqp.support.converter;
  *
  */
 public interface ClassMapper {
-
-	String getClassIdFieldName();
+	void fromClass(Class<?> clazz, MessageProperties properties);
 	
-	String fromClass(Class<?> clazz);
-	
-	Class<?> toClass(String classId);
+	Class<?> toClass(MessageProperties properties);
 }
