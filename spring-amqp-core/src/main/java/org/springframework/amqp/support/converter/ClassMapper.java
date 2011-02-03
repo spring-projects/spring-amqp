@@ -23,9 +23,11 @@ import org.springframework.amqp.core.MessageProperties;
  * be instantiated when receiving a message.
  * 
  * @author Mark Pollack
+ * @author James Carr
  *
  */
 public interface ClassMapper {
+
 	void fromClass(Class<?> clazz, MessageProperties properties);
 	
 	Class<?> toClass(MessageProperties properties);

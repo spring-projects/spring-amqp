@@ -104,7 +104,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		}
 		if (classId == null) {
 			throw new MessageConversionException(
-					"failed to convert json-based Message content. Could not resolve " + getClassIdFieldName()+ " in header");
+					"failed to convert Message content. Could not resolve " + getClassIdFieldName()+ " in header");
 		}
 		return toClass(classId);
 	}

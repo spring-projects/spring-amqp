@@ -18,17 +18,14 @@ package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -36,6 +33,7 @@ import org.springframework.amqp.core.MessageProperties;
  * JSON converter that uses the Jackson Json library.
  * 
  * @author Mark Pollack
+ * @author James Carr
  */
 public class JsonMessageConverter implements MessageConverter {
 
@@ -52,12 +50,10 @@ public class JsonMessageConverter implements MessageConverter {
 	
 	private ClassMapper classMapper = new DefaultClassMapper();
 
-
 	public JsonMessageConverter() {
 		super();
 		initializeJsonObjectMapper();
 	}
-
 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
