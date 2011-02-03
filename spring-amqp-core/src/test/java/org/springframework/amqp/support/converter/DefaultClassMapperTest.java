@@ -1,3 +1,15 @@
+/*
+ * Copyright 2002-2011 the original author or authors.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.support.converter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -16,6 +28,10 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.core.MessageProperties;
 
+/**
+ * @author James Carr
+ *
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultClassMapperTest {
 	@Spy DefaultClassMapper classMapper = new DefaultClassMapper();
@@ -48,6 +64,7 @@ public class DefaultClassMapperTest {
 		props.getHeaders().put("__TypeId__", "trade");
 		classMapper.setIdClassMapping(map("trade", SimpleTrade.class));
 		
+		@SuppressWarnings("rawtypes")
 		Class clazz = classMapper.toClass(props);
 		
 		assertThat(clazz, equalTo(SimpleTrade.class));
@@ -59,6 +76,7 @@ public class DefaultClassMapperTest {
 	public void shouldReturnHashtableForFieldWithHashtable(){
 		props.getHeaders().put("__TypeId__", "Hashtable");
 
+		@SuppressWarnings("rawtypes")
 		Class<Hashtable> clazz = (Class<Hashtable>) classMapper.toClass(props);
 		
 		assertThat(clazz, equalTo(Hashtable.class));
@@ -71,6 +89,7 @@ public class DefaultClassMapperTest {
 		String className = (String) props.getHeaders().get(classMapper.getClassIdFieldName());
 		assertThat(className, equalTo(SimpleTrade.class.getName()));
 	}
+
 	@Test
 	public void shouldUseSpecialnameForClassIfPresent() throws Exception{
 		classMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
@@ -90,9 +109,11 @@ public class DefaultClassMapperTest {
 		
 		assertThat(className, equalTo("Hashtable"));
 	}
+
 	private Map<String, Class<?>> map(String string, Class<?> class1) {
 		Map<String, Class<?>> map = new HashMap<String, Class<?>>();
 		map.put(string, class1);
 		return map;
 	}
+
 }
