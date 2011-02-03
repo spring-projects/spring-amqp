@@ -25,7 +25,11 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 public class RabbitNamespaceHandler extends NamespaceHandlerSupport {
 
 	public void init() {
-		registerBeanDefinitionParser("rabbit-admin", new RabbitAdminParser());		
+		registerBeanDefinitionParser("queue", new QueueParser());		
+		registerBeanDefinitionParser("direct-exchange", new DirectExchangeParser());		
+		registerBeanDefinitionParser("topic-exchange", new TopicExchangeParser());		
+		registerBeanDefinitionParser("fanout-exchange", new FanoutExchangeParser());		
+		registerBeanDefinitionParser("headers-exchange", new HeadersExchangeParser());		
 	}
 
 }

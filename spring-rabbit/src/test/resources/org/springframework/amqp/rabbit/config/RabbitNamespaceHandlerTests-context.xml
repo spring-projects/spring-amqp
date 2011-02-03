@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<direct-exchange name="direct-test"
+		xmlns="http://www.springframework.org/schema/rabbit">
+		<bindings>
+			<binding queue="foo" key="foo" />
+			<binding queue="bar" />
+		</bindings>
+	</direct-exchange>
+
+	<topic-exchange name="topic-test"
+		xmlns="http://www.springframework.org/schema/rabbit">
+		<bindings>
+			<binding queue="foo" pattern="foo.#" />
+			<binding queue="bar" pattern="bar.#" />
+		</bindings>
+	</topic-exchange>
+
+	<fanout-exchange name="fanout-test"
+		xmlns="http://www.springframework.org/schema/rabbit">
+		<bindings>
+			<binding queue="foo" />
+			<binding queue="bar" />
+		</bindings>
+	</fanout-exchange>
+
+	<headers-exchange name="headers-test"
+		xmlns="http://www.springframework.org/schema/rabbit">
+		<bindings>
+			<binding queue="foo" key="type" value="foo" />
+			<binding queue="bar" key="type" value="bar" />
+		</bindings>
+	</headers-exchange>
+
+	<rabbit:queue name="foo" />
+
+	<rabbit:queue name="bar" />
+
+	<bean class="org.springframework.amqp.rabbit.core.RabbitAdmin">
+		<constructor-arg name="connectionFactory" ref="connectionFactory"/>
+	</bean>
+
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory"/>
+
+</beans>

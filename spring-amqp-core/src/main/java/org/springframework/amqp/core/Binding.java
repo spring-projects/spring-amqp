@@ -51,6 +51,12 @@ public class Binding {
 		this.arguments = arguments;
 	}
 
+	public Binding(Queue queue, DirectExchange exchange) {
+		this.queue = queue.getName();
+		this.exchange = exchange.getName();
+		this.routingKey = queue.getName();
+	}
+
 	public Binding(Queue queue, DirectExchange exchange, String routingKey) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();

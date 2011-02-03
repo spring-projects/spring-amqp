@@ -1,229 +1,347 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns="http://www.springframework.org/schema/rabbit"
-		xmlns:xs="http://www.w3.org/2001/XMLSchema"
-		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		xmlns:tool="http://www.springframework.org/schema/tool"
-		targetNamespace="http://www.springframework.org/schema/rabbit"
-		elementFormDefault="qualified"
-		attributeFormDefault="unqualified">
-		
-  <xs:element name="rabbit-admin">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="queues"/>
-        <xs:element ref="routes"/>
-        <xs:element ref="exchanges"/>
-        <xs:element ref="users"/>
-        <xs:element ref="vhosts"/>
-        <xs:element ref="permissions"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="queues">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="drop-queue"/>
-        <xs:element maxOccurs="unbounded" ref="queue"/>
-      </xs:sequence>
-      <xs:attribute name="default-autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="default-durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="default-exclusive" use="optional" type="xs:boolean"/>
-      <xs:attribute name="default-passive" use="optional" type="xs:boolean"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="drop-queue">
-    <xs:complexType>
-      <xs:attribute name="if-empty" use="optional" type="xs:boolean"/>
-      <xs:attribute name="if-unused" use="optional" type="xs:boolean"/>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="queue">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="queue-arguments"/>
-      </xs:sequence>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="exclusive" use="optional" type="xs:boolean"/>
-      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="queue-arguments" type="map"/>
-  <xs:element name="exchanges">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="drop-exchange"/>
-        <xs:element maxOccurs="unbounded" ref="fanout-exchange"/>
-        <xs:element maxOccurs="unbounded" ref="direct-exchange"/>
-        <xs:element maxOccurs="unbounded" ref="topic-exchange"/>
-      </xs:sequence>
-      <xs:attribute name="default-autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="default-durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="default-passive" use="optional" type="xs:boolean"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="drop-exchange">
-    <xs:complexType>
-      <xs:attribute name="if-unused" use="optional" type="xs:boolean"/>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="fanout-exchange">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="exchange-arguments"/>
-        <xs:element ref="routes"/>
-      </xs:sequence>
-      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
-      <xs:attribute name="route-to-queue" use="optional"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="direct-exchange">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="exchange-arguments"/>
-        <xs:element ref="routes"/>
-      </xs:sequence>
-      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
-      <xs:attribute name="route-to-queue" use="optional"/>
-      <xs:attribute name="routing-key" use="optional" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="topic-exchange">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="exchange-arguments"/>
-        <xs:element ref="routes"/>
-      </xs:sequence>
-      <xs:attribute name="autodelete" use="optional" type="xs:boolean"/>
-      <xs:attribute name="durable" use="optional" type="xs:boolean"/>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="passive" use="optional" type="xs:boolean"/>
-      <xs:attribute name="route-to-queue" use="optional"/>
-      <xs:attribute name="routing-key" use="optional"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="users">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="drop-user"/>
-        <xs:element maxOccurs="unbounded" ref="user"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="drop-user">
-    <xs:complexType>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="user">
-    <xs:complexType>
-      <xs:attribute name="name" use="required" type="xs:NCName"/>
-      <xs:attribute name="password" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="vhosts">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="drop-vhost"/>
-        <xs:element maxOccurs="unbounded" ref="vhost"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="drop-vhost">
-    <xs:complexType>
-      <xs:attribute name="path" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="vhost">
-    <xs:complexType>
-      <xs:attribute name="path" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="permissions">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="drop-permissions"/>
-        <xs:element maxOccurs="unbounded" ref="grant"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="drop-permissions">
-    <xs:complexType>
-      <xs:attribute name="user-name" use="required" type="xs:NCName"/>
-      <xs:attribute name="vhost-path" use="optional" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="grant">
-    <xs:complexType>
-      <xs:attribute name="configure" use="required" type="xs:NCName"/>
-      <xs:attribute name="read" use="required" type="xs:NCName"/>
-      <xs:attribute name="user-name" use="required" type="xs:NCName"/>
-      <xs:attribute name="vhost-path" use="optional" type="xs:NCName"/>
-      <xs:attribute name="write" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:complexType name="map">
-    <xs:sequence>
-      <xs:element ref="map"/>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="map">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="entry"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="entry">
-    <xs:complexType>
-      <xs:attribute name="key" use="required"/>
-      <xs:attribute name="value"/>
-      <xs:attribute name="value-ref" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="routes">
-    <xs:complexType>
-      <xs:choice>
-        <xs:element maxOccurs="unbounded" ref="route"/>
-        <xs:element maxOccurs="unbounded" ref="unbind-route"/>
-      </xs:choice>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="route">
-    <xs:complexType>
-      <xs:complexContent>
-        <xs:extension base="route-arguments">
-          <xs:attribute name="queue" use="required"/>
-          <xs:attribute name="routing-key"/>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="unbind-route">
-    <xs:complexType>
-      <xs:complexContent>
-        <xs:extension base="route-arguments">
-          <xs:attribute name="exchange" use="required" type="xs:NCName"/>
-          <xs:attribute name="queue" use="required" type="xs:NCName"/>
-          <xs:attribute name="routing-key" use="required" type="xs:NCName"/>
-        </xs:extension>
-      </xs:complexContent>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="exchange-arguments" type="map"/>
-  <xs:complexType name="route-arguments">
-    <xs:sequence>
-      <xs:element ref="route-arguments"/>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="route-arguments" type="map"/>
-</xs:schema>
+<xsd:schema xmlns="http://www.springframework.org/schema/rabbit"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tool="http://www.springframework.org/schema/tool" xmlns:beans="http://www.springframework.org/schema/beans"
+	targetNamespace="http://www.springframework.org/schema/rabbit"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xsd:import namespace="http://www.springframework.org/schema/beans" />
+	<xsd:import namespace="http://www.springframework.org/schema/tool" />
+
+	<xsd:element name="queue">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+				Creates a queue for consumers to retrieve messages.  Uses an existing queue
+				with the same name if it exists on the broker, or else declares a 
+				new one.  If you want to send a message use an exchange.
+			]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="queue-arguments" minOccurs="0"
+					maxOccurs="1" />
+			</xsd:sequence>
+			<xsd:attribute name="name" use="required" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						The name of the queue.  Clients can receive or listen for messages by referring to the
+						queue itself, or to its name.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="autodelete" use="optional" type="xsd:boolean"
+				default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						Flag indicating that an queue will be deleted when it is no longer in use. Default is false.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="durable" use="optional" type="xsd:boolean"
+				default="true">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					Flag indicating that the queue is durable.  Default is true.
+				]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="queue-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+						A Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:element name="direct-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a direct exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a 
+					new one.  A direct exhange routes messages 
+					to queues that are bound to the exchange when the routing key in the message 
+					matches that in the binding exactly.  You can set up bindings here too, either with
+					explicit routing keys, or using the queue name implicitly.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded"
+										type="directBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+											Declares a binding of a queue to this exchange either with
+											an explicit routing key, or using the queue name implicitly.
+										]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="topic-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a topic exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a 
+					new one.  A topic exhange routes messages 
+					to queues that are bound to the exchange when the routing key in the message 
+					matches the routing pattern in the binding of the queue.  
+					You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded"
+										type="topicBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+											Declares a binding of a queue to this exchange either with
+											a routing pattern, e.g. "uk.weather.*" or "uk.#".
+										]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="fanout-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a fanout exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a 
+					new one.  A fanout exhange routes messages 
+					to all queues that are bound to the exchange.  You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded"
+										type="bindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+												Binds a queue to this exchange.  All messages sent to this exchange will be 
+												placed on this queue by the broker.
+											]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="headers-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a headers exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a 
+					new one.  A headers exhange routes messages 
+					to all queues where a message header matches that specified in the binding of the queue.  
+					You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded"
+										type="headersBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+												Binds a queue to this exchange.  Messages sent to this exchange will be 
+												placed on this queue by the broker if they contain a header that matches
+												this binding (key-value pair).
+											]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="exchangeType">
+		<xsd:sequence>
+			<xsd:element ref="exchange-arguments" minOccurs="0"
+				maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="name" use="required" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					The name of the exchange. Clients can send a message by referring to the
+					exchange itself, or to its name.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="autodelete" use="optional" type="xsd:boolean"
+			default="false">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that an exchange will be deleted when no longer in use. Default is false.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durable" use="optional" type="xsd:boolean"
+			default="true">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that the exchange is durable.  Default is true
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:element name="exchange-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+				A Map to pass to the broker when this component is declared.
+			]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="directBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="key" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+							An explicit routing key binding the queue to this exchange.  
+							If not provided defaults to the queue name.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="topicBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="pattern" use="required">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						An explicit routing pattern binding the queue to this exchange.  In the pattern, 
+						the symbol # matches one or more words and the symbol * matches any single word. 
+						Typical bindings might be "uk.#" for all items in the uk, "#.weather" for all 
+						weather items, or "uk.weather" for all uk weather items. 
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="headersBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="key" use="required" />
+				<xsd:attribute name="value" use="required" />
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="bindingType">
+		<xsd:sequence>
+			<xsd:element ref="binding-arguments" minOccurs="0"
+				maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="queue" use="required">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Queue"><![CDATA[
+				The bean name of the Queue to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Queue" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:element name="binding-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+						A Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="mapType">
+		<xsd:complexContent>
+			<xsd:extension base="beans:mapType">
+				<xsd:attribute name="ref" use="optional">
+					<xsd:annotation>
+						<xsd:documentation source="java:java.util.Map"><![CDATA[
+						The bean name of the Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+						<xsd:appinfo>
+							<tool:annotation kind="ref">
+								<tool:expected-type type="java.util.Map" />
+							</tool:annotation>
+						</xsd:appinfo>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+</xsd:schema>
