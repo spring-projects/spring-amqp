@@ -53,7 +53,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class);
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);

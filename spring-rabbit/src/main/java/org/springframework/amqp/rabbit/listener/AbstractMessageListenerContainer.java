@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.listener;
@@ -82,27 +79,19 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Return whether to expose the listener {@link Channel} to a registered
-	 * {@link ChannelAwareMessageListener}.
+	 * Return whether to expose the listener {@link Channel} to a registered {@link ChannelAwareMessageListener}.
 	 */
 	public boolean isExposeListenerChannel() {
 		return this.exposeListenerChannel;
 	}
 
 	/**
-	 * Set whether to expose the listener Rabbit Channel to a registered
-	 * {@link ChannelAwareMessageListener} as well as to
-	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls.
-	 * <p>
-	 * Default is "true", reusing the listener's {@link Channel}. Turn this off
-	 * to expose a fresh Rabbit Channel fetched from the same underlying Rabbit
-	 * {@link Connection} instead.
-	 * <p>
-	 * Note that Channels managed by an external transaction manager will always
-	 * get exposed to
-	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. So in
-	 * terms of RabbitTemplate exposure, this setting only affects locally
-	 * transacted Channels.
+	 * Set whether to expose the listener Rabbit Channel to a registered {@link ChannelAwareMessageListener} as well as
+	 * to {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. <p> Default is "true", reusing the
+	 * listener's {@link Channel}. Turn this off to expose a fresh Rabbit Channel fetched from the same underlying
+	 * Rabbit {@link Connection} instead. <p> Note that Channels managed by an external transaction manager will always
+	 * get exposed to {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. So in terms of RabbitTemplate
+	 * exposure, this setting only affects locally transacted Channels.
 	 * @see ChannelAwareMessageListener
 	 */
 	public void setExposeListenerChannel(boolean exposeListenerChannel) {
@@ -110,11 +99,10 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Set the message listener implementation to register. This can be either a
-	 * Spring {@link MessageListener} object or a Spring
-	 * {@link ChannelAwareMessageListener} object.
-	 * @throws IllegalArgumentException if the supplied listener is not a
-	 * {@link MessageListener} or a {@link ChannelAwareMessageListener}
+	 * Set the message listener implementation to register. This can be either a Spring {@link MessageListener} object
+	 * or a Spring {@link ChannelAwareMessageListener} object.
+	 * @throws IllegalArgumentException if the supplied listener is not a {@link MessageListener} or a
+	 * {@link ChannelAwareMessageListener}
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
@@ -124,15 +112,11 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Check the given message listener, throwing an exception if it does not
-	 * correspond to a supported listener type.
-	 * <p>
-	 * By default, only a Spring {@link MessageListener} object or a Spring
-	 * {@link org.springframework.jms.listener.SessionAwareMessageListener}
-	 * object will be accepted.
+	 * Check the given message listener, throwing an exception if it does not correspond to a supported listener type.
+	 * <p> By default, only a Spring {@link MessageListener} object or a Spring
+	 * {@link org.springframework.jms.listener.SessionAwareMessageListener} object will be accepted.
 	 * @param messageListener the message listener object to check
-	 * @throws IllegalArgumentException if the supplied listener is not a
-	 * MessageListener or SessionAwareMessageListener
+	 * @throws IllegalArgumentException if the supplied listener is not a MessageListener or SessionAwareMessageListener
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
@@ -151,9 +135,8 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions
-	 * thrown while processing a Message. By default there will be <b>no</b>
-	 * ErrorHandler so that error-level logging is the only result.
+	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
+	 * default there will be <b>no</b> ErrorHandler so that error-level logging is the only result.
 	 */
 	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
@@ -167,8 +150,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void invokeErrorHandler(Throwable ex) {
 		if (this.errorHandler != null) {
 			this.errorHandler.handleError(ex);
-		}
-		else if (logger.isWarnEnabled()) {
+		} else if (logger.isWarnEnabled()) {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
 		}
 	}
@@ -178,8 +160,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Execute the specified listener, committing or rolling back the
-	 * transaction afterwards (if necessary).
+	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @see #invokeListener
@@ -190,16 +171,14 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void executeListener(Channel channel, Message message) throws Throwable {
 		try {
 			doExecuteListener(channel, message);
-		}
-		catch (Throwable ex) {
+		} catch (Throwable ex) {
 			handleListenerException(ex);
 			throw ex;
 		}
 	}
 
 	/**
-	 * Execute the specified listener, committing or rolling back the
-	 * transaction afterwards (if necessary).
+	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @throws Throwable
@@ -212,16 +191,14 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void doExecuteListener(Channel channel, Message message) throws Throwable {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Rejecting received message because of the listener container "
-						+ "having been stopped in the meantime: " + message);
+				logger.warn("Rejecting received message because the listener container has been stopped: " + message);
 			}
 			rollbackIfNecessary(channel);
 			throw new MessageRejectedWhileStoppingException();
 		}
 		try {
 			invokeListener(channel, message);
-		}
-		catch (Throwable ex) {
+		} catch (Throwable ex) {
 			rollbackOnExceptionIfNecessary(channel, message, ex);
 			throw ex;
 		}
@@ -229,8 +206,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Invoke the specified listener: either as standard MessageListener or
-	 * (preferably) as SessionAwareMessageListener.
+	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @throws Exception
@@ -241,23 +217,19 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
-		}
-		else if (listener instanceof MessageListener) {
+		} else if (listener instanceof MessageListener) {
 			doInvokeListener((MessageListener) listener, message);
-		}
-		else if (listener != null) {
+		} else if (listener != null) {
 			throw new IllegalArgumentException("Only MessageListener and SessionAwareMessageListener supported: "
 					+ listener);
-		}
-		else {
+		} else {
 			throw new IllegalStateException("No message listener specified - see property 'messageListener'");
 		}
 	}
 
 	/**
-	 * Invoke the specified listener as Spring ChannelAwareMessageListener,
-	 * exposing a new Rabbit Session (potentially with its own transaction) to
-	 * the listener if demanded.
+	 * Invoke the specified listener as Spring ChannelAwareMessageListener, exposing a new Rabbit Session (potentially
+	 * with its own transaction) to the listener if demanded.
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
@@ -279,17 +251,14 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 			// Actually invoke the message listener...
 			listener.onMessage(message, channelToUse);
 
-		}
-		finally {
+		} finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
 	}
 
 	/**
-	 * Invoke the specified listener as Spring Rabbit MessageListener.
-	 * <p>
-	 * Default implementation performs a plain invocation of the
-	 * <code>onMessage</code> method.
+	 * Invoke the specified listener as Spring Rabbit MessageListener. <p> Default implementation performs a plain
+	 * invocation of the <code>onMessage</code> method.
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
@@ -310,8 +279,7 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 		if (isChannelLocallyTransacted(channel)) {
 			channel.basicAck(deliveryTag, false);
 			RabbitUtils.commitIfNecessary(channel);
-		}
-		else if (isChannelTransacted()) {
+		} else if (isChannelTransacted()) {
 			// Not locally transacted but it is transacted so it
 			// could be synchronized with an external transaction
 			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
@@ -326,14 +294,12 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void rollbackIfNecessary(Channel channel) {
 		if (this.isChannelLocallyTransacted(channel)) {
 			/*
-			 * Re-queue messages and don't get them re-delivered to the same
-			 * consumer, otherwise the broker just spins trying to get us to
-			 * accept the same message over and over
+			 * Re-queue messages and don't get them re-delivered to the same consumer, otherwise the broker just spins
+			 * trying to get us to accept the same message over and over
 			 */
 			try {
 				channel.basicRecover(true);
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				throw new AmqpIOException(e);
 			}
 			// Transacted channel enabled by this container -> rollback.
@@ -363,20 +329,16 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 					RabbitUtils.commitIfNecessary(channel);
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Application exception overridden by rollback exception", ex);
 			throw e;
 		}
 	}
 
 	/**
-	 * Check whether the given Channel is locally transacted, that is, whether
-	 * its transaction is managed by this listener container's Channel handling
-	 * and not by an external transaction coordinator.
-	 * <p>
-	 * Note:This method is about finding out whether the Channel's transaction
-	 * is local or externally coordinated.
+	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
+	 * listener container's Channel handling and not by an external transaction coordinator. <p> Note:This method is
+	 * about finding out whether the Channel's transaction is local or externally coordinated.
 	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see #isChannelTransacted()
@@ -386,12 +348,9 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Handle the given exception that arose during listener execution.
-	 * <p>
-	 * The default implementation logs the exception at error level, not
-	 * propagating it to the Rabbit provider - assuming that all handling of
-	 * acknowledgment and/or transactions is done by this listener container.
-	 * This can be overridden in subclasses.
+	 * Handle the given exception that arose during listener execution. <p> The default implementation logs the
+	 * exception at error level, not propagating it to the Rabbit provider - assuming that all handling of
+	 * acknowledgment and/or transactions is done by this listener container. This can be overridden in subclasses.
 	 * @param ex the exception to handle
 	 */
 	protected void handleListenerException(Throwable ex) {
@@ -400,16 +359,14 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 			return;
 		}
 		/*
-		 * TODO how to handle exceptions that rabbit might throw if (ex
-		 * instanceof JMSException) { invokeExceptionListener((JMSException)
-		 * ex); }
+		 * TODO how to handle exceptions that rabbit might throw if (ex instanceof JMSException) {
+		 * invokeExceptionListener((JMSException) ex); }
 		 */
 		if (isActive()) {
 			// Regular case: failed while active.
 			// Invoke ErrorHandler if available.
 			invokeErrorHandler(ex);
-		}
-		else {
+		} else {
 			// Rare case: listener thread failed after container shutdown.
 			// Log at debug level, to avoid spamming the shutdown log.
 			logger.debug("Listener exception after container shutdown", ex);
@@ -417,9 +374,8 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Internal exception class that indicates a rejected message on shutdown.
-	 * Used to trigger a rollback for an external transaction manager in that
-	 * case.
+	 * Internal exception class that indicates a rejected message on shutdown. Used to trigger a rollback for an
+	 * external transaction manager in that case.
 	 */
 	@SuppressWarnings("serial")
 	private static class MessageRejectedWhileStoppingException extends RuntimeException {

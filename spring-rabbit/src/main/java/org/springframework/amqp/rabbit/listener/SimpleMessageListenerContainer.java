@@ -14,22 +14,21 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer.Delivery;
 import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -40,7 +39,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
@@ -52,7 +50,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
-	private static final int DEFAULT_PREFETCH_COUNT = 10;
+	private static final int DEFAULT_PREFETCH_COUNT = 1;
+
+	private static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
@@ -62,14 +62,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int concurrentConsumers = 1;
 
-	private final Semaphore cancellationLock = new Semaphore(0);
-
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
-	// implied unlimited capacity
-	private volatile int blockingQueueConsumerCapacity = -1;
-
-	private volatile Set<Channel> channels = null;
+	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private volatile Set<BlockingQueueConsumer> consumers;
 
@@ -79,6 +74,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
 
+	private CountDownLatch cancellationLock;
+
 	public SimpleMessageListenerContainer() {
 	}
 
@@ -87,11 +84,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Specify the number of concurrent consumers to create. Default is 1.
-	 * <p>
-	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
-	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
-	 * general, stick with 1 consumer for low-volume queues.
+	 * Specify the number of concurrent consumers to create. Default is 1. <p> Raising the number of concurrent
+	 * consumers is recommended in order to scale the consumption of messages coming in from a queue. However, note that
+	 * any ordering guarantees are lost once multiple consumers are registered. In general, stick with 1 consumer for
+	 * low-volume queues.
 	 */
 	public void setConcurrentConsumers(int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
@@ -102,33 +98,41 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * The time to wait for workers in milliseconds after the container is stopped, and before the connection is forced
+	 * closed. If any workers are active when the shutdown signal comes they will be allowed to finish processing as
+	 * long as they can finish within this timeout. Otherwise the connection is closed and messages remain unacked (if
+	 * the channel is transactional). Defaults to 5 seconds.
+	 * 
+	 * @param shutdownTimeout the shutdown timeout to set
+	 */
+	public void setShutdownTimeout(long shutdownTimeout) {
+		this.shutdownTimeout = shutdownTimeout;
+	}
+
 	public void setTaskExecutor(Executor taskExecutor) {
 		Assert.notNull(taskExecutor, "taskExecutor must not be null");
 		this.taskExecutor = taskExecutor;
 	}
 
-	public int getPrefetchCount() {
-		return prefetchCount;
-	}
-
+	/**
+	 * Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
+	 * to improve throughput. It should be greater than or equal to {@link #setTxSize(int) the transaction size}.
+	 * 
+	 * @param prefetchCount the prefetch count
+	 */
 	public void setPrefetchCount(int prefetchCount) {
 		this.prefetchCount = prefetchCount;
 	}
 
-	public int getTxSize() {
-		return txSize;
-	}
-
+	/**
+	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
+	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}.
+	 * 
+	 * @param prefetchCount the prefetch count
+	 */
 	public void setTxSize(int txSize) {
 		this.txSize = txSize;
-	}
-
-	public int getBlockingQueueConsumerCapacity() {
-		return blockingQueueConsumerCapacity;
-	}
-
-	public void setBlockingQueueConsumerCapacity(int blockingQueueConsumerCapacity) {
-		this.blockingQueueConsumerCapacity = blockingQueueConsumerCapacity;
 	}
 
 	public void setTransactionManager(PlatformTransactionManager transactionManager) {
@@ -179,7 +183,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void doInitialize() throws Exception {
 		establishSharedConnection();
-		// initializeConsumers();
 	}
 
 	/**
@@ -191,8 +194,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doStart() throws Exception {
 		super.doStart();
 		initializeConsumers();
+		cancellationLock = new CountDownLatch(this.consumers.size());
 		for (BlockingQueueConsumer consumer : this.consumers) {
-			this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this));
+			this.taskExecutor
+					.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this, cancellationLock));
 		}
 	}
 
@@ -203,41 +208,41 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
+
 		if (!this.isRunning()) {
 			return;
 		}
+
 		try {
-			cancellationLock.acquire(consumers.size());
+			logger.debug("Waiting for workers to finish.");
+			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
+			if (finished) {
+				logger.debug("Successfully waited for workers to finish.");
+			} else {
+				logger.debug("Workers not finished.  Forcing connections to close.");
+			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			logger.debug("Interrupted waiting for workers.  Continuing with shutdown.");
 		}
-		logger.debug("Closing Rabbit Consumers");
-		synchronized (this.consumersMonitor) {
-			logger.debug("Closing Rabbit Channels");
-			try {
-				for (Channel channel : this.channels) {
-					RabbitUtils.closeChannel(channel);
-				}
-			} finally {
-				cancellationLock.release(consumers.size());
-			}
-			this.consumers = null;
-			this.channels = null;
-		}
+
+		this.consumers = null;
+
 	}
 
 	protected void initializeConsumers() throws IOException {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
-				this.channels = new HashSet<Channel>(this.concurrentConsumers);
-				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
+				Collection<Channel> channels = new ArrayList<Channel>();
 				for (int i = 0; i < this.concurrentConsumers; i++) {
 					Channel channel = getTransactionalResourceHolder().getChannel();
+					channels.add(channel);
+				}
+				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
+				for (Channel channel : channels) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer(channel);
-					this.channels.add(channel);
 					this.consumers.add(consumer);
 				}
-				cancellationLock.release(consumers.size());
 			}
 		}
 	}
@@ -248,42 +253,31 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected BlockingQueueConsumer createBlockingQueueConsumer(final Channel channel) throws IOException {
 		BlockingQueueConsumer consumer;
-		if (this.blockingQueueConsumerCapacity <= 0) {
-			consumer = new BlockingQueueConsumer(channel);
-		} else {
-			consumer = new BlockingQueueConsumer(channel, new LinkedBlockingQueue<Delivery>(
-					blockingQueueConsumerCapacity));
-		}
-		// Set basicQos before calling basicConsume
-		channel.basicQos(prefetchCount);
 		String queueNames = getRequiredQueueName();
-		String[] queue = StringUtils.commaDelimitedListToStringArray(queueNames);
-		for (int i = 0; i < queue.length; i++) {
-			channel.queueDeclarePassive(queue[i]);
-			channel.basicConsume(queue[i], !isChannelTransacted(), consumer);
-		}
+		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
+		consumer = new BlockingQueueConsumer(channel, isChannelTransacted(), prefetchCount, queues);
 		return consumer;
 	}
 
 	private class AsyncMessageProcessingConsumer implements Runnable {
 
-		private BlockingQueueConsumer queue;
+		private final BlockingQueueConsumer consumer;
 
 		private int txSize;
 
-		private SimpleMessageListenerContainer messageListenerContainer;
+		private final PlatformTransactionManager transactionManager;
 
-		private PlatformTransactionManager transactionManager;
-
-		private DefaultTransactionDefinition transactionDefinition;
+		private final DefaultTransactionDefinition transactionDefinition;
 
 		private long receiveTimeout;
 
-		public AsyncMessageProcessingConsumer(BlockingQueueConsumer q, int txSize,
-				SimpleMessageListenerContainer messageListenerContainer) {
-			this.queue = q;
+		private final CountDownLatch latch;
+
+		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, int txSize,
+				SimpleMessageListenerContainer messageListenerContainer, CountDownLatch latch) {
+			this.consumer = consumer;
 			this.txSize = txSize;
-			this.messageListenerContainer = messageListenerContainer;
+			this.latch = latch;
 			this.transactionManager = messageListenerContainer.transactionManager;
 			this.transactionDefinition = messageListenerContainer.transactionDefinition;
 			this.receiveTimeout = messageListenerContainer.receiveTimeout;
@@ -292,19 +286,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		public void run() {
 
 			try {
-				cancellationLock.acquire();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return;
-			}
-			try {
-				while (isRunning()) {
+
+				consumer.start();
+
+				// Always better to stop receiving as soon as possible if transactional
+				boolean continuable = false;
+				while (isActive() || continuable) {
 					try {
 						if (this.transactionManager != null) {
 							// Execute within transaction.
 							transactionalReceiveAndExecute();
 						} else {
-							receiveAndExecute();
+							// Will come back false when the queue is drained
+							continuable = receiveAndExecute() && !isChannelTransacted();
 						}
 					} catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
@@ -318,20 +312,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			} catch (Throwable t) {
 				logger.debug("Consumer received fatal exception, processing stopped.", t);
 			} finally {
-				Channel channel = queue.getChannel();
-				logger.info("Closing consumer on channel: " + channel);
-				RabbitUtils.closeMessageConsumer(channel, queue.getConsumerTag(), isChannelTransacted());
-				cancellationLock.release();
+				latch.countDown();
+				if (!isActive()) {
+					logger.debug("Cancelling " + consumer);
+					consumer.stop();
+				}
 			}
 		}
 
-		private void transactionalReceiveAndExecute() throws Exception {
+		private boolean transactionalReceiveAndExecute() throws Exception {
 			try {
-				new TransactionTemplate(this.transactionManager, this.transactionDefinition)
-						.execute(new TransactionCallback<Void>() {
-							public Void doInTransaction(TransactionStatus status) {
+				return new TransactionTemplate(this.transactionManager, this.transactionDefinition)
+						.execute(new TransactionCallback<Boolean>() {
+							public Boolean doInTransaction(TransactionStatus status) {
 								try {
-									receiveAndExecute();
+									return receiveAndExecute();
 								} catch (ListenerExecutionFailedException ex) {
 									// These are expected
 									throw ex;
@@ -342,7 +337,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								} catch (Throwable t) {
 									throw new AmqpException(t);
 								}
-								return null;
 							}
 						});
 			} catch (Exception ex) {
@@ -356,36 +350,23 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private boolean receiveAndExecute() throws Throwable {
 
-			Channel channel = queue.getChannel();
+			Channel channel = consumer.getChannel();
 
 			int totalMsgCount = 0;
 
-			ConnectionFactory connectionFactory = messageListenerContainer.getConnectionFactory();
+			ConnectionFactory connectionFactory = getConnectionFactory();
 			ConnectionFactoryUtils
 					.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory, true);
 
 			for (int i = 0; i < txSize; i++) {
-				logger.debug("Receiving message from consumer.");
-				Delivery delivery = queue.nextDelivery(receiveTimeout);
-				if (delivery == null) {
+
+				logger.debug("Waiting for message from consumer.");
+				Message message = consumer.nextMessage(receiveTimeout);
+				if (message == null) {
 					return false;
 				}
-
-				byte[] body = delivery.getBody();
-				Envelope envelope = delivery.getEnvelope();
 				totalMsgCount++;
-
-				if (logger.isDebugEnabled()) {
-					logger.debug("Received message from exchange [" + envelope.getExchange() + "], routing-key ["
-							+ envelope.getRoutingKey() + "]");
-				}
-
-				MessageProperties messageProperties = RabbitUtils.createMessageProperties(delivery.getProperties(),
-						envelope, "UTF-8");
-				messageProperties.setMessageCount(0);
-				Message message = new Message(body, messageProperties);
-
-				messageListenerContainer.executeListener(channel, message);
+				executeListener(channel, message);
 
 			}
 

@@ -126,7 +126,6 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	public void initialize()  {
 		try {
 			synchronized (this.lifecycleMonitor) {
-				this.active = true;
 				this.lifecycleMonitor.notifyAll();
 			}
 			doInitialize();
@@ -145,7 +144,6 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	public void shutdown() {
 		logger.debug("Shutting down Rabbit listener container");
 		synchronized (this.lifecycleMonitor) {
-			this.running = false;
 			this.active = false;
 			this.lifecycleMonitor.notifyAll();
 		}
@@ -158,6 +156,10 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 			throw convertRabbitAccessException(ex);
 		}
 		finally {
+			synchronized (this.lifecycleMonitor) {
+				this.running = false;
+				this.lifecycleMonitor.notifyAll();
+			}
 			if (sharedConnectionEnabled()) {				
 				ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
 				this.sharedConnection = null;				
@@ -204,6 +206,7 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 
 		// Reschedule paused tasks, if any.
 		synchronized (this.lifecycleMonitor) {
+			this.active = true;
 			this.running = true;
 			this.lifecycleMonitor.notifyAll();
 		}
@@ -220,6 +223,11 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 		}
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
+		} finally {
+			synchronized (this.lifecycleMonitor) {
+				this.running = false;
+				this.lifecycleMonitor.notifyAll();
+			}			
 		}
 	}
 
@@ -233,10 +241,6 @@ public abstract class AbstractRabbitListeningContainer extends RabbitAccessor im
 	 * @see #stopSharedConnection
 	 */
 	protected void doStop() {
-		synchronized (this.lifecycleMonitor) {
-			this.running = false;
-			this.lifecycleMonitor.notifyAll();
-		}
 		if (sharedConnectionEnabled()) {
 			stopSharedConnection();
 		}

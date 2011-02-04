@@ -129,10 +129,14 @@ public abstract class RabbitUtils {
 			if (transactional) {
 				/*
 				 * Re-queue in-flight messages if any (after the consumer is cancelled to prevent the broker from simply
-				 * sending them back to us).  Does not require a tx.commit.
+				 * sending them back to us). Does not require a tx.commit.
 				 */
 				channel.basicRecover(true);
 			}
+			/*
+			 * If not transactional then we are auto-acking (at least as of 1.0.0.M2) so there is nothing to recover.
+			 * Messages are going to be lost in general.
+			 */
 		} catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
