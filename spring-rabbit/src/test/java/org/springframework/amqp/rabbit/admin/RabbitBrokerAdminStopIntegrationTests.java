@@ -20,7 +20,6 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Level;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,21 +38,16 @@ public class RabbitBrokerAdminStopIntegrationTests {
 	@Before
 	public void init() throws Exception {
 		FileUtils.deleteDirectory(new File("target/rabbitmq"));
-		System.setProperty("RABBITMQ_LOG_BASE", "target/rabbitmq/log");
-		System.setProperty("RABBITMQ_MNESIA_BASE", "target/rabbitmq/mnesia");
-	}
-
-	@After
-	public void close() throws Exception {
-		System.clearProperty("RABBITMQ_LOG_BASE");
-		System.clearProperty("RABBITMQ_MNESIA_BASE");
 	}
 
 	@Test
-	// @Ignore("NEEDS RABBITMQ_HOME to be set.")
 	public void testStartNode() throws Exception {
 
-		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin();
+		// Set up broker admin for non-root user
+		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin("spring@localhost", 15672);
+		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
+		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
+
 		brokerAdmin.setStartupTimeout(10000L);
 
 		RabbitStatus status = brokerAdmin.getStatus();
@@ -71,7 +65,7 @@ public class RabbitBrokerAdminStopIntegrationTests {
 			brokerAdmin.startBrokerApplication();
 		}
 		status = brokerAdmin.getStatus();
-		
+
 		try {
 
 			assertFalse("Broker node did not start. Check logs for hints.", status.getNodes().isEmpty());

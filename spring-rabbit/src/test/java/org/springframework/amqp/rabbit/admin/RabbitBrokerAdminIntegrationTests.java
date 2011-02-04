@@ -61,9 +61,9 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	@BeforeClass
 	public static void start() throws Exception {
-		System.setProperty("RABBITMQ_LOG_BASE", "target/rabbitmq/log");
-		System.setProperty("RABBITMQ_MNESIA_BASE", "target/rabbitmq/mnesia");
-		brokerAdmin = new RabbitBrokerAdmin();
+		brokerAdmin = new RabbitBrokerAdmin("spring@localhost", 15672);
+		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
+		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
 		brokerAdmin.setStartupTimeout(10000L);
 		brokerAdmin.startNode();
 	}
@@ -73,8 +73,6 @@ public class RabbitBrokerAdminIntegrationTests {
 		if (Os.isFamily("windows") || Os.isFamily("dos")) {
 			brokerAdmin.stopNode();
 		}
-		System.clearProperty("RABBITMQ_LOG_BASE");
-		System.clearProperty("RABBITMQ_MNESIA_BASE");
 	}
 
 	@Test
@@ -110,8 +108,9 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	@Test
 	public void repeatLifecycle() throws Exception {
-		for (int i = 1; i < 20; i++) {
+		for (int i = 1; i <= 20; i++) {
 			testStatusAndBrokerLifecycle();
+			Thread.sleep(200);
 			if (i % 5 == 0) {
 				logger.debug("i = " + i);
 			}
@@ -129,7 +128,7 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	private void assertBrokerAppRunning(RabbitStatus status) {
 		assertEquals(1, status.getRunningNodes().size());
-		assertTrue(status.getRunningNodes().get(0).getName().contains("rabbit"));
+		assertTrue(status.getRunningNodes().get(0).getName().contains("spring@localhost"));
 	}
 
 }

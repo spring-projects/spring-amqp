@@ -84,9 +84,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	@Parameters
 	public static List<Object[]> getParameters() {
-		@SuppressWarnings("unused")
-		Object[] debug = new Object[] { MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF };
-		// return Collections.singletonList(debug);
+		// return Collections.singletonList(new Object[] { MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF });
 		return Arrays.asList( //
 				new Object[] { MessageCount.HIGH, Concurrency.LOW, TransactionMode.ON }, //
 				new Object[] { MessageCount.HIGH, Concurrency.LOW, TransactionMode.OFF });
@@ -115,21 +113,22 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.start();
 		try {
 			boolean waited = latch.await(50, TimeUnit.MILLISECONDS);
-			assertFalse("Expected time out waiting for message", waited);
+			logger.info("All messages received before stop: " + waited);
+			if (messageCount > 1) {
+				assertFalse("Expected not to receive all messages before stop", waited);
+			}
 			container.stop();
 			Thread.sleep(500L);
 			container.start();
 			if (transactional) {
 				waited = latch.await(5, TimeUnit.SECONDS);
 				assertTrue("Timed out waiting for message", waited);
-			}
-			else {
+			} else {
 				waited = latch.await(500, TimeUnit.MILLISECONDS);
 				// If non-transactional we half expect to lose messages
-				assertFalse("Expected time out waiting for message", waited);
+				logger.info("All messages received after stop: " + waited);
 			}
-		}
-		finally {
+		} finally {
 			// Wait for broker communication to finish before trying to stop
 			// container
 			Thread.sleep(300L);
@@ -154,14 +153,14 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			this.fail = fail;
 		}
 
-		public void handleMessage(String value) {
+		public void handleMessage(String value) throws Exception {
 			try {
 				logger.debug(value + count.getAndIncrement());
+				Thread.sleep(100L);
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			}
-			finally {
+			} finally {
 				latch.countDown();
 			}
 		}

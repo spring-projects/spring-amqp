@@ -68,6 +68,7 @@ import com.ericsson.otp.erlang.OtpSelf;
  * </p>
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class SimpleConnectionFactory implements ConnectionFactory, InitializingBean {
 
@@ -75,24 +76,24 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 
 	private boolean uniqueSelfNodeName = true;
 
-	private String selfNodeName;
+	private final String selfNodeName;
 
-	private String cookie;
+	private final String peerNodeName;
 
-	private String peerNodeName;
-
+	private final String cookie;
+	
 	private OtpSelf otpSelf;
 
 	private OtpPeer otpPeer;
 
 	public SimpleConnectionFactory(String selfNodeName, String peerNodeName, String cookie) {
-		this(selfNodeName, peerNodeName);
+		this.selfNodeName = selfNodeName;
+		this.peerNodeName = peerNodeName;
 		this.cookie = cookie;
 	}
 
 	public SimpleConnectionFactory(String selfNodeName, String peerNodeName) {
-		this.selfNodeName = selfNodeName;
-		this.peerNodeName = peerNodeName;
+		this(selfNodeName, peerNodeName, null);
 	}
 
 	public Connection createConnection() throws UnknownHostException, OtpAuthException, IOException {

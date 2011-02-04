@@ -48,15 +48,32 @@ import org.springframework.util.exec.Execute;
 import org.springframework.util.exec.Os;
 
 /**
- * Rabbit broker administration implementation exposed via JMX annotations.
+ * Rabbit broker administration. Features:
+ * 
+ * <ul>
+ * <li>Basic AMQP admin commands are provided, like declaring queues, exchanges and bindings.</li>
+ * <li>Manage user accounts and virtual hosts.</li>
+ * <li>Start and stop the broker process.</li>
+ * <li>Start and stop the broker application (in a running process).</li>
+ * <li>Inspect and manage the queues, e.g. listing message counts etc.</li>
+ * </ul>
+ * 
+ * Depending on your platform, to {@link #startNode() start the broker} you might need to set some environment
+ * properties. The most common are available via constructors or setters in this class (e.g.
+ * {@link #setRabbitLogBaseDirectory(String) RABBITMQ_LOG_BASE}). All others you can set via the OS (any setting that
+ * RabbtMQ allows in its startup script), and some work via System properties as special convenience cases (
+ * <code>ERLANG_HOME</code> and <code>RABBITMQ_HOME</code> ).
  * 
  * @author Mark Pollack
+ * @author Dave Syer
  */
 public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	private static final String DEFAULT_VHOST = "/";
 
-	private static String DEFAULT_HOST;
+	private static String DEFAULT_NODE_NAME;
+
+	private static int DEFAULT_PORT = 5672;
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
@@ -72,36 +89,110 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	// TODO: extract into field for DI
 	private SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
 
-	private final String hostName;
+	private final String nodeName;
 
 	private final String cookie;
 
-	// TODO: RABBITMQ_NODE_PORT=5672
+	private final int port;
+
+	private String rabbitLogBaseDirectory;
+
+	private String rabbitMnesiaBaseDirectory;
 
 	static {
 		try {
-			DEFAULT_HOST = InetAddress.getLocalHost().getHostName();
+			String hostName = InetAddress.getLocalHost().getHostName();
+			DEFAULT_NODE_NAME = "rabbit@" + hostName;
 		} catch (UnknownHostException e) {
-			DEFAULT_HOST = "localhost";
+			DEFAULT_NODE_NAME = "rabbit@localhost";
 		}
 	}
 
 	public RabbitBrokerAdmin() {
-		this(DEFAULT_HOST);
+		this(DEFAULT_NODE_NAME);
 	}
 
-	public RabbitBrokerAdmin(String hostName) {
-		this(hostName, null);
+	/**
+	 * Create an instance by supplying the erlang node name (e.g. "rabbit@myserver"), or simply the hostname (if the
+	 * alive name is "rabbit").
+	 * 
+	 * @param nodeName the node name or hostname to use
+	 */
+	public RabbitBrokerAdmin(String nodeName) {
+		this(nodeName, null);
 	}
-	
-	public RabbitBrokerAdmin(String hostName, String cookie) {
-		if (Os.isFamily("windows") && !DEFAULT_HOST.equals(hostName)) {
-			hostName = hostName.toUpperCase();
+
+	/**
+	 * Create an instance by supplying the erlang node name and cookie (unique string).
+	 * 
+	 * @param nodeName the node name or hostname to use
+	 * 
+	 * @param cookie the cookie value to use
+	 */
+	public RabbitBrokerAdmin(String nodeName, String cookie) {
+		this(nodeName, DEFAULT_PORT, cookie);
+	}
+
+	/**
+	 * Create an instance by supplying the erlang node name and port number. Use this on a UN*X system if you want to
+	 * run the broker as a user without root privileges, supplying values that do not clash with the default broker
+	 * (usually "rabbit@&lt;servername&gt;" and 5672). If, as well as managing an existing broker, you need to start the
+	 * broker process, you will also need to set {@link #setRabbitLogBaseDirectory(String) RABBITMQ_LOG_BASE} and
+	 * {@link #setRabbitMnesiaBaseDirectory(String)RABBITMQ_MNESIA_BASE} to point to writable directories).
+	 * 
+	 * @param nodeName the node name or hostname to use
+	 * @param port the port number (overriding the default which is 5672)
+	 */
+	public RabbitBrokerAdmin(String nodeName, int port) {
+		this(nodeName, port, null);
+	}
+
+	/**
+	 * Create an instance by supplying the erlang node name, port number and cookie (unique string).
+	 * 
+	 * @param nodeName the node name or hostname to use
+	 * @param port the port number (overriding the default which is 5672)
+	 * @param cookie the cookie value to use
+	 */
+	public RabbitBrokerAdmin(String nodeName, int port, String cookie) {
+
+		if (!nodeName.contains("@")) {
+			nodeName = "rabbit@" + nodeName; // it was just the host
 		}
+
+		String[] parts = nodeName.split("@");
+		Assert.state(parts.length == 2, "The node name should be in the form alivename@host, e.g. rabbit@myserver");
+		if (Os.isFamily("windows") && !DEFAULT_NODE_NAME.equals(nodeName)) {
+			nodeName = parts[0] + "@" + parts[1].toUpperCase();
+		}
+
+		this.port = port;
 		this.cookie = cookie;
-		this.hostName = hostName;
+		this.nodeName = nodeName;
 		this.executor.setDaemon(true);
-		initializeDefaultErlangTemplate(hostName);
+
+		initializeDefaultErlangTemplate(nodeName);
+
+	}
+
+	/**
+	 * The location of <code>RABBITMQ_LOG_BASE</code> to override the system default (which may be owned by another
+	 * user). Only needed for launching the broker process. Can also be set as a system property.
+	 * 
+	 * @param rabbitLogBaseDirectory the rabbit log base directory to set
+	 */
+	public void setRabbitLogBaseDirectory(String rabbitLogBaseDirectory) {
+		this.rabbitLogBaseDirectory = rabbitLogBaseDirectory;
+	}
+
+	/**
+	 * The location of <code>RABBITMQ_MNESIA_BASE</code> to override the system default (which may be owned by another
+	 * user). Only needed for launching the broker process. Can also be set as a system property.
+	 * 
+	 * @param rabbitMnesiaBaseDirectory the rabbit Mnesia base directory to set
+	 */
+	public void setRabbitMnesiaBaseDirectory(String rabbitMnesiaBaseDirectory) {
+		this.rabbitMnesiaBaseDirectory = rabbitMnesiaBaseDirectory;
 	}
 
 	/**
@@ -293,12 +384,24 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		String[] commandline = new String[] { rabbitStartCommand };
 
 		List<String> env = new ArrayList<String>();
-		addEnvironment(env, "RABBITMQ_LOG_BASE");
-		addEnvironment(env, "RABBITMQ_MNESIA_BASE");
+
+		if (rabbitLogBaseDirectory != null) {
+			env.add("RABBITMQ_LOG_BASE=" + rabbitLogBaseDirectory);
+		} else {
+			addEnvironment(env, "RABBITMQ_LOG_BASE");
+		}
+		if (rabbitMnesiaBaseDirectory != null) {
+			env.add("RABBITMQ_MNESIA_BASE=" + rabbitMnesiaBaseDirectory);
+		} else {
+			addEnvironment(env, "RABBITMQ_MNESIA_BASE");
+		}
 		addEnvironment(env, "ERLANG_HOME");
 
-		// Make the hostname explicitly the same so the erl process knows who we are
-		env.add("HOSTNAME=" + hostName);
+		// Make the nodename explicitly the same so the erl process knows who we are
+		env.add("RABBITMQ_NODENAME=" + nodeName);
+
+		// Set the port number for the new process
+		env.add("RABBITMQ_NODE_PORT=" + port);
 
 		// Ask for a detached erl process so stdout doesn't get diverted to a black hole when the JVM dies (without this
 		// you can start the Rabbit broker form Java but if you forget to stop it, the erl process is hosed).
@@ -518,7 +621,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	}
 
 	protected void initializeDefaultErlangTemplate(String host) {
-		String peerNodeName = "rabbit@" + host;
+		String peerNodeName = nodeName;
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpConnectionFactory = new SimpleConnectionFactory("rabbit-spring-monitor",
 				peerNodeName, this.cookie);
