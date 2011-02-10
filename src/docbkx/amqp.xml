@@ -678,16 +678,18 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
   <sect1 id="broker-configuration">
     <title>Configuring the broker</title>
 
-    <para>The AMQP specification describes how the protocol can be used to
-    configure Queues, Exchanges and Bindings on the broker. These operations
-    which are portable from the 0.8 specification and higher are present in
-    the AmqpAdmin interface in the org.springframework.amqp.core package. The
-    RabbitMQ implementation of that class is RabbitAdmin located in the
-    org.springframework.amqp.rabbit.core package. Any many configuration and
-    management functions are broker specific and not included in the AMQP
-    specification, the interface RabbitBrokerOperations and its implementation
-    RabbitBrokerAdmin located in the org.springframework.amqp.rabbit.admin
-    package is provided to fill that gap.</para>
+    <para>The AMQP specification describes how the protocol can be
+    used to configure Queues, Exchanges and Bindings on the
+    broker. These operations which are portable from the 0.8
+    specification and higher are present in the AmqpAdmin interface in
+    the org.springframework.amqp.core package. The RabbitMQ
+    implementation of that class is RabbitAdmin located in the
+    org.springframework.amqp.rabbit.core package. Many configuration
+    and management functions are broker specific and not included in
+    the AMQP specification, so the interface RabbitBrokerOperations
+    and its implementation RabbitBrokerAdmin located in the
+    org.springframework.amqp.rabbit.admin package is provided to fill
+    that gap.</para>
 
     <para>The AmqpAdmin interface is based on using the Spring AMQP domain
     abstractions and is shown below:</para>
