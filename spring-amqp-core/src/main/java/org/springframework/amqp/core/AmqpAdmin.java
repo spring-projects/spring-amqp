@@ -17,6 +17,7 @@ package org.springframework.amqp.core;
  * Specifies a basic set of portable AMQP administrative operations for AMQP > 0.8
  * 
  * @author Mark Pollack
+ * @author Dave Syer
  */
 public interface AmqpAdmin {
 
@@ -30,8 +31,9 @@ public interface AmqpAdmin {
 	 * Delete an exchange. Look at implementation specific subclass for implementation specific behavior, for example
 	 * for RabbitMQ this will delete the exchange without regard for whether it is in use or not.
 	 * @param exchangeName the name of the exchange
+	 * @return true if the exchange existed and was deleted
 	 */
-	void deleteExchange(String exchangeName);
+	boolean deleteExchange(String exchangeName);
 
 	// Queue Operations
 
@@ -50,8 +52,9 @@ public interface AmqpAdmin {
 	/**
 	 * Delete a queue, without regard for whether it is in use or has messages on it
 	 * @param queueName the name of the queue
+	 * @return true if the queue existed and was deleted
 	 */
-	void deleteQueue(String queueName);
+	boolean deleteQueue(String queueName);
 
 	// Note that nowait option is not readily exposed in Rabbit Java API but is for Rabbit .NET API.
 

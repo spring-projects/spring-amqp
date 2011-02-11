@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.core;
@@ -40,6 +37,7 @@ import com.rabbitmq.client.Channel;
  * 
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLifecycle {
 
@@ -58,7 +56,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 
 	private final Object lifecycleMonitor = new Object();
 
-
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
@@ -68,7 +65,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 		Assert.notNull(rabbitTemplate, "RabbitTemplate must not be null");
 		this.rabbitTemplate = rabbitTemplate;
 	}
-
 
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
@@ -98,11 +94,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 	}
 
 	@ManagedOperation
-	public void deleteExchange(final String exchangeName) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			public Object doInRabbit(Channel channel) throws Exception {
-				channel.exchangeDelete(exchangeName);
-				return null;
+	public boolean deleteExchange(final String exchangeName) {
+		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				try {
+					channel.exchangeDelete(exchangeName);
+				} catch (IOException e) {
+					return false;
+				}
+				return true;
 			}
 		});
 	}
@@ -120,7 +120,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 	}
 
 	/**
-	 * Declares a server-named exclusive, autodelete, non-durable queue. 
+	 * Declares a server-named exclusive, autodelete, non-durable queue.
 	 */
 	@ManagedOperation
 	public Queue declareQueue() {
@@ -128,7 +128,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 			public DeclareOk doInRabbit(Channel channel) throws Exception {
 				return channel.queueDeclare();
 			}
-		});			
+		});
 		Queue queue = new Queue(declareOk.getQueue());
 		queue.setExclusive(true);
 		queue.setAutoDelete(true);
@@ -137,11 +137,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 	}
 
 	@ManagedOperation
-	public void deleteQueue(final String queueName) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueDelete(queueName);
-				return null;
+	public boolean deleteQueue(final String queueName) {
+		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				try {
+					channel.queueDelete(queueName);
+				} catch (IOException e) {
+					return false;
+				}
+				return true;
 			}
 		});
 	}
@@ -185,7 +189,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 						binding.getArguments());
 				return null;
 			}
-		});		
+		});
 	}
 
 	// Lifecycle implementation
@@ -209,7 +213,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 			}
 			if (this.applicationContext == null) {
 				if (this.logger.isDebugEnabled()) {
-					this.logger.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
+					this.logger
+							.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
 				}
 				return;
 			}
@@ -237,7 +242,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 		callback.run();
 	}
 
-
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel
 
 	private void declareExchanges(final Channel channel, final Exchange... exchanges) throws IOException {
@@ -245,8 +249,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 			if (logger.isDebugEnabled()) {
 				logger.debug("declaring Exchange '" + exchange.getName() + "'");
 			}
-			channel.exchangeDeclare(exchange.getName(), exchange.getType(),
-					exchange.isDurable(), exchange.isAutoDelete(), exchange.getArguments());
+			channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
+					exchange.isAutoDelete(), exchange.getArguments());
 		}
 	}
 
@@ -256,24 +260,22 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 				if (logger.isDebugEnabled()) {
 					logger.debug("declaring Queue '" + queue.getName() + "'");
 				}
-				channel.queueDeclare(queue.getName(), queue.isDurable(),
-						queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
-			}
-			else if (logger.isDebugEnabled()) {
+				channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
+						queue.getArguments());
+			} else if (logger.isDebugEnabled()) {
 				logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
 			}
 		}
 	}
 
-
 	private void declareBindings(final Channel channel, final Binding... bindings) throws IOException {
 		for (Binding binding : bindings) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Binding queue [" + binding.getQueue() + "] to exchange [" +
-						binding.getExchange() + "] with routing key [" + binding.getRoutingKey() + "]");
+				logger.debug("Binding queue [" + binding.getQueue() + "] to exchange [" + binding.getExchange()
+						+ "] with routing key [" + binding.getRoutingKey() + "]");
 			}
-			channel.queueBind(binding.getQueue(), binding.getExchange(),
-					binding.getRoutingKey(), binding.getArguments());
+			channel.queueBind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(),
+					binding.getArguments());
 		}
 	}
 

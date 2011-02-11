@@ -7,7 +7,6 @@ import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -123,11 +122,7 @@ public class BrokerRunning extends TestWatchman {
 			if (purge) {
 				logger.debug("Deleting queue: " + queueName);
 				// Delete completely - gets rid of consumers and bindings as well
-				try {
-					admin.deleteQueue(queueName);
-				} catch (AmqpException e) {
-					// ignore
-				}
+				admin.deleteQueue(queueName);
 			}
 
 			if (isDefaultQueue(queueName)) {

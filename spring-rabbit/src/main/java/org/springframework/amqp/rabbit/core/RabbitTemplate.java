@@ -46,11 +46,11 @@ import com.rabbitmq.client.GetResponse;
  * 
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
-	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct
-														// default exchange
+	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct default exchange
 
 	private static final String DEFAULT_ROUTING_KEY = "";
 
