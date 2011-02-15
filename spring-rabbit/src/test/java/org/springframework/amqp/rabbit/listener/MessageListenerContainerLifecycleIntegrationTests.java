@@ -28,9 +28,15 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	private static Queue queue = new Queue("test.queue");
 
 	private enum TransactionMode {
-		ON, OFF;
+		ON, OFF, PREFETCH;
 		public boolean isTransactional() {
-			return this == ON;
+			return this != OFF;
+		}
+		public int getPrefetch() {
+			return this==PREFETCH ? 10 : -1;
+		}
+		public int getTxSize() {
+			return this==PREFETCH ? 5 : -1;			
 		}
 	}
 
@@ -60,21 +66,21 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 	}
 
-	private RabbitTemplate template = new RabbitTemplate();
-
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, MessageListenerContainerLifecycleIntegrationTests.class);
 
-	private void createTemplate(int concurrentConsumers) {
+	private RabbitTemplate createTemplate(int concurrentConsumers) {
+		RabbitTemplate template = new RabbitTemplate();
 		// SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		// connectionFactory.setPort(5673); // For Tracer
 		template.setConnectionFactory(connectionFactory);
+		return template;
 	}
 
 	@Test
@@ -85,6 +91,16 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	@Test
 	public void testTransactionalHighLevel() throws Exception {
 		doTest(MessageCount.HIGH, Concurrency.HIGH, TransactionMode.ON);
+	}
+
+	@Test
+	public void testTransactionalLowLevelWithPrefetch() throws Exception {
+		doTest(MessageCount.MEDIUM, Concurrency.LOW, TransactionMode.PREFETCH);
+	}
+
+	@Test
+	public void testTransactionalHighLevelWithPrefetch() throws Exception {
+		doTest(MessageCount.HIGH, Concurrency.HIGH, TransactionMode.PREFETCH);
 	}
 
 	@Test
@@ -103,7 +119,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		int concurrentConsumers = concurrency.value();
 		boolean transactional = transactionMode.isTransactional();
 
-		createTemplate(concurrentConsumers);
+		RabbitTemplate template = createTemplate(concurrentConsumers);
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		for (int i = 0; i < messageCount; i++) {
@@ -116,10 +132,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.setChannelTransacted(transactional);
 		container.setConcurrentConsumers(concurrentConsumers);
 
-		// TODO: make it work with prefetch
-		// container.setPrefetchCount(10);
-		// container.setTxSize(5);
-		// container.setConsumerQueueCapacity(10);
+		if (transactionMode.getPrefetch()>0) {			
+			container.setPrefetchCount(transactionMode.getPrefetch());
+			container.setTxSize(transactionMode.getTxSize());
+		}
 		container.setQueueName(queue.getName());
 		container.afterPropertiesSet();
 		container.start();
