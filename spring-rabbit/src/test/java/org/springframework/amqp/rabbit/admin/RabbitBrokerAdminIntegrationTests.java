@@ -38,6 +38,7 @@ import org.springframework.util.exec.Os;
  * 
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Helena Edelson
  */
 public class RabbitBrokerAdminIntegrationTests {
 
@@ -54,6 +55,8 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	private static RabbitBrokerAdmin brokerAdmin;
 
+    private static final String NODE_NAME = "spring@localhost";
+
 	@Before
 	public void init() throws Exception {
 		panic.setBrokerAdmin(brokerAdmin);
@@ -61,10 +64,9 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	@BeforeClass
 	public static void start() throws Exception {
-		brokerAdmin = new RabbitBrokerAdmin("spring@localhost", 15672);
-		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
-		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
-		brokerAdmin.setStartupTimeout(10000L);
+		brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
+        brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
+		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia"); 
 		brokerAdmin.startNode();
 	}
 
@@ -117,18 +119,23 @@ public class RabbitBrokerAdminIntegrationTests {
 		}
 	}
 
+
 	@Test
 	public void testGetQueues() throws Exception {
 		ConnectionFactory connectionFactory = new SingleConnectionFactory();
-		new RabbitAdmin(connectionFactory).declareQueue(new Queue("test.queue"));
+        Queue queue = new RabbitAdmin(connectionFactory).declareQueue();
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();
-		assertEquals("test.queue", queues.get(0).getName());
+		assertEquals(queue.getName(), queues.get(0).getName());
 	}
 
+    /**
+     * Asserts that the named-node is running.
+     * @param status
+     */
 	private void assertBrokerAppRunning(RabbitStatus status) {
 		assertEquals(1, status.getRunningNodes().size());
-		assertTrue(status.getRunningNodes().get(0).getName().contains("spring@localhost"));
+		assertTrue(status.getRunningNodes().get(0).getName().contains(NODE_NAME));
 	}
 
 }

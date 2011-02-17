@@ -66,6 +66,7 @@ import org.springframework.util.exec.Os;
  * 
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Helena Edelson
  */
 public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
@@ -231,24 +232,24 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	@ManagedOperation()
 	public void addUser(String username, String password) {
 		erlangTemplate
-				.executeAndConvertRpc("rabbit_access_control", "add_user", getBytes(username), getBytes(password));
+				.executeAndConvertRpc("rabbit_auth_backend_internal", "add_user", getBytes(username), getBytes(password));
 	}
 
 	@ManagedOperation
 	public void deleteUser(String username) {
-		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "delete_user", getBytes(username));
+		erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "delete_user", getBytes(username));
 	}
 
 	@ManagedOperation
 	public void changeUserPassword(String username, String newPassword) {
-		erlangTemplate.executeAndConvertRpc("rabbit_access_control", "change_password", getBytes(username),
+		erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "change_password", getBytes(username),
 				getBytes(newPassword));
 	}
 
 	@SuppressWarnings("unchecked")
 	@ManagedOperation
 	public List<String> listUsers() {
-		return (List<String>) erlangTemplate.executeAndConvertRpc("rabbit_access_control", "list_users");
+		return (List<String>) erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "list_users");
 	}
 
 	public int addVhost(String vhostPath) {

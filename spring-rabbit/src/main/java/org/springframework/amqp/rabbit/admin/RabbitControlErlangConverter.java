@@ -40,6 +40,7 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
  * 
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Helena Edelson
  */
 public class RabbitControlErlangConverter extends SimpleErlangConverter implements ErlangConverter {
 
@@ -66,7 +67,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 	}
 
 	protected void initializeConverterMap() {
-		registerConverter("rabbit_access_control", "list_users", new ListUsersConverter());
+		registerConverter("rabbit_auth_backend_internal", "list_users", new ListUsersConverter());
 		registerConverter("rabbit", "status", new StatusConverter());
 		registerConverter("rabbit_amqqueue", "info_all", new QueueInfoAllConverter());
 	}
