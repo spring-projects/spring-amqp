@@ -93,8 +93,7 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		}
-		catch (UncategorizedAmqpException e) {
+		} catch (UncategorizedAmqpException e) {
 			// TODO: allow client exception to propagate if no AMQP related
 			assertTrue(e.getCause() instanceof PlannedException);
 		}
@@ -143,7 +142,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testReceiveInExternalTransactionAutoAck() throws Exception {
 		template.convertAndSend(ROUTE, "message");
 		// Should just result in auto-ack (not synched with external tx)
-		template.setChannelTransacted(false);
+		template.setChannelTransacted(true);
 		String result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
 					public String doInTransaction(TransactionStatus status) {
@@ -158,7 +157,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveInExternalTransactionWithRollback() throws Exception {
 		// Makes receive (and send in principle) transactional
-		template.setChannelTransacted(true); 
+		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
@@ -168,8 +167,7 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		}
-		catch (PlannedException e) {
+		} catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -181,7 +179,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveInExternalTransactionWithNoRollback() throws Exception {
 		// Makes receive non-transactional
-		template.setChannelTransacted(false); 
+		template.setChannelTransacted(false);
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
@@ -191,8 +189,7 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		}
-		catch (PlannedException e) {
+		} catch (PlannedException e) {
 			// Expected
 		}
 		// No rollback
@@ -226,8 +223,7 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		}
-		catch (PlannedException e) {
+		} catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);

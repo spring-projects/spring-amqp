@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,26 +47,24 @@ public class RabbitBrokerAdminIntegrationTests {
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
 
 	/*
-	 * Ensure broker dies if a test fails (otherwise the erl process has to be killed manually)
+	 * Ensure broker dies if a test fails (otherwise the erl process might have to be killed manually)
 	 */
 	@Rule
-	public BrokerPanic panic = new BrokerPanic();
+	public static BrokerPanic panic = new BrokerPanic();
 
 	private static RabbitBrokerAdmin brokerAdmin;
 
     private static final String NODE_NAME = "spring@localhost";
 
-	@Before
-	public void init() throws Exception {
-		panic.setBrokerAdmin(brokerAdmin);
-	}
-
 	@BeforeClass
 	public static void start() throws Exception {
-		brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
-        brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
-		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia"); 
+		// Set up broker admin for non-root user
+		brokerAdmin = new RabbitBrokerAdmin("spring@localhost", 15672);
+		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
+		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
+		brokerAdmin.setStartupTimeout(10000L);
 		brokerAdmin.startNode();
+		panic.setBrokerAdmin(brokerAdmin);
 	}
 
 	@AfterClass

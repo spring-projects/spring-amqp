@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
@@ -39,8 +40,6 @@ public class BlockingQueueConsumer {
 	// When this is non-null the connection has been closed (should never happen in normal operation).
 	private volatile ShutdownSignalException shutdown;
 
-	private final boolean transactional;
-
 	private final String[] queues;
 
 	private final int prefetchCount;
@@ -51,11 +50,13 @@ public class BlockingQueueConsumer {
 
 	private final InternalConsumer consumer;
 
-	public BlockingQueueConsumer(Channel channel, boolean transactional, int prefetchCount, String... queues) {
+	private final AcknowledgeMode acknowledgeMode;
+
+	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, int prefetchCount, String... queues) {
 		this.channel = channel;
+		this.acknowledgeMode = acknowledgeMode;
 		this.prefetchCount = prefetchCount;
 		this.queues = queues;
-		this.transactional = transactional;
 		this.consumer = new InternalConsumer(channel);
 	}
 
@@ -83,7 +84,7 @@ public class BlockingQueueConsumer {
 	 */
 	private Message handle(Delivery delivery) throws InterruptedException {
 		if ((delivery == null && shutdown != null)) {
-			throw Utility.fixStackTrace(shutdown);
+			throw shutdown;
 		}
 		if (delivery == null) {
 			return null;
@@ -136,7 +137,7 @@ public class BlockingQueueConsumer {
 			channel.basicQos(prefetchCount);
 			for (int i = 0; i < queues.length; i++) {
 				channel.queueDeclarePassive(queues[i]);
-				channel.basicConsume(queues[i], !transactional, consumer);
+				channel.basicConsume(queues[i], acknowledgeMode.isAutoAck(), consumer);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Started " + this);
 				}
@@ -149,7 +150,7 @@ public class BlockingQueueConsumer {
 	public void stop() {
 		cancelled.set(true);
 		logger.debug("Closing Rabbit Channel: " + channel);
-		RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+		RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), acknowledgeMode.isTransactionAllowed());
 		RabbitUtils.closeChannel(channel);
 	}
 
@@ -170,7 +171,7 @@ public class BlockingQueueConsumer {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
 			if (cancelled.get()) {
-				if (transactional) {
+				if (acknowledgeMode.isTransactionAllowed()) {
 					return;
 				}
 			}
@@ -218,8 +219,8 @@ public class BlockingQueueConsumer {
 
 	@Override
 	public String toString() {
-		return "Consumer: tag=[" + consumer.getConsumerTag() + "], channel=" + channel + ", transactional="
-				+ transactional + " local queue size=" + queue.size();
+		return "Consumer: tag=[" + consumer.getConsumerTag() + "], channel=" + channel + ", acknowledgeMode="
+				+ acknowledgeMode + " local queue size=" + queue.size();
 	}
 
 }

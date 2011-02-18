@@ -14,6 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -32,11 +33,17 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		public boolean isTransactional() {
 			return this != OFF;
 		}
-		public int getPrefetch() {
-			return this==PREFETCH ? 10 : -1;
+
+		public AcknowledgeMode getAcknowledgeMode() {
+			return this == OFF ? AcknowledgeMode.NONE : AcknowledgeMode.AUTO;
 		}
+
+		public int getPrefetch() {
+			return this == PREFETCH ? 10 : -1;
+		}
+
 		public int getTxSize() {
-			return this==PREFETCH ? 5 : -1;			
+			return this == PREFETCH ? 5 : -1;
 		}
 	}
 
@@ -71,7 +78,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, MessageListenerContainerLifecycleIntegrationTests.class);
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+			MessageListenerContainerLifecycleIntegrationTests.class);
 
 	private RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
@@ -129,10 +137,11 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		PojoListener listener = new PojoListener(latch);
 		container.setMessageListener(new MessageListenerAdapter(listener));
-		container.setChannelTransacted(transactional);
+		container.setAcknowledgeMode(transactionMode.getAcknowledgeMode());
+		container.setChannelTransacted(transactionMode.isTransactional());
 		container.setConcurrentConsumers(concurrentConsumers);
 
-		if (transactionMode.getPrefetch()>0) {			
+		if (transactionMode.getPrefetch() > 0) {
 			container.setPrefetchCount(transactionMode.getPrefetch());
 			container.setTxSize(transactionMode.getTxSize());
 		}
