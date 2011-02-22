@@ -19,12 +19,13 @@ package org.springframework.amqp.rabbit.admin;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Map; 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.erlang.core.Application;
 import org.springframework.erlang.core.Node;
+import org.springframework.erlang.support.ControlAction;
 import org.springframework.erlang.support.converter.ErlangConversionException;
 import org.springframework.erlang.support.converter.ErlangConverter;
 import org.springframework.erlang.support.converter.SimpleErlangConverter;
@@ -37,7 +38,7 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /***
  * Converter that understands the responses from the rabbit control module and related functionality.
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Helena Edelson
@@ -46,41 +47,125 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private Map<String, ErlangConverter> converterMap = new HashMap<String, ErlangConverter>();
+    private Map<String, ControlAction> controlActionMap = new HashMap<String, ControlAction>();
+
+    private static ErlangConverter DEFAULT_CONVERTER = new SimpleErlangConverter();
+
+    private ControlAction[] controlActions;
 
 	public RabbitControlErlangConverter() {
-		initializeConverterMap();
+        createMappings();
 	}
 
-	public Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject)
-			throws ErlangConversionException {
-		ErlangConverter converter = getConverter(module, function);
-		if (converter != null) {
-			return converter.fromErlang(erlangObject);
-		} else {
-			return super.fromErlangRpc(module, function, erlangObject);
-		}
+    public Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject) throws ErlangConversionException {
+		ErlangConverter converter = getConverter(function);
+        return converter != null ? converter.fromErlang(erlangObject) : super.fromErlangRpc(module, function, erlangObject);  
 	}
 
-	protected ErlangConverter getConverter(String module, String function) {
-		return converterMap.get(generateKey(module, function));
+	protected ErlangConverter getConverter(String function) {
+        ControlAction action = controlActionMap.get(function);
+        return action != null ? action.getConverter() : this;  
 	}
 
-	protected void initializeConverterMap() {
-		registerConverter("rabbit_auth_backend_internal", "list_users", new ListUsersConverter());
-		registerConverter("rabbit", "status", new StatusConverter());
-		registerConverter("rabbit_amqqueue", "info_all", new QueueInfoAllConverter());
-	}
+    public ControlAction[] getControlActions() {
+        return this.controlActions;
+    }
 
-	protected void registerConverter(String module, String function, ErlangConverter listUsersConverter) {
-		converterMap.put(generateKey(module, function), listUsersConverter);
-	}
+    /**
+     * Initializes a map of ControlActions by function.
+     */
+    protected void createMappings() {
 
-	protected String generateKey(String module, String function) {
-		return module + "%" + function;
-	}
+        this.controlActions = new ControlAction[]{
+                ListUsers.create(), ListStatus.create(), ListQueues.create(), AddUser.create(), DeleteUser.create(),
+                ChangePassword.create(), StartBrokerApplication.create(), StopBrokerApplication.create(),
+                StopNode.create(), ResetNode.create(), ForceResetNode.create()
+        };
+        for (ControlAction action :controlActions) {
+            controlActionMap.put(action.getFunction(), action);
+        }
+    }
 
-	public class ListUsersConverter extends SimpleErlangConverter {
+ 
+   public static class AddUser extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(AddUser.class, "rabbit_auth_backend_internal", "add_user", DEFAULT_CONVERTER);
+        }
+    }
+    public static class DeleteUser extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(DeleteUser.class, "rabbit_auth_backend_internal", "delete_user", DEFAULT_CONVERTER);
+        }
+    }
+    public static class ChangePassword extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ChangePassword.class, "rabbit_auth_backend_internal", "change_password", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class StartBrokerApplication extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(StartBrokerApplication.class, "rabbit", "start", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class StopBrokerApplication extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(StopBrokerApplication.class, "rabbit", "stop", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class StopNode extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(StopNode.class, "rabbit", "stop_and_halt", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class ResetNode extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ResetNode.class, "rabbit_mnesia", "reset", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class ForceResetNode extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ForceResetNode.class, "rabbit_mnesia", "force_reset", DEFAULT_CONVERTER);
+        }
+    }
+
+    public static class ListUsers extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ListUsers.class, "rabbit_auth_backend_internal", "list_users", new ListUsersConverter());
+        }
+    }
+
+    public static class ListStatus extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ListStatus.class, "rabbit", "status", new StatusConverter());
+        }
+    }
+
+    public static class ListQueues extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(ListQueues.class, "rabbit_amqqueue", "info_all", new QueueInfoAllConverter());
+        }
+    }
+
+    /* TODO converter */
+    public static class ListExchanges extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction("rabbit_exchange", "list", null);
+        }
+    }
+
+    /* TODO */
+    public static class ListBindings extends RabbitControlAction {
+        public static ControlAction create() {
+            return null;
+        }
+    }
+
+	public static class ListUsersConverter extends SimpleErlangConverter {
 
 		public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {
 
@@ -110,7 +195,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 		}
 	}
 
-	public class StatusConverter extends SimpleErlangConverter {
+	public static class StatusConverter extends SimpleErlangConverter {
 
 		public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {
 
@@ -138,7 +223,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 				 */
 			}
 
-			return new RabbitStatus(applications, nodes, runningNodes);
+            return new RabbitStatus(applications, nodes, runningNodes);
 		}
 
 		private void extractNodes(List<Node> nodes, OtpErlangList nodesList) {
@@ -171,7 +256,7 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 		}
 	}
 
-	public class QueueInfoAllConverter extends SimpleErlangConverter {
+	public static class QueueInfoAllConverter extends SimpleErlangConverter {
 
 		@Override
 		public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {

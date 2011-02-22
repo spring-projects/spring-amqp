@@ -18,7 +18,7 @@
 package org.springframework.erlang.core;
 
 import org.springframework.erlang.OtpException;
-import org.springframework.erlang.support.converter.ErlangConverter;
+import org.springframework.erlang.support.ControlAction;
 
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
@@ -26,21 +26,17 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 /**
  * Operations to perform against OTP/Erlang
  * @author Mark Pollack
- *
+ * @author Helena Edelson
  */
 public interface ErlangOperations {
 
 	<T> T execute(ConnectionCallback<T> action) throws OtpException;
 	
-	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args) throws OtpException;
-	
-	
-	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args) throws OtpException;
-	
-	
-	OtpErlangObject executeRpc(String module, String function, Object... args) throws OtpException;
-	
-	Object executeAndConvertRpc(String module, String function, ErlangConverter converterToUse, Object... args) throws OtpException;
-	
-	Object executeAndConvertRpc(String module, String function, Object... args) throws OtpException;
+	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args) throws OtpException; 
+
+	OtpErlangObject executeRpc(ControlAction action, Object... args) throws OtpException;
+
+	Object executeAndConvertRpc(ControlAction action, Object... args) throws OtpException;
+
+    Object executeAndConvertRpc(String module, String function, Object... args);
 }
