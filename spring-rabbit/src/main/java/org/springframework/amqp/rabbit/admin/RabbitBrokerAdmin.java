@@ -587,7 +587,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
     @ManagedOperation
     public RabbitStatus getStatus() {
         try {
-            return (RabbitStatus) getErlangTemplate().executeAndConvertRpc(ListStatus.create());
+            return (RabbitStatus) getErlangTemplate().executeAndConvertRpc(getControlAction(ListStatus.class));
         } catch (OtpAuthException e) {
             throw new RabbitAdminAuthException(
                     "Could not authorise connection to Erlang process. This can happen if the broker is running, "
@@ -633,22 +633,18 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
         String version = getVersion();
 
         ControlAction[] controlActions = version != null ? erlangConverter.refreshMappings(version) : erlangConverter.getControlActions();
-
+         
         for (ControlAction action : controlActions) {
             controlActionMap.put(action.getKey(), action);
         }
     }
 
     /**
-     * Returns the version of the broker.
+     * Returns the version of the broker based on running nodes.
      * @return the broker version
      */
-    public String getVersion() {
-        String input = getStatus().getRunningApplications().get(0).getVersion().substring(1);
-        return input.substring(0, input.length() - 1);
-        /*Pattern p = Pattern.compile("([^@]+)@");
-        Matcher m = p.matcher(input);
-        return m.find() ? m.group(1) : input;*/ 
+   public String getVersion() { 
+       return (String) erlangTemplate.executeAndConvertRpc(RabbitControlErlangConverter.BrokerVersion.create());
     }
 
     /**

@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -89,11 +91,14 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 
     /**
      * Initializes a map of ControlActions by function.
+     * Tests whether the broker is the latest version, for internal
+     * API changes. Current changes are as of Rabbit 2.3.0.
      * @param version The broker version
      * @return ControlAction array
      */
     public ControlAction[] refreshMappings(String version) {
-        initializeMappings(version.startsWith("2.3"));
+        boolean isLatestVersion = version.startsWith("2.3");
+        initializeMappings(isLatestVersion);
 
         return getControlActions();
     }
@@ -189,6 +194,39 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
     public static class ListBindings extends RabbitControlAction {
         public static ControlAction create() {
             return null;
+        }
+    }
+
+    public static class BrokerVersion extends RabbitControlAction {
+        public static ControlAction create() {
+            return new RabbitControlAction(BrokerVersion.class, "rabbit", "status", new VersionConverter());
+        }
+    }
+
+    public static class VersionConverter extends SimpleErlangConverter {
+
+        public Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException {
+            String version = null;
+            long items = ((OtpErlangList) erlangObject).elements().length;
+            if (items > 0) {
+                if (erlangObject instanceof OtpErlangList) {
+                    for (OtpErlangObject outerList : ((OtpErlangList) erlangObject).elements()) {
+                        if (outerList instanceof OtpErlangTuple) {
+                            OtpErlangTuple entry = (OtpErlangTuple) outerList;
+                            String key = entry.elementAt(0).toString();
+                            if (key.equals("running_applications") && entry.elementAt(1) instanceof OtpErlangList) {
+                                OtpErlangList value = (OtpErlangList) entry.elementAt(1);
+
+                                Pattern p = Pattern.compile("\"(\\d+\\.\\d+(?:\\.\\d+)?)\"}$");
+                                Matcher m = p.matcher(value.elementAt(0).toString());
+                                version = m.find() ? m.group(1) : null;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return version;
         }
     }
 
