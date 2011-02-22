@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -39,7 +40,7 @@ import org.springframework.erlang.connection.SimpleConnectionFactory;
 import org.springframework.erlang.core.Application;
 import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.erlang.core.Node;
-import org.springframework.erlang.support.ControlAction;
+import org.springframework.erlang.core.ControlAction;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -79,7 +80,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
     private Map<Class, ControlAction> controlActionMap = new HashMap<Class, ControlAction>();
 
     private ErlangTemplate erlangTemplate;
-    
+
     private static final String DEFAULT_VHOST = "/";
 
     private static String DEFAULT_NODE_NAME;
@@ -586,7 +587,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
     @ManagedOperation
     public RabbitStatus getStatus() {
         try {
-            return (RabbitStatus) getErlangTemplate().executeAndConvertRpc(getControlAction(ListStatus.class)); 
+            return (RabbitStatus) getErlangTemplate().executeAndConvertRpc(ListStatus.create());
         } catch (OtpAuthException e) {
             throw new RabbitAdminAuthException(
                     "Could not authorise connection to Erlang process. This can happen if the broker is running, "
@@ -625,13 +626,29 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
     protected void createErlangTemplate(ConnectionFactory otpConnectionFactory) {
         RabbitControlErlangConverter erlangConverter = new RabbitControlErlangConverter();
-        for (ControlAction action : erlangConverter.getControlActions()) {
-            controlActionMap.put(action.getKey(), action);
-        }
-        
         erlangTemplate = new ErlangTemplate(otpConnectionFactory);
         erlangTemplate.setErlangConverter(erlangConverter);
         erlangTemplate.afterPropertiesSet();
+
+        String version = getVersion();
+
+        ControlAction[] controlActions = version != null ? erlangConverter.refreshMappings(version) : erlangConverter.getControlActions();
+
+        for (ControlAction action : controlActions) {
+            controlActionMap.put(action.getKey(), action);
+        }
+    }
+
+    /**
+     * Returns the version of the broker.
+     * @return the broker version
+     */
+    public String getVersion() {
+        String input = getStatus().getRunningApplications().get(0).getVersion().substring(1);
+        return input.substring(0, input.length() - 1);
+        /*Pattern p = Pattern.compile("([^@]+)@");
+        Matcher m = p.matcher(input);
+        return m.find() ? m.group(1) : input;*/ 
     }
 
     /**

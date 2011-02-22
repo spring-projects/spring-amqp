@@ -18,7 +18,6 @@
 package org.springframework.erlang.core;
 
 import org.springframework.erlang.OtpException;
-import org.springframework.erlang.support.ControlAction;
 
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;

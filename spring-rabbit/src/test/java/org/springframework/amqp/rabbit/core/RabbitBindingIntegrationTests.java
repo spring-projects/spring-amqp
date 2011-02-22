@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Message;
@@ -39,8 +40,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -62,6 +62,7 @@ public class RabbitBindingIntegrationTests {
 				return null;
 
 			}
+
 		});
 
 	}
@@ -78,8 +79,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -122,8 +122,7 @@ public class RabbitBindingIntegrationTests {
 		BlockingQueueConsumer consumer = template.execute(new ChannelCallback<BlockingQueueConsumer>() {
 			public BlockingQueueConsumer doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -157,8 +156,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -178,8 +176,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -211,8 +208,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, true, 1, queue.getName());
-				consumer.start();
+				BlockingQueueConsumer consumer = createConsumer(channel);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -229,6 +225,12 @@ public class RabbitBindingIntegrationTests {
 			}
 		});
 
+	}
+
+	private BlockingQueueConsumer createConsumer(Channel channel) {
+		BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, AcknowledgeMode.AUTO, 1, queue.getName());
+		consumer.start();
+		return consumer;
 	}
 
 	private String getResult(final BlockingQueueConsumer consumer) throws InterruptedException {

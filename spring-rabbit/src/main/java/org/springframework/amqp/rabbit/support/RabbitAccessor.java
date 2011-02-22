@@ -32,6 +32,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public abstract class RabbitAccessor implements InitializingBean {
 
@@ -40,7 +41,20 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	private volatile ConnectionFactory connectionFactory;
 
-	private volatile boolean channelTransacted;
+	private volatile boolean transactional;
+
+	public boolean isChannelTransacted() {
+		return this.transactional;
+	}
+
+	/**
+	 * Flag to indicate that channels created by this component will be transactional.
+	 * 
+	 * @param transactional the flag value to set
+	 */
+	public void setChannelTransacted(boolean transactional) {
+		this.transactional = transactional;
+	}
 
 	/**
 	 * Set the ConnectionFactory to use for obtaining RabbitMQ {@link Connection Connections}.
@@ -56,24 +70,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	public ConnectionFactory getConnectionFactory() {
 		return this.connectionFactory;
 	}
-
-	/**
-	 * Set the transaction mode that is used for a RabbitMQ {@link Channel},
-	 * Default is "false".
-	 */
-	public void setChannelTransacted(boolean channelTransacted) {
-		this.channelTransacted = channelTransacted;
-	}
-
-	/**
-	 * Return whether the RabbitMQ {@link Channel channels} used by this
-	 * accessor are supposed to be transacted.
-	 * @see #setChannelTransacted(boolean)
-	 */
-	public boolean isChannelTransacted() {
-		return this.channelTransacted;
-	}
-
+	
 	public void afterPropertiesSet() {
 		Assert.notNull(this.connectionFactory, "ConnectionFactory is required");
 	}
@@ -87,18 +84,6 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 */
 	protected Connection createConnection() throws IOException {
 		return this.connectionFactory.createConnection();
-	}
-	
-	/**
-	 * Create a RabbitMQ Channel for the given Connection.
-	 * @param con the RabbitMQ Connection to create a Channel for
-	 * @return the new RabbitMQ Channel
-	 * @throws IOException if thrown by RabbitMQ API methods
-	 */
-	protected Channel createChannel(Connection con) throws IOException {
-		Assert.notNull(con, "connection must not be null");
-		Channel channel = con.createChannel(false);
-		return channel;
 	}
 	
 	/**

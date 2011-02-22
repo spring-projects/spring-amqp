@@ -84,10 +84,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Specify the number of concurrent consumers to create. Default is 1. <p> Raising the number of concurrent
-	 * consumers is recommended in order to scale the consumption of messages coming in from a queue. However, note that
-	 * any ordering guarantees are lost once multiple consumers are registered. In general, stick with 1 consumer for
-	 * low-volume queues.
+	 * Specify the number of concurrent consumers to create. Default is 1.
+	 * <p>
+	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
+	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
+	 * general, stick with 1 consumer for low-volume queues.
 	 */
 	public void setConcurrentConsumers(int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
@@ -143,8 +144,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
-	public void afterPropertiesSet() {
-		super.afterPropertiesSet();
+	@Override
+	protected void validateConfiguration() {
+
+		super.validateConfiguration();
+
+		Assert.state(
+				!(getAcknowledgeMode().isAutoAck() && transactionManager != null),
+				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having an "
+						+ "external transaction manager. Either use a different AcknowledgeMode or make sure the transactionManager is null.");
+
 		if (this.getConnectionFactory() instanceof CachingConnectionFactory) {
 			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
 			if (cf.getChannelCacheSize() < this.concurrentConsumers) {
@@ -162,6 +171,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
+
 	}
 
 	// -------------------------------------------------------------------------
@@ -255,7 +265,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		BlockingQueueConsumer consumer;
 		String queueNames = getRequiredQueueName();
 		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
-		consumer = new BlockingQueueConsumer(channel, isChannelTransacted(), prefetchCount, queues);
+		consumer = new BlockingQueueConsumer(channel, getAcknowledgeMode(), prefetchCount, queues);
 		return consumer;
 	}
 
@@ -308,7 +318,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 			} catch (ShutdownSignalException e) {
-				logger.debug("Consumer received ShutdownSignal, processing stopped.");
+				logger.debug("Consumer received ShutdownSignal, processing stopped.", e);
 			} catch (Throwable t) {
 				logger.debug("Consumer received fatal exception, processing stopped.", t);
 			} finally {
@@ -355,8 +365,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int totalMsgCount = 0;
 
 			ConnectionFactory connectionFactory = getConnectionFactory();
-			ConnectionFactoryUtils
-					.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory, true);
+			if (getAcknowledgeMode().isTransactionAllowed()) {
+				ConnectionFactoryUtils.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory,
+						true);
+			}
 
 			for (int i = 0; i < txSize; i++) {
 

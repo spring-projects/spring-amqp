@@ -13,12 +13,15 @@
 
 package org.springframework.amqp.rabbit.admin;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +33,11 @@ import org.springframework.erlang.OtpException;
  * @author Mark Pollack
  * @author Dave Syer
  */
-public class RabbitBrokerAdminStopIntegrationTests {
+public class RabbitBrokerAdminLifecycleIntegrationTests {
+
+	private static Log logger = LogFactory.getLog(RabbitBrokerAdminLifecycleIntegrationTests.class);
+
+    private static final String NODE_NAME = "spring@localhost";
 
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
@@ -44,7 +51,7 @@ public class RabbitBrokerAdminStopIntegrationTests {
 	public void testStartNode() throws Exception {
 
 		// Set up broker admin for non-root user
-		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin("spring@localhost", 15672);
+		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
 		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
 		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
 
@@ -80,6 +87,53 @@ public class RabbitBrokerAdminStopIntegrationTests {
 			brokerAdmin.stopNode();
 		}
 
+	}
+
+	@Test
+	public void testStopAndStartBroker() throws Exception {
+
+		// Set up broker admin for non-root user
+		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
+		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
+		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
+
+		brokerAdmin.setStartupTimeout(10000L);
+		RabbitStatus status = brokerAdmin.getStatus();
+
+		status = brokerAdmin.getStatus();
+		if (!status.isRunning()) {
+			brokerAdmin.startBrokerApplication();
+		}
+		
+		brokerAdmin.stopBrokerApplication();
+
+		status = brokerAdmin.getStatus();
+		assertEquals(0, status.getRunningNodes().size());
+
+		brokerAdmin.startBrokerApplication();
+		status = brokerAdmin.getStatus();
+		assertBrokerAppRunning(status);
+
+	}
+
+	@Test
+	public void repeatLifecycle() throws Exception {
+		for (int i = 1; i <= 20; i++) {
+			testStopAndStartBroker();
+			Thread.sleep(200);
+			if (i % 5 == 0) {
+				logger.debug("i = " + i);
+			}
+		}
+	}
+
+    /**
+     * Asserts that the named-node is running.
+     * @param status
+     */
+	private void assertBrokerAppRunning(RabbitStatus status) {
+		assertEquals(1, status.getRunningNodes().size());
+		assertTrue(status.getRunningNodes().get(0).getName().contains(NODE_NAME));
 	}
 
 }

@@ -22,7 +22,6 @@ import org.springframework.erlang.OtpException;
 import org.springframework.erlang.connection.Connection;
 import org.springframework.erlang.connection.ConnectionFactory;
 import org.springframework.erlang.connection.ConnectionFactoryUtils;
-import org.springframework.erlang.support.ControlAction;
 import org.springframework.erlang.support.ErlangAccessor;
 import org.springframework.erlang.support.ErlangUtils;
 import org.springframework.erlang.support.converter.ErlangConverter;

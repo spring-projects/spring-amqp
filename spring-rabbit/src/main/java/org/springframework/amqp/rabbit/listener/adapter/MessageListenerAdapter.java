@@ -119,6 +119,8 @@ import com.rabbitmq.client.Channel;
  * @author Juergen Hoeller
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
+ * 
  * @see #setDelegate
  * @see #setDefaultListenerMethod
  * @see #setResponseRoutingKey(String)
@@ -298,7 +300,7 @@ public class MessageListenerAdapter	implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Spring {@link org.springframework.jms.listener.SessionAwareMessageListener}
+	 * Spring {@link ChannelAwareMessageListener}
 	 * entry point.
 	 * <p>Delegates the message to the target listener method, with appropriate
 	 * conversion of the message argument. If the target method returns a

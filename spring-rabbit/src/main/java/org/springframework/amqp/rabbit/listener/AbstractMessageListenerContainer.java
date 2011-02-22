@@ -16,24 +16,47 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 
 /**
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
-public abstract class AbstractMessageListenerContainer extends AbstractRabbitListeningContainer {
+public abstract class AbstractMessageListenerContainer extends RabbitAccessor implements BeanNameAware, DisposableBean,
+		SmartLifecycle {
+
+	// TODO See if can replace methods with general throws Exception signature to use a more specific exception.
+
+	private volatile String beanName;
+
+	private volatile Connection sharedConnection;
+
+	private volatile boolean autoStartup = true;
+
+	private int phase = Integer.MAX_VALUE;
+
+	private volatile boolean active = false;
+
+	private volatile boolean running = false;
+
+	private final Object lifecycleMonitor = new Object();
 
 	private volatile String queueName;
 
@@ -42,6 +65,42 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	private boolean exposeListenerChannel = true;
 
 	private volatile Object messageListener;
+
+	private volatile AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
+
+	/**
+	 * <p>
+	 * Flag controlling the behaviour of the container with respect to message acknowledgement. The most common usage is
+	 * to let the container handle the acknowledgements (so the listener doesn't need to know about the channel or the
+	 * message).
+	 * </p>
+	 * <p>
+	 * Set to {@link AcknowledgeMode#MANUAL} if the listener will send the acknowledgements itself using
+	 * {@link Channel#basicAck(long, boolean)}. Manual acks are consistent with either a transactional or
+	 * non-transactional channel, but if you are doing no other work on the channel at the same other than receiving a
+	 * single message then the transaction is probably unnecessary.
+	 * </p>
+	 * <p>
+	 * Set to {@link AcknowledgeMode#NONE} to tell the broker not to expect any acknowledgements, and it will assume all
+	 * messages are acknowledged as soon as they are sent (this is "autoack" in native Rabbit broker terms). If
+	 * {@link AcknowledgeMode#NONE} then the channel cannot be transactional (so the container will fail on start up if
+	 * that flag is accidentally set).
+	 * </p>
+	 * 
+	 * @param acknowledgeMode the acknowledge mode to set. Defaults to {@link AcknowledgeMode#AUTO}
+	 * 
+	 * @see AcknowledgeMode
+	 */
+	public void setAcknowledgeMode(AcknowledgeMode acknowledgeMode) {
+		this.acknowledgeMode = acknowledgeMode;
+	}
+
+	/**
+	 * @return the acknowledgeMode
+	 */
+	public AcknowledgeMode getAcknowledgeMode() {
+		return acknowledgeMode;
+	}
 
 	/**
 	 * Set the name of the queue to receive messages from.
@@ -87,11 +146,14 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 
 	/**
 	 * Set whether to expose the listener Rabbit Channel to a registered {@link ChannelAwareMessageListener} as well as
-	 * to {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. <p> Default is "true", reusing the
-	 * listener's {@link Channel}. Turn this off to expose a fresh Rabbit Channel fetched from the same underlying
-	 * Rabbit {@link Connection} instead. <p> Note that Channels managed by an external transaction manager will always
-	 * get exposed to {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. So in terms of RabbitTemplate
-	 * exposure, this setting only affects locally transacted Channels.
+	 * to {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls.
+	 * <p>
+	 * Default is "true", reusing the listener's {@link Channel}. Turn this off to expose a fresh Rabbit Channel fetched
+	 * from the same underlying Rabbit {@link Connection} instead.
+	 * <p>
+	 * Note that Channels managed by an external transaction manager will always get exposed to
+	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. So in terms of RabbitTemplate exposure, this
+	 * setting only affects locally transacted Channels.
 	 * @see ChannelAwareMessageListener
 	 */
 	public void setExposeListenerChannel(boolean exposeListenerChannel) {
@@ -113,7 +175,8 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 
 	/**
 	 * Check the given message listener, throwing an exception if it does not correspond to a supported listener type.
-	 * <p> By default, only a Spring {@link MessageListener} object or a Spring
+	 * <p>
+	 * By default, only a Spring {@link MessageListener} object or a Spring
 	 * {@link org.springframework.jms.listener.SessionAwareMessageListener} object will be accepted.
 	 * @param messageListener the message listener object to check
 	 * @throws IllegalArgumentException if the supplied listener is not a MessageListener or SessionAwareMessageListener
@@ -141,6 +204,347 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
 	}
+
+	/**
+	 * Set whether to automatically start the container after initialization.
+	 * <p>
+	 * Default is "true"; set this to "false" to allow for manual startup through the {@link #start()} method.
+	 */
+	public void setAutoStartup(boolean autoStartup) {
+		this.autoStartup = autoStartup;
+	}
+
+	public boolean isAutoStartup() {
+		return this.autoStartup;
+	}
+
+	/**
+	 * Specify the phase in which this container should be started and stopped. The startup order proceeds from lowest
+	 * to highest, and the shutdown order is the reverse of that. By default this value is Integer.MAX_VALUE meaning
+	 * that this container starts as late as possible and stops as soon as possible.
+	 */
+	public void setPhase(int phase) {
+		this.phase = phase;
+	}
+
+	/**
+	 * Return the phase in which this container will be started and stopped.
+	 */
+	public int getPhase() {
+		return this.phase;
+	}
+
+	public void setBeanName(String beanName) {
+		this.beanName = beanName;
+	}
+
+	/**
+	 * Return the bean name that this listener container has been assigned in its containing bean factory, if any.
+	 */
+	protected final String getBeanName() {
+		return this.beanName;
+	}
+
+	/**
+	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
+	 */
+	public final void afterPropertiesSet() {
+		super.afterPropertiesSet();
+		Assert.state(
+				exposeListenerChannel || !getAcknowledgeMode().isManual(),
+				"You cannot acknowledge messages manually if the channel is not exposed to the listener "
+						+ "(please check your configuration and set exposeListenerChannel=true or acknowledgeMode!=MANUAL)");
+		Assert.state(
+				!(getAcknowledgeMode().isAutoAck() && isChannelTransacted()),
+				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having a "
+						+ "transactional channel. Either use a different AcknowledgeMode or make sure channelTransacted=false");
+		validateConfiguration();
+		initialize();
+	}
+
+	/**
+	 * Validate the configuration of this container.
+	 * <p>
+	 * The default implementation is empty. To be overridden in subclasses.
+	 */
+	protected void validateConfiguration() {
+	}
+
+	/**
+	 * Calls {@link #shutdown()} when the BeanFactory destroys the container instance.
+	 * @see #shutdown()
+	 */
+	public void destroy() {
+		shutdown();
+	}
+
+	// -------------------------------------------------------------------------
+	// Lifecycle methods for starting and stopping the container
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Initialize this container.
+	 * <p>
+	 * Creates a Rabbit Connection and calls {@link #doInitialize()}.
+	 */
+	public void initialize() {
+		try {
+			synchronized (this.lifecycleMonitor) {
+				this.lifecycleMonitor.notifyAll();
+			}
+			doInitialize();
+		} catch (Exception ex) {
+			ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
+			this.sharedConnection = null;
+			throw convertRabbitAccessException(ex);
+		}
+	}
+
+	/**
+	 * Stop the shared Connection, call {@link #doShutdown()}, and close this container.
+	 */
+	public void shutdown() {
+		logger.debug("Shutting down Rabbit listener container");
+		synchronized (this.lifecycleMonitor) {
+			this.active = false;
+			this.lifecycleMonitor.notifyAll();
+		}
+
+		// Shut down the invokers.
+		try {
+			doShutdown();
+		} catch (Exception ex) {
+			throw convertRabbitAccessException(ex);
+		} finally {
+			synchronized (this.lifecycleMonitor) {
+				this.running = false;
+				this.lifecycleMonitor.notifyAll();
+			}
+			if (sharedConnectionEnabled()) {
+				ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
+				this.sharedConnection = null;
+			}
+		}
+	}
+
+	/**
+	 * Register any invokers within this container.
+	 * <p>
+	 * Subclasses need to implement this method for their specific invoker management process.
+	 * <p>
+	 * A shared Rabbit Connection
+	 * @throws Exception
+	 * @see #getSharedConnection()
+	 */
+	protected abstract void doInitialize() throws Exception;
+
+	/**
+	 * Close the registered invokers.
+	 * <p>
+	 * Subclasses need to implement this method for their specific invoker management process.
+	 * <p>
+	 * A shared Rabbit Connection, if any, will automatically be closed <i>afterwards</i>.
+	 * @see #shutdown()
+	 */
+	protected abstract void doShutdown();
+
+	/**
+	 * Return whether this container is currently active, that is, whether it has been set up but not shut down yet.
+	 */
+	public final boolean isActive() {
+		synchronized (this.lifecycleMonitor) {
+			return this.active;
+		}
+	}
+
+	/**
+	 * Start this container.
+	 * @see #doStart
+	 */
+	public void start() {
+		try {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Starting Rabbit listener container.");
+			}
+			doStart();
+		} catch (Exception ex) {
+			throw convertRabbitAccessException(ex);
+		}
+	}
+
+	/**
+	 * Start the shared Connection, if any, and notify all invoker tasks.
+	 * @throws Exception if thrown by Rabbit API methods
+	 * @see #establishSharedConnection
+	 */
+	protected void doStart() throws Exception {
+		// Lazily establish a shared Connection, if necessary.
+		if (sharedConnectionEnabled()) {
+			establishSharedConnection();
+		}
+
+		// Reschedule paused tasks, if any.
+		synchronized (this.lifecycleMonitor) {
+			this.active = true;
+			this.running = true;
+			this.lifecycleMonitor.notifyAll();
+		}
+
+	}
+
+	/**
+	 * Stop this container.
+	 * @see #doStop
+	 */
+	public void stop() {
+		try {
+			doStop();
+		} catch (Exception ex) {
+			throw convertRabbitAccessException(ex);
+		} finally {
+			synchronized (this.lifecycleMonitor) {
+				this.running = false;
+				this.lifecycleMonitor.notifyAll();
+			}
+		}
+	}
+
+	public void stop(Runnable callback) {
+		this.stop();
+		callback.run();
+	}
+
+	/**
+	 * Notify all invoker tasks and stop the shared Connection, if any.
+	 * @see #stopSharedConnection
+	 */
+	protected void doStop() {
+		if (sharedConnectionEnabled()) {
+			stopSharedConnection();
+		}
+	}
+
+	/**
+	 * Determine whether this container is currently running, that is, whether it has been started and not stopped yet.
+	 * @see #start()
+	 * @see #stop()
+	 * @see #runningAllowed()
+	 */
+	public final boolean isRunning() {
+		synchronized (this.lifecycleMonitor) {
+			return (this.running && runningAllowed());
+		}
+	}
+
+	/**
+	 * Check whether this container's listeners are generally allowed to run.
+	 * <p>
+	 * This implementation always returns <code>true</code>; the default 'running' state is purely determined by
+	 * {@link #start()} / {@link #stop()}.
+	 * <p>
+	 * Subclasses may override this method to check against temporary conditions that prevent listeners from actually
+	 * running. In other words, they may apply further restrictions to the 'running' state, returning <code>false</code>
+	 * if such a restriction prevents listeners from running.
+	 */
+	protected boolean runningAllowed() {
+		return true;
+	}
+
+	// -------------------------------------------------------------------------
+	// Management of a shared Rabbit Connection
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Establish a shared Connection for this container.
+	 * <p>
+	 * The default implementation delegates to {@link #createSharedConnection()}, which does one immediate attempt and
+	 * throws an exception if it fails. Can be overridden to have a recovery process in place, retrying until a
+	 * Connection can be successfully established.
+	 * @throws Exception if thrown by Rabbit API methods
+	 */
+	protected void establishSharedConnection() throws Exception {
+		if (this.sharedConnection == null) {
+			this.sharedConnection = createSharedConnection();
+			logger.debug("Established shared Rabbit Connection");
+		}
+	}
+
+	/**
+	 * Refresh the shared Connection that this container holds.
+	 * <p>
+	 * Called on startup and also after an infrastructure exception that occurred during invoker setup and/or execution.
+	 * @throws Exception if thrown by Rabbit API methods
+	 */
+	protected final void refreshSharedConnection() throws Exception {
+		ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
+		this.sharedConnection = null;
+		this.sharedConnection = createSharedConnection();
+	}
+
+	/**
+	 * Create a shared Connection for this container.
+	 * <p>
+	 * The default implementation creates a standard Connection and prepares it through {@link #prepareSharedConnection}.
+	 * @return the prepared Connection
+	 * @throws Exception if the creation failed
+	 */
+	protected Connection createSharedConnection() throws Exception {
+		Connection con = createConnection();
+		try {
+			prepareSharedConnection(con);
+			return con;
+		} catch (Exception ex) {
+			RabbitUtils.closeConnection(con);
+			throw ex;
+		}
+	}
+
+	/**
+	 * Prepare the given Connection, which is about to be registered as shared Connection for this container.
+	 * <p>
+	 * The default implementation sets the specified client id, if any. Subclasses can override this to apply further
+	 * settings.
+	 * @param connection the Connection to prepare
+	 */
+	protected void prepareSharedConnection(Connection connection) {
+	}
+
+	/**
+	 * Stop the shared Connection, logging any exception thrown by Rabbit API methods.
+	 */
+	protected void stopSharedConnection() {
+		if (this.sharedConnection != null) {
+			try {
+				this.sharedConnection.close();
+			} catch (Exception ex) {
+				logger.debug("Ignoring Connection close exception - assuming already closed: " + ex);
+			}
+		}
+	}
+
+	/**
+	 * Return the shared Rabbit Connection maintained by this container. Available after initialization.
+	 * @return the shared Connection (never <code>null</code>)
+	 * @throws IllegalStateException if this container does not maintain a shared Connection, or if the Connection
+	 * hasn't been initialized yet
+	 * @see #sharedConnectionEnabled()
+	 */
+	protected final Connection getSharedConnection() {
+		if (!sharedConnectionEnabled()) {
+			throw new IllegalStateException("This listener container does not maintain a shared Connection");
+		}
+		if (this.sharedConnection == null) {
+			throw new SharedConnectionNotInitializedException(
+					"This listener container's shared Connection has not been initialized yet");
+		}
+		return this.sharedConnection;
+	}
+
+	/**
+	 * Return whether a shared Rabbit Connection should be maintained by this container base class.
+	 * @see #getSharedConnection()
+	 */
+	protected abstract boolean sharedConnectionEnabled();
 
 	/**
 	 * Invoke the registered ErrorHandler, if any. Log at error level otherwise.
@@ -257,8 +661,9 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Invoke the specified listener as Spring Rabbit MessageListener. <p> Default implementation performs a plain
-	 * invocation of the <code>onMessage</code> method.
+	 * Invoke the specified listener as Spring Rabbit MessageListener.
+	 * <p>
+	 * Default implementation performs a plain invocation of the <code>onMessage</code> method.
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
@@ -276,10 +681,13 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	protected void commitIfNecessary(Channel channel, Message message) throws IOException {
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
 		if (isChannelLocallyTransacted(channel)) {
-			channel.basicAck(deliveryTag, false);
+			if (ackRequired) {
+				channel.basicAck(deliveryTag, false);
+			}
 			RabbitUtils.commitIfNecessary(channel);
-		} else if (isChannelTransacted()) {
+		} else if (isChannelTransacted() && ackRequired) {
 			// Not locally transacted but it is transacted so it
 			// could be synchronized with an external transaction
 			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
@@ -337,8 +745,9 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 
 	/**
 	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
-	 * listener container's Channel handling and not by an external transaction coordinator. <p> Note:This method is
-	 * about finding out whether the Channel's transaction is local or externally coordinated.
+	 * listener container's Channel handling and not by an external transaction coordinator.
+	 * <p>
+	 * Note:This method is about finding out whether the Channel's transaction is local or externally coordinated.
 	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see #isChannelTransacted()
@@ -348,9 +757,11 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	}
 
 	/**
-	 * Handle the given exception that arose during listener execution. <p> The default implementation logs the
-	 * exception at error level, not propagating it to the Rabbit provider - assuming that all handling of
-	 * acknowledgment and/or transactions is done by this listener container. This can be overridden in subclasses.
+	 * Handle the given exception that arose during listener execution.
+	 * <p>
+	 * The default implementation logs the exception at error level, not propagating it to the Rabbit provider -
+	 * assuming that all handling of acknowledgment and/or transactions is done by this listener container. This can be
+	 * overridden in subclasses.
 	 * @param ex the exception to handle
 	 */
 	protected void handleListenerException(Throwable ex) {
@@ -381,4 +792,21 @@ public abstract class AbstractMessageListenerContainer extends AbstractRabbitLis
 	private static class MessageRejectedWhileStoppingException extends RuntimeException {
 
 	}
+
+	/**
+	 * Exception that indicates that the initial setup of this container's shared Rabbit Connection failed. This is
+	 * indicating to invokers that they need to establish the shared Connection themselves on first access.
+	 */
+	@SuppressWarnings("serial")
+	public static class SharedConnectionNotInitializedException extends RuntimeException {
+
+		/**
+		 * Create a new SharedConnectionNotInitializedException.
+		 * @param msg the detail message
+		 */
+		protected SharedConnectionNotInitializedException(String msg) {
+			super(msg);
+		}
+	}
+
 }
