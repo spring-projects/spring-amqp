@@ -50,8 +50,6 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 
     private Map<String, ControlAction> controlActionMap;
 
-    private static ErlangConverter DEFAULT_CONVERTER = new SimpleErlangConverter();
-
     private ControlAction[] controlActions;
 
     /**
@@ -120,52 +118,52 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 
     public static class AddUser extends RabbitControlAction {
         public static ControlAction create(boolean isLatestVersion) {
-            return isLatestVersion ? new RabbitControlAction(AddUser.class, "rabbit_auth_backend_internal", "add_user", DEFAULT_CONVERTER)
-                    : new RabbitControlAction(AddUser.class, "rabbit_access_control", "add_user", DEFAULT_CONVERTER);
+            return isLatestVersion ? new RabbitControlAction(AddUser.class, "rabbit_auth_backend_internal", "add_user")
+                    : new RabbitControlAction(AddUser.class, "rabbit_access_control", "add_user");
         }
     }
 
     public static class DeleteUser extends RabbitControlAction {
         public static ControlAction create(boolean isLatestVersion) {
-            return isLatestVersion ? new RabbitControlAction(DeleteUser.class, "rabbit_auth_backend_internal", "delete_user", DEFAULT_CONVERTER)
-                    : new RabbitControlAction(DeleteUser.class, "rabbit_access_control", "delete_user", DEFAULT_CONVERTER);
+            return isLatestVersion ? new RabbitControlAction(DeleteUser.class, "rabbit_auth_backend_internal", "delete_user")
+                    : new RabbitControlAction(DeleteUser.class, "rabbit_access_control", "delete_user");
         }
     }
 
     public static class ChangePassword extends RabbitControlAction {
         public static ControlAction create(boolean isLatestVersion) {
-            return isLatestVersion ? new RabbitControlAction(ChangePassword.class, "rabbit_auth_backend_internal", "change_password", DEFAULT_CONVERTER)
-                    : new RabbitControlAction(ChangePassword.class, "rabbit_access_control", "change_password", DEFAULT_CONVERTER);
+            return isLatestVersion ? new RabbitControlAction(ChangePassword.class, "rabbit_auth_backend_internal", "change_password")
+                    : new RabbitControlAction(ChangePassword.class, "rabbit_access_control", "change_password");
         }
     }
 
     public static class StartBrokerApplication extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction(StartBrokerApplication.class, "rabbit", "start", DEFAULT_CONVERTER);
+            return new RabbitControlAction(StartBrokerApplication.class, "rabbit", "start");
         }
     }
 
     public static class StopBrokerApplication extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction(StopBrokerApplication.class, "rabbit", "stop", DEFAULT_CONVERTER);
+            return new RabbitControlAction(StopBrokerApplication.class, "rabbit", "stop");
         }
     }
 
     public static class StopNode extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction(StopNode.class, "rabbit", "stop_and_halt", DEFAULT_CONVERTER);
+            return new RabbitControlAction(StopNode.class, "rabbit", "stop_and_halt");
         }
     }
 
     public static class ResetNode extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction(ResetNode.class, "rabbit_mnesia", "reset", DEFAULT_CONVERTER);
+            return new RabbitControlAction(ResetNode.class, "rabbit_mnesia", "reset");
         }
     }
 
     public static class ForceResetNode extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction(ForceResetNode.class, "rabbit_mnesia", "force_reset", DEFAULT_CONVERTER);
+            return new RabbitControlAction(ForceResetNode.class, "rabbit_mnesia", "force_reset");
         }
     }
 
@@ -182,15 +180,13 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
     }
 
     /* TODO converter */
-
     public static class ListExchanges extends RabbitControlAction {
         public static ControlAction create() {
-            return new RabbitControlAction("rabbit_exchange", "list", null);
+            return new RabbitControlAction(ListExchanges.class, "rabbit_exchange", "list", null);
         }
     }
 
-    /* TODO */
-
+    /* TODO */ 
     public static class ListBindings extends RabbitControlAction {
         public static ControlAction create() {
             return null;
@@ -404,5 +400,5 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
             return new String(((OtpErlangBinary) nameElement).binaryValue());
         }
     }
-
+    
 }

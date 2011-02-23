@@ -60,11 +60,11 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
     }
 
     public OtpErlangObject executeRpc(ControlAction action, Object... args) {
-        return executeErlangRpc(action.getModule(), action.getFunction(), (OtpErlangList) action.getConverter().toErlang(args));
+        return executeErlangRpc(action.getModule(), action.getFunction(), (OtpErlangList) getErlangConverter(action).toErlang(args));
     }
 
     public Object executeAndConvertRpc(ControlAction action, Object... args) {
-        return action.getConverter().fromErlang(executeRpc(action, args));
+        return getErlangConverter(action).fromErlang(executeRpc(action, args));
     }
 
     public Object executeAndConvertRpc(String module, String function, Object... args) {
@@ -96,9 +96,8 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
         }
     }
 
-
-    public ErlangConverter getErlangConverter() {
-        return erlangConverter;
+    public ErlangConverter getErlangConverter(ControlAction action) {
+        return action.getConverter() != null ? action.getConverter() : erlangConverter;
     }
 
     public void setErlangConverter(ErlangConverter erlangConverter) {

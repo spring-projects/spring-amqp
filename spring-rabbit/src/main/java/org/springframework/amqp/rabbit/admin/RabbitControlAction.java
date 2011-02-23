@@ -32,8 +32,8 @@ public class RabbitControlAction implements ControlAction {
     public RabbitControlAction() {
     }
 
-    protected RabbitControlAction(String module, String function, ErlangConverter converter) {
-        this(null, module, function, converter);
+    protected RabbitControlAction(Class key, String module, String function) {
+        this(key, module, function, null);
     }
 
     protected RabbitControlAction(Class key, String module, String function, ErlangConverter converter) {
