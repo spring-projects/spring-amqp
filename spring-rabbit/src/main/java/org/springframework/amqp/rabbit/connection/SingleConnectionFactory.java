@@ -87,6 +87,10 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		this.rabbitConnectionFactory.setPassword(password);
 	}
 
+	public void setHost(String host) {
+		this.rabbitConnectionFactory.setHost(host);
+	}
+
 	public String getHost() {
 		return this.rabbitConnectionFactory.getHost();
 	}

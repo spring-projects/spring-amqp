@@ -26,6 +26,7 @@ import org.apache.log4j.Level;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.erlang.OtpException;
 
@@ -37,7 +38,7 @@ public class RabbitBrokerAdminLifecycleIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(RabbitBrokerAdminLifecycleIntegrationTests.class);
 
-    private static final String NODE_NAME = "spring@localhost";
+	private static final String NODE_NAME = "spring@localhost";
 
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
@@ -51,12 +52,7 @@ public class RabbitBrokerAdminLifecycleIntegrationTests {
 	public void testStartNode() throws Exception {
 
 		// Set up broker admin for non-root user
-		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
-		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
-		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
-
-		brokerAdmin.setStartupTimeout(10000L);
-
+		final RabbitBrokerAdmin brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin(NODE_NAME);
 		RabbitStatus status = brokerAdmin.getStatus();
 		try {
 			// Stop it if it is already running
@@ -93,18 +89,14 @@ public class RabbitBrokerAdminLifecycleIntegrationTests {
 	public void testStopAndStartBroker() throws Exception {
 
 		// Set up broker admin for non-root user
-		final RabbitBrokerAdmin brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, 15672);
-		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
-		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
-
-		brokerAdmin.setStartupTimeout(10000L);
+		final RabbitBrokerAdmin brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin(NODE_NAME);
 		RabbitStatus status = brokerAdmin.getStatus();
 
 		status = brokerAdmin.getStatus();
 		if (!status.isRunning()) {
 			brokerAdmin.startBrokerApplication();
 		}
-		
+
 		brokerAdmin.stopBrokerApplication();
 
 		status = brokerAdmin.getStatus();
@@ -127,10 +119,10 @@ public class RabbitBrokerAdminLifecycleIntegrationTests {
 		}
 	}
 
-    /**
-     * Asserts that the named-node is running.
-     * @param status
-     */
+	/**
+	 * Asserts that the named-node is running.
+	 * @param status
+	 */
 	private void assertBrokerAppRunning(RabbitStatus status) {
 		assertEquals(1, status.getRunningNodes().size());
 		assertTrue(status.getRunningNodes().get(0).getName().contains(NODE_NAME));

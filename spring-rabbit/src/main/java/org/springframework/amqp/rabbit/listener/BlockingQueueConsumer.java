@@ -167,7 +167,7 @@ public class BlockingQueueConsumer {
 		@Override
 		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Received shutdown for consumer tag=" + consumerTag, sig);
+				logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
 			}
 			shutdown = sig;
 			// TODO: interrupt?

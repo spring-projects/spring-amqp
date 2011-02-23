@@ -69,7 +69,7 @@ public abstract class RabbitUtils {
 	 * @param channel the RabbitMQ Channel to close (may be <code>null</code>)
 	 */
 	public static void closeChannel(Channel channel) {
-		if (channel != null) {
+		if (channel != null && channel.isOpen()) {
 			try {
 				channel.close();
 			} catch (IOException ex) {

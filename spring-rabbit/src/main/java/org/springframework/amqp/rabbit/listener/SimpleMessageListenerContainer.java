@@ -20,19 +20,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.amqp.AmqpException;
+import org.aopalliance.aop.Advice;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
+import org.springframework.aop.Pointcut;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
+import org.springframework.transaction.interceptor.MatchAlwaysTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -63,15 +66,46 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
-	private volatile Set<BlockingQueueConsumer> consumers;
+	private Set<BlockingQueueConsumer> consumers;
 
 	private final Object consumersMonitor = new Object();
 
 	private PlatformTransactionManager transactionManager;
 
-	private DefaultTransactionDefinition transactionDefinition = new DefaultTransactionDefinition();
+	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
 	private CountDownLatch cancellationLock;
+
+	public static interface ContainerDelegate {
+		boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable;
+	}
+
+	private Advice[] advices = new Advice[0];
+
+	private ContainerDelegate delegate = new ContainerDelegate() {
+		public boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+			return SimpleMessageListenerContainer.this.receiveAndExecute(consumer);
+		}
+	};
+
+	private ContainerDelegate proxy = delegate;
+
+	/**
+	 * <p>
+	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
+	 * multiple listener executions will all be wrapped in the same advice up to that limit.
+	 * </p>
+	 * <p>
+	 * If a {@link #setTransactionManager(PlatformTransactionManager) transactionManager} is provided as well, then
+	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
+	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
+	 * </p>
+	 * 
+	 * @param advices the advice chain to set
+	 */
+	public void setAdviceChain(Advice[] advices) {
+		this.advices = advices;
+	}
 
 	public SimpleMessageListenerContainer() {
 	}
@@ -138,6 +172,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * @param transactionAttribute the transaction attribute to set
+	 */
+	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
+		this.transactionAttribute = transactionAttribute;
+	}
+
+	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
@@ -172,6 +213,26 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
+	public void initializeProxy() {
+		if (advices.length == 0 && transactionManager == null) {
+			return;
+		}
+		ProxyFactory factory = new ProxyFactory();
+		if (transactionManager != null) {
+			MatchAlwaysTransactionAttributeSource txAttributeSource = new MatchAlwaysTransactionAttributeSource();
+			txAttributeSource.setTransactionAttribute(transactionAttribute);
+			Advice txAdvice = new TransactionInterceptor(transactionManager, txAttributeSource);
+			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, txAdvice));
+		}
+		for (Advice advice : advices) {
+			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
+		}
+		factory.setProxyTargetClass(false);
+		factory.addInterface(ContainerDelegate.class);
+		factory.setTarget(delegate);
+		proxy = (ContainerDelegate) factory.getProxy();
+	}
+
 	// -------------------------------------------------------------------------
 	// Implementation of AbstractMessageListenerContainer's template methods
 	// -------------------------------------------------------------------------
@@ -191,6 +252,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void doInitialize() throws Exception {
 		establishSharedConnection();
+		initializeProxy();
+	}
+
+	public int getActiveConsumerCount() {
+		return (int) cancellationLock.getCount();
 	}
 
 	/**
@@ -209,8 +275,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			cancellationLock = new CountDownLatch(this.consumers.size());
 			for (BlockingQueueConsumer consumer : this.consumers) {
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this,
-						cancellationLock));
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
 			}
 		}
 	}
@@ -231,13 +296,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.debug("Waiting for workers to finish.");
 			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {
-				logger.debug("Successfully waited for workers to finish.");
+				logger.info("Successfully waited for workers to finish.");
 			} else {
-				logger.debug("Workers not finished.  Forcing connections to close.");
+				logger.info("Workers not finished.  Forcing connections to close.");
 			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			logger.debug("Interrupted waiting for workers.  Continuing with shutdown.");
+			logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
 		}
 
 		synchronized (this.consumersMonitor) {
@@ -278,41 +343,60 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					// Need to recycle the channel in this consumer
 					consumer.stop();
-				} catch (Exception e) {
-					// Ignore
+					this.consumers.remove(consumer);
+					Channel channel = getTransactionalResourceHolder().getChannel();
+					consumer = createBlockingQueueConsumer(channel);
+					this.consumers.add(consumer);
+				} catch (RuntimeException e) {
+					// Ensure consumer counts are correct (another is not going to start because of the exception, but
+					// we haven't counted down yet)
+					logger.warn("Consumer died on restart. " + e.getClass() + ": " + e.getMessage());
+					cancellationLock.countDown();
+					// Thrown into the void (probably) in a background thread. Oh well, here goes...
+					throw e;
 				}
-				this.consumers.remove(consumer);
-				Channel channel = getTransactionalResourceHolder().getChannel();
-				consumer = createBlockingQueueConsumer(channel);
-				this.consumers.add(consumer);
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this,
-						cancellationLock));
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
 			}
 		}
+	}
+
+	private boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+
+		Channel channel = consumer.getChannel();
+
+		int totalMsgCount = 0;
+
+		ConnectionFactory connectionFactory = getConnectionFactory();
+		if (getAcknowledgeMode().isTransactionAllowed()) {
+			ConnectionFactoryUtils
+					.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory, true);
+		}
+
+		for (int i = 0; i < txSize; i++) {
+
+			logger.debug("Waiting for message from consumer.");
+			Message message = consumer.nextMessage(receiveTimeout);
+			if (message == null) {
+				return false;
+			}
+			totalMsgCount++;
+			executeListener(channel, message);
+
+		}
+
+		return true;
+
 	}
 
 	private class AsyncMessageProcessingConsumer implements Runnable {
 
 		private final BlockingQueueConsumer consumer;
 
-		private int txSize;
-
-		private final PlatformTransactionManager transactionManager;
-
-		private final DefaultTransactionDefinition transactionDefinition;
-
-		private long receiveTimeout;
-
 		private final CountDownLatch latch;
 
-		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, int txSize,
-				SimpleMessageListenerContainer messageListenerContainer, CountDownLatch latch) {
+		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, CountDownLatch latch) {
 			this.consumer = consumer;
-			this.txSize = txSize;
 			this.latch = latch;
-			this.transactionManager = messageListenerContainer.transactionManager;
-			this.transactionDefinition = messageListenerContainer.transactionDefinition;
-			this.receiveTimeout = messageListenerContainer.receiveTimeout;
 		}
 
 		public void run() {
@@ -325,26 +409,22 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				boolean continuable = false;
 				while (isActive() || continuable) {
 					try {
-						if (this.transactionManager != null) {
-							// Execute within transaction.
-							transactionalReceiveAndExecute();
-						} else {
-							// Will come back false when the queue is drained
-							continuable = receiveAndExecute() && !isChannelTransacted();
-						}
+						// Will come back false when the queue is drained
+						continuable = proxy.receiveAndExecute(consumer) && !isChannelTransacted();
 					} catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
 					}
 				}
+
 			} catch (InterruptedException e) {
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 			} catch (Throwable t) {
 				logger.debug("Consumer received fatal exception, processing stopped.", t);
 			} finally {
-				latch.countDown();
 				if (!isActive()) {
 					logger.debug("Cancelling " + consumer);
+					latch.countDown();
 					consumer.stop();
 				} else {
 					logger.debug("Restarting " + consumer);
@@ -354,61 +434,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		}
 
-		private boolean transactionalReceiveAndExecute() throws Exception {
-			try {
-				return new TransactionTemplate(this.transactionManager, this.transactionDefinition)
-						.execute(new TransactionCallback<Boolean>() {
-							public Boolean doInTransaction(TransactionStatus status) {
-								try {
-									return receiveAndExecute();
-								} catch (ListenerExecutionFailedException ex) {
-									// These are expected
-									throw ex;
-								} catch (Exception ex) {
-									throw new AmqpException("Unexpected exception on listener execution", ex);
-								} catch (Error err) {
-									throw err;
-								} catch (Throwable t) {
-									throw new AmqpException(t);
-								}
-							}
-						});
-			} catch (Exception ex) {
-				throw ex;
-			} catch (Error err) {
-				throw err;
-			} catch (Throwable t) {
-				throw new AmqpException(t);
-			}
-		}
-
-		private boolean receiveAndExecute() throws Throwable {
-
-			Channel channel = consumer.getChannel();
-
-			int totalMsgCount = 0;
-
-			ConnectionFactory connectionFactory = getConnectionFactory();
-			if (getAcknowledgeMode().isTransactionAllowed()) {
-				ConnectionFactoryUtils.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory,
-						true);
-			}
-
-			for (int i = 0; i < txSize; i++) {
-
-				logger.debug("Waiting for message from consumer.");
-				Message message = consumer.nextMessage(receiveTimeout);
-				if (message == null) {
-					return false;
-				}
-				totalMsgCount++;
-				executeListener(channel, message);
-
-			}
-
-			return true;
-
-		}
 	}
 
 }

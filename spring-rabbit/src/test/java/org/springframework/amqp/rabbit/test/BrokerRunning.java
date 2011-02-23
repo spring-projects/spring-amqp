@@ -10,6 +10,7 @@ import org.junit.runners.model.Statement;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.util.StringUtils;
 
 /**
  * <p>
@@ -56,6 +57,10 @@ public class BrokerRunning extends TestWatchman {
 
 	private Queue queue;
 
+	private int port = BrokerTestUtils.DEFAULT_PORT;
+
+	private String hostName = null;
+
 	/**
 	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
 	 * 
@@ -101,6 +106,20 @@ public class BrokerRunning extends TestWatchman {
 	private BrokerRunning(boolean assumeOnline) {
 		this(assumeOnline, new Queue(DEFAULT_QUEUE_NAME));
 	}
+	
+	/**
+	 * @param port the port to set
+	 */
+	public void setPort(int port) {
+		this.port = port;
+	}
+	
+	/**
+	 * @param hostName the hostName to set
+	 */
+	public void setHostName(String hostName) {
+		this.hostName = hostName;
+	}
 
 	@Override
 	public Statement apply(Statement base, FrameworkMethod method, Object target) {
@@ -115,6 +134,10 @@ public class BrokerRunning extends TestWatchman {
 		try {
 
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setPort(port);
+			if (StringUtils.hasText(hostName)) {
+				connectionFactory.setHost(hostName);
+			}
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 
 			String queueName = queue.getName();

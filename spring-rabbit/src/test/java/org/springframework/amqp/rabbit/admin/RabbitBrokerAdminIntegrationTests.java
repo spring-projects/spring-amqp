@@ -28,6 +28,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.test.BrokerPanic;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 
 /**
@@ -37,10 +38,6 @@ import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
  * @author Helena Edelson
  */
 public class RabbitBrokerAdminIntegrationTests {
-
-	private static final int PORT = 15672;
-
-	private static final String NODE_NAME = "spring@localhost";
 
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
@@ -56,10 +53,7 @@ public class RabbitBrokerAdminIntegrationTests {
 	@BeforeClass
 	public static void start() throws Exception {
 		// Set up broker admin for non-root user
-		brokerAdmin = new RabbitBrokerAdmin(NODE_NAME, PORT);
-		brokerAdmin.setRabbitLogBaseDirectory("target/rabbitmq/log");
-		brokerAdmin.setRabbitMnesiaBaseDirectory("target/rabbitmq/mnesia");
-		brokerAdmin.setStartupTimeout(10000L);
+		brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin();
 		brokerAdmin.startNode();
 		panic.setBrokerAdmin(brokerAdmin);
 	}
@@ -114,9 +108,15 @@ public class RabbitBrokerAdminIntegrationTests {
 	}
 
 	@Test
+	public void testGetEmptyQueues() throws Exception {
+		List<QueueInfo> queues = brokerAdmin.getQueues();
+		assertEquals(0, queues.size());
+	}
+
+	@Test
 	public void testGetQueues() throws Exception {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
-		connectionFactory.setPort(PORT);
+		connectionFactory.setPort(BrokerTestUtils.getAdminPort());
 		Queue queue = new RabbitAdmin(connectionFactory).declareQueue();
 		assertEquals("/", connectionFactory.getVirtualHost());
 		List<QueueInfo> queues = brokerAdmin.getQueues();

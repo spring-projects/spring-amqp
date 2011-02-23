@@ -1,5 +1,6 @@
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -29,9 +30,9 @@ import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 
 import com.rabbitmq.client.Channel;
 
-public class MessageListenerCachingConnectionIntegrationTests {
+public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
-	private static Log logger = LogFactory.getLog(MessageListenerCachingConnectionIntegrationTests.class);
+	private static Log logger = LogFactory.getLog(MessageListenerRecoveryCachingConnectionIntegrationTests.class);
 
 	private Queue queue = new Queue("test.queue");
 
@@ -110,6 +111,32 @@ public class MessageListenerCachingConnectionIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 
 		assertNull(template.receiveAndConvert(queue.getName()));
+
+	}
+
+	@Test
+	public void testListenerRecoversFromClosedChannelAndStop() throws Exception {
+
+		RabbitTemplate template = new RabbitTemplate(createConnectionFactory());
+
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		container = createContainer(new AbortChannelListener(latch), createConnectionFactory());
+		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+
+		int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
+		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
+		
+		assertNull(template.receiveAndConvert(queue.getName()));
+
+		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+		container.stop();
+		assertEquals(0, container.getActiveConsumerCount());
 
 	}
 

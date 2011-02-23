@@ -4,7 +4,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 
-public class MessageListenerSingleConnectionIntegrationTests extends MessageListenerCachingConnectionIntegrationTests {
+public class MessageListenerRecoverySingleConnectionIntegrationTests extends MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 	protected ConnectionFactory createConnectionFactory() {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();

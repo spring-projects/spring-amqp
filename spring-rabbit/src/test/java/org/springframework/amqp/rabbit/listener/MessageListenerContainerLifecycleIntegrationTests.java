@@ -158,8 +158,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				assertFalse("Expected not to receive all messages before stop", waited);
 			}
 
+			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			container.stop();
 			Thread.sleep(500L);
+			assertEquals(0, container.getActiveConsumerCount());
 			if (!transactional) {
 
 				int messagesReceivedAfterStop = listener.getCount();
@@ -181,6 +183,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 			int messagesReceivedBeforeStart = listener.getCount();
 			container.start();
+			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
 
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
@@ -195,11 +198,14 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				assertNull("Messages still available", template.receive(queue.getName()));
 			}
 
+			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
+
 		} finally {
 			// Wait for broker communication to finish before trying to stop
 			// container
 			Thread.sleep(300L);
 			container.shutdown();
+			assertEquals(0, container.getActiveConsumerCount());
 		}
 
 		assertNull(template.receiveAndConvert(queue.getName()));

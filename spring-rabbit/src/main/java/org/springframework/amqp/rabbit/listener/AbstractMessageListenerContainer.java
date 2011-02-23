@@ -356,7 +356,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			return this.active;
 		}
 	}
-
+	
 	/**
 	 * Start this container.
 	 * @see #doStart
@@ -432,22 +432,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 */
 	public final boolean isRunning() {
 		synchronized (this.lifecycleMonitor) {
-			return (this.running && runningAllowed());
+			return (this.running);
 		}
-	}
-
-	/**
-	 * Check whether this container's listeners are generally allowed to run.
-	 * <p>
-	 * This implementation always returns <code>true</code>; the default 'running' state is purely determined by
-	 * {@link #start()} / {@link #stop()}.
-	 * <p>
-	 * Subclasses may override this method to check against temporary conditions that prevent listeners from actually
-	 * running. In other words, they may apply further restrictions to the 'running' state, returning <code>false</code>
-	 * if such a restriction prevents listeners from running.
-	 */
-	protected boolean runningAllowed() {
-		return true;
 	}
 
 	// -------------------------------------------------------------------------
