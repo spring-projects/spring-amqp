@@ -25,8 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
+import java.util.concurrent.atomic.AtomicBoolean; 
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -364,7 +363,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
         String rabbitHome = System.getProperty("RABBITMQ_HOME", System.getenv("RABBITMQ_HOME"));
         if (rabbitHome == null) {
             if (Os.isFamily("windows") || Os.isFamily("dos")) {
-                rabbitHome = findDirectoryName("c:/Program Files", "rabbitmq");
+                rabbitHome = findDirectoryName("c:/Program Files");
             } else if (Os.isFamily("unix") || Os.isFamily("mac")) {
                 rabbitHome = "/usr/lib/rabbitmq";
             }
@@ -529,7 +528,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
      * @param child
      * @return the full name of a directory
      */
-    private String findDirectoryName(String parent, String child) {
+    private String findDirectoryName(String parent) {
         String result = null;
         String[] names = new File(parent).list(new FilenameFilter() {
             public boolean accept(File dir, String name) {
@@ -614,7 +613,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
     /**
      * Initializes the ErlangTemplate.
      */
-    protected void initializeDefaultErlangTemplate() { 
+    protected void initializeDefaultErlangTemplate() {
         logger.debug("Creating jinterface connection with peerNodeName = [" + nodeName + "]");
         SimpleConnectionFactory otpConnectionFactory = new SimpleConnectionFactory("rabbit-spring-monitor",
                 nodeName, this.cookie);
@@ -642,7 +641,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
      * @return the broker version
      */
    public String getVersion() { 
-       return (String) erlangTemplate.executeAndConvertRpc(RabbitControlErlangConverter.BrokerVersion.create());
+       return (String) erlangTemplate.executeAndConvertRpc(BrokerVersion.create());
     }
 
     /**
