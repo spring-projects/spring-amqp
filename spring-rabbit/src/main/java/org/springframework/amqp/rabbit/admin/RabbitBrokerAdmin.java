@@ -644,7 +644,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
      * @return the broker version
      */
    public String getVersion() { 
-       return (String) erlangTemplate.executeAndConvertRpc(RabbitControlErlangConverter.BrokerVersion.create());
+       return (String) erlangTemplate.executeAndConvertRpc(BrokerVersion.create());
     }
 
     /**
