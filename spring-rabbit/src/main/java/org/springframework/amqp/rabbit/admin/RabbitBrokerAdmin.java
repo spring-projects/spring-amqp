@@ -170,7 +170,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
         this.nodeName = nodeName;
         this.executor.setDaemon(true);
 
-        initializeDefaultErlangTemplate(nodeName);
+        initializeDefaultErlangTemplate();
 
     }
 
@@ -612,14 +612,12 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
     }
 
     /**
-     * TODO host is not used in method.
-     * @param host
+     * Initializes the ErlangTemplate.
      */
-    protected void initializeDefaultErlangTemplate(String host) {
-        String peerNodeName = nodeName;
-        logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
+    protected void initializeDefaultErlangTemplate() { 
+        logger.debug("Creating jinterface connection with peerNodeName = [" + nodeName + "]");
         SimpleConnectionFactory otpConnectionFactory = new SimpleConnectionFactory("rabbit-spring-monitor",
-                peerNodeName, this.cookie);
+                nodeName, this.cookie);
         otpConnectionFactory.afterPropertiesSet();
         createErlangTemplate(otpConnectionFactory);
     }
