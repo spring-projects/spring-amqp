@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.admin;
@@ -28,6 +25,7 @@ import org.springframework.erlang.core.Node;
 import org.springframework.erlang.support.converter.ErlangConversionException;
 import org.springframework.erlang.support.converter.ErlangConverter;
 import org.springframework.erlang.support.converter.SimpleErlangConverter;
+import org.springframework.util.Assert;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangBinary;
@@ -46,9 +44,12 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private Map<String, ErlangConverter> converterMap = new HashMap<String, ErlangConverter>();
+	private final Map<String, ErlangConverter> converterMap = new HashMap<String, ErlangConverter>();
 
-	public RabbitControlErlangConverter() {
+	private final Map<String, String> moduleAdapter;
+
+	public RabbitControlErlangConverter(Map<String, String> moduleAdapter) {
+		this.moduleAdapter = moduleAdapter;
 		initializeConverterMap();
 	}
 
@@ -73,6 +74,16 @@ public class RabbitControlErlangConverter extends SimpleErlangConverter implemen
 	}
 
 	protected void registerConverter(String module, String function, ErlangConverter listUsersConverter) {
+		String key = generateKey(module, function);
+		if (moduleAdapter.containsKey(key)) {
+			String adapter = moduleAdapter.get(key);
+			String[] values = adapter.split("%");
+			Assert.state(values.length == 2,
+					"The module adapter should be a map from 'module%function' to 'module%function'. "
+							+ "This one contained [" + adapter + "] which cannot be parsed to a module, function pair.");
+			module = values[0];
+			function = values[1];
+		}
 		converterMap.put(generateKey(module, function), listUsersConverter);
 	}
 

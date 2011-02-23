@@ -15,7 +15,9 @@ package org.springframework.amqp.rabbit.admin;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.junit.AfterClass;
@@ -83,6 +85,32 @@ public class RabbitBrokerAdminIntegrationTests {
 			Thread.sleep(200L);
 			brokerAdmin.deleteUser("joe");
 		}
+	}
+
+	@Test
+	public void integrationTestsUserCrudWithModuleAdapter() throws Exception {
+
+		Map<String, String> adapter = new HashMap<String, String>();
+		// Switch two functions with identical inputs!
+		adapter.put("rabbit_auth_backend_internal%add_user", "rabbit_auth_backend_internal%change_password");
+		adapter.put("rabbit_auth_backend_internal%change_password", "rabbit_auth_backend_internal%add_user");
+		brokerAdmin.setModuleAdapter(adapter);
+
+		List<String> users = brokerAdmin.listUsers();
+		if (users.contains("joe")) {
+			brokerAdmin.deleteUser("joe");
+		}
+		Thread.sleep(200L);
+		brokerAdmin.changeUserPassword("joe", "sales");
+		Thread.sleep(200L);
+		brokerAdmin.addUser("joe", "trader");
+		Thread.sleep(200L);
+		users = brokerAdmin.listUsers();
+		if (users.contains("joe")) {
+			Thread.sleep(200L);
+			brokerAdmin.deleteUser("joe");
+		}
+
 	}
 
 	@Test

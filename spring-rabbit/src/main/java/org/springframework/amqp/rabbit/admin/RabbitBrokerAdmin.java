@@ -21,7 +21,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -74,7 +76,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	private static String DEFAULT_NODE_NAME;
 
-	private static int DEFAULT_PORT = 5672;
+	private static final int DEFAULT_PORT = 5672;
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
@@ -99,6 +101,8 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	private String rabbitLogBaseDirectory;
 
 	private String rabbitMnesiaBaseDirectory;
+
+	private Map<String, String> moduleAdapter = new HashMap<String, String>();
 
 	static {
 		try {
@@ -149,7 +153,9 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	}
 
 	/**
-	 * Create an instance by supplying the erlang node name, port number and cookie (unique string).
+	 * Create an instance by supplying the erlang node name, port number and cookie (unique string). If the node name
+	 * does not contain an <code>@</code> character, it will be prepended with an alivename <code>rabbit@</code>
+	 * (interpreting the supplied value as just the hostname).
 	 * 
 	 * @param nodeName the node name or hostname to use
 	 * @param port the port number (overriding the default which is 5672)
@@ -171,8 +177,6 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		this.cookie = cookie;
 		this.nodeName = nodeName;
 		this.executor.setDaemon(true);
-
-		initializeDefaultErlangTemplate(nodeName);
 
 	}
 
@@ -215,41 +219,49 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		this.timeout = timeout;
 	}
 
+	/**
+	 * Allows users to adapt Erlang RPC <code>(module, function)</code> pairs to older, or different, versions of the
+	 * broker than the current target. The map is from String to String in the form
+	 * <code>input_module%input_function -> output_module%output_function</code> (using a <code>%</code> separator).
+	 * 
+	 * @param moduleAdapter the module adapter to set
+	 */
+	public void setModuleAdapter(Map<String, String> moduleAdapter) {
+		this.moduleAdapter = moduleAdapter;
+	}
+
 	@SuppressWarnings("unchecked")
 	public List<QueueInfo> getQueues() {
-		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all",
-				getBytes(DEFAULT_VHOST));
+		return (List<QueueInfo>) executeAndConvertRpc("rabbit_amqqueue", "info_all", getBytes(DEFAULT_VHOST));
 	}
 
 	@SuppressWarnings("unchecked")
 	public List<QueueInfo> getQueues(String virtualHost) {
-		return (List<QueueInfo>) erlangTemplate.executeAndConvertRpc("rabbit_amqqueue", "info_all",
-				getBytes(virtualHost));
+		return (List<QueueInfo>) executeAndConvertRpc("rabbit_amqqueue", "info_all", getBytes(virtualHost));
 	}
 
 	// User management
 
 	@ManagedOperation()
 	public void addUser(String username, String password) {
-		erlangTemplate
-				.executeAndConvertRpc("rabbit_auth_backend_internal", "add_user", getBytes(username), getBytes(password));
+		executeAndConvertRpc("rabbit_auth_backend_internal", "add_user", getBytes(username), getBytes(password));
 	}
 
 	@ManagedOperation
 	public void deleteUser(String username) {
-		erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "delete_user", getBytes(username));
+		executeAndConvertRpc("rabbit_auth_backend_internal", "delete_user", getBytes(username));
 	}
 
 	@ManagedOperation
 	public void changeUserPassword(String username, String newPassword) {
-		erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "change_password", getBytes(username),
+		executeAndConvertRpc("rabbit_auth_backend_internal", "change_password", getBytes(username),
 				getBytes(newPassword));
 	}
 
 	@SuppressWarnings("unchecked")
 	@ManagedOperation
 	public List<String> listUsers() {
-		return (List<String>) erlangTemplate.executeAndConvertRpc("rabbit_auth_backend_internal", "list_users");
+		return (List<String>) executeAndConvertRpc("rabbit_auth_backend_internal", "list_users");
 	}
 
 	public int addVhost(String vhostPath) {
@@ -312,7 +324,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		Future<Object> result = executor.submit(new Callable<Object>() {
 			public Object call() throws Exception {
 				try {
-					return erlangTemplate.executeAndConvertRpc("rabbit", "start");
+					return executeAndConvertRpc("rabbit", "start");
 				} finally {
 					latch.countDown();
 				}
@@ -336,7 +348,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	@ManagedOperation
 	public void stopBrokerApplication() {
 		logger.info("Stopping Rabbit Application.");
-		erlangTemplate.executeAndConvertRpc("rabbit", "stop");
+		executeAndConvertRpc("rabbit", "stop");
 		if (timeout > 0) {
 			waitForUnreadyState();
 		}
@@ -574,7 +586,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	public void stopNode() {
 		logger.info("Stopping RabbitMQ node.");
 		try {
-			erlangTemplate.executeAndConvertRpc("rabbit", "stop_and_halt");
+			executeAndConvertRpc("rabbit", "stop_and_halt");
 		} catch (Exception e) {
 			logger.error("Failed to send stop signal", e);
 		}
@@ -585,19 +597,19 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	@ManagedOperation
 	public void resetNode() {
-		erlangTemplate.executeAndConvertRpc("rabbit_mnesia", "reset");
+		executeAndConvertRpc("rabbit_mnesia", "reset");
 	}
 
 	@ManagedOperation
 	public void forceResetNode() {
-		erlangTemplate.executeAndConvertRpc("rabbit_mnesia", "force_reset");
+		executeAndConvertRpc("rabbit_mnesia", "force_reset");
 
 	}
 
 	@ManagedOperation
 	public RabbitStatus getStatus() {
 		try {
-			return (RabbitStatus) getErlangTemplate().executeAndConvertRpc("rabbit", "status");
+			return (RabbitStatus) executeAndConvertRpc("rabbit", "status");
 		} catch (OtpAuthException e) {
 			throw new RabbitAdminAuthException(
 					"Could not authorise connection to Erlang process. This can happen if the broker is running, "
@@ -617,11 +629,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		// TODO Auto-generated method stub
 	}
 
-	public ErlangTemplate getErlangTemplate() {
-		return this.erlangTemplate;
-	}
-
-	protected void initializeDefaultErlangTemplate(String host) {
+	protected void initializeDefaultErlangTemplate() {
 		String peerNodeName = nodeName;
 		logger.debug("Creating jinterface connection with peerNodeName = [" + peerNodeName + "]");
 		SimpleConnectionFactory otpConnectionFactory = new SimpleConnectionFactory("rabbit-spring-monitor",
@@ -632,8 +640,45 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	protected void createErlangTemplate(ConnectionFactory otpConnectionFactory) {
 		erlangTemplate = new ErlangTemplate(otpConnectionFactory);
-		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter());
+		erlangTemplate.setErlangConverter(new RabbitControlErlangConverter(moduleAdapter));
 		erlangTemplate.afterPropertiesSet();
+	}
+
+	/**
+	 * Convenience method for lazy initialization of the {@link ErlangTemplate} and associated trimmings. All RPC calls
+	 * should go through this method.
+	 * 
+	 * @param <T> the type of the result
+	 * @param module the module to address remotely
+	 * @param function the function to call
+	 * @param args the arguments to pass
+	 * 
+	 * @return the result from the remote erl process converted to the correct type
+	 */
+	@SuppressWarnings("unchecked")
+	private <T> T executeAndConvertRpc(String module, String function, Object... args) {
+
+		if (erlangTemplate == null) {
+			synchronized (this) {
+				if (erlangTemplate == null) {
+					initializeDefaultErlangTemplate();
+				}
+			}
+		}
+
+		String key = module + "%" + function;
+		if (moduleAdapter.containsKey(key)) {
+			String adapter = moduleAdapter.get(key);
+			String[] values = adapter.split("%");
+			Assert.state(values.length == 2,
+					"The module adapter should be a map from 'module%function' to 'module%function'. "
+							+ "This one contained [" + adapter + "] which cannot be parsed to a module, function pair.");
+			module = values[0];
+			function = values[1];
+		}
+
+		return (T) erlangTemplate.executeAndConvertRpc(module, function, args);
+
 	}
 
 	/**
