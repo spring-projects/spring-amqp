@@ -9,6 +9,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.test.annotation.Repeat;
@@ -40,7 +41,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		}
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(repeat.getConcurrency());
-		// connectionFactory.setPort(5673);
+		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 	}
 

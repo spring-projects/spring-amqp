@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.connection;
@@ -30,40 +27,35 @@ import org.springframework.util.StringUtils;
 import com.rabbitmq.client.Channel;
 
 /**
- * A {@link ConnectionFactory} implementation that returns the same Connections from all
- * {@link #createConnection()} calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()}.
+ * A {@link ConnectionFactory} implementation that returns the same Connections from all {@link #createConnection()}
+ * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()}.
  * 
  * @author Mark Fisher
  * @author Mark Pollack
  * @author Dave Syer
  */
-//TODO are there heartbeats and/or exception thrown if a connection is broken?
+// TODO are there heartbeats and/or exception thrown if a connection is broken?
 public class SingleConnectionFactory implements ConnectionFactory, DisposableBean {
 
-	protected final Log logger = LogFactory.getLog(getClass());
-
-	private volatile int port = RabbitUtils.DEFAULT_PORT;
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
-	
+
 	/** Raw Rabbit Connection */
 	private Connection targetConnection;
 
 	/** Proxy Connection */
 	private Connection connection;
-	
+
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
 
-
 	/**
-	 * Create a new SingleConnectionFactory initializing the hostname to be the 
-	 * value returned from InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws
-	 * an exception.
+	 * Create a new SingleConnectionFactory initializing the hostname to be the value returned from
+	 * InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws an exception.
 	 */
 	public SingleConnectionFactory() {
-		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
-		this.rabbitConnectionFactory.setHost(this.getDefaultHostName());
+		this((String) null);
 	}
 
 	/**
@@ -86,7 +78,6 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		Assert.notNull(rabbitConnectionFactory, "Target ConnectionFactory must not be null");
 		this.rabbitConnectionFactory = rabbitConnectionFactory;
 	}
-
 
 	public void setUsername(String username) {
 		this.rabbitConnectionFactory.setUsername(username);
@@ -112,92 +103,65 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		this.rabbitConnectionFactory.setPort(port);
 	}
 
-	protected int getPort() {
-		return this.port;
+	public int getPort() {
+		return this.rabbitConnectionFactory.getPort();
 	}
 
-	protected Channel getChannel(Connection connection, boolean transactional) throws IOException {
-		return this.createChannel(connection);
-	}
-
-	private Channel createChannel(Connection connection) throws IOException {
-		//TODO overload with channel number.
-		return connection.createChannel(false);
-	}
-
-	public Connection createConnection() throws IOException {
+	public final Connection createConnection() throws IOException {
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
-				initConnection();
+				if (this.targetConnection != null) {
+					RabbitUtils.closeConnection(this.targetConnection);
+				}
+				this.targetConnection = doCreateConnection();
+				if (logger.isInfoEnabled()) {
+					logger.info("Established shared Rabbit Connection: " + this.targetConnection);
+				}
+				this.connection = new SharedConnectionProxy(this.targetConnection);
 			}
 			return this.connection;
 		}
 	}
 
-	public void initConnection() throws IOException {
+	/**
+	 * Close the underlying shared connection. The provider of this ConnectionFactory needs to care for proper shutdown.
+	 * <p>
+	 * As this bean implements DisposableBean, a bean factory will automatically invoke this on destruction of its
+	 * cached singletons.
+	 */
+	public final void destroy() {
 		synchronized (this.connectionMonitor) {
 			if (this.targetConnection != null) {
-				closeConnection(this.targetConnection);
-			}
-			this.targetConnection = doCreateConnection();
-			prepareConnection(this.targetConnection);
-			if (logger.isInfoEnabled()) {
-				logger.info("Established shared Rabbit Connection: " + this.targetConnection);
-			}
-			this.connection = getSharedConnectionProxy(this.targetConnection);
-		}
-	}
-
-	/**
-	 * Close the underlying shared connection.
-	 * The provider of this ConnectionFactory needs to care for proper shutdown.
-	 * <p>As this bean implements DisposableBean, a bean factory will
-	 * automatically invoke this on destruction of its cached singletons.
-	 */
-	public void destroy() {
-		resetConnection();
-	}	
-
-	/**
-	 * Reset the underlying shared Connection, to be reinitialized on next access.
-	 */
-	public void resetConnection() {
-		synchronized (this.connectionMonitor) {
-			if (this.targetConnection != null) {
-				closeConnection(this.targetConnection);
+				RabbitUtils.closeConnection(this.targetConnection);
 			}
 			this.targetConnection = null;
 			this.connection = null;
 		}
+		reset();
 	}
 
 	/**
-	 * Close the given Connection.
-	 * @param connection the Connection to close
+	 * Default implementation does nothing. Called on {@link #destroy()}.
 	 */
-	protected void closeConnection(Connection connection) {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Closing shared Rabbit Connection: " + this.targetConnection);
-		}
+	protected void reset() {
+	}
+
+	/**
+	 * Create a Connection. This implementation just delegates to the underlying Rabbit ConnectionFactory. Subclasses
+	 * typically will decorate the result to provide additional features.
+	 * 
+	 * @return the new Connection
+	 */
+	protected Connection doCreateConnection() {
+		return createBareConnection();
+	}
+
+	private Connection createBareConnection() {
 		try {
-			//TODO there are other close overloads close(int closeCode, java.lang.String closeMessage, int timeout) 
-			connection.close();			
+			return new SimpleConnection(this.rabbitConnectionFactory.newConnection());
+		} catch (IOException e) {
+			throw RabbitUtils.convertRabbitAccessException(e);
 		}
-		catch (Throwable ex) {
-			logger.debug("Could not close shared Rabbit Connection", ex);
-		}
-	}
-
-	/**
-	 * Create a Rabbit Connection via this class's ConnectionFactory.
-	 * @return the new Rabbit Connection
-	 */
-	protected Connection doCreateConnection() throws IOException {	
-		return new SimpleConnection(this.rabbitConnectionFactory.newConnection());	
-	}
-
-	protected void prepareConnection(Connection con) throws IOException {
-		//TODO configure ShutdownListener, investigate reconnection exceptions
 	}
 
 	private String getDefaultHostName() {
@@ -206,45 +170,54 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 			InetAddress localMachine = InetAddress.getLocalHost();
 			temp = localMachine.getHostName();
 			logger.debug("Using hostname [" + temp + "] for hostname.");
-		}
-		catch (UnknownHostException e) {
+		} catch (UnknownHostException e) {
 			logger.warn("Could not get host name, using 'localhost' as default value", e);
 			temp = "localhost";
 		}
 		return temp;
 	}
 
-	/**
-	 * Wrap the given Connection with a proxy that delegates every method call to it
-	 * but suppresses close calls. This is useful for allowing application code to
-	 * handle a special framework Connection just like an ordinary Connection from a
-	 * Rabbit ConnectionFactory.
-	 * @param target the original Connection to wrap
-	 * @return the wrapped Connection
-	 */
-	protected Connection getSharedConnectionProxy(Connection target) {
-		return new SharedConnectionProxy(target);
-	}
-
 	@Override
 	public String toString() {
-		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port=" + port + "]";
+		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port="
+				+ rabbitConnectionFactory.getPort() + "]";
 	}
 
-	private class SharedConnectionProxy implements Connection {
+	/**
+	 * Wrap a raw Connection with a proxy that delegates every method call to it but suppresses close calls. This is
+	 * useful for allowing application code to handle a special framework Connection just like an ordinary Connection
+	 * from a Rabbit ConnectionFactory.
+	 */
+	private class SharedConnectionProxy implements Connection, ConnectionProxy {
 
-		private final Connection target;
+		private volatile Connection target;
 
 		public SharedConnectionProxy(Connection target) {
 			this.target = target;
 		}
 
-		public Channel createChannel(boolean transactional) throws IOException {
-			Channel channel = getChannel(this.target, transactional);
+		public Channel createChannel(boolean transactional) {
+			if (!target.isOpen()) {
+				synchronized (this) {
+					if (!target.isOpen()) {
+						logger.debug("Detected closed connection. Opening a new one before creating Channel.");
+						target = createBareConnection();
+					}
+				}
+			}
+			Channel channel = target.createChannel(transactional);
 			return channel;
 		}
 
-		public void close() throws IOException {
+		public void close() {
+		}
+
+		public boolean isOpen() {
+			return target != null && target.isOpen();
+		}
+
+		public Connection getTargetConnection() {
+			return target;
 		}
 
 		@Override
@@ -264,12 +237,11 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 			if (target == null) {
 				if (other.target != null)
 					return false;
-			}
-			else if (!target.equals(other.target))
+			} else if (!target.equals(other.target))
 				return false;
 			return true;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "Shared Rabbit Connection: " + this.target;

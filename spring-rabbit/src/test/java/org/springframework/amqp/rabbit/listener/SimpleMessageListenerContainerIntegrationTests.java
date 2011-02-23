@@ -26,6 +26,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -60,11 +61,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	private final boolean externalTransaction;
 
+	private final boolean transactional;
+
 	public SimpleMessageListenerContainerIntegrationTests(int messageCount, int concurrency,
-			AcknowledgeMode acknowledgeMode, int txSize, boolean externalTransaction) {
+			AcknowledgeMode acknowledgeMode, boolean transactional, int txSize, boolean externalTransaction) {
 		this.messageCount = messageCount;
 		this.concurrentConsumers = concurrency;
 		this.acknowledgeMode = acknowledgeMode;
+		this.transactional = transactional;
 		this.txSize = txSize;
 		this.externalTransaction = externalTransaction;
 	}
@@ -76,19 +80,29 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				params(1, 1, 1, AcknowledgeMode.NONE), //
 				params(2, 4, 1, AcknowledgeMode.AUTO), //
 				extern(3, 4, 1, AcknowledgeMode.AUTO), //
-				params(4, 2, 2, AcknowledgeMode.AUTO), //
-				params(5, 2, 2, AcknowledgeMode.NONE), //
-				params(6, 20, 4, AcknowledgeMode.AUTO), //
-				params(7, 20, 4, AcknowledgeMode.NONE), //
-				params(8, 1000, 4, AcknowledgeMode.AUTO), //
-				params(9, 1000, 4, AcknowledgeMode.NONE), //
-				params(10, 1000, 4, AcknowledgeMode.AUTO, 10) //
+				params(4, 4, 1, AcknowledgeMode.AUTO, false), //
+				params(5, 2, 2, AcknowledgeMode.AUTO), //
+				params(6, 2, 2, AcknowledgeMode.NONE), //
+				params(7, 20, 4, AcknowledgeMode.AUTO), //
+				params(8, 20, 4, AcknowledgeMode.NONE), //
+				params(9, 1000, 4, AcknowledgeMode.AUTO), //
+				params(10, 1000, 4, AcknowledgeMode.NONE), //
+				params(11, 1000, 4, AcknowledgeMode.AUTO, 10) //
 				);
 	}
 
-	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, int txSize) {
+	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, boolean transactional, int txSize) {
 		// "i" is just a counter to make it easier to identify the test in the log
-		return new Object[] { messageCount, concurrency, acknowledgeMode, txSize, false };
+		return new Object[] { messageCount, concurrency, acknowledgeMode, transactional, txSize, false };
+	}
+
+	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, int txSize) {
+		// For this test always us a transaction if it makes sense...
+		return params(i, messageCount, concurrency, acknowledgeMode, acknowledgeMode.isTransactionAllowed(), txSize);
+	}
+
+	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, boolean transactional) {
+		return params(i, messageCount, concurrency, acknowledgeMode, transactional, 1);
 	}
 
 	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode) {
@@ -96,14 +110,14 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 
 	private static Object[] extern(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode) {
-		return new Object[] { messageCount, concurrency, acknowledgeMode, 1, true };
+		return new Object[] { messageCount, concurrency, acknowledgeMode, true, 1, true };
 	}
 
 	@Before
 	public void declareQueue() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
-		// connectionFactory.setPort(5673);
+		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 	}
 
@@ -124,7 +138,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
-		boolean waited = latch.await(Math.max(1, messageCount / 50), TimeUnit.SECONDS);
+		boolean waited = latch.await(Math.max(2, messageCount / 50), TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
@@ -167,8 +181,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
-		// For this test always us a transaction if it makes sense...
-		container.setChannelTransacted(acknowledgeMode.isTransactionAllowed());
+		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
 		if (externalTransaction) {
 			container.setTransactionManager(new TestTransactionManager());

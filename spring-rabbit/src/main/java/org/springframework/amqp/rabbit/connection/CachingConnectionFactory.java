@@ -13,7 +13,6 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,7 +21,8 @@ import java.util.LinkedList;
 
 import javax.naming.OperationNotSupportedException;
 
-import org.springframework.amqp.AmqpIOException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
@@ -54,6 +54,8 @@ import com.rabbitmq.client.Channel;
 // TODO are there heartbeats and/or exception thrown if a connection is broken?
 public class CachingConnectionFactory extends SingleConnectionFactory implements DisposableBean {
 
+	private final Log logger = LogFactory.getLog(getClass());
+
 	private int channelCacheSize = 1;
 
 	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
@@ -61,6 +63,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	private final LinkedList<ChannelProxy> cachedChannelsTransactional = new LinkedList<ChannelProxy>();
 
 	private volatile boolean active = true;
+
+	private ChannelCachingConnectionProxy targetConnection;
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -97,8 +101,9 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		return this.channelCacheSize;
 	}
 
-	protected Channel getChannel(Connection connection, boolean transactional) throws IOException {
-		LinkedList<ChannelProxy> channelList = transactional ? this.cachedChannelsTransactional : this.cachedChannelsNonTransactional;
+	private Channel getChannel(boolean transactional) {
+		LinkedList<ChannelProxy> channelList = transactional ? this.cachedChannelsTransactional
+				: this.cachedChannelsNonTransactional;
 		Channel channel = null;
 		synchronized (channelList) {
 			if (!channelList.isEmpty()) {
@@ -110,33 +115,35 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 				logger.trace("Found cached Rabbit Channel");
 			}
 		} else {
-			channel = getCachedChannelProxy(connection, channelList, transactional);
+			channel = getCachedChannelProxy(channelList, transactional);
 		}
 		return channel;
 	}
 
-	protected ChannelProxy getCachedChannelProxy(Connection connection, LinkedList<ChannelProxy> channelList, boolean transactional) {
-		Channel targetChannel = createBareChannel(connection, transactional);
+	private ChannelProxy getCachedChannelProxy(LinkedList<ChannelProxy> channelList, boolean transactional) {
+		Channel targetChannel = createBareChannel(transactional);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
 		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
-				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(connection, targetChannel,
-						channelList, transactional));
+				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(targetChannel, channelList,
+						transactional));
 	}
 
-	private Channel createBareChannel(Connection connection, boolean transactional) {
-		try {
-			return connection.createChannel(transactional);
-		} catch (IOException e) {
-			throw new AmqpIOException(e);
-		}
+	private Channel createBareChannel(boolean transactional) {
+		return this.targetConnection.createBareChannel(transactional);
+	}
+
+	@Override
+	protected Connection doCreateConnection() {
+		targetConnection = new ChannelCachingConnectionProxy(super.doCreateConnection());
+		return targetConnection;
 	}
 
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
-	public void resetConnection() {
+	protected void reset() {
 		this.active = false;
 		synchronized (this.cachedChannelsNonTransactional) {
 			for (ChannelProxy channel : cachedChannelsNonTransactional) {
@@ -149,7 +156,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 			this.cachedChannelsNonTransactional.clear();
 		}
 		this.active = true;
-		super.resetConnection();
+		super.reset();
 	}
 
 	@Override
@@ -164,15 +171,12 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 		private final LinkedList<ChannelProxy> channelList;
 
-		private final Connection connection;
-
 		private final Object targetMonitor = new Object();
 
 		private final boolean transactional;
 
-		public CachedChannelInvocationHandler(Connection connection, Channel target,
-				LinkedList<ChannelProxy> channelList, boolean transactional) {
-			this.connection = connection;
+		public CachedChannelInvocationHandler(Channel target, LinkedList<ChannelProxy> channelList,
+				boolean transactional) {
 			this.target = target;
 			this.channelList = channelList;
 			this.transactional = transactional;
@@ -209,7 +213,13 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 			} else if (methodName.equals("getTargetChannel")) {
 				// Handle getTargetChannel method: return underlying Channel.
 				return this.target;
-			} try {
+			}
+			try {
+				synchronized (targetMonitor) {
+					if (this.target == null) {
+						this.target = createBareChannel(transactional);
+					}
+				}
 				return method.invoke(this.target, args);
 			} catch (InvocationTargetException ex) {
 				if (!this.target.isOpen()) {
@@ -217,7 +227,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 					logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
 					synchronized (targetMonitor) {
 						if (!this.target.isOpen()) {
-							this.target = createBareChannel(connection, transactional);
+							this.target = createBareChannel(transactional);
 						}
 					}
 				}
@@ -231,6 +241,14 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
+			if (!this.target.isOpen()) {
+				synchronized (targetMonitor) {
+					if (!this.target.isOpen()) {
+						this.target = null;
+						return;
+					}
+				}
+			}
 			// Allow for multiple close calls...
 			if (!this.channelList.contains(proxy)) {
 				if (logger.isTraceEnabled()) {
@@ -244,15 +262,76 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 			if (logger.isDebugEnabled()) {
 				logger.debug("Closing cached Channel: " + this.target);
 			}
+			if (this.target == null) {
+				return;
+			}
 			if (this.target.isOpen()) {
 				synchronized (targetMonitor) {
 					if (this.target.isOpen()) {
 						this.target.close();
 					}
+					this.target = null;
 				}
 			}
 		}
 
 	}
 
+	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy {
+
+		private volatile Connection target;
+
+		public ChannelCachingConnectionProxy(Connection target) {
+			this.target = target;
+		}
+
+		private Channel createBareChannel(boolean transactional) {
+			return target.createChannel(transactional);
+		}
+
+		public Channel createChannel(boolean transactional) {
+			Channel channel = getChannel(transactional);
+			return channel;
+		}
+
+		public void close() {
+			target.close();
+		}
+
+		public boolean isOpen() {
+			return target!=null && target.isOpen();
+		}
+
+		public Connection getTargetConnection() {
+			return target;
+		}
+
+		@Override
+		public int hashCode() {
+			return 31 + ((target == null) ? 0 : target.hashCode());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ChannelCachingConnectionProxy other = (ChannelCachingConnectionProxy) obj;
+			if (target == null) {
+				if (other.target != null)
+					return false;
+			} else if (!target.equals(other.target))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "Shared Rabbit Connection: " + this.target;
+		}
+
+	}
 }

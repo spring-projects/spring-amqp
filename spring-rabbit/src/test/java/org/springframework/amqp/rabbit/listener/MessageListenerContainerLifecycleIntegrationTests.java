@@ -20,6 +20,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 
 public class MessageListenerContainerLifecycleIntegrationTests {
@@ -86,7 +87,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		// SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
-		// connectionFactory.setPort(5673); // For Tracer
+		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		return template;
 	}

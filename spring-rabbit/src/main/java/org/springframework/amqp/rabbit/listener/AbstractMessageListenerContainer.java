@@ -691,6 +691,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			// Not locally transacted but it is transacted so it
 			// could be synchronized with an external transaction
 			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+		} else if (ackRequired) {
+			if (ackRequired) {
+				channel.basicAck(deliveryTag, false);
+			}			
 		}
 
 	}
@@ -700,7 +704,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param channel the Rabbit Channel to roll back
 	 */
 	protected void rollbackIfNecessary(Channel channel) {
-		if (this.isChannelLocallyTransacted(channel)) {
+		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
+		if (ackRequired) {
 			/*
 			 * Re-queue messages and don't get them re-delivered to the same consumer, otherwise the broker just spins
 			 * trying to get us to accept the same message over and over
@@ -710,6 +715,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			} catch (IOException e) {
 				throw new AmqpIOException(e);
 			}
+		}
+		if (this.isChannelLocallyTransacted(channel)) {
 			// Transacted channel enabled by this container -> rollback.
 			RabbitUtils.rollbackIfNecessary(channel);
 		}
@@ -723,16 +730,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 */
 	protected void rollbackOnExceptionIfNecessary(Channel channel, Message message, Throwable ex) throws Exception {
 
-		// TODO not sure if the exception at this point if only from the
-		// application or from Rabbit.
+		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
 		try {
 			if (this.isChannelTransacted()) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Initiating transaction rollback on application exception: " + ex);
 				}
 				RabbitUtils.rollbackIfNecessary(channel);
-				if (message != null) {
+			}
+			if (message != null) {
+				if (ackRequired) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Rejecting message");
+					}
 					channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
+				}
+				if (this.isChannelTransacted()) {
 					// Need to commit the reject (=nack)
 					RabbitUtils.commitIfNecessary(channel);
 				}

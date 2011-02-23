@@ -44,6 +44,8 @@ public class BlockingQueueConsumer {
 
 	private final int prefetchCount;
 
+	private final boolean transactional;
+	
 	private final Channel channel;
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
@@ -52,9 +54,10 @@ public class BlockingQueueConsumer {
 
 	private final AcknowledgeMode acknowledgeMode;
 
-	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, int prefetchCount, String... queues) {
+	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, boolean transactional, int prefetchCount, String... queues) {
 		this.channel = channel;
 		this.acknowledgeMode = acknowledgeMode;
+		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
 		this.queues = queues;
 		this.consumer = new InternalConsumer(channel);
@@ -72,8 +75,9 @@ public class BlockingQueueConsumer {
 	 * Check if we are in shutdown mode and if so throw an exception.
 	 */
 	private void checkShutdown() {
-		if (shutdown != null)
+		if (shutdown != null) {
 			throw Utility.fixStackTrace(shutdown);
+		}
 	}
 
 	/**
@@ -150,7 +154,7 @@ public class BlockingQueueConsumer {
 	public void stop() {
 		cancelled.set(true);
 		logger.debug("Closing Rabbit Channel: " + channel);
-		RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), acknowledgeMode.isTransactionAllowed());
+		RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
 		RabbitUtils.closeChannel(channel);
 	}
 
@@ -162,9 +166,11 @@ public class BlockingQueueConsumer {
 
 		@Override
 		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Received shutdown for consumer tag=" + consumerTag, sig);
+			}
 			shutdown = sig;
 			// TODO: interrupt?
-			// TODO: is this ever used?
 		}
 
 		@Override
@@ -177,7 +183,6 @@ public class BlockingQueueConsumer {
 			}
 			// TODO: do we want to pass on 'consumerTag'?
 			logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
-			checkShutdown();
 			try {
 				// TODO: If transactional we could use a bounded queue and offer() here with a timeout
 				// in which case if it fails we could nack the message and have it requeued.

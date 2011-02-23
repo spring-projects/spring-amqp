@@ -3,7 +3,7 @@
  */
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
+import org.springframework.amqp.AmqpException;
 
 import com.rabbitmq.client.Channel;
 
@@ -17,9 +17,9 @@ public interface Connection {
      * Create a new channel, using an internally allocated channel number.
      * @param transactional true if the channel should support transactions
      * @return a new channel descriptor, or null if none is available
-     * @throws IOException if an I/O problem is encountered
+     * @throws AmqpException if an I/O problem is encountered
      */
-    Channel createChannel(boolean transactional) throws IOException;
+    Channel createChannel(boolean transactional) throws AmqpException;
 
     /**
      * Close this connection and all its channels
@@ -28,9 +28,15 @@ public interface Connection {
      *
      * Waits for all the close operations to complete.
      *
-     * @throws IOException if an I/O problem is encountered
+     * @throws AmqpException if an I/O problem is encountered
      */
-    // TODO: throws AmqpException
-    void close() throws IOException;
+    void close() throws AmqpException;
+    
+    /**
+     * Flag to indicate the status of the connection.
+     * 
+     * @return true if the connection is open
+     */
+    boolean isOpen();
 
 }

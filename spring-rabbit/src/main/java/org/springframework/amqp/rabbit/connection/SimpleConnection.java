@@ -17,6 +17,8 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
+import org.springframework.amqp.rabbit.support.RabbitUtils;
+
 import com.rabbitmq.client.Channel;
 
 public class SimpleConnection implements Connection {
@@ -27,12 +29,26 @@ public class SimpleConnection implements Connection {
 		this.delegate = delegate;	
 	}
 
-	public Channel createChannel(boolean transactional) throws IOException {
-		return delegate.createChannel();
+	// TODO: expose the transactional flag
+	public Channel createChannel(boolean transactional) {
+		try {
+			return delegate.createChannel();
+		} catch (IOException e) {
+			throw RabbitUtils.convertRabbitAccessException(e);
+		}
 	}
 
-	public void close() throws IOException {
-		delegate.close();
+	public void close() {
+		try {
+			delegate.close();
+		} catch (IOException e) {
+			throw RabbitUtils.convertRabbitAccessException(e);
+		}
 	}
+
+	public boolean isOpen() {
+		return delegate!=null && delegate.isOpen();
+	}
+
 
 }

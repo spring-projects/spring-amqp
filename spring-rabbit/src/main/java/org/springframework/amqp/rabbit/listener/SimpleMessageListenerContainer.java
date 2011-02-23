@@ -14,8 +14,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -39,7 +37,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
@@ -60,7 +57,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
-	private volatile int concurrentConsumers = 1;
+	private volatile int concurrentConsumers = 0;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
@@ -161,7 +158,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						"CachingConnectionFactory's channelCacheSize can not be less than the number of concurrentConsumers");
 			}
 			// Default setting
-			if (concurrentConsumers == 1) {
+			if (concurrentConsumers < 1) {
+				concurrentConsumers = 1;
 				// Set concurrent consumers to size of connection factory
 				// channel cache.
 				if (cf.getChannelCacheSize() > 1) {
@@ -204,10 +202,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doStart() throws Exception {
 		super.doStart();
 		initializeConsumers();
-		cancellationLock = new CountDownLatch(this.consumers.size());
-		for (BlockingQueueConsumer consumer : this.consumers) {
-			this.taskExecutor
-					.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this, cancellationLock));
+		synchronized (this.consumersMonitor) {
+			if (this.consumers == null) {
+				logger.info("Consumers were initialized and then cleared (presumably the container was stopped concurrently)");
+				return;
+			}
+			cancellationLock = new CountDownLatch(this.consumers.size());
+			for (BlockingQueueConsumer consumer : this.consumers) {
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this,
+						cancellationLock));
+			}
 		}
 	}
 
@@ -236,20 +240,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.debug("Interrupted waiting for workers.  Continuing with shutdown.");
 		}
 
-		this.consumers = null;
+		synchronized (this.consumersMonitor) {
+			this.consumers = null;
+		}
 
 	}
 
 	protected void initializeConsumers() throws IOException {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
-				Collection<Channel> channels = new ArrayList<Channel>();
+				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
 				for (int i = 0; i < this.concurrentConsumers; i++) {
 					Channel channel = getTransactionalResourceHolder().getChannel();
-					channels.add(channel);
-				}
-				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
-				for (Channel channel : channels) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer(channel);
 					this.consumers.add(consumer);
 				}
@@ -261,12 +263,32 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return super.isChannelLocallyTransacted(channel) && this.transactionManager == null;
 	}
 
-	protected BlockingQueueConsumer createBlockingQueueConsumer(final Channel channel) throws IOException {
+	protected BlockingQueueConsumer createBlockingQueueConsumer(final Channel channel) {
 		BlockingQueueConsumer consumer;
 		String queueNames = getRequiredQueueName();
 		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
-		consumer = new BlockingQueueConsumer(channel, getAcknowledgeMode(), prefetchCount, queues);
+		consumer = new BlockingQueueConsumer(channel, getAcknowledgeMode(), isChannelTransacted(), prefetchCount,
+				queues);
 		return consumer;
+	}
+
+	private void restart(BlockingQueueConsumer consumer) {
+		synchronized (this.consumersMonitor) {
+			if (this.consumers != null) {
+				try {
+					// Need to recycle the channel in this consumer
+					consumer.stop();
+				} catch (Exception e) {
+					// Ignore
+				}
+				this.consumers.remove(consumer);
+				Channel channel = getTransactionalResourceHolder().getChannel();
+				consumer = createBlockingQueueConsumer(channel);
+				this.consumers.add(consumer);
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, this.txSize, this,
+						cancellationLock));
+			}
+		}
 	}
 
 	private class AsyncMessageProcessingConsumer implements Runnable {
@@ -317,8 +339,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			} catch (InterruptedException e) {
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
-			} catch (ShutdownSignalException e) {
-				logger.debug("Consumer received ShutdownSignal, processing stopped.", e);
 			} catch (Throwable t) {
 				logger.debug("Consumer received fatal exception, processing stopped.", t);
 			} finally {
@@ -326,8 +346,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				if (!isActive()) {
 					logger.debug("Cancelling " + consumer);
 					consumer.stop();
+				} else {
+					logger.debug("Restarting " + consumer);
+					restart(consumer);
 				}
 			}
+
 		}
 
 		private boolean transactionalReceiveAndExecute() throws Exception {

@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -46,7 +47,7 @@ public class UnackedRawIntegrationTests {
 	public void init() throws Exception {
 
 		factory.setHost("localhost");
-		// factory.setPort(5673);
+		factory.setPort(BrokerTestUtils.getPort());
 		conn = factory.newConnection();
 		noTxChannel = conn.createChannel();
 		txChannel = conn.createChannel();

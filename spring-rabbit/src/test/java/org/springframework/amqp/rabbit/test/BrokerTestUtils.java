@@ -10,28 +10,22 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
-package org.springframework.amqp.rabbit.connection;
-
-import java.io.IOException;
+package org.springframework.amqp.rabbit.test;
 
 /**
- * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection Connections}.
+ * Global convenience class for all integration tests, carrying constants and other utilities for broker set up.
  * 
- * <p>
- * NOTE: The Rabbit API contains a ConnectionFactory class (same name).
- * 
- * @author Mark Fisher
  * @author Dave Syer
+ * 
  */
-public interface ConnectionFactory {
+public class BrokerTestUtils {
+	
+	public static final int DEFAULT_PORT = 5672;
 
-	Connection createConnection() throws IOException;
+	public static final int TRACER_PORT = 5673;
 
-	String getHost();
-
-	int getPort();
-
-	String getVirtualHost();
+	public static int getPort() {
+		return DEFAULT_PORT;
+	}
 
 }

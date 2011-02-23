@@ -228,7 +228,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	private BlockingQueueConsumer createConsumer(Channel channel) {
-		BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, AcknowledgeMode.AUTO, 1, queue.getName());
+		BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, AcknowledgeMode.AUTO, true, 1, queue.getName());
 		consumer.start();
 		return consumer;
 	}

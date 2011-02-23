@@ -14,6 +14,7 @@ import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -29,13 +30,13 @@ public class CachingConnectionFactoryIntegrationTests {
 	
 	@Before
 	public void open() {
-		// connectionFactory.setPort(5673);
+		connectionFactory.setPort(BrokerTestUtils.getPort());
 	}
 
 	@After
 	public void close() {
 		// Release resources
-		connectionFactory.resetConnection();
+		connectionFactory.reset();
 	}
 
 	@Test
@@ -61,7 +62,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		template.convertAndSend(queue.getName(), "message");
 
 		// Force a physical close of the channel
-		connectionFactory.resetConnection();
+		connectionFactory.destroy();
 		
 		// The queue was removed when the channel was closed 
 		exception.expect(AmqpIOException.class);

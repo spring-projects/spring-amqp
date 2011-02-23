@@ -25,37 +25,38 @@ import com.rabbitmq.client.GetResponse;
 public class CachingConnectionFactoryTests {
 
 	@Test
+
 	public void testWithConnectionFactoryDefaults() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
-
+		
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
-
+		when(mockChannel.isOpen()).thenReturn(true);
+		when(mockConnection.isOpen()).thenReturn(true);
+		
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		Connection con = ccf.createConnection();
-
+		
 		Channel channel = con.createChannel(false);
 		channel.close(); // should be ignored, and placed into channel cache.
 		con.close(); // should be ignored
-
+		
 		Connection con2 = ccf.createConnection();
-		Channel channel2 = con2.createChannel(false); // will retrieve same
-														// channel object that
-														// was just put into
-														// channel
-														// cache
+		/*
+		 * will retrieve same channel object that was just put into channel cache
+		 */
+		Channel channel2 = con2.createChannel(false);
 		channel2.close(); // should be ignored
 		con2.close(); // should be ignored
-
+		
 		Assert.assertSame(con, con2);
 		Assert.assertSame(channel, channel2);
 		verify(mockConnection, never()).close();
 		verify(mockChannel, never()).close();
-
+		
 	}
-
 	@Test
 	public void testWithConnectionFactoryCacheSize() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
@@ -64,10 +65,13 @@ public class CachingConnectionFactoryTests {
 		Channel mockChannel2 = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
 
 		when(mockChannel1.basicGet("foo", false)).thenReturn(new GetResponse(null, null, null, 1));
 		when(mockChannel2.basicGet("bar", false)).thenReturn(new GetResponse(null, null, null, 1));
+		when(mockChannel1.isOpen()).thenReturn(true);
+		when(mockChannel2.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(2);
@@ -115,9 +119,12 @@ public class CachingConnectionFactoryTests {
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2).thenReturn(mockChannel3);
+		when(mockConnection.isOpen()).thenReturn(true);
 
 		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
 		when(mockChannel2.isOpen()).thenReturn(true);
+		when(mockChannel3.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(1);
@@ -130,12 +137,15 @@ public class CachingConnectionFactoryTests {
 		Channel channel2 = con.createChannel(false);
 		Assert.assertNotSame(channel1, channel2);
 
-		channel1.close(); // should be ignored, and add last into channel cache.
-		channel2.close(); // should be physically closed
+		// should be ignored, and added last into channel cache.
+		channel1.close();
+		// should be physically closed
+		channel2.close();
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache
-												// (channel1)
-		Channel ch2 = con.createChannel(false); // create anew channel
+		// remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false);
+		// create a new channel
+		Channel ch2 = con.createChannel(false);
 
 		Assert.assertNotSame(ch1, ch2);
 		Assert.assertSame(ch1, channel1);
@@ -151,7 +161,7 @@ public class CachingConnectionFactoryTests {
 		verify(mockConnection, never()).close();
 		verify(mockChannel1, never()).close();
 		verify(mockChannel2, atLeastOnce()).close();
-		verify(mockChannel3, never()).close();
+		verify(mockChannel3, atLeastOnce()).close();
 
 	}
 
@@ -164,8 +174,10 @@ public class CachingConnectionFactoryTests {
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
+		when(mockConnection.isOpen()).thenReturn(true);
 
 		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
 		when(mockChannel2.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -209,8 +221,10 @@ public class CachingConnectionFactoryTests {
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
+		when(mockConnection.isOpen()).thenReturn(true);
 
 		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
 		when(mockChannel2.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -245,7 +259,7 @@ public class CachingConnectionFactoryTests {
 		verify(mockConnection, never()).close();
 		verify(mockChannel1, never()).close();
 		verify(mockChannel2, never()).close();
-		
+
 		@SuppressWarnings("unchecked")
 		List<Channel> notxlist = (List<Channel>) ReflectionTestUtils.getField(ccf, "cachedChannelsNonTransactional");
 		assertEquals(1, notxlist.size());
@@ -270,6 +284,10 @@ public class CachingConnectionFactoryTests {
 		// the same method to returning different
 		// values.
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
+		when(mockConnection.isOpen()).thenReturn(true);
+		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
+		when(mockChannel2.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(2);
