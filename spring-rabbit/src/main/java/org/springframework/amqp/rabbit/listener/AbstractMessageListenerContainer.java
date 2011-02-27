@@ -24,6 +24,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.BeanNameAware;
@@ -623,7 +624,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by Rabbit API methods
+	 * @throws Exception if thrown by Rabbit API methods or listener itself. 
+	 * <p/>
+	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
 	 */
@@ -639,8 +642,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 				channelToUse = resourceHolder.getChannel();
 			}
 			// Actually invoke the message listener...
-			listener.onMessage(message, channelToUse);
-
+			try {
+				listener.onMessage(message, channelToUse);
+			} catch (Exception e) {
+				throw (Exception) wrapToListenerExecutionFailedExceptionIfNeeded(e);
+			}
 		} finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
@@ -650,12 +656,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Invoke the specified listener as Spring Rabbit MessageListener.
 	 * <p>
 	 * Default implementation performs a plain invocation of the <code>onMessage</code> method.
+	 * <p/>
+	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
 	protected void doInvokeListener(MessageListener listener, Message message) {
-		listener.onMessage(message);
+		try {
+			listener.onMessage(message);
+		} catch (RuntimeException e) {
+			throw (RuntimeException) wrapToListenerExecutionFailedExceptionIfNeeded(e);
+		}
 	}
 
 	/**
@@ -808,4 +820,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		}
 	}
 
+	/**
+	 * @param e
+	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
+	 * {@link ListenerExecutionFailedException} and return.
+	 */
+	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e) {
+		if (!(e instanceof ListenerExecutionFailedException)) {
+			// Wrap exception to ListenerExecutionFailedException.
+			return new ListenerExecutionFailedException("Listener threw exception", e);
+		}
+		return e;
+	}
 }

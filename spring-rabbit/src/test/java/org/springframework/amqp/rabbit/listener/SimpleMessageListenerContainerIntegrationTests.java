@@ -15,14 +15,18 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -32,6 +36,8 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+
+import com.rabbitmq.client.Channel;
 
 @RunWith(Parameterized.class)
 public class SimpleMessageListenerContainerIntegrationTests {
@@ -132,9 +138,45 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 
 	@Test
+	public void testPojoListenerSunnyDay() throws Exception {
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		doSunnyDayTest(latch, new MessageListenerAdapter(new PojoListener(latch)));
+	}
+	
+	@Test
 	public void testListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new PojoListener(latch));
+		doSunnyDayTest(latch, new Listener(latch));
+	}
+	
+	@Test
+	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
+	public void testChannelAwareListenerSunnyDay() throws Exception {
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		doSunnyDayTest(latch, new ChannelAwareListener(latch));
+	}
+	
+	@Test
+	public void testPojoListenerWithException() throws Exception {
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		doListenerWithExceptionTest(latch, new MessageListenerAdapter(new PojoListener(latch, true)));
+	}
+	
+	@Test
+	public void testListenerWithException() throws Exception {
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		doListenerWithExceptionTest(latch, new Listener(latch, true));
+	}
+	
+	@Test
+	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
+	public void testChannelAwareListenerWithException() throws Exception {
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		doListenerWithExceptionTest(latch, new ChannelAwareListener(latch, true));
+	}
+	
+	private void doSunnyDayTest(CountDownLatch latch, Object listener) throws Exception {
+		container = createContainer(listener);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -142,11 +184,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
-
-	@Test
-	public void testListenerWithException() throws Exception {
-		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new PojoListener(latch, true));
+	
+	private void doListenerWithExceptionTest(CountDownLatch latch, Object listener) throws Exception {
+		container = createContainer(listener);
 		if (acknowledgeMode.isTransactionAllowed()) {
 			// Should only need one message if it is going to fail
 			for (int i = 0; i < concurrentConsumers; i++) {
@@ -176,7 +216,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	private SimpleMessageListenerContainer createContainer(Object listener) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
-		container.setMessageListener(new MessageListenerAdapter(listener));
+		container.setMessageListener(listener);
 		container.setQueueName(queue.getName());
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
@@ -221,6 +261,71 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			}
 		}
 	}
+	
+	public static class Listener implements MessageListener {
+		private AtomicInteger count = new AtomicInteger();
+		
+		private final CountDownLatch latch;
+		
+		private final boolean fail;
+		
+		public Listener(CountDownLatch latch) {
+			this(latch, false);
+		}
+		
+		public Listener(CountDownLatch latch, boolean fail) {
+			this.latch = latch;
+			this.fail = fail;
+		}
+		
+		public void onMessage(Message message) {
+			String value = new String(message.getBody());
+			try {
+				int counter = count.getAndIncrement();
+				if (logger.isDebugEnabled() && counter % 500 == 0) {
+					logger.debug(value + counter);
+				}
+				if (fail) {
+					throw new RuntimeException("Planned failure");
+				}
+			} finally {
+				latch.countDown();
+			}
+		}
+	}
+	
+	public static class ChannelAwareListener implements ChannelAwareMessageListener {
+		private AtomicInteger count = new AtomicInteger();
+		
+		private final CountDownLatch latch;
+		
+		private final boolean fail;
+		
+		public ChannelAwareListener(CountDownLatch latch) {
+			this(latch, false);
+		}
+		
+		public ChannelAwareListener(CountDownLatch latch, boolean fail) {
+			this.latch = latch;
+			this.fail = fail;
+		}
+		
+		public void onMessage(Message message, Channel channel) throws Exception {
+			String value = new String(message.getBody());
+			try {
+				int counter = count.getAndIncrement();
+				if (logger.isDebugEnabled() && counter % 500 == 0) {
+					logger.debug(value + counter);
+				}
+				if (fail) {
+					throw new RuntimeException("Planned failure");
+				}
+			} finally {
+				latch.countDown();
+			}
+		}
+
+	}
 
 	@SuppressWarnings("serial")
 	private class TestTransactionManager extends AbstractPlatformTransactionManager {
@@ -243,5 +348,4 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 
 	}
-
 }
