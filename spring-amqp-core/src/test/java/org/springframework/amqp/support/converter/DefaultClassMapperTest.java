@@ -13,6 +13,7 @@
 package org.springframework.amqp.support.converter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.BDDMockito.given;
@@ -58,7 +59,6 @@ public class DefaultClassMapperTest {
 		assertThat(clazz, equalTo(String.class));
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void shouldUseTheCLassProvidedByTheLookupMapIfPresent(){
 		props.getHeaders().put("__TypeId__", "trade");
@@ -67,7 +67,7 @@ public class DefaultClassMapperTest {
 		@SuppressWarnings("rawtypes")
 		Class clazz = classMapper.toClass(props);
 		
-		assertThat(clazz, equalTo(SimpleTrade.class));
+		assertEquals(clazz,SimpleTrade.class);
 		
 	}
 	
