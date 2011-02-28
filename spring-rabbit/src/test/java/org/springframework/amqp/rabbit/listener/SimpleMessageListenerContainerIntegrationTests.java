@@ -150,7 +150,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 	
 	@Test
-	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
+//	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
 	public void testChannelAwareListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doSunnyDayTest(latch, new ChannelAwareListener(latch));
@@ -169,7 +169,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 	
 	@Test
-	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
+//	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
 	public void testChannelAwareListenerWithException() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doListenerWithExceptionTest(latch, new ChannelAwareListener(latch, true));
