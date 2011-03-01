@@ -19,52 +19,46 @@ package org.springframework.amqp.rabbit.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessagePostProcessor;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import java.util.Map;
 
-@ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.HeadersExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.core.io.ClassPathResource;
+
 public final class RabbitNamespaceHandlerTests {
 
-	@Autowired
-	private Queue foo;
+	private XmlBeanFactory beanFactory;
 
-	private RabbitTemplate template;
-	
-	@Autowired
-	public void setConnectionFactory(ConnectionFactory connectionFactory) {
-		template = new RabbitTemplate(connectionFactory);
+	@Before
+	public void setUp() throws Exception {
+		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName()+"-context.xml", getClass()));
 	}
 
 	@Test
 	public void testParse() throws Exception {
-		assertNotNull(foo);
+		assertNotNull(beanFactory.getBean("foo", Queue.class));
+	}
+
+	@Test
+	public void testExchanges() throws Exception {
+		assertNotNull(beanFactory.getBean("direct-test", DirectExchange.class));
+		assertNotNull(beanFactory.getBean("topic-test", TopicExchange.class));
+		assertNotNull(beanFactory.getBean("fanout-test", FanoutExchange.class));
+		assertNotNull(beanFactory.getBean("headers-test", HeadersExchange.class));
 	}
 
 	@Test
 	public void testBindings() throws Exception {
-		template.convertAndSend("direct-test", "foo", "Hello"); 
-		assertEquals("Hello", template.receiveAndConvert("foo")); 
-		template.convertAndSend("topic-test", "foo.bar", "Hello"); 
-		assertEquals("Hello", template.receiveAndConvert("foo")); 
-		template.convertAndSend("fanout-test", null, "Hello"); 
-		assertEquals("Hello", template.receiveAndConvert("foo")); 
-		template.convertAndSend("headers-test", null, "Hello", new MessagePostProcessor() {
-			public Message postProcessMessage(Message message) throws AmqpException {
-				message.getMessageProperties().setHeader("type", "foo");
-				return message;
-			}
-		}); 
-		assertEquals("Hello", template.receiveAndConvert("foo")); 
+		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
+		// 2 for each exchange type
+		assertEquals(8, bindings.size());
 	}
 
 }
