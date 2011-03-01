@@ -15,7 +15,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -150,7 +149,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 	
 	@Test
-	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
 	public void testChannelAwareListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doSunnyDayTest(latch, new ChannelAwareListener(latch));
@@ -169,7 +167,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 	
 	@Test
-	@Ignore ("RabbitMQ connection can not be obtained if running in Parameterized mode")
 	public void testChannelAwareListenerWithException() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doListenerWithExceptionTest(latch, new ChannelAwareListener(latch, true));
