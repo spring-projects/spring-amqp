@@ -31,11 +31,15 @@ import org.springframework.amqp.AmqpException;
  */
 public interface AmqpTemplate {
 
+	// send methods for messages
+
 	void send(Message message) throws AmqpException;
 
 	void send(String routingKey, Message message) throws AmqpException;
 
 	void send(String exchange, String routingKey, Message message) throws AmqpException;
+
+	// send methods with conversion
 
 	void convertAndSend(Object message) throws AmqpException;
 
@@ -49,14 +53,32 @@ public interface AmqpTemplate {
 
 	void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
 
+	// receive methods for messages
+
 	Message receive() throws AmqpException;
 
 	Message receive(String queueName) throws AmqpException;
+
+	// receive methods with conversion
 
 	Object receiveAndConvert() throws AmqpException;
 
 	Object receiveAndConvert(String queueName) throws AmqpException;
 
+	// send and receive methods for messages
+
+	Message sendAndReceive(Message message) throws AmqpException;
+
+	Message sendAndReceive(String routingKey, Message message) throws AmqpException;
+
+	Message sendAndReceive(String exchange, String routingKey, Message message) throws AmqpException;
+
+	// send and receive methods with conversion
+
 	Object convertSendAndReceive(Object message) throws AmqpException;
+
+	Object convertSendAndReceive(String routingKey, Object message) throws AmqpException;
+
+	Object convertSendAndReceive(String exchange, String routingKey, Object message) throws AmqpException;
 
 }

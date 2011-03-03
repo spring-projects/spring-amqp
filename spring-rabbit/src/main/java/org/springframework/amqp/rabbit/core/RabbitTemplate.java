@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -214,6 +214,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return null;
 	}
 
+	public Message sendAndReceive(final Message message) throws AmqpException {
+		return this.doSendAndReceive(this.exchange, this.routingKey, message);
+	}
+
+	public Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
+		return this.doSendAndReceive(this.exchange, routingKey, message);
+	}
+
+	public Message sendAndReceive(final String exchange, final String routingKey, final Message message) throws AmqpException {
+		return this.doSendAndReceive(exchange, routingKey, message);
+	}
+
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
 		return this.convertSendAndReceive(this.exchange, this.routingKey, message);
 	}
@@ -222,8 +234,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.convertSendAndReceive(this.exchange, routingKey, message);
 	}
 
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
-			throws AmqpException {
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message) throws AmqpException {
 		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
 		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
@@ -238,15 +249,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
 
-				// TODO: extract this to a method
-				Address replyToAddress = message.getMessageProperties().getReplyTo();
-				if (replyToAddress == null) {
-					// TODO: first check for a replyToAddress property on this
-					// template
-					DeclareOk queueDeclaration = channel.queueDeclare();
-					replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
-					message.getMessageProperties().setReplyTo(replyToAddress);
-				}
+				Assert.isNull(message.getMessageProperties().getReplyTo(),
+						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
+				// TODO: first check for a replyToAddress property on this template
+				DeclareOk queueDeclaration = channel.queueDeclare();
+				Address replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
+				message.getMessageProperties().setReplyTo(replyToAddress);
 
 				boolean noAck = false;
 				String consumerTag = UUID.randomUUID().toString();
