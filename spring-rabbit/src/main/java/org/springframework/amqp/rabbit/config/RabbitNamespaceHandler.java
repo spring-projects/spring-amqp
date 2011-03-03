@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.config;
 
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * Start of namespace handler for Rabbit
+ * Namespace handler for Rabbit.
+ * 
  * @author Mark Pollack
- *
+ * @author Mark Fisher
+ * @since 1.0
  */
 public class RabbitNamespaceHandler extends NamespaceHandlerSupport {
 
 	public void init() {
-		registerBeanDefinitionParser("queue", new QueueParser());		
-		registerBeanDefinitionParser("direct-exchange", new DirectExchangeParser());		
-		registerBeanDefinitionParser("topic-exchange", new TopicExchangeParser());		
-		registerBeanDefinitionParser("fanout-exchange", new FanoutExchangeParser());		
-		registerBeanDefinitionParser("headers-exchange", new HeadersExchangeParser());		
+		registerBeanDefinitionParser("queue", new QueueParser());
+		registerBeanDefinitionParser("direct-exchange", new DirectExchangeParser());
+		registerBeanDefinitionParser("topic-exchange", new TopicExchangeParser());
+		registerBeanDefinitionParser("fanout-exchange", new FanoutExchangeParser());
+		registerBeanDefinitionParser("headers-exchange", new HeadersExchangeParser());
+		registerBeanDefinitionParser("listener-container", new ListenerContainerParser());
 	}
 
 }
