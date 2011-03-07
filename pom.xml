@@ -32,6 +32,9 @@
 	<profiles>
 		<profile>
 			<id>staging</id>
+			<properties>
+			  <dist.staging>/${java.io.tmpdir}/spring-amqp/dist</dist.staging>
+			</properties>
 			<distributionManagement>
 				<site>
 					<id>spring-site-staging</id>

@@ -62,7 +62,7 @@
 		<downloadUrl>http://www.springsource.com/download/community
 		</downloadUrl>
 		<site>
-			<id>spring-docs</id>
+			<id>spring-site</id>
 			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-amqp/docs/${project.version}
 			</url>
 		</site>
