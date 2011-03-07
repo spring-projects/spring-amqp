@@ -12,8 +12,6 @@
 
 	<import resource="classpath:client-handlers.xml" />
 
-	<!-- 
 	<import resource="classpath:client-messaging.xml" />
-	-->
 
 </beans>
