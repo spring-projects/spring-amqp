@@ -97,7 +97,7 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 	}
 
 	@Test
-	public void testListenerRecoversFromClosedConnection() throws Exception {
+	public void testListenerRecoversFromDeadBroker() throws Exception {
 
 		List<QueueInfo> queues = brokerAdmin.getQueues();
 		logger.info("Queues: " + queues);
