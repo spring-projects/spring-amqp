@@ -210,7 +210,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
-
+		if (concurrentConsumers < 1) {
+			concurrentConsumers = 1;
+		}
 	}
 
 	public void initializeProxy() {
