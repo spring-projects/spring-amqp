@@ -16,9 +16,8 @@
 	</description>
 	<properties>
 		<maven.test.failure.ignore>true</maven.test.failure.ignore>
-		<rabbitmq.version>2.1.0</rabbitmq.version>
 		<spring.framework.version>3.0.3.RELEASE</spring.framework.version>
-		<spring.amqp.version>1.0.0.BUILD-SNAPSHOT</spring.amqp.version>
+		<spring.amqp.version>1.0.0.M3</spring.amqp.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -40,16 +39,6 @@
   			<groupId>org.springframework.amqp</groupId>
   			<artifactId>spring-rabbit</artifactId>
   			<version>${spring.amqp.version}</version>
-		</dependency>
-		<dependency>
-  			<groupId>org.springframework.amqp</groupId>
-  			<artifactId>spring-rabbit-admin</artifactId>
-  			<version>${spring.amqp.version}</version>
-		</dependency>
-		<dependency>
-  			<groupId>com.rabbitmq</groupId>
-  			<artifactId>amqp-client</artifactId>
-  			<version>${rabbitmq.version}</version>
 		</dependency>
 		
 		<dependency>
