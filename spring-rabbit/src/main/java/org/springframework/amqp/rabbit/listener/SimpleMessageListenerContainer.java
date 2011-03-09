@@ -251,7 +251,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @throws Exception
 	 */
 	protected void doInitialize() throws Exception {
-		establishSharedConnection();
 		initializeProxy();
 	}
 
@@ -267,6 +266,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void doStart() throws Exception {
 		super.doStart();
+		establishSharedConnection();
 		initializeConsumers();
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {

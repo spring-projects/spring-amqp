@@ -7,7 +7,7 @@
   <para>In this chapter, we will explore interface and classes that are the
   essential components for developing applications with Spring AMQP.</para>
 
-  <sect1>
+  <section>
     <title>AMQP Abstractions</title>
 
     <para>The Spring AMQP project consists of a handful of modules, each
@@ -205,9 +205,9 @@
     within the core package. As one of the main components involved in actual
     AMQP messaging, it is discussed in detail in its own section (see <xref
     linkend="amqp-template" />).</para>
-  </sect1>
+  </section>
 
-  <sect1>
+  <section>
     <title>Connection and Resource Management</title>
 
     <para>Whereas the AMQP model we described in the previous section is
@@ -249,23 +249,27 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
 </bean>]]></programlisting>
 
     <para><note>
-         You may also discover the 
+         There is also a 
 
         <classname>CachingConnectionFactory</classname>
 
-         implementation, but at this time, that code is considered 
-
-        <emphasis>experimental</emphasis>
-
-         . We recommend sticking with 
+         implementation, which is superior to the 
 
         <classname>SingleConnectionFactory</classname>
 
-         for now as the caching implementation will most likely evolve. Support for failover of connections is also planned. 
-      </note></para>
-  </sect1>
+         in terms of performance and resilience. The 
 
-  <sect1 id="amqp-template">
+        <classname>CachingConnectionFactory</classname>
+
+         should be considered the default for most practical usage, and 
+
+        <classname>SingleConnectionFactory</classname>
+
+         as useful for simple tests and maybe as a building block for extending the framework. 
+      </note></para>
+  </section>
+
+  <section id="amqp-template">
     <title>AmqpTemplate</title>
 
     <para>As with many other high-level abstractions provided by the Spring
@@ -290,9 +294,9 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     interface defines all of the basic operations for sending and receiving
     Messages. We will explore Message sending and reception, respectively, in
     the two sections that follow.</para>
-  </sect1>
+  </section>
 
-  <sect1>
+  <section>
     <title>Sending messages</title>
 
     <para>When sending a Message, one can use any of the following
@@ -378,9 +382,9 @@ template.send(new MessageCreator() {
         return new Message("Hello World".getBytes(), someProperties);
     }
 });]]></programlisting>
-  </sect1>
+  </section>
 
-  <sect1>
+  <section>
     <title>Receiving messages</title>
 
     <para>Message reception is always a bit more complicated than sending. The
@@ -391,7 +395,7 @@ template.send(new MessageCreator() {
     look at an example of each approach in the next two sub-sections.</para>
 
     <sect2>
-      <title>Synchronous Reception</title>
+      <title>Synchronous Consumer</title>
 
       <para>The <interfacename>AmqpTemplate</interfacename> itself can be used
       for synchronous Message reception. There are two 'receive' methods
@@ -405,88 +409,58 @@ template.send(new MessageCreator() {
 Message receive(String queueName) throws AmqpException;]]></programlisting>
     </sect2>
 
-    <sect2>
-       
-
-      <title>Asynchronous Reception</title>
-
-       
-
-      <para>For asynchronous Message reception, a dedicated component other
-      than the <interfacename>AmqpTemplate</interfacename> is involved. That
-      component is a container for a Message consuming callback. We will look
-      at the container and its properties in just a moment, but first we
-      should look at the callback since that is where your application code
-      will be integrated with the messaging system. There are a few options
-      for the callback. The simplest of these is to implement the
-      <interfacename>MessageListener</interfacename> interface:</para>
-
-       
-
-      <programlisting language="java"><![CDATA[public interface MessageListener {
+    <sect2><title>Asynchronous Consumer</title> <para>For asynchronous Message
+    reception, a dedicated component (not the
+    <interfacename>AmqpTemplate</interfacename>) is involved. That component
+    is a container for a Message consuming callback. We will look at the
+    container and its properties in just a moment, but first we should look at
+    the callback since that is where your application code will be integrated
+    with the messaging system. There are a few options for the callback. The
+    simplest of these is to implement the
+    <interfacename>MessageListener</interfacename> interface:</para>
+    <programlisting language="java"><![CDATA[public interface MessageListener {
 
     void onMessage(Message message);
 
-}]]></programlisting>
-
-       
-
-      <para>If your callback logic depends upon the AMQP Channel instance for
-      any reason, you may instead use the
-      <interfacename>ChannelAwareMessageListener</interfacename>. It looks
-      similar but with an extra parameter:</para>
-
-       
-
-      <programlisting language="java"><![CDATA[public interface ChannelAwareMessageListener<M extends Message> {
+}]]></programlisting> <para>If your callback logic depends upon the AMQP
+    Channel instance for any reason, you may instead use the
+    <interfacename>ChannelAwareMessageListener</interfacename>. It looks
+    similar but with an extra parameter:</para> <programlisting
+    language="java"><![CDATA[public interface ChannelAwareMessageListener<M extends Message> {
 
     void onMessage(M message, Channel channel) throws Exception;
 
-}]]></programlisting>
-
-       
-
-      <para>If you prefer to maintain a stricter separation between your
-      application logic and the messaging API, you can rely upon an adapter
-      implementation that is provided by the framework. This is often referred
-      to as "Message-driven POJO" support. When using the adapter, you only
-      need to provide a reference to the instance that the adapter itself
-      should invoke.</para>
-
-       
-
-      <programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>
-
-       Now that you've seen the various options for the Message-listening callback, we can turn our attention to the container. Basically, the container handles the "active" responsibilities so that the listener callback can remain passive. The container is an example of a "lifecycle" component. It provides methods for starting and stopping. When configuring the container, you are essentially bridging the gap between an AMQP Queue and the 
-
-      <interfacename>MessageListener</interfacename>
-
-       instance. You must provide a reference to the 
-
-      <interfacename>ConnectionFactory</interfacename>
-
-       and the queue name or Queue instance(s) from which that listener should consume Messages. Here is the most basic example using the default implementation, 
-
-      <classname>SimpleMessageListenerContainer</classname>
-
-       : 
-
-      <programlisting language="java"><![CDATA[SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+}]]></programlisting> <para>If you prefer to maintain a stricter separation
+    between your application logic and the messaging API, you can rely upon an
+    adapter implementation that is provided by the framework. This is often
+    referred to as "Message-driven POJO" support. When using the adapter, you
+    only need to provide a reference to the instance that the adapter itself
+    should invoke.</para> <programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>
+    Now that you've seen the various options for the Message-listening
+    callback, we can turn our attention to the container. Basically, the
+    container handles the "active" responsibilities so that the listener
+    callback can remain passive. The container is an example of a "lifecycle"
+    component. It provides methods for starting and stopping. When configuring
+    the container, you are essentially bridging the gap between an AMQP Queue
+    and the <interfacename>MessageListener</interfacename> instance. You must
+    provide a reference to the
+    <interfacename>ConnectionFactory</interfacename> and the queue name or
+    Queue instance(s) from which that listener should consume Messages. Here
+    is the most basic example using the default implementation,
+    <classname>SimpleMessageListenerContainer</classname> : <programlisting
+    language="java"><![CDATA[SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 container.setConnectionFactory(rabbitConnectionFactory);
 container.setQueueName("some.queue");
-container.setMessageListener(someListener);]]></programlisting>
-
-       As an "active" component, it's most common to create the listener container with a bean definition so that it can simply run in the background. This can be done via XML: 
-
-      <programlisting language="xml"><![CDATA[<bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
+container.setMessageListener(someListener);]]></programlisting> As an "active"
+    component, it's most common to create the listener container with a bean
+    definition so that it can simply run in the background. This can be done
+    via XML: <programlisting language="xml"><![CDATA[<bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
     <property name="connectionFactory" ref="rabbitConnectionFactory"/>
     <property name="queueName" value="some.queue"/>
     <property name="messageListener" ref="someListener"/>
-</bean>]]></programlisting>
-
-       Or, you may prefer to use the @Configuration style which will look very similar to the actual code snippet above: 
-
-      <programlisting language="java"><![CDATA[@Configuration
+</bean>]]></programlisting> Or, you may prefer to use the @Configuration style
+    which will look very similar to the actual code snippet above:
+    <programlisting language="java"><![CDATA[@Configuration
 public class ExampleAmqpConfiguration {
 
     @Bean
@@ -514,13 +488,10 @@ public class ExampleAmqpConfiguration {
             }
         }
     }
-}]]></programlisting>
+}]]></programlisting></sect2>
+  </section>
 
-       
-    </sect2>
-  </sect1>
-
-  <sect1>
+  <section>
     <title>Message Converters</title>
 
     <para>The <interfacename>AmqpTemplate</interfacename> also defines several
@@ -673,23 +644,22 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </property>
 </bean>]]></programlisting>
     </sect2>
-  </sect1>
+  </section>
 
-  <sect1 id="broker-configuration">
+  <section id="broker-configuration">
     <title>Configuring the broker</title>
 
-    <para>The AMQP specification describes how the protocol can be
-    used to configure Queues, Exchanges and Bindings on the
-    broker. These operations which are portable from the 0.8
-    specification and higher are present in the AmqpAdmin interface in
-    the org.springframework.amqp.core package. The RabbitMQ
-    implementation of that class is RabbitAdmin located in the
-    org.springframework.amqp.rabbit.core package. Many configuration
-    and management functions are broker specific and not included in
-    the AMQP specification, so the interface RabbitBrokerOperations
-    and its implementation RabbitBrokerAdmin located in the
-    org.springframework.amqp.rabbit.admin package is provided to fill
-    that gap.</para>
+    <para>The AMQP specification describes how the protocol can be used to
+    configure Queues, Exchanges and Bindings on the broker. These operations
+    which are portable from the 0.8 specification and higher are present in
+    the AmqpAdmin interface in the org.springframework.amqp.core package. The
+    RabbitMQ implementation of that class is RabbitAdmin located in the
+    org.springframework.amqp.rabbit.core package. Many configuration and
+    management functions are broker specific and not included in the AMQP
+    specification, so the interface RabbitBrokerOperations and its
+    implementation RabbitBrokerAdmin located in the
+    org.springframework.amqp.rabbit.admin package is provided to fill that
+    gap.</para>
 
     <para>The AmqpAdmin interface is based on using the Spring AMQP domain
     abstractions and is shown below:</para>
@@ -868,9 +838,9 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     <para>The client is declaring another queue via the declareQueue() method
     on the AmqpAdmin, and it binds that queue to the market data exchange with
     a routing pattern that is externalized in a properties file.</para>
-  </sect1>
+  </section>
 
-  <sect1>
+  <section>
     <title>Exception Handling</title>
 
     <para>Many operations with the RabbitMQ Java client can throw checked
@@ -880,9 +850,17 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     the Exceptions within our runtime hierarchy. Those are defined in the
     'org.springframework.amqp' package, and AmqpException is the base of the
     hierarchy.</para>
-  </sect1>
 
-  <sect1>
+    <para>If you are using a
+    <classname>SimpleMessageListenerContainer</classname> you will also be
+    able to inject a Spring <classname>ErrorHandler</classname> instance that
+    can be used to react to an exception in the listener. The
+    <classname>ErrorHandler</classname> cannot prevent the exception from
+    eventually propagating, but it can be used to log or alert another
+    component that there is a problem.</para>
+  </section>
+
+  <section>
     <title>Transactions</title>
 
     <para>The Spring Rabbit framework has support for automatic transaction
@@ -939,10 +917,10 @@ public void doSomething() {
     directly manipulated to commit the transactiom early for instance).</para>
 
     <para>For asynchronous use cases with
-    <classname>SimpleMessageListenerContainer</classname> an external
-    transaction has to be requested by the container when it sets up the
-    listener. To signal that an external transaction is required the user
-    provides an implementation of
+    <classname>SimpleMessageListenerContainer</classname> if an external
+    transaction is needed it has to be requested by the container when it sets
+    up the listener. To signal that an external transaction is required the
+    user provides an implementation of
     <classname>PlatformTransactionManager</classname> to the container when it
     is configured. For example:</para>
 
@@ -977,26 +955,153 @@ public class ExampleExternalTransactionAmqpConfiguration {
     messaging operations would be auto-acked, so the effect is to commit the
     messaging operations even on a rollback of the business operation.</para>
 
-    <para>A note on rollback of received messages. AMQP transactions only
-    apply to messages and acks sent to the broker, so when there is a rollback
-    of a Spring transaction and a message has been received, wheat Spring AMQP
-    has to do is not just rollback the transaction, but also manually reject
-    the message (sort of a nack, but that's not what the specification calls
-    it). Such messages (and any that are unacked when a channel is closed or
-    aborts) go to the back of the queue on a Rabbit broker, and this behaviour
-    is not what some users expect, especially if they come from a JMS
-    background, so it's good to be aware of it. The re-queuing order is not
-    mandated by the AMQP specification, but it makes the broker much more
-    efficient, and also means that if it is under load there is a natural back
-    off before the message can be consumed again.</para>
-  </sect1>
+    <section>
+      <title>A note on Rollback of Received Messages</title>
 
-  <sect1>
+      <para>AMQP transactions only apply to messages and acks sent to the
+      broker, so when there is a rollback of a Spring transaction and a
+      message has been received, wheat Spring AMQP has to do is not just
+      rollback the transaction, but also manually reject the message (sort of
+      a nack, but that's not what the specification calls it). Such messages
+      (and any that are unacked when a channel is closed or aborts) go to the
+      back of the queue on a Rabbit broker, and this behaviour is not what
+      some users expect, especially if they come from a JMS background, so
+      it's good to be aware of it. The re-queuing order is not mandated by the
+      AMQP specification, but it makes the broker much more efficient, and
+      also means that if it is under load there is a natural back off before
+      the message can be consumed again.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Message Listener Container Features</title>
+
+    <para>There are quite a few options for configuring a
+    <classname>SimpleMessageListenerContainer</classname> related to
+    transactions and quality of service, and some of them interact with each
+    other.</para>
+
+    <para><table>
+        <title>Configuration options for a message listener container</title>
+
+        <tgroup cols="2">
+          <thead>
+            <row>
+              <entry>Property</entry>
+
+              <entry>Description</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>channelTransacted</entry>
+
+              <entry>Boolean flag to signal that all messages should be
+              acknowledged in a transaction (either manually or
+              automatically)</entry>
+            </row>
+
+            <row>
+              <entry>acknowledgeMode</entry>
+
+              <entry><literal>NONE</literal> = no acks will be sent (the
+              default and incompatible with
+              <literal>channelTransacted=true</literal>). RabbitMQ calls this
+              "autoack" because the broker assumes all messages are acked
+              without any action from the consumer. MANUAL = the listener must
+              acknowledge all messages by calling
+              <code>Channel.basicAck()</code>. AUTO = the container will
+              acknowledge the message automatically. Note that
+              <literal>acknowledgeMode</literal> is complementary to
+              channelTransacted - if the channel is transacted then the broker
+              requires a commit notification in addition to the ack.</entry>
+            </row>
+
+            <row>
+              <entry>transactionManager</entry>
+
+              <entry>External transaction manager for the operation of the
+              listener. Also complementary to channelTransacted - if the
+              <classname>Channel</classname> is transacted then its
+              transaction will be synchronized with the external
+              transaction.</entry>
+            </row>
+
+            <row>
+              <entry>prefetchCount</entry>
+
+              <entry>The number of messages to accept from the broker in one
+              socket frame. The higher this is the faster the messages can be
+              delivered, but the higher the risk of non-sequential processing.
+              Ignored if the <literal>acknowledgeMode</literal> is
+              NONE.</entry>
+            </row>
+
+            <row>
+              <entry>shutdownTimeout</entry>
+
+              <entry>When a container shuts down (e.g. if its enclosing
+              <classname>ApplicationContext</classname> is closed) it waits
+              for in-flight messages to be processed up to this limit.
+              Defaults to 10 seconds. After the limit is reached, if the
+              channel is not transacted messages will be discarded.</entry>
+            </row>
+
+            <row>
+              <entry>txSize</entry>
+
+              <entry>If the channel is transacted or an external transaction
+              manager is provided, the container will attempt to process up to
+              this number of messages per transaction (waiting for each one up
+              to the receieve timeout setting).</entry>
+            </row>
+
+            <row>
+              <entry>receiveTimeout</entry>
+
+              <entry>The maximum time to wait for each message. If
+              acknowledgeMode=NONE (the default) this has very little effect -
+              the container just spins round an asks for another message. It
+              has the biggest effect for a transactional
+              <classname>Channel</classname> with <code>txSize&gt;1</code>,
+              since it can cause messages already consumed not to be
+              acknowledged until the timeout expires.</entry>
+            </row>
+
+            <row>
+              <entry>autoStartup</entry>
+
+              <entry>Flag to indicate that the container should start when the
+              <classname>ApplicationContext</classname> does (as part of the
+              <classname>SmartLifecycle</classname> callbacks which happen
+              after all beans are initialized). Defaults to true, but set it
+              to false if your broker might not be available on startup, and
+              then call <code>start()</code> later manually when you know the
+              broker is ready.</entry>
+            </row>
+
+            <row>
+              <entry>adviceChain</entry>
+
+              <entry>An array of AOP Advice to apply to the listener
+              execution. This can be used to apply additional cross cutting
+              concerns such as automatic retry in the event of broker death.
+              Note that simple re-connection after an AMQP error is handled by
+              the <classname>CachingConnectionFactory</classname>, as long as
+              the broker is still alive.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </table></para>
+  </section>
+
+  <section>
     <title>JMX Monitoring</title>
 
     <para>All the methods in the RabbitBrokerAdmin class are exposed through
     JMX through the use of the @ManagedOperations annotation. Please refer to
     the sample application for how to configure spring to export the
     RabbitBrokerAdmin.</para>
-  </sect1>
+  </section>
 </chapter>

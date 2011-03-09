@@ -19,7 +19,6 @@
 		<dist.name>Spring AMQP</dist.name>
 		<dist.key>AMQP</dist.key>
 		<dist.version>${project.version}</dist.version>
-		<dist.releaseType>snapshot</dist.releaseType>
 		<dist.finalName>${dist.id}-${dist.version}</dist.finalName>
 		<dist.fileName>${dist.finalName}.zip</dist.fileName>
 		<dist.filePath>target/${dist.fileName}</dist.filePath>
@@ -32,6 +31,9 @@
 	<profiles>
 		<profile>
 			<id>staging</id>
+			<properties>
+			  <dist.staging>/${java.io.tmpdir}/spring-amqp/dist</dist.staging>
+			</properties>
 			<distributionManagement>
 				<site>
 					<id>spring-site-staging</id>
@@ -218,18 +220,18 @@
 					<execution>
 						<id>upload-dist</id>
 						<phase>deploy</phase>
-						<configuration>
-							<tasks>
-								<ant antfile="${basedir}/src/ant/upload-dist.xml">
-									<target name="upload-dist" />
-								</ant>
-							</tasks>
-						</configuration>
 						<goals>
 							<goal>run</goal>
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+				  <tasks>
+					<ant antfile="${basedir}/src/ant/upload-dist.xml">
+					  <target name="upload-dist" />
+					</ant>
+				  </tasks>
+				</configuration>
 				<dependencies>
 					<dependency>
 						<groupId>org.springframework.build</groupId>
