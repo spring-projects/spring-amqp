@@ -8,3 +8,4 @@ erl_crash.dump
 nohup.out
 .idea
 *.iml
+.project
