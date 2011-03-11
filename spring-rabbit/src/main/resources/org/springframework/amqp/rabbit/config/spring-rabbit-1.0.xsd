@@ -536,4 +536,67 @@
 		</xsd:attribute>
 	</xsd:complexType>
 
+	<xsd:element name="rabbit-admin">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin) 
+	for customers to manage exchanges, queues and bindings.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique ID for this rabbit admin.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="rabbit-template" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to rabbit template. Either 'rabbit-template' or 'rabbit-connection-factory' attribute 
+	can be set.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type
+								type="org.springframework.amqp.rabbit.core.RabbitTemplate" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="rabbit-connection-factory" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to rabbit connection factory. Either 'rabbit-connection-factory' or 
+	'rabbit-template' attribute can be set.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type
+								type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="phase" type="xsd:int">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The lifecycle phase within which this admin should start and stop. The lower
+	the value the earlier this admin will start and the later it will stop. The
+	default is Integer.MIN_VALUE meaning the admin will start as early as possible
+	and stop as late as possible.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="auto-startup" type="xsd:boolean">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies if the rabbit admin should be started automatically when ApplicationContext 
+	is refreshed. Default value is 'true'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
 </xsd:schema>
