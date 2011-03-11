@@ -34,6 +34,7 @@ public class RabbitNamespaceHandler extends NamespaceHandlerSupport {
 		registerBeanDefinitionParser("fanout-exchange", new FanoutExchangeParser());
 		registerBeanDefinitionParser("headers-exchange", new HeadersExchangeParser());
 		registerBeanDefinitionParser("listener-container", new ListenerContainerParser());
+		registerBeanDefinitionParser("rabbit-admin", new RabbitAdminParser());
 	}
 
 }
