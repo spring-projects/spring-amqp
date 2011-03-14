@@ -16,21 +16,12 @@ package org.springframework.amqp.rabbit.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -41,12 +32,9 @@ import org.springframework.util.StringUtils;
  * @author tomas.lukosius@opencredo.com
  * 
  */
-@RunWith(Parameterized.class)
 public final class AdminParserTests {
-	private static Log logger = LogFactory.getLog(AdminParserTests.class);
 
-	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, AdminParserTests.class);
+	private static Log logger = LogFactory.getLog(AdminParserTests.class);
 
 	// Specifies if test case expects context to be valid or not: true - context expects to be valid.
 	private boolean validContext = true;
@@ -63,57 +51,22 @@ public final class AdminParserTests {
 
 	private boolean initialisedWithTemplate;
 
-	public AdminParserTests(int contextIndex, boolean validContext, String adminBeanName, int expectedPhase,
-			boolean expectedAutoStartup, boolean initialisedWithTemplate) {
-		super();
-		this.contextIndex = contextIndex;
-		this.validContext = validContext;
-		this.adminBeanName = adminBeanName;
-		this.expectedPhase = expectedPhase;
-		this.expectedAutoStartup = expectedAutoStartup;
-		this.initialisedWithTemplate = initialisedWithTemplate;
-	}
-
-	@Parameters
-	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { //
-		params(0, true), // #0
-				params(1, false), // #1
-				params(2, false), // #2
-				params(3, false), // #3
-				params(4, false), // #4
-				params(5, true, "admin-test", 12, false, false), // #5
-				params(6, true, "admin-test", 12, false, true) // #6
-		};
-		return Arrays.asList(data);
-	}
-
-	private static Object[] params(int index, boolean validContext) {
-		return params(index, validContext, null, Integer.MIN_VALUE, true, false);
-	}
-
-	/**
-	 * 
-	 * @param contextIndex The index of spring context. Context file name template:
-	 * &lt;class-name&gt;-&lt;contextIndex&gt;-context.xml
-	 * @param validContext <code>true</code> if spring-context is expected to be loaded without failures.
-	 * @param adminBeanName The bean name of expected rabbit admin. If its not specified - rabbit admin will be
-	 * retrieved by type.
-	 * @param expectedPhase 'phase' expected in {@link RabbitAdmin}.
-	 * @param expectedAutoStartup 'autoStartup' expected in {@link RabbitAdmin}.
-	 * @param initialisedWithTemplat <code>true</code> if {@link RabbitAdmin} in spring-context initialized by passing
-	 * {@link RabbitTemplate} as constructor parameter, <code>false</code> - initialized by passing
-	 * {@link ConnectionFactory} as constructor parameter.
-	 * @return
-	 */
-	private static Object[] params(int contextIndex, boolean validContext, String adminBeanName, int expectedPhase,
-			boolean expectedAutoStartup, boolean initialisedWithTemplat) {
-		return new Object[] { contextIndex, validContext, adminBeanName, expectedPhase, expectedAutoStartup,
-				initialisedWithTemplat };
+	@Test
+	public void testInvalid() throws Exception {
+		contextIndex = 1;
+		validContext = false;
+		doTest();
 	}
 
 	@Test
-	public void testParse() throws Exception {
+	public void testValid() throws Exception {
+		contextIndex = 2;
+		validContext = true;
+		expectedPhase = 12;
+		doTest();
+	}
+
+	private void doTest() throws Exception {
 		// Create context
 		XmlBeanFactory beanFactory = loadContext();
 		if (beanFactory == null) {

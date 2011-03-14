@@ -61,11 +61,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
 	}
 
-	public RabbitAdmin(RabbitTemplate rabbitTemplate) {
-		Assert.notNull(rabbitTemplate, "RabbitTemplate must not be null");
-		this.rabbitTemplate = rabbitTemplate;
-	}
-
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
 	}

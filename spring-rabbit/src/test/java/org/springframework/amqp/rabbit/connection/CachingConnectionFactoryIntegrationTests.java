@@ -44,7 +44,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
-		RabbitAdmin admin = new RabbitAdmin(template);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = admin.declareQueue();
 		template.convertAndSend(queue.getName(), "message");
 		String result = (String) template.receiveAndConvert(queue.getName());
@@ -57,7 +57,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
-		RabbitAdmin admin = new RabbitAdmin(template);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = admin.declareQueue();
 		template.convertAndSend(queue.getName(), "message");
 
@@ -80,7 +80,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		RabbitTemplate template2 = new RabbitTemplate(connectionFactory);
 		template1.setChannelTransacted(true);
 
-		RabbitAdmin admin = new RabbitAdmin(template1);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = admin.declareQueue();
 
 		template1.convertAndSend(queue.getName(), "message");

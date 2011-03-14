@@ -14,6 +14,7 @@ import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -23,6 +24,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionProxy;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.MessageListenerBrokerInterruptionIntegrationTests.VanillaListener;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
@@ -80,7 +82,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		acknowledgeMode = AcknowledgeMode.MANUAL;
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new ManualAckListener(latch), createConnectionFactory());
+		container = createContainer(queue.getName(), new ManualAckListener(latch), createConnectionFactory());
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -100,7 +102,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(createConnectionFactory());
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new AbortChannelListener(latch), createConnectionFactory());
+		container = createContainer(queue.getName(), new AbortChannelListener(latch), createConnectionFactory());
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -120,7 +122,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(createConnectionFactory());
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new AbortChannelListener(latch), createConnectionFactory());
+		container = createContainer(queue.getName(), new AbortChannelListener(latch), createConnectionFactory());
 		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 
 		for (int i = 0; i < messageCount; i++) {
@@ -147,8 +149,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		ConnectionFactory connectionFactory = createConnectionFactory();
-		container = createContainer(new CloseConnectionListener((ConnectionProxy) connectionFactory.createConnection(),
-				latch), connectionFactory);
+		container = createContainer(queue.getName(), new CloseConnectionListener((ConnectionProxy) connectionFactory.createConnection(),
+						latch), connectionFactory);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -171,7 +173,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		acknowledgeMode = AcknowledgeMode.MANUAL;
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new ManualAckListener(latch), connectionFactory);
+		container = createContainer(queue.getName(), new ManualAckListener(latch), connectionFactory);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -186,10 +188,18 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, ConnectionFactory connectionFactory) {
+	@Test(expected=AmqpIllegalStateException.class)
+	public void testListenerDoesNotRecoverFromMissingQueue() throws Exception {
+		// TODO: with only 1 this test tends to fail
+		concurrentConsumers = 3;
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		container = createContainer("nonexistent", new VanillaListener(latch), createConnectionFactory());
+	}
+
+	private SimpleMessageListenerContainer createContainer(String queueName, Object listener, ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
-		container.setQueueName(queue.getName());
+		container.setQueueName(queueName);
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);

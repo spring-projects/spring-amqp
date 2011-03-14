@@ -551,20 +551,6 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="template" type="xsd:string">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	Reference to rabbit template. Either 'template' or 'connection-factory' attribute 
-	can be set.
-					]]></xsd:documentation>
-					<xsd:appinfo>
-						<tool:annotation kind="ref">
-							<tool:expected-type
-								type="org.springframework.amqp.rabbit.core.RabbitTemplate" />
-						</tool:annotation>
-					</xsd:appinfo>
-				</xsd:annotation>
-			</xsd:attribute>
 			<xsd:attribute name="connection-factory" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[

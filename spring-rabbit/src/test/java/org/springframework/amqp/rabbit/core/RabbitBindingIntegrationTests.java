@@ -12,6 +12,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -23,7 +24,9 @@ public class RabbitBindingIntegrationTests {
 
 	private static Queue queue = new Queue("test.queue");
 
-	private RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+	private ConnectionFactory connectionFactory = new CachingConnectionFactory();
+
+	private RabbitTemplate template = new RabbitTemplate(connectionFactory );
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
@@ -31,7 +34,7 @@ public class RabbitBindingIntegrationTests {
 	@Test
 	public void testSendAndReceiveWithTopicSingleCallback() throws Exception {
 
-		final RabbitAdmin admin = new RabbitAdmin(template);
+		final RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		final TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
@@ -71,7 +74,7 @@ public class RabbitBindingIntegrationTests {
 	@Test
 	public void testSendAndReceiveWithNonDefaultExchange() throws Exception {
 
-		final RabbitAdmin admin = new RabbitAdmin(template);
+		final RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		final TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 
@@ -110,7 +113,7 @@ public class RabbitBindingIntegrationTests {
 	// @Ignore("Not sure yet if we need to support a use case like this")
 	public void testSendAndReceiveWithTopicConsumeInBackground() throws Exception {
 
-		RabbitAdmin admin = new RabbitAdmin(template);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
@@ -147,7 +150,7 @@ public class RabbitBindingIntegrationTests {
 	@Test
 	public void testSendAndReceiveWithTopicTwoCallbacks() throws Exception {
 
-		RabbitAdmin admin = new RabbitAdmin(template);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
@@ -199,7 +202,7 @@ public class RabbitBindingIntegrationTests {
 	@Test
 	public void testSendAndReceiveWithFanout() throws Exception {
 
-		RabbitAdmin admin = new RabbitAdmin(template);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		FanoutExchange exchange = new FanoutExchange("fanout");
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());

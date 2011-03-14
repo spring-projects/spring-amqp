@@ -25,12 +25,10 @@ import org.w3c.dom.Element;
  */
 class AdminParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final String TEMPLATE_ATTRIBUTE = "template";
-
 	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
 
 	private static final String PHASE_ATTRIBUTE = "phase";
-	
+
 	private static final String AUTO_STARTUP_ATTRIBUTE = "auto-startup";
 
 	@Override
@@ -50,30 +48,15 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
-		boolean templateAttributeExist = element.getAttributeNode(TEMPLATE_ATTRIBUTE) != null;
-		boolean connectionFactoryAttributeExist = element.getAttributeNode(CONNECTION_FACTORY_ATTRIBUTE) != null;
-		// Only one of 'templateRef' or 'connectionFactoryRef' can be set.
-		if (templateAttributeExist && connectionFactoryAttributeExist) {
-			parserContext.getReaderContext().error(
-					"Either '" + TEMPLATE_ATTRIBUTE + "' or '" + CONNECTION_FACTORY_ATTRIBUTE
-					+ "' attribute must be set.", element);
-		}
-
-		String templateRef = element.getAttribute(TEMPLATE_ATTRIBUTE);
 		String connectionFactoryRef = element.getAttribute(CONNECTION_FACTORY_ATTRIBUTE);
-		
+
 		// At least one of 'templateRef' or 'connectionFactoryRef' attribute must be set.
-		if (!StringUtils.hasText(templateRef) && !StringUtils.hasText(connectionFactoryRef)) {
-			parserContext.getReaderContext().error(
-					"One of '" + TEMPLATE_ATTRIBUTE + "' or '" + CONNECTION_FACTORY_ATTRIBUTE
-							+ "' attribute must be set.", element);
+		if (!StringUtils.hasText(connectionFactoryRef)) {
+			parserContext.getReaderContext().error("A '" + CONNECTION_FACTORY_ATTRIBUTE + "' attribute must be set.",
+					element);
 		}
 
-
-		if (StringUtils.hasText(templateRef)) {
-			// Use constructor with template parameter
-			builder.addConstructorArgReference(templateRef);
-		} else if (StringUtils.hasText(connectionFactoryRef)) {
+		if (StringUtils.hasText(connectionFactoryRef)) {
 			// Use constructor with connectionFactory parameter
 			builder.addConstructorArgReference(connectionFactoryRef);
 		}
@@ -83,7 +66,7 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyValue("phase", attributeValue);
 		}
-		
+
 		attributeValue = element.getAttribute(AUTO_STARTUP_ATTRIBUTE);
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyValue("autoStartup", attributeValue);

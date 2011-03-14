@@ -17,7 +17,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -135,16 +134,6 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 
 		assertNull(template.receiveAndConvert(queue.getName()));
-
-	}
-
-	@Test(expected=AmqpIllegalStateException.class)
-	public void testListenerDoesNotRecoverFromMissingQueue() throws Exception {
-
-		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer("nonexistent", new VanillaListener(latch), connectionFactory);
-
-		brokerAdmin.stopBrokerApplication();
 
 	}
 
