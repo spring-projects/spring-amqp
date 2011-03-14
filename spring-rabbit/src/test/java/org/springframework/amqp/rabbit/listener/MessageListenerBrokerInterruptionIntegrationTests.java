@@ -17,6 +17,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -39,9 +40,9 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	private Queue queue = new Queue("test.queue");
 
-	private int concurrentConsumers = 1;
+	private int concurrentConsumers = 2;
 
-	private int messageCount = 10;
+	private int messageCount = 60;
 
 	private int txSize = 1;
 
@@ -107,12 +108,15 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		container = createContainer(new VanillaListener(latch), connectionFactory);
+		assertEquals("No more messages to receive before even sent!", messageCount, latch.getCount());
+		container = createContainer(queue.getName(), new VanillaListener(latch), connectionFactory);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
+		assertTrue("No more messages to receive before broker stopped", latch.getCount()>0);
 		brokerAdmin.stopBrokerApplication();
+		assertTrue("No more messages to receive after broker stopped", latch.getCount()>0);
 		boolean waited = latch.await(500, TimeUnit.MILLISECONDS);
 		assertFalse("Did not time out waiting for message", waited);
 
@@ -134,10 +138,21 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, ConnectionFactory connectionFactory) {
+	@Test(expected=AmqpIllegalStateException.class)
+	public void testListenerDoesNotRecoverFromMissingQueue() throws Exception {
+
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		container = createContainer("nonexistent", new VanillaListener(latch), connectionFactory);
+
+		brokerAdmin.stopBrokerApplication();
+
+	}
+
+	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
+			ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
-		container.setQueueName(queue.getName());
+		container.setQueueName(queueName);
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);

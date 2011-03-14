@@ -151,6 +151,13 @@ public class BlockingQueueConsumer {
 			channel.basicQos(prefetchCount);
 			for (int i = 0; i < queues.length; i++) {
 				channel.queueDeclarePassive(queues[i]);
+			}
+		} catch (IOException e) {
+			throw new ListenerStartupFatalException("Cannot prepare queue for listener. "
+					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
+		}
+		try {
+			for (int i = 0; i < queues.length; i++) {
 				channel.basicConsume(queues[i], acknowledgeMode.isAutoAck(), consumer);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Started " + this);

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener.adapter;
+package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 
 
 /**
@@ -27,14 +28,14 @@ import org.springframework.amqp.AmqpException;
  * @see MessageListenerAdapter
  */
 @SuppressWarnings("serial")
-public class ListenerExecutionFailedException extends AmqpException {
+public class ListenerStartupFatalException extends AmqpException {
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.
 	 * @param msg the detail message
 	 * @param cause the exception thrown by the listener method
 	 */
-	public ListenerExecutionFailedException(String msg, Throwable cause) {
+	public ListenerStartupFatalException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 

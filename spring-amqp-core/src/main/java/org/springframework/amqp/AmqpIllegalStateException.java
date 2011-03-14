@@ -28,4 +28,8 @@ public class AmqpIllegalStateException extends AmqpException {
 		super(message);
 	}
 
+	public AmqpIllegalStateException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 }

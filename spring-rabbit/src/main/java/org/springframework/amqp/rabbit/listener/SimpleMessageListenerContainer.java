@@ -18,15 +18,16 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.aopalliance.aop.Advice;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -279,17 +280,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return (int) cancellationLock.getCount();
 	}
 
-	@Override
-	protected void establishSharedConnection() throws Exception {
-		try {
-			super.establishSharedConnection();
-		} catch (AmqpException e) {
-			// Try to recover later...
-			logger.info("Could not start message listener container.  Consumer threads will attempt to reconnect. Exception ("
-					+ e.getClass().getName() + "): " + e.getMessage());
-		}
-	}
-
 	/**
 	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
 	 * to this container's task executor.
@@ -305,8 +295,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				return;
 			}
 			cancellationLock = new CountDownLatch(this.consumers.size());
+			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
 			for (BlockingQueueConsumer consumer : this.consumers) {
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
+				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer,
+						cancellationLock);
+				processors.add(processor);
+				this.taskExecutor.execute(processor);
+			}
+			for (AsyncMessageProcessingConsumer processor : processors) {
+				ListenerStartupFatalException startupException = processor.getStartupException();
+				if (startupException != null) {
+					throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
+				}
 			}
 		}
 	}
@@ -362,7 +362,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		BlockingQueueConsumer consumer;
 		String queueNames = getRequiredQueueName();
 		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
-		consumer = new BlockingQueueConsumer(getConnectionFactory(), getAcknowledgeMode(), isChannelTransacted(), prefetchCount, queues);
+		consumer = new BlockingQueueConsumer(getConnectionFactory(), getAcknowledgeMode(), isChannelTransacted(),
+				prefetchCount, queues);
 		return consumer;
 	}
 
@@ -428,17 +429,41 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final CountDownLatch latch;
 
+		private final CountDownLatch start;
+
+		private ListenerStartupFatalException startupException;
+
 		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, CountDownLatch latch) {
 			this.consumer = consumer;
 			this.latch = latch;
+			this.start = new CountDownLatch(1);
+		}
+
+		/**
+		 * Retrieve the fatal startup exception if this processor completely failed to locate the broker resources it
+		 * needed.  Blocks up to 60 seconds waiting (but should always return promptly in normal circumstances).
+		 * 
+		 * @return a startup exception if there was one
+		 * @throws TimeoutException if the consumer hasn't started
+		 * @throws InterruptedException if the consumer startup is interrupted
+		 */
+		public ListenerStartupFatalException getStartupException() throws TimeoutException, InterruptedException {
+			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
+				throw new TimeoutException("Timed out waiting for startup");
+			}
+			return startupException;
 		}
 
 		public void run() {
+
+			boolean aborted = false;
 
 			try {
 
 				try {
 					consumer.start();
+				} catch (ListenerStartupFatalException ex) {
+					throw ex;
 				} catch (Throwable t) {
 					handleStartupFailure(t);
 					throw t;
@@ -447,6 +472,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Always better to stop receiving as soon as possible if
 				// transactional
 				boolean continuable = false;
+				start.countDown();
 				while (isActive() || continuable) {
 					try {
 						// Will come back false when the queue is drained
@@ -459,25 +485,39 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			} catch (InterruptedException e) {
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
+				aborted = true;
+			} catch (ListenerStartupFatalException ex) {
+				logger.error("Consumer received fatal exception on startup", ex);
+				this.startupException = ex;
+				// Fatal, but no point re-throwing, so just abort.
+				aborted = true;
 			} catch (Throwable t) {
 				if (logger.isInfoEnabled()) {
-					logger.info("Consumer received fatal exception, processing stopped", t);
+					logger.info(
+							"Consumer raised exception, processing can restart if the connection factory supports it",
+							t);
 				} else {
-					logger.warn("Consumer received fatal exception, processing stopped: " + t);
+					logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
+							+ "Exception summary: " + t);
 				}
-			} finally {
-				if (!isActive()) {
-					logger.debug("Cancelling " + consumer);
-					latch.countDown();
-					try {
-						consumer.stop();
-					} catch (AmqpException e) {
-						logger.info("Could not stop message consumer on shutdown", e);
-					}
-				} else {
-					logger.info("Restarting " + consumer);
-					restart(consumer);
+			}
+
+			start.countDown();
+
+			if (!isActive() || aborted) {
+				logger.debug("Cancelling " + consumer);
+				latch.countDown();
+				try {
+					consumer.stop();
+				} catch (AmqpException e) {
+					logger.info("Could not stop message consumer on shutdown", e);
 				}
+				if (aborted) {
+					stop();
+				}
+			} else {
+				logger.info("Restarting " + consumer);
+				restart(consumer);
 			}
 
 		}
@@ -485,15 +525,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Give the container a chance to recover from consumer startup failure, e.g. if teh broker is down.
+	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval} to give the container a
+	 * chance to recover from consumer startup failure, e.g. if the broker is down.
 	 * 
 	 * @param t the exception that stopped the startup
 	 * @throws Exception if the shared connection still can't be established
 	 */
 	protected void handleStartupFailure(Throwable t) throws Exception {
 		try {
-			Thread.sleep(recoveryInterval);
-			establishSharedConnection();
+			long timeout = System.currentTimeMillis() + recoveryInterval;
+			while (isActive() && System.currentTimeMillis() < timeout) {
+				Thread.sleep(200);
+			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException("Unrecoverable interruption on consumer restart");

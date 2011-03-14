@@ -24,7 +24,6 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.listener.adapter.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.BeanNameAware;
@@ -46,8 +45,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	// TODO See if can replace methods with general throws Exception signature to use a more specific exception.
 
 	private volatile String beanName;
-
-	private volatile Connection sharedConnection;
 
 	private volatile boolean autoStartup = true;
 
@@ -295,8 +292,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			}
 			doInitialize();
 		} catch (Exception ex) {
-			ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
-			this.sharedConnection = null;
 			throw convertRabbitAccessException(ex);
 		}
 	}
@@ -320,10 +315,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			synchronized (this.lifecycleMonitor) {
 				this.running = false;
 				this.lifecycleMonitor.notifyAll();
-			}
-			if (sharedConnectionEnabled()) {
-				ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
-				this.sharedConnection = null;
 			}
 		}
 	}
@@ -379,10 +370,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @see #establishSharedConnection
 	 */
 	protected void doStart() throws Exception {
-		// Lazily establish a shared Connection, if necessary.
-		if (sharedConnectionEnabled()) {
-			establishSharedConnection();
-		}
 
 		// Reschedule paused tasks, if any.
 		synchronized (this.lifecycleMonitor) {
@@ -420,9 +407,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @see #stopSharedConnection
 	 */
 	protected void doStop() {
-		if (sharedConnectionEnabled()) {
-			stopSharedConnection();
-		}
 	}
 
 	/**
@@ -436,102 +420,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			return (this.running);
 		}
 	}
-
-	// -------------------------------------------------------------------------
-	// Management of a shared Rabbit Connection
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Establish a shared Connection for this container.
-	 * <p>
-	 * The default implementation delegates to {@link #createSharedConnection()}, which does one immediate attempt and
-	 * throws an exception if it fails. Can be overridden to have a recovery process in place, retrying until a
-	 * Connection can be successfully established.
-	 * @throws Exception if thrown by Rabbit API methods
-	 */
-	protected void establishSharedConnection() throws Exception {
-		if (this.sharedConnection == null) {
-			this.sharedConnection = createSharedConnection();
-			logger.debug("Established shared Rabbit Connection");
-		}
-	}
-
-	/**
-	 * Refresh the shared Connection that this container holds.
-	 * <p>
-	 * Called on startup and also after an infrastructure exception that occurred during invoker setup and/or execution.
-	 * @throws Exception if thrown by Rabbit API methods
-	 */
-	protected final void refreshSharedConnection() throws Exception {
-		ConnectionFactoryUtils.releaseConnection(this.sharedConnection);
-		this.sharedConnection = null;
-		this.sharedConnection = createSharedConnection();
-	}
-
-	/**
-	 * Create a shared Connection for this container.
-	 * <p>
-	 * The default implementation creates a standard Connection and prepares it through {@link #prepareSharedConnection}.
-	 * @return the prepared Connection
-	 * @throws Exception if the creation failed
-	 */
-	protected Connection createSharedConnection() throws Exception {
-		Connection con = createConnection();
-		try {
-			prepareSharedConnection(con);
-			return con;
-		} catch (Exception ex) {
-			RabbitUtils.closeConnection(con);
-			throw ex;
-		}
-	}
-
-	/**
-	 * Prepare the given Connection, which is about to be registered as shared Connection for this container.
-	 * <p>
-	 * The default implementation sets the specified client id, if any. Subclasses can override this to apply further
-	 * settings.
-	 * @param connection the Connection to prepare
-	 */
-	protected void prepareSharedConnection(Connection connection) {
-	}
-
-	/**
-	 * Stop the shared Connection, logging any exception thrown by Rabbit API methods.
-	 */
-	protected void stopSharedConnection() {
-		if (this.sharedConnection != null) {
-			try {
-				this.sharedConnection.close();
-			} catch (Exception ex) {
-				logger.debug("Ignoring Connection close exception - assuming already closed: " + ex);
-			}
-		}
-	}
-
-	/**
-	 * Return the shared Rabbit Connection maintained by this container. Available after initialization.
-	 * @return the shared Connection (never <code>null</code>)
-	 * @throws IllegalStateException if this container does not maintain a shared Connection, or if the Connection
-	 * hasn't been initialized yet
-	 * @see #sharedConnectionEnabled()
-	 */
-	protected final Connection getSharedConnection() {
-		if (!sharedConnectionEnabled()) {
-			throw new IllegalStateException("This listener container does not maintain a shared Connection");
-		}
-		if (this.sharedConnection == null) {
-			throw new SharedConnectionNotInitializedException(
-					"This listener container's shared Connection has not been initialized yet");
-		}
-		return this.sharedConnection;
-	}
-
-	/**
-	 * Return whether a shared Rabbit Connection should be maintained by this container base class.
-	 * @see #getSharedConnection()
-	 */
-	protected abstract boolean sharedConnectionEnabled();
 
 	/**
 	 * Invoke the registered ErrorHandler, if any. Log at error level otherwise.
