@@ -23,7 +23,7 @@ import org.w3c.dom.Element;
  * @author tomas.lukosius@opencredo.com
  * @since 1.0
  */
-class RabbitAdminParser extends AbstractSingleBeanDefinitionParser {
+class AdminParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String TEMPLATE_ATTRIBUTE = "rabbit-template";
 

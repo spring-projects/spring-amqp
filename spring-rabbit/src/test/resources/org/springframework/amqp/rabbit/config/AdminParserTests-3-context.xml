@@ -7,11 +7,9 @@
 	<bean id="connectionFactory"
 		class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" />
 
-	<bean id="template" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-		<constructor-arg ref="connectionFactory" />
-	</bean>
-
-	<!-- 'rabbit-template' and 'rabbit-connection-factory' attributes are set - context load should fail -->
-	<rabbit:rabbit-admin rabbit-connection-factory="" rabbit-template="template"/>
+	<!-- 'rabbit-template' and 'rabbit-connection-factory' attributes are set 
+		- context load should fail -->
+	<rabbit:admin rabbit-connection-factory="connectionFactory"
+		rabbit-template="" />
 
 </beans>

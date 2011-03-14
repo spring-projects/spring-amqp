@@ -8,12 +8,7 @@
 	<bean id="connectionFactory"
 		class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" />
 
-	<bean id="template" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-		<constructor-arg ref="connectionFactory" />
-	</bean>
-
 	<!-- Valid configuration -->
-	<rabbit:rabbit-admin id="admin-test"
-		rabbit-template="template" phase="12" auto-startup="false" />
+	<rabbit:admin rabbit-connection-factory="connectionFactory" />
 
 </beans>

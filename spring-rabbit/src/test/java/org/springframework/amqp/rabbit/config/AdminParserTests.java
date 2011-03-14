@@ -42,16 +42,17 @@ import org.springframework.util.StringUtils;
  * 
  */
 @RunWith(Parameterized.class)
-public final class RabbitAdminParserTests {
-	private static Log logger = LogFactory.getLog(RabbitAdminParserTests.class);
+public final class AdminParserTests {
+	private static Log logger = LogFactory.getLog(AdminParserTests.class);
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitAdminParserTests.class);
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, AdminParserTests.class);
 
-	// Test case expects context to be valid
+	// Specifies if test case expects context to be valid or not: true - context expects to be valid.
 	private boolean validContext = true;
 
-	// Index of context file name used by this test (template: <class-name>-<contextIndex>-context.xml)
+	// Index of context file used by this test case. Context file name has such template:
+	// <class-name>-<contextIndex>-context.xml.
 	private int contextIndex;
 
 	private int expectedPhase;
@@ -62,7 +63,7 @@ public final class RabbitAdminParserTests {
 
 	private boolean initialisedWithTemplate;
 
-	public RabbitAdminParserTests(int contextIndex, boolean validContext, String adminBeanName, int expectedPhase,
+	public AdminParserTests(int contextIndex, boolean validContext, String adminBeanName, int expectedPhase,
 			boolean expectedAutoStartup, boolean initialisedWithTemplate) {
 		super();
 		this.contextIndex = contextIndex;
@@ -96,7 +97,7 @@ public final class RabbitAdminParserTests {
 	 * @param contextIndex The index of spring context. Context file name template:
 	 * &lt;class-name&gt;-&lt;contextIndex&gt;-context.xml
 	 * @param validContext <code>true</code> if spring-context is expected to be loaded without failures.
-	 * @param adminBeanName The bean name of expected rabbit-admin. If its not specified - rabbit-admin will be
+	 * @param adminBeanName The bean name of expected rabbit admin. If its not specified - rabbit admin will be
 	 * retrieved by type.
 	 * @param expectedPhase 'phase' expected in {@link RabbitAdmin}.
 	 * @param expectedAutoStartup 'autoStartup' expected in {@link RabbitAdmin}.

@@ -536,7 +536,7 @@
 		</xsd:attribute>
 	</xsd:complexType>
 
-	<xsd:element name="rabbit-admin">
+	<xsd:element name="admin">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin) 

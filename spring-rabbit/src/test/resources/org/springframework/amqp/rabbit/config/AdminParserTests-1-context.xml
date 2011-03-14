@@ -5,10 +5,8 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="connectionFactory"
-		class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" />
-
-	<!-- Valid configuration -->
-	<rabbit:rabbit-admin rabbit-connection-factory="connectionFactory" />
+	<!-- One of 'rabbit-template' or 'rabbit-connection-factory' attributes 
+		must be set - context load should fail -->
+	<rabbit:admin />
 
 </beans>
