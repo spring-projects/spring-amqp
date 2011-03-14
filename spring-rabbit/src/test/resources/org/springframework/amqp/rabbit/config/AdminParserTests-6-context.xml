@@ -14,6 +14,6 @@
 
 	<!-- Valid configuration -->
 	<rabbit:admin id="admin-test"
-		rabbit-template="template" phase="12" auto-startup="false" />
+		template="template" phase="12" auto-startup="false" />
 
 </beans>

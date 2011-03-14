@@ -9,6 +9,6 @@
 		class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" />
 
 	<!-- Valid configuration -->
-	<rabbit:admin id="admin-test" rabbit-connection-factory="connectionFactory" phase="12" auto-startup="false"/>
+	<rabbit:admin id="admin-test" connection-factory="connectionFactory" phase="12" auto-startup="false"/>
 
 </beans>

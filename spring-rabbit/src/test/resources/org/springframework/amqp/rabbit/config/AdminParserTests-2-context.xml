@@ -13,7 +13,7 @@
 
 	<!-- 'rabbit-template' and 'rabbit-connection-factory' attributes are set 
 		- context load should fail -->
-	<rabbit:admin rabbit-connection-factory="connectionFactory"
-		rabbit-template="template" />
+	<rabbit:admin connection-factory="connectionFactory"
+		template="template" />
 
 </beans>

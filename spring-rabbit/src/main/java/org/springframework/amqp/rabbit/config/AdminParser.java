@@ -25,9 +25,9 @@ import org.w3c.dom.Element;
  */
 class AdminParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final String TEMPLATE_ATTRIBUTE = "rabbit-template";
+	private static final String TEMPLATE_ATTRIBUTE = "template";
 
-	private static final String CONNECTION_FACTORY_ATTRIBUTE = "rabbit-connection-factory";
+	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
 
 	private static final String PHASE_ATTRIBUTE = "phase";
 	

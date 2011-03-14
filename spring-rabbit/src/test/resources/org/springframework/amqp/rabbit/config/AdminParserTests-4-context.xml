@@ -11,7 +11,7 @@
 		<constructor-arg ref="connectionFactory" />
 	</bean>
 
-	<!-- 'rabbit-template' and 'rabbit-connection-factory' attributes are set - context load should fail -->
-	<rabbit:admin rabbit-connection-factory="" rabbit-template="template"/>
+	<!-- 'template' and 'connection-factory' attributes are set - context load should fail -->
+	<rabbit:admin connection-factory="" template="template"/>
 
 </beans>

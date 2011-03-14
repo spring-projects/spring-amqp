@@ -9,6 +9,6 @@
 		class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory" />
 
 	<!-- Valid configuration -->
-	<rabbit:admin rabbit-connection-factory="connectionFactory" />
+	<rabbit:admin connection-factory="connectionFactory" />
 
 </beans>

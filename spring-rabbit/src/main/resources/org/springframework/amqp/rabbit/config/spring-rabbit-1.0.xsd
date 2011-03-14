@@ -551,10 +551,10 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="rabbit-template" type="xsd:string">
+			<xsd:attribute name="template" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Reference to rabbit template. Either 'rabbit-template' or 'rabbit-connection-factory' attribute 
+	Reference to rabbit template. Either 'template' or 'connection-factory' attribute 
 	can be set.
 					]]></xsd:documentation>
 					<xsd:appinfo>
@@ -565,11 +565,11 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="rabbit-connection-factory" type="xsd:string">
+			<xsd:attribute name="connection-factory" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Reference to rabbit connection factory. Either 'rabbit-connection-factory' or 
-	'rabbit-template' attribute can be set.
+	Reference to rabbit connection factory. Either 'connection-factory' or 
+	'template' attribute can be set.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
