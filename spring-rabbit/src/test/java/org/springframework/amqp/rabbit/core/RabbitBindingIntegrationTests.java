@@ -13,6 +13,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
+import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
@@ -40,7 +41,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -79,7 +80,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -122,7 +123,7 @@ public class RabbitBindingIntegrationTests {
 		BlockingQueueConsumer consumer = template.execute(new ChannelCallback<BlockingQueueConsumer>() {
 			public BlockingQueueConsumer doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -156,7 +157,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -176,7 +177,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -208,7 +209,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
 
-				BlockingQueueConsumer consumer = createConsumer(channel);
+				BlockingQueueConsumer consumer = createConsumer(template);
 				String tag = consumer.getConsumerTag();
 				assertNotNull(tag);
 
@@ -227,8 +228,8 @@ public class RabbitBindingIntegrationTests {
 
 	}
 
-	private BlockingQueueConsumer createConsumer(Channel channel) {
-		BlockingQueueConsumer consumer = new BlockingQueueConsumer(channel, AcknowledgeMode.AUTO, true, 1, queue.getName());
+	private BlockingQueueConsumer createConsumer(RabbitAccessor accessor) {
+		BlockingQueueConsumer consumer = new BlockingQueueConsumer(accessor.getConnectionFactory(), AcknowledgeMode.AUTO, true, 1, queue.getName());
 		consumer.start();
 		return consumer;
 	}

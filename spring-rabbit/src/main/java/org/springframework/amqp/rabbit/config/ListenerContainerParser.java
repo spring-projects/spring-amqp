@@ -13,11 +13,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
@@ -26,6 +23,9 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * @author Mark Fisher
@@ -162,8 +162,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 	}
 
 	private BeanDefinition parseContainer(Element listenerEle, Element containerEle, ParserContext parserContext) {
-		RootBeanDefinition containerDef = new RootBeanDefinition(
-				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer");
+		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
 		containerDef.setSource(parserContext.extractSource(containerEle));
 
 		String connectionFactoryBeanName = "rabbitConnectionFactory";

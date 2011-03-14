@@ -13,7 +13,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -46,14 +46,18 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public class SimpleMessageListenerContainer extends
-		AbstractMessageListenerContainer {
+public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
-	private static final int DEFAULT_PREFETCH_COUNT = 1;
+	public static final int DEFAULT_PREFETCH_COUNT = 1;
 
-	private static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
+	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
+
+	/**
+	 * The default recovery interval: 5000 ms = 5 seconds.
+	 */
+	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
@@ -67,6 +71,8 @@ public class SimpleMessageListenerContainer extends
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
+	private long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
+
 	private Set<BlockingQueueConsumer> consumers;
 
 	private final Object consumersMonitor = new Object();
@@ -78,17 +84,14 @@ public class SimpleMessageListenerContainer extends
 	private CountDownLatch cancellationLock;
 
 	public static interface ContainerDelegate {
-		boolean receiveAndExecute(BlockingQueueConsumer consumer)
-				throws Throwable;
+		boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable;
 	}
 
 	private Advice[] advices = new Advice[0];
 
 	private ContainerDelegate delegate = new ContainerDelegate() {
-		public boolean receiveAndExecute(BlockingQueueConsumer consumer)
-				throws Throwable {
-			return SimpleMessageListenerContainer.this
-					.receiveAndExecute(consumer);
+		public boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+			return SimpleMessageListenerContainer.this.receiveAndExecute(consumer);
 		}
 	};
 
@@ -96,23 +99,28 @@ public class SimpleMessageListenerContainer extends
 
 	/**
 	 * <p>
-	 * Public setter for the {@link Advice} to apply to listener executions. If
-	 * {@link #setTxSize(int) txSize>1} then multiple listener executions will
-	 * all be wrapped in the same advice up to that limit.
+	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
+	 * multiple listener executions will all be wrapped in the same advice up to that limit.
 	 * </p>
 	 * <p>
-	 * If a {@link #setTransactionManager(PlatformTransactionManager)
-	 * transactionManager} is provided as well, then separate advice is created
-	 * for the transaction and applied first in the chain. In that case the
-	 * advice chain provided here should not contain a transaction interceptor
-	 * (otherwise two transactions would be be applied).
+	 * If a {@link #setTransactionManager(PlatformTransactionManager) transactionManager} is provided as well, then
+	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
+	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
 	 * </p>
 	 * 
-	 * @param advices
-	 *            the advice chain to set
+	 * @param advices the advice chain to set
 	 */
 	public void setAdviceChain(Advice[] advices) {
 		this.advices = advices;
+	}
+
+	/**
+	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
+	 * seconds.
+	 * @see #handleConsumerStartupFailure
+	 */
+	public void setRecoveryInterval(long recoveryInterval) {
+		this.recoveryInterval = recoveryInterval;
 	}
 
 	public SimpleMessageListenerContainer() {
@@ -125,14 +133,12 @@ public class SimpleMessageListenerContainer extends
 	/**
 	 * Specify the number of concurrent consumers to create. Default is 1.
 	 * <p>
-	 * Raising the number of concurrent consumers is recommended in order to
-	 * scale the consumption of messages coming in from a queue. However, note
-	 * that any ordering guarantees are lost once multiple consumers are
-	 * registered. In general, stick with 1 consumer for low-volume queues.
+	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
+	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
+	 * general, stick with 1 consumer for low-volume queues.
 	 */
 	public void setConcurrentConsumers(int concurrentConsumers) {
-		Assert.isTrue(concurrentConsumers > 0,
-				"'concurrentConsumers' value must be at least 1 (one)");
+		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
 		this.concurrentConsumers = concurrentConsumers;
 	}
 
@@ -141,15 +147,12 @@ public class SimpleMessageListenerContainer extends
 	}
 
 	/**
-	 * The time to wait for workers in milliseconds after the container is
-	 * stopped, and before the connection is forced closed. If any workers are
-	 * active when the shutdown signal comes they will be allowed to finish
-	 * processing as long as they can finish within this timeout. Otherwise the
-	 * connection is closed and messages remain unacked (if the channel is
-	 * transactional). Defaults to 5 seconds.
+	 * The time to wait for workers in milliseconds after the container is stopped, and before the connection is forced
+	 * closed. If any workers are active when the shutdown signal comes they will be allowed to finish processing as
+	 * long as they can finish within this timeout. Otherwise the connection is closed and messages remain unacked (if
+	 * the channel is transactional). Defaults to 5 seconds.
 	 * 
-	 * @param shutdownTimeout
-	 *            the shutdown timeout to set
+	 * @param shutdownTimeout the shutdown timeout to set
 	 */
 	public void setShutdownTimeout(long shutdownTimeout) {
 		this.shutdownTimeout = shutdownTimeout;
@@ -161,47 +164,39 @@ public class SimpleMessageListenerContainer extends
 	}
 
 	/**
-	 * Tells the broker how many messages to send to each consumer in a single
-	 * request. Often this can be set quite high to improve throughput. It
-	 * should be greater than or equal to {@link #setTxSize(int) the transaction
-	 * size}.
+	 * Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
+	 * to improve throughput. It should be greater than or equal to {@link #setTxSize(int) the transaction size}.
 	 * 
-	 * @param prefetchCount
-	 *            the prefetch count
+	 * @param prefetchCount the prefetch count
 	 */
 	public void setPrefetchCount(int prefetchCount) {
 		this.prefetchCount = prefetchCount;
 	}
 
 	/**
-	 * Tells the container how many messages to process in a single transaction
-	 * (if the channel is transactional). For best results it should be less
-	 * than or equal to {@link #setPrefetchCount(int) the prefetch count}.
+	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
+	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}.
 	 * 
-	 * @param prefetchCount
-	 *            the prefetch count
+	 * @param prefetchCount the prefetch count
 	 */
 	public void setTxSize(int txSize) {
 		this.txSize = txSize;
 	}
 
-	public void setTransactionManager(
-			PlatformTransactionManager transactionManager) {
+	public void setTransactionManager(PlatformTransactionManager transactionManager) {
 		this.transactionManager = transactionManager;
 	}
 
 	/**
-	 * @param transactionAttribute
-	 *            the transaction attribute to set
+	 * @param transactionAttribute the transaction attribute to set
 	 */
-	public void setTransactionAttribute(
-			TransactionAttribute transactionAttribute) {
+	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
 		this.transactionAttribute = transactionAttribute;
 	}
 
 	/**
-	 * Avoid the possibility of not configuring the CachingConnectionFactory in
-	 * sync with the number of concurrent consumers.
+	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
+	 * consumers.
 	 */
 	@Override
 	protected void validateConfiguration() {
@@ -239,7 +234,7 @@ public class SimpleMessageListenerContainer extends
 		}
 	}
 
-	public void initializeProxy() {
+	private void initializeProxy() {
 		if (advices.length == 0 && transactionManager == null) {
 			return;
 		}
@@ -247,12 +242,10 @@ public class SimpleMessageListenerContainer extends
 		if (transactionManager != null) {
 			MatchAlwaysTransactionAttributeSource txAttributeSource = new MatchAlwaysTransactionAttributeSource();
 			txAttributeSource.setTransactionAttribute(transactionAttribute);
-			Advice txAdvice = new TransactionInterceptor(transactionManager,
-					txAttributeSource);
-			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE,
-					txAdvice));
+			Advice txAdvice = new TransactionInterceptor(transactionManager, txAttributeSource);
+			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, txAdvice));
 		}
-		for (Advice advice : advices) {
+		for (Advice advice : getAdvices()) {
 			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
 		}
 		factory.setProxyTargetClass(false);
@@ -273,8 +266,8 @@ public class SimpleMessageListenerContainer extends
 	}
 
 	/**
-	 * Creates the specified number of concurrent consumers, in the form of a
-	 * Rabbit Channel plus associated MessageConsumer.
+	 * Creates the specified number of concurrent consumers, in the form of a Rabbit Channel plus associated
+	 * MessageConsumer.
 	 * 
 	 * @throws Exception
 	 */
@@ -286,16 +279,25 @@ public class SimpleMessageListenerContainer extends
 		return (int) cancellationLock.getCount();
 	}
 
+	@Override
+	protected void establishSharedConnection() throws Exception {
+		try {
+			super.establishSharedConnection();
+		} catch (AmqpException e) {
+			// Try to recover later...
+			logger.info("Could not start message listener container.  Consumer threads will attempt to reconnect. Exception ("
+					+ e.getClass().getName() + "): " + e.getMessage());
+		}
+	}
+
 	/**
-	 * Re-initializes this container's Rabbit message consumers, if not
-	 * initialized already. Then submits each consumer to this container's task
-	 * executor.
+	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
+	 * to this container's task executor.
 	 * 
 	 * @throws Exception
 	 */
 	protected void doStart() throws Exception {
 		super.doStart();
-		establishSharedConnection();
 		initializeConsumers();
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
@@ -304,8 +306,7 @@ public class SimpleMessageListenerContainer extends
 			}
 			cancellationLock = new CountDownLatch(this.consumers.size());
 			for (BlockingQueueConsumer consumer : this.consumers) {
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(
-						consumer, cancellationLock));
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
 			}
 		}
 	}
@@ -324,8 +325,7 @@ public class SimpleMessageListenerContainer extends
 
 		try {
 			logger.debug("Waiting for workers to finish.");
-			boolean finished = cancellationLock.await(shutdownTimeout,
-					TimeUnit.MILLISECONDS);
+			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {
 				logger.info("Successfully waited for workers to finish.");
 			} else {
@@ -342,15 +342,12 @@ public class SimpleMessageListenerContainer extends
 
 	}
 
-	protected void initializeConsumers() throws IOException {
+	protected void initializeConsumers() {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
-				this.consumers = new HashSet<BlockingQueueConsumer>(
-						this.concurrentConsumers);
+				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
 				for (int i = 0; i < this.concurrentConsumers; i++) {
-					Channel channel = getTransactionalResourceHolder()
-							.getChannel();
-					BlockingQueueConsumer consumer = createBlockingQueueConsumer(channel);
+					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
 				}
 			}
@@ -358,18 +355,14 @@ public class SimpleMessageListenerContainer extends
 	}
 
 	protected boolean isChannelLocallyTransacted(Channel channel) {
-		return super.isChannelLocallyTransacted(channel)
-				&& this.transactionManager == null;
+		return super.isChannelLocallyTransacted(channel) && this.transactionManager == null;
 	}
 
-	protected BlockingQueueConsumer createBlockingQueueConsumer(
-			final Channel channel) {
+	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
 		String queueNames = getRequiredQueueName();
-		String[] queues = StringUtils
-				.commaDelimitedListToStringArray(queueNames);
-		consumer = new BlockingQueueConsumer(channel, getAcknowledgeMode(),
-				isChannelTransacted(), prefetchCount, queues);
+		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
+		consumer = new BlockingQueueConsumer(getConnectionFactory(), getAcknowledgeMode(), isChannelTransacted(), prefetchCount, queues);
 		return consumer;
 	}
 
@@ -380,29 +373,24 @@ public class SimpleMessageListenerContainer extends
 					// Need to recycle the channel in this consumer
 					consumer.stop();
 					this.consumers.remove(consumer);
-					Channel channel = getTransactionalResourceHolder()
-							.getChannel();
-					consumer = createBlockingQueueConsumer(channel);
+					consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
 				} catch (RuntimeException e) {
 					// Ensure consumer counts are correct (another is not going
 					// to start because of the exception, but
 					// we haven't counted down yet)
-					logger.warn("Consumer died on restart. " + e.getClass()
-							+ ": " + e.getMessage());
+					logger.warn("Consumer died on restart. " + e.getClass() + ": " + e.getMessage());
 					cancellationLock.countDown();
 					// Thrown into the void (probably) in a background thread.
 					// Oh well, here goes...
 					throw e;
 				}
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(
-						consumer, cancellationLock));
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
 			}
 		}
 	}
 
-	private boolean receiveAndExecute(BlockingQueueConsumer consumer)
-			throws Throwable {
+	private boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
 
 		Channel channel = consumer.getChannel();
 
@@ -410,8 +398,8 @@ public class SimpleMessageListenerContainer extends
 
 		ConnectionFactory connectionFactory = getConnectionFactory();
 		if (getAcknowledgeMode().isTransactionAllowed()) {
-			ConnectionFactoryUtils.bindResourceToTransaction(
-					new RabbitResourceHolder(channel), connectionFactory, true);
+			ConnectionFactoryUtils
+					.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory, true);
 		}
 
 		for (int i = 0; i < txSize; i++) {
@@ -430,14 +418,17 @@ public class SimpleMessageListenerContainer extends
 
 	}
 
+	protected Advice[] getAdvices() {
+		return advices;
+	}
+
 	private class AsyncMessageProcessingConsumer implements Runnable {
 
 		private final BlockingQueueConsumer consumer;
 
 		private final CountDownLatch latch;
 
-		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer,
-				CountDownLatch latch) {
+		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, CountDownLatch latch) {
 			this.consumer = consumer;
 			this.latch = latch;
 		}
@@ -446,7 +437,12 @@ public class SimpleMessageListenerContainer extends
 
 			try {
 
-				consumer.start();
+				try {
+					consumer.start();
+				} catch (Throwable t) {
+					handleStartupFailure(t);
+					throw t;
+				}
 
 				// Always better to stop receiving as soon as possible if
 				// transactional
@@ -454,8 +450,7 @@ public class SimpleMessageListenerContainer extends
 				while (isActive() || continuable) {
 					try {
 						// Will come back false when the queue is drained
-						continuable = proxy.receiveAndExecute(consumer)
-								&& !isChannelTransacted();
+						continuable = proxy.receiveAndExecute(consumer) && !isChannelTransacted();
 					} catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
 					}
@@ -465,22 +460,44 @@ public class SimpleMessageListenerContainer extends
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 			} catch (Throwable t) {
-				logger.debug(
-						"Consumer received fatal exception, processing stopped.",
-						t);
+				if (logger.isInfoEnabled()) {
+					logger.info("Consumer received fatal exception, processing stopped", t);
+				} else {
+					logger.warn("Consumer received fatal exception, processing stopped: " + t);
+				}
 			} finally {
 				if (!isActive()) {
 					logger.debug("Cancelling " + consumer);
 					latch.countDown();
-					consumer.stop();
+					try {
+						consumer.stop();
+					} catch (AmqpException e) {
+						logger.info("Could not stop message consumer on shutdown", e);
+					}
 				} else {
-					logger.debug("Restarting " + consumer);
+					logger.info("Restarting " + consumer);
 					restart(consumer);
 				}
 			}
 
 		}
 
+	}
+
+	/**
+	 * Give the container a chance to recover from consumer startup failure, e.g. if teh broker is down.
+	 * 
+	 * @param t the exception that stopped the startup
+	 * @throws Exception if the shared connection still can't be established
+	 */
+	protected void handleStartupFailure(Throwable t) throws Exception {
+		try {
+			Thread.sleep(recoveryInterval);
+			establishSharedConnection();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
+		}
 	}
 
 }

@@ -71,37 +71,41 @@ public class ConnectionFactoryUtils {
 
 	/**
 	 * Obtain a RabbitMQ Channel that is synchronized with the current transaction, if any.
-	 * @param cf the ConnectionFactory to obtain a Channel for
+	 * @param connectionFactory the ConnectionFactory to obtain a Channel for
 	 * @param synchedLocalTransactionAllowed whether to allow for a local RabbitMQ transaction that is synchronized with
 	 * a Spring-managed transaction (where the main transaction might be a JDBC-based one for a specific DataSource, for
 	 * example), with the RabbitMQ transaction committing right after the main transaction. If not allowed, the given
 	 * ConnectionFactory needs to handle transaction enlistment underneath the covers.
 	 * @return the transactional Channel, or <code>null</code> if none found
 	 */
-	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory cf,
+	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
 			final boolean synchedLocalTransactionAllowed) {
 
-		return doGetTransactionalResourceHolder(cf, new ResourceFactory() {
-			public Channel getChannel(RabbitResourceHolder holder) {
-				return holder.getChannel();
-			}
+		RabbitResourceHolder holder = doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
+					public Channel getChannel(RabbitResourceHolder holder) {
+						return holder.getChannel();
+					}
 
-			public Connection getConnection(RabbitResourceHolder holder) {
-				return holder.getConnection();
-			}
+					public Connection getConnection(RabbitResourceHolder holder) {
+						return holder.getConnection();
+					}
 
-			public Connection createConnection() throws IOException {
-				return cf.createConnection();
-			}
+					public Connection createConnection() throws IOException {
+						return connectionFactory.createConnection();
+					}
 
-			public Channel createChannel(Connection con) throws IOException {
-				return con.createChannel(synchedLocalTransactionAllowed);
-			}
+					public Channel createChannel(Connection con) throws IOException {
+						return con.createChannel(synchedLocalTransactionAllowed);
+					}
 
-			public boolean isSynchedLocalTransactionAllowed() {
-				return synchedLocalTransactionAllowed;
-			}
-		});
+					public boolean isSynchedLocalTransactionAllowed() {
+						return synchedLocalTransactionAllowed;
+					}
+				});
+		if (synchedLocalTransactionAllowed) {
+			holder.declareTransactional();
+		}
+		return holder;
 	}
 
 	/**

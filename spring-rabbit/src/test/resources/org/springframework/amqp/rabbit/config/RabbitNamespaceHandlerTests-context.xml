@@ -41,7 +41,7 @@
 
 	<rabbit:queue name="bar" />
 
-	<rabbit:admin id="admin-test" rabbit-connection-factory="connectionFactory"/>
+	<rabbit:admin id="admin-test" connection-factory="connectionFactory"/>
 
 	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory"/>
 

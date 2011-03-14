@@ -12,6 +12,8 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 
 import com.rabbitmq.client.AMQP;
@@ -23,9 +25,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.utility.Utility;
 
 /**
- * Variation on QueueingConsumer in RabbitMQ, uses 'put' instead of 'add' and stored a reference to the consumerTag that
- * was returned when this Consumer was registered with the channel so as to make it easy to close the consumer when
- * shutting down.
+ * Specialized consumer encapsulating knowledge of the broker connections and having its own lifecycle (start and stop).
  * 
  * @author Mark Pollack
  * @author Dave Syer
@@ -35,6 +35,7 @@ public class BlockingQueueConsumer {
 
 	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
+	// This must be an unbounded queue or we risk blocking the Connection thread.
 	private final BlockingQueue<Delivery> queue = new LinkedBlockingQueue<Delivery>();
 
 	// When this is non-null the connection has been closed (should never happen in normal operation).
@@ -46,22 +47,27 @@ public class BlockingQueueConsumer {
 
 	private final boolean transactional;
 
-	private final Channel channel;
+	private Channel channel;
+
+	private InternalConsumer consumer;
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	private final InternalConsumer consumer;
-
 	private final AcknowledgeMode acknowledgeMode;
 
-	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, boolean transactional,
-			int prefetchCount, String... queues) {
-		this.channel = channel;
+	private final ConnectionFactory connectionFactory;
+
+	/**
+	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
+	 * until it is started.
+	 */
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int prefetchCount, String... queues) {
+		this.connectionFactory = connectionFactory;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
 		this.queues = queues;
-		this.consumer = new InternalConsumer(channel);
 	}
 
 	public Channel getChannel() {
@@ -136,6 +142,9 @@ public class BlockingQueueConsumer {
 	}
 
 	public void start() throws AmqpException {
+		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
+				.getChannel();
+		this.consumer = new InternalConsumer(channel);
 		try {
 			// Set basicQos before calling basicConsume (it is ignored if we are not transactional and the broker will
 			// send blocks of 100 messages)
@@ -155,14 +164,8 @@ public class BlockingQueueConsumer {
 	public void stop() {
 		cancelled.set(true);
 		logger.debug("Closing Rabbit Channel: " + channel);
-		try {
+		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null) {
 			RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
-		} catch (AmqpException e) {
-			if (logger.isDebugEnabled()) {
-				logger.info("Could not close message consumer on shutdown", e);
-			} else {
-				logger.info("Could not close message consumer on shutdown (" + e.getClass() + "): " + e.getMessage());
-			}
 		}
 		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
@@ -234,8 +237,8 @@ public class BlockingQueueConsumer {
 
 	@Override
 	public String toString() {
-		return "Consumer: tag=[" + consumer.getConsumerTag() + "], channel=" + channel + ", acknowledgeMode="
-				+ acknowledgeMode + " local queue size=" + queue.size();
+		return "Consumer: tag=[" + (consumer != null ? consumer.getConsumerTag() : null) + "], channel=" + channel
+				+ ", acknowledgeMode=" + acknowledgeMode + " local queue size=" + queue.size();
 	}
 
 }
