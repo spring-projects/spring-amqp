@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.aopalliance.aop.Advice;
 import org.springframework.amqp.AmqpException;
@@ -431,7 +432,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final CountDownLatch start;
 
-		private ListenerStartupFatalException startupException;
+		private volatile ListenerStartupFatalException startupException;
+
+		private AtomicBoolean started = new AtomicBoolean(false);
 
 		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, CountDownLatch latch) {
 			this.consumer = consumer;
@@ -441,13 +444,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		/**
 		 * Retrieve the fatal startup exception if this processor completely failed to locate the broker resources it
-		 * needed.  Blocks up to 60 seconds waiting (but should always return promptly in normal circumstances).
+		 * needed. Blocks up to 60 seconds waiting (but should always return promptly in normal circumstances).
 		 * 
 		 * @return a startup exception if there was one
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		public ListenerStartupFatalException getStartupException() throws TimeoutException, InterruptedException {
+			if (!started.get()) {
+				return null;
+			}
 			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("Timed out waiting for startup");
 			}
@@ -457,6 +463,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		public void run() {
 
 			boolean aborted = false;
+			this.started.set(true);
 
 			try {
 
