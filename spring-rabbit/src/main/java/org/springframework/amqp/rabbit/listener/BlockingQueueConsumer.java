@@ -45,7 +45,7 @@ public class BlockingQueueConsumer {
 	private final int prefetchCount;
 
 	private final boolean transactional;
-	
+
 	private final Channel channel;
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
@@ -54,7 +54,8 @@ public class BlockingQueueConsumer {
 
 	private final AcknowledgeMode acknowledgeMode;
 
-	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, boolean transactional, int prefetchCount, String... queues) {
+	public BlockingQueueConsumer(Channel channel, AcknowledgeMode acknowledgeMode, boolean transactional,
+			int prefetchCount, String... queues) {
 		this.channel = channel;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
@@ -154,7 +155,16 @@ public class BlockingQueueConsumer {
 	public void stop() {
 		cancelled.set(true);
 		logger.debug("Closing Rabbit Channel: " + channel);
-		RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+		try {
+			RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+		} catch (AmqpException e) {
+			if (logger.isDebugEnabled()) {
+				logger.info("Could not close message consumer on shutdown", e);
+			} else {
+				logger.info("Could not close message consumer on shutdown (" + e.getClass() + "): " + e.getMessage());
+			}
+		}
+		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
 	}
 
