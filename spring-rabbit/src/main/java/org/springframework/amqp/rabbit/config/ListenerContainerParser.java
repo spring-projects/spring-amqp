@@ -203,7 +203,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String concurrency = containerEle.getAttribute(CONCURRENCY_ATTRIBUTE);
 		if (StringUtils.hasText(concurrency)) {
-			containerDef.getPropertyValues().add("concurrency", concurrency);
+			containerDef.getPropertyValues().add("concurrentConsumers", concurrency);
 		}
 
 		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
