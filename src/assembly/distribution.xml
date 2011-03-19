@@ -20,7 +20,6 @@
 				<include>apache-license.txt</include>
 				<include>epl-license.txt</include>
 				<include>notice.txt</include>
-				<include>changelog.txt</include>
 			</includes>
 			<outputDirectory/>
 			<lineEnding>dos</lineEnding>
@@ -38,14 +37,6 @@
 			<directory>target/site/apidocs</directory>
 			<outputDirectory>docs/javadoc</outputDirectory>
 		</fileSet>
-		<fileSet>
-			<!-- adds sample projects distribution archive under the 'samples' directory -->
-			<directory>spring-amqp-samples</directory>
-			<excludes>
-				<exclude>*/target/</exclude>
-			</excludes>
-			<outputDirectory>samples</outputDirectory>
-		</fileSet>
 	</fileSets>
 	<moduleSets>
 		<moduleSet>
@@ -54,7 +45,6 @@
 				<include>org.springframework.amqp:spring-amqp</include>
 				<include>org.springframework.amqp:spring-erlang</include>
 				<include>org.springframework.amqp:spring-rabbit</include>
-				<include>org.springframework.amqp:spring-rabbit-admin</include>
 			</includes>
 			<binaries>
 				<outputDirectory>dist</outputDirectory>
@@ -69,7 +59,6 @@
 				<include>org.springframework.amqp:spring-amqp</include>
 				<include>org.springframework.amqp:spring-erlang</include>
 				<include>org.springframework.amqp:spring-rabbit</include>
-				<include>org.springframework.amqp:spring-rabbit-admin</include>
 			</includes>
 			<binaries>
 				<attachmentClassifier>sources</attachmentClassifier>
