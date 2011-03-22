@@ -13,6 +13,8 @@
 
 package org.springframework.amqp.core;
 
+import java.nio.charset.Charset;
+
 import org.springframework.amqp.utils.SerializationUtils;
 
 /**
@@ -74,17 +76,15 @@ public class Message {
 				return SerializationUtils.deserialize(body).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)) {
-				// TODO: use charset
-				return new String(body);
+				return new String(body, Charset.defaultCharset());
 			}
 			if (MessageProperties.CONTENT_TYPE_JSON.equals(contentType)) {
-				// TODO: use charset
-				return new String(body);
+				return new String(body, Charset.defaultCharset());
 			}
-			return body.toString();
 		} catch (Exception e) {
-			return "Undeserializable body of length: " + body.length;
+			// ignore
 		}
+		return body.toString()+"(byte["+body.length+"])"; // Comes out as '[B@....b' (so harmless)
 	}
 
 }
