@@ -62,10 +62,6 @@
 							<junitArtifactName>junit:junit</junitArtifactName>
 						</configuration>
 					</plugin>
-					<plugin>
-						<groupId>com.springsource.bundlor</groupId>
-						<artifactId>com.springsource.bundlor.maven</artifactId>
-					</plugin>
 				</plugins>
 			</build>
 		</profile>
@@ -403,6 +399,9 @@
 							</goals>
 						</execution>
 					</executions>
+					<configuration>
+						<failOnWarnings>true</failOnWarnings>
+					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>

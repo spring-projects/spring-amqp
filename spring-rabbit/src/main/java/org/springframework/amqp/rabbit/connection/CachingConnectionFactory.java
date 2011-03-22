@@ -19,8 +19,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -185,7 +183,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			String methodName = method.getName();
 			if (methodName.equals("txSelect") && !this.transactional) {
-				throw new OperationNotSupportedException("Cannot start transaction on non-transactional channel");
+				throw new UnsupportedOperationException("Cannot start transaction on non-transactional channel");
 			}
 			if (methodName.equals("equals")) {
 				// Only consider equal when proxies are identical.
