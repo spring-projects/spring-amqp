@@ -60,7 +60,7 @@ public class MessageTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		Message message = new Message("foo".getBytes(), messageProperties);
-		System.err.println(message);
+		// System.err.println(message);
 		assertNotNull(message.toString());
 	}
 
