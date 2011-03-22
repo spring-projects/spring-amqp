@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.springframework.amqp</groupId>
 	<artifactId>spring-amqp-parent</artifactId>
@@ -34,6 +35,39 @@
 				<maven.test.skip>true</maven.test.skip>
 				<maven.javadoc.skip>true</maven.javadoc.skip>
 			</properties>
+		</profile>
+		<profile>
+			<id>integration</id>
+			<properties>
+				<integration.test>true</integration.test>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<systemProperties>
+								<property>
+									<name>BROKER_INTEGRATION_TEST</name>
+									<value>${integration.test}</value>
+								</property>
+							</systemProperties>
+							<useFile>false</useFile>
+							<includes>
+								<include>**/*Tests.java</include>
+							</includes>
+							<excludes>
+								<exclude>**/Abstract*.java</exclude>
+							</excludes>
+							<junitArtifactName>junit:junit</junitArtifactName>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>com.springsource.bundlor</groupId>
+						<artifactId>com.springsource.bundlor.maven</artifactId>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>staging</id>
@@ -78,10 +112,9 @@
 		</snapshotRepository>
 	</distributionManagement>
 	<dependencyManagement>
-		<!-- inheritable <dependency> declarations for child poms. children still 
-			must explicitly declare the groupId/artifactId of these dependencies in order 
-			for them to show up on the classpath, but metadata like <version> and <scope> 
-			are inherited, which cuts down on verbosity. see http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html -->
+		<!-- inheritable <dependency> declarations for child poms. children still must explicitly declare the groupId/artifactId 
+			of these dependencies in order for them to show up on the classpath, but metadata like <version> and <scope> are inherited, 
+			which cuts down on verbosity. see http://www.sonatype.com/books/mvnref-book/reference/pom-relationships-sect-dep-manage.html -->
 		<dependencies>
 
 			<dependency>
@@ -248,10 +281,9 @@
 		</dependencies>
 	</dependencyManagement>
 	<dependencies>
-		<!-- dependency definitions to be inherited by child poms. any <dependency> 
-			declarations here will automatically show up on child project classpaths. 
-			only items that are truly common across all projects (modules and samples) 
-			should go here. otherwise, consider <dependencyManagement> above -->
+		<!-- dependency definitions to be inherited by child poms. any <dependency> declarations here will automatically show up 
+			on child project classpaths. only items that are truly common across all projects (modules and samples) should go here. otherwise, 
+			consider <dependencyManagement> above -->
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
@@ -262,8 +294,7 @@
 	<build>
 		<extensions>
 			<extension>
-				<!-- available only in the springframework maven repository. see <repositories> 
-					section below -->
+				<!-- available only in the springframework maven repository. see <repositories> section below -->
 				<groupId>org.springframework.build.aws</groupId>
 				<artifactId>org.springframework.build.aws.maven</artifactId>
 				<version>3.0.0.RELEASE</version>
@@ -356,14 +387,11 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
-					<!-- configures the springsource bundlor plugin, which generates OSGI-compatible 
-						MANIFEST.MF files during the 'compile' phase of the maven build. this plugin 
-						is declared within the pluginManagement section because not every module 
-						that inherits from this pom needs bundlor's services, e.g.: spring-integration-samples 
-						and all its children. for this reason, all modules that wish to use bundlor 
-						must declare it explicitly. it is not necessary to specify the <version> 
-						or <configuration> sections, but groupId and artifactId are required. see 
-						http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html 
+					<!-- configures the springsource bundlor plugin, which generates OSGI-compatible MANIFEST.MF files during the 'compile' 
+						phase of the maven build. this plugin is declared within the pluginManagement section because not every module that inherits 
+						from this pom needs bundlor's services, e.g.: spring-integration-samples and all its children. for this reason, all modules 
+						that wish to use bundlor must declare it explicitly. it is not necessary to specify the <version> or <configuration> sections, 
+						but groupId and artifactId are required. see http://static.springsource.org/s2-bundlor/1.0.x/user-guide/html/ch04s03.html 
 						for more info -->
 					<groupId>com.springsource.bundlor</groupId>
 					<artifactId>com.springsource.bundlor.maven</artifactId>
@@ -407,8 +435,7 @@
 	<reporting>
 		<plugins>
 			<plugin>
-				<!-- significantly speeds up the 'Dependencies' report during site creation 
-					see http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html -->
+				<!-- significantly speeds up the 'Dependencies' report during site creation see http://old.nabble.com/Skipping-dependency-report-during-Maven2-site-generation-td20116761.html -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.1</version>

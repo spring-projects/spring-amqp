@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import junit.framework.Assert;
@@ -12,12 +11,13 @@ import junit.framework.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
-import org.springframework.util.exec.Os;
 
 import com.ericsson.otp.erlang.OtpConnection;
 import com.ericsson.otp.erlang.OtpErlangBinary;
@@ -32,15 +32,31 @@ public class JInterfaceIntegrationTests {
 
 	private static int counter;
 
+	private static final String NODE_NAME = "spring@localhost";
+
 	private OtpConnection connection = null;
+
+	private RabbitBrokerAdmin brokerAdmin;
 
 	@Rule
 	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
+
+	@Before
+	public void init() {
+		brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin(NODE_NAME);
+		RabbitStatus status = brokerAdmin.getStatus();
+		if (!status.isRunning()) {
+			brokerAdmin.startBrokerApplication();
+		}
+	}
 
 	@After
 	public void close() {
 		if (connection != null) {
 			connection.close();
+		}
+		if (brokerAdmin != null) {
+			brokerAdmin.stopNode();
 		}
 	}
 
@@ -49,7 +65,7 @@ public class JInterfaceIntegrationTests {
 
 		OtpSelf self = new OtpSelf("rabbit-monitor");
 
-		String hostName = "rabbit@" + getHostName();
+		String hostName = NODE_NAME;
 		OtpPeer peer = new OtpPeer(hostName);
 		connection = self.connect(peer);
 
@@ -67,7 +83,7 @@ public class JInterfaceIntegrationTests {
 	public void otpTemplate() throws UnknownHostException {
 
 		String selfNodeName = "rabbit-monitor";
-		String peerNodeName = "rabbit@" + getHostName();
+		String peerNodeName = NODE_NAME;
 
 		SingleConnectionFactory cf = new SingleConnectionFactory(selfNodeName, peerNodeName);
 
@@ -82,14 +98,6 @@ public class JInterfaceIntegrationTests {
 
 	}
 
-	private String getHostName() throws UnknownHostException {
-		String hostName = InetAddress.getLocalHost().getHostName();
-		if (Os.isFamily("windows")) {
-			hostName = hostName.toUpperCase();
-		}
-		return hostName;
-	}
-
 	@Test
 	public void testRawOtpConnect() throws Exception {
 		createConnection();
@@ -98,7 +106,7 @@ public class JInterfaceIntegrationTests {
 	@Test
 	public void stressTest() throws Exception {
 		String cookie = readCookie();
-		logger.info("Cookie: "+cookie);
+		logger.info("Cookie: " + cookie);
 		OtpConnection con = createConnection();
 		boolean recycleConnection = false;
 		for (int i = 0; i < 100; i++) {
@@ -115,7 +123,7 @@ public class JInterfaceIntegrationTests {
 
 	public OtpConnection createConnection() throws Exception {
 		OtpSelf self = new OtpSelf("rabbit-monitor-" + counter++);
-		OtpPeer peer = new OtpPeer("rabbit@" + getHostName());
+		OtpPeer peer = new OtpPeer(NODE_NAME);
 		return self.connect(peer);
 	}
 
