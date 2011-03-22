@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;

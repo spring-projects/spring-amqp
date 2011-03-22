@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.rabbit.connection.Connection;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 

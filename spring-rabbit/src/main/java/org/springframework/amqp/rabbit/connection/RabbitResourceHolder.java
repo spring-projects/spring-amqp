@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;

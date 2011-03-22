@@ -13,8 +13,8 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
-import org.springframework.amqp.rabbit.support.RabbitAccessor;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 

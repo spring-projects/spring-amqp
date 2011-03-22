@@ -14,7 +14,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;

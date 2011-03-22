@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -29,7 +29,6 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 

@@ -18,7 +18,6 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
