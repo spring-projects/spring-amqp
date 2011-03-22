@@ -39,7 +39,6 @@ import org.springframework.transaction.interceptor.MatchAlwaysTransactionAttribu
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -361,8 +360,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
-		String queueNames = getRequiredQueueName();
-		String[] queues = StringUtils.commaDelimitedListToStringArray(queueNames);
+		String[] queues = getRequiredQueueNames();
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), getAcknowledgeMode(), isChannelTransacted(),
 				prefetchCount, queues);
 		return consumer;

@@ -146,7 +146,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			container.setPrefetchCount(transactionMode.getPrefetch());
 			container.setTxSize(transactionMode.getTxSize());
 		}
-		container.setQueueName(queue.getName());
+		container.setQueueNames(queue.getName());
 		container.afterPropertiesSet();
 		container.start();
 

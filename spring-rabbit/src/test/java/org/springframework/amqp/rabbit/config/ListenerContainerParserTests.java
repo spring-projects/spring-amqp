@@ -18,6 +18,8 @@ package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,7 +52,7 @@ public final class ListenerContainerParserTests {
 		DirectFieldAccessor listenerAccessor = new DirectFieldAccessor(container.getMessageListener());
 		assertEquals(beanFactory.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
-		assertEquals("foo, bar", container.getQueueName());
+		assertEquals("[foo, bar]", Arrays.asList(container.getQueueNames()).toString());
 	}
 
 

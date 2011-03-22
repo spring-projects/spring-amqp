@@ -151,7 +151,7 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 			ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
-		container.setQueueName(queueName);
+		container.setQueueNames(queueName);
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);

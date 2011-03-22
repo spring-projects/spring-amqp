@@ -21,10 +21,20 @@ import org.springframework.util.StringUtils;
 /**
  * Represents an address for publication of an AMQP message. The AMQP 0-8 and 0-9 specifications have an unstructured
  * string that is used as a "reply to" address. There are however conventions in use and this class makes it easier to
- * follow these conventions.
+ * follow these conventions, which can be easily summarised as:
+ * 
+ * <pre>
+ * (exchangeType)://(exchange)/(routingKey)
+ * </pre>
+ * 
+ * Here we also allow the exchange type to default to direct, and the exchange name to default to empty (so just a
+ * routing key will work if you know the queue name).
+ * 
+ * @see ExchangeTypes
  * 
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class Address {
 

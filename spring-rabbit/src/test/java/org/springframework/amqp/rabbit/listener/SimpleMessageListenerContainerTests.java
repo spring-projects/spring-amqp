@@ -36,7 +36,7 @@ public class SimpleMessageListenerContainerTests {
 	public void testInconsistentTransactionConfiguration() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(this));
-		container.setQueueName("foo");
+		container.setQueueNames("foo");
 		container.setChannelTransacted(false);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
@@ -48,7 +48,7 @@ public class SimpleMessageListenerContainerTests {
 	public void testInconsistentAcknowledgeConfiguration() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(this));
-		container.setQueueName("foo");
+		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		expectedException.expect(IllegalStateException.class);

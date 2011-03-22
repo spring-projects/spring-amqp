@@ -151,7 +151,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 		container.setPrefetchCount(messageCount);
 		container.setTxSize(messageCount);
-		container.setQueueName(queue.getName());
+		container.setQueueNames(queue.getName());
 		container.setErrorHandler(errorHandler);
 		container.afterPropertiesSet();
 		container.start();

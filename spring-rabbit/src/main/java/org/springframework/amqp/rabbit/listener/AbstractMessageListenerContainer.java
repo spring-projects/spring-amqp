@@ -56,7 +56,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 
 	private final Object lifecycleMonitor = new Object();
 
-	private volatile String queueName;
+	private volatile String[] queueNames;
 
 	private ErrorHandler errorHandler;
 
@@ -104,35 +104,31 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Set the name of the queue to receive messages from.
 	 * @param queueName the desired queue (can not be <code>null</code>)
 	 */
-	public void setQueueName(String queueName) {
-		// TODO change to QueueNames(String... queueNames)
-		Assert.notNull(queueName, "'queueName' must not be null");
-		this.queueName = queueName;
+	public void setQueueNames(String... queueName) {
+		this.queueNames = queueName;
 	}
 
 	public void setQueues(Queue... queues) {
-		// TODO check for null arg value, refactor out of string based
-		// conventions. Merge with string queue name values?
-		StringBuilder sb = new StringBuilder();
-		int size = queues.length;
-		for (int i = 0; i < size; i++) {
-			sb.append(queues[i].getName());
-			if (i != size - 1)
-				sb.append(",");
+		// TODO: Merge with string queue name values?
+		String[] queueNames = new String[queues.length];
+		for (int i = 0; i < queues.length; i++) {
+			Assert.notNull(queues[i], "Queue must not be null.");
+			queueNames[i] = queues[i].getName();
 		}
-		this.queueName = sb.toString();
+		this.queueNames = queueNames;
 	}
 
 	/**
 	 * Return the name of the queue to receive messages from.
 	 */
-	public String getQueueName() {
-		return this.queueName;
+	public String[] getQueueNames() {
+		return this.queueNames;
 	}
 
-	protected String getRequiredQueueName() {
-		Assert.notNull(this.queueName, "Queue name must not be null.");
-		return this.queueName;
+	protected String[] getRequiredQueueNames() {
+		Assert.notNull(this.queueNames, "Queue names must not be null.");
+		Assert.state(this.queueNames.length > 0, "Queue names must not be empty.");
+		return this.queueNames;
 	}
 
 	/**
@@ -348,7 +344,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			return this.active;
 		}
 	}
-	
+
 	/**
 	 * Start this container.
 	 * @see #doStart
@@ -512,7 +508,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by Rabbit API methods or listener itself. 
+	 * @throws Exception if thrown by Rabbit API methods or listener itself.
 	 * <p/>
 	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 * @see ChannelAwareMessageListener
@@ -580,7 +576,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		} else if (ackRequired) {
 			if (ackRequired) {
 				channel.basicAck(deliveryTag, false);
-			}			
+			}
 		}
 
 	}

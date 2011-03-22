@@ -165,11 +165,6 @@ public class MessageProperties {
 		this.replyTo = replyTo;
 	}
 
-	//TODO - create Address/ReplyTo class to encapsulate exchangeType/exchange/routingkey ? 
-	//       qpid 0.8/1.0 .NET don't use a single string, but a pair.  
-	//       qpid 0.8 Java uses a single string
-	//
-	//       See RabbitMQ .NET developer guide for more details on conventions for this string
 	public Address getReplyTo() {
 		return this.replyTo;
 	}
@@ -197,9 +192,6 @@ public class MessageProperties {
 	public long getContentLength() {
 		return this.contentLength;
 	}
-
-	//public void setDefaultCharset(String charSet) {
-	//}
 
 	public void setDeliveryMode(MessageDeliveryMode deliveryMode) {
 		this.deliveryMode = deliveryMode;

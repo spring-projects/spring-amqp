@@ -73,10 +73,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String PHASE_ATTRIBUTE = "phase";
 
-
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
-		CompositeComponentDefinition compositeDef =
-			new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
+		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
+				parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
 		NodeList childNodes = element.getChildNodes();
@@ -89,7 +88,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 				}
 			}
 		}
-		
+
 		parserContext.popAndRegisterContainingComponent();
 		return null;
 	}
@@ -97,13 +96,11 @@ class ListenerContainerParser implements BeanDefinitionParser {
 	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
-		
+
 		String ref = listenerEle.getAttribute(REF_ATTRIBUTE);
 		if (!StringUtils.hasText(ref)) {
-			parserContext.getReaderContext().error(
-					"Listener 'ref' attribute contains empty value.", listenerEle);
-		}
-		else {
+			parserContext.getReaderContext().error("Listener 'ref' attribute contains empty value.", listenerEle);
+		} else {
 			listenerDef.getPropertyValues().add("delegate", new RuntimeBeanReference(ref));
 		}
 
@@ -111,8 +108,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		if (listenerEle.hasAttribute(METHOD_ATTRIBUTE)) {
 			method = listenerEle.getAttribute(METHOD_ATTRIBUTE);
 			if (!StringUtils.hasText(method)) {
-				parserContext.getReaderContext().error(
-						"Listener 'method' attribute contains empty value.", listenerEle);
+				parserContext.getReaderContext()
+						.error("Listener 'method' attribute contains empty value.", listenerEle);
 			}
 		}
 		listenerDef.getPropertyValues().add("defaultListenerMethod", method);
@@ -122,10 +119,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			if (!StringUtils.hasText(messageConverter)) {
 				parserContext.getReaderContext().error(
 						"Listener container 'message-converter' attribute contains empty value.", containerEle);
-			}
-			else {
-				listenerDef.getPropertyValues().add("messageConverter",
-						new RuntimeBeanReference(messageConverter));
+			} else {
+				listenerDef.getPropertyValues().add("messageConverter", new RuntimeBeanReference(messageConverter));
 			}
 		}
 
@@ -145,17 +140,18 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		containerDef.getPropertyValues().add("messageListener", listenerDef);
 
 		String containerBeanName = listenerEle.getAttribute(ID_ATTRIBUTE);
-		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator 
+		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator
 		if (!StringUtils.hasText(containerBeanName)) {
 			containerBeanName = parserContext.getReaderContext().generateBeanName(containerDef);
 		}
 
 		String queueNames = listenerEle.getAttribute(QUEUE_NAMES_ATTRIBUTE);
 		if (!StringUtils.hasText(queueNames)) {
-			parserContext.getReaderContext().error(
-					"Listener 'queue-names' attribute contains empty value.", listenerEle);
+			parserContext.getReaderContext().error("Listener 'queue-names' attribute contains empty value.",
+					listenerEle);
 		}
-		containerDef.getPropertyValues().add("queueName", queueNames);
+		containerDef.getPropertyValues().add("queueNames",
+				StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(queueNames)));
 
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
@@ -180,14 +176,12 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String taskExecutorBeanName = containerEle.getAttribute(TASK_EXECUTOR_ATTRIBUTE);
 		if (StringUtils.hasText(taskExecutorBeanName)) {
-			containerDef.getPropertyValues().add("taskExecutor",
-					new RuntimeBeanReference(taskExecutorBeanName));
+			containerDef.getPropertyValues().add("taskExecutor", new RuntimeBeanReference(taskExecutorBeanName));
 		}
 
 		String errorHandlerBeanName = containerEle.getAttribute(ERROR_HANDLER_ATTRIBUTE);
 		if (StringUtils.hasText(errorHandlerBeanName)) {
-			containerDef.getPropertyValues().add("errorHandler",
-					new RuntimeBeanReference(errorHandlerBeanName));
+			containerDef.getPropertyValues().add("errorHandler", new RuntimeBeanReference(errorHandlerBeanName));
 		}
 
 		AcknowledgeMode acknowledgeMode = parseAcknowledgeMode(containerEle, parserContext);
@@ -230,20 +224,17 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		if (StringUtils.hasText(acknowledge)) {
 			if (ACKNOWLEDGE_AUTO.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.AUTO;
-			}
-			else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
+			} else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.MANUAL;
-			}
-			else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
+			} else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.NONE;
-			}
-			else {
-				parserContext.getReaderContext().error("Invalid listener container 'acknowledge' setting [" +
-						acknowledge + "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
+			} else {
+				parserContext.getReaderContext().error(
+						"Invalid listener container 'acknowledge' setting [" + acknowledge
+								+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
 			}
 			return acknowledgeMode;
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
