@@ -13,7 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
+import org.springframework.amqp.AmqpException;
 
 /**
  * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection Connections}.
@@ -26,7 +26,7 @@ import java.io.IOException;
  */
 public interface ConnectionFactory {
 
-	Connection createConnection() throws IOException;
+	Connection createConnection() throws AmqpException;
 
 	String getHost();
 

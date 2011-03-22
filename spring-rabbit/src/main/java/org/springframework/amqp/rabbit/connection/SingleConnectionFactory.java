@@ -16,9 +16,11 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
@@ -49,6 +51,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
+	
+	private final CompositeConnectionListener listener = new CompositeConnectionListener();
 
 	/**
 	 * Create a new SingleConnectionFactory initializing the hostname to be the value returned from
@@ -111,7 +115,15 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return this.rabbitConnectionFactory.getPort();
 	}
 
-	public final Connection createConnection() throws IOException {
+	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
+		this.listener.setDelegates(listeners);
+	}
+
+	public void addConnectionListener(ConnectionListener listener) {
+		this.listener.addDelegate(listener);
+	}
+
+	public final Connection createConnection() throws AmqpException {
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
 				if (this.targetConnection != null) {
@@ -123,8 +135,9 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				}
 				this.connection = new SharedConnectionProxy(this.targetConnection);
 			}
-			return this.connection;
 		}
+		this.listener.onCreate(connection);
+		return this.connection;
 	}
 
 	/**
