@@ -46,7 +46,9 @@ public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfigurat
 
 	@Bean
 	public AmqpAdmin amqpAdmin() {
-		return new RabbitAdmin(rabbitTemplate().getConnectionFactory());
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(rabbitTemplate().getConnectionFactory());
+		rabbitAdmin.setAutoStartup(true);
+		return rabbitAdmin;
 	}
 
 }

@@ -57,7 +57,7 @@ public class BrokerRunning extends TestWatchman {
 
 	private Queue queue;
 
-	private int port = BrokerTestUtils.DEFAULT_PORT;
+	private int port = BrokerTestUtils.getPort();
 
 	private String hostName = null;
 
@@ -71,7 +71,7 @@ public class BrokerRunning extends TestWatchman {
 	}
 
 	/**
-	 * Ensure the broker is running and has an empty queue in the default exchange.
+	 * Ensure the broker is running and has an empty queue (which can be addressed via the default exchange).
 	 * 
 	 * @return a new rule that assumes an existing running broker
 	 */
@@ -106,14 +106,14 @@ public class BrokerRunning extends TestWatchman {
 	private BrokerRunning(boolean assumeOnline) {
 		this(assumeOnline, new Queue(DEFAULT_QUEUE_NAME));
 	}
-	
+
 	/**
 	 * @param port the port to set
 	 */
 	public void setPort(int port) {
 		this.port = port;
 	}
-	
+
 	/**
 	 * @param hostName the hostName to set
 	 */
@@ -148,12 +148,12 @@ public class BrokerRunning extends TestWatchman {
 				admin.deleteQueue(queueName);
 			}
 
-			if (isDefaultQueue(queueName)) {
-				// Just for test probe.
-				admin.deleteQueue(queueName);
-			} else {
-				admin.declareQueue(queue);
-			}
+				if (isDefaultQueue(queueName)) {
+					// Just for test probe.
+					admin.deleteQueue(queueName);
+				} else {
+					admin.declareQueue(queue);
+				}
 			brokerOffline = false;
 			if (!assumeOnline) {
 				Assume.assumeTrue(brokerOffline);

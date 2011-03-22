@@ -27,8 +27,6 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
 
-	private static final String PHASE_ATTRIBUTE = "phase";
-
 	private static final String AUTO_STARTUP_ATTRIBUTE = "auto-startup";
 
 	@Override
@@ -62,11 +60,6 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 		}
 
 		String attributeValue;
-		attributeValue = element.getAttribute(PHASE_ATTRIBUTE);
-		if (StringUtils.hasText(attributeValue)) {
-			builder.addPropertyValue("phase", attributeValue);
-		}
-
 		attributeValue = element.getAttribute(AUTO_STARTUP_ATTRIBUTE);
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyValue("autoStartup", attributeValue);

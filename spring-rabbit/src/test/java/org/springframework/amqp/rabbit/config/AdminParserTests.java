@@ -43,8 +43,6 @@ public final class AdminParserTests {
 	// <class-name>-<contextIndex>-context.xml.
 	private int contextIndex;
 
-	private int expectedPhase;
-
 	private boolean expectedAutoStartup;
 
 	private String adminBeanName;
@@ -62,7 +60,6 @@ public final class AdminParserTests {
 	public void testValid() throws Exception {
 		contextIndex = 2;
 		validContext = true;
-		expectedPhase = 12;
 		doTest();
 	}
 
@@ -81,7 +78,6 @@ public final class AdminParserTests {
 		} else {
 			admin = beanFactory.getBean(RabbitAdmin.class);
 		}
-		assertEquals(expectedPhase, admin.getPhase());
 		assertEquals(expectedAutoStartup, admin.isAutoStartup());
 		assertEquals(beanFactory.getBean(ConnectionFactory.class), admin.getRabbitTemplate().getConnectionFactory());
 

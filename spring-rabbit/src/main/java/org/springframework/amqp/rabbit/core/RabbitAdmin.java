@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,10 +23,12 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.util.Assert;
 
@@ -39,34 +42,31 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLifecycle {
+public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, InitializingBean {
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final RabbitTemplate rabbitTemplate;
 
-	private volatile boolean running;
+	private volatile boolean running = false;
 
 	private volatile boolean autoStartup = true;
-
-	private volatile int phase = Integer.MIN_VALUE;
 
 	private volatile ApplicationContext applicationContext;
 
 	private final Object lifecycleMonitor = new Object();
 
+	private final ConnectionFactory connectionFactory;
+
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
 	}
 
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
-	}
-
-	public void setPhase(int phase) {
-		this.phase = phase;
 	}
 
 	public void setApplicationContext(ApplicationContext applicationContext) {
@@ -193,48 +193,72 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, SmartLif
 		return this.autoStartup;
 	}
 
-	public int getPhase() {
-		return this.phase;
-	}
+	/**
+	 * If {@link #setAutoStartup(boolean) autoStartup} is set to true, registers a callback on the
+	 * {@link ConnectionFactory} to declare all exchanges and queues in the enclosing application context. If the
+	 * callback fails then it may cause other clients of the connection factory to fail, but since only exchanges,
+	 * queues and bindings are declared failure is not expected.
+	 * 
+	 * @see InitializingBean#afterPropertiesSet()
+	 * @see #initialize()
+	 */
+	public void afterPropertiesSet() {
 
-	public boolean isRunning() {
-		return this.running;
-	}
-
-	public void start() {
 		synchronized (this.lifecycleMonitor) {
-			if (this.running) {
+
+			if (this.running || !this.autoStartup) {
 				return;
 			}
-			if (this.applicationContext == null) {
-				if (this.logger.isDebugEnabled()) {
-					this.logger
-							.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
+
+			// Prevent stack overflow...
+			final AtomicBoolean initializing = new AtomicBoolean(false);
+
+			connectionFactory.addConnectionListener(new ConnectionListener() {
+
+				private volatile boolean initialized = false;
+
+				public void onCreate(Connection connection) {
+					if (!initializing.compareAndSet(false, true) || initialized) {
+						return;
+					}
+					initialize();
+					initializing.compareAndSet(true, false);
+					initialized = true;
 				}
-				return;
-			}
-			final Collection<Exchange> exchanges = this.applicationContext.getBeansOfType(Exchange.class).values();
-			final Collection<Queue> queues = this.applicationContext.getBeansOfType(Queue.class).values();
-			final Collection<Binding> bindings = this.applicationContext.getBeansOfType(Binding.class).values();
-			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-				public Object doInRabbit(Channel channel) throws Exception {
-					declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
-					declareQueues(channel, queues.toArray(new Queue[queues.size()]));
-					declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
-					return null;
-				}
+
 			});
+
 			this.running = true;
+
 		}
 	}
 
-	public void stop() {
-		this.running = false;
-	}
+	/**
+	 * Declares all the exchanges, queues and bindings in the enclosing application context, if any. It should be safe
+	 * (but unnecessary) to call this method more than once.
+	 */
+	public void initialize() {
 
-	public void stop(Runnable callback) {
-		this.stop();
-		callback.run();
+		if (this.applicationContext == null) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger
+						.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
+			}
+			return;
+		}
+
+		final Collection<Exchange> exchanges = applicationContext.getBeansOfType(Exchange.class).values();
+		final Collection<Queue> queues = applicationContext.getBeansOfType(Queue.class).values();
+		final Collection<Binding> bindings = applicationContext.getBeansOfType(Binding.class).values();
+		rabbitTemplate.execute(new ChannelCallback<Object>() {
+			public Object doInRabbit(Channel channel) throws Exception {
+				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
+				declareQueues(channel, queues.toArray(new Queue[queues.size()]));
+				declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
+				return null;
+			}
+		});
+
 	}
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel

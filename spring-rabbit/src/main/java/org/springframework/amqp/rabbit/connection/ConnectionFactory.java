@@ -33,5 +33,7 @@ public interface ConnectionFactory {
 	int getPort();
 
 	String getVirtualHost();
+	
+	void addConnectionListener(ConnectionListener listener);
 
 }
