@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.erlang.OtpException;
 
@@ -43,6 +44,9 @@ public class RabbitBrokerAdminLifecycleIntegrationTests {
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
 
+	@Rule
+	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
+	
 	@Before
 	public void init() throws Exception {
 		FileUtils.deleteDirectory(new File("target/rabbitmq"));

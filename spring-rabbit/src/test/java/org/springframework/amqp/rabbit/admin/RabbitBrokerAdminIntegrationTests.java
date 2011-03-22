@@ -29,6 +29,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.test.BrokerPanic;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 
 /**
@@ -42,6 +43,9 @@ public class RabbitBrokerAdminIntegrationTests {
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
 
+	@Rule
+	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
+
 	/*
 	 * Ensure broker dies if a test fails (otherwise the erl process might have to be killed manually)
 	 */
@@ -52,15 +56,19 @@ public class RabbitBrokerAdminIntegrationTests {
 
 	@BeforeClass
 	public static void start() throws Exception {
-		// Set up broker admin for non-root user
-		brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin();
-		brokerAdmin.startNode();
-		panic.setBrokerAdmin(brokerAdmin);
+		if (environment.isActive()) {
+			// Set up broker admin for non-root user
+			brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin();
+			brokerAdmin.startNode();
+			panic.setBrokerAdmin(brokerAdmin);
+		}
 	}
 
 	@AfterClass
 	public static void stop() throws Exception {
-		brokerAdmin.stopNode();
+		if (environment.isActive()) {
+			brokerAdmin.stopNode();
+		}
 	}
 
 	@Test

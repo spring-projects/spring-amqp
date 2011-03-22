@@ -30,6 +30,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerPanic;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 
 import com.rabbitmq.client.Channel;
 
@@ -50,6 +51,9 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
 	private SimpleMessageListenerContainer container;
+
+	@Rule
+	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
 
 	/*
 	 * Ensure broker dies if a test fails (otherwise the erl process might have to be killed manually)
@@ -72,28 +76,34 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 		logger.debug("Setting up broker");
 		brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin();
 		panic.setBrokerAdmin(brokerAdmin);
-		brokerAdmin.startNode();
+		if (environment.isActive()) {
+			brokerAdmin.startNode();
+		}
 	}
 
 	@Before
 	public void createConnectionFactory() {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-		connectionFactory.setChannelCacheSize(concurrentConsumers);
-		connectionFactory.setPort(BrokerTestUtils.getAdminPort());
-		this.connectionFactory = connectionFactory;
+		if (environment.isActive()) {
+			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setChannelCacheSize(concurrentConsumers);
+			connectionFactory.setPort(BrokerTestUtils.getAdminPort());
+			this.connectionFactory = connectionFactory;
+		}
 	}
 
 	@After
 	public void clear() throws Exception {
-		// Wait for broker communication to finish before trying to stop container
-		Thread.sleep(300L);
-		logger.debug("Shutting down at end of test");
-		if (container != null) {
-			container.shutdown();
+		if (environment.isActive()) {
+			// Wait for broker communication to finish before trying to stop container
+			Thread.sleep(300L);
+			logger.debug("Shutting down at end of test");
+			if (container != null) {
+				container.shutdown();
+			}
+			brokerAdmin.stopNode();
+			// Remove all trace of the durable queue...
+			FileUtils.deleteDirectory(new File("target/rabbitmq"));
 		}
-		brokerAdmin.stopNode();
-		// Remove all trace of the durable queue...
-		FileUtils.deleteDirectory(new File("target/rabbitmq"));
 	}
 
 	@Test
@@ -113,9 +123,9 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		assertTrue("No more messages to receive before broker stopped", latch.getCount()>0);
+		assertTrue("No more messages to receive before broker stopped", latch.getCount() > 0);
 		brokerAdmin.stopBrokerApplication();
-		assertTrue("No more messages to receive after broker stopped", latch.getCount()>0);
+		assertTrue("No more messages to receive after broker stopped", latch.getCount() > 0);
 		boolean waited = latch.await(500, TimeUnit.MILLISECONDS);
 		assertFalse("Did not time out waiting for message", waited);
 

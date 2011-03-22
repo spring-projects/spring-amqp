@@ -12,8 +12,9 @@ import junit.framework.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 import org.springframework.erlang.connection.SingleConnectionFactory;
 import org.springframework.erlang.core.ErlangTemplate;
 import org.springframework.util.exec.Os;
@@ -25,7 +26,6 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
-@Ignore("Manual integration test only.")
 public class JInterfaceIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(JInterfaceIntegrationTests.class);
@@ -33,6 +33,9 @@ public class JInterfaceIntegrationTests {
 	private static int counter;
 
 	private OtpConnection connection = null;
+
+	@Rule
+	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
 
 	@After
 	public void close() {
