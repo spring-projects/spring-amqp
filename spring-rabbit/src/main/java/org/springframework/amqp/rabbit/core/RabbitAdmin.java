@@ -124,10 +124,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				return channel.queueDeclare();
 			}
 		});
-		Queue queue = new Queue(declareOk.getQueue());
-		queue.setExclusive(true);
-		queue.setAutoDelete(true);
-		queue.setDurable(false);
+		Queue queue = new Queue(declareOk.getQueue(), true, true, false);
 		return queue;
 	}
 
@@ -247,6 +244,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 			return;
 		}
 
+		logger.debug("Initializing declarations");
 		final Collection<Exchange> exchanges = applicationContext.getBeansOfType(Exchange.class).values();
 		final Collection<Queue> queues = applicationContext.getBeansOfType(Queue.class).values();
 		final Collection<Binding> bindings = applicationContext.getBeansOfType(Binding.class).values();
@@ -258,6 +256,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				return null;
 			}
 		});
+		logger.debug("Declarations finished");
 
 	}
 

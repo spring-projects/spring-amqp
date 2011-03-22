@@ -18,11 +18,14 @@ package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
@@ -43,8 +46,26 @@ public final class RabbitNamespaceHandlerTests {
 	}
 
 	@Test
-	public void testParse() throws Exception {
-		assertNotNull(beanFactory.getBean("foo", Queue.class));
+	public void testQueue() throws Exception {
+		Queue queue = beanFactory.getBean("foo", Queue.class);
+		assertNotNull(queue);
+		assertEquals("foo", queue.getName());
+	}
+
+	@Test
+	public void testAliasQueue() throws Exception {
+		Queue queue = beanFactory.getBean("spam", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("spam", queue.getName());
+		assertEquals("bar", queue.getName());
+	}
+
+	@Test
+	public void testAnonymousQueue() throws Exception {
+		Queue queue = beanFactory.getBean("bucket", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("bucket", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
 	}
 
 	@Test
@@ -58,8 +79,8 @@ public final class RabbitNamespaceHandlerTests {
 	@Test
 	public void testBindings() throws Exception {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
-		// 2 for each exchange type
-		assertEquals(8, bindings.size());
+		// 4 for each exchange type
+		assertEquals(16, bindings.size());
 	}
 	
 	@Test

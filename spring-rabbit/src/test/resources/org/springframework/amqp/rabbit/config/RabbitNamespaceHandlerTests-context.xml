@@ -10,6 +10,8 @@
 		<bindings>
 			<binding queue="foo" key="foo" />
 			<binding queue="bar" />
+			<binding queue="spam" />
+			<binding queue="bucket" />
 		</bindings>
 	</direct-exchange>
 
@@ -18,6 +20,8 @@
 		<bindings>
 			<binding queue="foo" pattern="foo.#" />
 			<binding queue="bar" pattern="bar.#" />
+			<binding queue="spam" pattern="spam.#"/>
+			<binding queue="bucket" pattern="bucket.#"/>
 		</bindings>
 	</topic-exchange>
 
@@ -26,6 +30,8 @@
 		<bindings>
 			<binding queue="foo" />
 			<binding queue="bar" />
+			<binding queue="spam" />
+			<binding queue="bucket" />
 		</bindings>
 	</fanout-exchange>
 
@@ -34,12 +40,16 @@
 		<bindings>
 			<binding queue="foo" key="type" value="foo" />
 			<binding queue="bar" key="type" value="bar" />
+			<binding queue="spam" key="type" value="spam" />
+			<binding queue="bucket" key="type" value="bucket"  />
 		</bindings>
 	</headers-exchange>
 
 	<rabbit:queue name="foo" />
 
-	<rabbit:queue name="bar" />
+	<rabbit:queue id="spam" name="bar" />
+
+	<rabbit:queue id="bucket" />
 
 	<rabbit:admin id="admin-test" connection-factory="connectionFactory"/>
 

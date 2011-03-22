@@ -13,12 +13,16 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
+import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
+import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -44,6 +48,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 	private static final String ID_ATTRIBUTE = "id";
 
 	private static final String QUEUE_NAMES_ATTRIBUTE = "queue-names";
+
+	private static final String QUEUES_ATTRIBUTE = "queues";
 
 	private static final String REF_ATTRIBUTE = "ref";
 
@@ -139,19 +145,41 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		listenerDef.setBeanClassName("org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter");
 		containerDef.getPropertyValues().add("messageListener", listenerDef);
 
-		String containerBeanName = listenerEle.getAttribute(ID_ATTRIBUTE);
+		String containerBeanName = containerEle.getAttribute(ID_ATTRIBUTE);
 		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator
 		if (!StringUtils.hasText(containerBeanName)) {
 			containerBeanName = parserContext.getReaderContext().generateBeanName(containerDef);
 		}
 
-		String queueNames = listenerEle.getAttribute(QUEUE_NAMES_ATTRIBUTE);
-		if (!StringUtils.hasText(queueNames)) {
-			parserContext.getReaderContext().error("Listener 'queue-names' attribute contains empty value.",
+		if (!NamespaceUtils.isAttributeDefined(listenerEle, QUEUE_NAMES_ATTRIBUTE)
+				&& !NamespaceUtils.isAttributeDefined(listenerEle, QUEUES_ATTRIBUTE)) {
+			parserContext.getReaderContext().error("Listener 'queue-names' or 'queues' attribute must be provided.",
 					listenerEle);
 		}
-		containerDef.getPropertyValues().add("queueNames",
-				StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(queueNames)));
+		if (NamespaceUtils.isAttributeDefined(listenerEle, QUEUE_NAMES_ATTRIBUTE)
+				&& NamespaceUtils.isAttributeDefined(listenerEle, QUEUES_ATTRIBUTE)) {
+			parserContext.getReaderContext().error("Listener 'queue-names' or 'queues' attribute must be provided but not both.",
+					listenerEle);
+		}
+
+		String queueNames = listenerEle.getAttribute(QUEUE_NAMES_ATTRIBUTE);
+		if (StringUtils.hasText(queueNames)) {
+			String[] names = StringUtils.commaDelimitedListToStringArray(queueNames);
+			List<TypedStringValue> values = new ManagedList<TypedStringValue>();
+			for (int i = 0; i < names.length; i++) {
+				values.add(new TypedStringValue(names[i].trim()));
+			}
+			containerDef.getPropertyValues().add("queueNames", values);
+		}
+		String queues = listenerEle.getAttribute(QUEUES_ATTRIBUTE);
+		if (StringUtils.hasText(queues)) {
+			String[] names = StringUtils.commaDelimitedListToStringArray(queues);
+			List<RuntimeBeanReference> values = new ManagedList<RuntimeBeanReference>();
+			for (int i = 0; i < names.length; i++) {
+				values.add(new RuntimeBeanReference(names[i].trim()));
+			}
+			containerDef.getPropertyValues().add("queues", values);
+		}
 
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));

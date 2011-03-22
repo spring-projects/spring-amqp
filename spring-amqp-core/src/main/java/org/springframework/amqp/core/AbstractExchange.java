@@ -29,33 +29,45 @@ import java.util.Map;
  */
 public abstract class AbstractExchange implements Exchange {
 
-	protected String name;
+	private final String name;
 
-	private boolean durable = false;
+	private final boolean durable;
 
-	private boolean autoDelete = false;
+	private final boolean autoDelete;
 
-	private Map<String, Object> arguments = null;	
+	private final Map<String, Object> arguments;	
 
 	/**
 	 * Construct a new Exchange for bean usage. 
 	 * @param name the name of the exchange.
 	 */
 	public AbstractExchange(String name) {
-		this.name = name;
+		this(name, false, false);
 	}
 	
 	/**
-	 * Construct a new Exchange, given a name, durability flag, and auto-delete flag. 
+	 * Construct a new Exchange, given a name, durability flag, auto-delete flag. 
 	 * @param name the name of the exchange.
 	 * @param durable true if we are declaring a durable exchange (the exchange will survive a server restart)
 	 * @param autoDelete true if the server should delete the exchange when it is no longer in use
 	 */
 	public AbstractExchange(String name, boolean durable, boolean autoDelete) {
+		this(name, durable, autoDelete, null);
+	}
+
+	/**
+	 * Construct a new Exchange, given a name, durability flag, and auto-delete flag, and arguments. 
+	 * @param name the name of the exchange.
+	 * @param durable true if we are declaring a durable exchange (the exchange will survive a server restart)
+	 * @param autoDelete true if the server should delete the exchange when it is no longer in use
+	 * @param arguments the arguments used to declare the exchange
+	 */
+	public AbstractExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
 		super();
 		this.name = name;
 		this.durable = durable;
 		this.autoDelete = autoDelete;
+		this.arguments = arguments;
 	}
 
 	public abstract String getType();
@@ -68,25 +80,8 @@ public abstract class AbstractExchange implements Exchange {
 		return durable;
 	}
 
-	/**
-	 * Set the durability of this exchange definition.
-	 * @param durable true if describing a durable exchange (the exchange will survive a server restart)
-	 */
-	public void setDurable(boolean durable) {
-		this.durable = durable;
-	}
-
 	public boolean isAutoDelete() {
 		return autoDelete;
-	}
-
-	/**
-	 * Set the auto-delete lifecycle of this exchange. 
-	 * An non-auto-deleted exchange lasts until the server is shut down.
-	 * @param autoDelete true if the server should delete the exchange when it is no longer in use.
-	 */
-	public void setAutoDelete(boolean autoDelete) {
-		this.autoDelete = autoDelete;
 	}
 
 	/**
@@ -95,14 +90,6 @@ public abstract class AbstractExchange implements Exchange {
 	 */
 	public Map<String, Object> getArguments() {
 		return arguments;
-	}
-
-	/**
-	 * Set the collection of arbitrary arguments to use when declaring an exchange.
-	 * @param arguments A collection of arbitrary arguments to use when declaring an exchange.
-	 */
-	public void setArguments(Map<String, Object> arguments) {
-		this.arguments = arguments;
 	}
 
 	@Override

@@ -77,6 +77,17 @@ public abstract class NamespaceUtils {
 	}
 
 	/**
+	 * Checks the attribute to see if it is defined in the given element.
+	 * 
+	 * @param element the XML element where the attribute should be defined
+	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
+	 */
+	public static boolean isAttributeDefined(Element element, String attributeName) {
+		String value = element.getAttribute(attributeName);
+		return (StringUtils.hasText(value));
+	}
+
+	/**
 	 * Populates the bean definition constructor argument with the value of that attribute if it is defined in the given
 	 * element.
 	 * 

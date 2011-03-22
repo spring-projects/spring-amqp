@@ -24,11 +24,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -41,20 +43,28 @@ public final class ListenerContainerParserTests {
 	@Before
 	public void setUp() throws Exception {
 		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver());
 	}
 
 	@Test
-	public void testParse() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean(SimpleMessageListenerContainer.class);
+	public void testParseWithQueueNames() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container1", SimpleMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
 		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
 		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());
 		DirectFieldAccessor listenerAccessor = new DirectFieldAccessor(container.getMessageListener());
 		assertEquals(beanFactory.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
-		assertEquals("[foo, bar]", Arrays.asList(container.getQueueNames()).toString());
+		Queue queue = beanFactory.getBean("bar", Queue.class);
+		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
 	}
 
+	@Test
+	public void testParseWithQueues() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container2", SimpleMessageListenerContainer.class);
+		Queue queue = beanFactory.getBean("bar", Queue.class);
+		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
+	}
 
 	static class TestBean {
 		public void handle(String s) {

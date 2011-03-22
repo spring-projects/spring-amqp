@@ -21,7 +21,15 @@
 				<xsd:element ref="queue-arguments" minOccurs="0"
 					maxOccurs="1" />
 			</xsd:sequence>
-			<xsd:attribute name="name" use="required" type="xsd:string">
+			<xsd:attribute name="id" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						The id of the queue in case it is different than the name.  Clients can receive or listen for messages by referring to the
+						queue itself, or to its name.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="name" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 						The name of the queue.  Clients can receive or listen for messages by referring to the
@@ -361,6 +369,13 @@
 			<xsd:sequence>
 				<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded"/>
 			</xsd:sequence>
+			<xsd:attribute name="id" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Optional bean id for the container.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="connection-factory" type="xsd:string" default="rabbitConnectionFactory">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
@@ -484,10 +499,17 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="queue-names" type="xsd:string" use="required">
+		<xsd:attribute name="queue-names" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	The queue names for this listener as a comma-separated list. Required.
+	The queue names for this listener as a comma-separated list. Either this or queues is required.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="queues" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The queues (bean references) for this listener as a comma-separated list. Either this or queue-names is requires.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>

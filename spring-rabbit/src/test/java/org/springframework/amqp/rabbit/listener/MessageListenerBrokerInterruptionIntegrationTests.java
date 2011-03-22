@@ -38,7 +38,8 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerBrokerInterruptionIntegrationTests.class);
 
-	private Queue queue = new Queue("test.queue");
+	// Ensure queue is durable, or it won't survive the broker restart
+	private Queue queue = new Queue("test.queue", true);
 
 	private int concurrentConsumers = 2;
 
@@ -70,8 +71,6 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	public MessageListenerBrokerInterruptionIntegrationTests() throws Exception {
 		FileUtils.deleteDirectory(new File("target/rabbitmq"));
-		// Ensure queue is durable, or it won't survive the broker restart
-		queue.setDurable(true);
 		brokerIsRunning.setPort(BrokerTestUtils.getAdminPort());
 		logger.debug("Setting up broker");
 		brokerAdmin = BrokerTestUtils.getRabbitBrokerAdmin();

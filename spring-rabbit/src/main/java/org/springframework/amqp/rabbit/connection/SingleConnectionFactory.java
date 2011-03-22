@@ -134,8 +134,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				}
 				this.connection = new SharedConnectionProxy(this.targetConnection);
 			}
+			this.listener.onCreate(connection);
 		}
-		this.listener.onCreate(connection);
 		return this.connection;
 	}
 

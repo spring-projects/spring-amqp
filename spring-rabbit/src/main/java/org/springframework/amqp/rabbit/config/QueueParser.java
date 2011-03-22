@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
@@ -35,11 +36,18 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	
 	@Override
 	protected Class<?> getBeanClass(Element element) {
-		return Queue.class;
+		if (NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {			
+			return Queue.class;
+		} else {
+			return AnonymousQueue.class;
+		}
 	}
 	
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE) && !NamespaceUtils.isAttributeDefined(element, ID_ATTRIBUTE)) {
+			parserContext.getReaderContext().error("Queue must have either id or name (or both)", element);
+		}
 		NamespaceUtils.addConstructorArgValueIfAttributeDefined(builder, element, NAME_ATTRIBUTE);
 	}
 
