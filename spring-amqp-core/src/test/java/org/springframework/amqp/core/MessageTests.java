@@ -18,10 +18,14 @@ package org.springframework.amqp.core;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.util.Date;
+
 import org.junit.Test;
+import org.springframework.amqp.utils.SerializationUtils;
 
 /**
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class MessageTests {
 
@@ -33,8 +37,30 @@ public class MessageTests {
 
 	@Test
 	public void toStringForNullMessageProperties() {
-		Message mesage = new Message(new byte[0], null);
-		assertNotNull(mesage.toString());
+		Message message = new Message(new byte[0], null);
+		assertNotNull(message.toString());
+	}
+
+	@Test
+	public void toStringForNonStringMessageBody() {
+		Message message = new Message(SerializationUtils.serialize(new Date()), null);
+		assertNotNull(message.toString());
+	}
+
+	@Test
+	public void toStringForSerializableMessageBody() {
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+		Message message = new Message(SerializationUtils.serialize(new Date()), messageProperties);
+		assertNotNull(message.toString());
+	}
+
+	@Test
+	public void toStringForNonSerializableMessageBody() {
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+		Message message = new Message("foo".getBytes(), messageProperties);
+		assertNotNull(message.toString());
 	}
 
 }
