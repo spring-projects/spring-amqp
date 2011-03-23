@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -106,9 +105,8 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (UncategorizedAmqpException e) {
-			// TODO: allow client exception to propagate if no AMQP related
-			assertTrue(e.getCause() instanceof PlannedException);
+		} catch (Exception e) {
+			assertTrue(e instanceof PlannedException);
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
