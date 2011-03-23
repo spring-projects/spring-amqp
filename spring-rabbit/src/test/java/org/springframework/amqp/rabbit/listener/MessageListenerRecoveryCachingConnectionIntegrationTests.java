@@ -23,6 +23,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionProxy;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.MessageListenerBrokerInterruptionIntegrationTests.VanillaListener;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -75,6 +76,63 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	}
 
 	@Test
+	public void testListenerSendsMessageAndThenCommit() throws Exception {
+
+		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		Queue sendQueue = new Queue("test.send");
+		new RabbitAdmin(connectionFactory).declareQueue(sendQueue);
+
+		acknowledgeMode = AcknowledgeMode.AUTO;
+		transactional = true;
+
+		CountDownLatch latch = new CountDownLatch(1);
+		container = createContainer(queue.getName(), new ChannelSenderListener(sendQueue.getName(), latch, false),
+				connectionFactory);
+		template.convertAndSend(queue.getName(), "foo");
+
+		int timeout = getTimeout();
+		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
+		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
+
+		// All messages committed
+		assertEquals("bar", new String((byte[])template.receiveAndConvert(sendQueue.getName())));
+		assertNull(template.receiveAndConvert(queue.getName()));
+
+	}
+
+	@Test
+	public void testListenerSendsMessageAndThenRollback() throws Exception {
+
+		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		Queue sendQueue = new Queue("test.send");
+		new RabbitAdmin(connectionFactory).declareQueue(sendQueue);
+
+		acknowledgeMode = AcknowledgeMode.AUTO;
+		transactional = true;
+
+		CountDownLatch latch = new CountDownLatch(1);
+		container = createContainer(queue.getName(), new ChannelSenderListener(sendQueue.getName(), latch, true),
+				connectionFactory);
+		template.convertAndSend(queue.getName(), "foo");
+
+		int timeout = getTimeout();
+		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
+		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
+		
+		container.stop();
+		
+		// Foo message is redelivered
+		assertEquals("foo", template.receiveAndConvert(queue.getName()));
+		// Sending of bar message is also rolled back
+		assertNull(template.receiveAndConvert(sendQueue.getName()));
+
+	}
+
+	@Test
 	public void testListenerRecoversFromBogusDoubleAck() throws Exception {
 
 		RabbitTemplate template = new RabbitTemplate(createConnectionFactory());
@@ -87,7 +145,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		int timeout = getTimeout();
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
@@ -107,7 +165,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		int timeout = getTimeout();
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
@@ -123,17 +181,18 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		container = createContainer(queue.getName(), new AbortChannelListener(latch), createConnectionFactory());
+		Thread.sleep(500L);
 		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		int timeout = getTimeout();
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
-		
+
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
@@ -149,8 +208,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		ConnectionFactory connectionFactory = createConnectionFactory();
-		container = createContainer(queue.getName(), new CloseConnectionListener((ConnectionProxy) connectionFactory.createConnection(),
-						latch), connectionFactory);
+		container = createContainer(queue.getName(),
+				new CloseConnectionListener((ConnectionProxy) connectionFactory.createConnection(), latch),
+				connectionFactory);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -178,7 +238,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		int timeout = getTimeout();
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
@@ -187,8 +247,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
-
-	@Test(expected=AmqpIllegalStateException.class)
+	@Test(expected = AmqpIllegalStateException.class)
 	public void testListenerDoesNotRecoverFromMissingQueue() throws Exception {
 		// TODO: with only 1 this test tends to fail
 		concurrentConsumers = 3;
@@ -196,7 +255,12 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		container = createContainer("nonexistent", new VanillaListener(latch), createConnectionFactory());
 	}
 
-	private SimpleMessageListenerContainer createContainer(String queueName, Object listener, ConnectionFactory connectionFactory) {
+	private int getTimeout() {
+		return Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+	}
+	
+	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
+			ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueNames(queueName);
@@ -228,6 +292,36 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 				if (failed.compareAndSet(false, true)) {
 					// intentional error (causes exception on connection thread):
 					channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+				}
+			} finally {
+				latch.countDown();
+			}
+		}
+	}
+
+	public static class ChannelSenderListener implements ChannelAwareMessageListener {
+
+		private final CountDownLatch latch;
+
+		private final boolean fail;
+
+		private final String queueName;
+
+		public ChannelSenderListener(String queueName, CountDownLatch latch, boolean fail) {
+			this.queueName = queueName;
+			this.latch = latch;
+			this.fail = fail;
+		}
+
+		public void onMessage(Message message, Channel channel) throws Exception {
+			String value = new String(message.getBody());
+			try {
+				logger.debug("Received: " + value + " Sending: bar");
+				channel.basicPublish("", queueName, null, "bar".getBytes());
+				if (fail) {
+					logger.debug("Failing (planned)");
+					// intentional error (causes exception on connection thread):
+					throw new RuntimeException("Planned");
 				}
 			} finally {
 				latch.countDown();

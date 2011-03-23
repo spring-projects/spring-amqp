@@ -57,13 +57,16 @@ public class BlockingQueueConsumer {
 
 	private final ConnectionFactory connectionFactory;
 
+	private final ActiveObjectCounter<BlockingQueueConsumer> stopped;
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
 	 */
-	public BlockingQueueConsumer(ConnectionFactory connectionFactory, AcknowledgeMode acknowledgeMode,
-			boolean transactional, int prefetchCount, String... queues) {
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory, ActiveObjectCounter<BlockingQueueConsumer> stopped,
+			AcknowledgeMode acknowledgeMode, boolean transactional, int prefetchCount, String... queues) {
 		this.connectionFactory = connectionFactory;
+		this.stopped = stopped;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
@@ -145,6 +148,7 @@ public class BlockingQueueConsumer {
 		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
 				.getChannel();
 		this.consumer = new InternalConsumer(channel);
+		this.stopped.add(this);
 		try {
 			// Set basicQos before calling basicConsume (it is ignored if we are not transactional and the broker will
 			// send blocks of 100 messages)
@@ -170,10 +174,10 @@ public class BlockingQueueConsumer {
 
 	public void stop() {
 		cancelled.set(true);
-		logger.debug("Closing Rabbit Channel: " + channel);
 		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null) {
 			RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
 		}
+		logger.debug("Closing Rabbit Channel: " + channel);
 		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
 	}
@@ -194,6 +198,15 @@ public class BlockingQueueConsumer {
 		}
 
 		@Override
+		public void handleCancelOk(String consumerTag) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Received cancellation notice for " + BlockingQueueConsumer.this);
+			}
+			// Signal to the container that we have been cancelled
+			stopped.release(BlockingQueueConsumer.this);
+		}
+
+		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
 			if (cancelled.get()) {
@@ -201,8 +214,10 @@ public class BlockingQueueConsumer {
 					return;
 				}
 			}
-			// TODO: do we want to pass on 'consumerTag'?
-			logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
+			if (logger.isDebugEnabled()) {
+				// TODO: do we want to pass on 'consumerTag'?
+				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
+			}
 			try {
 				// TODO: If transactional we could use a bounded queue and offer() here with a timeout
 				// in which case if it fails we could nack the message and have it requeued.

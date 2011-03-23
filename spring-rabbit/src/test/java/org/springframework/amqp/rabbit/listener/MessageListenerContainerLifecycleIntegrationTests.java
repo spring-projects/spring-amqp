@@ -183,12 +183,12 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 			int messagesReceivedBeforeStart = listener.getCount();
 			container.start();
-			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			int timeout = Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
 
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 			waited = latch.await(timeout, TimeUnit.SECONDS);
 			logger.info("All messages received after start: " + waited);
+			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			if (transactional) {
 				assertTrue("Timed out waiting for message", waited);
 			} else {
@@ -203,7 +203,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		} finally {
 			// Wait for broker communication to finish before trying to stop
 			// container
-			Thread.sleep(300L);
+			Thread.sleep(500L);
 			container.shutdown();
 			assertEquals(0, container.getActiveConsumerCount());
 		}

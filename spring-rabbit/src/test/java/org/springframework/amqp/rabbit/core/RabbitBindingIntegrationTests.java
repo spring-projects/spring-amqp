@@ -14,6 +14,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
+import org.springframework.amqp.rabbit.listener.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -232,7 +233,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	private BlockingQueueConsumer createConsumer(RabbitAccessor accessor) {
-		BlockingQueueConsumer consumer = new BlockingQueueConsumer(accessor.getConnectionFactory(), AcknowledgeMode.AUTO, true, 1, queue.getName());
+		BlockingQueueConsumer consumer = new BlockingQueueConsumer(accessor.getConnectionFactory(), new ActiveObjectCounter<BlockingQueueConsumer>(), AcknowledgeMode.AUTO, true, 1, queue.getName());
 		consumer.start();
 		return consumer;
 	}

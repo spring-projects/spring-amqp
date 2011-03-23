@@ -33,6 +33,8 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.jmx.export.annotation.ManagedMetric;
+import org.springframework.jmx.support.MetricType;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.MatchAlwaysTransactionAttributeSource;
@@ -82,7 +84,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
-	private CountDownLatch cancellationLock;
+	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	public static interface ContainerDelegate {
 		boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable;
@@ -276,8 +278,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		initializeProxy();
 	}
 
+	@ManagedMetric(metricType = MetricType.GAUGE)
 	public int getActiveConsumerCount() {
-		return (int) cancellationLock.getCount();
+		return cancellationLock.getCount();
 	}
 
 	/**
@@ -288,17 +291,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void doStart() throws Exception {
 		super.doStart();
-		initializeConsumers();
 		synchronized (this.consumersMonitor) {
+			initializeConsumers();
 			if (this.consumers == null) {
 				logger.info("Consumers were initialized and then cleared (presumably the container was stopped concurrently)");
 				return;
 			}
-			cancellationLock = new CountDownLatch(this.consumers.size());
 			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
 			for (BlockingQueueConsumer consumer : this.consumers) {
-				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer,
-						cancellationLock);
+				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 				processors.add(processor);
 				this.taskExecutor.execute(processor);
 			}
@@ -345,6 +346,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void initializeConsumers() {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
+				cancellationLock.reset();
 				this.consumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
 				for (int i = 0; i < this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
@@ -361,8 +363,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
 		String[] queues = getRequiredQueueNames();
-		consumer = new BlockingQueueConsumer(getConnectionFactory(), getAcknowledgeMode(), isChannelTransacted(),
-				prefetchCount, queues);
+		consumer = new BlockingQueueConsumer(getConnectionFactory(), cancellationLock, getAcknowledgeMode(),
+				isChannelTransacted(), prefetchCount, queues);
 		return consumer;
 	}
 
@@ -372,6 +374,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					// Need to recycle the channel in this consumer
 					consumer.stop();
+					this.cancellationLock.release(consumer);
 					this.consumers.remove(consumer);
 					consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
@@ -380,12 +383,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// to start because of the exception, but
 					// we haven't counted down yet)
 					logger.warn("Consumer died on restart. " + e.getClass() + ": " + e.getMessage());
-					cancellationLock.countDown();
 					// Thrown into the void (probably) in a background thread.
 					// Oh well, here goes...
 					throw e;
 				}
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer, cancellationLock));
+				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer));
 			}
 		}
 	}
@@ -426,17 +428,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final BlockingQueueConsumer consumer;
 
-		private final CountDownLatch latch;
-
 		private final CountDownLatch start;
 
 		private volatile ListenerStartupFatalException startupException;
 
 		private AtomicBoolean started = new AtomicBoolean(false);
 
-		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer, CountDownLatch latch) {
+		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
-			this.latch = latch;
 			this.start = new CountDownLatch(1);
 		}
 
@@ -497,8 +496,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
 			} catch (Throwable t) {
-				if (logger.isInfoEnabled()) {
-					logger.info(
+				if (logger.isDebugEnabled()) {
+					logger.warn(
 							"Consumer raised exception, processing can restart if the connection factory supports it",
 							t);
 				} else {
@@ -511,17 +510,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 			if (!isActive() || aborted) {
 				logger.debug("Cancelling " + consumer);
-				latch.countDown();
 				try {
 					consumer.stop();
 				} catch (AmqpException e) {
-					logger.info("Could not stop message consumer on shutdown", e);
+					logger.info("Could not cancel message consumer", e);
+					// TODO: should we release the cancellationLock here?
 				}
 				if (aborted) {
 					stop();
 				}
 			} else {
 				logger.info("Restarting " + consumer);
+				// cancellationLock is not decremented on restart
 				restart(consumer);
 			}
 
