@@ -18,12 +18,15 @@ import static org.junit.Assert.assertEquals;
 import java.math.BigDecimal;
 import java.util.Hashtable;
 
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ser.BeanSerializerFactory;
 import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author Mark Pollack
+ * @author Dave Syer
  */
 public class JsonMessageConverterTests {
 
@@ -39,6 +42,27 @@ public class JsonMessageConverterTests {
 		trade.setTicker("VMW");
 		trade.setUserName("Joe Trader");
 		JsonMessageConverter converter = new JsonMessageConverter();
+		Message message = converter.toMessage(trade, new MessageProperties());
+		
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertEquals(trade, marshalledTrade);
+	}
+
+	@Test
+	public void simpleTradeOverrideMapper() {
+		SimpleTrade trade = new SimpleTrade();
+		trade.setAccountName("Acct1");
+		trade.setBuyRequest(true);
+		trade.setOrderType("Market");
+		trade.setPrice(new BigDecimal(103.30));
+		trade.setQuantity(100);
+		trade.setRequestId("R123");
+		trade.setTicker("VMW");
+		trade.setUserName("Joe Trader");
+		JsonMessageConverter converter = new JsonMessageConverter();
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializerFactory(BeanSerializerFactory.instance);
+		converter.setJsonObjectMapper(mapper);
 		Message message = converter.toMessage(trade, new MessageProperties());
 		
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
