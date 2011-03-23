@@ -104,6 +104,25 @@ public abstract class NamespaceUtils {
 	}
 
 	/**
+	 * Populates the bean definition constructor argument with the boolean value of that attribute if it is defined in the given
+	 * element or else uses the default provided.
+	 * 
+	 * @param builder the bean definition builder to be configured
+	 * @param element the XML element where the attribute should be defined
+	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
+	 * @param defaultValue the default value to use if the attirbute is not set
+	 */
+	public static void addConstructorArgBooleanValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+			String attributeName, boolean defaultValue) {
+		String value = element.getAttribute(attributeName);
+		if (StringUtils.hasText(value)) {
+			builder.addConstructorArgValue(new TypedStringValue(value));
+		} else {
+			builder.addConstructorArgValue(defaultValue);
+		}
+	}
+
+	/**
 	 * Populates the bean definition constructor argument with a reference to a bean with id equal to the attribute if
 	 * it is defined in the given element.
 	 * 

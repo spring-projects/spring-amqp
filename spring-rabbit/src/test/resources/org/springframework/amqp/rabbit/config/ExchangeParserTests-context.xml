@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<rabbit:direct-exchange name="direct" />
+
+	<rabbit:direct-exchange id="alias" name="direct-alias" />
+
+	<rabbit:direct-exchange name="direct-override" auto-delete="true" durable="true"/>
+
+	<direct-exchange name="direct-arguments" xmlns="http://www.springframework.org/schema/rabbit">
+		<exchange-arguments>
+			<beans:entry key="foo" value="bar" />
+		</exchange-arguments>
+	</direct-exchange>
+
+	<rabbit:topic-exchange name="topic" />
+
+	<rabbit:fanout-exchange name="fanout"/>
+
+	<rabbit:headers-exchange name="headers" xmlns="http://www.springframework.org/schema/rabbit"/>
+
+</beans>

@@ -1,54 +1,96 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.config;
+
+import java.util.Map;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
- *
+ * 
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
+
+	private static final String ARGUMENTS_ELEMENT = "queue-arguments";
+	private static final String DURABLE_ATTRIBUTE = "durable";
+	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
+	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
 		return true;
 	}
-	
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
-		if (NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {			
+		if (NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {
 			return Queue.class;
 		} else {
 			return AnonymousQueue.class;
 		}
 	}
-	
+
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
-		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE) && !NamespaceUtils.isAttributeDefined(element, ID_ATTRIBUTE)) {
+
+		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)
+				&& !NamespaceUtils.isAttributeDefined(element, ID_ATTRIBUTE)) {
 			parserContext.getReaderContext().error("Queue must have either id or name (or both)", element);
 		}
+
 		NamespaceUtils.addConstructorArgValueIfAttributeDefined(builder, element, NAME_ATTRIBUTE);
+
+		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {
+
+			if (attributeHasIllegalOverride(element, DURABLE_ATTRIBUTE, "false")
+					|| attributeHasIllegalOverride(element, EXCLUSIVE_ATTRIBUTE, "true")
+					|| attributeHasIllegalOverride(element, AUTO_DELETE_ATTRIBUTE, "true")) {
+				parserContext.getReaderContext().error(
+						"Anonymous queue cannot specify durable='true', exclusive='false' or auto-delete='false'",
+						element);
+				return;
+			}
+
+		} else {
+
+			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, false);
+			NamespaceUtils
+					.addConstructorArgBooleanValueIfAttributeDefined(builder, element, EXCLUSIVE_ATTRIBUTE, false);
+			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
+					false);
+
+		}
+
+		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS_ELEMENT);
+		if (argumentsElement != null) {
+			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+					builder.getRawBeanDefinition());
+			builder.addConstructorArgValue(map);
+		}
+
+	}
+
+	private boolean attributeHasIllegalOverride(Element element, String name, String allowed) {
+		return element.getAttributeNode(name) != null && element.getAttributeNode(name).getSpecified()
+				&& !allowed.equals(element.getAttribute(name));
 	}
 
 }

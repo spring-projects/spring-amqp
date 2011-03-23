@@ -16,11 +16,14 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Map;
+
 /**
  * Simple container collecting information to describe a topic exchange.
  * Used in conjunction with administrative operations.
  * 
  * @author Mark Pollack
+ * @author Dave Syer
  * @see AmqpAdmin
  */
 public class TopicExchange extends AbstractExchange {
@@ -33,6 +36,9 @@ public class TopicExchange extends AbstractExchange {
 		super(name, durable, autoDelete);		
 	}
 
+	public TopicExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {
+		super(name, durable, autoDelete, arguments);
+	}
 
 	@Override
 	public final String getType() {

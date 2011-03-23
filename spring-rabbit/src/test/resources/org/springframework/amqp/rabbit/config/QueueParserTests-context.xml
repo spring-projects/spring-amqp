@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<rabbit:queue name="foo" />
+
+	<rabbit:queue name="override" durable="true" auto-delete="true" exclusive="true" />
+
+	<rabbit:queue id="alias" name="spam" />
+
+	<rabbit:queue id="overrideAlias" name="bar" durable="true" auto-delete="true" exclusive="true" />
+
+	<rabbit:queue id="anonymous" />
+
+	<rabbit:queue name="arguments">
+		<rabbit:queue-arguments>
+			<beans:entry key="foo" value="bar" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+
+	<rabbit:queue id="anonymousArguments">
+		<rabbit:queue-arguments>
+			<beans:entry key="foo" value="spam" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+
+	<rabbit:queue id="anonymousOverride" durable="false" auto-delete="true" exclusive="true" />
+
+</beans>

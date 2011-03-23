@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Map;
+
 /**
  * Simple container collecting information to describe a direct exchange.
  * Used in conjunction with administrative operations.
@@ -23,6 +25,7 @@ package org.springframework.amqp.core;
  * @see AmqpAdmin
  * 
  * @author Mark Pollack
+ * @author Dave Syer
  */
 public class DirectExchange extends AbstractExchange {
 
@@ -37,6 +40,9 @@ public class DirectExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
+	public DirectExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {
+		super(name, durable, autoDelete, arguments);
+	}
 
 	@Override
 	public final String getType() {

@@ -15,6 +15,7 @@
  */
 package org.springframework.amqp.core;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -24,7 +25,11 @@ import java.util.UUID;
 public class AnonymousQueue extends Queue {
 
 	public AnonymousQueue() {
-		super(UUID.randomUUID().toString(), false, true, true);
+		this(null);
+	}
+
+	public AnonymousQueue(Map<String,Object> arguments) {
+		super(UUID.randomUUID().toString(),  false, true, true, arguments);
 	}
 
 }

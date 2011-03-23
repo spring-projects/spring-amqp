@@ -16,8 +16,11 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Map;
+
 /**
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class HeadersExchange extends AbstractExchange {
 
@@ -25,6 +28,13 @@ public class HeadersExchange extends AbstractExchange {
 		super(name);
 	}
 
+	public HeadersExchange(String name, boolean durable, boolean autoDelete) {
+		super(name, durable, autoDelete);
+	}
+
+	public HeadersExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {
+		super(name, durable, autoDelete, arguments);
+	}
 
 	@Override
 	public String getType() {

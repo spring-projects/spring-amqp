@@ -37,7 +37,6 @@ public class Binding {
 
 	private Map<String, Object> arguments;
 
-
 	public Binding(Queue queue, FanoutExchange exchange) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
@@ -63,12 +62,11 @@ public class Binding {
 		this.routingKey = routingKey;
 	}
 
-	public Binding(Queue queue, TopicExchange exchange, String routingKey) {
+	public Binding(Queue queue, TopicExchange exchange, String routingPattern) {
 		this.queue = queue.getName();
 		this.exchange = exchange.getName();
-		this.routingKey = routingKey;
+		this.routingKey = routingPattern;
 	}
-
 
 	public String getQueue() {
 		return this.queue;
@@ -84,10 +82,6 @@ public class Binding {
 
 	public Map<String, Object> getArguments() {
 		return this.arguments;
-	}
-
-	public void setArguments(Map<String, Object> arguments) {
-		this.arguments = arguments;
 	}
 
 }

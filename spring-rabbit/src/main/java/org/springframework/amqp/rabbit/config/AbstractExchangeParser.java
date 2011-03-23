@@ -13,6 +13,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.Map;
+
 import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.TypedStringValue;
@@ -28,6 +30,12 @@ import org.w3c.dom.Element;
  * 
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
+
+	private static final String ARGUMENTS_ELEMENT = "exchange-arguments";
+
+	private static final String DURABLE_ATTRIBUTE = "durable";
+
+	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
 
 	private static String BINDINGS_ELE = "bindings";
 
@@ -53,6 +61,18 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 						.generateBeanName(beanDefinition)), parserContext.getRegistry());
 			}
 		}
+
+		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, true);
+		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
+				false);
+
+		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS_ELEMENT);
+		if (argumentsElement != null) {
+			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+					builder.getRawBeanDefinition());
+			builder.addConstructorArgValue(map);
+		}
+
 	}
 
 	protected abstract AbstractBeanDefinition parseBinding(BeanMetadataElement exchange, Element binding,

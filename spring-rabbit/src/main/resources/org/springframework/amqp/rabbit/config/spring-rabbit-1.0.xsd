@@ -37,19 +37,24 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="autodelete" use="optional" type="xsd:boolean"
-				default="false">
+			<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean" default="false">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-						Flag indicating that an queue will be deleted when it is no longer in use. Default is false.
+						Flag indicating that an queue will be deleted when it is no longer in use, i.e. the connection that declared it is closed. Default is false.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="durable" use="optional" type="xsd:boolean"
-				default="true">
+			<xsd:attribute name="exclusive" use="optional" type="xsd:boolean" default="false">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-					Flag indicating that the queue is durable.  Default is true.
+					Flag indicating that the queue is exclusive to this connection.  Default is false.
+				]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is false.
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -231,6 +236,13 @@
 			<xsd:element ref="exchange-arguments" minOccurs="0"
 				maxOccurs="1" />
 		</xsd:sequence>
+		<xsd:attribute name="id" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					The id of the exchange bean definition in case it is different than the name.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="name" use="required" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
@@ -239,19 +251,19 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="autodelete" use="optional" type="xsd:boolean"
+		<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean"
 			default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-					Flag indicating that an exchange will be deleted when no longer in use. Default is false.
+					Flag indicating that an exchange will be deleted when no longer in use, i.e. the connection that declared it is closed. Default is false.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
 		<xsd:attribute name="durable" use="optional" type="xsd:boolean"
-			default="true">
+			default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-					Flag indicating that the exchange is durable.  Default is true
+					Flag indicating that the exchange is durable, i.e. will survive broker restart.  Default is false.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
@@ -569,7 +581,7 @@
 			<xsd:attribute name="id" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Unique ID for this rabbit admin.
+	Unique name for this rabbit admin used as a bean definition identifier.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -587,21 +599,10 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="phase" type="xsd:int">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	The lifecycle phase within which this admin should start and stop. The lower
-	the value the earlier this admin will start and the later it will stop. The
-	default is Integer.MIN_VALUE meaning the admin will start as early as possible
-	and stop as late as possible.
-					]]></xsd:documentation>
-				</xsd:annotation>
-			</xsd:attribute>
 			<xsd:attribute name="auto-startup" type="xsd:boolean">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Specifies if the rabbit admin should be started automatically when ApplicationContext 
-	is refreshed. Default value is 'true'.
+	Specifies if the queues, exchanges and bindings in the context should be automatically declared (lazily on first connection to the broker). Default value is 'true'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>

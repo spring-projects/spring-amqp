@@ -16,12 +16,15 @@
 
 package org.springframework.amqp.core;
 
+import java.util.Map;
+
 /**
  * Simple container collecting information to describe a fanout exchange.
  * Used in conjunction with administrative operations.
  * @see AmqpAdmin
  * 
  * @author Mark Pollack
+ * @author Dave Syer
  */
 public class FanoutExchange extends AbstractExchange {
 
@@ -33,6 +36,9 @@ public class FanoutExchange extends AbstractExchange {
 		super(name, durable, autoDelete);
 	}
 
+	public FanoutExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {
+		super(name, durable, autoDelete, arguments);
+	}
 
 	@Override
 	public final String getType() {
