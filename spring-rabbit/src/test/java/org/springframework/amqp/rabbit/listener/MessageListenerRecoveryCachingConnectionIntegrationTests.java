@@ -12,6 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -97,7 +98,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 
 		// All messages committed
-		assertEquals("bar", new String((byte[])template.receiveAndConvert(sendQueue.getName())));
+		assertEquals("bar", new String((byte[]) template.receiveAndConvert(sendQueue.getName())));
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
@@ -122,9 +123,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
-		
+
 		container.stop();
-		
+
 		// Foo message is redelivered
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));
 		// Sending of bar message is also rolled back
@@ -247,10 +248,18 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
+
 	@Test(expected = AmqpIllegalStateException.class)
 	public void testListenerDoesNotRecoverFromMissingQueue() throws Exception {
-		// TODO: with only 1 this test tends to fail
 		concurrentConsumers = 3;
+		CountDownLatch latch = new CountDownLatch(messageCount);
+		container = createContainer("nonexistent", new VanillaListener(latch), createConnectionFactory());
+	}
+
+	@Test(expected = AmqpIllegalStateException.class)
+	@Ignore
+	public void testSingleListenerDoesNotRecoverFromMissingQueue() throws Exception {
+		concurrentConsumers = 1;
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		container = createContainer("nonexistent", new VanillaListener(latch), createConnectionFactory());
 	}
@@ -258,7 +267,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	private int getTimeout() {
 		return Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
 	}
-	
+
 	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
 			ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);

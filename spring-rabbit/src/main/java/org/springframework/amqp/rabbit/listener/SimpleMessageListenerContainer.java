@@ -514,14 +514,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					consumer.stop();
 				} catch (AmqpException e) {
 					logger.info("Could not cancel message consumer", e);
-					// TODO: should we release the cancellationLock here?
 				}
 				if (aborted) {
 					stop();
 				}
 			} else {
 				logger.info("Restarting " + consumer);
-				// cancellationLock is not decremented on restart
 				restart(consumer);
 			}
 

@@ -49,7 +49,6 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-// TODO are there heartbeats and/or exception thrown if a connection is broken?
 public class CachingConnectionFactory extends SingleConnectionFactory implements DisposableBean {
 
 	private final Log logger = LogFactory.getLog(getClass());

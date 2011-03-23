@@ -80,9 +80,6 @@ public class RabbitTemplateIntegrationTests {
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
-		// TODO: If channel is transacted with a SingleConnectionFactory the
-		// message is always rolled back to the broker
-		// after receive (correct but surprising for users)
 		assertEquals(null, result);
 	}
 
@@ -253,7 +250,6 @@ public class RabbitTemplateIntegrationTests {
 			public Message call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive();
 					if (message != null) {
 						break;
@@ -285,7 +281,6 @@ public class RabbitTemplateIntegrationTests {
 			public Message call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive(ROUTE);
 					if (message != null) {
 						break;
@@ -317,7 +312,6 @@ public class RabbitTemplateIntegrationTests {
 			public Message call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive(ROUTE);
 					if (message != null) {
 						break;
@@ -351,7 +345,6 @@ public class RabbitTemplateIntegrationTests {
 			public String call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive();
 					if (message != null) {
 						break;
@@ -381,7 +374,6 @@ public class RabbitTemplateIntegrationTests {
 			public String call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive(ROUTE);
 					if (message != null) {
 						break;
@@ -411,7 +403,6 @@ public class RabbitTemplateIntegrationTests {
 			public String call() throws Exception {
 				Message message = null;
 				for (int i = 0; i < 10; i++) {
-					// TODO: AMQP-71 add receive timeout
 					message = template.receive(ROUTE);
 					if (message != null) {
 						break;

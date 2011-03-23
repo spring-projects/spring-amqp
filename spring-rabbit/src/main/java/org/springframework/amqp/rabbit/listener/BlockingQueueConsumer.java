@@ -194,7 +194,6 @@ public class BlockingQueueConsumer {
 				logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
 			}
 			shutdown = sig;
-			// TODO: interrupt?
 		}
 
 		@Override
@@ -215,12 +214,11 @@ public class BlockingQueueConsumer {
 				}
 			}
 			if (logger.isDebugEnabled()) {
-				// TODO: do we want to pass on 'consumerTag'?
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
 			try {
-				// TODO: If transactional we could use a bounded queue and offer() here with a timeout
-				// in which case if it fails we could nack the message and have it requeued.
+				// N.B. we can't use a bounded queue and offer() here with a timeout
+				// in case the connection thread gets blocked
 				queue.put(new Delivery(envelope, properties, body));
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

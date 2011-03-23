@@ -56,8 +56,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private static final long DEFAULT_REPLY_TIMEOUT = 5000;
 
-	// TODO configure defaults
-	// void basicQos(int prefetchSize, int prefetchCount, boolean global)
+	private static final String DEFAULT_ENCODING = "UTF-8";
 
 	private volatile String exchange = DEFAULT_EXCHANGE;
 
@@ -69,6 +68,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
 	private volatile MessageConverter messageConverter = new SimpleMessageConverter();
+
+	private String encoding = DEFAULT_ENCODING;
 
 	public RabbitTemplate() {
 		initDefaultStrategies();
@@ -94,6 +95,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	public void setQueue(String queue) {
 		this.queue = queue;
+	}
+
+	/**
+	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
+	 * 
+	 * @param encoding the encoding to set
+	 */
+	public void setEncoding(String encoding) {
+		this.encoding = encoding;
 	}
 
 	/**
@@ -193,7 +203,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 					}
 					MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(),
-							response.getEnvelope(), "UTF-8");
+							response.getEnvelope(), encoding);
 					messageProps.setMessageCount(response.getMessageCount());
 					return new Message(response.getBody(), messageProps);
 				}
@@ -222,7 +232,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.doSendAndReceive(this.exchange, routingKey, message);
 	}
 
-	public Message sendAndReceive(final String exchange, final String routingKey, final Message message) throws AmqpException {
+	public Message sendAndReceive(final String exchange, final String routingKey, final Message message)
+			throws AmqpException {
 		return this.doSendAndReceive(exchange, routingKey, message);
 	}
 
@@ -234,7 +245,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.convertSendAndReceive(this.exchange, routingKey, message);
 	}
 
-	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message) throws AmqpException {
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
+			throws AmqpException {
 		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
 		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
@@ -253,7 +265,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
 				// TODO: first check for a replyToAddress property on this template
 				DeclareOk queueDeclaration = channel.queueDeclare();
-				Address replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration.getQueue());
+				Address replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration
+						.getQueue());
 				message.getMessageProperties().setReplyTo(replyToAddress);
 
 				boolean noAck = false;
@@ -265,7 +278,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
 							byte[] body) throws IOException {
 						MessageProperties messageProperties = RabbitUtils.createMessageProperties(properties, envelope,
-								"UTF-8");
+								encoding);
 						Message reply = new Message(body, messageProperties);
 						try {
 							replyHandoff.put(reply);
@@ -332,8 +345,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			// try to send to configured routing key
 			routingKey = this.routingKey;
 		}
-		// TODO parameterize out default encoding
-		channel.basicPublish(exchange, routingKey, false, false, RabbitUtils.extractBasicProperties(message, "UTF-8"),
+		channel.basicPublish(exchange, routingKey, false, false, RabbitUtils.extractBasicProperties(message, encoding),
 				message.getBody());
 		// Check commit - avoid commit call within a JTA transaction.
 		if (isChannelLocallyTransacted(channel)) {

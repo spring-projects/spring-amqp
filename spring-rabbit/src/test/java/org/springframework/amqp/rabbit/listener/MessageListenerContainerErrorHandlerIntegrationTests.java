@@ -77,7 +77,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 	}
 
 	@Test
-	public void testErrorHandlerInvokeSpecRuntimeExceptionFromListener() throws Exception {
+	public void testErrorHandlerListenerExecutionFailedExceptionFromListener() throws Exception {
 		int messageCount = 3;
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionListener(latch,
@@ -87,21 +87,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
-	/**
-	 * TODO: {@link #testErrorHandlerInvokeSpecRuntimeExceptionFromListener()} is very similar test, but throws specific
-	 * type of {@link RuntimeException} - {@link ListenerExecutionFailedException}. That exception is handled in
-	 * different way and listener is invoked for all available messages. <br/>
-	 * In this test listener throws {@link RuntimeException} and it fails if you are expecting multiple messages to be
-	 * processed.<br/>
-	 * Investigation required!
-	 * @throws Exception
-	 */
 	@Test
-	public void testErrorHandlerInvokeRuntimeExceptionFromListener() throws Exception {
-		// TODO If messageCount is more than 1 and RuntimeException is thrown from listener - test will fail.
-		// But if listener throws ListenerExecutionFailedException test will pass (see
-		// testErrorHandlerInvokeSpecRuntimeExceptionFromListener())
-		// even with multiple messages. Investigation required.
+	public void testErrorHandlerRegularRuntimeExceptionFromListener() throws Exception {
 		int messageCount = 3;
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionListener(latch, new RuntimeException(

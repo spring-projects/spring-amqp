@@ -182,7 +182,6 @@ public abstract class RabbitUtils {
 			target.setRedelivered(envelope.isRedeliver());
 			target.setDeliveryTag(envelope.getDeliveryTag());
 		}
-		// TODO: what about messageCount?
 		return target;
 	}
 

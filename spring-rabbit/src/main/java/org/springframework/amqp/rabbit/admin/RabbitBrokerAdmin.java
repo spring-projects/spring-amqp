@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.erlang.OtpAuthException;
 import org.springframework.erlang.OtpException;
@@ -89,8 +90,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	private long timeout = 0;
 
-	// TODO: extract into field for DI
-	private SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
+	private AsyncTaskExecutor executor;
 
 	private final String nodeName;
 
@@ -176,8 +176,19 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 		this.port = port;
 		this.cookie = cookie;
 		this.nodeName = nodeName;
-		this.executor.setDaemon(true);
+		SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor();
+		executor.setDaemon(true);
+		this.executor = executor;
 
+	}
+
+	/**
+	 * An async task executor for launching background processing when starting or stopping the broker.
+	 * 
+	 * @param executor the executor to set
+	 */
+	public void setExecutor(AsyncTaskExecutor executor) {
+		this.executor = executor;
 	}
 
 	/**

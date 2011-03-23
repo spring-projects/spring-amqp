@@ -42,8 +42,6 @@ import com.rabbitmq.client.Channel;
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor implements BeanNameAware, DisposableBean,
 		SmartLifecycle {
 
-	// TODO See if can replace methods with general throws Exception signature to use a more specific exception.
-
 	private volatile String beanName;
 
 	private volatile boolean autoStartup = true;
@@ -529,7 +527,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			try {
 				listener.onMessage(message, channelToUse);
 			} catch (Exception e) {
-				throw (Exception) wrapToListenerExecutionFailedExceptionIfNeeded(e);
+				throw wrapToListenerExecutionFailedExceptionIfNeeded(e);
 			}
 		} finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
@@ -546,11 +544,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param message the received Rabbit Message
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
-	protected void doInvokeListener(MessageListener listener, Message message) {
+	protected void doInvokeListener(MessageListener listener, Message message) throws Exception {
 		try {
 			listener.onMessage(message);
-		} catch (RuntimeException e) {
-			throw (RuntimeException) wrapToListenerExecutionFailedExceptionIfNeeded(e);
+		} catch (Exception e) {
+			throw wrapToListenerExecutionFailedExceptionIfNeeded(e);
 		}
 	}
 
@@ -664,10 +662,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			// Internal exception - has been handled before.
 			return;
 		}
-		/*
-		 * TODO how to handle exceptions that rabbit might throw if (ex instanceof JMSException) {
-		 * invokeExceptionListener((JMSException) ex); }
-		 */
 		if (isActive()) {
 			// Regular case: failed while active.
 			// Invoke ErrorHandler if available.
