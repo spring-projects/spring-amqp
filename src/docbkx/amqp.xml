@@ -464,7 +464,7 @@ container.setMessageListener(someListener);]]></programlisting> As an "active"
 public class ExampleAmqpConfiguration {
 
     @Bean
-    public MessageListenerContainer messageListenerContainer {
+    public MessageListenerContainer messageListenerContainer() {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitConnectionFactory());
         container.setQueueName("some.queue");
@@ -484,9 +484,9 @@ public class ExampleAmqpConfiguration {
     public MessageListener exampleListener() {
         return new MessageListener() {
             public void onMessage(Message message) {
-                System.out.println("received: " + message)
+                System.out.println("received: " + message);
             }
-        }
+        };
     }
 }]]></programlisting></sect2>
   </section>
@@ -928,7 +928,7 @@ public void doSomething() {
 public class ExampleExternalTransactionAmqpConfiguration {
 
     @Bean
-    public MessageListenerContainer messageListenerContainer {
+    public MessageListenerContainer messageListenerContainer() {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitConnectionFactory());
         container.setTransactionManager(transactionManager());
