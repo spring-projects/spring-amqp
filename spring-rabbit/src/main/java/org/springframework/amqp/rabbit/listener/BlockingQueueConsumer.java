@@ -57,16 +57,16 @@ public class BlockingQueueConsumer {
 
 	private final ConnectionFactory connectionFactory;
 
-	private final ActiveObjectCounter<BlockingQueueConsumer> stopped;
+	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
 	 */
-	public BlockingQueueConsumer(ConnectionFactory connectionFactory, ActiveObjectCounter<BlockingQueueConsumer> stopped,
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory, ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter,
 			AcknowledgeMode acknowledgeMode, boolean transactional, int prefetchCount, String... queues) {
 		this.connectionFactory = connectionFactory;
-		this.stopped = stopped;
+		this.activeObjectCounter = activeObjectCounter;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
@@ -148,7 +148,7 @@ public class BlockingQueueConsumer {
 		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
 				.getChannel();
 		this.consumer = new InternalConsumer(channel);
-		this.stopped.add(this);
+		this.activeObjectCounter.add(this);
 		try {
 			// Set basicQos before calling basicConsume (it is ignored if we are not transactional and the broker will
 			// send blocks of 100 messages)
@@ -157,6 +157,7 @@ public class BlockingQueueConsumer {
 				channel.queueDeclarePassive(queues[i]);
 			}
 		} catch (IOException e) {
+			this.activeObjectCounter.release(this);
 			throw new ListenerStartupFatalException("Cannot prepare queue for listener. "
 					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 		}
@@ -202,7 +203,7 @@ public class BlockingQueueConsumer {
 				logger.debug("Received cancellation notice for " + BlockingQueueConsumer.this);
 			}
 			// Signal to the container that we have been cancelled
-			stopped.release(BlockingQueueConsumer.this);
+			activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 
 		@Override

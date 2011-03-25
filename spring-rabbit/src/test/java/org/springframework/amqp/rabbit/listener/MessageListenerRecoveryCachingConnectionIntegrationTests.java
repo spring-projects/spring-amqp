@@ -12,7 +12,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -257,8 +256,11 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	}
 
 	@Test(expected = AmqpIllegalStateException.class)
-	@Ignore
 	public void testSingleListenerDoesNotRecoverFromMissingQueue() throws Exception {
+		/*
+		 * A single listener sometimes doesn't have time to attempt to start before we ask it if it has failed, so this
+		 * is a good test of that potential bug.
+		 */
 		concurrentConsumers = 1;
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		container = createContainer("nonexistent", new VanillaListener(latch), createConnectionFactory());

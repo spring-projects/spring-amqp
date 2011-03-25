@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.aopalliance.aop.Advice;
 import org.springframework.amqp.AmqpException;
@@ -432,8 +431,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile ListenerStartupFatalException startupException;
 
-		private AtomicBoolean started = new AtomicBoolean(false);
-
 		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
@@ -448,9 +445,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		public ListenerStartupFatalException getStartupException() throws TimeoutException, InterruptedException {
-			if (!started.get()) {
-				return null;
-			}
 			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("Timed out waiting for startup");
 			}
@@ -460,7 +454,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		public void run() {
 
 			boolean aborted = false;
-			this.started.set(true);
 
 			try {
 
@@ -506,6 +499,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 
+			// In all cases count down to allow container to progress beyond startup
 			start.countDown();
 
 			if (!isActive() || aborted) {
@@ -516,6 +510,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					logger.info("Could not cancel message consumer", e);
 				}
 				if (aborted) {
+					logger.info("Stopping container from aborted consumer");
 					stop();
 				}
 			} else {
