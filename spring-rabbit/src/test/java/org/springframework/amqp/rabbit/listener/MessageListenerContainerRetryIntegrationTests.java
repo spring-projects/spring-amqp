@@ -56,15 +56,45 @@ public class MessageListenerContainerRetryIntegrationTests {
 	}
 
 	@Test
-	public void testStatefulRetryPerMessage() throws Exception {
+	public void testStatefulRetryWithAllMessagesFailing() throws Exception {
 
 		int messageCount = 10;
+		int txSize = 1;
+		int failFrequency = 1;
 		int concurrentConsumers = 3;
+		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
 
+	}
+
+	@Test
+	public void testStatefulRetryWithTxSizeAndIntermittentFailure() throws Exception {
+
+		int messageCount = 10;
+		int txSize = 4;
+		int failFrequency = 3;
+		int concurrentConsumers = 3;
+		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
+
+	}
+
+	@Test
+	public void testStatefulRetryWithMoreMessages() throws Exception {
+
+		int messageCount = 200;
+		int txSize = 10;
+		int failFrequency = 6;
+		int concurrentConsumers = 3;
+		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
+
+	}
+
+	public void doTestStatefulRetry(int messageCount, int txSize, int failFrequency, int concurrentConsumers) throws Exception {
+
+		int failedMessageCount = messageCount / failFrequency + (messageCount % failFrequency == 0 ? 0 : 1);
 		RabbitTemplate template = createTemplate(concurrentConsumers);
 
 		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), (Object) (i + "foo"), new MessagePostProcessor() {
+			template.convertAndSend(queue.getName(), new Integer(i), new MessagePostProcessor() {
 				// There is no message id by default
 				public Message postProcessMessage(Message message) throws AmqpException {
 					message.getMessageProperties().setMessageId(UUID.randomUUID().toString());
@@ -74,11 +104,11 @@ public class MessageListenerContainerRetryIntegrationTests {
 		}
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
-		final CountDownLatch latch = new CountDownLatch(messageCount);
-		PojoListener listener = new PojoListener();
+		PojoListener listener = new PojoListener(failFrequency);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setChannelTransacted(true);
+		container.setTxSize(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 
 		StatefulRetryOperationsInterceptor retryInterceptor = new StatefulRetryOperationsInterceptor();
@@ -89,6 +119,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 				return !message.getMessageProperties().isRedelivered();
 			}
 		});
+		final CountDownLatch latch = new CountDownLatch(failedMessageCount);
 		retryInterceptor.setRecoverer(new MethodInvocationRecoverer<Object>() {
 			public Object recover(Object[] args, Throwable cause) {
 				logger.info("Recovered: " + Arrays.asList(args));
@@ -99,7 +130,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		retryInterceptor.setKeyGenerator(new MethodArgumentsKeyGenerator() {
 			public Object getKey(Object[] args) {
 				Message message = (Message) args[1];
-				logger.info("Key: " + new String(message.getBody()));
+				logger.info("Key: " + message.getMessageProperties().getMessageId());
 				return message.getMessageProperties().getMessageId();
 			}
 		});
@@ -115,14 +146,14 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 			boolean waited = latch.await(timeout, TimeUnit.SECONDS);
-			logger.info("All messages received after start: " + waited);
+			logger.info("All messages recovered: " + waited);
 			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
-			assertTrue("Timed out waiting for message", waited);
+			assertTrue("Timed out waiting for messages", waited);
 
 			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 
-			// Retried each one 3 times...
-			assertEquals(3*messageCount, listener.count.get());
+			// Retried each failure 3 times (default retry policy)...
+			assertEquals(messageCount + 2 * failedMessageCount, listener.getCount());
 
 		} finally {
 			container.shutdown();
@@ -136,10 +167,17 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 	public static class PojoListener {
 		private AtomicInteger count = new AtomicInteger();
+		private final int failFrequency;
 
-		public void handleMessage(String value) throws Exception {
+		public PojoListener(int failFrequency) {
+			this.failFrequency = failFrequency;
+		}
+
+		public void handleMessage(int value) throws Exception {
 			logger.debug(value + count.getAndIncrement());
-			throw new RuntimeException("Planned");
+			if (value % failFrequency == 0) {
+				throw new RuntimeException("Planned");
+			}
 		}
 
 		public int getCount() {

@@ -36,13 +36,11 @@ public class MessageProperties {
 
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
-
 	private static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
 	private static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
 	private static final Integer DEFAULT_PRIORITY = new Integer(0);
-
 
 	private final Map<String, Object> headers = new HashMap<String, Object>();
 
