@@ -158,7 +158,7 @@ public class BlockingQueueConsumer {
 			}
 		} catch (IOException e) {
 			this.activeObjectCounter.release(this);
-			throw new ListenerStartupFatalException("Cannot prepare queue for listener. "
+			throw new FatalListenerStartupException("Cannot prepare queue for listener. "
 					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 		}
 		try {

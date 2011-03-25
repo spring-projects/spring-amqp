@@ -303,7 +303,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				this.taskExecutor.execute(processor);
 			}
 			for (AsyncMessageProcessingConsumer processor : processors) {
-				ListenerStartupFatalException startupException = processor.getStartupException();
+				FatalListenerStartupException startupException = processor.getStartupException();
 				if (startupException != null) {
 					throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
 				}
@@ -429,7 +429,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final CountDownLatch start;
 
-		private volatile ListenerStartupFatalException startupException;
+		private volatile FatalListenerStartupException startupException;
 
 		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
@@ -444,7 +444,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		public ListenerStartupFatalException getStartupException() throws TimeoutException, InterruptedException {
+		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
 			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("Timed out waiting for startup");
 			}
@@ -459,7 +459,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 				try {
 					consumer.start();
-				} catch (ListenerStartupFatalException ex) {
+				} catch (FatalListenerStartupException ex) {
 					throw ex;
 				} catch (Throwable t) {
 					handleStartupFailure(t);
@@ -483,9 +483,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 				aborted = true;
-			} catch (ListenerStartupFatalException ex) {
+			} catch (FatalListenerStartupException ex) {
 				logger.error("Consumer received fatal exception on startup", ex);
 				this.startupException = ex;
+				// Fatal, but no point re-throwing, so just abort.
+				aborted = true;
+			} catch (FatalListenerExecutionException ex) {
+				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
 			} catch (Throwable t) {

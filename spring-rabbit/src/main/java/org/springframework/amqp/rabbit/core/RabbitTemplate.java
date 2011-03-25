@@ -345,6 +345,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			// try to send to configured routing key
 			routingKey = this.routingKey;
 		}
+		
 		channel.basicPublish(exchange, routingKey, false, false, RabbitUtils.extractBasicProperties(message, encoding),
 				message.getBody());
 		// Check commit - avoid commit call within a JTA transaction.

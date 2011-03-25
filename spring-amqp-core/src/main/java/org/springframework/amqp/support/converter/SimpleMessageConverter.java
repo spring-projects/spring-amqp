@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.util.UUID;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -48,9 +49,20 @@ public class SimpleMessageConverter implements MessageConverter, BeanClassLoader
 	private String codebaseUrl;
 
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
+
+	private boolean createMessageIds = false;
 	
 	public void setBeanClassLoader(ClassLoader beanClassLoader) {
 		this.beanClassLoader = beanClassLoader;
+	}
+
+	/**
+	 * Flag to indicate that new messages should have unique identifiers added to their properties before sending.
+	 * Default false.
+	 * @param createMessageIds the flag value to set
+	 */
+	public void setCreateMessageIds(boolean createMessageIds) {
+		this.createMessageIds = createMessageIds;
 	}
 
 	/**
@@ -145,6 +157,9 @@ public class SimpleMessageConverter implements MessageConverter, BeanClassLoader
 		}
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
+		}
+		if (this.createMessageIds && messageProperties.getMessageId()==null) {
+			messageProperties.setMessageId(UUID.randomUUID().toString());
 		}
 		return new Message(bytes, messageProperties);
 	}
