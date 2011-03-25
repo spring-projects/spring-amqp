@@ -31,6 +31,8 @@ import org.springframework.amqp.utils.SerializationUtils;
  */
 public class Message {
 
+	private static final String ENCODING = Charset.defaultCharset().name();
+
 	private final MessageProperties messageProperties;
 
 	private final byte[] body;
@@ -76,10 +78,10 @@ public class Message {
 				return SerializationUtils.deserialize(body).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)) {
-				return new String(body, Charset.defaultCharset());
+				return new String(body, ENCODING);
 			}
 			if (MessageProperties.CONTENT_TYPE_JSON.equals(contentType)) {
-				return new String(body, Charset.defaultCharset());
+				return new String(body, ENCODING);
 			}
 		} catch (Exception e) {
 			// ignore
