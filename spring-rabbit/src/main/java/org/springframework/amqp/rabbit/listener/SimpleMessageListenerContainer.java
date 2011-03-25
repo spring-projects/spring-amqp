@@ -86,14 +86,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	public static interface ContainerDelegate {
-		boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable;
+		void invokeListener(Channel channel, Message message) throws Exception;
 	}
 
 	private Advice[] advices = new Advice[0];
 
 	private ContainerDelegate delegate = new ContainerDelegate() {
-		public boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
-			return SimpleMessageListenerContainer.this.receiveAndExecute(consumer);
+		public void invokeListener(Channel channel, Message message) throws Exception {
+			SimpleMessageListenerContainer.super.invokeListener(channel, message);
 		}
 	};
 
@@ -324,7 +324,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		try {
-			logger.debug("Waiting for workers to finish.");
+			logger.info("Waiting for workers to finish.");
 			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {
 				logger.info("Successfully waited for workers to finish.");
@@ -473,7 +473,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				while (isActive() || continuable) {
 					try {
 						// Will come back false when the queue is drained
-						continuable = proxy.receiveAndExecute(consumer) && !isChannelTransacted();
+						continuable = receiveAndExecute(consumer) && !isChannelTransacted();
 					} catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
 					}
@@ -520,6 +520,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		}
 
+	}
+	
+	@Override
+	protected void invokeListener(Channel channel, Message message) throws Exception {
+		proxy.invokeListener(channel, message);
 	}
 
 	/**
