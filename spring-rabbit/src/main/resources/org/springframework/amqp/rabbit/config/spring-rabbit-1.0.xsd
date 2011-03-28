@@ -500,6 +500,13 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="advice-chain" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a chain of AOP advice to be applied to the listener.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
