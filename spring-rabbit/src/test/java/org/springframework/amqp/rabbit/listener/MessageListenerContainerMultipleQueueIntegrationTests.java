@@ -66,6 +66,24 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 	@Test
 	public void testMultipleQueues() {
+		doTest(new ContainerConfigurer() {
+			public void configure(SimpleMessageListenerContainer container) {
+				container.setQueues(queue1, queue2);
+			}
+		});
+	}
+
+	@Test
+	public void testMultipleQueueNames() {
+		doTest(new ContainerConfigurer() {
+			public void configure(SimpleMessageListenerContainer container) {
+				container.setQueueNames(queue1.getName(), queue2.getName());
+			}
+		});
+	}
+
+
+	private void doTest(ContainerConfigurer configurer) {
 		int messageCount = 10;
 		int concurrentConsumers = 1;
 		RabbitTemplate template = new RabbitTemplate();
@@ -87,7 +105,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setChannelTransacted(true);
 		container.setConcurrentConsumers(concurrentConsumers);
-		container.setQueueNames(queue1.getName(), queue2.getName());
+		configurer.configure(container);
 		container.afterPropertiesSet();
 		container.start();
 		try {
@@ -107,6 +125,11 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		}
 		assertNull(template.receiveAndConvert(queue1.getName()));
 		assertNull(template.receiveAndConvert(queue2.getName()));
+	}
+
+
+	private interface ContainerConfigurer {
+		void configure(SimpleMessageListenerContainer container);
 	}
 
 
