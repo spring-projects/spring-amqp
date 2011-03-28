@@ -86,14 +86,30 @@ public class Queue {
 		return this.name;
 	}
 
+	/**
+	 * A durable queue will survive a server restart
+	 * 
+	 * @return true if durable
+	 */
 	public boolean isDurable() {
 		return this.durable;
 	}
 
+	/**
+	 * True if the server should only send messages to the declarer's connection.
+	 * 
+	 * @return true if auto-delete
+	 */
 	public boolean isExclusive() {
 		return this.exclusive;
 	}
 
+	/**
+	 * True if the server should delete the queue when it is no longer in use (the last consumer is cancelled). A queue
+	 * that never has any consumers will not be deleted automatically.
+	 * 
+	 * @return true if auto-delete
+	 */
 	public boolean isAutoDelete() {
 		return this.autoDelete;
 	}

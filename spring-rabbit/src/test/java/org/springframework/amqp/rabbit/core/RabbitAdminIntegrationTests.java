@@ -9,6 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -59,6 +60,35 @@ public class RabbitAdminIntegrationTests {
 		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
 	}
 
+	@Test(expected = AmqpIOException.class)
+	public void testDoubleDeclarationOfExclusiveQueue() throws Exception {
+		// Expect exception because the queue is locked when it is declared a second time.
+		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
+		connectionFactory1.setPort(BrokerTestUtils.getPort());
+		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
+		connectionFactory2.setPort(BrokerTestUtils.getPort());
+		Queue queue = new Queue("test.queue", false, true, true);
+		rabbitAdmin.deleteQueue(queue.getName());
+		new RabbitAdmin(connectionFactory1).declareQueue(queue);
+		new RabbitAdmin(connectionFactory2).declareQueue(queue);
+	}
+
+	@Test
+	public void testDoubleDeclarationOfAutodeleteQueue() throws Exception {
+		// No error expected here: the queue is autodeleted when the last consumer is cancelled, but this one never has
+		// any consumers.
+		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
+		connectionFactory1.setPort(BrokerTestUtils.getPort());
+		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
+		connectionFactory2.setPort(BrokerTestUtils.getPort());
+		Queue queue = new Queue("test.queue", false, false, true);
+		rabbitAdmin.deleteQueue(queue.getName());
+		new RabbitAdmin(connectionFactory1).declareQueue(queue);
+		new RabbitAdmin(connectionFactory2).declareQueue(queue);
+		connectionFactory1.destroy();
+		connectionFactory2.destroy();
+	}
+
 	@Test
 	public void testStartupWithAutodelete() throws Exception {
 
@@ -66,7 +96,7 @@ public class RabbitAdminIntegrationTests {
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.afterPropertiesSet();
-		
+
 		final AtomicReference<Connection> connectionHolder = new AtomicReference<Connection>();
 
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
@@ -108,7 +138,7 @@ public class RabbitAdminIntegrationTests {
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.afterPropertiesSet();
-		
+
 		final AtomicReference<Connection> connectionHolder = new AtomicReference<Connection>();
 
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
@@ -123,7 +153,7 @@ public class RabbitAdminIntegrationTests {
 		assertTrue("Expected Queue to exist", exists);
 
 		assertTrue(queueExists(connectionHolder.get(), queue));
-		
+
 		// simulate broker going down and coming back up...
 		rabbitAdmin.deleteQueue(queue.getName());
 		connectionFactory.destroy();
@@ -154,7 +184,7 @@ public class RabbitAdminIntegrationTests {
 	 * @return true if the queue exists
 	 */
 	private boolean queueExists(Connection connection, Queue queue) throws Exception {
-		if (connection==null) {
+		if (connection == null) {
 			ConnectionFactory connectionFactory = new ConnectionFactory();
 			connectionFactory.setPort(BrokerTestUtils.getPort());
 			connection = connectionFactory.newConnection();

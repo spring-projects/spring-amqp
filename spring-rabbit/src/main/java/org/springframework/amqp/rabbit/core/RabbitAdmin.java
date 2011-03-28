@@ -218,9 +218,12 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						return;
 					}
 					try {
-						// ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
-						// one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
-						// chatter).  If anyone has a problem with it: use auto-startup="false".
+						/*
+						 * ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
+						 * one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
+						 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
+						 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
+						 */
 						initialize();
 					} finally {
 						initializing.compareAndSet(true, false);
@@ -255,6 +258,38 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		final Collection<Exchange> exchanges = applicationContext.getBeansOfType(Exchange.class).values();
 		final Collection<Queue> queues = applicationContext.getBeansOfType(Queue.class).values();
 		final Collection<Binding> bindings = applicationContext.getBeansOfType(Binding.class).values();
+
+		for (Exchange exchange : exchanges) {
+			if (!exchange.isDurable()) {
+				logger.warn("Auto-declaring a non-durable Exchange ("
+						+ exchange.getName()
+						+ "). It will be deleted by the broker if it shuts down, and can be redeclared by closing and reopening the connection.");
+			}
+			if (exchange.isAutoDelete()) {
+				logger.warn("Auto-declaring an auto-delete Exchange ("
+						+ exchange.getName()
+						+ "). It will be deleted by the broker if not in use (if all bindings are deleted), but will only be redeclared if the connection is closed and reopened.");
+			}
+		}
+
+		for (Queue queue : queues) {
+			if (!queue.isDurable()) {
+				logger.warn("Auto-declaring a non-durable Queue ("
+						+ queue.getName()
+						+ "). It will be redeclared if the broker stops and is restarted while the connection factory is alive, but all messages will be lost.");
+			}
+			if (queue.isAutoDelete()) {
+				logger.warn("Auto-declaring an auto-delete Queue ("
+						+ queue.getName()
+						+ "). It will be deleted deleted by the broker if not in use, and all messages will be lost.  Redeclared when the connection is closed and reopened.");
+			}
+			if (queue.isExclusive()) {
+				logger.warn("Auto-declaring an exclusive Queue ("
+						+ queue.getName()
+						+ "). It cannot be accessed by consumers on another connection, and will be redeclared if the connection is reopened.");
+			}
+		}
+
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
 				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
