@@ -16,7 +16,6 @@
 		<junit.version>4.8.2</junit.version>
 		<log4j.version>1.2.15</log4j.version>
 		<org.mockito.version>1.8.4</org.mockito.version>
-		<org.slf4j.version>1.5.10</org.slf4j.version>
 		<org.codehaus.jackson.version>1.4.3</org.codehaus.jackson.version>
 		<org.erlang.otp.version>1.5.3</org.erlang.otp.version>
 		<com.rabbitmq.version>2.3.1</com.rabbitmq.version>
@@ -149,12 +148,6 @@
 				<groupId>org.springframework</groupId>
 				<artifactId>spring-core</artifactId>
 				<version>${org.springframework.version}</version>
-				<exclusions>
-					<exclusion>
-						<groupId>commons-logging</groupId>
-						<artifactId>commons-logging</artifactId>
-					</exclusion>
-				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework</groupId>
@@ -186,23 +179,6 @@
 			</dependency>
 
 			<!-- Logging -->
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>${org.slf4j.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>jcl-over-slf4j</artifactId>
-				<version>${org.slf4j.version}</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-log4j12</artifactId>
-				<version>${org.slf4j.version}</version>
-				<scope>runtime</scope>
-			</dependency>
 			<dependency>
 				<groupId>log4j</groupId>
 				<artifactId>log4j</artifactId>
