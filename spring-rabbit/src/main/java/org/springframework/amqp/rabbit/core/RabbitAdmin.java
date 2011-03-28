@@ -207,24 +207,27 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				return;
 			}
 
-			// Prevent stack overflow...
-			final AtomicBoolean initializing = new AtomicBoolean(false);
-
 			connectionFactory.addConnectionListener(new ConnectionListener() {
 
-				private volatile boolean initialized = false;
+				// Prevent stack overflow...
+				private AtomicBoolean initializing = new AtomicBoolean(false);
 
 				public void onCreate(Connection connection) {
-					if (!initializing.compareAndSet(false, true) || initialized) {
+					if (!initializing.compareAndSet(false, true)) {
+						// If we are already initializing, we don't need to do it again...
 						return;
 					}
-					initialize();
-					initializing.compareAndSet(true, false);
-					initialized = true;
+					try {
+						// ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
+						// one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
+						// chatter).  If anyone has a problem with it: use auto-startup="false".
+						initialize();
+					} finally {
+						initializing.compareAndSet(true, false);
+					}
 				}
 
 				public void onClose(Connection connection) {
-					initialized = false;
 				}
 
 			});

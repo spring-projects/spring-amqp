@@ -101,6 +101,50 @@ public class RabbitAdminIntegrationTests {
 
 	}
 
+	@Test
+	public void testStartupWithNonDurable() throws Exception {
+
+		final Queue queue = new Queue("test.queue", false, false, false);
+		context.getBeanFactory().registerSingleton("foo", queue);
+		rabbitAdmin.deleteQueue(queue.getName());
+		rabbitAdmin.afterPropertiesSet();
+		
+		final AtomicReference<Connection> connectionHolder = new AtomicReference<Connection>();
+
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+		// Force RabbitAdmin to initialize the queue
+		boolean exists = rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				DeclareOk result = channel.queueDeclarePassive(queue.getName());
+				connectionHolder.set(channel.getConnection());
+				return result != null;
+			}
+		});
+		assertTrue("Expected Queue to exist", exists);
+
+		assertTrue(queueExists(connectionHolder.get(), queue));
+		
+		// simulate broker going down and coming back up...
+		rabbitAdmin.deleteQueue(queue.getName());
+		connectionFactory.destroy();
+		assertFalse(queueExists(null, queue));
+
+		// Broker auto-deleted queue, but it is re-created by the connection listener
+		exists = rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				DeclareOk result = channel.queueDeclarePassive(queue.getName());
+				connectionHolder.set(channel.getConnection());
+				return result != null;
+			}
+		});
+		assertTrue("Expected Queue to exist", exists);
+
+		assertTrue(queueExists(connectionHolder.get(), queue));
+		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
+		assertFalse(queueExists(null, queue));
+
+	}
+
 	/**
 	 * Use native Rabbit API to test queue, bypassing all the connection and channel caching and callbacks in Spring
 	 * AMQP.
