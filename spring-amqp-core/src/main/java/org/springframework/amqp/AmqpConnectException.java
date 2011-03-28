@@ -22,9 +22,9 @@ import java.net.ConnectException;
  * @author Dave Syer
  */
 @SuppressWarnings("serial")
-public class AmqpConnectException extends AmqpIOException {
+public class AmqpConnectException extends AmqpException {
 
-	public AmqpConnectException(ConnectException cause) {
+	public AmqpConnectException(Exception cause) {
 		super(cause);
 	}
 

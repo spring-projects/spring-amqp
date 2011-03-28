@@ -312,11 +312,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			if (isChannelLocallyTransacted(channel)) {
 				resourceHolder.rollbackAll();
 			}
-			if (ex instanceof RuntimeException) {
-				throw (RuntimeException) ex;
-			} else {
-				throw convertRabbitAccessException(ex);
-			}
+			throw convertRabbitAccessException(ex);
 		} finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}

@@ -102,7 +102,7 @@ public class ConnectionFactoryUtils {
 					}
 				});
 		if (synchedLocalTransactionAllowed) {
-			holder.declareTransactional();
+			// holder.declareTransactional();
 		}
 		return holder;
 	}
@@ -132,43 +132,27 @@ public class ConnectionFactoryUtils {
 		if (resourceHolderToUse == null) {
 			resourceHolderToUse = new RabbitResourceHolder();
 		}
-		Connection con = resourceFactory.getConnection(resourceHolderToUse);
+		Connection connection = resourceFactory.getConnection(resourceHolderToUse);
 		Channel channel = null;
 		try {
-			boolean isExistingCon = (con != null);
+			boolean isExistingCon = (connection != null);
 			if (!isExistingCon) {
-				con = resourceFactory.createConnection();
-				resourceHolderToUse.addConnection(con);
+				connection = resourceFactory.createConnection();
+				resourceHolderToUse.addConnection(connection);
 			}
-			channel = resourceFactory.createChannel(con);
-			resourceHolderToUse.addChannel(channel, con);
+			channel = resourceFactory.createChannel(connection);
+			resourceHolderToUse.addChannel(channel, connection);
 
 			if (resourceHolderToUse != resourceHolder) {
 				bindResourceToTransaction(resourceHolderToUse, connectionFactory,
 						resourceFactory.isSynchedLocalTransactionAllowed());
 			}
-			if (isChannelTransactional(channel, connectionFactory)) {
-				// It is externally transacted and was just created so we want to start the transaction
-				channel.txSelect();
-			}
 
 			return resourceHolderToUse;
 
 		} catch (IOException ex) {
-			if (channel != null) {
-				try {
-					channel.close();
-				} catch (Throwable ex2) {
-					// ignore
-				}
-			}
-			if (con != null) {
-				try {
-					con.close();
-				} catch (Throwable ex2) {
-					// ignore
-				}
-			}
+			RabbitUtils.closeChannel(channel);
+			RabbitUtils.closeConnection(connection);
 			throw new AmqpIOException(ex);
 		}
 	}

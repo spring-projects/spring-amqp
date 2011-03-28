@@ -36,6 +36,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Fisher
@@ -101,10 +102,13 @@ public abstract class RabbitUtils {
 		}
 	}
 
-	public static AmqpException convertRabbitAccessException(Throwable ex) {
+	public static RuntimeException convertRabbitAccessException(Throwable ex) {
 		Assert.notNull(ex, "Exception must not be null");
 		if (ex instanceof AmqpException) {
 			return (AmqpException) ex;
+		}
+		if (ex instanceof ShutdownSignalException) {
+			return new AmqpConnectException((ShutdownSignalException) ex);
 		}
 		if (ex instanceof ConnectException) {
 			return new AmqpConnectException((ConnectException) ex);

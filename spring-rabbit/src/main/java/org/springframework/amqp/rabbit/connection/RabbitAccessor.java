@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -103,7 +102,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 		return holder;
 	}
 
-	protected AmqpException convertRabbitAccessException(Exception ex) {
+	protected RuntimeException convertRabbitAccessException(Exception ex) {
 		return RabbitUtils.convertRabbitAccessException(ex);
 	}
 

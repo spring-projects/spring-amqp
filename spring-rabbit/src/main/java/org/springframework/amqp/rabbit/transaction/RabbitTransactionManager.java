@@ -141,7 +141,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 			if (logger.isDebugEnabled()) {
 				logger.debug("Created AMQP transaction on channel [" + resourceHolder.getChannel() + "]");
 			}
-			resourceHolder.declareTransactional();
+			// resourceHolder.declareTransactional();
 			txObject.setResourceHolder(resourceHolder);
 			txObject.getResourceHolder().setSynchronizedWithTransaction(true);
 			int timeout = determineTimeout(definition);

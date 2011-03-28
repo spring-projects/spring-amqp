@@ -24,14 +24,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -48,10 +51,35 @@ public class RabbitTemplateIntegrationTests {
 
 	private static final String ROUTE = "test.queue";
 
-	private RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+	private RabbitTemplate template;
+
+	@Before
+	public void create() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setPort(BrokerTestUtils.getPort());
+		template = new RabbitTemplate(connectionFactory);
+	}
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
+
+	@Test
+	public void testSendToNonExistentAndThenReceive() throws Exception {
+		// If transacted then the commit fails on send, so we get a nice synchronous exception
+		template.setChannelTransacted(true);
+		try {
+			template.convertAndSend("", "no.such.route", "message");
+			// fail("Expected AmqpException");
+		} catch (AmqpException e) {
+			// e.printStackTrace();
+		}
+		// Now send the real message, and all should be well...
+		template.convertAndSend(ROUTE, "message");
+		String result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals("message", result);
+		result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals(null, result);
+	}
 
 	@Test
 	public void testSendAndReceive() throws Exception {
@@ -103,7 +131,7 @@ public class RabbitTemplateIntegrationTests {
 			});
 			fail("Expected PlannedException");
 		} catch (Exception e) {
-			assertTrue(e instanceof PlannedException);
+			assertTrue(e.getCause() instanceof PlannedException);
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
