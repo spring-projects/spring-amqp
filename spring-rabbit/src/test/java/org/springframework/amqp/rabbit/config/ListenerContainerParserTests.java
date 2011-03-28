@@ -17,9 +17,12 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.aopalliance.aop.Advice;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,6 +31,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
@@ -66,9 +70,22 @@ public final class ListenerContainerParserTests {
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
 	}
 
+	@Test
+	public void testParseWithAdviceChain() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container3", SimpleMessageListenerContainer.class);
+		DirectFieldAccessor accessor = new DirectFieldAccessor(container);
+		Object adviceChain = accessor.getPropertyValue("adviceChain");
+		assertNotNull(adviceChain);
+		assertEquals(3, ((Advice[]) adviceChain).length);
+	}
+
 	static class TestBean {
 		public void handle(String s) {
 		}
 	}
 
+	static class TestAdvice implements MethodBeforeAdvice {
+		public void before(Method method, Object[] args, Object target) throws Throwable {
+		}
+	}
 }

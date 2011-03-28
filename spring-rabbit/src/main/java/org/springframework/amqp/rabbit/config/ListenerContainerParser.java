@@ -248,7 +248,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);
 		if (StringUtils.hasText(adviceChain)) {
-			containerDef.getPropertyValues().add("adviceChain", adviceChain);
+			containerDef.getPropertyValues().add("adviceChain", new RuntimeBeanReference(adviceChain));
 		}
 
 		return containerDef;

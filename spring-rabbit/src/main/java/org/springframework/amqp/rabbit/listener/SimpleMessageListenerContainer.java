@@ -84,13 +84,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
+	private volatile Advice[] adviceChain = new Advice[0];
+
 	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	public static interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
 	}
-
-	private Advice[] advices = new Advice[0];
 
 	private ContainerDelegate delegate = new ContainerDelegate() {
 		public void invokeListener(Channel channel, Message message) throws Exception {
@@ -113,8 +113,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * 
 	 * @param advices the advice chain to set
 	 */
-	public void setAdviceChain(Advice[] advices) {
-		this.advices = advices;
+	public void setAdviceChain(Advice[] adviceChain) {
+		this.adviceChain = adviceChain;
 	}
 
 	/**
@@ -238,11 +238,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void initializeProxy() {
-		if (advices.length == 0) {
+		if (adviceChain.length == 0) {
 			return;
 		}
 		ProxyFactory factory = new ProxyFactory();
-		for (Advice advice : getAdvices()) {
+		for (Advice advice : getAdviceChain()) {
 			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
 		}
 		factory.setProxyTargetClass(false);
@@ -432,8 +432,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	protected Advice[] getAdvices() {
-		return advices;
+	private Advice[] getAdviceChain() {
+		return this.adviceChain;
 	}
 
 	private class AsyncMessageProcessingConsumer implements Runnable {

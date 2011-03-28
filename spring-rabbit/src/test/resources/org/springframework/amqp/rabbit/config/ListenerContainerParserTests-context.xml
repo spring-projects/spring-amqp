@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
 	<rabbit:queue name="foo" />
 
@@ -16,6 +19,16 @@
 	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
 		<rabbit:listener id="testListener" queues="foo, bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
+
+	<rabbit:listener-container id="container3" connection-factory="connectionFactory" advice-chain="adviceChain">
+		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<util:list id="adviceChain">
+		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
+		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
+		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
+	</util:list>
 
 	<bean class="org.springframework.amqp.rabbit.core.RabbitAdmin">
 		<constructor-arg name="connectionFactory" ref="connectionFactory"/>
