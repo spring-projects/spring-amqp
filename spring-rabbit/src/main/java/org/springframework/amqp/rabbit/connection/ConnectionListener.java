@@ -23,4 +23,6 @@ public interface ConnectionListener {
 	
 	void onCreate(Connection connection);
 
+	void onClose(Connection connection);
+
 }

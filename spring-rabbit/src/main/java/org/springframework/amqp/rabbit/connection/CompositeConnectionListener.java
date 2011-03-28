@@ -32,6 +32,12 @@ public class CompositeConnectionListener implements ConnectionListener {
 		}	
 	}
 
+	public void onClose(Connection connection) {
+		for (ConnectionListener delegate : delegates) {
+			delegate.onClose(connection);
+		}	
+	}
+
 	public void setDelegates(List<? extends ConnectionListener> delegates) {
 		this.delegates = new ArrayList<ConnectionListener>(delegates);
 	}

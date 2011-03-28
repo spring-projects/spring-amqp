@@ -124,7 +124,7 @@ public class BlockingQueueConsumer {
 	 * @throws ShutdownSignalException if the connection is shut down while waiting
 	 */
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
-		logger.debug("Retrieving delivery for " + this);
+		logger.trace("Retrieving delivery for " + this);
 		return handle(queue.take());
 	}
 

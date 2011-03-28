@@ -294,19 +294,18 @@ public class CachingConnectionFactoryTests {
 
 		Connection con = ccf.createConnection();
 
-		Channel channel1 = con.createChannel(false); // This will return a
-														// Spring AOP proxy that
-														// surpresses calls to
-														// close
-		Channel channel2 = con.createChannel(false); // "
+		// This will return a proxy that surpresses calls to close
+		Channel channel1 = con.createChannel(false); 
+		Channel channel2 = con.createChannel(false);
 
-		channel1.close(); // should be ignored, and add last into channel cache.
-		channel2.close(); // "
+		// Should be ignored, and add last into channel cache.
+		channel1.close(); 
+		channel2.close();
 
-		Channel ch1 = con.createChannel(false); // remove first entry in cache
-												// (channel1)
-		Channel ch2 = con.createChannel(false); // remove first entry in cache
-												// (channel2)
+		// remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false);
+		// remove first entry in cache (channel2)
+		Channel ch2 = con.createChannel(false); 
 
 		Assert.assertSame(ch1, channel1);
 		Assert.assertSame(ch2, channel2);
@@ -314,9 +313,8 @@ public class CachingConnectionFactoryTests {
 		Channel target1 = ((ChannelProxy) ch1).getTargetChannel();
 		Channel target2 = ((ChannelProxy) ch2).getTargetChannel();
 
-		Assert.assertNotSame(target1, target2); // make sure mokito returned
-												// different mocks for the
-												// channel
+		// make sure mokito returned different mocks for the channel
+		Assert.assertNotSame(target1, target2); 
 
 		ch1.close();
 		ch2.close();
@@ -331,5 +329,14 @@ public class CachingConnectionFactoryTests {
 		// verify(mockChannel1).close();
 		verify(mockChannel2, times(1)).close();
 
+		// After destroy we can get a new connection
+		Connection con1 = ccf.createConnection();
+		Assert.assertNotSame(con, con1);
+
+		// This will return a proxy that surpresses calls to close
+		Channel channel3 = con.createChannel(false); 
+		Assert.assertNotSame(channel3, channel1);
+		Assert.assertNotSame(channel3, channel2);
 	}
+
 }

@@ -35,10 +35,11 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
-import org.springframework.transaction.interceptor.MatchAlwaysTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionAttribute;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -237,16 +238,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void initializeProxy() {
-		if (advices.length == 0 && transactionManager == null) {
+		if (advices.length == 0) {
 			return;
 		}
 		ProxyFactory factory = new ProxyFactory();
-		if (transactionManager != null) {
-			MatchAlwaysTransactionAttributeSource txAttributeSource = new MatchAlwaysTransactionAttributeSource();
-			txAttributeSource.setTransactionAttribute(transactionAttribute);
-			Advice txAdvice = new TransactionInterceptor(transactionManager, txAttributeSource);
-			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, txAdvice));
-		}
 		for (Advice advice : getAdvices()) {
 			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
 		}
@@ -391,26 +386,44 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	private boolean receiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+	private boolean receiveAndExecute(final BlockingQueueConsumer consumer) throws Throwable {
+
+		if (transactionManager != null) {
+			try {
+				return new TransactionTemplate(transactionManager, transactionAttribute)
+				.execute(new TransactionCallback<Boolean>() {
+					public Boolean doInTransaction(TransactionStatus status) {
+						ConnectionFactoryUtils.bindResourceToTransaction(
+								new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), true);
+						try {
+							return doReceiveAndExecute(consumer);
+						} catch (RuntimeException e) {
+							throw e;
+						} catch (Throwable e) {
+							throw new WrappedTransactionException(e);
+						}
+					}
+				});
+			} catch (WrappedTransactionException e) {
+				throw e.getCause();
+			}
+		}
+
+		return doReceiveAndExecute(consumer);
+
+	}
+
+	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
 
 		Channel channel = consumer.getChannel();
 
-		int totalMsgCount = 0;
-
-		ConnectionFactory connectionFactory = getConnectionFactory();
-		if (getAcknowledgeMode().isTransactionAllowed()) {
-			ConnectionFactoryUtils
-					.bindResourceToTransaction(new RabbitResourceHolder(channel), connectionFactory, true);
-		}
-
 		for (int i = 0; i < txSize; i++) {
 
-			logger.debug("Waiting for message from consumer.");
+			logger.trace("Waiting for message from consumer.");
 			Message message = consumer.nextMessage(receiveTimeout);
 			if (message == null) {
 				return false;
 			}
-			totalMsgCount++;
 			executeListener(channel, message);
 
 		}
@@ -525,7 +538,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 	}
-	
+
 	@Override
 	protected void invokeListener(Channel channel, Message message) throws Exception {
 		proxy.invokeListener(channel, message);
@@ -547,6 +560,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
+		}
+	}
+	
+	@SuppressWarnings("serial")
+	private static class WrappedTransactionException extends RuntimeException {
+		public WrappedTransactionException(Throwable cause) {
+			super(cause);
 		}
 	}
 

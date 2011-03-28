@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +29,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -51,9 +49,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	private final AcknowledgeMode acknowledgeMode;
 
-	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
+	// @Rule
+	// public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+	// SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
@@ -96,7 +94,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				);
 	}
 
-	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, boolean transactional, int txSize) {
+	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int txSize) {
 		// "i" is just a counter to make it easier to identify the test in the log
 		return new Object[] { messageCount, concurrency, acknowledgeMode, transactional, txSize, false };
 	}
@@ -106,7 +105,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		return params(i, messageCount, concurrency, acknowledgeMode, acknowledgeMode.isTransactionAllowed(), txSize);
 	}
 
-	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode, boolean transactional) {
+	private static Object[] params(int i, int messageCount, int concurrency, AcknowledgeMode acknowledgeMode,
+			boolean transactional) {
 		return params(i, messageCount, concurrency, acknowledgeMode, transactional, 1);
 	}
 
@@ -141,37 +141,37 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doSunnyDayTest(latch, new MessageListenerAdapter(new PojoListener(latch)));
 	}
-	
+
 	@Test
 	public void testListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doSunnyDayTest(latch, new Listener(latch));
 	}
-	
+
 	@Test
 	public void testChannelAwareListenerSunnyDay() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doSunnyDayTest(latch, new ChannelAwareListener(latch));
 	}
-	
+
 	@Test
 	public void testPojoListenerWithException() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doListenerWithExceptionTest(latch, new MessageListenerAdapter(new PojoListener(latch, true)));
 	}
-	
+
 	@Test
 	public void testListenerWithException() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doListenerWithExceptionTest(latch, new Listener(latch, true));
 	}
-	
+
 	@Test
 	public void testChannelAwareListenerWithException() throws Exception {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doListenerWithExceptionTest(latch, new ChannelAwareListener(latch, true));
 	}
-	
+
 	private void doSunnyDayTest(CountDownLatch latch, Object listener) throws Exception {
 		container = createContainer(listener);
 		for (int i = 0; i < messageCount; i++) {
@@ -181,7 +181,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
-	
+
 	private void doListenerWithExceptionTest(CountDownLatch latch, Object listener) throws Exception {
 		container = createContainer(listener);
 		if (acknowledgeMode.isTransactionAllowed()) {
@@ -248,7 +248,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			try {
 				int counter = count.getAndIncrement();
 				if (logger.isDebugEnabled() && counter % 500 == 0) {
-					logger.debug(value + counter);
+					logger.debug("Handling: " + value + ":" + counter + " - " + latch);
 				}
 				if (fail) {
 					throw new RuntimeException("Planned failure");
@@ -258,23 +258,23 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			}
 		}
 	}
-	
+
 	public static class Listener implements MessageListener {
 		private AtomicInteger count = new AtomicInteger();
-		
+
 		private final CountDownLatch latch;
-		
+
 		private final boolean fail;
-		
+
 		public Listener(CountDownLatch latch) {
 			this(latch, false);
 		}
-		
+
 		public Listener(CountDownLatch latch, boolean fail) {
 			this.latch = latch;
 			this.fail = fail;
 		}
-		
+
 		public void onMessage(Message message) {
 			String value = new String(message.getBody());
 			try {
@@ -290,23 +290,23 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			}
 		}
 	}
-	
+
 	public static class ChannelAwareListener implements ChannelAwareMessageListener {
 		private AtomicInteger count = new AtomicInteger();
-		
+
 		private final CountDownLatch latch;
-		
+
 		private final boolean fail;
-		
+
 		public ChannelAwareListener(CountDownLatch latch) {
 			this(latch, false);
 		}
-		
+
 		public ChannelAwareListener(CountDownLatch latch, boolean fail) {
 			this.latch = latch;
 			this.fail = fail;
 		}
-		
+
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			try {

@@ -40,6 +40,15 @@ public class BrokerTestUtils {
 	}
 
 	/**
+	 * The port that the tracer is listening on (e.g. as input for a {@link ConnectionFactory}).
+	 * 
+	 * @return a port number
+	 */
+	public static int getTracerPort() {
+		return TRACER_PORT;
+	}
+
+	/**
 	 * An alternative port number than can safely be used to stop and start a broker, even when one is already running
 	 * on the standard port as a privileged user. Useful for tests involving {@link RabbitBrokerAdmin} on UN*X.
 	 * 

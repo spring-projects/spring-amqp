@@ -223,6 +223,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					initialized = true;
 				}
 
+				public void onClose(Connection connection) {
+					initialized = false;
+				}
+
 			});
 
 			this.running = true;

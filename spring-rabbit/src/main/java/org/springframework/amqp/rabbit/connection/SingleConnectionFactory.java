@@ -147,6 +147,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	public final void destroy() {
 		synchronized (this.connectionMonitor) {
 			if (this.targetConnection != null) {
+				listener.onClose(targetConnection);
 				RabbitUtils.closeConnection(this.targetConnection);
 			}
 			this.targetConnection = null;
