@@ -79,6 +79,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String PHASE_ATTRIBUTE = "phase";
 
+	private static final String ADVICE_CHAIN_ATTRIBUTE = "advice-chain";
+
+
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
@@ -241,6 +244,11 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		String phase = containerEle.getAttribute(PHASE_ATTRIBUTE);
 		if (StringUtils.hasText(phase)) {
 			containerDef.getPropertyValues().add("phase", phase);
+		}
+
+		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);
+		if (StringUtils.hasText(adviceChain)) {
+			containerDef.getPropertyValues().add("adviceChain", adviceChain);
 		}
 
 		return containerDef;
