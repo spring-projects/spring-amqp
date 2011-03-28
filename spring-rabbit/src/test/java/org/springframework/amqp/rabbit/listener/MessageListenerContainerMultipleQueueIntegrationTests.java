@@ -66,7 +66,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 	@Test
 	public void testMultipleQueues() {
-		doTest(new ContainerConfigurer() {
+		doTest(1, new ContainerConfigurer() {
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueues(queue1, queue2);
 			}
@@ -75,7 +75,25 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 	@Test
 	public void testMultipleQueueNames() {
-		doTest(new ContainerConfigurer() {
+		doTest(1, new ContainerConfigurer() {
+			public void configure(SimpleMessageListenerContainer container) {
+				container.setQueueNames(queue1.getName(), queue2.getName());
+			}
+		});
+	}
+
+	@Test
+	public void testMultipleQueuesWithConcurrentConsumers() {
+		doTest(3, new ContainerConfigurer() {
+			public void configure(SimpleMessageListenerContainer container) {
+				container.setQueues(queue1, queue2);
+			}
+		});
+	}
+
+	@Test
+	public void testMultipleQueueNamesWithConcurrentConsumers() {
+		doTest(3, new ContainerConfigurer() {
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueueNames(queue1.getName(), queue2.getName());
 			}
@@ -83,12 +101,11 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	}
 
 
-	private void doTest(ContainerConfigurer configurer) {
+	private void doTest(int concurrentConsumers, ContainerConfigurer configurer) {
 		int messageCount = 10;
-		int concurrentConsumers = 1;
 		RabbitTemplate template = new RabbitTemplate();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-		connectionFactory.setChannelCacheSize(1);
+		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		SimpleMessageConverter messageConverter = new SimpleMessageConverter();
