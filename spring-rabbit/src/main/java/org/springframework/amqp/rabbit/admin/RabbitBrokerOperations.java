@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
  * Queues, Bindings, User, VHosts, etc. <p>Current implementations expose operations with basic type arguments via JMX.
  * 
  * @author Mark Pollack
- * 
  */
 public interface RabbitBrokerOperations {
 
@@ -30,10 +29,6 @@ public interface RabbitBrokerOperations {
 	public List<QueueInfo> getQueues();
 
 	public List<QueueInfo> getQueues(String virtualHost);
-
-	// Message Delivery
-
-	void recoverAsync(boolean requeue);
 
 	// User management
 
@@ -113,4 +108,5 @@ public interface RabbitBrokerOperations {
 	 * @return status of the node.
 	 */
 	RabbitStatus getStatus();
+
 }
