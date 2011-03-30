@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2011 by the original author(s).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.amqp.rabbit.log4j;
+
+import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+
+/**
+ * @author Jon Brisbin <jbrisbin@vmware.com>
+ */
+@Configuration
+public class AmqpAppenderConfiguration {
+
+  static {
+    //DOMConfigurator.configure(AmqpAppenderTests.class.getResource("/log4j.xml"));
+  }
+
+  static final String QUEUE = "amqp.appender.test";
+  static final String EXCHANGE = "logs";
+  static final String ROUTING_KEY = "AmqpAppenderTest.#";
+
+  @Bean
+  public SingleConnectionFactory connectionFactory() {
+    return new SingleConnectionFactory();
+  }
+
+  @Bean
+  public TopicExchange testExchange() {
+    return new TopicExchange(EXCHANGE, true, false);
+  }
+
+  @Bean
+  public Queue testQueue() {
+    return new Queue(QUEUE);
+  }
+
+  @Bean
+  public Binding testBinding() {
+    return new Binding(testQueue(), testExchange(), ROUTING_KEY);
+  }
+
+  @Bean
+  public RabbitAdmin rabbitAdmin() {
+    return new RabbitAdmin(connectionFactory());
+  }
+
+  @Bean
+  @Scope(BeanDefinition.SCOPE_PROTOTYPE)
+  public SimpleMessageListenerContainer listenerContainer() {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+    Queue q = testQueue();
+
+    RabbitAdmin admin = rabbitAdmin();
+    admin.declareQueue(q);
+    admin.declareBinding(testBinding());
+
+    container.setQueues(q);
+    //container.setMessageListener(testListener(4));
+    container.setAutoStartup(false);
+    container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+
+    return container;
+  }
+
+  @Bean
+  @Scope(BeanDefinition.SCOPE_PROTOTYPE)
+  public TestListener testListener(int count) {
+    return new TestListener(count);
+  }
+}
