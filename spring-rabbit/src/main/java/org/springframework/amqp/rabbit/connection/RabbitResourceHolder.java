@@ -177,8 +177,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * Call this method once the channel {@link Channel#txSelect()} has been called
-	 * @param transactional the flag to set
+	 * Call this method once the channel {@link Channel#txSelect()} has been called.
 	 */
 	public void declareTransactional() {
 		if (!isSynchronizedWithTransaction() && !transactional) {
