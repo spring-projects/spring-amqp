@@ -435,14 +435,14 @@ Message receive(String queueName) throws AmqpException;]]></programlisting>
     adapter implementation that is provided by the framework. This is often
     referred to as "Message-driven POJO" support. When using the adapter, you
     only need to provide a reference to the instance that the adapter itself
-    should invoke.</para> <programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>
-    Now that you've seen the various options for the Message-listening
-    callback, we can turn our attention to the container. Basically, the
-    container handles the "active" responsibilities so that the listener
-    callback can remain passive. The container is an example of a "lifecycle"
-    component. It provides methods for starting and stopping. When configuring
-    the container, you are essentially bridging the gap between an AMQP Queue
-    and the <interfacename>MessageListener</interfacename> instance. You must
+    should invoke.</para><programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>Now
+    that you've seen the various options for the Message-listening callback,
+    we can turn our attention to the container. Basically, the container
+    handles the "active" responsibilities so that the listener callback can
+    remain passive. The container is an example of a "lifecycle" component. It
+    provides methods for starting and stopping. When configuring the
+    container, you are essentially bridging the gap between an AMQP Queue and
+    the <interfacename>MessageListener</interfacename> instance. You must
     provide a reference to the
     <interfacename>ConnectionFactory</interfacename> and the queue name or
     Queue instance(s) from which that listener should consume Messages. Here
@@ -450,17 +450,15 @@ Message receive(String queueName) throws AmqpException;]]></programlisting>
     <classname>SimpleMessageListenerContainer</classname> : <programlisting
     language="java"><![CDATA[SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 container.setConnectionFactory(rabbitConnectionFactory);
-container.setQueueName("some.queue");
-container.setMessageListener(someListener);]]></programlisting> As an "active"
-    component, it's most common to create the listener container with a bean
-    definition so that it can simply run in the background. This can be done
-    via XML: <programlisting language="xml"><![CDATA[<bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
-    <property name="connectionFactory" ref="rabbitConnectionFactory"/>
-    <property name="queueName" value="some.queue"/>
-    <property name="messageListener" ref="someListener"/>
-</bean>]]></programlisting> Or, you may prefer to use the @Configuration style
-    which will look very similar to the actual code snippet above:
-    <programlisting language="java"><![CDATA[@Configuration
+container.setQueueNames("some.queue");
+container.setMessageListener(new MessageListenerAdapter(somePojo));]]></programlisting>
+    As an "active" component, it's most common to create the listener
+    container with a bean definition so that it can simply run in the
+    background. This can be done via XML: <programlisting language="xml"><![CDATA[<rabbit:listener-container connection-factory="rabbitConnectionFactory">
+    <rabbit:listener queues="some.queue" ref="somePojo" method="handle"/>
+</rabbit:listener-container>]]></programlisting> Or, you may prefer to use the
+    @Configuration style which will look very similar to the actual code
+    snippet above: <programlisting language="java"><![CDATA[@Configuration
 public class ExampleAmqpConfiguration {
 
     @Bean
@@ -699,68 +697,58 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
     when configured using Spring XML would look like this:<programlisting
-    language="xml"><![CDATA[<bean id="cf" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
+    language="xml"><![CDATA[<bean id="cf" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
     <constructor-arg value="localhost"/>
     <property name="username" value="guest"/>
     <property name="password" value="guest"/>
 </bean>
 
-<bean id="amqpAdmin" class="org.springframework.amqp.rabbit.core.RabbitAdmin">
-    <constructor-arg ref="cf"/>
-</bean>]]></programlisting></para>
+<rabbit:admin id="amqpAdmin" connection-factory="cf"/>]]></programlisting></para>
 
-    <para>The class AbstractAmqpConfiguration can also be used to configure an
-    instance of the AmqpAmin interface. The base class
-    AbstractAmqpConfiguration is located in the package
-    org.springframework.amqp.config and is shown in part below.</para>
+    <para>The <classname>RabbitAdmin</classname> implementation does automatic
+    lazy declaration of <classname>Queues</classname>,
+    <classname>Exchanges</classname> and <classname>Bindings</classname>
+    declared in the same <classname>ApplicationContext</classname>. These
+    components will be declared as son as a <classname>Connection</classname>
+    is opened to the broker. There are some namespace features that make this
+    very convenient, e.g. in the Stocks sample application we have:</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
-public abstract class AbstractAmqpConfiguration implements ApplicationContextAware, SmartLifecycle {
+    <programlisting><![CDATA[<rabbit:queue id="tradeQueue" />
 
-  @Bean
-  public abstract AmqpAdmin amqpAdmin();
+<rabbit:queue id="marketDataQueue" />
 
-  // the rest omitted for brevity.
-}]]></programlisting>
+<fanout-exchange name="broadcast.responses" xmlns="http://www.springframework.org/schema/rabbit">
+  <bindings>
+    <binding queue="tradeQueue" />
+  </bindings>
+</fanout-exchange>
 
-    <para>The part that is omitted is related to the implementation of
-    SmartLifecycle which is responsible for querying the container for all
-    Queues, Exchanges, and Bindings that are defined in the DI container and
-    declaring them to the broker. Thus if you are using the @Configuration
-    style of configuration, you can simply create Queue, Exchange, and Binding
-    bean definitions and they will be declared to the broker once the
-    application has started.</para>
+<topic-exchange name="app.stock.marketdata" xmlns="http://www.springframework.org/schema/rabbit">
+  <bindings>
+    <binding queue="marketDataQueue" pattern="${stocks.quote.pattern}" />
+  </bindings>
+</topic-exchange>]]></programlisting>
 
-    <para>If you are using RabbitMQ as your broker, the additional abstract
-    @Configuration class can be used to bootstrap an implementation of
-    AmqpAdmin as shown below</para>
+    <para>In the example above we are using anonymous Queues (actually
+    internally just Queues with names generated by the framework, not by the
+    broker) and refer to them by ID. We can also declare Queues with explicit
+    names, which also serve as identifiers for their bean definitions in the
+    context. E.g.</para>
 
-    <programlisting language="java"><![CDATA[@Configuration
-public abstract class AbstractRabbitConfiguration extends AbstractAmqpConfiguration {
+    <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
-  @Bean
-  public abstract RabbitTemplate rabbitTemplate();
-
-  @Bean
-  public AmqpAdmin amqpAdmin() {
-    this.amqpAdmin = new RabbitAdmin(rabbitTemplate().getConnectionFactory());
-    return this.amqpAdmin;
-  }
-}]]></programlisting>
-
-    <para>This leaves it up to you to provide an implementation of the
-    rabbitTemplate method in your application specific subclass. For example,
-    using the Stock sample application, there is the @Configuration class
+    <para>To see how to use Java to configure the AMQP infrastructure, look at
+    the Stock sample application, there is the @Configuration class
     AbstractStockRabbitConfiguration which in turn has
     RabbitClientConfiguration and RabbitServerConfiguration subclasses. The
     code for AbstractStockRabbitConfiguration is show below</para>
 
     <programlisting language="java"><![CDATA[@Configuration
-public abstract class AbstractStockAppRabbitConfiguration extends AbstractRabbitConfiguration {
+public abstract class AbstractStockAppRabbitConfiguration {
 
     @Bean
     public ConnectionFactory connectionFactory() {
-        SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
         connectionFactory.setUsername("guest");
         connectionFactory.setPassword("guest");
         return connectionFactory;
