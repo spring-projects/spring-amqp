@@ -76,6 +76,24 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * 
 	 * @param hostName the host name to connect to
 	 */
+	public CachingConnectionFactory(String hostName, int port) {
+		super(hostName, port);
+	}
+
+	/**
+	 * Create a new CachingConnectionFactory given a host name.
+	 * 
+	 * @param hostName the host name to connect to
+	 */
+	public CachingConnectionFactory(int port) {
+		super(port);
+	}
+
+	/**
+	 * Create a new CachingConnectionFactory given a host name.
+	 * 
+	 * @param hostName the host name to connect to
+	 */
 	public CachingConnectionFactory(String hostName) {
 		super(hostName);
 	}

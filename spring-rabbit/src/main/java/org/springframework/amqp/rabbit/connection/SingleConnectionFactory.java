@@ -62,14 +62,32 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	/**
 	 * Create a new SingleConnectionFactory given a host name.
+	 * @param port the port to connect to
+	 */
+	public SingleConnectionFactory(int port) {
+		this(null, port);
+	}
+	
+	/**
+	 * Create a new SingleConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
 	 */
 	public SingleConnectionFactory(String hostname) {
+		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
+	}
+	
+	/**
+	 * Create a new SingleConnectionFactory given a host name.
+	 * @param hostname the host name to connect to
+	 * @param port the port number to connect to
+	 */
+	public SingleConnectionFactory(String hostname, int port) {
 		if (!StringUtils.hasText(hostname)) {
 			hostname = getDefaultHostName();
 		}
 		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
 		this.rabbitConnectionFactory.setHost(hostname);
+		this.rabbitConnectionFactory.setPort(port);
 	}
 
 	/**
