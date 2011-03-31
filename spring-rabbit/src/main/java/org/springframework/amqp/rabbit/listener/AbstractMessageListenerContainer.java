@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -39,8 +39,8 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public abstract class AbstractMessageListenerContainer extends RabbitAccessor implements BeanNameAware, DisposableBean,
-		SmartLifecycle {
+public abstract class AbstractMessageListenerContainer extends RabbitAccessor
+		implements BeanNameAware, DisposableBean, SmartLifecycle {
 
 	private volatile String beanName;
 
@@ -317,9 +317,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * <p>
 	 * Subclasses need to implement this method for their specific invoker management process.
 	 * <p>
-	 * A shared Rabbit Connection
 	 * @throws Exception
-	 * @see #getSharedConnection()
 	 */
 	protected abstract void doInitialize() throws Exception;
 
@@ -358,19 +356,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Start the shared Connection, if any, and notify all invoker tasks.
+	 * Start this container, and notify all invoker tasks.
 	 * @throws Exception if thrown by Rabbit API methods
-	 * @see #establishSharedConnection
 	 */
 	protected void doStart() throws Exception {
-
 		// Reschedule paused tasks, if any.
 		synchronized (this.lifecycleMonitor) {
 			this.active = true;
 			this.running = true;
 			this.lifecycleMonitor.notifyAll();
 		}
-
 	}
 
 	/**
@@ -396,8 +391,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Notify all invoker tasks and stop the shared Connection, if any.
-	 * @see #stopSharedConnection
+	 * This method is invoked when the container is stopping.
+	 * The default implementation does nothing, but subclasses may override.
 	 */
 	protected void doStop() {
 	}
@@ -406,7 +401,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Determine whether this container is currently running, that is, whether it has been started and not stopped yet.
 	 * @see #start()
 	 * @see #stop()
-	 * @see #runningAllowed()
 	 */
 	public final boolean isRunning() {
 		synchronized (this.lifecycleMonitor) {
