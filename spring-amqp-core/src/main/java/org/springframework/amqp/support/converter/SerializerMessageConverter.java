@@ -33,7 +33,7 @@ import org.springframework.core.serializer.Serializer;
  * 
  * @author Dave Syer
  */
-public class SerializerMessageConverter implements MessageConverter {
+public class SerializerMessageConverter extends AbstractMessageConverter {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -117,7 +117,7 @@ public class SerializerMessageConverter implements MessageConverter {
 	/**
 	 * Creates an AMQP Message from the provided Object.
 	 */
-	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;
 		if (object instanceof String) {
 			try {

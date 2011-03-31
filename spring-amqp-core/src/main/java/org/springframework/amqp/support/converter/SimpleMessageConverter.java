@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.util.UUID;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -40,7 +39,7 @@ import org.springframework.util.ClassUtils;
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  */
-public class SimpleMessageConverter implements MessageConverter, BeanClassLoaderAware {
+public class SimpleMessageConverter extends AbstractMessageConverter implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -50,19 +49,8 @@ public class SimpleMessageConverter implements MessageConverter, BeanClassLoader
 
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
-	private boolean createMessageIds = false;
-	
 	public void setBeanClassLoader(ClassLoader beanClassLoader) {
 		this.beanClassLoader = beanClassLoader;
-	}
-
-	/**
-	 * Flag to indicate that new messages should have unique identifiers added to their properties before sending.
-	 * Default false.
-	 * @param createMessageIds the flag value to set
-	 */
-	public void setCreateMessageIds(boolean createMessageIds) {
-		this.createMessageIds = createMessageIds;
 	}
 
 	/**
@@ -129,7 +117,7 @@ public class SimpleMessageConverter implements MessageConverter, BeanClassLoader
 	/**
 	 * Creates an AMQP Message from the provided Object.
 	 */
-	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;		
 		if (object instanceof byte[]) {
 			bytes = (byte[]) object;
@@ -157,9 +145,6 @@ public class SimpleMessageConverter implements MessageConverter, BeanClassLoader
 		}
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
-		}
-		if (this.createMessageIds && messageProperties.getMessageId()==null) {
-			messageProperties.setMessageId(UUID.randomUUID().toString());
 		}
 		return new Message(bytes, messageProperties);
 	}

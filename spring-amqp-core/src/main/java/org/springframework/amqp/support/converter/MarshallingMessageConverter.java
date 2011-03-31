@@ -17,7 +17,6 @@
 package org.springframework.amqp.support.converter;
 
 import java.io.ByteArrayInputStream;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
@@ -42,7 +41,7 @@ import org.springframework.util.Assert;
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#convertAndSend
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#receiveAndConvert
  */
-public class MarshallingMessageConverter implements MessageConverter, InitializingBean {
+public class MarshallingMessageConverter extends AbstractMessageConverter implements InitializingBean {
 
 	private Marshaller marshaller;
 
@@ -118,7 +117,7 @@ public class MarshallingMessageConverter implements MessageConverter, Initializi
 	/**
 	 * Marshals the given object to a {@link Message}.
 	 */
-	public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		try {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			StreamResult streamResult = new StreamResult(bos);

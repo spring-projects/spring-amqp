@@ -17,6 +17,8 @@
 package org.springframework.amqp.support.converter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +43,21 @@ public class SimpleMessageConverterTests {
 		Object result = converter.fromMessage(message);
 		assertEquals(byte[].class, result.getClass());
 		assertEquals("test", new String((byte[]) result, "UTF-8"));
+	}
+
+	@Test
+	public void noMessageIdByDefault() throws Exception {
+		SimpleMessageConverter converter = new SimpleMessageConverter();
+		Message message = converter.toMessage("foo", null);
+		assertNull(message.getMessageProperties().getMessageId());
+	}
+
+	@Test
+	public void optionalMessageId() throws Exception {
+		SimpleMessageConverter converter = new SimpleMessageConverter();
+		converter.setCreateMessageIds(true);
+		Message message = converter.toMessage("foo", null);
+		assertNotNull(message.getMessageProperties().getMessageId());
 	}
 
 	@Test

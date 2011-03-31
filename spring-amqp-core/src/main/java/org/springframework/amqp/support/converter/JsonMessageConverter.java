@@ -33,9 +33,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author James Carr
  * @author Dave Syer
  */
-public class JsonMessageConverter implements MessageConverter {
-
-	// TODO create composite MessageConverter with key/value pairs of content-type/converter. introduce base class
+public class JsonMessageConverter extends AbstractMessageConverter {
 
 	private static Log log = LogFactory.getLog(JsonMessageConverter.class);
 
@@ -125,7 +123,7 @@ public class JsonMessageConverter implements MessageConverter {
 		return jsonObjectMapper.readValue(contentAsString, targetClass);
 	}
 
-	public Message toMessage(Object objectToConvert, MessageProperties messageProperties)
+	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
 			throws MessageConversionException {
 		byte[] bytes = null;
 		try {
