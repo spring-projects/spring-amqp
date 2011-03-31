@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,9 +10,11 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.transaction;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
@@ -57,11 +59,10 @@ import com.rabbitmq.client.Connection;
  * which has stronger needs for synchronization.
  * 
  * @author Dave Syer
- * 
  */
 @SuppressWarnings("serial")
-public class RabbitTransactionManager extends AbstractPlatformTransactionManager implements ResourceTransactionManager,
-		InitializingBean {
+public class RabbitTransactionManager extends AbstractPlatformTransactionManager
+		implements ResourceTransactionManager, InitializingBean {
 
 	private ConnectionFactory connectionFactory;
 
