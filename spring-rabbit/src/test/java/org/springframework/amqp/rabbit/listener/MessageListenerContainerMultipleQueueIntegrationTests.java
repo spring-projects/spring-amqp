@@ -51,10 +51,10 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	private static Queue queue2 = new Queue("test.queue.2");
 
 	@Rule
-	public BrokerRunning brokerIsRunningAndQueue1Empty = BrokerRunning.isRunningWithEmptyQueue(queue1);
+	public BrokerRunning brokerIsRunningAndQueue1Empty = BrokerRunning.isRunningWithEmptyQueues(queue1);
 
 	@Rule
-	public BrokerRunning brokerIsRunningAndQueue2Empty = BrokerRunning.isRunningWithEmptyQueue(queue2);
+	public BrokerRunning brokerIsRunningAndQueue2Empty = BrokerRunning.isRunningWithEmptyQueues(queue2);
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,

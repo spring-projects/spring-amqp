@@ -1,6 +1,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -39,6 +40,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 	private Queue queue = new Queue("test.queue");
 
+	private Queue sendQueue = new Queue("test.send");
+
 	private int concurrentConsumers = 1;
 
 	private int messageCount = 10;
@@ -56,7 +59,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue, sendQueue);
 
 	protected ConnectionFactory createConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -80,7 +83,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		ConnectionFactory connectionFactory = createConnectionFactory();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		Queue sendQueue = new Queue("test.send");
 		new RabbitAdmin(connectionFactory).declareQueue(sendQueue);
 
 		acknowledgeMode = AcknowledgeMode.AUTO;
@@ -97,7 +99,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 
 		// All messages committed
-		assertEquals("bar", new String((byte[]) template.receiveAndConvert(sendQueue.getName())));
+		byte[] bytes = (byte[]) template.receiveAndConvert(sendQueue.getName());
+		assertNotNull(bytes);
+		assertEquals("bar", new String(bytes));
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
@@ -107,7 +111,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		ConnectionFactory connectionFactory = createConnectionFactory();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		Queue sendQueue = new Queue("test.send");
 		new RabbitAdmin(connectionFactory).declareQueue(sendQueue);
 
 		acknowledgeMode = AcknowledgeMode.AUTO;
@@ -124,6 +127,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertTrue("Timed out waiting for message", waited);
 
 		container.stop();
+		Thread.sleep(200L);
 
 		// Foo message is redelivered
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));

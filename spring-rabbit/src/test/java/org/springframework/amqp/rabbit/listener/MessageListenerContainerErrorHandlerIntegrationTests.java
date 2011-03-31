@@ -42,7 +42,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 	private ErrorHandler errorHandler = mock(ErrorHandler.class);
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,

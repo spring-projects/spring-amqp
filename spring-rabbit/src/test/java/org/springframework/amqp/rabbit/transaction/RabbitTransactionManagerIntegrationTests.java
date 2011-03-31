@@ -22,7 +22,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	private TransactionTemplate transactionTemplate;
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
 
 	@Before
 	public void init() {

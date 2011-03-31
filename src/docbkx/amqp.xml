@@ -652,12 +652,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     which are portable from the 0.8 specification and higher are present in
     the AmqpAdmin interface in the org.springframework.amqp.core package. The
     RabbitMQ implementation of that class is RabbitAdmin located in the
-    org.springframework.amqp.rabbit.core package. Many configuration and
-    management functions are broker specific and not included in the AMQP
-    specification, so the interface RabbitBrokerOperations and its
-    implementation RabbitBrokerAdmin located in the
-    org.springframework.amqp.rabbit.admin package is provided to fill that
-    gap.</para>
+    org.springframework.amqp.rabbit.core package.</para>
 
     <para>The AmqpAdmin interface is based on using the Spring AMQP domain
     abstractions and is shown below:</para>
@@ -1084,12 +1079,4 @@ public class ExampleExternalTransactionAmqpConfiguration {
       </table></para>
   </section>
 
-  <section>
-    <title>JMX Monitoring</title>
-
-    <para>All the methods in the RabbitBrokerAdmin class are exposed through
-    JMX through the use of the @ManagedOperations annotation. Please refer to
-    the sample application for how to configure spring to export the
-    RabbitBrokerAdmin.</para>
-  </section>
 </chapter>

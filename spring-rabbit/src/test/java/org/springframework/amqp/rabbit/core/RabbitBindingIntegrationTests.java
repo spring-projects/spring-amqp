@@ -30,7 +30,7 @@ public class RabbitBindingIntegrationTests {
 	private RabbitTemplate template = new RabbitTemplate(connectionFactory );
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	@Test
 	public void testSendAndReceiveWithTopicSingleCallback() throws Exception {

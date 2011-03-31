@@ -55,7 +55,7 @@ public class BrokerRunning extends TestWatchman {
 
 	private final boolean purge;
 
-	private Queue queue;
+	private Queue[] queues;
 
 	private int port = BrokerTestUtils.getPort();
 
@@ -66,8 +66,12 @@ public class BrokerRunning extends TestWatchman {
 	 * 
 	 * @return a new rule that assumes an existing running broker
 	 */
-	public static BrokerRunning isRunningWithEmptyQueue(String queue) {
-		return new BrokerRunning(true, new Queue(queue), true);
+	public static BrokerRunning isRunningWithEmptyQueues(String... names) {
+		Queue[] queues = new Queue[names.length];
+		for (int i = 0; i < queues.length; i++) {
+			queues[i] = new Queue(names[i]);
+		}
+		return new BrokerRunning(true, true, queues);
 	}
 
 	/**
@@ -75,8 +79,8 @@ public class BrokerRunning extends TestWatchman {
 	 * 
 	 * @return a new rule that assumes an existing running broker
 	 */
-	public static BrokerRunning isRunningWithEmptyQueue(Queue queue) {
-		return new BrokerRunning(true, queue, true);
+	public static BrokerRunning isRunningWithEmptyQueues(Queue... queues) {
+		return new BrokerRunning(true, true, queues);
 	}
 
 	/**
@@ -93,14 +97,14 @@ public class BrokerRunning extends TestWatchman {
 		return new BrokerRunning(false);
 	}
 
-	private BrokerRunning(boolean assumeOnline, Queue queue, boolean purge) {
+	private BrokerRunning(boolean assumeOnline, boolean purge, Queue... queues) {
 		this.assumeOnline = assumeOnline;
-		this.queue = queue;
+		this.queues = queues;
 		this.purge = purge;
 	}
 
-	private BrokerRunning(boolean assumeOnline, Queue queue) {
-		this(assumeOnline, queue, false);
+	private BrokerRunning(boolean assumeOnline, Queue... queues) {
+		this(assumeOnline, false, queues);
 	}
 
 	private BrokerRunning(boolean assumeOnline) {
@@ -140,13 +144,14 @@ public class BrokerRunning extends TestWatchman {
 			}
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 
-			String queueName = queue.getName();
+			for (Queue queue : queues) {
+				String queueName = queue.getName();
 
-			if (purge) {
-				logger.debug("Deleting queue: " + queueName);
-				// Delete completely - gets rid of consumers and bindings as well
-				admin.deleteQueue(queueName);
-			}
+				if (purge) {
+					logger.debug("Deleting queue: " + queueName);
+					// Delete completely - gets rid of consumers and bindings as well
+					admin.deleteQueue(queueName);
+				}
 
 				if (isDefaultQueue(queueName)) {
 					// Just for test probe.
@@ -154,6 +159,7 @@ public class BrokerRunning extends TestWatchman {
 				} else {
 					admin.declareQueue(queue);
 				}
+			}
 			brokerOffline = false;
 			if (!assumeOnline) {
 				Assume.assumeTrue(brokerOffline);

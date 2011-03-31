@@ -29,7 +29,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 
 	@Rule
 	// After the repeat processor, so it only runs once
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
 
 	private CachingConnectionFactory connectionFactory;
 

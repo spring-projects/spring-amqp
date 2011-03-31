@@ -61,7 +61,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(ROUTE);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
 
 	@Test
 	public void testSendToNonExistentAndThenReceive() throws Exception {

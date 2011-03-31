@@ -70,7 +70,12 @@ public class RabbitAdminIntegrationTests {
 		Queue queue = new Queue("test.queue", false, true, true);
 		rabbitAdmin.deleteQueue(queue.getName());
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
-		new RabbitAdmin(connectionFactory2).declareQueue(queue);
+		try {
+			new RabbitAdmin(connectionFactory2).declareQueue(queue);
+		} finally {
+			// Need to release the connection so the exclusive queue is deleted
+			connectionFactory1.destroy();
+		}
 	}
 
 	@Test

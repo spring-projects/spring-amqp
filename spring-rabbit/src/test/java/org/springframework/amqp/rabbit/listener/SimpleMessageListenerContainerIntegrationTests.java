@@ -54,7 +54,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	// SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	private final int messageCount;
 

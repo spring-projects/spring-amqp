@@ -63,7 +63,7 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 	public static BrokerPanic panic = new BrokerPanic();
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueue(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	private ConnectionFactory connectionFactory;
 
