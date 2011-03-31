@@ -45,6 +45,29 @@
 					<plugin>
 						<artifactId>maven-surefire-plugin</artifactId>
 						<configuration>
+							<useFile>false</useFile>
+							<includes>
+								<include>**/*Tests.java</include>
+							</includes>
+							<excludes>
+								<exclude>**/Abstract*.java</exclude>
+							</excludes>
+							<junitArtifactName>junit:junit</junitArtifactName>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>broker-integration</id>
+			<properties>
+				<integration.test>true</integration.test>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
 							<systemProperties>
 								<property>
 									<name>BROKER_INTEGRATION_TEST</name>
