@@ -243,7 +243,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 
-		// TODO: is there a race condition here where the template gets a closed connection and this receive fails?
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}

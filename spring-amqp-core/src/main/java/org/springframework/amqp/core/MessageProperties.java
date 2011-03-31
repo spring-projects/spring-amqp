@@ -146,7 +146,7 @@ public class MessageProperties {
 		this.type = type;
 	}
 
-	//TODO what is this?  is it stuctureType - int in qpid
+	//NOTE stuctureType is int in qpid
 	public String getType() {
 		return this.type;
 	}

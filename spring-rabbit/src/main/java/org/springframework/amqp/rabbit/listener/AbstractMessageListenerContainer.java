@@ -107,7 +107,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	public void setQueues(Queue... queues) {
-		// TODO: Merge with string queue name values?
 		String[] queueNames = new String[queues.length];
 		for (int i = 0; i < queues.length; i++) {
 			Assert.notNull(queues[i], "Queue must not be null.");

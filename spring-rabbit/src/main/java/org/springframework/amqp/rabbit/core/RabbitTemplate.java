@@ -263,7 +263,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
-				// TODO: first check for a replyToAddress property on this template
 				DeclareOk queueDeclaration = channel.queueDeclare();
 				Address replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration
 						.getQueue());

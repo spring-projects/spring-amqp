@@ -24,7 +24,6 @@ public class SimpleConnection implements Connection {
 		this.delegate = delegate;
 	}
 
-	// TODO: expose the transactional flag
 	public Channel createChannel(boolean transactional) {
 		try {
 			Channel channel = delegate.createChannel();
