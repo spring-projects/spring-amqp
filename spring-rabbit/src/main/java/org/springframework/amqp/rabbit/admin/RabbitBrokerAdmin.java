@@ -143,7 +143,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * run the broker as a user without root privileges, supplying values that do not clash with the default broker
 	 * (usually "rabbit@&lt;servername&gt;" and 5672). If, as well as managing an existing broker, you need to start the
 	 * broker process, you will also need to set {@link #setRabbitLogBaseDirectory(String) RABBITMQ_LOG_BASE} and
-	 * {@link #setRabbitMnesiaBaseDirectory(String)RABBITMQ_MNESIA_BASE} to point to writable directories).
+	 * {@link #setRabbitMnesiaBaseDirectory(String) RABBITMQ_MNESIA_BASE} to point to writable directories).
 	 * 
 	 * @param nodeName the node name or hostname to use
 	 * @param port the port number (overriding the default which is 5672)
