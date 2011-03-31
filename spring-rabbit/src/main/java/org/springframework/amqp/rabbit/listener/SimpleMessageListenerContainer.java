@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -111,16 +111,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
 	 * </p>
 	 * 
-	 * @param advices the advice chain to set
+	 * @param adviceChain the advice chain to set
 	 */
 	public void setAdviceChain(Advice[] adviceChain) {
 		this.adviceChain = adviceChain;
 	}
 
 	/**
-	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
-	 * seconds.
-	 * @see #handleConsumerStartupFailure
+	 * Specify the interval between recovery attempts, in <b>milliseconds</b>.
+	 * The default is 5000 ms, that is, 5 seconds.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
 		this.recoveryInterval = recoveryInterval;
@@ -180,7 +179,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
 	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}.
 	 * 
-	 * @param prefetchCount the prefetch count
+	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
 		this.txSize = txSize;
