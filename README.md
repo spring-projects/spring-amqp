@@ -1,13 +1,37 @@
 This project provides support for using Spring and Java with AMQP, and in particular RabbitMQ.
 
-# Build Instructions #
+# Getting Started
 
 Clone from GIT and then use Maven (2.1.*):
 
     $ git clone ...
     $ mvn install
 
-SpringSource ToolSuite users (or Eclipse users with the latest m2eclipse plugin) can import the projects as existing Eclipse projects.
+SpringSource ToolSuite users (or Eclipse users with the latest
+m2eclipse plugin) can import the projects as existing Eclipse
+projects. There are plenty of intersting integration tests (names
+ending with `IntegrationTests`) to show the features of the
+framework. Sample applications can be found in the [Spring AMQP
+Samples](http://github.com/SpringSource/spring-amqp-samples) project.
+
+Spring AMQP is released under the terms of the Apache Software License Version 2.0 (see license.txt).
+
+
+## Distribution Contents
+
+The binary JARs are available in the 'dist' directory, and the source JARs are in the 'src' directory.  The reference manual and javadoc are located in the 'docs' directory.
+
+## Changelog
+
+Lists of issues addressed per release can be found in [JIRA](https://jira.springsource.org/browse/AMQP#selectedTab=com.atlassian.jira.plugin.system.project%3Aversions-panel).
+
+## Additional Resources
+
+* Spring AMQP Homepage: [http://www.springsource.org/spring-amqp]
+* Spring AMQP Source:   [http://github.com/SpringSource/spring-amqp]
+* Spring AMQP Samples:  [http://github.com/SpringSource/spring-amqp-samples]
+* Spring AMQP Forum:    [http://forum.springsource.org/forumdisplay.php?f=74]
+
 
 # Contributing to Spring AMQP
 
@@ -27,6 +51,6 @@ None of these is essential for a pull request, but they will all help.  They can
 * Make sure all new .java files to have a simple Javadoc class comment with at least an @author tag identifying you, and preferably at least a paragraph on what the class is for.
 * Add the ASF license header comment to all new .java files (copy from existing files in the project)
 * Add yourself as an @author to the .java files that you modify substantially (moew than cosmetic changes).
-* Add some Javadocs and, if you change the namespace, some XSD doc elements (Spring AMQP is not stellar in this area yet, but it will have to come up to scratch one day, so you will be helping a lot).
+* Add some Javadocs and, if you change the namespace, some XSD doc elements.
 * A few unit tests would help a lot as well - someone has to do it.
 * If no-one else is using your branch, please rebase it against the current master (or other target branch in the main project).

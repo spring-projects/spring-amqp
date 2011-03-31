@@ -13,13 +13,21 @@
 	<includeBaseDirectory>true</includeBaseDirectory>
 	<fileSets>
 		<fileSet>
-			<!-- adds readme and other textfiles to the root of the distribution archive -->
-			<directory>src/main/resources</directory>
+			<!-- adds licenses etc. to the root of the distribution archive -->
+			<directory>src/assembly</directory>
 			<includes>
-				<include>readme.txt</include>
 				<include>apache-license.txt</include>
 				<include>epl-license.txt</include>
 				<include>notice.txt</include>
+			</includes>
+			<outputDirectory/>
+			<lineEnding>dos</lineEnding>
+		</fileSet>
+		<fileSet>
+			<!-- adds readme to the root of the distribution archive -->
+			<directory>.</directory>
+			<includes>
+				<include>README.md</include>
 			</includes>
 			<outputDirectory/>
 			<lineEnding>dos</lineEnding>
