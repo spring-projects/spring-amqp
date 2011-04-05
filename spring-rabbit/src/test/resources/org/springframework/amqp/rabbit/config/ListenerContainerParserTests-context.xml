@@ -24,6 +24,10 @@
 		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
+	<rabbit:listener-container id="container4" connection-factory="connectionFactory">
+		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
 	<util:list id="adviceChain">
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>

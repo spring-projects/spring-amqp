@@ -12,12 +12,15 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -53,6 +56,16 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+	}
+
+	@Test
+	public void testDefaConsumerCount() throws Exception {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
+		container.setMessageListener(new MessageListenerAdapter(this));
+		container.setQueueNames("foo");
+		container.setAutoStartup(false);
+		container.afterPropertiesSet();
+		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 	}
 
 	@SuppressWarnings("serial")

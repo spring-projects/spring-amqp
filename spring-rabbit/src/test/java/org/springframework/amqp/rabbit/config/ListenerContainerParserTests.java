@@ -36,6 +36,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Mark Fisher
@@ -73,10 +74,15 @@ public final class ListenerContainerParserTests {
 	@Test
 	public void testParseWithAdviceChain() throws Exception {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container3", SimpleMessageListenerContainer.class);
-		DirectFieldAccessor accessor = new DirectFieldAccessor(container);
-		Object adviceChain = accessor.getPropertyValue("adviceChain");
+		Object adviceChain = ReflectionTestUtils.getField(container, "adviceChain");
 		assertNotNull(adviceChain);
 		assertEquals(3, ((Advice[]) adviceChain).length);
+	}
+
+	@Test
+	public void testParseWithDefaults() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container4", SimpleMessageListenerContainer.class);
+		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 	}
 
 	static class TestBean {
