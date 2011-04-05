@@ -7,18 +7,20 @@
   <section>
     <title>Introduction</title>
 
-    <para>The Spring AMQP Samples project includes two sample applications.
+    <para>The <ulink url="http://github.com/SpringSource/spring-amqp-samples">Spring
+    AMQP Samples</ulink> project includes two sample applications.
     The first is a simple "Hello World" example that demonstrates both
-    synchronous and asynchronous message reception. It provides an excellent
-    starting point for acquiring an understanding of the essential components.
-    The second sample is based on a stock-trading use case to demonstrate the
-    types of interaction that would be common in real world applications. In
-    this chapter, we will provide a quick walk-through of each sample so that
-    you can focus on the most important components. The samples are available
-    in the distribution, and they are both Maven-based, so you should be able
-    to import them directly into any Maven-aware IDE (such as <ulink
-    url="http://www.springsource.com/products/sts">SpringSource Tool
-    Suite</ulink>).</para>
+    synchronous and asynchronous message reception. It provides an
+    excellent starting point for acquiring an understanding of the
+    essential components.  The second sample is based on a
+    stock-trading use case to demonstrate the types of interaction
+    that would be common in real world applications. In this chapter,
+    we will provide a quick walk-through of each sample so that you
+    can focus on the most important components. The samples are both
+    Maven-based, so you should be able to import them directly into
+    any Maven-aware IDE (such
+    as <ulink url="http://www.springsource.com/products/sts">SpringSource
+    Tool Suite</ulink>).</para>
   </section>
 
   <section>

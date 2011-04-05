@@ -733,8 +733,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
     <para>To see how to use Java to configure the AMQP infrastructure, look at
-    the Stock sample application, there is the @Configuration class
-    AbstractStockRabbitConfiguration which in turn has
+    the Stock sample application, there is the <code>@Configuration</code> class
+    <classname>AbstractStockRabbitConfiguration</classname> which in turn has
     RabbitClientConfiguration and RabbitServerConfiguration subclasses. The
     code for AbstractStockRabbitConfiguration is show below</para>
 
