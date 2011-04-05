@@ -39,8 +39,8 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public abstract class AbstractMessageListenerContainer extends RabbitAccessor
-		implements BeanNameAware, DisposableBean, SmartLifecycle {
+public abstract class AbstractMessageListenerContainer extends RabbitAccessor implements BeanNameAware, DisposableBean,
+		SmartLifecycle {
 
 	private volatile String beanName;
 
@@ -63,6 +63,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile Object messageListener;
 
 	private volatile AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
+
+	private boolean initialized;
 
 	/**
 	 * <p>
@@ -345,6 +347,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @see #doStart
 	 */
 	public void start() {
+		if (!initialized) {
+			synchronized (this.lifecycleMonitor) {
+				if (!initialized) {
+					afterPropertiesSet();
+					initialized = true;
+				}
+			}
+		}
 		try {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Starting Rabbit listener container.");
@@ -391,8 +401,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * This method is invoked when the container is stopping.
-	 * The default implementation does nothing, but subclasses may override.
+	 * This method is invoked when the container is stopping. The default implementation does nothing, but subclasses
+	 * may override.
 	 */
 	protected void doStop() {
 	}
@@ -419,7 +429,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		} else if (logger.isDebugEnabled()) {
 			logger.debug("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
 		} else if (logger.isInfoEnabled()) {
-			logger.info("Execution of Rabbit message listener failed, and no ErrorHandler has been set: "+ex.getClass()+": "+ex.getMessage());
+			logger.info("Execution of Rabbit message listener failed, and no ErrorHandler has been set: "
+					+ ex.getClass() + ": " + ex.getMessage());
 		}
 	}
 

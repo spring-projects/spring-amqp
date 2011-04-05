@@ -68,6 +68,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
+	/*
+	 * The default value for concurrentConsumers is 0 so that we have a "useless" value that we can detect as unset, and
+	 * use that to generate a default value the best we can. The default, once initialize() is called, will be the
+	 * larger of 1 and the connection factory cahce size if there is one.
+	 */
 	private volatile int concurrentConsumers = 0;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
@@ -118,8 +123,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Specify the interval between recovery attempts, in <b>milliseconds</b>.
-	 * The default is 5000 ms, that is, 5 seconds.
+	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
+	 * seconds.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
 		this.recoveryInterval = recoveryInterval;
@@ -390,19 +395,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (transactionManager != null) {
 			try {
 				return new TransactionTemplate(transactionManager, transactionAttribute)
-				.execute(new TransactionCallback<Boolean>() {
-					public Boolean doInTransaction(TransactionStatus status) {
-						ConnectionFactoryUtils.bindResourceToTransaction(
-								new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), true);
-						try {
-							return doReceiveAndExecute(consumer);
-						} catch (RuntimeException e) {
-							throw e;
-						} catch (Throwable e) {
-							throw new WrappedTransactionException(e);
-						}
-					}
-				});
+						.execute(new TransactionCallback<Boolean>() {
+							public Boolean doInTransaction(TransactionStatus status) {
+								ConnectionFactoryUtils.bindResourceToTransaction(
+										new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), true);
+								try {
+									return doReceiveAndExecute(consumer);
+								} catch (RuntimeException e) {
+									throw e;
+								} catch (Throwable e) {
+									throw new WrappedTransactionException(e);
+								}
+							}
+						});
 			} catch (WrappedTransactionException e) {
 				throw e.getCause();
 			}
@@ -561,7 +566,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
 		}
 	}
-	
+
 	@SuppressWarnings("serial")
 	private static class WrappedTransactionException extends RuntimeException {
 		public WrappedTransactionException(Throwable cause) {

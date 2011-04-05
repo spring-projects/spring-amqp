@@ -59,12 +59,24 @@ public class SimpleMessageListenerContainerTests {
 	}
 
 	@Test
-	public void testDefaConsumerCount() throws Exception {
+	public void testDefaultConsumerCount() throws Exception {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
 		container.afterPropertiesSet();
+		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+	}
+
+	@Test
+	public void testLazyConsumerCount() throws Exception {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory()) {
+			@Override
+			protected void doStart() throws Exception {
+				// do nothing
+			}
+		};
+		container.start();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 	}
 
