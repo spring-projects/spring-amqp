@@ -135,9 +135,10 @@ public class BrokerRunning extends TestWatchman {
 			Assume.assumeTrue(brokerOffline);
 		}
 
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+
 		try {
 
-			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			connectionFactory.setPort(port);
 			if (StringUtils.hasText(hostName)) {
 				connectionFactory.setHost(hostName);
@@ -171,6 +172,8 @@ public class BrokerRunning extends TestWatchman {
 			if (assumeOnline) {
 				Assume.assumeNoException(e);
 			}
+		} finally {
+			connectionFactory.destroy();
 		}
 
 		return super.apply(base, method, target);

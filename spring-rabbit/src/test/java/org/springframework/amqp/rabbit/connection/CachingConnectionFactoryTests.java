@@ -9,7 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
@@ -339,4 +341,41 @@ public class CachingConnectionFactoryTests {
 		Assert.assertNotSame(channel3, channel2);
 	}
 
+	@Test
+	public void testWithListener() throws IOException {
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
+
+		final AtomicInteger called = new AtomicInteger(0);
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+			public void onCreate(Connection connection) {
+				called.incrementAndGet();
+			}
+			public void onClose(Connection connection) {
+				called.decrementAndGet();
+			}
+		}));
+
+		Connection con = connectionFactory.createConnection();
+		assertEquals(1, called.get());
+
+		con.close();
+		assertEquals(1, called.get());
+		verify(mockConnection, never()).close();
+		
+		connectionFactory.createConnection();
+		assertEquals(1, called.get());
+
+		connectionFactory.destroy();
+		assertEquals(0, called.get());
+		verify(mockConnection, atLeastOnce()).close();
+
+		verify(mockConnectionFactory, times(1)).newConnection();
+
+	}
+	
 }

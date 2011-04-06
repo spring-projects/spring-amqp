@@ -3,6 +3,7 @@ package org.springframework.amqp.rabbit.core;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
@@ -40,6 +41,9 @@ public class RabbitAdminIntegrationTests {
 	public void init() {
 		context = new GenericApplicationContext();
 		rabbitAdmin = new RabbitAdmin(connectionFactory);
+		rabbitAdmin.deleteQueue("test.queue");
+		// Force connection factory to forget that it has been used to delete the queue
+		connectionFactory.destroy();
 		rabbitAdmin.setApplicationContext(context);
 		rabbitAdmin.setAutoStartup(true);
 	}
@@ -49,14 +53,17 @@ public class RabbitAdminIntegrationTests {
 		if (context != null) {
 			context.close();
 		}
+		if (connectionFactory!=null) {
+			connectionFactory.destroy();
+		}
 	}
 
 	@Test
-	public void testStartupWithBroker() throws Exception {
+	public void testStartupWithLazyDeclaration() throws Exception {
 		Queue queue = new Queue("test.queue");
 		context.getBeanFactory().registerSingleton("foo", queue);
-		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.afterPropertiesSet();
+		// A new connection is initialized so the queue is declared
 		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
 	}
 
@@ -87,7 +94,6 @@ public class RabbitAdminIntegrationTests {
 		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
 		connectionFactory2.setPort(BrokerTestUtils.getPort());
 		Queue queue = new Queue("test.queue", false, false, true);
-		rabbitAdmin.deleteQueue(queue.getName());
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
 		new RabbitAdmin(connectionFactory2).declareQueue(queue);
 		connectionFactory1.destroy();
@@ -99,13 +105,11 @@ public class RabbitAdminIntegrationTests {
 
 		final Queue queue = new Queue("test.queue", false, true, true);
 		context.getBeanFactory().registerSingleton("foo", queue);
-		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.afterPropertiesSet();
 
 		final AtomicReference<Connection> connectionHolder = new AtomicReference<Connection>();
 
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-		// Force RabbitAdmin to initialize the queue
 		boolean exists = rabbitTemplate.execute(new ChannelCallback<Boolean>() {
 			public Boolean doInRabbit(Channel channel) throws Exception {
 				DeclareOk result = channel.queueDeclarePassive(queue.getName());
@@ -116,6 +120,16 @@ public class RabbitAdminIntegrationTests {
 		assertTrue("Expected Queue to exist", exists);
 
 		assertTrue(queueExists(connectionHolder.get(), queue));
+
+		exists = rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				DeclareOk result = channel.queueDeclarePassive(queue.getName());
+				connectionHolder.set(channel.getConnection());
+				return result != null;
+			}
+		});
+		assertTrue("Expected Queue to exist", exists);
+
 		connectionFactory.destroy();
 		// Broker now deletes queue (only verifiable in native API)
 		assertFalse(queueExists(null, queue));
@@ -141,7 +155,6 @@ public class RabbitAdminIntegrationTests {
 
 		final Queue queue = new Queue("test.queue", false, false, false);
 		context.getBeanFactory().registerSingleton("foo", queue);
-		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.afterPropertiesSet();
 
 		final AtomicReference<Connection> connectionHolder = new AtomicReference<Connection>();
@@ -189,17 +202,25 @@ public class RabbitAdminIntegrationTests {
 	 * @return true if the queue exists
 	 */
 	private boolean queueExists(Connection connection, Queue queue) throws Exception {
-		if (connection == null) {
+		Connection target = connection;
+		if (target == null) {
 			ConnectionFactory connectionFactory = new ConnectionFactory();
 			connectionFactory.setPort(BrokerTestUtils.getPort());
-			connection = connectionFactory.newConnection();
+			target = connectionFactory.newConnection();
 		}
-		Channel channel = connection.createChannel();
+		Channel channel = target.createChannel();
 		try {
 			DeclareOk result = channel.queueDeclarePassive(queue.getName());
 			return result != null;
-		} catch (Exception e) {
+		} catch (IOException e) {
+			if (e.getCause().getMessage().contains("RESOURCE_LOCKED")) {
+				return true;
+			}
 			return false;
+		} finally {
+			if (connection==null) {
+				target.close();
+			}
 		}
 	}
 

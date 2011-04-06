@@ -154,7 +154,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		targetConnection = new ChannelCachingConnectionProxy(super.doCreateConnection());
 		return targetConnection;
 	}
-
+	
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
@@ -172,6 +172,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		}
 		this.active = true;
 		super.reset();
+		this.targetConnection = null;
 	}
 
 	@Override

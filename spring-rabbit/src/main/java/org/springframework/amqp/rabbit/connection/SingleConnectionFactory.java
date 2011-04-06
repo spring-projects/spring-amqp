@@ -46,7 +46,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
-	
+
 	private final CompositeConnectionListener listener = new CompositeConnectionListener();
 
 	/**
@@ -64,7 +64,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	public SingleConnectionFactory(int port) {
 		this(null, port);
 	}
-	
+
 	/**
 	 * Create a new SingleConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
@@ -72,7 +72,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	public SingleConnectionFactory(String hostname) {
 		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
 	}
-	
+
 	/**
 	 * Create a new SingleConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
@@ -139,9 +139,11 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	public final Connection createConnection() throws AmqpException {
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
-				this.connection = new SharedConnectionProxy(doCreateConnection());
+				Connection target = doCreateConnection();
+				this.connection = new SharedConnectionProxy(target);
+				// invoke the listener *after* this.connection is assigned
+				listener.onCreate(target);
 			}
-			this.listener.onCreate(connection);
 		}
 		return this.connection;
 	}
@@ -154,8 +156,10 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 */
 	public final void destroy() {
 		synchronized (this.connectionMonitor) {
-			this.connection.destroy();
-			this.connection = null;
+			if (connection != null) {
+				this.connection.destroy();
+				this.connection = null;
+			}
 		}
 		reset();
 	}
@@ -173,7 +177,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @return the new Connection
 	 */
 	protected Connection doCreateConnection() {
-		return createBareConnection();
+		Connection connection = createBareConnection();
+		return connection;
 	}
 
 	private Connection createBareConnection() {
@@ -217,11 +222,12 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		}
 
 		public Channel createChannel(boolean transactional) {
-			if (target==null || !target.isOpen()) {
+			if (target == null || !target.isOpen()) {
 				synchronized (this) {
-					if (target==null || !target.isOpen()) {
+					if (target == null || !target.isOpen()) {
 						logger.debug("Detected closed connection. Opening a new one before creating Channel.");
 						target = createBareConnection();
+						listener.onCreate(target);
 					}
 				}
 			}
@@ -231,7 +237,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 		public void close() {
 		}
-		
+
 		public void destroy() {
 			if (this.target != null) {
 				listener.onClose(target);

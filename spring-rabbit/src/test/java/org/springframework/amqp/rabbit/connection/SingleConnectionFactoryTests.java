@@ -1,7 +1,6 @@
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -11,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -28,27 +27,32 @@ public class SingleConnectionFactoryTests {
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 
-		final AtomicBoolean called = new AtomicBoolean(false);
+		final AtomicInteger called = new AtomicInteger(0);
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
 			public void onCreate(Connection connection) {
-				called.set(true);
+				called.incrementAndGet();
 			}
 			public void onClose(Connection connection) {
-				called.set(false);
+				called.decrementAndGet();
 			}
 		}));
 
 		Connection con = connectionFactory.createConnection();
-		assertTrue(called.get());
+		assertEquals(1, called.get());
 
 		con.close();
-		assertTrue(called.get());
+		assertEquals(1, called.get());
 		verify(mockConnection, never()).close();
+		
+		connectionFactory.createConnection();
+		assertEquals(1, called.get());
 
 		connectionFactory.destroy();
-		assertFalse(called.get());
+		assertEquals(0, called.get());
 		verify(mockConnection, atLeastOnce()).close();
+
+		verify(mockConnectionFactory, times(1)).newConnection();
 
 	}
 	
@@ -74,6 +78,17 @@ public class SingleConnectionFactoryTests {
 		connectionFactory.destroy();
 		verify(mockConnection2, times(1)).close();
 
+	}
+
+	@Test
+	public void testDestroyBeforeUsed() throws Exception {
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.destroy();
+
+		verify(mockConnectionFactory, never()).newConnection();
 	}
 
 }
