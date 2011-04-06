@@ -68,12 +68,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
-	/*
-	 * The default value for concurrentConsumers is 0 so that we have a "useless" value that we can detect as unset, and
-	 * use that to generate a default value the best we can. The default, once initialize() is called, will be the
-	 * larger of 1 and the connection factory cahce size if there is one.
-	 */
-	private volatile int concurrentConsumers = 0;
+	private volatile int concurrentConsumers = 1;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
@@ -217,28 +212,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		if (this.getConnectionFactory() instanceof CachingConnectionFactory) {
 			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
-			// Default setting
-			if (concurrentConsumers < 1) {
-				concurrentConsumers = 1;
-				// Set concurrent consumers to size of connection factory
-				// channel cache.
-				if (cf.getChannelCacheSize() > 1) {
-					logger.info("Setting number of concurrent consumers to CachingConnectionFactory's ChannelCacheSize ["
-							+ cf.getChannelCacheSize() + "]");
-					this.concurrentConsumers = cf.getChannelCacheSize();
-				} else {
-					cf.setChannelCacheSize(1);
-				}
-			}
 			if (cf.getChannelCacheSize() < this.concurrentConsumers) {
 				cf.setChannelCacheSize(this.concurrentConsumers);
 				logger.warn("CachingConnectionFactory's channelCacheSize can not be less than the number of concurrentConsumers so it was reset to match: "
 						+ this.concurrentConsumers);
 			}
 		}
-		if (concurrentConsumers < 1) {
-			concurrentConsumers = 1;
-		}
+
 	}
 
 	private void initializeProxy() {
