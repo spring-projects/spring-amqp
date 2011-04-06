@@ -41,11 +41,8 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 
-	/** Raw Rabbit Connection */
-	private Connection targetConnection;
-
 	/** Proxy Connection */
-	private Connection connection;
+	private SharedConnectionProxy connection;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -142,14 +139,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	public final Connection createConnection() throws AmqpException {
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
-				if (this.targetConnection != null) {
-					RabbitUtils.closeConnection(this.targetConnection);
-				}
-				this.targetConnection = doCreateConnection();
-				if (logger.isInfoEnabled()) {
-					logger.info("Established shared Rabbit Connection: " + this.targetConnection);
-				}
-				this.connection = new SharedConnectionProxy(this.targetConnection);
+				this.connection = new SharedConnectionProxy(doCreateConnection());
 			}
 			this.listener.onCreate(connection);
 		}
@@ -164,11 +154,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 */
 	public final void destroy() {
 		synchronized (this.connectionMonitor) {
-			if (this.targetConnection != null) {
-				listener.onClose(targetConnection);
-				RabbitUtils.closeConnection(this.targetConnection);
-			}
-			this.targetConnection = null;
+			this.connection.destroy();
 			this.connection = null;
 		}
 		reset();
@@ -231,9 +217,9 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		}
 
 		public Channel createChannel(boolean transactional) {
-			if (!target.isOpen()) {
+			if (target==null || !target.isOpen()) {
 				synchronized (this) {
-					if (!target.isOpen()) {
+					if (target==null || !target.isOpen()) {
 						logger.debug("Detected closed connection. Opening a new one before creating Channel.");
 						target = createBareConnection();
 					}
@@ -244,6 +230,14 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		}
 
 		public void close() {
+		}
+		
+		public void destroy() {
+			if (this.target != null) {
+				listener.onClose(target);
+				RabbitUtils.closeConnection(this.target);
+			}
+			this.target = null;
 		}
 
 		public boolean isOpen() {
