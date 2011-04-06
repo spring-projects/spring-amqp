@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema xmlns="http://www.springframework.org/schema/rabbit"
-	xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:tool="http://www.springframework.org/schema/tool" xmlns:beans="http://www.springframework.org/schema/beans"
-	targetNamespace="http://www.springframework.org/schema/rabbit"
+<xsd:schema xmlns="http://www.springframework.org/schema/rabbit" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tool="http://www.springframework.org/schema/tool"
+	xmlns:beans="http://www.springframework.org/schema/beans" targetNamespace="http://www.springframework.org/schema/rabbit"
 	elementFormDefault="qualified" attributeFormDefault="unqualified">
 
 	<xsd:import namespace="http://www.springframework.org/schema/beans" />
@@ -18,8 +17,7 @@
 		</xsd:annotation>
 		<xsd:complexType>
 			<xsd:sequence>
-				<xsd:element ref="queue-arguments" minOccurs="0"
-					maxOccurs="1" />
+				<xsd:element ref="queue-arguments" minOccurs="0" maxOccurs="1" />
 			</xsd:sequence>
 			<xsd:attribute name="id" type="xsd:string">
 				<xsd:annotation>
@@ -92,8 +90,7 @@
 							</xsd:annotation>
 							<xsd:complexType>
 								<xsd:choice>
-									<xsd:element name="binding" maxOccurs="unbounded"
-										type="directBindingType">
+									<xsd:element name="binding" maxOccurs="unbounded" type="directBindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
 											Declares a binding of a queue to this exchange either with
@@ -133,8 +130,7 @@
 							</xsd:annotation>
 							<xsd:complexType>
 								<xsd:choice>
-									<xsd:element name="binding" maxOccurs="unbounded"
-										type="topicBindingType">
+									<xsd:element name="binding" maxOccurs="unbounded" type="topicBindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
 											Declares a binding of a queue to this exchange either with
@@ -172,8 +168,7 @@
 							</xsd:annotation>
 							<xsd:complexType>
 								<xsd:choice>
-									<xsd:element name="binding" maxOccurs="unbounded"
-										type="bindingType">
+									<xsd:element name="binding" maxOccurs="unbounded" type="bindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
 												Binds a queue to this exchange.  All messages sent to this exchange will be 
@@ -212,8 +207,7 @@
 							</xsd:annotation>
 							<xsd:complexType>
 								<xsd:choice>
-									<xsd:element name="binding" maxOccurs="unbounded"
-										type="headersBindingType">
+									<xsd:element name="binding" maxOccurs="unbounded" type="headersBindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
 												Binds a queue to this exchange.  Messages sent to this exchange will be 
@@ -233,8 +227,7 @@
 
 	<xsd:complexType name="exchangeType">
 		<xsd:sequence>
-			<xsd:element ref="exchange-arguments" minOccurs="0"
-				maxOccurs="1" />
+			<xsd:element ref="exchange-arguments" minOccurs="0" maxOccurs="1" />
 		</xsd:sequence>
 		<xsd:attribute name="id" type="xsd:string">
 			<xsd:annotation>
@@ -251,16 +244,14 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean"
-			default="false">
+		<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean" default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 					Flag indicating that an exchange will be deleted when no longer in use, i.e. the connection that declared it is closed. Default is false.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="durable" use="optional" type="xsd:boolean"
-			default="false">
+		<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 					Flag indicating that the exchange is durable, i.e. will survive broker restart.  Default is false.
@@ -320,8 +311,7 @@
 
 	<xsd:complexType name="bindingType">
 		<xsd:sequence>
-			<xsd:element ref="binding-arguments" minOccurs="0"
-				maxOccurs="1" />
+			<xsd:element ref="binding-arguments" minOccurs="0" maxOccurs="1" />
 		</xsd:sequence>
 		<xsd:attribute name="queue" use="required">
 			<xsd:annotation>
@@ -373,13 +363,13 @@
 			]]></xsd:documentation>
 			<xsd:appinfo>
 				<tool:annotation>
-					<tool:exports type="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer"/>
+					<tool:exports type="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer" />
 				</tool:annotation>
 			</xsd:appinfo>
 		</xsd:annotation>
 		<xsd:complexType>
 			<xsd:sequence>
-				<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded" />
 			</xsd:sequence>
 			<xsd:attribute name="id" type="xsd:string">
 				<xsd:annotation>
@@ -396,7 +386,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory"/>
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -409,7 +399,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="java.util.concurrent.Executor"/>
+							<tool:expected-type type="java.util.concurrent.Executor" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -423,7 +413,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter"/>
+							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -436,7 +426,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.util.ErrorHandler"/>
+							<tool:expected-type type="org.springframework.util.ErrorHandler" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -449,9 +439,9 @@
 				</xsd:annotation>
 				<xsd:simpleType>
 					<xsd:restriction base="xsd:NMTOKEN">
-						<xsd:enumeration value="auto"/>
-						<xsd:enumeration value="manual"/>
-						<xsd:enumeration value="none"/>
+						<xsd:enumeration value="auto" />
+						<xsd:enumeration value="manual" />
+						<xsd:enumeration value="none" />
 					</xsd:restriction>
 				</xsd:simpleType>
 			</xsd:attribute>
@@ -462,7 +452,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.transaction.PlatformTransactionManager"/>
+							<tool:expected-type type="org.springframework.transaction.PlatformTransactionManager" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -540,7 +530,7 @@
 	or defining the specified listener method. Required.
 				]]></xsd:documentation>
 				<xsd:appinfo>
-					<tool:annotation kind="ref"/>
+					<tool:annotation kind="ref" />
 				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
@@ -600,8 +590,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type
-								type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -615,4 +604,161 @@
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
+
+	<xsd:element name="template">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit template (org.springframework.amqp.rabbit.core.RabbitTemplate) 
+	for convenient access to the broker.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique name for this rabbit template used as a bean definition identifier.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="routing-key" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default routing key for sending messages.  Default is empty.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="exchange" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default exchange for sending messages.  Default is empty (the default exchange).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="queue" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default queue for receiving messages. Default is empty (non-existent queue).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="reply-timeout" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Timeout for send and receive in milliseconds.  Default is 5000 (5 seconds).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="channel-transacted" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Flag to indicate that the channel should be used transactionally.  Default is false.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="encoding" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Encoding to use for packing and unpacking MessagePoperties of type String.  Default is UTF-8.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="message-converter" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	MessageConverter to convert between raw bytes and Java objects in the *convert* methods.  Defaults to a simple implementation that handles Strings, byte arrays and Serializable.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-factory" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to rabbit connection factory.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="connection-factory">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit CachingConnectionFactory with sensible defaults.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique name for this rabbit connection factory used as a bean definition identifier.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="host" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Hostname to connect to broker.  Default is "localhost".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="port" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Port number to connect to broker.  Default is 5672.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="username" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Username to connect to broker.  Default is "guest".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="password" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Password to connect to broker.  Default is "guest".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="virtual-host" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Virtual host name to connect to broker.  Default is "/".  Virtual hosts are logical partitions of the broker with separate queues, excchanges, users, etc.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="channel-cache-size" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Cache size for channels.  More channels can be used by clients, but in excess of this number they will not be cached.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to native rabbit connection factory, where you can specify native features like heartbeat.  The other properties (host, port) etc. on this element 
+	override the ones on the native connection factory (which is used as a parent bean definition).
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="com.rabbitmq.client.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
 </xsd:schema>

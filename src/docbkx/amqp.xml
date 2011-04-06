@@ -242,7 +242,8 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
 
     <para>When using XML, the configuration might look like this:</para>
 
-    <programlisting language="xml"><![CDATA[<bean id="cf" class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
+    <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
+      class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
     <constructor-arg value="somehost"/>
     <property name="username" value="guest"/>
     <property name="password" value="guest"/>
@@ -266,7 +267,12 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         <classname>SingleConnectionFactory</classname>
 
          as useful for simple tests and maybe as a building block for extending the framework. 
-      </note></para>
+      </note> A <classname>ConnectionFactory</classname> can be created
+    quickly and conveniently using the rabbit namespace: <programlisting
+    language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>]]></programlisting>
+    In most cases this will be preferable since the framework can choose the
+    best defaults for you, and it will always choose a
+    <classname>CachingConnectionFactory</classname>.</para>
   </section>
 
   <section id="amqp-template">
@@ -692,13 +698,9 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
     when configured using Spring XML would look like this:<programlisting
-    language="xml"><![CDATA[<bean id="cf" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
-    <constructor-arg value="localhost"/>
-    <property name="username" value="guest"/>
-    <property name="password" value="guest"/>
-</bean>
+    language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>
 
-<rabbit:admin id="amqpAdmin" connection-factory="cf"/>]]></programlisting></para>
+<rabbit:admin id="amqpAdmin" connection-factory="connectionFactory"/>]]></programlisting></para>
 
     <para>The <classname>RabbitAdmin</classname> implementation does automatic
     lazy declaration of <classname>Queues</classname>,
@@ -733,10 +735,11 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
     <para>To see how to use Java to configure the AMQP infrastructure, look at
-    the Stock sample application, there is the <code>@Configuration</code> class
-    <classname>AbstractStockRabbitConfiguration</classname> which in turn has
-    RabbitClientConfiguration and RabbitServerConfiguration subclasses. The
-    code for AbstractStockRabbitConfiguration is show below</para>
+    the Stock sample application, there is the <code>@Configuration</code>
+    class <classname>AbstractStockRabbitConfiguration</classname> which in
+    turn has RabbitClientConfiguration and RabbitServerConfiguration
+    subclasses. The code for AbstractStockRabbitConfiguration is show
+    below</para>
 
     <programlisting language="java"><![CDATA[@Configuration
 public abstract class AbstractStockAppRabbitConfiguration {
@@ -1078,5 +1081,4 @@ public class ExampleExternalTransactionAmqpConfiguration {
         </tgroup>
       </table></para>
   </section>
-
 </chapter>

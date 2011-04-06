@@ -49,12 +49,14 @@ public abstract class NamespaceUtils {
 	 * @param attributeName the name of the attribute whose value will be used to populate the property
 	 * @param propertyName the name of the property to be populated
 	 */
-	public static void setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element, String attributeName,
-			String propertyName) {
+	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+			String attributeName, String propertyName) {
 		String attributeValue = element.getAttribute(attributeName);
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyValue(propertyName, attributeValue);
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -71,8 +73,9 @@ public abstract class NamespaceUtils {
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be set on the property
 	 */
-	public static void setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element, String attributeName) {
-		setValueIfAttributeDefined(builder, element, attributeName,
+	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+			String attributeName) {
+		return setValueIfAttributeDefined(builder, element, attributeName,
 				Conventions.attributeNameToPropertyName(attributeName));
 	}
 
@@ -95,17 +98,19 @@ public abstract class NamespaceUtils {
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
 	 */
-	public static void addConstructorArgValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+	public static boolean addConstructorArgValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgValue(new TypedStringValue(value));
+			return true;
 		}
+		return false;
 	}
 
 	/**
-	 * Populates the bean definition constructor argument with the boolean value of that attribute if it is defined in the given
-	 * element or else uses the default provided.
+	 * Populates the bean definition constructor argument with the boolean value of that attribute if it is defined in
+	 * the given element or else uses the default provided.
 	 * 
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
@@ -130,12 +135,34 @@ public abstract class NamespaceUtils {
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to set the reference
 	 */
-	public static void addConstructorArgRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+	public static boolean addConstructorArgRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgReference(value);
+			return true;
 		}
+		return false;
+	}
+
+	/**
+	 * Populates the bean definition constructor argument with a reference to a bean with parent id equal to the
+	 * attribute if it is defined in the given element.
+	 * 
+	 * @param builder the bean definition builder to be configured
+	 * @param element the XML element where the attribute should be defined
+	 * @param attributeName the name of the attribute whose value will be used to set the reference
+	 */
+	public static boolean addConstructorArgParentRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+			String attributeName) {
+		String value = element.getAttribute(attributeName);
+		if (StringUtils.hasText(value)) {
+			BeanDefinitionBuilder child = BeanDefinitionBuilder.genericBeanDefinition();
+			child.setParentName(value);
+			builder.addConstructorArgValue(child.getBeanDefinition());
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -147,13 +174,16 @@ public abstract class NamespaceUtils {
 	 * @param attributeName the name of the attribute whose value will be used as a bean reference to populate the
 	 * property
 	 * @param propertyName the name of the property to be populated
+	 * @return
 	 */
-	public static void setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName, String propertyName) {
 		String attributeValue = element.getAttribute(attributeName);
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyReference(propertyName, attributeValue);
+			return true;
 		}
+		return false;
 	}
 
 	/**
@@ -173,9 +203,9 @@ public abstract class NamespaceUtils {
 	 * 
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 */
-	public static void setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
+	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
-		setReferenceIfAttributeDefined(builder, element, attributeName,
+		return setReferenceIfAttributeDefined(builder, element, attributeName,
 				Conventions.attributeNameToPropertyName(attributeName));
 	}
 
