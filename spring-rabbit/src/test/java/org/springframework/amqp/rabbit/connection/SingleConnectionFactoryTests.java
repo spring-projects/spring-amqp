@@ -57,6 +57,44 @@ public class SingleConnectionFactoryTests {
 	}
 	
 	@Test
+	public void testWithListenerRegisteredAfterOpen() throws IOException {
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
+
+		final AtomicInteger called = new AtomicInteger(0);
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		Connection con = connectionFactory.createConnection();
+		assertEquals(0, called.get());
+
+		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+			public void onCreate(Connection connection) {
+				called.incrementAndGet();
+			}
+			public void onClose(Connection connection) {
+				called.decrementAndGet();
+			}
+		}));
+		assertEquals(1, called.get());
+
+		con.close();
+		assertEquals(1, called.get());
+		verify(mockConnection, never()).close();
+		
+		connectionFactory.createConnection();
+		assertEquals(1, called.get());
+
+		connectionFactory.destroy();
+		assertEquals(0, called.get());
+		verify(mockConnection, atLeastOnce()).close();
+
+		verify(mockConnectionFactory, times(1)).newConnection();
+
+	}
+
+	@Test
 	public void testCloseInvalidConnection() throws Exception {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);

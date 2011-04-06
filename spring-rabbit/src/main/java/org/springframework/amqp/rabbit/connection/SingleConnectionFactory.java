@@ -130,10 +130,18 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
 		this.listener.setDelegates(listeners);
+		// If the connection is already alive we assume that the new listeners want to be notified
+		if (this.connection != null) {
+			this.listener.onCreate(this.connection);
+		}
 	}
 
 	public void addConnectionListener(ConnectionListener listener) {
 		this.listener.addDelegate(listener);
+		// If the connection is already alive we assume that the new listener wants to be notified
+		if (this.connection != null) {
+			listener.onCreate(this.connection);
+		}
 	}
 
 	public final Connection createConnection() throws AmqpException {
