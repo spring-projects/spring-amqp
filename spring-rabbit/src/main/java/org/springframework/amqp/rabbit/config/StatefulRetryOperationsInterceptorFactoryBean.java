@@ -84,9 +84,9 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 			public Void recover(Object[] args, Throwable cause) {
 				Message message = (Message) args[1];
 				if (messageRecoverer == null) {
-					logger.warn("Message dropped on recovery: " + message);
+					logger.warn("Message dropped on recovery: " + message, cause);
 				} else {
-					messageRecoverer.recover(message);
+					messageRecoverer.recover(message, cause);
 				}
 				return null;
 			}

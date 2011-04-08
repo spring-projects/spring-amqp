@@ -143,7 +143,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 			factory = new StatelessRetryOperationsInterceptorFactoryBean();
 		}
 		factory.setMessageRecoverer(new MessageRecoverer() {
-			public void recover(Message message) {
+			public void recover(Message message, Throwable cause) {
 				logger.info("Recovered: " + message);
 				latch.countDown();
 			}

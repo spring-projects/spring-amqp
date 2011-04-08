@@ -24,7 +24,8 @@ public interface MessageRecoverer {
 	 * Callback for message that was consumed but failed all retry attempts.
 	 * 
 	 * @param message the message to recover
+	 * @param cause the cause of the error
 	 */
-	void recover(Message message);
+	void recover(Message message, Throwable cause);
 
 }
