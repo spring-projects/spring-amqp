@@ -77,6 +77,11 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   #-------------------------------
  *   log4j.appender.amqp.declareExchange=false
  *   #-------------------------------
+ *   ## Flags to use when declaring the exchange
+ *   #-------------------------------
+ *   log4j.appender.amqp.durable=true
+ *   log4j.appender.amqp.autoDelete=false
+ *   #-------------------------------
  *   ## Message properties
  *   #-------------------------------
  *   log4j.appender.amqp.contentType=text/plain
@@ -203,6 +208,10 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	private final String mutex = "mutex";
 
+	private boolean durable = true;
+
+	private boolean autoDelete = false;
+
 	public AmqpAppender() {
 	}
 
@@ -323,6 +332,22 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.maxSenderRetries = maxSenderRetries;
 	}
 
+	public boolean isDurable() {
+		return durable;
+	}
+
+	public void setDurable(boolean durable) {
+		this.durable = durable;
+	}
+
+	public boolean isAutoDelete() {
+		return autoDelete;
+	}
+
+	public void setAutoDelete(boolean autoDelete) {
+		this.autoDelete = autoDelete;
+	}
+
 	/**
 	 * Submit the required number of senders into the pool.
 	 */
@@ -341,15 +366,15 @@ public class AmqpAppender extends AppenderSkeleton {
 		if (declareExchange) {
 			Exchange x;
 			if ("topic".equals(exchangeType)) {
-				x = new TopicExchange(exchangeName, true, false);
+				x = new TopicExchange(exchangeName, durable, autoDelete);
 			} else if ("direct".equals(exchangeType)) {
-				x = new DirectExchange(exchangeName, true, false);
+				x = new DirectExchange(exchangeName, durable, autoDelete);
 			} else if ("fanout".equals(exchangeType)) {
-				x = new FanoutExchange(exchangeName, true, false);
+				x = new FanoutExchange(exchangeName, durable, autoDelete);
 			} else if ("headers".equals(exchangeType)) {
-				x = new HeadersExchange(exchangeType, true, false);
+				x = new HeadersExchange(exchangeType, durable, autoDelete);
 			} else {
-				x = new TopicExchange(exchangeName);
+				x = new TopicExchange(exchangeName, durable, autoDelete);
 			}
 			// admin.deleteExchange(exchangeName);
 			admin.declareExchange(x);
