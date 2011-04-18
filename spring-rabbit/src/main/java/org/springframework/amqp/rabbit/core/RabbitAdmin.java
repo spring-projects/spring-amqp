@@ -177,7 +177,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	public void removeBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueUnbind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(),
+				channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 						binding.getArguments());
 				return null;
 			}
@@ -331,10 +331,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private void declareBindings(final Channel channel, final Binding... bindings) throws IOException {
 		for (Binding binding : bindings) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Binding queue [" + binding.getQueue() + "] to exchange [" + binding.getExchange()
+				logger.debug("Binding queue [" + binding.getDestination() + "] to exchange [" + binding.getExchange()
 						+ "] with routing key [" + binding.getRoutingKey() + "]");
 			}
-			channel.queueBind(binding.getQueue(), binding.getExchange(), binding.getRoutingKey(),
+			channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 					binding.getArguments());
 		}
 	}

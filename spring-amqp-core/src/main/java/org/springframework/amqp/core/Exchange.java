@@ -48,6 +48,12 @@ public interface Exchange {
 	 */
 	boolean isAutoDelete();
 
+	/**
+	 * A map of arguments used to declare the exchange. These are stored by the broker, but do not necessarily have any
+	 * meaning to the broker (depending on the exchange type).
+	 * 
+	 * @return the arguments
+	 */
 	Map<String, Object> getArguments();
 
 }

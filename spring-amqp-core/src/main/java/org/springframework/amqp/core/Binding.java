@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.core;
@@ -19,57 +16,48 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 /**
- * Simple container collecting information to describe a queue binding. Takes Queue and Exchange
- * instances as arguments to facilitate wiring using @Bean code based configuration.
- * Used in conjunction with AmqpAdmin.
+ * Simple container collecting information to describe a binding. Takes String destination and Exchange source instances
+ * as arguments to facilitate wiring using code based configuration. Can be used in conjunction with {@link AmqpAdmin},
+ * or created via a {@link BindingBuilder}.
  * 
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Dave Syer
+ * 
  * @see AmqpAdmin
  */
 public class Binding {
 
-	private String queue;
+	public static final String QUEUE_TYPE = "queue";
 
-	private String exchange;
+	private final String destination;
 
-	private String routingKey;
+	private final String exchange;
 
-	private Map<String, Object> arguments;
+	private final String routingKey;
 
-	public Binding(Queue queue, FanoutExchange exchange) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
-	}
+	private final Map<String, Object> arguments;
 
-	public Binding(Queue queue, HeadersExchange exchange, Map<String, Object> arguments) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = "";
+	private final String destinationType;
+
+//	public Binding(String destination, String exchange, String routingKey, Map<String, Object> arguments) {
+//		this(destination, QUEUE_TYPE, exchange, routingKey, arguments);
+//	}
+//	
+	public Binding(String destination, String destinationType, String exchange, String routingKey, Map<String, Object> arguments) {
+		this.destination = destination;
+		this.destinationType = destinationType;
+		this.exchange = exchange;
+		this.routingKey = routingKey;
 		this.arguments = arguments;
 	}
 
-	public Binding(Queue queue, DirectExchange exchange) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = queue.getName();
+	public String getDestination() {
+		return this.destination;
 	}
 
-	public Binding(Queue queue, DirectExchange exchange, String routingKey) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = routingKey;
-	}
-
-	public Binding(Queue queue, TopicExchange exchange, String routingPattern) {
-		this.queue = queue.getName();
-		this.exchange = exchange.getName();
-		this.routingKey = routingPattern;
-	}
-
-	public String getQueue() {
-		return this.queue;
+	public String getDestinationType() {
+		return this.destinationType;
 	}
 
 	public String getExchange() {
