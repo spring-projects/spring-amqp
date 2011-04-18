@@ -49,7 +49,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  * <p>
  * A fully-configured AmqpAppender, with every option set to their defaults, would look like this:
  * </p>
- * 
+ * <p/>
  * <pre>
  * <code>
  *   log4j.appender.amqp=org.springframework.amqp.log4j.AmqpAppender
@@ -68,7 +68,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   log4j.appender.amqp.exchangeName=logs
  *   log4j.appender.amqp.exchangeType=topic
  *   #-------------------------------
- *   ## Log4J-format pattern to use to create a routing key.  
+ *   ## Log4J-format pattern to use to create a routing key.
  *   ## The application id is available as %X{applicationId}.
  *   #-------------------------------
  *   log4j.appender.amqp.routingKeyPattern=%c.%p
@@ -99,7 +99,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - <%m>%n
  * </code>
  * </pre>
- * 
+ *
  * @author Jon Brisbin <jbrisbin@vmware.com>
  */
 public class AmqpAppender extends AppenderSkeleton {
@@ -423,6 +423,8 @@ public class AmqpAppender extends AppenderSkeleton {
 			try {
 				RabbitTemplate rabbitTmpl = new RabbitTemplate(connectionFactory);
 				if (replyTimeout > 0) {
+					// Set a reply timeout if one's been specified by the user
+					// leave it off by default
 					rabbitTmpl.setReplyTimeout(replyTimeout);
 				}
 				while (true) {
