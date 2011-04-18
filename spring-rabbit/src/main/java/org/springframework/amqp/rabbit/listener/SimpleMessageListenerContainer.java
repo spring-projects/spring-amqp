@@ -456,9 +456,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 				try {
 					consumer.start();
+					start.countDown();
 				} catch (FatalListenerStartupException ex) {
 					throw ex;
 				} catch (Throwable t) {
+					start.countDown();
 					handleStartupFailure(t);
 					throw t;
 				}
@@ -466,7 +468,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Always better to stop receiving as soon as possible if
 				// transactional
 				boolean continuable = false;
-				start.countDown();
 				while (isActive() || continuable) {
 					try {
 						// Will come back false when the queue is drained
