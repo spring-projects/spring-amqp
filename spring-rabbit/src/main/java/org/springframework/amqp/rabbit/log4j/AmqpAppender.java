@@ -61,7 +61,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   log4j.appender.amqp.username=guest
  *   log4j.appender.amqp.password=guest
  *   log4j.appender.amqp.virtualHost=/
- *   log4j.appender.amqp.connectionTimeout=0
+ *   log4j.appender.amqp.replyTimeout=0
  *   #-------------------------------
  *   ## Exchange name and type
  *   #-------------------------------
@@ -142,7 +142,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * How long to wait for a connection to time out.
 	 */
-	private int connectionTimeout = 0;
+	private int replyTimeout = 0;
 	/**
 	 * Configuration arbitrary application ID.
 	 */
@@ -288,8 +288,12 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.declareExchange = declareExchange;
 	}
 
-	public int getConnectionTimeout() {
-		return connectionTimeout;
+	public int getReplyTimeout() {
+		return replyTimeout;
+	}
+
+	public void setReplyTimeout(int replyTimeout) {
+		this.replyTimeout = replyTimeout;
 	}
 
 	public String getContentType() {
@@ -418,6 +422,9 @@ public class AmqpAppender extends AppenderSkeleton {
 		public void run() {
 			try {
 				RabbitTemplate rabbitTmpl = new RabbitTemplate(connectionFactory);
+				if (replyTimeout > 0) {
+					rabbitTmpl.setReplyTimeout(replyTimeout);
+				}
 				while (true) {
 					final Event event = events.take();
 					LoggingEvent logEvent = event.getEvent();
