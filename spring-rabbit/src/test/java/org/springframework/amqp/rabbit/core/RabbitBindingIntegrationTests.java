@@ -40,7 +40,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
@@ -79,7 +79,7 @@ public class RabbitBindingIntegrationTests {
 		final TopicExchange exchange = new TopicExchange("topic");
 		admin.declareExchange(exchange);
 
-		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
@@ -119,7 +119,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
 		template.setExchange(exchange.getName());
@@ -156,7 +156,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.from(queue).to(exchange).with("*.end"));
+		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {
@@ -208,7 +208,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareExchange(exchange);
 		template.setExchange(exchange.getName());
 
-		admin.declareBinding(BindingBuilder.from(queue).to(exchange));
+		admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
 
 		template.execute(new ChannelCallback<Void>() {
 			public Void doInRabbit(Channel channel) throws Exception {

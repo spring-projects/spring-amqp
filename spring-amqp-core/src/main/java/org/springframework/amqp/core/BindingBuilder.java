@@ -29,10 +29,9 @@ import org.springframework.util.Assert;
  */
 public final class BindingBuilder  {
 
-	public static ExchangeConfigurer from(Queue queue) {
+	public static ExchangeConfigurer bind(Queue queue) {
 		return new ExchangeConfigurer(queue);
 	}
-
 
 	public static class ExchangeConfigurer {
 

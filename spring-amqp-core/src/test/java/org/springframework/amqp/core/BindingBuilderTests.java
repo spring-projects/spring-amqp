@@ -27,25 +27,25 @@ public class BindingBuilderTests {
 
 	@Test
 	public void fanoutBinding() {
-		Binding binding = BindingBuilder.from(new Queue("q")).to(new FanoutExchange("f"));
+		Binding binding = BindingBuilder.bind(new Queue("q")).to(new FanoutExchange("f"));
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void directBinding() {	
-		Binding binding = BindingBuilder.from(new Queue("q")).to(new DirectExchange("d")).with("r");
+		Binding binding = BindingBuilder.bind(new Queue("q")).to(new DirectExchange("d")).with("r");
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void directBindingWithQueueName() {
-		Binding binding = BindingBuilder.from(new Queue("q")).to(new DirectExchange("d")).withQueueName();
+		Binding binding = BindingBuilder.bind(new Queue("q")).to(new DirectExchange("d")).withQueueName();
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void topicBinding() {
-		Binding binding = BindingBuilder.from(new Queue("q")).to(new TopicExchange("t")).with("r");
+		Binding binding = BindingBuilder.bind(new Queue("q")).to(new TopicExchange("t")).with("r");
 		assertNotNull(binding);
 	}
 

@@ -313,7 +313,7 @@ private String marketDataRoutingKey;
 
 @Bean
 public Binding marketDataBinding() {
-    return BindingBuilder.from(
+    return BindingBuilder.bind(
             marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
 }]]></programlisting>
 

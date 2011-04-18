@@ -179,7 +179,7 @@
       <para>We also provide a <classname>BindingBuilder</classname> to
       facilitate a "fluent API" style.</para>
 
-      <programlisting language="java"><![CDATA[Binding b = BindingBuilder.from(someQueue).to(someTopicExchange).with("foo.*");]]></programlisting>
+      <programlisting language="java"><![CDATA[Binding b = BindingBuilder.bind(someQueue).to(someTopicExchange).with("foo.*");]]></programlisting>
 
       <note>
         <para>The BindingBuilder class is shown above for clarity, but this
@@ -813,7 +813,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
      */
     @Bean
     public Binding marketDataBinding() {
-        return BindingBuilder.from(
+        return BindingBuilder.bind(
                 marketDataQueue()).to(marketDataExchange()).with(marketDataRoutingKey);
     }
 
