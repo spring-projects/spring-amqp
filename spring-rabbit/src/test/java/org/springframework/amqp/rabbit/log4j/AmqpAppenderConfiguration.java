@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.log4j;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -59,7 +60,7 @@ public class AmqpAppenderConfiguration {
 
   @Bean
   public Binding testBinding() {
-    return new Binding(testQueue(), testExchange(), ROUTING_KEY);
+    return BindingBuilder.bind(testQueue()).to(testExchange()).with(ROUTING_KEY);
   }
 
   @Bean

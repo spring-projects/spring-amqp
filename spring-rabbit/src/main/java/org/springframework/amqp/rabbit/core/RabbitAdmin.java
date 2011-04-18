@@ -177,8 +177,13 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	public void removeBinding(final Binding binding) {
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
 			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-						binding.getArguments());
+				if (binding.isDestinationQueue()) {
+					channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+							binding.getArguments());
+				} else {
+					channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+							binding.getArguments());
+				}
 				return null;
 			}
 		});
@@ -331,11 +336,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private void declareBindings(final Channel channel, final Binding... bindings) throws IOException {
 		for (Binding binding : bindings) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Binding queue [" + binding.getDestination() + "] to exchange [" + binding.getExchange()
-						+ "] with routing key [" + binding.getRoutingKey() + "]");
+				logger.debug("Binding destination [" + binding.getDestination() + " (" + binding.getDestinationType()
+						+ ")] to exchange [" + binding.getExchange() + "] with routing key [" + binding.getRoutingKey()
+						+ "]");
 			}
-			channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-					binding.getArguments());
+			if (binding.isDestinationQueue()) {
+				channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
+			} else {
+				channel.exchangeBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
+			}
 		}
 	}
 

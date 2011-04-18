@@ -60,26 +60,17 @@ public class BindingBuilderTests {
 				return "x-custom";
 			}
 		}
-		;
-		Binding binding = BindingBuilder.bind(new Queue("q")).to(new CustomExchange("f")).with("r")
-				.and(Collections.<String, Object> singletonMap("k", new Object()));
+		Binding binding = BindingBuilder.//
+				bind(new Queue("q")).//
+				to(new CustomExchange("f")).//
+				with("r").//
+				and(Collections.<String, Object> singletonMap("k", new Object()));
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void exchangeBinding() {
-		class CustomExchange extends AbstractExchange {
-			public CustomExchange(String name) {
-				super(name);
-			}
-
-			@Override
-			public String getType() {
-				return "x-custom";
-			}
-		}
-		;
-		Binding binding = BindingBuilder.bind(new CustomExchange("q")).to(new FanoutExchange("f"));
+		Binding binding = BindingBuilder.bind(new DirectExchange("q")).to(new FanoutExchange("f"));
 		assertNotNull(binding);
 	}
 

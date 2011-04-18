@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.util.Assert;
 
 /**
@@ -29,19 +30,19 @@ import org.springframework.util.Assert;
 public final class BindingBuilder {
 
 	public static DestinationConfigurer bind(Queue queue) {
-		return new DestinationConfigurer(queue.getName(), "queue");
+		return new DestinationConfigurer(queue.getName(), DestinationType.QUEUE);
 	}
 
 	public static DestinationConfigurer bind(Exchange exchange) {
-		return new DestinationConfigurer(exchange.getName(), "exchange");
+		return new DestinationConfigurer(exchange.getName(), DestinationType.EXCHANGE);
 	}
 
 	public static class DestinationConfigurer {
 
 		protected final String name;
-		protected final String type;
+		protected final DestinationType type;
 
-		private DestinationConfigurer(String name, String type) {
+		private DestinationConfigurer(String name, DestinationType type) {
 			this.name = name;
 			this.type = type;
 		}

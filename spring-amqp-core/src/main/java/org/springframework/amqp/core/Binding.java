@@ -16,9 +16,9 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 /**
- * Simple container collecting information to describe a binding. Takes String destination and Exchange source instances
- * as arguments to facilitate wiring using code based configuration. Can be used in conjunction with {@link AmqpAdmin},
- * or created via a {@link BindingBuilder}.
+ * Simple container collecting information to describe a binding. Takes String destination and exchange names as
+ * arguments to facilitate wiring using code based configuration. Can be used in conjunction with {@link AmqpAdmin}, or
+ * created via a {@link BindingBuilder}.
  * 
  * @author Mark Pollack
  * @author Mark Fisher
@@ -28,7 +28,9 @@ import java.util.Map;
  */
 public class Binding {
 
-	public static final String QUEUE_TYPE = "queue";
+	public static enum DestinationType {
+		QUEUE, EXCHANGE;
+	}
 
 	private final String destination;
 
@@ -38,13 +40,10 @@ public class Binding {
 
 	private final Map<String, Object> arguments;
 
-	private final String destinationType;
+	private final DestinationType destinationType;
 
-//	public Binding(String destination, String exchange, String routingKey, Map<String, Object> arguments) {
-//		this(destination, QUEUE_TYPE, exchange, routingKey, arguments);
-//	}
-//	
-	public Binding(String destination, String destinationType, String exchange, String routingKey, Map<String, Object> arguments) {
+	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
+			Map<String, Object> arguments) {
 		this.destination = destination;
 		this.destinationType = destinationType;
 		this.exchange = exchange;
@@ -56,7 +55,7 @@ public class Binding {
 		return this.destination;
 	}
 
-	public String getDestinationType() {
+	public DestinationType getDestinationType() {
 		return this.destinationType;
 	}
 
@@ -70,6 +69,10 @@ public class Binding {
 
 	public Map<String, Object> getArguments() {
 		return this.arguments;
+	}
+
+	public boolean isDestinationQueue() {
+		return DestinationType.QUEUE.equals(destinationType);
 	}
 
 }
