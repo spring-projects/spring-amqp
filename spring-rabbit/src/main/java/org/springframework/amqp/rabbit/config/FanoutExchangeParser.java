@@ -13,9 +13,11 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.Collections;
+
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.FanoutExchange;
-import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -33,10 +35,13 @@ public class FanoutExchangeParser extends AbstractExchangeParser {
 	}
 
 	@Override
-	protected AbstractBeanDefinition parseBinding(BeanMetadataElement exchange, Element binding, ParserContext parserContext) {
+	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(Binding.class);
-		builder.addConstructorArgReference(binding.getAttribute(BINDING_QUEUE_ATTR));
-		builder.addConstructorArgValue(exchange);
+		builder.addConstructorArgValue(binding.getAttribute(BINDING_QUEUE_ATTR));
+		builder.addConstructorArgValue(DestinationType.EXCHANGE);
+		builder.addConstructorArgValue(exchangeName);
+		builder.addConstructorArgValue("");
+		builder.addConstructorArgValue(Collections.<String, Object>emptyMap());
 		return builder.getBeanDefinition();
 	}
 

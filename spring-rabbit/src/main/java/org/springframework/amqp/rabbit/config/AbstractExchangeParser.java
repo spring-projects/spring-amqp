@@ -15,7 +15,6 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
-import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
@@ -55,7 +54,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		Element bindings = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
 		if (bindings != null) {
 			for (Element binding : DomUtils.getChildElementsByTagName(bindings, BINDING_ELE)) {
-				AbstractBeanDefinition beanDefinition = parseBinding(builder.getRawBeanDefinition(), binding,
+				AbstractBeanDefinition beanDefinition = parseBinding(exchangeName, binding,
 						parserContext);
 				registerBeanDefinition(new BeanDefinitionHolder(beanDefinition, parserContext.getReaderContext()
 						.generateBeanName(beanDefinition)), parserContext.getRegistry());
@@ -75,7 +74,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	}
 
-	protected abstract AbstractBeanDefinition parseBinding(BeanMetadataElement exchange, Element binding,
+	protected abstract AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext);
 
 }

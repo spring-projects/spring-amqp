@@ -17,8 +17,8 @@
 package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.HeadersExchange;
-import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -38,10 +38,12 @@ public class HeadersExchangeParser extends AbstractExchangeParser {
 	}
 
 	@Override
-	protected AbstractBeanDefinition parseBinding(BeanMetadataElement exchange, Element binding, ParserContext parserContext) {
+	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(Binding.class);
-		builder.addConstructorArgReference(binding.getAttribute(BINDING_QUEUE_ATTR));
-		builder.addConstructorArgValue(exchange);
+		builder.addConstructorArgValue(binding.getAttribute(BINDING_QUEUE_ATTR));
+		builder.addConstructorArgValue(DestinationType.EXCHANGE);
+		builder.addConstructorArgValue(exchangeName);
+		builder.addConstructorArgValue("");
 		ManagedMap<TypedStringValue, TypedStringValue> map = new ManagedMap<TypedStringValue, TypedStringValue>();
 		String key = binding.getAttribute("key");
 		String value = binding.getAttribute("value");
