@@ -40,9 +40,9 @@ public class HeadersExchangeParser extends AbstractExchangeParser {
 	@Override
 	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(Binding.class);
-		builder.addConstructorArgValue(binding.getAttribute(BINDING_QUEUE_ATTR));
+		builder.addConstructorArgValue(new TypedStringValue(binding.getAttribute(BINDING_QUEUE_ATTR)));
 		builder.addConstructorArgValue(DestinationType.EXCHANGE);
-		builder.addConstructorArgValue(exchangeName);
+		builder.addConstructorArgValue(new TypedStringValue(exchangeName));
 		builder.addConstructorArgValue("");
 		ManagedMap<TypedStringValue, TypedStringValue> map = new ManagedMap<TypedStringValue, TypedStringValue>();
 		String key = binding.getAttribute("key");

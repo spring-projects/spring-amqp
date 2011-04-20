@@ -18,6 +18,7 @@ import java.util.Collections;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -37,9 +38,9 @@ public class FanoutExchangeParser extends AbstractExchangeParser {
 	@Override
 	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(Binding.class);
-		builder.addConstructorArgValue(binding.getAttribute(BINDING_QUEUE_ATTR));
+		builder.addConstructorArgValue(new TypedStringValue(binding.getAttribute(BINDING_QUEUE_ATTR)));
 		builder.addConstructorArgValue(DestinationType.EXCHANGE);
-		builder.addConstructorArgValue(exchangeName);
+		builder.addConstructorArgValue(new TypedStringValue(exchangeName));
 		builder.addConstructorArgValue("");
 		builder.addConstructorArgValue(Collections.<String, Object>emptyMap());
 		return builder.getBeanDefinition();

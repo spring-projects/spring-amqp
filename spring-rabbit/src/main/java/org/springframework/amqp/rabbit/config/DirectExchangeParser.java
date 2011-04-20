@@ -18,6 +18,7 @@ import java.util.Collections;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -41,14 +42,14 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(Binding.class);
-		builder.addConstructorArgValue(binding.getAttribute(BINDING_QUEUE_ATTR));
+		builder.addConstructorArgValue(new TypedStringValue(binding.getAttribute(BINDING_QUEUE_ATTR)));
 		builder.addConstructorArgValue(DestinationType.EXCHANGE);
-		builder.addConstructorArgValue(exchangeName);
+		builder.addConstructorArgValue(new TypedStringValue(exchangeName));
 		String bindingKey = binding.getAttribute(BINDING_KEY_ATTR);
 		if (!StringUtils.hasText(bindingKey)) {
 			bindingKey = "";
 		}
-		builder.addConstructorArgValue(bindingKey);
+		builder.addConstructorArgValue(new TypedStringValue(bindingKey));
 		builder.addConstructorArgValue(Collections.<String, Object>emptyMap());
 		return builder.getBeanDefinition();
 	}
