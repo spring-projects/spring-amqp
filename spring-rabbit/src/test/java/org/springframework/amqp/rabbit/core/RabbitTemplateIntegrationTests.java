@@ -293,6 +293,7 @@ public class RabbitTemplateIntegrationTests {
 		Message message = new Message("test-message".getBytes(), new MessageProperties());
 		Message reply = template.sendAndReceive(message);
 		assertEquals(new String(message.getBody()), new String(received.get(1000, TimeUnit.MILLISECONDS).getBody()));
+		assertNotNull("Reply is expected", reply);
 		assertEquals(new String(message.getBody()), new String(reply.getBody()));
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
@@ -324,6 +325,7 @@ public class RabbitTemplateIntegrationTests {
 		Message message = new Message("test-message".getBytes(), new MessageProperties());
 		Message reply = template.sendAndReceive(ROUTE, message);
 		assertEquals(new String(message.getBody()), new String(received.get(1000, TimeUnit.MILLISECONDS).getBody()));
+		assertNotNull("Reply is expected", reply);
 		assertEquals(new String(message.getBody()), new String(reply.getBody()));
 		// Message was consumed so nothing left on queue
 		reply = template.receive(ROUTE);
@@ -355,6 +357,7 @@ public class RabbitTemplateIntegrationTests {
 		Message message = new Message("test-message".getBytes(), new MessageProperties());
 		Message reply = template.sendAndReceive("", ROUTE, message);
 		assertEquals(new String(message.getBody()), new String(received.get(1000, TimeUnit.MILLISECONDS).getBody()));
+		assertNotNull("Reply is expected", reply);
 		assertEquals(new String(message.getBody()), new String(reply.getBody()));
 		// Message was consumed so nothing left on queue
 		reply = template.receive(ROUTE);
