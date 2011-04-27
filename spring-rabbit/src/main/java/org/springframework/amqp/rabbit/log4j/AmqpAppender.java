@@ -396,6 +396,9 @@ public class AmqpAppender extends AppenderSkeleton {
 			senderPool.shutdownNow();
 			senderPool = null;
 		}
+		if (null != connectionFactory) {
+			connectionFactory.destroy();
+		}
 	}
 
 	public boolean requiresLayout() {
@@ -408,7 +411,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	protected class EventSender implements Runnable {
 		public void run() {
 			try {
-				RabbitTemplate rabbitTmpl = new RabbitTemplate(connectionFactory);
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 				while (true) {
 					final Event event = events.take();
 					LoggingEvent logEvent = event.getEvent();
@@ -460,7 +463,7 @@ public class AmqpAppender extends AppenderSkeleton {
 					// Send a message
 					String routingKey = routingKeyLayout.format(logEvent);
 					try {
-						rabbitTmpl
+						rabbitTemplate
 								.send(exchangeName, routingKey, new Message(msgBody.toString().getBytes(), amqpProps));
 					} catch (AmqpException e) {
 						int retries = event.incrementRetries();
