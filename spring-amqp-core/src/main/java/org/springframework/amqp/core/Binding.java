@@ -75,4 +75,9 @@ public class Binding {
 		return DestinationType.QUEUE.equals(destinationType);
 	}
 
+	@Override
+	public String toString() {
+		return "Binding [destination=" + destination + ", exchange=" + exchange + ", routingKey=" + routingKey + "]";
+	}
+
 }
