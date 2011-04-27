@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/rabbit"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<direct-exchange name="directTest">
+		<bindings>
+			<binding queue="bucket" />
+		</bindings>
+	</direct-exchange>
+
+	<topic-exchange name="topicTest">
+		<bindings>
+			<binding queue="bucket" pattern="bucket.#"/>
+		</bindings>
+	</topic-exchange>
+
+	<fanout-exchange name="fanoutTest">
+		<bindings>
+			<binding queue="bucket" />
+		</bindings>
+	</fanout-exchange>
+
+	<headers-exchange name="headersTest">
+		<bindings>
+			<binding queue="bucket" key="type" value="bucket"  />
+		</bindings>
+	</headers-exchange>
+
+	<queue id="bucket" />
+
+	<admin id="admin-test" connection-factory="connectionFactory" auto-startup="true"/>
+
+	<connection-factory id="connectionFactory"/>
+
+</beans:beans>
