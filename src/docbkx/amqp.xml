@@ -10,19 +10,21 @@
   <section>
     <title>AMQP Abstractions</title>
 
-    <para>The Spring AMQP project consists of a handful of modules, each
-    represented by a JAR in the distribution. These modules are: spring-amqp,
-    spring-rabbit, spring-erlang, and spring-rabbit-admin. The 'spring-amqp'
-    module contains the org.springframework.amqp.core package. Within that
+    <para>Spring AMQP consists of a handful of modules, each represented by a
+    JAR in the distribution. These modules are: spring-amqp, spring-rabbit and
+    spring-erlang. The 'spring-amqp' module contains the
+    <literal>org.springframework.amqp.core</literal> package. Within that
     package, you will find the classes that represent the core AMQP "model".
     Our intention is to provide generic abstractions that do not rely on any
     particular AMQP broker implementation or client library. End user code
     will be more portable across vendor implementations as it can be developed
     against the abstraction layer only. These abstractions are then used
     implemented by broker-specific modules, such as 'spring-rabbit'. For the
-    M1 release there is only a RabbitMQ implementation however the
-    abstractions have been vetted in .NET using Apache Qpid in addition to
-    RabbitMQ.</para>
+    1.0 release there is only a RabbitMQ implementation however the
+    abstractions have been validated in .NET using Apache Qpid in addition to
+    RabbitMQ. Since AMQP operates at the protocol level in principle the
+    RabbitMQ client can be used with any broker that supports the same
+    protocol version, but we do not test any other brokers at present.</para>
 
     <para>The overview here assumes that you are already familiar with the
     basics of the AMQP specification already. If you are not, then have a look
@@ -308,11 +310,11 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <para>When sending a Message, one can use any of the following
     methods:</para>
 
-    <programlisting language="xml"><![CDATA[void send(MessageCreator messageCreator) throws AmqpException;
+    <programlisting language="xml"><![CDATA[void send(Message message) throws AmqpException;
 
-void send(String routingKey, MessageCreator messageCreator) throws AmqpException;
+void send(String routingKey, Message message) throws AmqpException;
 
-void send(String exchange, String routingKey, MessageCreator messageCreator) throws AmqpException;]]></programlisting>
+void send(String exchange, String routingKey, Message message) throws AmqpException;]]></programlisting>
 
     <para>We can begin our discussion with the last method listed above since
     it is actually the most explicit. It allows an AMQP Exchange name to be
@@ -321,11 +323,7 @@ void send(String exchange, String routingKey, MessageCreator messageCreator) thr
     An example of using this method to send a Message might look this
     this:</para>
 
-    <programlisting language="java"><![CDATA[amqpTemplate.send("marketData.topic", "quotes.nasdaq.FOO", new MessageCreator() {
-    public Message createMessage() {
-        return new Message("12.34".getBytes(), someProperties);
-    }
-});]]></programlisting>
+    <programlisting language="java"><![CDATA[amqpTemplate.send("marketData.topic", "quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));]]></programlisting>
 
     <para>The "exchange" property can be set on the template itself if you
     plan to use that template instance to send to the same exchange most or
@@ -334,23 +332,14 @@ void send(String exchange, String routingKey, MessageCreator messageCreator) thr
     one:</para>
 
     <programlisting language="java"><![CDATA[amqpTemplate.setExchange("marketData.topic");
-amqpTemplate.send("quotes.nasdaq.FOO", new MessageCreator() {
-    public Message createMessage() {
-        return new Message("12.34".getBytes(), someProperties);
-    }
-});]]></programlisting>
+amqpTemplate.send("quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));]]></programlisting>
 
     <para>If both the "exchange" and "routingKey" properties are set on the
     template, then the method accepting only the
-    <interfacename>MessageCreator</interfacename> may be used:</para>
+    <interfacename>Message</interfacename> may be used:</para>
 
     <programlisting language="java"><![CDATA[amqpTemplate.setExchange("marketData.topic");
-amqpTemplate.setRoutingKey("quotes.nasdaq.FOO");
-amqpTemplate.send(new MessageCreator() {
-    public Message createMessage() {
-        return new Message("12.34".getBytes(), someProperties);
-    }
-});]]></programlisting>
+amqpTemplate.setRoutingKey("quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));]]></programlisting>
 
     <para>A better way of thinking about the exchange and routing key
     properties is that the explicit method parameters will always override the
@@ -371,11 +360,7 @@ amqpTemplate.send(new MessageCreator() {
     either by providing the method parameter at runtime:</para>
 
     <programlisting language="java"><![CDATA[RabbitTemplate template = new RabbitTemplate(); // using default no-name Exchange
-template.send("queue.helloWorld", new MessageCreator() {
-    public Message createMessage() {
-        return new Message("Hello World".getBytes(), someProperties);
-    }
-});]]></programlisting>
+template.send("queue.helloWorld", new Message("Hello World".getBytes(), someProperties));]]></programlisting>
 
     <para>Or, if you prefer to create a template that will be used for
     publishing primarily or exclusively to a single Queue, the following is
@@ -383,22 +368,22 @@ template.send("queue.helloWorld", new MessageCreator() {
 
     <programlisting language="java"><![CDATA[RabbitTemplate template = new RabbitTemplate(); // using default no-name Exchange
 template.setRoutingKey("queue.helloWorld"); // but we'll always send to this Queue
-template.send(new MessageCreator() {
-    public Message createMessage() {
-        return new Message("Hello World".getBytes(), someProperties);
-    }
-});]]></programlisting>
+template.send(new Message("Hello World".getBytes(), someProperties));]]></programlisting>
+
+    <para></para>
   </section>
 
   <section>
     <title>Receiving messages</title>
 
     <para>Message reception is always a bit more complicated than sending. The
-    reason is that there are two ways to receive a Message. The simpler option
-    is to poll for a single Message at a time with a synchronous, blocking
+    reason is that there are two ways to receive a
+    <classname>Message</classname>. The simpler option is to poll for a single
+    <classname>Message</classname> at a time with a synchronous, blocking
     method call. The more complicated yet more common approach is to register
-    a listener that will receive Messages on-demand, asynchronously. We will
-    look at an example of each approach in the next two sub-sections.</para>
+    a listener that will receive <classname>Messages</classname> on-demand,
+    asynchronously. We will look at an example of each approach in the next
+    two sub-sections.</para>
 
     <sect2>
       <title>Synchronous Consumer</title>
@@ -413,9 +398,22 @@ template.send(new MessageCreator() {
       <programlisting language="java"><![CDATA[Message receive() throws AmqpException;
 
 Message receive(String queueName) throws AmqpException;]]></programlisting>
+
+      <para>Just like in the case of sending messages, the
+      <classname>AmqpTemplate</classname> has some convenience methods for
+      receiving POJOs instead of <classname>Message</classname> instances, and
+      implementations will provide a way to customize the
+      <classname>MessageConverter</classname> used to create the
+      <classname>Object</classname> returned:</para>
+
+      <para>
+        <programlisting><![CDATA[Object receiveAndConvert() throws AmqpException;
+
+Object receiveAndConvert(String queueName) throws AmqpException;]]></programlisting>
+      </para>
     </sect2>
 
-    <sect2><title>Asynchronous Consumer</title> <para>For asynchronous Message
+    <sect2><title>Asynchronous Consumer</title><para>For asynchronous Message
     reception, a dedicated component (not the
     <interfacename>AmqpTemplate</interfacename>) is involved. That component
     is a container for a Message consuming callback. We will look at the
@@ -518,12 +516,14 @@ public class ExampleAmqpConfiguration {
 }]]></programlisting>
 
     <para>The relevant Message-sending methods on the
-    <interfacename>AmqpTemplate</interfacename> are listed below. They are
-    simpler than the methods we discussed previously because they do not
-    require the MessageCreator callback. Instead, the MessageConverter is
-    responsible for "creating" each Message by converting the provided object
-    to the byte array for the Message body and then adding any provided
-    MessageProperties.</para>
+    <interfacename>AmqpTemplate</interfacename> are listed below. They
+    are simpler than the methods we discussed previously because they
+    do not require the <classname>Message</classname> instance.
+    Instead, the <interfacename>MessageConverter</interfacename> is
+    responsible for "creating" each <classname>Message</classname> by
+    converting the provided object to the byte array for
+    the <classname>Message</classname> body and then adding any
+    provided <classname>MessageProperties</classname>.</para>
 
     <programlisting language="java"><![CDATA[void convertAndSend(Object message) throws AmqpException;
 

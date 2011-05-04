@@ -26,15 +26,15 @@ import org.springframework.amqp.core.MessageProperties;
 public interface MessageConverter {
 
 	/**
-	 * Convert a Java object to a Rabbit Message.
+	 * Convert a Java object to a Message.
 	 * @param object the object to convert
-	 * @return the Rabbit Message
+	 * @return the Message
 	 * @throws MessageConversionException in case of conversion failure
 	 */
 	Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException;
 
 	/**
-	 * Convert from a Rabbit GetResponse to a Java object.
+	 * Convert from a Message to a Java object.
 	 * @param message the message to convert
 	 * @return the converted Java object
 	 * @throws MessageConversionException in case of conversion failure

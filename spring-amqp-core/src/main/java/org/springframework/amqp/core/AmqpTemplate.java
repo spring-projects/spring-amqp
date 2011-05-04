@@ -21,7 +21,7 @@ import org.springframework.amqp.AmqpException;
 /**
  * Specifies a basic set of AMQP operations.
  * 
- * Provides synchronous send an receive methods.  The convertAndSend and receiveAndConvert
+ * Provides synchronous send and receive methods.  The {@link #convertAndSend(Object)} and {@link #receiveAndConvert()}
  * methods allow let you send and receive POJO objects.  Implementations are expected to
  * delegate to an instance of {@link org.springframework.amqp.support.converter.MessageConverter}
  * to perform conversion to and from AMQP byte[] payload type.
