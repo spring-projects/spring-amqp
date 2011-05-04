@@ -352,14 +352,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					// Need to recycle the channel in this consumer
 					consumer.stop();
+					// Ensure consumer counts are correct (another is not going
+					// to start because of the exception, but
+					// we haven't counted down yet)
 					this.cancellationLock.release(consumer);
 					this.consumers.remove(consumer);
 					consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
 				} catch (RuntimeException e) {
-					// Ensure consumer counts are correct (another is not going
-					// to start because of the exception, but
-					// we haven't counted down yet)
 					logger.warn("Consumer died on restart. " + e.getClass() + ": " + e.getMessage());
 					// Thrown into the void (probably) in a background thread.
 					// Oh well, here goes...

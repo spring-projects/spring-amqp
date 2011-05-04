@@ -40,8 +40,9 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.test.annotation.Repeat;
 
 /**
- * A JUnit method &#064;Rule that looks at Spring repeat annotations on methods and
- * executes the test multiple times (without re-initializing the test case).
+ * A JUnit method &#064;Rule that looks at Spring repeat annotations on methods and executes the test multiple times
+ * (without re-initializing the test case if necessary). To avoid re-initializing use the {@link #isInitialized()}
+ * method to protect the &#64;Before and &#64;After methods.
  * 
  * @author Dave Syer
  * @since 2.0
@@ -55,6 +56,8 @@ public class RepeatProcessor implements MethodRule {
 
 	private volatile boolean initialized = false;
 
+	private volatile boolean finalizing = false;
+
 	public RepeatProcessor() {
 		this(0);
 	}
@@ -63,7 +66,7 @@ public class RepeatProcessor implements MethodRule {
 		this.concurrency = concurrency < 0 ? 0 : concurrency;
 	}
 
-	public Statement apply(final Statement base, FrameworkMethod method, Object target) {
+	public Statement apply(final Statement base, FrameworkMethod method, final Object target) {
 
 		Repeat repeat = AnnotationUtils.findAnnotation(method.getMethod(), Repeat.class);
 		if (repeat == null) {
@@ -77,72 +80,73 @@ public class RepeatProcessor implements MethodRule {
 
 		initializeIfNecessary(target);
 
-		try {
-			if (concurrency <= 0) {
-				return new Statement() {
-					@Override
-					public void evaluate() throws Throwable {
-						for (int i = 0; i < repeats; i++) {
-							try {
-								base.evaluate();
-							}
-							catch (Throwable t) {
-								throw new IllegalStateException("Failed on iteration: " + i, t);
-							}
-						}
-					}
-				};
-			}
+		if (concurrency <= 0) {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
-					List<Future<Boolean>> results = new ArrayList<Future<Boolean>>();
-					ExecutorService executor = Executors.newFixedThreadPool(concurrency);
-					CompletionService<Boolean> completionService = new ExecutorCompletionService<Boolean>(executor);
 					try {
 						for (int i = 0; i < repeats; i++) {
-							final int count = i;
-							results.add(completionService.submit(new Callable<Boolean>() {
-								public Boolean call() {
-									try {
-										base.evaluate();
-									}
-									catch (Throwable t) {
-										throw new IllegalStateException("Failed on iteration: " + count, t);
-									}
-									return true;
-								}
-							}));
+							try {
+								base.evaluate();
+							} catch (Throwable t) {
+								throw new IllegalStateException("Failed on iteration: " + i, t);
+							}
 						}
-						for (int i = 0; i < repeats; i++) {
-							Future<Boolean> future = completionService.take();
-							assertTrue("Null result from completer", future.get());
-						}
-					}
-					finally {
-						executor.shutdownNow();
+					} finally {
+						finalizeIfNecessary(target);
 					}
 				}
 			};
 		}
-		finally {
-			finalizeIfNecessary(target);
-		}
+		return new Statement() {
+			@Override
+			public void evaluate() throws Throwable {
+				List<Future<Boolean>> results = new ArrayList<Future<Boolean>>();
+				ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+				CompletionService<Boolean> completionService = new ExecutorCompletionService<Boolean>(executor);
+				try {
+					for (int i = 0; i < repeats; i++) {
+						final int count = i;
+						results.add(completionService.submit(new Callable<Boolean>() {
+							public Boolean call() {
+								try {
+									base.evaluate();
+								} catch (Throwable t) {
+									throw new IllegalStateException("Failed on iteration: " + count, t);
+								}
+								return true;
+							}
+						}));
+					}
+					for (int i = 0; i < repeats; i++) {
+						Future<Boolean> future = completionService.take();
+						assertTrue("Null result from completer", future.get());
+					}
+				} finally {
+					executor.shutdownNow();
+					finalizeIfNecessary(target);
+				}
+			}
+		};
 	}
 
 	private void finalizeIfNecessary(Object target) {
+		finalizing = true;
 		List<FrameworkMethod> afters = new TestClass(target.getClass()).getAnnotatedMethods(After.class);
-		if (!afters.isEmpty()) {
-			logger.debug("Running @After methods");
-			try {
-				new RunAfters(new Statement() {
-					public void evaluate() {
-					}
-				}, afters, target).evaluate();
+		try {
+			if (!afters.isEmpty()) {
+				logger.debug("Running @After methods");
+				try {
+					new RunAfters(new Statement() {
+						public void evaluate() {
+						}
+					}, afters, target).evaluate();
+				} catch (Throwable e) {
+					Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
+				}
 			}
-			catch (Throwable e) {
-				Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
-			}
+		} finally {
+			finalizing = false;
 		}
 	}
 
@@ -156,8 +160,7 @@ public class RepeatProcessor implements MethodRule {
 					public void evaluate() {
 					}
 				}, befores, target).evaluate();
-			}
-			catch (Throwable e) {
+			} catch (Throwable e) {
 				Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
 			}
 			initialized = true;
@@ -169,6 +172,10 @@ public class RepeatProcessor implements MethodRule {
 
 	public boolean isInitialized() {
 		return initialized;
+	}
+
+	public boolean isFinalizing() {
+		return finalizing;
 	}
 
 	public int getConcurrency() {
