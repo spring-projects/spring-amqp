@@ -52,7 +52,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	private final AcknowledgeMode acknowledgeMode;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.OFF, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule

@@ -629,7 +629,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 					if (logger.isDebugEnabled()) {
 						logger.debug("Rejecting message");
 					}
-					channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
+					// channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
+					channel.basicNack(message.getMessageProperties().getDeliveryTag(), true, true);
 				}
 				if (this.isChannelTransacted()) {
 					// Need to commit the reject (=nack)
