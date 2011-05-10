@@ -56,6 +56,10 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
+	public Log4jLevelAdjuster testLogLevels = new Log4jLevelAdjuster(Level.DEBUG,
+			SimpleMessageListenerContainerIntegrationTests.class);
+
+	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	private final int messageCount;
@@ -179,7 +183,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
-		boolean waited = latch.await(Math.max(2, messageCount / 50), TimeUnit.SECONDS);
+		boolean waited = latch.await(Math.max(2, messageCount / 40), TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
@@ -249,7 +253,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		public void handleMessage(String value) {
 			try {
 				int counter = count.getAndIncrement();
-				if (logger.isDebugEnabled() && counter % 500 == 0) {
+				if (logger.isDebugEnabled() && counter % 100 == 0) {
 					logger.debug("Handling: " + value + ":" + counter + " - " + latch);
 				}
 				if (fail) {
@@ -281,7 +285,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			String value = new String(message.getBody());
 			try {
 				int counter = count.getAndIncrement();
-				if (logger.isDebugEnabled() && counter % 500 == 0) {
+				if (logger.isDebugEnabled() && counter % 100 == 0) {
 					logger.debug(value + counter);
 				}
 				if (fail) {
@@ -313,7 +317,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			String value = new String(message.getBody());
 			try {
 				int counter = count.getAndIncrement();
-				if (logger.isDebugEnabled() && counter % 500 == 0) {
+				if (logger.isDebugEnabled() && counter % 100 == 0) {
 					logger.debug(value + counter);
 				}
 				if (fail) {

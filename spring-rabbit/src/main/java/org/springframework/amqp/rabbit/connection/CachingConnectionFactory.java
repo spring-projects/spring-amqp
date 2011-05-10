@@ -27,17 +27,13 @@ import org.springframework.util.Assert;
 import com.rabbitmq.client.Channel;
 
 /**
- * NOTE: this ConnectionFactory implementation is considered <b>experimental</b> at this stage. There are concerns to be
- * addressed in relation to the statefulness of channels. Therefore, we recommend using {@link SingleConnectionFactory}
- * for now.
- * 
  * A {@link ConnectionFactory} implementation that returns the same Connections from all {@link #createConnection()}
  * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and caches
  * {@link com.rabbitmq.client.Channel}.
  * 
  * <p>
- * By default, only one single Session will be cached, with further requested Channels being created and disposed on
- * demand. Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
+ * By default, only one Channel will be cached, with further requested Channels being created and disposed on demand.
+ * Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
  * environment.
  * 
  * <p>
@@ -146,6 +142,10 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	}
 
 	private Channel createBareChannel(boolean transactional) {
+		if (!this.targetConnection.isOpen()) {
+			// Use createConnection here not doCreateConnection so that the old one is properly disposed
+			createConnection();
+		}
 		return this.targetConnection.createBareChannel(transactional);
 	}
 
@@ -154,7 +154,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		targetConnection = new ChannelCachingConnectionProxy(super.doCreateConnection());
 		return targetConnection;
 	}
-	
+
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
@@ -315,7 +315,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		}
 
 		public boolean isOpen() {
-			return target!=null && target.isOpen();
+			return target != null && target.isOpen();
 		}
 
 		public Connection getTargetConnection() {

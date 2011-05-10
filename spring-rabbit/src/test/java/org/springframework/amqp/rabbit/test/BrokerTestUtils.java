@@ -36,7 +36,7 @@ public class BrokerTestUtils {
 	 * @return a port number
 	 */
 	public static int getPort() {
-		return DEFAULT_PORT;
+		return TRACER_PORT; // DEFAULT_PORT;
 	}
 
 	/**
