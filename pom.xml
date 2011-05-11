@@ -93,7 +93,7 @@
 							<goal>generate-html</goal>
 							<goal>generate-pdf</goal>
 						</goals>
-						<phase>package</phase>
+						<phase>site</phase>
 					</execution>
 				</executions>
 				<dependencies>
@@ -151,7 +151,7 @@
 						<goals>
 							<goal>aggregate</goal>
 						</goals>
-						<phase>package</phase>
+						<phase>site</phase>
 						<configuration>
 							<aggregate>true</aggregate>
 							<breakiterator>true</breakiterator>
