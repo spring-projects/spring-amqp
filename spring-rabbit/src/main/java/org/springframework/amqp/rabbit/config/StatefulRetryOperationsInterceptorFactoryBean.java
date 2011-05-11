@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.config;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
@@ -88,7 +89,10 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				} else {
 					messageRecoverer.recover(message, cause);
 				}
-				return null;
+				// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume
+				// any more messages until the acks and commits are sent for this (problematic) message...
+				throw new ImmediateAcknowledgeAmqpException("Recovered message forces ack (if ack mode requires it): "
+						+ message, cause);
 			}
 		});
 

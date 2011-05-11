@@ -1,7 +1,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -29,10 +28,13 @@ import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.test.annotation.Repeat;
 
 public class MessageListenerContainerRetryIntegrationTests {
 
@@ -48,7 +50,13 @@ public class MessageListenerContainerRetryIntegrationTests {
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
+	public Log4jLevelAdjuster traceLevels = new Log4jLevelAdjuster(Level.TRACE, StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
+
+	@Rule
 	public ExpectedException exception = ExpectedException.none();
+
+	@Rule
+	public RepeatProcessor repeats = new RepeatProcessor();
 
 	private RabbitTemplate template;
 
@@ -114,6 +122,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 	}
 
 	@Test
+	@Repeat(10)
 	public void testStatefulRetryWithTxSizeAndIntermittentFailure() throws Exception {
 
 		int messageCount = 10;
@@ -144,7 +153,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		}
 		factory.setMessageRecoverer(new MessageRecoverer() {
 			public void recover(Message message, Throwable cause) {
-				logger.info("Recovered: " + message);
+				logger.info("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString()+"], message: " +message);
 				latch.countDown();
 			}
 		});
@@ -220,15 +229,15 @@ public class MessageListenerContainerRetryIntegrationTests {
 			assertTrue("Timed out waiting for messages", waited);
 
 			// Retried each failure 3 times (default retry policy)...
-			assertEquals(messageCount + 2 * failedMessageCount, listener.getCount());
+			assertEquals(3 * failedMessageCount, listener.getCount());
+
+			// All failed messages recovered
+			assertEquals(null, template.receiveAndConvert(queue.getName()));
 
 		} finally {
 			container.shutdown();
 			assertEquals(0, container.getActiveConsumerCount());
 		}
-
-		// All failed messages recovered
-		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
 
@@ -241,8 +250,10 @@ public class MessageListenerContainerRetryIntegrationTests {
 		}
 
 		public void handleMessage(int value) throws Exception {
-			logger.debug(value+ ":" + count.getAndIncrement());
+			logger.debug("Handling: ["+value+ "], fails:" + count);
 			if (value % failFrequency == 0) {
+				count.getAndIncrement();
+				logger.debug("Failing: ["+value+ "], fails:" + count);
 				throw new RuntimeException("Planned");
 			}
 		}

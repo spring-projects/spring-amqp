@@ -1,5 +1,8 @@
 package org.springframework.amqp.rabbit.test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Assume;
@@ -46,18 +49,20 @@ public class BrokerRunning extends TestWatchman {
 	private static Log logger = LogFactory.getLog(BrokerRunning.class);
 
 	// Static so that we only test once on failure: speeds up test suite
-	private static boolean brokerOnline = true;
+	private static Map<Integer,Boolean> brokerOnline = new HashMap<Integer, Boolean>();
 
 	// Static so that we only test once on failure
-	private static boolean brokerOffline = true;
+	private static Map<Integer,Boolean> brokerOffline = new HashMap<Integer, Boolean>();
 
 	private final boolean assumeOnline;
 
 	private final boolean purge;
 
 	private Queue[] queues;
+	
+	private int DEFAULT_PORT = BrokerTestUtils.getPort();
 
-	private int port = BrokerTestUtils.getPort();
+	private int port;
 
 	private String hostName = null;
 
@@ -101,6 +106,7 @@ public class BrokerRunning extends TestWatchman {
 		this.assumeOnline = assumeOnline;
 		this.queues = queues;
 		this.purge = purge;
+		setPort(DEFAULT_PORT);
 	}
 
 	private BrokerRunning(boolean assumeOnline, Queue... queues) {
@@ -116,6 +122,12 @@ public class BrokerRunning extends TestWatchman {
 	 */
 	public void setPort(int port) {
 		this.port = port;
+		if (!brokerOffline.containsKey(port)) {
+			brokerOffline.put(port, true);			
+		}
+		if (!brokerOnline.containsKey(port)) {
+			brokerOnline.put(port, true);			
+		}
 	}
 
 	/**
@@ -130,9 +142,9 @@ public class BrokerRunning extends TestWatchman {
 
 		// Check at the beginning, so this can be used as a static field
 		if (assumeOnline) {
-			Assume.assumeTrue(brokerOnline);
+			Assume.assumeTrue(brokerOnline.get(port));
 		} else {
-			Assume.assumeTrue(brokerOffline);
+			Assume.assumeTrue(brokerOffline.get(port));
 		}
 
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -161,14 +173,14 @@ public class BrokerRunning extends TestWatchman {
 					admin.declareQueue(queue);
 				}
 			}
-			brokerOffline = false;
+			brokerOffline.put(port, false);
 			if (!assumeOnline) {
-				Assume.assumeTrue(brokerOffline);
+				Assume.assumeTrue(brokerOffline.get(port));
 			}
 
 		} catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);
-			brokerOnline = false;
+			brokerOnline.put(port, false);
 			if (assumeOnline) {
 				Assume.assumeNoException(e);
 			}

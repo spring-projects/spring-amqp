@@ -46,8 +46,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 	private int messageCount = 10;
 
-	private int txSize = 1;
-
 	private boolean transactional = false;
 
 	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
@@ -79,7 +77,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	}
 
 	@Test
-	public void testListenerSendsMessageAndThenCommit() throws Exception {
+	public void testListenerSendsMessageAndThenContainerCommits() throws Exception {
 
 		ConnectionFactory connectionFactory = createConnectionFactory();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -102,7 +100,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		byte[] bytes = (byte[]) template.receiveAndConvert(sendQueue.getName());
 		assertNotNull(bytes);
 		assertEquals("bar", new String(bytes));
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertEquals(null, template.receiveAndConvert(queue.getName()));
 
 	}
 
@@ -278,8 +276,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueNames(queueName);
-		container.setTxSize(txSize);
-		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);

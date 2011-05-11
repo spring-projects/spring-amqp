@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import org.aopalliance.aop.Advice;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -341,8 +342,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
 		String[] queues = getRequiredQueueNames();
+		// There's no point prefetching less than the tx size, otherwise the consumer will stall because the broker
+		// didn't get an ack for delivered messages
+		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), cancellationLock, getAcknowledgeMode(),
-				isChannelTransacted(), prefetchCount, queues);
+				isChannelTransacted(), actualPrefetchCount, queues);
 		return consumer;
 	}
 
@@ -401,18 +405,31 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		Channel channel = consumer.getChannel();
 
+		Message lastMessage = null;
 		for (int i = 0; i < txSize; i++) {
 
 			logger.trace("Waiting for message from consumer.");
 			Message message = consumer.nextMessage(receiveTimeout);
 			if (message == null) {
-				return false;
+				break;
 			}
-			executeListener(channel, message);
+			lastMessage = message;
+			try {
+				executeListener(channel, message);
+			} catch (ImmediateAcknowledgeAmqpException e) {
+				break;
+			} catch (Throwable ex) {
+				rollbackOnExceptionIfNecessary(channel, message, ex);
+				throw ex;
+			}
 
 		}
+		if (lastMessage != null) {
+			commitIfNecessary(channel, lastMessage);
+			return true;
+		}
 
-		return true;
+		return false;
 
 	}
 

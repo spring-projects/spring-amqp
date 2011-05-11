@@ -89,7 +89,7 @@ public class RepeatProcessor implements MethodRule {
 							try {
 								base.evaluate();
 							} catch (Throwable t) {
-								throw new IllegalStateException("Failed on iteration: " + i, t);
+								throw new IllegalStateException("Failed on iteration: " + i + " of " + repeats + " (started at 0)", t);
 							}
 						}
 					} finally {

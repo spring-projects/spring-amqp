@@ -53,7 +53,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.OFF, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule
 	public Log4jLevelAdjuster testLogLevels = new Log4jLevelAdjuster(Level.DEBUG,
@@ -94,9 +94,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				params(6, 2, 2, AcknowledgeMode.NONE), //
 				params(7, 20, 4, AcknowledgeMode.AUTO), //
 				params(8, 20, 4, AcknowledgeMode.NONE), //
-				params(9, 1000, 4, AcknowledgeMode.AUTO), //
-				params(10, 1000, 4, AcknowledgeMode.NONE), //
-				params(11, 1000, 4, AcknowledgeMode.AUTO, 10) //
+				params(9, 300, 4, AcknowledgeMode.AUTO), //
+				params(10, 300, 4, AcknowledgeMode.NONE), //
+				params(11, 300, 4, AcknowledgeMode.AUTO, 10) //
 				);
 	}
 

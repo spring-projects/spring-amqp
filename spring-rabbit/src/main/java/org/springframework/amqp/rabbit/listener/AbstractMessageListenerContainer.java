@@ -475,13 +475,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			rollbackIfNecessary(channel);
 			throw new MessageRejectedWhileStoppingException();
 		}
-		try {
-			invokeListener(channel, message);
-		} catch (Throwable ex) {
-			rollbackOnExceptionIfNecessary(channel, message, ex);
-			throw ex;
-		}
-		commitIfNecessary(channel, message);
+		invokeListener(channel, message);
 	}
 
 	/**
@@ -570,8 +564,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
 		if (isChannelLocallyTransacted(channel)) {
 			if (ackRequired) {
-				channel.basicAck(deliveryTag, false);
+				channel.basicAck(deliveryTag, true);
 			}
+			// For manual acks we still need to commit
 			RabbitUtils.commitIfNecessary(channel);
 		} else if (isChannelTransacted() && ackRequired) {
 			// Not locally transacted but it is transacted so it
@@ -579,7 +574,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 		} else if (ackRequired) {
 			if (ackRequired) {
-				channel.basicAck(deliveryTag, false);
+				channel.basicAck(deliveryTag, true);
 			}
 		}
 
