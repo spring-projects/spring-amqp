@@ -2,6 +2,8 @@ Bundle-SymbolicName: org.springframework.amqp.rabbit
 Bundle-Name: Spring RabbitMQ Support
 Bundle-Vendor: SpringSource
 Bundle-ManifestVersion: 2
+Import-Package: 
+ org.springframework.jmx.support;version="[3.0.5,4.0.0)" 
 Import-Template: 
  org.springframework.*;version="[3.0.5, 4.0.0)",
  org.springframework.amqp.*;version="[1.0.0, 1.1.0)",
