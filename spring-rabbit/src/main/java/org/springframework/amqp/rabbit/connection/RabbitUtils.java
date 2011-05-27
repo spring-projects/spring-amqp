@@ -37,6 +37,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.LongString;
 
 /**
  * @author Mark Fisher
@@ -151,7 +152,22 @@ public abstract class RabbitUtils {
 		Map<String, Object> headers = source.getHeaders();
 		if (!CollectionUtils.isEmpty(headers)) {
 			for (Map.Entry<String, Object> entry : headers.entrySet()) {
-				target.setHeader(entry.getKey(), entry.getValue());
+				Object value = entry.getValue();
+				if (value instanceof LongString) {
+					try {
+						LongString longString = (LongString) value;
+						if (longString.length() <= 1024) {
+							value = new String(longString.getBytes(), charset);
+						}
+						else {
+							value = longString.getStream();
+						}
+					}
+					catch (Exception e) {
+						throw convertRabbitAccessException(e);
+					}
+				}
+				target.setHeader(entry.getKey(), value);
 			}
 		}
 		target.setTimestamp(source.getTimestamp());
