@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,7 +15,12 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.ConnectException;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -211,7 +216,7 @@ public abstract class RabbitUtils {
 		}
 		MessageProperties source = message.getMessageProperties();
 		BasicProperties target = new BasicProperties();
-		target.setHeaders(source.getHeaders());
+		target.setHeaders(convertHeadersIfNecessary(source.getHeaders()));
 		target.setTimestamp(source.getTimestamp());
 		target.setMessageId(source.getMessageId());
 		target.setUserId(source.getUserId());
@@ -230,7 +235,8 @@ public abstract class RabbitUtils {
 		if (correlationId != null && correlationId.length > 0) {
 			try {
 				target.setCorrelationId(new String(correlationId, charset));
-			} catch (UnsupportedEncodingException ex) {
+			}
+			catch (UnsupportedEncodingException ex) {
 				throw new AmqpUnsupportedEncodingException(ex);
 			}
 		}
@@ -252,6 +258,38 @@ public abstract class RabbitUtils {
 		} catch (IOException e) {
 			throw RabbitUtils.convertRabbitAccessException(e);
 		}
+	}
+
+	private static Map<String, Object> convertHeadersIfNecessary(Map<String, Object> headers) {
+		if (CollectionUtils.isEmpty(headers)) {
+			return Collections.<String, Object>emptyMap();
+		}
+		Map<String, Object> writableHeaders = new HashMap<String, Object>();
+		for (Map.Entry<String, Object> entry : headers.entrySet()) {
+			writableHeaders.put(entry.getKey(), convertHeaderValueIfNecessary(entry.getValue()));
+		}
+		return writableHeaders;
+	}
+
+	private static Object convertHeaderValueIfNecessary(Object value) {
+		boolean valid = (value instanceof String)
+				|| (value instanceof byte[])
+				|| (value instanceof Boolean)
+				|| (value instanceof LongString)
+				|| (value instanceof Integer)
+				|| (value instanceof Long)
+				|| (value instanceof Float)
+				|| (value instanceof Double)
+				|| (value instanceof BigDecimal)
+				|| (value instanceof Short)
+				|| (value instanceof Byte)
+				|| (value instanceof Date)
+				|| (value instanceof List)
+				|| (value instanceof Map);
+		if (!valid && value != null) {
+			value = value.toString();
+		}
+		return value;
 	}
 
 }
