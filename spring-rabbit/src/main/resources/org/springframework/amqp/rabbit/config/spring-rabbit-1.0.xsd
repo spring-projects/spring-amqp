@@ -518,7 +518,7 @@
 		<xsd:attribute name="queues" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	The queues (bean references) for this listener as a comma-separated list. Either this or queue-names is requires.
+	The queues (bean references) for this listener as a comma-separated list. Either this or queue-names is required.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
