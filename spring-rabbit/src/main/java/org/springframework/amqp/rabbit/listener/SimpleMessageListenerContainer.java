@@ -51,6 +51,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
@@ -105,6 +106,22 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private ContainerDelegate proxy = delegate;
 
+
+	/**
+	 * Default constructor for convenient dependency injection via setters.
+	 */
+	public SimpleMessageListenerContainer() { }
+
+	/**
+	 * Create a listener container from the connection factory (mandatory).
+	 * 
+	 * @param connectionFactory the {@link ConnectionFactory}
+	 */
+	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
+		this.setConnectionFactory(connectionFactory);
+	}
+
+
 	/**
 	 * <p>
 	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
@@ -128,20 +145,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
 		this.recoveryInterval = recoveryInterval;
-	}
-
-	/**
-	 * Default constructor for convenient dependency injection via setters.
-	 */
-	public SimpleMessageListenerContainer() { }
-
-	/**
-	 * Create a listener container from the connection factory (mandatory).
-	 * 
-	 * @param connectionFactory the {@link ConnectionFactory}
-	 */
-	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
-		this.setConnectionFactory(connectionFactory);
 	}
 
 	/**
@@ -206,6 +209,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
 		this.transactionAttribute = transactionAttribute;
+	}
+
+	/**
+	 * Set the {@link MessagePropertiesConverter} for this listener container.
+	 */
+	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
+		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
+		this.messagePropertiesConverter = messagePropertiesConverter;
 	}
 
 	/**

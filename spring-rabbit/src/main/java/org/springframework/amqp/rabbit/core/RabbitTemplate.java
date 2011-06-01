@@ -49,6 +49,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
@@ -132,6 +133,14 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
+	}
+
+	/**
+	 * Set the {@link MessagePropertiesConverter} for this template.
+	 */
+	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
+		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
+		this.messagePropertiesConverter = messagePropertiesConverter;
 	}
 
 	/**
