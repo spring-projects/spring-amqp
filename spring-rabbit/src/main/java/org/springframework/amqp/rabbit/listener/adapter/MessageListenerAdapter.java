@@ -30,6 +30,8 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -153,6 +155,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	private volatile boolean immediatePublish;
 
 	private MessageConverter messageConverter;
+
+	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	private String encoding = DEFAULT_ENCODING;
 
@@ -569,7 +573,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 			logger.debug("Publishing response to exchanage = [" + replyTo.getExchangeName() + "], routingKey = ["
 					+ replyTo.getRoutingKey() + "]");
 			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
-					this.immediatePublish, RabbitUtils.extractBasicProperties(message, encoding), message.getBody());
+					this.immediatePublish, this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding), message.getBody());
 		} catch (Exception ex) {
 			throw RabbitUtils.convertRabbitAccessException(ex);
 		}

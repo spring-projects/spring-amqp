@@ -30,6 +30,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
@@ -68,6 +70,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
 	private volatile MessageConverter messageConverter = new SimpleMessageConverter();
+
+	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	private String encoding = DEFAULT_ENCODING;
 
@@ -202,8 +206,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						// could be synchronized with an external transaction
 						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 					}
-					MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(),
-							response.getEnvelope(), encoding);
+					MessageProperties messageProps = messagePropertiesConverter.toMessageProperties(
+							response.getProps(), response.getEnvelope(), encoding);
 					messageProps.setMessageCount(response.getMessageCount());
 					return new Message(response.getBody(), messageProps);
 				}
@@ -276,8 +280,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 					@Override
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
 							byte[] body) throws IOException {
-						MessageProperties messageProperties = RabbitUtils.createMessageProperties(properties, envelope,
-								encoding);
+						MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
+								properties, envelope, encoding);
 						Message reply = new Message(body, messageProperties);
 						try {
 							replyHandoff.put(reply);
@@ -341,7 +345,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			routingKey = this.routingKey;
 		}
 		
-		channel.basicPublish(exchange, routingKey, false, false, RabbitUtils.extractBasicProperties(message, encoding),
+		channel.basicPublish(exchange, routingKey, false, false,
+				this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding),
 				message.getBody());
 		// Check commit - avoid commit call within a JTA transaction.
 		if (isChannelLocallyTransacted(channel)) {

@@ -29,6 +29,8 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -88,6 +90,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile Advice[] adviceChain = new Advice[0];
 
 	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
+
+	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	public static interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -352,8 +356,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		// There's no point prefetching less than the tx size, otherwise the consumer will stall because the broker
 		// didn't get an ack for delivered messages
 		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
-		consumer = new BlockingQueueConsumer(getConnectionFactory(), cancellationLock, getAcknowledgeMode(),
-				isChannelTransacted(), actualPrefetchCount, queues);
+		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
+				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, queues);
 		return consumer;
 	}
 

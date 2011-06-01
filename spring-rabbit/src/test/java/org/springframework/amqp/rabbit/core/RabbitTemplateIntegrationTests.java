@@ -27,12 +27,14 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -142,13 +144,14 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testSendAndReceiveInCallback() throws Exception {
 		template.convertAndSend(ROUTE, "message");
+		final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 		String result = template.execute(new ChannelCallback<String>() {
 			public String doInRabbit(Channel channel) throws Exception {
 				// We need noAck=false here for the message to be expicitly
 				// acked
 				GetResponse response = channel.basicGet(ROUTE, false);
-				MessageProperties messageProps = RabbitUtils.createMessageProperties(response.getProps(),
-						response.getEnvelope(), "UTF-8");
+				MessageProperties messageProps = messagePropertiesConverter.toMessageProperties(
+						response.getProps(), response.getEnvelope(), "UTF-8");
 				// Explicit ack
 				channel.basicAck(response.getEnvelope().getDeliveryTag(), false);
 				return (String) new SimpleMessageConverter().fromMessage(new Message(response.getBody(), messageProps));

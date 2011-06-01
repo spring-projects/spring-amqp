@@ -1,3 +1,19 @@
+/*
+ * Copyright 2002-2011 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
@@ -17,6 +33,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -59,6 +76,8 @@ public class BlockingQueueConsumer {
 
 	private final ConnectionFactory connectionFactory;
 
+	private final MessagePropertiesConverter messagePropertiesConverter;
+
 	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
 	private List<Long> deliveryTags = new ArrayList<Long>();
@@ -67,10 +86,11 @@ public class BlockingQueueConsumer {
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
 	 */
-	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory, MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, String... queues) {
 		this.connectionFactory = connectionFactory;
+		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
@@ -111,8 +131,8 @@ public class BlockingQueueConsumer {
 		byte[] body = delivery.getBody();
 		Envelope envelope = delivery.getEnvelope();
 
-		MessageProperties messageProperties = RabbitUtils.createMessageProperties(delivery.getProperties(), envelope,
-				"UTF-8");
+		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
+				delivery.getProperties(), envelope, "UTF-8");
 		messageProperties.setMessageCount(0);
 		Message message = new Message(body, messageProperties);
 		if (logger.isDebugEnabled()) {
