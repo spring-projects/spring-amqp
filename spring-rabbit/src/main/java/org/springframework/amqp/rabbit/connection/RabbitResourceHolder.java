@@ -166,12 +166,12 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				for (Long deliveryTag : deliveryTags.get(channel)) {
 					try {
 						channel.basicReject(deliveryTag, true);
-						// Need to commit the reject (=nack)
-						RabbitUtils.commitIfNecessary(channel);
 					} catch (IOException ex) {
 						throw new AmqpIOException(ex);
 					}
 				}
+				// Need to commit the reject (=nack)
+				RabbitUtils.commitIfNecessary(channel);
 			}
 		}
 	}

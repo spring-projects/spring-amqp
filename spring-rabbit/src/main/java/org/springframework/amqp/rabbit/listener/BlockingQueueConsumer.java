@@ -1,6 +1,8 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -59,12 +61,15 @@ public class BlockingQueueConsumer {
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
+	private List<Long> deliveryTags = new ArrayList<Long>();
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
 	 */
-	public BlockingQueueConsumer(ConnectionFactory connectionFactory, ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter,
-			AcknowledgeMode acknowledgeMode, boolean transactional, int prefetchCount, String... queues) {
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int prefetchCount, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.activeObjectCounter = activeObjectCounter;
 		this.acknowledgeMode = acknowledgeMode;
@@ -113,6 +118,7 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Received message: " + message);
 		}
+		deliveryTags.add(messageProperties.getDeliveryTag());
 		return message;
 	}
 
@@ -260,6 +266,91 @@ public class BlockingQueueConsumer {
 	public String toString() {
 		return "Consumer: tag=[" + (consumer != null ? consumer.getConsumerTag() : null) + "], channel=" + channel
 				+ ", acknowledgeMode=" + acknowledgeMode + " local queue size=" + queue.size();
+	}
+
+	/**
+	 * Perform a rollback, handling rollback exceptions properly.
+	 * @param ex the thrown application exception or error
+	 * @throws Exception in case of a rollback error
+	 */
+	public void rollbackOnExceptionIfNecessary(Throwable ex) throws Exception {
+
+		boolean ackRequired = !acknowledgeMode.isAutoAck() && !acknowledgeMode.isManual();
+		try {
+			if (transactional) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Initiating transaction rollback on application exception: " + ex);
+				}
+				RabbitUtils.rollbackIfNecessary(channel);
+			}
+			if (ackRequired) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Rejecting messages");
+				}
+				for (Long deliveryTag : deliveryTags) {
+					// With newer RabbitMQ brokers could use basicNack here...
+					channel.basicReject(deliveryTag, true);
+				}
+				if (transactional) {
+					// Need to commit the reject (=nack)
+					RabbitUtils.commitIfNecessary(channel);
+				}
+			}
+		} catch (Exception e) {
+			logger.error("Application exception overridden by rollback exception", ex);
+			throw e;
+		} finally {
+			deliveryTags.clear();
+		}
+	}
+
+	/**
+	 * Perform a commit or message acknowledgement, as appropriate.
+	 * @param locallyTransacted
+	 * @throws IOException
+	 */
+	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
+
+		if (deliveryTags.isEmpty()) {
+			return false;
+		}
+
+		try {
+
+			boolean ackRequired = !acknowledgeMode.isAutoAck() && !acknowledgeMode.isManual();
+			
+			if (ackRequired) {
+
+				if (transactional && !locallyTransacted) {
+
+					// Not locally transacted but it is transacted so it
+					// could be synchronized with an external transaction
+					for (Long deliveryTag : deliveryTags) {
+						ConnectionFactoryUtils.registerDeliveryTag(connectionFactory, channel, deliveryTag);
+					}					
+
+				
+				} else {
+
+					if (!deliveryTags.isEmpty()) {
+						long deliveryTag = deliveryTags.get(deliveryTags.size()-1);
+						channel.basicAck(deliveryTag, true);
+					}
+
+				}
+			}
+
+			if (locallyTransacted) {
+				// For manual acks we still need to commit
+				RabbitUtils.commitIfNecessary(channel);
+			}
+
+		} finally {
+			deliveryTags.clear();
+		}
+
+		return true;
+
 	}
 
 }

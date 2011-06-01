@@ -203,7 +203,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 		try {
 
-			int timeout = Math.min(1 + messageCount / concurrentConsumers, 30);
+			int timeout = Math.min(1 + 2 * messageCount / concurrentConsumers, 30);
 
 			final int count = messageCount;
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");

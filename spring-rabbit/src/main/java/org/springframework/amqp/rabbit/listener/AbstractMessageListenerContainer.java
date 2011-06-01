@@ -13,9 +13,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import java.io.IOException;
-
-import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -24,7 +21,6 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
@@ -443,39 +439,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @see #invokeListener
-	 * @see #commitIfNecessary
-	 * @see #rollbackOnExceptionIfNecessary
 	 * @see #handleListenerException
 	 */
 	protected void executeListener(Channel channel, Message message) throws Throwable {
-		try {
-			doExecuteListener(channel, message);
-		} catch (Throwable ex) {
-			handleListenerException(ex);
-			throw ex;
-		}
-	}
-
-	/**
-	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
-	 * @param channel the Rabbit Channel to operate on
-	 * @param message the received Rabbit Message
-	 * @throws Throwable
-	 * @throws Exception if thrown by Rabbit API methods
-	 * @see #invokeListener
-	 * @see #commitIfNecessary
-	 * @see #rollbackOnExceptionIfNecessary
-	 * @see #convertRabbitAccessException
-	 */
-	protected void doExecuteListener(Channel channel, Message message) throws Throwable {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Rejecting received message because the listener container has been stopped: " + message);
 			}
-			rollbackIfNecessary(channel);
 			throw new MessageRejectedWhileStoppingException();
 		}
-		invokeListener(channel, message);
+		try {
+			invokeListener(channel, message);
+		} catch (Throwable ex) {
+			handleListenerException(ex);
+			throw ex;
+		}
 	}
 
 	/**
@@ -553,92 +531,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Perform a commit or message acknowledgement, as appropriate.
-	 * @param channel the Rabbit channel to commit
-	 * @param message the Message to acknowledge
-	 * @throws IOException
-	 */
-	protected void commitIfNecessary(Channel channel, Message message) throws IOException {
-
-		long deliveryTag = message.getMessageProperties().getDeliveryTag();
-		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
-		if (isChannelLocallyTransacted(channel)) {
-			if (ackRequired) {
-				channel.basicAck(deliveryTag, true);
-			}
-			// For manual acks we still need to commit
-			RabbitUtils.commitIfNecessary(channel);
-		} else if (isChannelTransacted() && ackRequired) {
-			// Not locally transacted but it is transacted so it
-			// could be synchronized with an external transaction
-			ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
-		} else if (ackRequired) {
-			if (ackRequired) {
-				channel.basicAck(deliveryTag, true);
-			}
-		}
-
-	}
-
-	/**
-	 * Perform a rollback, if appropriate.
-	 * @param channel the Rabbit Channel to roll back
-	 */
-	protected void rollbackIfNecessary(Channel channel) {
-		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
-		if (ackRequired) {
-			/*
-			 * Re-queue messages and don't get them re-delivered to the same consumer, otherwise the broker just spins
-			 * trying to get us to accept the same message over and over
-			 */
-			try {
-				channel.basicRecover(true);
-			} catch (IOException e) {
-				throw new AmqpIOException(e);
-			}
-		}
-		if (this.isChannelLocallyTransacted(channel)) {
-			// Transacted channel enabled by this container -> rollback.
-			RabbitUtils.rollbackIfNecessary(channel);
-		}
-	}
-
-	/**
-	 * Perform a rollback, handling rollback exceptions properly.
-	 * @param channel the Rabbit Channel to roll back
-	 * @param ex the thrown application exception or error
-	 * @throws Exception in case of a rollback error
-	 */
-	protected void rollbackOnExceptionIfNecessary(Channel channel, Message message, Throwable ex) throws Exception {
-
-		boolean ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
-		try {
-			if (this.isChannelTransacted()) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Initiating transaction rollback on application exception: " + ex);
-				}
-				RabbitUtils.rollbackIfNecessary(channel);
-			}
-			if (message != null) {
-				if (ackRequired) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Rejecting message");
-					}
-					// channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);
-					channel.basicNack(message.getMessageProperties().getDeliveryTag(), true, true);
-				}
-				if (this.isChannelTransacted()) {
-					// Need to commit the reject (=nack)
-					RabbitUtils.commitIfNecessary(channel);
-				}
-			}
-		} catch (Exception e) {
-			logger.error("Application exception overridden by rollback exception", ex);
-			throw e;
-		}
-	}
-
-	/**
 	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
 	 * listener container's Channel handling and not by an external transaction coordinator.
 	 * <p>
@@ -660,10 +552,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param ex the exception to handle
 	 */
 	protected void handleListenerException(Throwable ex) {
-		if (ex instanceof MessageRejectedWhileStoppingException) {
-			// Internal exception - has been handled before.
-			return;
-		}
 		if (isActive()) {
 			// Regular case: failed while active.
 			// Invoke ErrorHandler if available.
@@ -673,15 +561,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			// Log at debug level, to avoid spamming the shutdown log.
 			logger.debug("Listener exception after container shutdown", ex);
 		}
-	}
-
-	/**
-	 * Internal exception class that indicates a rejected message on shutdown. Used to trigger a rollback for an
-	 * external transaction manager in that case.
-	 */
-	@SuppressWarnings("serial")
-	private static class MessageRejectedWhileStoppingException extends RuntimeException {
-
 	}
 
 	/**

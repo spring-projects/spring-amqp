@@ -18,7 +18,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.retry.RetryOperations;
 
 /**
- * Convenient base class for intercptor factories.
+ * Convenient base class for interceptor factories.
  * 
  * @author Dave Syer
  * 

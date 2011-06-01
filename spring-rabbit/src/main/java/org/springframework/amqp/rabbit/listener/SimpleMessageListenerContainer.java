@@ -126,9 +126,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.recoveryInterval = recoveryInterval;
 	}
 
-	public SimpleMessageListenerContainer() {
-	}
+	/**
+	 * Default constructor for convenient dependency injection via setters.
+	 */
+	public SimpleMessageListenerContainer() { }
 
+	/**
+	 * Create a listener container from the connection factory (mandatory).
+	 * 
+	 * @param connectionFactory the {@link ConnectionFactory}
+	 */
 	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
 		this.setConnectionFactory(connectionFactory);
 	}
@@ -405,7 +412,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		Channel channel = consumer.getChannel();
 
-		Message lastMessage = null;
 		for (int i = 0; i < txSize; i++) {
 
 			logger.trace("Waiting for message from consumer.");
@@ -413,23 +419,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (message == null) {
 				break;
 			}
-			lastMessage = message;
 			try {
 				executeListener(channel, message);
 			} catch (ImmediateAcknowledgeAmqpException e) {
 				break;
 			} catch (Throwable ex) {
-				rollbackOnExceptionIfNecessary(channel, message, ex);
+				consumer.rollbackOnExceptionIfNecessary(ex);
 				throw ex;
 			}
 
 		}
-		if (lastMessage != null) {
-			commitIfNecessary(channel, lastMessage);
-			return true;
-		}
-
-		return false;
+		
+		return consumer.commitIfNecessary(isChannelLocallyTransacted(channel));
 
 	}
 
