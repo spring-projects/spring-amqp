@@ -96,6 +96,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		boolean waited = latch.await(timeout, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 
+		// Give message time to reach broker (intermittent test failures)!
+		Thread.sleep(500L);
 		// All messages committed
 		byte[] bytes = (byte[]) template.receiveAndConvert(sendQueue.getName());
 		assertNotNull(bytes);
