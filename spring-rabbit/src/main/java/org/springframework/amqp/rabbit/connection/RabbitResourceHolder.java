@@ -177,18 +177,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * Call this method once the channel {@link Channel#txSelect()} has been called.
-	 */
-	public void declareTransactional() {
-		if (!isSynchronizedWithTransaction() && !transactional) {
-			for (Channel channel : this.channels) {
-				RabbitUtils.declareTransactional(channel);
-			}
-			this.transactional = !channels.isEmpty();
-		}
-	}
-
-	/**
 	 * @return true if the channels in this holder are transactional
 	 */
 	public boolean isChannelTransactional() {

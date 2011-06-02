@@ -20,10 +20,10 @@ import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -46,9 +46,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public class CachingConnectionFactory extends SingleConnectionFactory implements DisposableBean {
-
-	private final Log logger = LogFactory.getLog(getClass());
+public class CachingConnectionFactory extends AbstractConnectionFactory implements DisposableBean {
 
 	private int channelCacheSize = 1;
 
@@ -58,7 +56,10 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 	private volatile boolean active = true;
 
-	private ChannelCachingConnectionProxy targetConnection;
+	private ChannelCachingConnectionProxy connection;
+
+	/** Synchronization monitor for the shared Connection */
+	private final Object connectionMonitor = new Object();
 
 	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
@@ -67,16 +68,21 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws an exception.
 	 */
 	public CachingConnectionFactory() {
-		super();
+		this((String) null);
 	}
 
 	/**
 	 * Create a new CachingConnectionFactory given a host name.
 	 * 
-	 * @param hostName the host name to connect to
+	 * @param hostname the host name to connect to
 	 */
-	public CachingConnectionFactory(String hostName, int port) {
-		super(hostName, port);
+	public CachingConnectionFactory(String hostname, int port) {
+		super(new com.rabbitmq.client.ConnectionFactory());
+		if (!StringUtils.hasText(hostname)) {
+			hostname = getDefaultHostName();
+		}
+		setHost(hostname);
+		setPort(port);
 	}
 
 	/**
@@ -85,16 +91,16 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	 * @param hostName the host name to connect to
 	 */
 	public CachingConnectionFactory(int port) {
-		super(port);
+		this(null, port);
 	}
 
 	/**
 	 * Create a new CachingConnectionFactory given a host name.
 	 * 
-	 * @param hostName the host name to connect to
+	 * @param hostname the host name to connect to
 	 */
-	public CachingConnectionFactory(String hostName) {
-		super(hostName);
+	public CachingConnectionFactory(String hostname) {
+		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
 	}
 
 	/**
@@ -154,17 +160,39 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	}
 
 	private Channel createBareChannel(boolean transactional) {
-		if (!this.targetConnection.isOpen()) {
+		if (this.connection==null || !this.connection.isOpen()) {
+			this.connection = null;
 			// Use createConnection here not doCreateConnection so that the old one is properly disposed
 			createConnection();
 		}
-		return this.targetConnection.createBareChannel(transactional);
+		return this.connection.createBareChannel(transactional);
 	}
 
-	@Override
-	protected Connection doCreateConnection() {
-		targetConnection = new ChannelCachingConnectionProxy(super.doCreateConnection());
-		return targetConnection;
+	public final Connection createConnection() throws AmqpException {
+		synchronized (this.connectionMonitor) {
+			if (this.connection == null) {
+				this.connection = new ChannelCachingConnectionProxy(super.createBareConnection());
+				// invoke the listener *after* this.connection is assigned
+				getConnectionListener().onCreate(connection);
+			}
+		}
+		return this.connection;
+	}
+
+	/**
+	 * Close the underlying shared connection. The provider of this ConnectionFactory needs to care for proper shutdown.
+	 * <p>
+	 * As this bean implements DisposableBean, a bean factory will automatically invoke this on destruction of its
+	 * cached singletons.
+	 */
+	public final void destroy() {
+		synchronized (this.connectionMonitor) {
+			if (connection != null) {
+				this.connection.destroy();
+				this.connection = null;
+			}
+		}
+		reset();
 	}
 
 	/**
@@ -193,8 +221,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 			this.cachedChannelsTransactional.clear();
 		}
 		this.active = true;
-		super.reset();
-		this.targetConnection = null;
+		this.connection = null;
 	}
 
 	@Override
@@ -333,8 +360,15 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		}
 
 		public void close() {
-			target.close();
+		}
+
+		public void destroy() {
+			if (this.target != null) {
+				getConnectionListener().onClose(target);
+				RabbitUtils.closeConnection(this.target);
+			}
 			reset();
+			this.target = null;
 		}
 
 		public boolean isOpen() {

@@ -18,6 +18,7 @@ import org.springframework.amqp.rabbit.listener.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
 import com.rabbitmq.client.Channel;
@@ -26,7 +27,7 @@ public class RabbitBindingIntegrationTests {
 
 	private static Queue queue = new Queue("test.queue");
 
-	private ConnectionFactory connectionFactory = new CachingConnectionFactory();
+	private ConnectionFactory connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
 
 	private RabbitTemplate template = new RabbitTemplate(connectionFactory );
 
@@ -145,7 +146,7 @@ public class RabbitBindingIntegrationTests {
 		result = getResult(consumer);
 		assertEquals("message", result);
 
-		consumer.getChannel().basicCancel(consumer.getConsumerTag());
+		consumer.stop();
 
 	}
 
@@ -171,7 +172,7 @@ public class RabbitBindingIntegrationTests {
 					String result = getResult(consumer);
 					assertEquals(null, result);
 				} finally {
-					channel.basicCancel(tag);
+					consumer.stop();
 				}
 
 				return null;
@@ -191,7 +192,7 @@ public class RabbitBindingIntegrationTests {
 					String result = getResult(consumer);
 					assertEquals("message", result);
 				} finally {
-					channel.basicCancel(tag);
+					consumer.stop();
 				}
 
 				return null;
@@ -223,7 +224,7 @@ public class RabbitBindingIntegrationTests {
 					String result = getResult(consumer);
 					assertEquals("message", result);
 				} finally {
-					channel.basicCancel(tag);
+					consumer.stop();
 				}
 
 				return null;

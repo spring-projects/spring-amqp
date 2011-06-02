@@ -18,7 +18,8 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +81,7 @@ public class BlockingQueueConsumer {
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
-	private List<Long> deliveryTags = new ArrayList<Long>();
+	private Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
@@ -175,6 +176,7 @@ public class BlockingQueueConsumer {
 				.getChannel();
 		this.consumer = new InternalConsumer(channel);
 		this.activeObjectCounter.add(this);
+		this.deliveryTags.clear();
 		try {
 			// Set basicQos before calling basicConsume (it is ignored if we are not transactional and the broker will
 			// send blocks of 100 messages)
@@ -207,6 +209,7 @@ public class BlockingQueueConsumer {
 		logger.debug("Closing Rabbit Channel: " + channel);
 		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
+		deliveryTags.clear();
 	}
 
 	private class InternalConsumer extends DefaultConsumer {
@@ -353,7 +356,7 @@ public class BlockingQueueConsumer {
 				} else {
 
 					if (!deliveryTags.isEmpty()) {
-						long deliveryTag = deliveryTags.get(deliveryTags.size()-1);
+						long deliveryTag = new ArrayList<Long>(deliveryTags).get(deliveryTags.size()-1);
 						channel.basicAck(deliveryTag, true);
 					}
 

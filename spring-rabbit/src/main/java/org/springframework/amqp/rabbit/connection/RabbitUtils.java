@@ -15,13 +15,7 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
 import java.net.ConnectException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,19 +24,11 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
-import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageDeliveryMode;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
-import com.rabbitmq.client.impl.LongString;
 
 /**
  * @author Mark Fisher

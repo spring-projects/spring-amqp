@@ -14,7 +14,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
@@ -151,8 +150,8 @@ public class CachingConnectionFactoryIntegrationTests {
 					return null;
 				}
 			});
-			fail("Expected AmqpConnectException");
-		} catch (AmqpConnectException e) {
+			fail("Expected AmqpIOException");
+		} catch (AmqpIOException e) {
 			// expected
 		}
 		template.convertAndSend(route, "message");

@@ -13,16 +13,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
@@ -35,19 +28,13 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Dave Syer
  */
-public class SingleConnectionFactory implements ConnectionFactory, DisposableBean {
-
-	private final Log logger = LogFactory.getLog(getClass());
-
-	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
+public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 	/** Proxy Connection */
 	private SharedConnectionProxy connection;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
-
-	private final CompositeConnectionListener connectionListener = new CompositeConnectionListener();
 
 	/**
 	 * Create a new SingleConnectionFactory initializing the hostname to be the value returned from
@@ -79,12 +66,12 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @param port the port number to connect to
 	 */
 	public SingleConnectionFactory(String hostname, int port) {
+		super(new com.rabbitmq.client.ConnectionFactory());
 		if (!StringUtils.hasText(hostname)) {
 			hostname = getDefaultHostName();
 		}
-		this.rabbitConnectionFactory = new com.rabbitmq.client.ConnectionFactory();
-		this.rabbitConnectionFactory.setHost(hostname);
-		this.rabbitConnectionFactory.setPort(port);
+		setHost(hostname);
+		setPort(port);
 	}
 
 	/**
@@ -92,52 +79,19 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
 	public SingleConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
-		Assert.notNull(rabbitConnectionFactory, "Target ConnectionFactory must not be null");
-		this.rabbitConnectionFactory = rabbitConnectionFactory;
-	}
-
-	public void setUsername(String username) {
-		this.rabbitConnectionFactory.setUsername(username);
-	}
-
-	public void setPassword(String password) {
-		this.rabbitConnectionFactory.setPassword(password);
-	}
-
-	public void setHost(String host) {
-		this.rabbitConnectionFactory.setHost(host);
-	}
-
-	public String getHost() {
-		return this.rabbitConnectionFactory.getHost();
-	}
-
-	public void setVirtualHost(String virtualHost) {
-		this.rabbitConnectionFactory.setVirtualHost(virtualHost);
-	}
-
-	public String getVirtualHost() {
-		return rabbitConnectionFactory.getVirtualHost();
-	}
-
-	public void setPort(int port) {
-		this.rabbitConnectionFactory.setPort(port);
-	}
-
-	public int getPort() {
-		return this.rabbitConnectionFactory.getPort();
+		super(rabbitConnectionFactory);
 	}
 
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
-		this.connectionListener.setDelegates(listeners);
+		super.setConnectionListeners(listeners);
 		// If the connection is already alive we assume that the new listeners want to be notified
 		if (this.connection != null) {
-			this.connectionListener.onCreate(this.connection);
+			this.getConnectionListener().onCreate(this.connection);
 		}
 	}
 
 	public void addConnectionListener(ConnectionListener listener) {
-		this.connectionListener.addDelegate(listener);
+		super.addConnectionListener(listener);
 		// If the connection is already alive we assume that the new listener wants to be notified
 		if (this.connection != null) {
 			listener.onCreate(this.connection);
@@ -150,7 +104,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				Connection target = doCreateConnection();
 				this.connection = new SharedConnectionProxy(target);
 				// invoke the listener *after* this.connection is assigned
-				connectionListener.onCreate(target);
+				getConnectionListener().onCreate(target);
 			}
 		}
 		return this.connection;
@@ -169,13 +123,6 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				this.connection = null;
 			}
 		}
-		reset();
-	}
-
-	/**
-	 * Default implementation does nothing. Called on {@link #destroy()}.
-	 */
-	protected void reset() {
 	}
 
 	/**
@@ -189,31 +136,9 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		return connection;
 	}
 
-	private Connection createBareConnection() {
-		try {
-			return new SimpleConnection(this.rabbitConnectionFactory.newConnection());
-		} catch (IOException e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
-		}
-	}
-
-	private String getDefaultHostName() {
-		String temp;
-		try {
-			InetAddress localMachine = InetAddress.getLocalHost();
-			temp = localMachine.getHostName();
-			logger.debug("Using hostname [" + temp + "] for hostname.");
-		} catch (UnknownHostException e) {
-			logger.warn("Could not get host name, using 'localhost' as default value", e);
-			temp = "localhost";
-		}
-		return temp;
-	}
-
 	@Override
 	public String toString() {
-		return "SingleConnectionFactory [host=" + rabbitConnectionFactory.getHost() + ", port="
-				+ rabbitConnectionFactory.getPort() + "]";
+		return "SingleConnectionFactory [host=" + getHost() + ", port=" + getPort() + "]";
 	}
 
 	/**
@@ -235,7 +160,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 					if (!isOpen()) {
 						logger.debug("Detected closed connection. Opening a new one before creating Channel.");
 						target = createBareConnection();
-						connectionListener.onCreate(target);
+						getConnectionListener().onCreate(target);
 					}
 				}
 			}
@@ -248,7 +173,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 		public void destroy() {
 			if (this.target != null) {
-				connectionListener.onClose(target);
+				getConnectionListener().onClose(target);
 				RabbitUtils.closeConnection(this.target);
 			}
 			this.target = null;

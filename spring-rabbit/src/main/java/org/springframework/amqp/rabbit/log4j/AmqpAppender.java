@@ -40,6 +40,7 @@ import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -165,7 +166,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * RabbitMQ ConnectionFactory.
 	 */
-	private CachingConnectionFactory connectionFactory;
+	private AbstractConnectionFactory connectionFactory;
 	/**
 	 * RabbitMQ host to connect to.
 	 */

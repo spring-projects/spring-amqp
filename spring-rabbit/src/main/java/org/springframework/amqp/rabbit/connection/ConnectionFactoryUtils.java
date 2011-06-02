@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
+
 /**
  * Helper class for managing a Spring based Rabbit {@link org.springframework.amqp.rabbit.connection.ConnectionFactory},
  * in particular for obtaining transactional Rabbit resources for a given ConnectionFactory.
@@ -81,29 +82,26 @@ public class ConnectionFactoryUtils {
 			final boolean synchedLocalTransactionAllowed) {
 
 		RabbitResourceHolder holder = doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
-					public Channel getChannel(RabbitResourceHolder holder) {
-						return holder.getChannel();
-					}
+			public Channel getChannel(RabbitResourceHolder holder) {
+				return holder.getChannel();
+			}
 
-					public Connection getConnection(RabbitResourceHolder holder) {
-						return holder.getConnection();
-					}
+			public Connection getConnection(RabbitResourceHolder holder) {
+				return holder.getConnection();
+			}
 
-					public Connection createConnection() throws IOException {
-						return connectionFactory.createConnection();
-					}
+			public Connection createConnection() throws IOException {
+				return connectionFactory.createConnection();
+			}
 
-					public Channel createChannel(Connection con) throws IOException {
-						return con.createChannel(synchedLocalTransactionAllowed);
-					}
+			public Channel createChannel(Connection con) throws IOException {
+				return con.createChannel(synchedLocalTransactionAllowed);
+			}
 
-					public boolean isSynchedLocalTransactionAllowed() {
-						return synchedLocalTransactionAllowed;
-					}
-				});
-		if (synchedLocalTransactionAllowed) {
-			// holder.declareTransactional();
-		}
+			public boolean isSynchedLocalTransactionAllowed() {
+				return synchedLocalTransactionAllowed;
+			}
+		});
 		return holder;
 	}
 
