@@ -326,10 +326,10 @@ public class CachingConnectionFactoryTests {
 
 		verify(mockConnection, times(2)).createChannel();
 
-		verify(mockConnection, times(1)).close();
+		verify(mockConnection).close();
 
 		// verify(mockChannel1).close();
-		verify(mockChannel2, times(1)).close();
+		verify(mockChannel2).close();
 
 		// After destroy we can get a new connection
 		Connection con1 = ccf.createConnection();
@@ -342,7 +342,7 @@ public class CachingConnectionFactoryTests {
 	}
 
 	@Test
-	public void testWithListener() throws IOException {
+	public void testWithConnectionListener() throws IOException {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
@@ -374,8 +374,45 @@ public class CachingConnectionFactoryTests {
 		assertEquals(0, called.get());
 		verify(mockConnection, atLeastOnce()).close();
 
-		verify(mockConnectionFactory, times(1)).newConnection();
+		verify(mockConnectionFactory).newConnection();
 
 	}
 	
+	@Test
+	public void testWithChannelListener() throws IOException {
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+
+		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		final AtomicInteger called = new AtomicInteger(0);
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		connectionFactory.setChannelListeners(Arrays.asList(new ChannelListener() {
+			public void onCreate(Channel channel, boolean transactional) {
+				called.incrementAndGet();
+			}
+		}));
+		connectionFactory.setChannelCacheSize(1);
+
+		Connection con = connectionFactory.createConnection();
+		Channel channel = con.createChannel(false);
+		assertEquals(1, called.get());
+		channel.close();
+		
+		con.close();
+		verify(mockConnection, never()).close();
+		
+		connectionFactory.createConnection();
+		con.createChannel(false);
+		assertEquals(1, called.get());
+
+		connectionFactory.destroy();
+		verify(mockConnection, atLeastOnce()).close();
+
+		verify(mockConnectionFactory).newConnection();
+
+	}
+
 }

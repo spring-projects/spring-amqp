@@ -269,7 +269,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return this.getRequiredMessageConverter().fromMessage(replyMessage);
 	}
 
-	private Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
+	/**
+	 * Send a message and wait for a reply.
+	 * 
+	 * @param exchange the exchange name
+	 * @param routingKey the routing key
+	 * @param message the message to send
+	 * @return the message that is received in reply
+	 */
+	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
@@ -339,7 +347,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * @param message the Message to send
 	 * @throws IOException if thrown by RabbitMQ API methods
 	 */
-	private void doSend(Channel channel, String exchange, String routingKey, Message message) throws Exception {
+	protected void doSend(Channel channel, String exchange, String routingKey, Message message) throws Exception {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 		}

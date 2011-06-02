@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -58,6 +59,8 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 	private volatile boolean active = true;
 
 	private ChannelCachingConnectionProxy targetConnection;
+
+	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -103,6 +106,14 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		super(rabbitConnectionFactory);
 	}
 
+	public void setChannelListeners(List<? extends ChannelListener> listeners) {
+		this.channelListener.setDelegates(listeners);
+	}
+
+	public void addChannelListener(ChannelListener listener) {
+		this.channelListener.addDelegate(listener);
+	}
+
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
@@ -136,6 +147,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		if (logger.isDebugEnabled()) {
 			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
+		channelListener.onCreate(targetChannel, transactional);
 		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
 				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(targetChannel, channelList,
 						transactional));
@@ -169,6 +181,16 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 				}
 			}
 			this.cachedChannelsNonTransactional.clear();
+		}
+		synchronized (this.cachedChannelsTransactional) {
+			for (ChannelProxy channel : cachedChannelsTransactional) {
+				try {
+					channel.getTargetChannel().close();
+				} catch (Throwable ex) {
+					logger.trace("Could not close cached Rabbit Channel", ex);
+				}
+			}
+			this.cachedChannelsTransactional.clear();
 		}
 		this.active = true;
 		super.reset();
@@ -257,9 +279,9 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
-			if (!this.target.isOpen()) {
+			if (this.target!=null && !this.target.isOpen()) {
 				synchronized (targetMonitor) {
-					if (!this.target.isOpen()) {
+					if (this.target!=null && !this.target.isOpen()) {
 						this.target = null;
 						return;
 					}
@@ -312,6 +334,7 @@ public class CachingConnectionFactory extends SingleConnectionFactory implements
 
 		public void close() {
 			target.close();
+			reset();
 		}
 
 		public boolean isOpen() {

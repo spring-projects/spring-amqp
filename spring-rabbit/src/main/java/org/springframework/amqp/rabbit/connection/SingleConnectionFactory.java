@@ -47,7 +47,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
 
-	private final CompositeConnectionListener listener = new CompositeConnectionListener();
+	private final CompositeConnectionListener connectionListener = new CompositeConnectionListener();
 
 	/**
 	 * Create a new SingleConnectionFactory initializing the hostname to be the value returned from
@@ -129,15 +129,15 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 	}
 
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
-		this.listener.setDelegates(listeners);
+		this.connectionListener.setDelegates(listeners);
 		// If the connection is already alive we assume that the new listeners want to be notified
 		if (this.connection != null) {
-			this.listener.onCreate(this.connection);
+			this.connectionListener.onCreate(this.connection);
 		}
 	}
 
 	public void addConnectionListener(ConnectionListener listener) {
-		this.listener.addDelegate(listener);
+		this.connectionListener.addDelegate(listener);
 		// If the connection is already alive we assume that the new listener wants to be notified
 		if (this.connection != null) {
 			listener.onCreate(this.connection);
@@ -150,7 +150,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 				Connection target = doCreateConnection();
 				this.connection = new SharedConnectionProxy(target);
 				// invoke the listener *after* this.connection is assigned
-				listener.onCreate(target);
+				connectionListener.onCreate(target);
 			}
 		}
 		return this.connection;
@@ -230,12 +230,12 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 		}
 
 		public Channel createChannel(boolean transactional) {
-			if (target == null || !target.isOpen()) {
+			if (!isOpen()) {
 				synchronized (this) {
-					if (target == null || !target.isOpen()) {
+					if (!isOpen()) {
 						logger.debug("Detected closed connection. Opening a new one before creating Channel.");
 						target = createBareConnection();
-						listener.onCreate(target);
+						connectionListener.onCreate(target);
 					}
 				}
 			}
@@ -248,7 +248,7 @@ public class SingleConnectionFactory implements ConnectionFactory, DisposableBea
 
 		public void destroy() {
 			if (this.target != null) {
-				listener.onClose(target);
+				connectionListener.onClose(target);
 				RabbitUtils.closeConnection(this.target);
 			}
 			this.target = null;
