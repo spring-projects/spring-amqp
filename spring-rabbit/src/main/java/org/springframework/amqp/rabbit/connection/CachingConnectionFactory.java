@@ -21,7 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -46,7 +45,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  */
-public class CachingConnectionFactory extends AbstractConnectionFactory implements DisposableBean {
+public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 	private int channelCacheSize = 1;
 
@@ -60,8 +59,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
-
-	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -112,14 +109,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		super(rabbitConnectionFactory);
 	}
 
-	public void setChannelListeners(List<? extends ChannelListener> listeners) {
-		this.channelListener.setDelegates(listeners);
-	}
-
-	public void addChannelListener(ChannelListener listener) {
-		this.channelListener.addDelegate(listener);
-	}
-
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
@@ -127,6 +116,22 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	public int getChannelCacheSize() {
 		return this.channelCacheSize;
+	}
+
+	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
+		super.setConnectionListeners(listeners);
+		// If the connection is already alive we assume that the new listeners want to be notified
+		if (this.connection != null) {
+			this.getConnectionListener().onCreate(this.connection);
+		}
+	}
+
+	public void addConnectionListener(ConnectionListener listener) {
+		super.addConnectionListener(listener);
+		// If the connection is already alive we assume that the new listener wants to be notified
+		if (this.connection != null) {
+			listener.onCreate(this.connection);
+		}
 	}
 
 	private Channel getChannel(boolean transactional) {
@@ -153,14 +158,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		if (logger.isDebugEnabled()) {
 			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
-		channelListener.onCreate(targetChannel, transactional);
+		getChannelListener().onCreate(targetChannel, transactional);
 		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
 				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(targetChannel, channelList,
 						transactional));
 	}
 
 	private Channel createBareChannel(boolean transactional) {
-		if (this.connection==null || !this.connection.isOpen()) {
+		if (this.connection == null || !this.connection.isOpen()) {
 			this.connection = null;
 			// Use createConnection here not doCreateConnection so that the old one is properly disposed
 			createConnection();
@@ -280,9 +285,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return this.target;
 			}
 			try {
-				synchronized (targetMonitor) {
-					if (this.target == null) {
-						this.target = createBareChannel(transactional);
+				if (this.target == null || !this.target.isOpen()) {
+					this.target = null;
+					synchronized (targetMonitor) {
+						if (this.target == null) {
+							this.target = createBareChannel(transactional);
+						}
 					}
 				}
 				return method.invoke(this.target, args);
@@ -306,9 +314,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
-			if (this.target!=null && !this.target.isOpen()) {
+			if (this.target != null && !this.target.isOpen()) {
 				synchronized (targetMonitor) {
-					if (this.target!=null && !this.target.isOpen()) {
+					if (this.target != null && !this.target.isOpen()) {
 						this.target = null;
 						return;
 					}

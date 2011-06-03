@@ -31,7 +31,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
+
 	private final CompositeConnectionListener connectionListener = new CompositeConnectionListener();
+
+	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
@@ -79,8 +82,17 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * 
 	 * @return the connection listener
 	 */
-	protected CompositeConnectionListener getConnectionListener() {
+	protected ConnectionListener getConnectionListener() {
 		return connectionListener;
+	}
+	
+	/**
+	 * A composite channel listener to be used by subclasses when creating and closing channels.
+	 * 
+	 * @return the channel listener
+	 */
+	protected ChannelListener getChannelListener() {
+		return channelListener;
 	}
 
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
@@ -89,6 +101,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void addConnectionListener(ConnectionListener listener) {
 		this.connectionListener.addDelegate(listener);
+	}
+
+	public void setChannelListeners(List<? extends ChannelListener> listeners) {
+		this.channelListener.setDelegates(listeners);
+	}
+
+	public void addChannelListener(ChannelListener listener) {
+		this.channelListener.addDelegate(listener);
 	}
 
 	final protected Connection createBareConnection() {

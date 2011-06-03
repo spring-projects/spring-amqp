@@ -160,7 +160,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			container.stop();
-			Thread.sleep(500L);
+			Thread.sleep(1000L);
 			assertEquals(0, container.getActiveConsumerCount());
 			if (!transactional) {
 

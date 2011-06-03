@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2011 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.rabbit.listener;
@@ -87,7 +84,8 @@ public class BlockingQueueConsumer {
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
 	 */
-	public BlockingQueueConsumer(ConnectionFactory connectionFactory, MessagePropertiesConverter messagePropertiesConverter,
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, String... queues) {
 		this.connectionFactory = connectionFactory;
@@ -172,15 +170,20 @@ public class BlockingQueueConsumer {
 	}
 
 	public void start() throws AmqpException {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting consumer " + this);
+		}
 		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
 				.getChannel();
 		this.consumer = new InternalConsumer(channel);
-		this.activeObjectCounter.add(this);
 		this.deliveryTags.clear();
+		this.activeObjectCounter.add(this);
 		try {
-			// Set basicQos before calling basicConsume (it is ignored if we are not transactional and the broker will
-			// send blocks of 100 messages)
-			channel.basicQos(prefetchCount);
+			if (!acknowledgeMode.isAutoAck()) {
+				// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
+				// will send blocks of 100 messages)
+				channel.basicQos(prefetchCount);
+			}
 			for (int i = 0; i < queues.length; i++) {
 				channel.queueDeclarePassive(queues[i]);
 			}
@@ -193,7 +196,7 @@ public class BlockingQueueConsumer {
 			for (int i = 0; i < queues.length; i++) {
 				channel.basicConsume(queues[i], acknowledgeMode.isAutoAck(), consumer);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Started " + this);
+					logger.debug("Started on queue '" + queues[i] + "': " + this);
 				}
 			}
 		} catch (IOException e) {
@@ -341,7 +344,7 @@ public class BlockingQueueConsumer {
 		try {
 
 			boolean ackRequired = !acknowledgeMode.isAutoAck() && !acknowledgeMode.isManual();
-			
+
 			if (ackRequired) {
 
 				if (transactional && !locallyTransacted) {
@@ -350,13 +353,12 @@ public class BlockingQueueConsumer {
 					// could be synchronized with an external transaction
 					for (Long deliveryTag : deliveryTags) {
 						ConnectionFactoryUtils.registerDeliveryTag(connectionFactory, channel, deliveryTag);
-					}					
+					}
 
-				
 				} else {
 
 					if (!deliveryTags.isEmpty()) {
-						long deliveryTag = new ArrayList<Long>(deliveryTags).get(deliveryTags.size()-1);
+						long deliveryTag = new ArrayList<Long>(deliveryTags).get(deliveryTags.size() - 1);
 						channel.basicAck(deliveryTag, true);
 					}
 

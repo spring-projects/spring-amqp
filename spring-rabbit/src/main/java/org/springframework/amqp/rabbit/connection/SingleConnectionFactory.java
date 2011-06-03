@@ -165,6 +165,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 				}
 			}
 			Channel channel = target.createChannel(transactional);
+			getChannelListener().onCreate(channel, transactional);
 			return channel;
 		}
 

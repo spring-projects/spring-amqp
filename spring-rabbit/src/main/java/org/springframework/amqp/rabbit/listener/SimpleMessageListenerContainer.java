@@ -106,11 +106,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private ContainerDelegate proxy = delegate;
 
-
 	/**
 	 * Default constructor for convenient dependency injection via setters.
 	 */
-	public SimpleMessageListenerContainer() { }
+	public SimpleMessageListenerContainer() {
+	}
 
 	/**
 	 * Create a listener container from the connection factory (mandatory).
@@ -120,7 +120,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
 		this.setConnectionFactory(connectionFactory);
 	}
-
 
 	/**
 	 * <p>
@@ -378,7 +377,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					// Need to recycle the channel in this consumer
 					consumer.stop();
-					// Ensure consumer counts are correct (another is not going
+					// Ensure consumer counts are correct (another is going
 					// to start because of the exception, but
 					// we haven't counted down yet)
 					this.cancellationLock.release(consumer);
@@ -444,7 +443,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 
 		}
-		
+
 		return consumer.commitIfNecessary(isChannelLocallyTransacted(channel));
 
 	}

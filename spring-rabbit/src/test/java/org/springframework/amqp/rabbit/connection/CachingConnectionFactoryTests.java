@@ -19,15 +19,21 @@ import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
 
 /**
  * @author Mark Pollack
+ * @author Dave Syer
  */
-public class CachingConnectionFactoryTests {
+public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTests {
+
+	@Override
+	protected AbstractConnectionFactory createConnectionFactory(ConnectionFactory connectionFactory) {
+		return new CachingConnectionFactory(connectionFactory);
+	}
 
 	@Test
-
 	public void testWithConnectionFactoryDefaults() throws IOException {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
@@ -342,59 +348,25 @@ public class CachingConnectionFactoryTests {
 	}
 
 	@Test
-	public void testWithConnectionListener() throws IOException {
-
-		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
-		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
-
-		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
-
-		final AtomicInteger called = new AtomicInteger(0);
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
-		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
-			public void onCreate(Connection connection) {
-				called.incrementAndGet();
-			}
-			public void onClose(Connection connection) {
-				called.decrementAndGet();
-			}
-		}));
-
-		Connection con = connectionFactory.createConnection();
-		assertEquals(1, called.get());
-
-		con.close();
-		assertEquals(1, called.get());
-		verify(mockConnection, never()).close();
-		
-		connectionFactory.createConnection();
-		assertEquals(1, called.get());
-
-		connectionFactory.destroy();
-		assertEquals(0, called.get());
-		verify(mockConnection, atLeastOnce()).close();
-
-		verify(mockConnectionFactory).newConnection();
-
-	}
-	
-	@Test
 	public void testWithChannelListener() throws IOException {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
+		when(mockChannel.isOpen()).thenReturn(true);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
 		final AtomicInteger called = new AtomicInteger(0);
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		connectionFactory.setChannelListeners(Arrays.asList(new ChannelListener() {
 			public void onCreate(Channel channel, boolean transactional) {
 				called.incrementAndGet();
 			}
 		}));
-		connectionFactory.setChannelCacheSize(1);
+		((CachingConnectionFactory)connectionFactory).setChannelCacheSize(1);
 
 		Connection con = connectionFactory.createConnection();
 		Channel channel = con.createChannel(false);
@@ -414,5 +386,4 @@ public class CachingConnectionFactoryTests {
 		verify(mockConnectionFactory).newConnection();
 
 	}
-
 }

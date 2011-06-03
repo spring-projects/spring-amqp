@@ -53,8 +53,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	private SimpleMessageListenerContainer container;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue, sendQueue);
