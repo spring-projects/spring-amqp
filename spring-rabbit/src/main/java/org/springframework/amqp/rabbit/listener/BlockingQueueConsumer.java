@@ -227,6 +227,8 @@ public class BlockingQueueConsumer {
 				logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
 			}
 			shutdown = sig;
+			// The delivery tags will be invalid if the channel shuts down
+			deliveryTags.clear();
 		}
 
 		@Override
