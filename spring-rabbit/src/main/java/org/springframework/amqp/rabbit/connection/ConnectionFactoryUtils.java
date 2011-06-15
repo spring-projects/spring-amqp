@@ -15,8 +15,6 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -34,24 +32,9 @@ import com.rabbitmq.client.Channel;
  * well as {@link org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer}.
  * 
  * @author Mark Fisher
+ * @author Dave Syer
  */
 public class ConnectionFactoryUtils {
-
-	private static final Log logger = LogFactory.getLog(ConnectionFactoryUtils.class);
-
-	/**
-	 * Release the given Connection by closing it.
-	 */
-	public static void releaseConnection(Connection con) {
-		if (con == null) {
-			return;
-		}
-		try {
-			con.close();
-		} catch (Throwable ex) {
-			logger.debug("Could not close RabbitMQ Connection", ex);
-		}
-	}
 
 	/**
 	 * Determine whether the given RabbitMQ Channel is transactional, that is, bound to the current thread by Spring's
@@ -160,7 +143,7 @@ public class ConnectionFactoryUtils {
 			return;
 		}
 		RabbitUtils.closeChannel(resourceHolder.getChannel());
-		releaseConnection(resourceHolder.getConnection());
+		RabbitUtils.closeConnection(resourceHolder.getConnection());
 	}
 
 	public static void bindResourceToTransaction(RabbitResourceHolder resourceHolder,

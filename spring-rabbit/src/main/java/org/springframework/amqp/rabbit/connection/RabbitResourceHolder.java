@@ -40,7 +40,9 @@ import com.rabbitmq.client.Channel;
  * Note: This is an SPI class, not intended to be used by applications.
  * 
  * @author Mark Fisher
- * @see RabbitTransactionManager (not yet implemented)
+ * @author Dave Syer
+ * 
+ * @see RabbitTransactionManager
  * @see RabbitTemplate
  */
 public class RabbitResourceHolder extends ResourceHolderSupport {
@@ -145,7 +147,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 			}
 		}
 		for (Connection con : this.connections) {
-			ConnectionFactoryUtils.releaseConnection(con);
+			RabbitUtils.closeConnection(con);
 		}
 		this.connections.clear();
 		this.channels.clear();
