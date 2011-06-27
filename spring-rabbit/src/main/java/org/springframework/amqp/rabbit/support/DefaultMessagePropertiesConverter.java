@@ -92,26 +92,26 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
-		BasicProperties target = new BasicProperties();
-		target.setHeaders(this.convertHeadersIfNecessary(source.getHeaders()));
-		target.setTimestamp(source.getTimestamp());
-		target.setMessageId(source.getMessageId());
-		target.setUserId(source.getUserId());
-		target.setAppId(source.getAppId());
-		target.setClusterId(source.getClusterId());
-		target.setType(source.getType());
+		BasicProperties.Builder target = new BasicProperties.Builder();
+		target.headers(this.convertHeadersIfNecessary(source.getHeaders()));
+		target.timestamp(source.getTimestamp());
+		target.messageId(source.getMessageId());
+		target.userId(source.getUserId());
+		target.appId(source.getAppId());
+		target.clusterId(source.getClusterId());
+		target.type(source.getType());
 		MessageDeliveryMode deliveryMode = source.getDeliveryMode();
 		if (deliveryMode != null) {
-			target.setDeliveryMode(MessageDeliveryMode.toInt(deliveryMode));
+			target.deliveryMode(MessageDeliveryMode.toInt(deliveryMode));
 		}
-		target.setExpiration(source.getExpiration());
-		target.setPriority(source.getPriority());
-		target.setContentType(source.getContentType());
-		target.setContentEncoding(source.getContentEncoding());
+		target.expiration(source.getExpiration());
+		target.priority(source.getPriority());
+		target.contentType(source.getContentType());
+		target.contentEncoding(source.getContentEncoding());
 		byte[] correlationId = source.getCorrelationId();
 		if (correlationId != null && correlationId.length > 0) {
 			try {
-				target.setCorrelationId(new String(correlationId, charset));
+				target.correlationId(new String(correlationId, charset));
 			}
 			catch (UnsupportedEncodingException ex) {
 				throw new AmqpUnsupportedEncodingException(ex);
@@ -119,9 +119,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		}
 		Address replyTo = source.getReplyTo();
 		if (replyTo != null) {
-			target.setReplyTo(replyTo.toString());
+			target.replyTo(replyTo.toString());
 		}
-		return target;
+		return target.build();
 	}
 
 	private Map<String, Object> convertHeadersIfNecessary(Map<String, Object> headers) {
