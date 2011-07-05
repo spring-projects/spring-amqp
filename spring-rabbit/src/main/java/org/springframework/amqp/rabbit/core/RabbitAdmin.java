@@ -124,7 +124,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				return channel.queueDeclare();
 			}
 		});
-		Queue queue = new Queue(declareOk.getQueue(), true, true, false);
+		Queue queue = new Queue(declareOk.getQueue(), false, true, true);
 		return queue;
 	}
 
