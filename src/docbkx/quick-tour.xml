@@ -8,5 +8,117 @@
     <title>Introduction</title>
 
     <para>This is the 5 minute tour to get started with Spring AMQP.</para>
+
+    <para>Prequisites: install and run the RabbitMQ broker (<ulink
+    url="http://www.rabbitmq.com/download.html">http://www.rabbitmq.com/download.html</ulink>).
+    Then grab the spring-rabbit JAR and all its dependencies - the easiest way
+    to do that is to declare a depenendency in your build tool, e.g. for
+    Maven:</para>
+
+    <programlisting><![CDATA[<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit</artifactId>
+  <version>1.0.0.RELEASE</version>
+</dependency>]]></programlisting>
+
+    <section>
+      <title>Very, Very Quick</title>
+
+      <para>Using plain, imperative Java to send and receive a message:</para>
+
+      <programlisting><![CDATA[ConnectionFactory connectionFactory = new CachingConnectionFactory();
+
+AmqpAdmin admin = new RabbitAdmin(connectionFactory);
+admin.declareQueue("myqueue");
+
+AmqpTemplate template = new RabbitTemplate(connectionFactory);
+template.convertAndSend("foo", "myqueue");
+
+String foo = template.receieveAndConvert("myqueue");]]></programlisting>
+
+      <para>Note that there is a <classname>ConnectionFactory</classname> in
+      the native Java Rabbit client as well. We are using the Spring
+      abstraction in the code above. We are relying on the default exchange in
+      the broker (since none is specified in the send), and the default
+      binding of all queues to the default exchange by their name (hence we
+      can use the queue name as a routing key in the send). Those behaviours
+      are defined in the AMQP specification.</para>
+    </section>
+
+    <section>
+      <title>With XML Configuration</title>
+
+      <para>The same example as above, but externalizing the resource
+      configuration to XML:</para>
+
+      <programlisting><![CDATA[ApplicationContext context = new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
+AmqpTemplate template = context.getBean(AmqpTemplate.class);
+
+template.convertAndSend("foo", "myqueue");
+
+String foo = template.receieveAndConvert("myqueue");]]></programlisting>
+
+      <programlisting><![CDATA[<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+  xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+<rabbit:connection-factory id="connectionFactory"/>
+
+<rabbit:template id="amqpTemplate" connection-factory="connectionFactory"/>
+
+<rabbit:admin connection-factory="connectionFactory"/>
+
+<rabbit:queue id="myqueue"/>
+
+</beans>]]></programlisting>
+
+      <para>The <code>&lt;rabbit:admin/&gt;</code> declaration by default
+      automatically looks for beans of type <classname>Queue</classname>,
+      <classname>Exchange</classname> and <classname>Binding</classname> and
+      declares them to the broker on behalf of the user, hence there is no
+      need to use that bean explicitly in the simple Java driver. There are
+      plenty of options to configure the properties of the components in the
+      XML schema - you can use auto-complete features of your XML editor to
+      explore them and look at their documentation.</para>
+    </section>
+
+    <section>
+      <title>With Java Configuration</title>
+
+      <para>The same example again with the external configuration in
+      Java:</para>
+
+      <para><programlisting><![CDATA[ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
+AmqpTemplate template = context.getBean(AmqpTemplate.class);
+
+template.convertAndSend("foo", "myqueue");
+
+String foo = template.receieveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
+public class RabbitConfiguration {
+
+  @Bean
+  public ConnectionFactory connectionFactory() {
+    CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+    return connectionFactory;
+  }
+
+  @Bean
+  public AmqpAdmin amqpAdmin() {
+    return new RabbitAdmin(connectionFactory());
+  }
+
+  @Bean
+  public RabbitTemplate rabbitTemplate() {
+    return new RabbitTemplate(connectionFactory());
+  }
+
+  @Bean
+  public Queue myQueue() {
+    return new Queue("myqueue");
+  }
+
+}]]></programlisting></para>
+    </section>
   </section>
 </chapter>
