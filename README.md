@@ -2,14 +2,17 @@ This project provides support for using Spring and Java with AMQP, and in partic
 
 # Getting Started
 
-Clone from GIT and then use Maven (2.1.*):
+Clone from GIT and then use Maven (2.2.*):
 
     $ git clone ...
-    $ mvn install
+    $ mvn install -P bootstrap
+
+Use the `bootstrap` profile only the first time - it enables some
+repositories that can't be exposed in the poms by default.
 
 SpringSource ToolSuite users (or Eclipse users with the latest
 m2eclipse plugin) can import the projects as existing Eclipse
-projects. There are plenty of intersting integration tests (names
+projects. There are plenty of intersteing integration tests (names
 ending with `IntegrationTests`) to show the features of the
 framework. Sample applications can be found in the [Spring AMQP
 Samples](http://github.com/SpringSource/spring-amqp-samples) project.

@@ -104,8 +104,42 @@
 			</distributionManagement>
 		</profile>
 		<profile>
+			<id>milestone</id>
+			<distributionManagement>
+			  <repository>
+				<id>spring-milestone</id>
+				<name>Spring Milestone Repository</name>
+				<url>s3://maven.springframework.org/milestone</url>
+			  </repository>
+			</distributionManagement>
+		</profile>
+		<profile>
 			<id>bootstrap</id>
-			<!-- TODO: move the repositories in here before release -->
+			<pluginRepositories>
+			  <pluginRepository>
+				<!-- necessary for bundlor and utils -->
+				<id>repository.plugin.springsource.release</id>
+				<name>SpringSource Maven Repository</name>
+				<url>http://repository.springsource.com/maven/bundles/release</url>
+			  </pluginRepository>
+			</pluginRepositories>
+			<repositories>
+			  <repository>
+				<id>repository.springframework.maven.release</id>
+				<name>Spring Framework Maven Release Repository</name>
+				<url>http://maven.springframework.org/release</url>
+			  </repository>
+			  <repository>
+				<id>repository.springframework.maven.milestone</id>
+				<name>Spring Framework Maven Milestone Repository</name>
+				<url>http://maven.springframework.org/milestone</url>
+			  </repository>
+			  <repository>
+				<id>repository.springframework.maven.snapshot</id>
+				<name>Spring Framework Maven Snapshot Repository</name>
+				<url>http://maven.springframework.org/snapshot</url>
+			  </repository>
+			</repositories>
 		</profile>
 	</profiles>
 	<distributionManagement>
@@ -118,9 +152,9 @@
 			</url>
 		</site>
 		<repository>
-			<id>spring-milestone</id>
-			<name>Spring Milestone Repository</name>
-			<url>s3://maven.springframework.org/milestone</url>
+			<id>spring-release</id>
+			<name>Spring Release Repository</name>
+			<url>s3://maven.springframework.org/release</url>
 		</repository>
 		<snapshotRepository>
 			<id>spring-snapshot</id>
@@ -376,6 +410,18 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>aggregate</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<phase>package</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<artifactId>maven-jar-plugin</artifactId>
 				<configuration>
 					<archive>
@@ -395,6 +441,7 @@
 						for more info -->
 					<groupId>com.springsource.bundlor</groupId>
 					<artifactId>com.springsource.bundlor.maven</artifactId>
+					<version>1.0.0.RELEASE</version>
 					<executions>
 						<execution>
 							<id>bundlor</id>
@@ -410,31 +457,6 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<pluginRepositories>
-		<pluginRepository>
-			<!-- necessary for bundlor and utils -->
-			<id>repository.plugin.springsource.release</id>
-			<name>SpringSource Maven Repository</name>
-			<url>http://repository.springsource.com/maven/bundles/release</url>
-		</pluginRepository>
-	</pluginRepositories>
-	<repositories>
-		<repository>
-			<id>repository.springframework.maven.release</id>
-			<name>Spring Framework Maven Release Repository</name>
-			<url>http://maven.springframework.org/release</url>
-		</repository>
-		<repository>
-			<id>repository.springframework.maven.milestone</id>
-			<name>Spring Framework Maven Milestone Repository</name>
-			<url>http://maven.springframework.org/milestone</url>
-		</repository>
-		<repository>
-			<id>repository.springframework.maven.snapshot</id>
-			<name>Spring Framework Maven Snapshot Repository</name>
-			<url>http://maven.springframework.org/snapshot</url>
-		</repository>
-	</repositories>
 	<reporting>
 		<plugins>
 			<plugin>

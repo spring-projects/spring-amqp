@@ -87,3 +87,7 @@ your `settings.xml`.
 If you make a mistake with the jars, you can re-deploy to the Sonatype
 staging area by doing the deploy command again, but once it is
 released they are in Maven Central and they never come out again.
+
+[Sonatype]: https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
+[Downloads]: http://static.springframework.org/downloads/nightly/release-download.php?project=BATCH
+[CommunityDownloads]: http://www.springsource.com/download/community
