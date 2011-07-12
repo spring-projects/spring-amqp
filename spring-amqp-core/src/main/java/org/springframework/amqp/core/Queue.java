@@ -34,12 +34,12 @@ public class Queue {
 	private final java.util.Map<java.lang.String, java.lang.Object> arguments;
 
 	/**
-	 * The queue is non-durable, non-exclusive and non auto-delete.
+	 * The queue is durable, non-exclusive and non auto-delete.
 	 * 
 	 * @param name the name of the queue.
 	 */
 	public Queue(String name) {
-		this(name, false, false, false);
+		this(name, true, false, false);
 	}
 
 	/**

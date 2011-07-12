@@ -41,7 +41,7 @@ public final class QueueParserTests {
 		Queue queue = beanFactory.getBean("foo", Queue.class);
 		assertNotNull(queue);
 		assertEquals("foo", queue.getName());
-		assertFalse(queue.isDurable());
+		assertTrue(queue.isDurable());
 		assertFalse(queue.isAutoDelete());
 		assertFalse(queue.isExclusive());
 	}

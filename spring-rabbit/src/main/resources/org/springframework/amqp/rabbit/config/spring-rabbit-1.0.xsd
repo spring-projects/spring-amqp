@@ -49,10 +49,10 @@
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="false">
+			<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="true">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is false.
+					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is true.
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
