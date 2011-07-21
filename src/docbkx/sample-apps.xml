@@ -42,15 +42,6 @@
       You can read more about that <ulink
       url="http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/htmlsingle/spring-framework-reference.html#beans-java">here</ulink>.</para>
 
-      <para>You will see that the RabbitConfiguration class extends a
-      framework-provided class called AbstractRabbitConfiguration. That forces
-      it to implement the abstract rabbitTemplate() method while the base
-      class itself then creates an 'amqpAdmin' bean. The "rabbitTemplate" bean
-      in turn depends upon the bean that is created by the connectionFactory()
-      method. There, we are providing the 'username' and 'password' properties
-      as well as the 'hostname' constructor argument to an instance of
-      SingleConnectionFactory.</para>
-
       <programlisting language="java"><![CDATA[@Bean
 public ConnectionFactory connectionFactory() {
     CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
@@ -59,11 +50,12 @@ public ConnectionFactory connectionFactory() {
     return connectionFactory;
 }]]></programlisting>
 
-      <para>The base class also provides a mechanism that will recognize any
-      Exchange, Queue, or Binding bean definitions and then declare them on
-      the broker. In fact, the "helloWorldQueue" bean that is generated in
-      HelloWorldConfiguration is an example simply because it is an instance
-      of Queue.</para>
+      <para>The configuration also contains an instance
+      of <classname>RabbitAdmin</classname>, which by default looks
+      for any beans of type Exchange, Queue, or Binding and then
+      declares them on the broker. In fact, the "helloWorldQueue" bean
+      that is generated in HelloWorldConfiguration is an example
+      simply because it is an instance of Queue.</para>
 
       <programlisting language="java"><![CDATA[@Bean
 public Queue helloWorldQueue() {

@@ -476,7 +476,7 @@ public class ExampleAmqpConfiguration {
 
     @Bean
     public ConnectionFactory rabbitConnectionFactory() {
-        SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
+        CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
         connectionFactory.setUsername("guest");
         connectionFactory.setPassword("guest");
         return connectionFactory;
