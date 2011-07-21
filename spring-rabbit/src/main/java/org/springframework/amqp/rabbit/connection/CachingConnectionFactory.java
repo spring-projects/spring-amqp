@@ -283,6 +283,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			} else if (methodName.equals("getTargetChannel")) {
 				// Handle getTargetChannel method: return underlying Channel.
 				return this.target;
+			} else if (methodName.equals("isOpen")) {
+				// Handle isOpen method: we are closed if the target is
+				return this.target != null && this.target.isOpen();
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {
