@@ -4,6 +4,8 @@
 	<groupId>org.springframework.amqp</groupId>
 	<artifactId>spring-amqp-dist</artifactId>
 	<name>Spring AMQP Distribution</name>
+	<description><![CDATA[Spring AMQP is framework that makes it easy to write Java applications for the Advanced Message Queue Protocol.  It supports a variety of common high-level messaging patterns, like synchronous and asynchronous consumers, synchronous producers, automatic re-connection, transactions, batching.  The emphasis is on declarative configuration and a POJO programming model without hiding the full power of the underlying protocol.
+    ]]></description>
 	<version>1.0.0.BUILD-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<modules> 
@@ -63,6 +65,23 @@
 				<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 			  </repository>
 			</distributionManagement>
+			<build>
+			  <plugins>
+				<plugin>
+				  <groupId>org.apache.maven.plugins</groupId>
+				  <artifactId>maven-gpg-plugin</artifactId>
+				  <executions>
+					<execution>
+					  <id>sign-artifacts</id>
+					  <phase>verify</phase>
+					  <goals>
+						<goal>sign</goal>
+					  </goals>
+					</execution>
+				  </executions>
+				</plugin>
+			  </plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>milestone</id>
