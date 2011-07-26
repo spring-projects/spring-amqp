@@ -284,25 +284,26 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 				// Handle getTargetChannel method: return underlying Channel.
 				return this.target;
 			} else if (methodName.equals("isOpen")) {
-				// Handle isOpen method: we are closed if the target is
+				// Handle isOpen method: we are closed if the target is closed
 				return this.target != null && this.target.isOpen();
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {
 					this.target = null;
-					synchronized (targetMonitor) {
-						if (this.target == null) {
-							this.target = createBareChannel(transactional);
-						}
-					}
 				}
-				return method.invoke(this.target, args);
+				synchronized (targetMonitor) {
+					if (this.target == null) {
+						this.target = createBareChannel(transactional);
+					}
+					return method.invoke(this.target, args);
+				}
 			} catch (InvocationTargetException ex) {
-				if (!this.target.isOpen()) {
+				if (this.target == null || !this.target.isOpen()) {
 					// Basic re-connection logic...
+					this.target = null;
 					logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
 					synchronized (targetMonitor) {
-						if (!this.target.isOpen()) {
+						if (this.target == null) {
 							this.target = createBareChannel(transactional);
 						}
 					}

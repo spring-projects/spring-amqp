@@ -240,6 +240,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		container = createContainer(queue.getName(), new ManualAckListener(latch), connectionFactory);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
+			// Give the listener container a chance to steal the connection from the template
+			Thread.sleep(200);
 		}
 
 		int timeout = getTimeout();
