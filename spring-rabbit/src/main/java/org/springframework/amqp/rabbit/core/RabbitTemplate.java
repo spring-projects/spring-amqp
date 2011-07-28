@@ -365,7 +365,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		channel.basicPublish(exchange, routingKey, false, false,
 				this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding),
 				message.getBody());
-		// Check commit - avoid commit call within a JTA transaction.
+		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
 			RabbitUtils.commitIfNecessary(channel);

@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -77,6 +78,21 @@ public class RabbitTemplateIntegrationTests {
 		}
 		// Now send the real message, and all should be well...
 		template.convertAndSend(ROUTE, "message");
+		String result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals("message", result);
+		result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals(null, result);
+	}
+
+	@Test
+	public void testSendAndReceiveWithPostProcessor() throws Exception {
+		template.convertAndSend(ROUTE, (Object)"message", new MessagePostProcessor() {
+			public Message postProcessMessage(Message message) throws AmqpException {
+				message.getMessageProperties().setContentType("text/other");
+				// message.getMessageProperties().setUserId("foo");
+				return message;
+			}
+		});
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
