@@ -79,7 +79,9 @@ public class Address {
 	}
 
 	/***
-	 * Create an Address given the exchange type, exchange name and routing key. This will set the
+	 * Create an Address given the exchange type, exchange name and routing key. This will set the exchange type, name
+	 * and the routing key explicitly.
+	 * 
 	 * @param exchangeType
 	 * @param exchangeName
 	 * @param routingKey

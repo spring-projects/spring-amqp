@@ -304,7 +304,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return message;
 			}
 
@@ -336,7 +336,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return message;
 			}
 
@@ -368,7 +368,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return message;
 			}
 
@@ -402,7 +402,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return (String) template.getMessageConverter().fromMessage(message);
 			}
 
@@ -431,7 +431,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return (String) template.getMessageConverter().fromMessage(message);
 			}
 
@@ -460,7 +460,7 @@ public class RabbitTemplateIntegrationTests {
 					Thread.sleep(100L);
 				}
 				assertNotNull("No message received", message);
-				template.send(message.getMessageProperties().getReplyTo().getRoutingKey(), message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
 				return (String) template.getMessageConverter().fromMessage(message);
 			}
 

@@ -58,7 +58,7 @@ public class MessageProperties {
 
 	private volatile byte[] correlationId;
 
-	private volatile Address replyTo;
+	private volatile String replyTo;
 
 	private volatile String contentType = DEFAULT_CONTENT_TYPE;
 
@@ -159,12 +159,20 @@ public class MessageProperties {
 		return this.correlationId;
 	}
 
-	public void setReplyTo(Address replyTo) {
+	public void setReplyTo(String replyTo) {
 		this.replyTo = replyTo;
 	}
 
-	public Address getReplyTo() {
+	public String getReplyTo() {
 		return this.replyTo;
+	}
+
+	public void setReplyToAddress(Address replyTo) {
+		this.replyTo = replyTo.toString();
+	}
+
+	public Address getReplyToAddress() {
+		return new Address(this.replyTo);
 	}
 
 	public void setContentType(String contentType) {

@@ -19,7 +19,6 @@ import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -546,7 +545,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	protected Address getReplyToAddress(Message request) throws Exception {
-		Address replyTo = request.getMessageProperties().getReplyTo();
+		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
 			if (this.responseExchange == null) {
 				throw new AmqpException(

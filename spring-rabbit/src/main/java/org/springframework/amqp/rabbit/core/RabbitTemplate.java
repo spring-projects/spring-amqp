@@ -20,8 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
-import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
@@ -285,9 +283,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
 				DeclareOk queueDeclaration = channel.queueDeclare();
-				Address replyToAddress = new Address(ExchangeTypes.DIRECT, DEFAULT_EXCHANGE, queueDeclaration
-						.getQueue());
-				message.getMessageProperties().setReplyTo(replyToAddress);
+				String replyTo = queueDeclaration.getQueue();
+				message.getMessageProperties().setReplyTo(replyTo);
 
 				boolean noAck = false;
 				String consumerTag = UUID.randomUUID().toString();
@@ -307,8 +304,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						}
 					}
 				};
-				channel.basicConsume(replyToAddress.getRoutingKey(), noAck, consumerTag, noLocal, exclusive, null,
-						consumer);
+				channel.basicConsume(replyTo, noAck, consumerTag, noLocal, exclusive, null, consumer);
 				doSend(channel, exchange, routingKey, message);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
@@ -361,7 +357,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			// try to send to configured routing key
 			routingKey = this.routingKey;
 		}
-		
+
 		channel.basicPublish(exchange, routingKey, false, false,
 				this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding),
 				message.getBody());
