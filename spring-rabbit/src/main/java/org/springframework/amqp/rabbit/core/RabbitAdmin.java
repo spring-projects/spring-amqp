@@ -286,7 +286,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 			if (queue.isAutoDelete()) {
 				logger.warn("Auto-declaring an auto-delete Queue ("
 						+ queue.getName()
-						+ "). It will be deleted deleted by the broker if not in use, and all messages will be lost.  Redeclared when the connection is closed and reopened.");
+						+ "). It will be deleted by the broker if not in use, and all messages will be lost.  Redeclared when the connection is closed and reopened.");
 			}
 			if (queue.isExclusive()) {
 				logger.warn("Auto-declaring an exclusive Queue ("
