@@ -1,17 +1,14 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.amqp.core;
@@ -82,7 +79,6 @@ public class MessageProperties {
 
 	private volatile Integer messageCount;
 
-
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
 	}
@@ -95,15 +91,15 @@ public class MessageProperties {
 		this.timestamp = timestamp;
 	}
 
-	//NOTE qpid java timestamp is long, presumably can convert to Date.
+	// NOTE qpid java timestamp is long, presumably can convert to Date.
 	public Date getTimestamp() {
 		return this.timestamp;
 	}
 
-	//NOTE Not forward compatible with qpid 1.0 .NET
-	//     qpid 0.8 .NET/Java: is a string
-	//     qpid 1.0 .NET: MessageId property on class MessageProperties and is UUID 
-	//                    There is an 'ID' stored IMessage class and is an int.
+	// NOTE Not forward compatible with qpid 1.0 .NET
+	// qpid 0.8 .NET/Java: is a string
+	// qpid 1.0 .NET: MessageId property on class MessageProperties and is UUID
+	// There is an 'ID' stored IMessage class and is an int.
 	public void setMessageId(String messageId) {
 		this.messageId = messageId;
 	}
@@ -116,9 +112,9 @@ public class MessageProperties {
 		this.userId = userId;
 	}
 
-	//NOTE Note forward compatible with qpid 1.0 .NET
-	//     qpid 0.8 .NET/java: is a string
-	//     qpid 1.0 .NET: getUserId is byte[]
+	// NOTE Note forward compatible with qpid 1.0 .NET
+	// qpid 0.8 .NET/java: is a string
+	// qpid 1.0 .NET: getUserId is byte[]
 	public String getUserId() {
 		return this.userId;
 	}
@@ -131,11 +127,12 @@ public class MessageProperties {
 		return this.appId;
 	}
 
-	//NOTE not forward compatible with qpid 1.0 .NET
-	//     qpid 0.8 .NET/Java: is a string
-	//     qpid 1.0 .NET: is not present
+	// NOTE not forward compatible with qpid 1.0 .NET
+	// qpid 0.8 .NET/Java: is a string
+	// qpid 1.0 .NET: is not present
 	public void setClusterId(String clusterId) {
-		this.clusterId = clusterId;;
+		this.clusterId = clusterId;
+		;
 	}
 
 	public String getClusterId() {
@@ -146,7 +143,7 @@ public class MessageProperties {
 		this.type = type;
 	}
 
-	//NOTE stuctureType is int in qpid
+	// NOTE stuctureType is int in qpid
 	public String getType() {
 		return this.type;
 	}
@@ -172,7 +169,7 @@ public class MessageProperties {
 	}
 
 	public Address getReplyToAddress() {
-		return new Address(this.replyTo);
+		return this.replyTo == null ? null : new Address(this.replyTo);
 	}
 
 	public void setContentType(String contentType) {
@@ -212,8 +209,8 @@ public class MessageProperties {
 		this.expiration = expiration;
 	}
 
-	//NOTE qpid Java broker qpid 0.8/1.0 .NET: is a long.  
-	//     0.8 Spec has:  expiration (shortstr) 
+	// NOTE qpid Java broker qpid 0.8/1.0 .NET: is a long.
+	// 0.8 Spec has: expiration (shortstr)
 	public String getExpiration() {
 		return this.expiration;
 	}

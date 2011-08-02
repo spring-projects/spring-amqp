@@ -33,4 +33,11 @@ public class MessagePropertiesTests {
 		assertEquals("bar", properties.getReplyToAddress().getRoutingKey());
 	}
 
+	@Test
+	public void testReplyToNullByDefault() throws Exception {
+		MessageProperties properties = new MessageProperties();
+		assertEquals(null, properties.getReplyTo());
+		assertEquals(null, properties.getReplyToAddress());
+	}
+
 }
