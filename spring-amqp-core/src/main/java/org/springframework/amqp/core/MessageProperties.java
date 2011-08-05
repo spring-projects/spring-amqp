@@ -165,11 +165,11 @@ public class MessageProperties {
 	}
 
 	public void setReplyToAddress(Address replyTo) {
-		this.replyTo = replyTo.toString();
+		this.replyTo = (replyTo != null) ? replyTo.toString() : null;
 	}
 
 	public Address getReplyToAddress() {
-		return this.replyTo == null ? null : new Address(this.replyTo);
+		return (this.replyTo != null) ? new Address(this.replyTo) : null;
 	}
 
 	public void setContentType(String contentType) {
