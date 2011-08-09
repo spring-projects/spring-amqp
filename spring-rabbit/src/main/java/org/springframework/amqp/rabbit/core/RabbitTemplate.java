@@ -249,17 +249,34 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, this.routingKey, message);
+		return this.convertSendAndReceive(this.exchange, this.routingKey, message, null);
 	}
 
 	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, routingKey, message);
+		return this.convertSendAndReceive(this.exchange, routingKey, message, null);
 	}
 
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
 			throws AmqpException {
+		return this.convertSendAndReceive(exchange, routingKey, message, null);
+	}
+
+	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor) throws AmqpException {
+		return this.convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor);
+	}
+
+	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor)
+			throws AmqpException {
+		return this.convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor);
+	}
+
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 		MessageProperties messageProperties = new MessageProperties();
 		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
+		if (messagePostProcessor != null) {
+			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
+		}
 		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
 		if (replyMessage == null) {
 			return null;
