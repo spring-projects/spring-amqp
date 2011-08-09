@@ -6,7 +6,7 @@
 	<name>Spring AMQP Distribution</name>
 	<description><![CDATA[Spring AMQP is framework that makes it easy to write Java applications for the Advanced Message Queue Protocol.  It supports a variety of common high-level messaging patterns, like synchronous and asynchronous consumers, synchronous producers, automatic re-connection, transactions, batching.  The emphasis is on declarative configuration and a POJO programming model without hiding the full power of the underlying protocol.
     ]]></description>
-	<version>1.0.0.BUILD-SNAPSHOT</version>
+	<version>1.0.0.RC3</version>
 	<packaging>pom</packaging>
 	<modules> 
 		<module>spring-amqp-parent</module>
