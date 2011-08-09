@@ -79,6 +79,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String PHASE_ATTRIBUTE = "phase";
 
+	private static final String AUTO_STARTUP_ATTRIBUTE = "auto-startup";
+
 	private static final String ADVICE_CHAIN_ATTRIBUTE = "advice-chain";
 
 
@@ -228,22 +230,27 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		String concurrency = containerEle.getAttribute(CONCURRENCY_ATTRIBUTE);
 		if (StringUtils.hasText(concurrency)) {
-			containerDef.getPropertyValues().add("concurrentConsumers", concurrency);
+			containerDef.getPropertyValues().add("concurrentConsumers", new TypedStringValue(concurrency));
 		}
 
 		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
 		if (StringUtils.hasText(prefetch)) {
-			containerDef.getPropertyValues().add("prefetchCount", new Integer(prefetch));
+			containerDef.getPropertyValues().add("prefetchCount", new TypedStringValue(prefetch));
 		}
 
 		String transactionSize = containerEle.getAttribute(TRANSACTION_SIZE_ATTRIBUTE);
 		if (StringUtils.hasText(transactionSize)) {
-			containerDef.getPropertyValues().add("txSize", transactionSize);
+			containerDef.getPropertyValues().add("txSize", new TypedStringValue(transactionSize));
 		}
 
 		String phase = containerEle.getAttribute(PHASE_ATTRIBUTE);
 		if (StringUtils.hasText(phase)) {
 			containerDef.getPropertyValues().add("phase", phase);
+		}
+
+		String autoStartup = containerEle.getAttribute(AUTO_STARTUP_ATTRIBUTE);
+		if (StringUtils.hasText(autoStartup)) {
+			containerDef.getPropertyValues().add("autoStartup", new TypedStringValue(autoStartup));
 		}
 
 		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);

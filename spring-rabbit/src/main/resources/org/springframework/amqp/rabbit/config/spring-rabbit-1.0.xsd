@@ -490,6 +490,13 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="auto-startup" type="xsd:string" default="true">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Flag to indicate that the container should start up automatically when the enclosing context is refreshed.  Default true.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="advice-chain" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
