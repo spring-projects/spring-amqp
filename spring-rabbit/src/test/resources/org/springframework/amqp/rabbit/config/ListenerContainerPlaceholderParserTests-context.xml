@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="properties">
+			<props>
+				<prop key="five">5</prop>
+				<prop key="one">1</prop>
+			</props>
+		</property>
+	</bean>
+
+	<rabbit:queue name="foo" />
+
+	<rabbit:queue id="bar" />
+
+	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="${five}" transaction-size="${one}">
+		<rabbit:listener id="testListener" queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory"/>
+
+	<bean id="testBean" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestBean"/>
+
+</beans>

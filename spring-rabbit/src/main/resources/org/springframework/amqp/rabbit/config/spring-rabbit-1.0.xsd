@@ -35,21 +35,21 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean" default="false">
+			<xsd:attribute name="auto-delete" use="optional" type="xsd:string" default="false">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 						Flag indicating that an queue will be deleted when it is no longer in use, i.e. the connection that declared it is closed. Default is false.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="exclusive" use="optional" type="xsd:boolean" default="false">
+			<xsd:attribute name="exclusive" use="optional" type="xsd:string" default="false">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 					Flag indicating that the queue is exclusive to this connection.  Default is false.
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="true">
+			<xsd:attribute name="durable" use="optional" type="xsd:string" default="true">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is true.
@@ -244,14 +244,14 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="auto-delete" use="optional" type="xsd:boolean" default="false">
+		<xsd:attribute name="auto-delete" use="optional" type="xsd:string" default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 					Flag indicating that an exchange will be deleted when no longer in use, i.e. the connection that declared it is closed. Default is false.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="durable" use="optional" type="xsd:boolean" default="false">
+		<xsd:attribute name="durable" use="optional" type="xsd:string " default="false">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 					Flag indicating that the exchange is durable, i.e. will survive broker restart.  Default is false.
@@ -464,7 +464,7 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="prefetch" type="xsd:int">
+			<xsd:attribute name="prefetch" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
@@ -472,7 +472,7 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="transaction-size" type="xsd:int">
+			<xsd:attribute name="transaction-size" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Tells the container how many messages to process in a single transaction (if the channel is transactional). For

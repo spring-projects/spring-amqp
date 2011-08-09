@@ -17,39 +17,43 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.aopalliance.aop.Advice;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.config.ListenerContainerParserTests.TestBean;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * @author Mark Fisher
+ * @author Dave Syer
  */
-public class ListenerContainerParserTests {
+public final class ListenerContainerPlaceholderParserTests {
 
 	private BeanFactory beanFactory;
-
+	
 	@Before
 	public void setUp() throws Exception {
-		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
-		((ConfigurableBeanFactory)beanFactory).setBeanExpressionResolver(new StandardBeanExpressionResolver());
+		beanFactory = new GenericXmlApplicationContext(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		((GenericXmlApplicationContext)beanFactory).getDefaultListableBeanFactory().setBeanExpressionResolver(new StandardBeanExpressionResolver());
+	}
+
+	@After
+	public void closeBeanFactory() throws Exception {
+		if (beanFactory!=null) {
+			((ConfigurableApplicationContext)beanFactory).close();
+		}
 	}
 
 	@Test
@@ -65,34 +69,4 @@ public class ListenerContainerParserTests {
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
 	}
 
-	@Test
-	public void testParseWithQueues() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("container2", SimpleMessageListenerContainer.class);
-		Queue queue = beanFactory.getBean("bar", Queue.class);
-		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
-	}
-
-	@Test
-	public void testParseWithAdviceChain() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("container3", SimpleMessageListenerContainer.class);
-		Object adviceChain = ReflectionTestUtils.getField(container, "adviceChain");
-		assertNotNull(adviceChain);
-		assertEquals(3, ((Advice[]) adviceChain).length);
-	}
-
-	@Test
-	public void testParseWithDefaults() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("container4", SimpleMessageListenerContainer.class);
-		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
-	}
-
-	static class TestBean {
-		public void handle(String s) {
-		}
-	}
-
-	static class TestAdvice implements MethodBeforeAdvice {
-		public void before(Method method, Object[] args, Object target) throws Throwable {
-		}
-	}
 }

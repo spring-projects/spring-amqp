@@ -24,12 +24,13 @@ import org.junit.Test;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
 
-public final class QueueParserTests {
+public class QueueParserTests {
 
-	private XmlBeanFactory beanFactory;
+	protected BeanFactory beanFactory;
 
 	@Before
 	public void setUpDefaultBeanFactory() throws Exception {

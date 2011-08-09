@@ -53,7 +53,7 @@ public abstract class NamespaceUtils {
 			String attributeName, String propertyName) {
 		String attributeValue = element.getAttribute(attributeName);
 		if (StringUtils.hasText(attributeValue)) {
-			builder.addPropertyValue(propertyName, attributeValue);
+			builder.addPropertyValue(propertyName, new TypedStringValue(attributeValue));
 			return true;
 		}
 		return false;
