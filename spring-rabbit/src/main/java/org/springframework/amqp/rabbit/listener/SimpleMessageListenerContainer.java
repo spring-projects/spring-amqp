@@ -385,9 +385,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
 				} catch (RuntimeException e) {
-					logger.warn("Consumer died on restart. " + e.getClass() + ": " + e.getMessage());
-					// Thrown into the void (probably) in a background thread.
-					// Oh well, here goes...
+					logger.warn("Consumer failed irretrievably on restart. " + e.getClass() + ": " + e.getMessage());
+					// Re-throw and have it logged properly by the caller.
 					throw e;
 				}
 				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer));
