@@ -42,7 +42,33 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 
 /**
- * Helper class that simplifies synchronous RabbitMQ access code.
+ * <p>
+ * Helper class that simplifies synchronous RabbitMQ access (sending and receiving messages).
+ * </p>
+ * 
+ * <p>
+ * The default settings are for non-transactional messaging, which reduces the amount of data exchanged with the broker.
+ * To use a new transaction for every send or receive set the {@link #setChannelTransacted(boolean) channelTransacted}
+ * flag. To extend the transaction over multiple invocations (more efficient), you can use a Spring transaction to
+ * bracket the calls (with <code>channelTransacted=true</code> as well).
+ * </p>
+ * 
+ * <p>
+ * The only mandatory property is the {@link #setConnectionFactory(ConnectionFactory) ConnectionFactory}. There are
+ * strategies available for converting messages to and from Java objects (
+ * {@link #setMessageConverter(MessageConverter) MessageConverter}) and for converting message headers (known as message
+ * properties in AMQP, see {@link #setMessagePropertiesConverter(MessagePropertiesConverter) MessagePropertiesConverter}
+ * ). The defaults probably do something sensible for typical use cases, as long as the message content-type is set
+ * appropriately.
+ * </p>
+ * 
+ * <p>
+ * The "send" methods all have overloaded versions that allow you to explicitly target an exchange and a routing key, or
+ * you can set default values to be used in all send operations. The plain "receive" methods allow you to explicitly
+ * target a queue to receive from, or you can set a default value for the template that applies to all explicit
+ * receives. The convenience methods for send <b>and</b> receive use the sender defaults if no exchange or routing key
+ * is specified, but they always use a temporary queue for the receive leg, so the default queue is ignored.
+ * </p>
  * 
  * @author Mark Pollack
  * @author Mark Fisher
@@ -74,28 +100,57 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private String encoding = DEFAULT_ENCODING;
 
+	/**
+	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
+	 */
 	public RabbitTemplate() {
 		initDefaultStrategies();
 	}
 
+	/**
+	 * Create a rabbit template with default strategies and settings.
+	 * 
+	 * @param connectionFactory the connection factory to use
+	 */
 	public RabbitTemplate(ConnectionFactory connectionFactory) {
 		this();
 		setConnectionFactory(connectionFactory);
 		afterPropertiesSet();
 	}
 
+	/**
+	 * Set up the default strategies. Subclasses can override if necessary.
+	 */
 	protected void initDefaultStrategies() {
 		setMessageConverter(new SimpleMessageConverter());
 	}
 
+	/**
+	 * The name of the default exchange to use for send operations when none is specified. Defaults to <code>""</code>
+	 * which is the default exchange in the broker (per the AMQP specification).
+	 * 
+	 * @param exchange the exchange name to use for send operations
+	 */
 	public void setExchange(String exchange) {
 		this.exchange = (exchange != null) ? exchange : DEFAULT_EXCHANGE;
 	}
 
+	/**
+	 * The value of a default routing key to use for send operations when none is specified. Default is empty which is
+	 * not helpful when using the default (or any direct) exchange, but fine if the exchange is a headers exchange for
+	 * instance.
+	 * 
+	 * @param exchange the default routing key to use for send operations
+	 */
 	public void setRoutingKey(String routingKey) {
 		this.routingKey = routingKey;
 	}
 
+	/**
+	 * The name of the default queue to receive messages from when none is specified explicitly.
+	 * 
+	 * @param queue the default queue name to use for receive
+	 */
 	public void setQueue(String queue) {
 		this.queue = queue;
 	}
@@ -112,7 +167,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	/**
 	 * Specify the timeout in milliseconds to be used when waiting for a reply Message when using one of the
 	 * sendAndReceive methods. The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value
-	 * indicates an indefinite timeout.
+	 * indicates an indefinite timeout. Not used in the plain receive methods because there is no blocking receive
+	 * operation defined in the protocol.
+	 * 
+	 * @param replyTimeout the reply timeout in milliseconds
+	 * 
+	 * @see #sendAndReceive(String, String, Message)
+	 * @see #convertSendAndReceive(String, String, Object)
 	 */
 	public void setReplyTimeout(long replyTimeout) {
 		this.replyTimeout = replyTimeout;
@@ -123,7 +184,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * Object results from receiveAndConvert methods.
 	 * <p>
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
-	 * Objects.
+	 * Objects depending on the message content type header.
 	 * 
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
@@ -134,7 +195,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	/**
-	 * Set the {@link MessagePropertiesConverter} for this template.
+	 * Set the {@link MessagePropertiesConverter} for this template. This converter is used to convert between raw byte
+	 * content in the message headers and plain Java objects. In particular there are limitations when dealing with very
+	 * long string headers, which hopefully are rare in practice, but if you need to use long headers you might need to
+	 * inject a special converter here.
 	 */
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
@@ -142,7 +206,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	}
 
 	/**
-	 * Return the message converter for this template.
+	 * Return the message converter for this template. Useful for clients that want to take advantage of the converter
+	 * in {@link ChannelCallback} implementations.
 	 */
 	public MessageConverter getMessageConverter() {
 		return this.messageConverter;
