@@ -219,22 +219,26 @@
     that exists only within our "spring-rabbit" module since at this point,
     RabbitMQ is the only supported implementation.</para>
 
-    <para>The central component for managing a connection to the RabbitMQ
-    broker is the <interfacename>ConnectionFactory</interfacename> interface.
-    The responsibility of a <interfacename>ConnectionFactory</interfacename>
-    implementation is to provide an instance of
-    <classname>com.rabbitmq.client.Connection</classname>. The simplest
-    implementation we provide is
-    <classname>SingleConnectionFactory</classname> which establishes a single
-    connection that can be shared by the application. Sharing of the
-    connection is possible since the "unit of work" for messaging with AMQP is
-    actually a "channel" (in some ways, this is similar to the relationship
-    between a Connection and a Session in JMS). As you can imagine, the
-    connection instance provides a <methodname>createChannel</methodname>
-    method. When creating an instance of
-    <classname>SingleConnectionFactory</classname>, the 'hostname' can be
-    provided via the constructor. The 'username' and 'password' properties
-    should be provided as well.</para>
+    <para>The central component for managing a connection to the
+    RabbitMQ broker is the
+    <interfacename>ConnectionFactory</interfacename> interface.  The
+    responsibility of a
+    <interfacename>ConnectionFactory</interfacename> implementation is
+    to provide an instance of
+    <classname>org.springframework.amqp.rabbit.connection.Connection</classname>
+    which is a wrapper for
+    <classname>com.rabbitmq.client.Connection</classname>. The
+    simplest implementation we provide is
+    <classname>SingleConnectionFactory</classname> which establishes a
+    single connection that can be shared by the application. Sharing
+    of the connection is possible since the "unit of work" for
+    messaging with AMQP is actually a "channel" (in some ways, this is
+    similar to the relationship between a Connection and a Session in
+    JMS). As you can imagine, the connection instance provides a
+    <methodname>createChannel</methodname> method. When creating an
+    instance of <classname>SingleConnectionFactory</classname>, the
+    'hostname' can be provided via the constructor. The 'username' and
+    'password' properties should be provided as well.</para>
 
     <programlisting language="java"><![CDATA[SingleConnectionFactory connectionFactory = new SingleConnectionFactory("somehost");
 connectionFactory.setUsername("guest");
@@ -251,29 +255,21 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <property name="password" value="guest"/>
 </bean>]]></programlisting>
 
-    <para><note>
-         There is also a 
-
-        <classname>CachingConnectionFactory</classname>
-
-         implementation, which is superior to the 
-
-        <classname>SingleConnectionFactory</classname>
-
-         in terms of performance and resilience. The 
-
-        <classname>CachingConnectionFactory</classname>
-
-         should be considered the default for most practical usage, and 
-
-        <classname>SingleConnectionFactory</classname>
-
-         as useful for simple tests and maybe as a building block for extending the framework. 
-      </note> A <classname>ConnectionFactory</classname> can be created
-    quickly and conveniently using the rabbit namespace: <programlisting
-    language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>]]></programlisting>
-    In most cases this will be preferable since the framework can choose the
-    best defaults for you, and it will always choose a
+    <para><note> There is also a
+    <classname>CachingConnectionFactory</classname> implementation,
+    which is superior to the
+    <classname>SingleConnectionFactory</classname> in terms of
+    performance and resilience. The
+    <classname>CachingConnectionFactory</classname> should be
+    considered the default for most practical usage, and
+    <classname>SingleConnectionFactory</classname> as useful for
+    simple tests and maybe as a building block for extending the
+    framework.  </note> A <classname>ConnectionFactory</classname> can
+    be created quickly and conveniently using the rabbit namespace:
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
+    id="connectionFactory"/>]]></programlisting> In most cases this
+    will be preferable since the framework can choose the best
+    defaults for you, and it will always choose a
     <classname>CachingConnectionFactory</classname>.</para>
   </section>
 
@@ -946,7 +942,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
       <para>AMQP transactions only apply to messages and acks sent to the
       broker, so when there is a rollback of a Spring transaction and a
-      message has been received, wheat Spring AMQP has to do is not just
+      message has been received, what Spring AMQP has to do is not just
       rollback the transaction, but also manually reject the message (sort of
       a nack, but that's not what the specification calls it). Such messages
       (and any that are unacked when a channel is closed or aborts) go to the
@@ -1081,4 +1077,118 @@ public class ExampleExternalTransactionAmqpConfiguration {
         </tgroup>
       </table></para>
   </section>
+
+  <section>
+    <title>Resilience: Recovering from Errors and Broker Failures</title>
+
+    <para>Some of the key (and most popular) high-level features that
+    Spring AMQP provides are to do with recovery and automatic
+    re-connection in the event of a protocol error or broker failure.
+    We have seen all the relevant components already in this guide,
+    but it should help to bring them all together here and call out
+    the features and recovery scenarios individually.</para>
+
+    <para>The most important practical step if you want to take
+    advantage of these features is to use the
+    <classname>CachingConnectionFactory</classname>.  It is also often
+    beneficial to use the <classname>RabbitAdmin</classname>
+    auto-declaration features.  In addition, if you care about
+    guaranteed delivery, you probably also need to use the
+    <code>channelTransacted</code> flag in
+    <classname>RabbitTemplate</classname> and
+    <classname>SimpleMessageListenerContainer</classname> and also the
+    <code>AcknowledgeMode.AUTO</code> (or manual if you do the acks
+    yourself) in the
+    <classname>SimpleMessageListenerContainer</classname>.</para>
+
+    <section>
+      <title>Automatic Declararation of Exchanges, Queues and
+      Bindings</title>
+
+      <para>The <classname>RabbitAdmin</classname> component can
+      declare exchanges, queues and bindings on startup.  It does this
+      lazily, through a <classname>ConnectionListener</classname>, so
+      if the broker is not present on startup it doesn't matter.  The
+      first time a <classname>Connection</classname> is useed (e.g. by
+      sending a message) the listener will fire and the admin features
+      will be applied.  A further benefit of doing the auto
+      declarations in a listener is that if the connection is dropped
+      for any reason (e.g. broker death, network glitch, etc.) they
+      will be applied again the next time they are needed.</para>
+
+    </section>
+
+    <section>
+      <title>Failures in Synchronous Operations and Options for Retry</title>
+
+      <para>If you lose your connection to the broker in a synchronous
+      sequence using <classname>RabbitTemplate</classname> (for
+      instance), then Spring AMQP will throw an
+      <classname>AmqpException</classname> (usually but not always
+      <classname>AmqpIOException</classname>).  We don't try to hide
+      the fact that there was a problem, so you have to be able to
+      catch and respond to the exception.  The easiest thing to do if
+      you suspect that the connection was lost, and it wasn't your
+      fault, is to simply try the operation again.  You can do this
+      manually, or you could look at using Spring Retry to handle the
+      retry (imperatively or declaratively).</para>
+
+      <para>Spring Retry provides a couple of AOP interceptors and a
+      great deal of flexibility to specify the parameters of the retry
+      (number of attempts, exception types, backoff algorithm etc.).
+      Spring AMQP also provides some convenience factory beans for
+      creating Spring Retry interceptors in a convenient form for AMQP
+      use cases, with strongly typed callback interfaces for you to
+      implement custom recovery logic.  See the Javadocs and
+      properties of
+      <classname>StatefulRetryOperationsInterceptor</classname> and
+      <classname>StatelessRetryOperationsInterceptor</classname> for
+      more detail.  Stateless retry is appropriate if there is no
+      transaction or if a transaction is started inside the retry
+      callback.  Note that stateless retry is simpler to configure and
+      analyse than stateful retry, but it is not usually appropriate
+      if there is an ongoing transaction which must be rolled back or
+      definitely is going to roll back.  A dropped connection in the
+      middle of a transaction should have the same effect as a
+      rollback, so for reconnection where the transaction is started
+      higher up uthe stack, stateful retry is usually the best
+      choice.</para>
+
+    </section>
+
+   <section>
+      <title>Message Listeners and the Asynchronous Case</title>
+
+      <para>If a <classname>MessageListener</classname> fails because
+      of a business exception, the exception is handled by the message
+      listener container and then it goes back to listening for
+      another message.  If the failure is caused by a dropped
+      conection (not a business exception), then the consumer that is
+      collecting messages for the listener has to be cancelled and
+      restarted.  The
+      <classname>SimpleMessageListenerContainer</classname> handles
+      this seamlessly, and leaves a log to say that the listener is
+      being restarted.  In fact it loops endlessly trying to restart
+      the consumer, and only if the consumer is very badly behaved
+      indeed will it give up.  One side effect is that if the broker
+      is down when the container starts, it will just keep trying
+      until a connection can be established.</para>
+
+      <para>Business exception handling, as opposed to protocol errors
+      and dropped connections, might need more thought and some custom
+      configuration, especially if transactions and/or container acks
+      are in use.  AMQP has no definition of dead letter behaviour, so
+      by default a message that is rejected or rolled back because of
+      a business exception can be redelivered ad infinitum.  To put a
+      limit in the client on the number of re-deliveries your best
+      choice is a
+      <classname>StatefulRetryOperationsInterceptor</classname> in the
+      advice chain of the listener.  The interceptor can have a
+      recovery callback that implements a custom dead letter action:
+      whatever is appropriate for your particular environment.</para>
+
+    </section>
+
+  </section>
+
 </chapter>

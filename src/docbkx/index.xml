@@ -39,19 +39,18 @@
 
     <xi:include href="preface.xml"/>
 
-    <!--
     <part>
         <title>Introduction</title>
         <partintro>
             <para>
-                This first part of the reference documentation
-                <link linkend="what-is-spring-amqp">is an overview</link> of
-                Spring AMQP and the underlying concepts.
+                This first part of the reference documentation is a
+                high-level overview of Spring AMQP and the underlying
+                concepts and some code snippets that qill get you up
+                and running as quickly as possible.
             </para>
         </partintro>
         <xi:include href="quick-tour.xml"/>
     </part>
-    -->
 
     <part>
         <title>Reference</title>
