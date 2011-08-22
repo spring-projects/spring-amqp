@@ -8,7 +8,7 @@
 
 	<rabbit:direct-exchange id="alias" name="direct-alias" />
 
-	<rabbit:direct-exchange name="direct-override" auto-delete="true" durable="true"/>
+	<rabbit:direct-exchange name="direct-override" auto-delete="true" durable="false"/>
 
 	<direct-exchange name="direct-arguments" xmlns="http://www.springframework.org/schema/rabbit">
 		<exchange-arguments>

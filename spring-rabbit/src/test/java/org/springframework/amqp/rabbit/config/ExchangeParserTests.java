@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2008 the original author or authors.
+ * Copyright 2002-2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public final class ExchangeParserTests {
 		DirectExchange exchange = beanFactory.getBean("direct", DirectExchange.class);
 		assertNotNull(exchange);
 		assertEquals("direct", exchange.getName());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
 	}
 
@@ -53,7 +53,7 @@ public final class ExchangeParserTests {
 		DirectExchange exchange = beanFactory.getBean("alias", DirectExchange.class);
 		assertNotNull(exchange);
 		assertEquals("direct-alias", exchange.getName());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
 	}
 
@@ -62,7 +62,7 @@ public final class ExchangeParserTests {
 		TopicExchange exchange = beanFactory.getBean("topic", TopicExchange.class);
 		assertNotNull(exchange);
 		assertEquals("topic", exchange.getName());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
 	}
 
@@ -71,7 +71,7 @@ public final class ExchangeParserTests {
 		FanoutExchange exchange = beanFactory.getBean("fanout", FanoutExchange.class);
 		assertNotNull(exchange);
 		assertEquals("fanout", exchange.getName());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
 	}
 
@@ -80,7 +80,7 @@ public final class ExchangeParserTests {
 		HeadersExchange exchange = beanFactory.getBean("headers", HeadersExchange.class);
 		assertNotNull(exchange);
 		assertEquals("headers", exchange.getName());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
 	}
 
@@ -89,7 +89,7 @@ public final class ExchangeParserTests {
 		DirectExchange exchange = beanFactory.getBean("direct-override", DirectExchange.class);
 		assertNotNull(exchange);
 		assertEquals("direct-override", exchange.getName());
-		assertTrue(exchange.isDurable());
+		assertFalse(exchange.isDurable());
 		assertTrue(exchange.isAutoDelete());
 	}
 

@@ -42,7 +42,7 @@ public abstract class AbstractExchange implements Exchange {
 	 * @param name the name of the exchange.
 	 */
 	public AbstractExchange(String name) {
-		this(name, false, false);
+		this(name, true, false);
 	}
 	
 	/**
