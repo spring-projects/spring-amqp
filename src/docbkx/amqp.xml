@@ -1109,7 +1109,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
       declare exchanges, queues and bindings on startup.  It does this
       lazily, through a <classname>ConnectionListener</classname>, so
       if the broker is not present on startup it doesn't matter.  The
-      first time a <classname>Connection</classname> is useed (e.g. by
+      first time a <classname>Connection</classname> is used (e.g. by
       sending a message) the listener will fire and the admin features
       will be applied.  A further benefit of doing the auto
       declarations in a listener is that if the connection is dropped

@@ -25,8 +25,8 @@
 
     <para>To receive AMQP Messages from a Queue, configure an &lt;inbound-channel-adapter&gt;</para>
 
-    <programlisting language="xml"><![CDATA[<amqp:inbound-channel-adapter queue-name="some.queue"
-                              channel="fromAMQP"
+    <programlisting language="xml"><![CDATA[<amqp:inbound-channel-adapter channel="fromAMQP"
+                              queue-names="some.queue"
                               connection-factory="rabbitConnectionFactory"/>]]></programlisting>
   </section>
 
@@ -45,17 +45,13 @@
   <section>
     <title>Inbound Gateway</title>
 
-    <para>To receive an AMQP Message from a Queue, and respond to an
-    Exchange, configure an &lt;inbound-gateway&gt;.  A
-    'routing-key' may optionally be provided in addition to the
-    exchange name.</para>
+    <para>To receive an AMQP Message from a Queue, and respond to its
+    reply-to address, configure an &lt;inbound-gateway&gt;.</para>
 
-    <programlisting language="xml"><![CDATA[<amqp:inbound-gateway input-channel="fromAMQP"
-                               output-channel="toAMQP"
-                               exchange-name="some.exchange"
-                               routing-key="foo"
-                               queue-name="some.queue"
-                               amqp-template="rabbitTemplate"/>]]></programlisting>
+    <programlisting language="xml"><![CDATA[<amqp:inbound-gateway request-channel="fromAMQP"
+                               reply-channel="toAMQP"
+                               queue-names="some.queue"
+                               connection-factory="rabbitConnectionFactory"/>]]></programlisting>
 
   </section>
 
@@ -67,8 +63,8 @@
     &lt;outbound-gateway&gt;.  A 'routing-key' may optionally be
     provided in addition to the exchange name.</para>
 
-    <programlisting language="xml"><![CDATA[<amqp:outbound-gateway input-channel="toAMQP"
-                               output-channel="fromAMQP"
+    <programlisting language="xml"><![CDATA[<amqp:outbound-gateway request-channel="toAMQP"
+                               reply-channel="fromAMQP"
                                exchange-name="some.exchange"
                                routing-key="foo"
                                amqp-template="rabbitTemplate"/>]]></programlisting>
