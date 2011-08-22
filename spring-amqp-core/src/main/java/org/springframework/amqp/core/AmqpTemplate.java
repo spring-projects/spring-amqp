@@ -96,7 +96,7 @@ public interface AmqpTemplate {
 	void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 	/**
-	 * Convert a Java object to an Amqp {@link Message} and send it to a specific exchange with a default routing key.
+	 * Convert a Java object to an Amqp {@link Message} and send it to a default exchange with a specific routing key.
 	 * 
 	 * @param routingKey the routing key
 	 * @param message a message to send
