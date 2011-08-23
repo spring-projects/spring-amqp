@@ -137,8 +137,13 @@
 
     private volatile Map<String, Object> arguments;
 
+    /**
+     * The queue is durable, non-exclusive and non auto-delete.
+     * 
+     * @param name the name of the queue.
+     */
     public Queue(String name) {
-        this.name = name;
+        this(name, true, false, false);
     }
 
     // Getters and Setters omitted for brevity
@@ -185,7 +190,7 @@
 
       <note>
         <para>The BindingBuilder class is shown above for clarity, but this
-        style works well when using a static import for the 'from()'
+        style works well when using a static import for the 'bind()'
         method.</para>
       </note>
 
@@ -355,7 +360,8 @@ amqpTemplate.send("quotes.nasdaq.FOO", new Message("12.34".getBytes(), somePrope
     <interfacename>Message</interfacename> may be used:</para>
 
     <programlisting language="java"><![CDATA[amqpTemplate.setExchange("marketData.topic");
-amqpTemplate.setRoutingKey("quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));]]></programlisting>
+amqpTemplate.setRoutingKey("quotes.nasdaq.FOO");
+amqpTemplate.send(new Message("12.34".getBytes(), someProperties));]]></programlisting>
 
     <para>A better way of thinking about the exchange and routing key
     properties is that the explicit method parameters will always override the
@@ -446,9 +452,9 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     Channel instance for any reason, you may instead use the
     <interfacename>ChannelAwareMessageListener</interfacename>. It looks
     similar but with an extra parameter:</para> <programlisting
-    language="java"><![CDATA[public interface ChannelAwareMessageListener<M extends Message> {
+    language="java"><![CDATA[public interface ChannelAwareMessageListener {
 
-    void onMessage(M message, Channel channel) throws Exception;
+    void onMessage(Message message, Channel channel) throws Exception;
 
 }]]></programlisting> <para>If you prefer to maintain a stricter separation
     between your application logic and the messaging API, you can rely upon an
@@ -666,6 +672,21 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </sect2>
   </section>
 
+  <section id="request-reply">
+    <title>Request/Reply Messaging</title>
+
+    <para>The <classname>AmqpTemplate</classname> also provides a variety of
+    <methodname>sendAndReceive</methodname> methods that accept the same argument options
+    that you have seen above for the one-way send operations (exchange, routingKey, and Message).
+    Those methods are quite useful for request/reply scenarios since they handle the configuration
+    of the necessary "reply-to" property before sending and can listen for the reply message on an
+    exclusive Queue that is created internally for that purpose.</para>
+
+    <para>Similar request/reply methods are also available where the <classname>MessageConverter</classname>
+    is applied to both the request and reply. Those methods are named <methodname>convertSendAndReceive</methodname>.
+    See the Javadoc of <classname>AmqpTemplate</classname> for more detail.</para>
+  </section>
+
   <section id="broker-configuration">
     <title>Configuring the broker</title>
 
@@ -705,8 +726,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
 }]]></programlisting>
 
-    <para>The declareQueue() method defined a queue on the broker whose name
-    is automatically created. The additional properties of this auto-generated
+    <para>The no-arg declareQueue() method defines a queue on the broker whose name
+    is automatically generated. The additional properties of this auto-generated
     queue are exclusive=true, autoDelete=true, and durable=false.<note>
         <para>Removing a binding was not introduced until the 0.9 version of
         the AMQP spec.</para>
@@ -751,10 +772,10 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
     <para>To see how to use Java to configure the AMQP infrastructure, look at
-    the Stock sample application, there is the <code>@Configuration</code>
+    the Stock sample application, where there is the <code>@Configuration</code>
     class <classname>AbstractStockRabbitConfiguration</classname> which in
     turn has RabbitClientConfiguration and RabbitServerConfiguration
-    subclasses. The code for AbstractStockRabbitConfiguration is show
+    subclasses. The code for AbstractStockRabbitConfiguration is shown
     below</para>
 
     <programlisting language="java"><![CDATA[@Configuration
@@ -791,7 +812,7 @@ public abstract class AbstractStockAppRabbitConfiguration {
 }]]></programlisting>
 
     <para>In the Stock application, the server is configured using the
-    following @Configuration class</para>
+    following @Configuration class:</para>
 
     <programlisting language="java"><![CDATA[@Configuration
 public class RabbitServerConfiguration extends AbstractStockAppRabbitConfiguration  {
@@ -811,7 +832,7 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
     defined by the specification.</para>
 
     <para>The client @Configuration class is a little more interesting and is
-    show below.</para>
+    shown below.</para>
 
     <programlisting language="java"><![CDATA[@Configuration
 public class RabbitClientConfiguration extends AbstractStockAppRabbitConfiguration {
@@ -825,7 +846,8 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     }
 
     /**
-     * Binds to the market data exchange. Interested in any stock quotes.
+     * Binds to the market data exchange. Interested in any stock quotes
+     * that match its routing key.
      */
     @Bean
     public Binding marketDataBinding() {
@@ -876,7 +898,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     <classname>SimpleMessageListenerContainer</classname> there is a flag
     <code>channelTransacted</code> which, if true, tells the framework to use
     a transactional channel and to end all operations (send or receive) with a
-    commit or rollback depending on the outcome, with an exception signalling
+    commit or rollback depending on the outcome, with an exception signaling
     a rollback. Another signal is to provide an external transaction with one
     of Spring's <classname>PlatformTransactionManager</classname>
     implementations as a context for the ongoing operation. If there is
@@ -892,7 +914,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     are created, usually at application startup. The external transaction is
     more dynamic in principle because the system responds to the current
     Thread state at runtime, but in practice is often also a configuration
-    setting, when the transactions are layed onto an application
+    setting, when the transactions are layered onto an application
     declaratively.</para>
 
     <para>For synchronous use cases with <classname>RabbitTemplate</classname>
@@ -916,7 +938,7 @@ public void doSomething() {
     broker, and the outgoing message will not be sent. This applies to any
     operations with the <classname>RabbitTemplate</classname> inside a chain
     of transactional methods (unless the <classname>Channel</classname> is
-    directly manipulated to commit the transactiom early for instance).</para>
+    directly manipulated to commit the transaction early for instance).</para>
 
     <para>For asynchronous use cases with
     <classname>SimpleMessageListenerContainer</classname> if an external
@@ -949,7 +971,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
     rolled back, and the message will also be returned to the broker.
     Significantly, if the transaction fails to commit (e.g. a database
     constraint error, or connectivity problem), then the AMQP transaction will
-    also be rolled back, and message will be returned to the broker. This is
+    also be rolled back, and the message will be returned to the broker. This is
     sometimes known as a Best Efforts 1 Phase Commit, and is a very powerful
     pattern for reliable messaging. If the <code>channelTransacted</code> flag
     was set to false in the example above, which is the default, then the
@@ -1056,7 +1078,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
               <entry>If the channel is transacted or an external transaction
               manager is provided, the container will attempt to process up to
               this number of messages per transaction (waiting for each one up
-              to the receieve timeout setting).</entry>
+              to the receive timeout setting).</entry>
             </row>
 
             <row>
@@ -1064,9 +1086,9 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
               <entry>The maximum time to wait for each message. If
               acknowledgeMode=NONE (the default) this has very little effect -
-              the container just spins round an asks for another message. It
+              the container just spins round and asks for another message. It
               has the biggest effect for a transactional
-              <classname>Channel</classname> with <code>txSize&gt;1</code>,
+              <classname>Channel</classname> with <code>txSize &gt; 1</code>,
               since it can cause messages already consumed not to be
               acknowledged until the timeout expires.</entry>
             </row>
@@ -1108,11 +1130,10 @@ public class ExampleExternalTransactionAmqpConfiguration {
     but it should help to bring them all together here and call out
     the features and recovery scenarios individually.</para>
 
-    <para>The most important practical step if you want to take
-    advantage of these features is to use the
-    <classname>CachingConnectionFactory</classname>.  It is also often
-    beneficial to use the <classname>RabbitAdmin</classname>
-    auto-declaration features.  In addition, if you care about
+    <para>The primary reconnection features are enabled by the
+    <classname>CachingConnectionFactory</classname> itself. 
+    It is also often beneficial to use the <classname>RabbitAdmin</classname>
+    auto-declaration features. In addition, if you care about
     guaranteed delivery, you probably also need to use the
     <code>channelTransacted</code> flag in
     <classname>RabbitTemplate</classname> and
@@ -1122,7 +1143,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
     <classname>SimpleMessageListenerContainer</classname>.</para>
 
     <section>
-      <title>Automatic Declararation of Exchanges, Queues and
+      <title>Automatic Declaration of Exchanges, Queues and
       Bindings</title>
 
       <para>The <classname>RabbitAdmin</classname> component can
@@ -1171,23 +1192,23 @@ public class ExampleExternalTransactionAmqpConfiguration {
       definitely is going to roll back.  A dropped connection in the
       middle of a transaction should have the same effect as a
       rollback, so for reconnection where the transaction is started
-      higher up uthe stack, stateful retry is usually the best
+      higher up the stack, stateful retry is usually the best
       choice.</para>
 
     </section>
 
-   <section>
+    <section>
       <title>Message Listeners and the Asynchronous Case</title>
 
       <para>If a <classname>MessageListener</classname> fails because
       of a business exception, the exception is handled by the message
       listener container and then it goes back to listening for
       another message.  If the failure is caused by a dropped
-      conection (not a business exception), then the consumer that is
+      connection (not a business exception), then the consumer that is
       collecting messages for the listener has to be cancelled and
       restarted.  The
       <classname>SimpleMessageListenerContainer</classname> handles
-      this seamlessly, and leaves a log to say that the listener is
+      this seamlessly, and it leaves a log to say that the listener is
       being restarted.  In fact it loops endlessly trying to restart
       the consumer, and only if the consumer is very badly behaved
       indeed will it give up.  One side effect is that if the broker
