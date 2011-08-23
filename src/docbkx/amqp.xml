@@ -228,19 +228,24 @@
     <classname>org.springframework.amqp.rabbit.connection.Connection</classname>
     which is a wrapper for
     <classname>com.rabbitmq.client.Connection</classname>. The
-    simplest implementation we provide is
-    <classname>SingleConnectionFactory</classname> which establishes a
-    single connection that can be shared by the application. Sharing
+    only concrete implementation we provide is
+    <classname>CachingConnectionFactory</classname> which establishes a
+    single connection proxy that can be shared by the application. Sharing
     of the connection is possible since the "unit of work" for
     messaging with AMQP is actually a "channel" (in some ways, this is
     similar to the relationship between a Connection and a Session in
     JMS). As you can imagine, the connection instance provides a
-    <methodname>createChannel</methodname> method. When creating an
-    instance of <classname>SingleConnectionFactory</classname>, the
-    'hostname' can be provided via the constructor. The 'username' and
-    'password' properties should be provided as well.</para>
+    <methodname>createChannel</methodname> method. The
+    <classname>CachingConnectionFactory</classname> implementation
+    supports caching of those channels, and it maintains separate
+    caches for channels based on whether they are transactional or not.
+    When creating an instance of <classname>CachingConnectionFactory</classname>,
+    the 'hostname' can be provided via the constructor. The 'username' and
+    'password' properties should be provided as well. If you would like to
+    configure the size of the channel cache (the default is 1), you could
+    call the <methodname>setChannelCacheSize()</methodname> method here as well.</para>
 
-    <programlisting language="java"><![CDATA[SingleConnectionFactory connectionFactory = new SingleConnectionFactory("somehost");
+    <programlisting language="java"><![CDATA[CachingConnectionFactory connectionFactory = new CachingConnectionFactory("somehost");
 connectionFactory.setUsername("guest");
 connectionFactory.setPassword("guest");
 
@@ -249,28 +254,43 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <para>When using XML, the configuration might look like this:</para>
 
     <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
-      class="org.springframework.amqp.rabbit.connection.SingleConnectionFactory">
+      class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
     <constructor-arg value="somehost"/>
     <property name="username" value="guest"/>
     <property name="password" value="guest"/>
 </bean>]]></programlisting>
 
-    <para><note> There is also a
-    <classname>CachingConnectionFactory</classname> implementation,
-    which is superior to the
-    <classname>SingleConnectionFactory</classname> in terms of
-    performance and resilience. The
-    <classname>CachingConnectionFactory</classname> should be
-    considered the default for most practical usage, and
-    <classname>SingleConnectionFactory</classname> as useful for
-    simple tests and maybe as a building block for extending the
-    framework.  </note> A <classname>ConnectionFactory</classname> can
+    <para><note> There is also a <classname>SingleConnectionFactory</classname>
+    implementation which is only available in the unit test code of the framework.
+    It is simpler than <classname>CachingConnectionFactory</classname> since it does
+    not cache channels, but it is not intended for practical usage
+    outside of simple tests due to its lack of performance and resilience.
+    If you find a need to implement your own <classname>ConnectionFactory</classname>
+    for some reason, the <classname>AbstractConnectionFactory</classname>
+    base class may provide a nice starting point.</note>
+
+    A <classname>ConnectionFactory</classname> can
     be created quickly and conveniently using the rabbit namespace:
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory"/>]]></programlisting> In most cases this
     will be preferable since the framework can choose the best
-    defaults for you, and it will always choose a
-    <classname>CachingConnectionFactory</classname>.</para>
+    defaults for you. The created instance will be a
+    <classname>CachingConnectionFactory</classname>.
+
+    Keep in mind that the default cache size for channels is 1.
+    If you want more channels to be cached set a larger value via the
+    'channelCacheSize' property. In XML it would look like this:
+    <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
+      class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
+    <constructor-arg value="somehost"/>
+    <property name="username" value="guest"/>
+    <property name="password" value="guest"/>
+    <property name="channelCacheSize" value="25"/>
+</bean>]]></programlisting>
+    And with the namespace you can just add the 'channel-cache-size' attribute:
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
+    id="connectionFactory" channel-cache-size="25"/>]]></programlisting>
+    </para>
   </section>
 
   <section id="amqp-template">
