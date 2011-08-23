@@ -58,7 +58,7 @@
             <para>
                 This part of the reference documentation details the various components
                 that comprise Spring AMQP. The <link linkend="amqp">main chapter</link>
-        covers the core classes to develop an AMQP application.  It part also
+        covers the core classes to develop an AMQP application.  This part also
         includes a chapter on <link lnkend="erlang">integration with
         Erlang</link> and a chapter
         about the <link linkend="sample-apps">sample applications</link>.
@@ -72,8 +72,8 @@
         <title>Spring Integration - Reference</title>
         <partintro>
             <para>
-                This part of the reference documentation details the
-        integration with the Spring Integration project.
+                This part of the reference documentation provides a quick introduction to the
+        AMQP support within the Spring Integration project.
             </para>
         </partintro>
         <xi:include href="si-amqp.xml"/>

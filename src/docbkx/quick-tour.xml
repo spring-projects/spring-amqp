@@ -9,10 +9,10 @@
 
     <para>This is the 5 minute tour to get started with Spring AMQP.</para>
 
-    <para>Prequisites: install and run the RabbitMQ broker (<ulink
+    <para>Prerequisites: install and run the RabbitMQ broker (<ulink
     url="http://www.rabbitmq.com/download.html">http://www.rabbitmq.com/download.html</ulink>).
     Then grab the spring-rabbit JAR and all its dependencies - the easiest way
-    to do that is to declare a depenendency in your build tool, e.g. for
+    to do that is to declare a dependency in your build tool, e.g. for
     Maven:</para>
 
     <programlisting><![CDATA[<dependency>
@@ -32,9 +32,9 @@ AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 admin.declareQueue("myqueue");
 
 AmqpTemplate template = new RabbitTemplate(connectionFactory);
-template.convertAndSend("foo", "myqueue");
+template.convertAndSend("myqueue", "foo");
 
-String foo = template.receieveAndConvert("myqueue");]]></programlisting>
+String foo = template.receiveAndConvert("myqueue");]]></programlisting>
 
       <para>Note that there is a <classname>ConnectionFactory</classname> in
       the native Java Rabbit client as well. We are using the Spring
@@ -54,9 +54,9 @@ String foo = template.receieveAndConvert("myqueue");]]></programlisting>
       <programlisting><![CDATA[ApplicationContext context = new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
-template.convertAndSend("foo", "myqueue");
+template.convertAndSend("myqueue", "foo");
 
-String foo = template.receieveAndConvert("myqueue");]]></programlisting>
+String foo = template.receiveAndConvert("myqueue");]]></programlisting>
 
       <programlisting><![CDATA[<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:rabbit="http://www.springframework.org/schema/rabbit"
@@ -69,7 +69,7 @@ String foo = template.receieveAndConvert("myqueue");]]></programlisting>
 
 <rabbit:admin connection-factory="connectionFactory"/>
 
-<rabbit:queue id="myqueue"/>
+<rabbit:queue name="myqueue"/>
 
 </beans>]]></programlisting>
 
@@ -92,9 +92,9 @@ String foo = template.receieveAndConvert("myqueue");]]></programlisting>
       <para><programlisting><![CDATA[ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
-template.convertAndSend("foo", "myqueue");
+template.convertAndSend("myqueue", "foo");
 
-String foo = template.receieveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
+String foo = template.receiveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
 public class RabbitConfiguration {
 
   @Bean

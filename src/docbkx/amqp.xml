@@ -4,7 +4,7 @@
 <chapter id="amqp">
   <title>Using Spring AMQP</title>
 
-  <para>In this chapter, we will explore interface and classes that are the
+  <para>In this chapter, we will explore the interfaces and classes that are the
   essential components for developing applications with Spring AMQP.</para>
 
   <section>
@@ -33,7 +33,7 @@
     <sect2>
       <title>Message</title>
 
-      <para>The 0-8 and 0-9-1 AMQP specifications do not define an Message
+      <para>The 0-8 and 0-9-1 AMQP specifications do not define a Message
       class or interface. Instead, when performing an operation such as
       '<literal>
           <methodname>basicPublish</methodname>

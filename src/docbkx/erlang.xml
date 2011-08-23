@@ -17,6 +17,7 @@
   <section>
     <title>Communicating with Erlang processes</title>
 
+<!--
     <para>TODO</para>
 
     <section>
@@ -24,6 +25,7 @@
 
       <para>TODO</para>
     </section>
+-->
 
     <section>
       <title>Executing RPC</title>
@@ -70,7 +72,7 @@ public void deleteUser(String username) {
 }]]></programlisting>
 
       <para>As the JInterface library uses specific classes such as
-      OtpErlangDouble, OtpErlangString to represent the primitive types in
+      OtpErlangDouble and OtpErlangString to represent the primitive types in
       Erlang RPC calls, there is a converter class that works in concert with
       ErlangTemplate that knows how to translate from Java primitive types to
       their Erlang class equivalents. You can also create custom converters
@@ -81,7 +83,7 @@ public void deleteUser(String username) {
     <section>
       <title>ErlangConverter</title>
 
-      <para>The ErlangConverter interface is show below</para>
+      <para>The ErlangConverter interface is shown below.</para>
 
       <programlisting language="java"><![CDATA[public interface ErlangConverter {
 
@@ -95,7 +97,7 @@ public void deleteUser(String username) {
 
     /**
      * Convert from a Erlang data type to a Java object.
-     * @param erlangObject the Elang object to convert
+     * @param erlangObject the Erlang object to convert
      * @return the converted Java object
      * @throws ErlangConversionException in case of conversion failure
      */
