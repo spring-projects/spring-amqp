@@ -12,7 +12,7 @@ repositories that can't be exposed in the poms by default.
 
 SpringSource ToolSuite users (or Eclipse users with the latest
 m2eclipse plugin) can import the projects as existing Eclipse
-projects. There are plenty of intersteing integration tests (names
+projects. There are plenty of interesting integration tests (names
 ending with `IntegrationTests`) to show the features of the
 framework. Sample applications can be found in the [Spring AMQP
 Samples](http://github.com/SpringSource/spring-amqp-samples) project.
@@ -53,7 +53,7 @@ None of these is essential for a pull request, but they will all help.  They can
 * Use the Spring Framework code format conventions (import `eclipse-code-formatter.xml` from the root of the project if you are using Eclipse).
 * Make sure all new .java files to have a simple Javadoc class comment with at least an @author tag identifying you, and preferably at least a paragraph on what the class is for.
 * Add the ASF license header comment to all new .java files (copy from existing files in the project)
-* Add yourself as an @author to the .java files that you modify substantially (moew than cosmetic changes).
+* Add yourself as an @author to the .java files that you modify substantially (more than cosmetic changes).
 * Add some Javadocs and, if you change the namespace, some XSD doc elements.
 * A few unit tests would help a lot as well - someone has to do it.
 * If no-one else is using your branch, please rebase it against the current master (or other target branch in the main project).
