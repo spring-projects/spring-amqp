@@ -4,6 +4,8 @@
 	<groupId>org.springframework.amqp</groupId>
 	<artifactId>spring-amqp-parent</artifactId>
 	<name>Spring AMQP Parent</name>
+	<description><![CDATA[Spring AMQP is framework that makes it easy to write Java applications for the Advanced Message Queue Protocol.  It supports a variety of common high-level messaging patterns, like synchronous and asynchronous consumers, synchronous producers, automatic re-connection, transactions, batching.  The emphasis is on declarative configuration and a POJO programming model without hiding the full power of the underlying protocol.
+    ]]></description>
 	<url>http://www.springsource.org/spring-amqp</url>
 	<version>1.0.0.RELEASE</version>
 	<packaging>pom</packaging>
@@ -20,6 +22,44 @@
 		<com.rabbitmq.version>2.5.0</com.rabbitmq.version>
 		<org.springframework.version>3.0.5.RELEASE</org.springframework.version>
 	</properties>
+	<licenses>
+		<license>
+			<name>Apache 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<id>dsyer</id>
+			<name>Dave Syer</name>
+			<email>dsyer@vmware.com</email>
+		</developer>
+		<developer>
+			<id>markfisher</id>
+			<name>Mark Fisher</name>
+			<email>markfisher@vmware.com</email>
+		</developer>
+		<developer>
+			<id>mpollack</id>
+			<name>Mark Pollack</name>
+			<email>mpollack@vmware.com</email>
+		</developer>
+		<developer>
+			<id>jbrisbin</id>
+			<name>Jon Brisbin</name>
+			<email>jbrisbin@vmware.com</email>
+		</developer>
+		<developer>
+			<id>tomas.lukosius</id>
+			<name>Tomas Lukosius</name>
+			<email>tomas.lukosius@opencredo.com</email>
+		</developer>
+    </developers>
+	<scm>
+		<url>http://github.com/SpringSource/spring-amqp</url>
+		<connection>scm:git:git://github.com/SpringSource/spring-amqp.git</connection>
+		<developerConnection>scm:git:git://github.com/SpringSource/spring-amqp.git</developerConnection>
+	</scm>
 	<profiles>
 		<profile>
 			<id>strict</id>
