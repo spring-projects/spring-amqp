@@ -64,11 +64,11 @@ To deploy to a local staging for test purposes use this recipe:
 ## Building the Website
 
     $ export MAVEN_OPTS=-Xmx512m 
-    $ mvn site -P samples,release,dist
-    $ mvn site:deploy -P samples,dist,release
+    $ mvn site
+    $ mvn site:deploy
 
 The last step sends the result to the .org site. Use `mvn site:deploy
--P samples,dist,staging` to test the result before you deploy for real
+-P staging` to test the result before you deploy for real
 (it puts it in target/staging).
 
 
