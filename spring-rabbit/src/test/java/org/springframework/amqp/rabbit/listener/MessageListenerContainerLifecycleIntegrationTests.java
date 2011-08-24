@@ -205,9 +205,9 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			// container
 			Thread.sleep(500L);
 			container.shutdown();
-			assertEquals(0, container.getActiveConsumerCount());
 		}
 
+		assertEquals(0, container.getActiveConsumerCount());
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 	}
