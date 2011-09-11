@@ -250,6 +250,7 @@ public class ConnectionFactoryUtils {
 			if (status != TransactionSynchronization.STATUS_COMMITTED) {
 				resourceHolder.rollbackAll();
 			}
+			// resourceHolder.setSynchronizedWithTransaction(false);
 			super.afterCompletion(status);
 		}
 
