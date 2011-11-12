@@ -18,11 +18,15 @@ import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.BDDMockito.given;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.codehaus.jackson.map.type.TypeFactory;
+import org.codehaus.jackson.type.JavaType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Spy;
@@ -109,6 +113,28 @@ public class DefaultClassMapperTest {
 		
 		assertThat(className, equalTo("Hashtable"));
 	}
+	
+//	@Test
+//	public void shouldConvertCollectionsWithCorrectMemberTypes(){
+//		
+//		
+////		Class<? extends Collection> collectionType = ArrayList.class;
+////		Class<?> elementType = String.class;
+////		JavaType javaType = TypeFactory.collectionType(collectionType, elementType);
+////		System.out.println(javaType.getContentType());
+////		
+//		
+//		
+//		props.getHeaders().put("__TypeId__", "arrayList");
+//		props.getHeaders().put("__ContentTypeId__", "trade");
+//		classMapper.setIdClassMapping(map("collection", ArrayList.class));
+//		classMapper.setIdClassMapping(map("trade", SimpleTrade.class));
+//		
+//		JavaType javaType = classMapper.toJavaType(props);
+//		
+//		assertEquals(TypeFactory.collectionType(ArrayList.class, SimpleTrade.class), javaType);
+//		
+//	}
 
 	private Map<String, Class<?>> map(String string, Class<?> class1) {
 		Map<String, Class<?>> map = new HashMap<String, Class<?>>();
