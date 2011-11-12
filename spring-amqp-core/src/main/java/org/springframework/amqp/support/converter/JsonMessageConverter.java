@@ -23,6 +23,8 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.type.TypeFactory;
+import org.codehaus.jackson.type.JavaType;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -32,6 +34,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Mark Pollack
  * @author James Carr
  * @author Dave Syer
+ * @author Sam Nelson
  */
 public class JsonMessageConverter extends AbstractMessageConverter {
 
@@ -43,7 +46,8 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 
 	private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-	private ClassMapper classMapper = new DefaultClassMapper();
+	private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
+
 
 	public JsonMessageConverter() {
 		super();
@@ -58,12 +62,12 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 		this.defaultCharset = (defaultCharset != null) ? defaultCharset : DEFAULT_CHARSET;
 	}
 
-	public ClassMapper getClassMapper() {
-		return classMapper;
+	public JavaTypeMapper getJavaTypeMapper() {
+		return javaTypeMapper;
 	}
-
-	public void setClassMapper(ClassMapper classMapper) {
-		this.classMapper = classMapper;
+	
+	public void setJavaTypeMapper(JavaTypeMapper javaTypeMapper) {
+		this.javaTypeMapper = javaTypeMapper;
 	}
 
 	/**
@@ -94,9 +98,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 					encoding = this.defaultCharset;
 				}
 				try {
-					// content = new String(message.getBody(), encoding);
-
-					Class<?> targetClass = classMapper.toClass(message.getMessageProperties());
+					JavaType targetClass = javaTypeMapper.toJavaType(message.getMessageProperties());
 					content = convertBytesToObject(message.getBody(), encoding, targetClass);
 				} catch (UnsupportedEncodingException e) {
 					throw new MessageConversionException("Failed to convert json-based Message content", e);
@@ -117,10 +119,10 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 		return content;
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding, Class<?> targetClass) throws JsonParseException,
+	private Object convertBytesToObject(byte[] body, String encoding, JavaType targetJavaType) throws JsonParseException,
 			JsonMappingException, IOException {
 		String contentAsString = new String(body, encoding);
-		return jsonObjectMapper.readValue(contentAsString, targetClass);
+		return jsonObjectMapper.readValue(contentAsString, targetJavaType);
 	}
 
 	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
@@ -143,7 +145,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
 		}
-		classMapper.fromClass(objectToConvert.getClass(), messageProperties);
+		javaTypeMapper.fromJavaType(TypeFactory.type(objectToConvert.getClass()), messageProperties);
 		return new Message(bytes, messageProperties);
 	}
 

@@ -87,7 +87,7 @@ public class JsonMessageConverterTests {
 		hashtable.put("TICKER", "VMW");
 		hashtable.put("PRICE", "103.2");
 		JsonMessageConverter converter = new JsonMessageConverter();
-		Message message = converter.toMessage(hashtable, new MessageProperties());
+		Message message = converter.toMessage(hashtable, new MessageProperties());		
 		Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
 		assertEquals("VMW", marhsalledHashtable.get("TICKER"));
 		assertEquals("103.2", marhsalledHashtable.get("PRICE"));

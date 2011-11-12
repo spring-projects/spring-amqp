@@ -23,8 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.codehaus.jackson.map.type.CollectionType;
+import org.codehaus.jackson.map.type.MapType;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.type.JavaType;
+import org.hamcrest.core.IsEqual;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -33,9 +36,23 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 	public static final String DEFAULT_CONTENT_CLASSID_FIELD_NAME = "__ContentTypeId__";
+	public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
+	
 	private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 	private Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
+	public String getClassIdFieldName() {
+		return DEFAULT_CLASSID_FIELD_NAME;
+	}
+	
+	public String getContentClassIdFieldName() {
+		return DEFAULT_CONTENT_CLASSID_FIELD_NAME;
+	}
+
+	public String getKeyClassIdFieldName() {
+		return DEFAULT_KEY_CLASSID_FIELD_NAME;
+	}
+	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType classType = getClassIdType(retrieveHeader(properties,
@@ -44,14 +61,20 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 			return classType;
 		}
 
-		String contentClassId = retrieveHeader(properties,
-				getContentClassIdFieldName());
-		JavaType contentClassType = getClassIdType(contentClassId);
-		JavaType collectionType = TypeFactory.collectionType(
-				(Class<? extends Collection>) classType.getRawClass(),
+		JavaType contentClassType = getClassIdType(retrieveHeader(properties,
+				getContentClassIdFieldName()));
+		if (classType.getKeyType() == null) {
+			return TypeFactory.collectionType(
+					(Class<? extends Collection>) classType.getRawClass(),
+					contentClassType);
+		}
+		
+		JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
+		JavaType mapType = TypeFactory.mapType(
+				(Class<? extends Map>) classType.getRawClass(), keyClassType, 
 				contentClassType);
-		return collectionType;
-
+		return mapType;
+		
 	}
 
 	private JavaType getClassIdType(String classId) {
@@ -89,10 +112,6 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 		return classId;
 	}
 
-	public String getClassIdFieldName() {
-		return DEFAULT_CLASSID_FIELD_NAME;
-	}
-
 	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
 		this.idClassMapping = idClassMapping;
 	}
@@ -105,7 +124,17 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 			addHeader(properties, getContentClassIdFieldName(), javaType
 					.getContentType().getRawClass());
 		}
+		
+		if (javaType.getKeyType() != null) {
+			addHeader(properties, getKeyClassIdFieldName(), javaType
+					.getKeyType().getRawClass());
+		}
 	}
+	
+	public void afterPropertiesSet() throws Exception {
+		validateIdTypeMapping();
+	}
+
 
 	private void addHeader(MessageProperties properties, String headerName,
 			Class<?> clazz) {
@@ -116,10 +145,7 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 		}
 	}
 
-	public void afterPropertiesSet() throws Exception {
-		validateIdTypeMapping();
-	}
-
+	
 	private void validateIdTypeMapping() {
 		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
 		for (Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
@@ -130,9 +156,4 @@ public class DefaultJavaTypeMapper implements JavaTypeMapper, InitializingBean {
 		}
 		this.idClassMapping = finalIdClassMapping;
 	}
-
-	public String getContentClassIdFieldName() {
-		return DEFAULT_CONTENT_CLASSID_FIELD_NAME;
-	}
-
 }
