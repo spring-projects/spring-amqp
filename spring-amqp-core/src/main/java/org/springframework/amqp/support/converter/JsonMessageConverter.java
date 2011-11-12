@@ -1,17 +1,15 @@
 /*
- * Copyright 2002-2010 the original author or authors.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Copyright 2002-2010 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and limitations under the
+ * License.
  */
 
 package org.springframework.amqp.support.converter;
+
+import static org.codehaus.jackson.map.type.TypeFactory.type;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -23,6 +21,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.JavaType;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -32,6 +31,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Mark Pollack
  * @author James Carr
  * @author Dave Syer
+ * @author Sam Nelson
  */
 public class JsonMessageConverter extends AbstractMessageConverter {
 
@@ -43,7 +43,18 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 
 	private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-	private ClassMapper classMapper = new DefaultClassMapper();
+	private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
+
+	private ClassMapper classMapper = null;
+
+	public ClassMapper getClassMapper() {
+		return classMapper;
+
+	}
+
+	public void setClassMapper(ClassMapper classMapper) {
+		this.classMapper = classMapper;
+	}
 
 	public JsonMessageConverter() {
 		super();
@@ -51,26 +62,29 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 	}
 
 	/**
-	 * Specify the default charset to use when converting to or from text-based Message body content. If not specified,
-	 * the charset will be "UTF-8".
+	 * Specify the default charset to use when converting to or from text-based
+	 * Message body content. If not specified, the charset will be "UTF-8".
 	 */
 	public void setDefaultCharset(String defaultCharset) {
-		this.defaultCharset = (defaultCharset != null) ? defaultCharset : DEFAULT_CHARSET;
+		this.defaultCharset = (defaultCharset != null) ? defaultCharset
+				: DEFAULT_CHARSET;
 	}
 
-	public ClassMapper getClassMapper() {
-		return classMapper;
+	public JavaTypeMapper getJavaTypeMapper() {
+		return javaTypeMapper;
 	}
 
-	public void setClassMapper(ClassMapper classMapper) {
-		this.classMapper = classMapper;
+	public void setJavaTypeMapper(JavaTypeMapper javaTypeMapper) {
+		this.javaTypeMapper = javaTypeMapper;
 	}
 
 	/**
-	 * The {@link ObjectMapper} to use instead of using the default. An alternative to injecting a mapper is to extend
-	 * this class and override {@link #initializeJsonObjectMapper()}.
+	 * The {@link ObjectMapper} to use instead of using the default. An
+	 * alternative to injecting a mapper is to extend this class and override
+	 * {@link #initializeJsonObjectMapper()}.
 	 * 
-	 * @param jsonObjectMapper the object mapper to set
+	 * @param jsonObjectMapper
+	 *            the object mapper to set
 	 */
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
 		this.jsonObjectMapper = jsonObjectMapper;
@@ -80,10 +94,14 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 	 * Subclass and override to customize.
 	 */
 	protected void initializeJsonObjectMapper() {
-		jsonObjectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		jsonObjectMapper
+				.configure(
+						DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,
+						false);
 	}
 
-	public Object fromMessage(Message message) throws MessageConversionException {
+	public Object fromMessage(Message message)
+			throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
@@ -94,21 +112,35 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 					encoding = this.defaultCharset;
 				}
 				try {
-					// content = new String(message.getBody(), encoding);
 
-					Class<?> targetClass = classMapper.toClass(message.getMessageProperties());
-					content = convertBytesToObject(message.getBody(), encoding, targetClass);
+					if (getClassMapper() == null) {
+						JavaType targetJavaType = getJavaTypeMapper()
+								.toJavaType(message.getMessageProperties());
+						content = convertBytesToObject(message.getBody(),
+								encoding, targetJavaType);
+					} else {
+						System.out.println("HERE " + getClassMapper());
+						Class<?> targetClass = getClassMapper().toClass(
+								message.getMessageProperties());
+						content = convertBytesToObject(message.getBody(),
+								encoding, targetClass);
+					}
 				} catch (UnsupportedEncodingException e) {
-					throw new MessageConversionException("Failed to convert json-based Message content", e);
+					throw new MessageConversionException(
+							"Failed to convert json-based Message content", e);
 				} catch (JsonParseException e) {
-					throw new MessageConversionException("Failed to convert Message content", e);
+					throw new MessageConversionException(
+							"Failed to convert Message content", e);
 				} catch (JsonMappingException e) {
-					throw new MessageConversionException("Failed to convert Message content", e);
+					throw new MessageConversionException(
+							"Failed to convert Message content", e);
 				} catch (IOException e) {
-					throw new MessageConversionException("Failed to convert Message content", e);
+					throw new MessageConversionException(
+							"Failed to convert Message content", e);
 				}
 			} else {
-				log.warn("Could not convert incoming message with content-type [" + contentType + "]");
+				log.warn("Could not convert incoming message with content-type ["
+						+ contentType + "]");
 			}
 		}
 		if (content == null) {
@@ -117,34 +149,59 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 		return content;
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding, Class<?> targetClass) throws JsonParseException,
+	private Object convertBytesToObject(byte[] body, String encoding,
+			JavaType targetJavaType) throws JsonParseException,
 			JsonMappingException, IOException {
 		String contentAsString = new String(body, encoding);
-		return jsonObjectMapper.readValue(contentAsString, targetClass);
+		return jsonObjectMapper.readValue(contentAsString, targetJavaType);
 	}
 
-	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
+	private Object convertBytesToObject(byte[] body, String encoding,
+			Class<?> targetClass) throws JsonParseException,
+			JsonMappingException, IOException {
+		String contentAsString = new String(body, encoding);
+		return jsonObjectMapper.readValue(contentAsString, type(targetClass));
+	}
+
+	protected Message createMessage(Object objectToConvert,
+			MessageProperties messageProperties)
 			throws MessageConversionException {
 		byte[] bytes = null;
 		try {
-			String jsonString = jsonObjectMapper.writeValueAsString(objectToConvert);
+			String jsonString = jsonObjectMapper
+					.writeValueAsString(objectToConvert);
 			bytes = jsonString.getBytes(this.defaultCharset);
 		} catch (UnsupportedEncodingException e) {
-			throw new MessageConversionException("Failed to convert Message content", e);
+			throw new MessageConversionException(
+					"Failed to convert Message content", e);
 		} catch (JsonGenerationException e) {
-			throw new MessageConversionException("Failed to convert Message content", e);
+			throw new MessageConversionException(
+					"Failed to convert Message content", e);
 		} catch (JsonMappingException e) {
-			throw new MessageConversionException("Failed to convert Message content", e);
+			throw new MessageConversionException(
+					"Failed to convert Message content", e);
 		} catch (IOException e) {
-			throw new MessageConversionException("Failed to convert Message content", e);
+			throw new MessageConversionException(
+					"Failed to convert Message content", e);
 		}
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
 		messageProperties.setContentEncoding(this.defaultCharset);
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
 		}
-		classMapper.fromClass(objectToConvert.getClass(), messageProperties);
+
+		if (getClassMapper() == null) {
+			getJavaTypeMapper().fromJavaType(type(objectToConvert.getClass()),
+					messageProperties);
+
+		} else {
+			getClassMapper().fromClass(objectToConvert.getClass(),
+					messageProperties);
+
+		}
+
 		return new Message(bytes, messageProperties);
+
 	}
 
 }
