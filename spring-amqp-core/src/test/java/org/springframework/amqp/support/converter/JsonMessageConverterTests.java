@@ -23,6 +23,7 @@ import org.springframework.amqp.core.MessageProperties;
 /**
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Sam Nelson
  */
 public class JsonMessageConverterTests {
 
