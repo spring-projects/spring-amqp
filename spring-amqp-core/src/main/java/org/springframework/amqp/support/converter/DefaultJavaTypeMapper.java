@@ -27,7 +27,6 @@ import org.codehaus.jackson.map.type.CollectionType;
 import org.codehaus.jackson.map.type.MapType;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.type.JavaType;
-import org.hamcrest.core.IsEqual;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
