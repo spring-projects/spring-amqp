@@ -423,9 +423,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	protected void invokeErrorHandler(Throwable ex) {
 		if (this.errorHandler != null) {
 			this.errorHandler.handleError(ex);
-		} else if (logger.isDebugEnabled()) {
+		} else if (logger.isWarnEnabled()) {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
-		} else if (logger.isInfoEnabled()) {
+		} else if (logger.isWarnEnabled()) {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set: "
 					+ ex.getClass() + ": " + ex.getMessage());
 		}
