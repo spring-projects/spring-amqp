@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.springframework.amqp</groupId>
 	<artifactId>spring-amqp-parent</artifactId>
@@ -54,7 +55,7 @@
 			<name>Tomas Lukosius</name>
 			<email>tomas.lukosius@opencredo.com</email>
 		</developer>
-    </developers>
+	</developers>
 	<scm>
 		<url>http://github.com/SpringSource/spring-amqp</url>
 		<connection>scm:git:git://github.com/SpringSource/spring-amqp.git</connection>
@@ -146,71 +147,71 @@
 		<profile>
 			<id>central</id>
 			<distributionManagement>
-			  <snapshotRepository>
-				<id>sonatype-nexus-snapshots</id>
-				<name>Sonatype Nexus Snapshots</name>
-				<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-			  </snapshotRepository>
-			  <repository>
-				<id>sonatype-nexus-staging</id>
-				<name>Nexus Release Repository</name>
-				<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-			  </repository>
+				<snapshotRepository>
+					<id>sonatype-nexus-snapshots</id>
+					<name>Sonatype Nexus Snapshots</name>
+					<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+				</snapshotRepository>
+				<repository>
+					<id>sonatype-nexus-staging</id>
+					<name>Nexus Release Repository</name>
+					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+				</repository>
 			</distributionManagement>
 			<build>
-			  <plugins>
-				<plugin>
-				  <groupId>org.apache.maven.plugins</groupId>
-				  <artifactId>maven-gpg-plugin</artifactId>
-				  <executions>
-					<execution>
-					  <id>sign-artifacts</id>
-					  <phase>verify</phase>
-					  <goals>
-						<goal>sign</goal>
-					  </goals>
-					</execution>
-				  </executions>
-				</plugin>
-			  </plugins>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
 			</build>
 		</profile>
 		<profile>
 			<id>milestone</id>
 			<distributionManagement>
-			  <repository>
-				<id>spring-milestone</id>
-				<name>Spring Milestone Repository</name>
-				<url>s3://maven.springframework.org/milestone</url>
-			  </repository>
+				<repository>
+					<id>spring-milestone</id>
+					<name>Spring Milestone Repository</name>
+					<url>s3://maven.springframework.org/milestone</url>
+				</repository>
 			</distributionManagement>
 		</profile>
 		<profile>
 			<id>bootstrap</id>
 			<pluginRepositories>
-			  <pluginRepository>
-				<!-- necessary for bundlor and utils -->
-				<id>repository.plugin.springsource.release</id>
-				<name>SpringSource Maven Repository</name>
-				<url>http://repository.springsource.com/maven/bundles/release</url>
-			  </pluginRepository>
+				<pluginRepository>
+					<!-- necessary for bundlor and utils -->
+					<id>repository.plugin.springsource.release</id>
+					<name>SpringSource Maven Repository</name>
+					<url>http://repository.springsource.com/maven/bundles/release</url>
+				</pluginRepository>
 			</pluginRepositories>
 			<repositories>
-			  <repository>
-				<id>repository.springframework.maven.release</id>
-				<name>Spring Framework Maven Release Repository</name>
-				<url>http://maven.springframework.org/release</url>
-			  </repository>
-			  <repository>
-				<id>repository.springframework.maven.milestone</id>
-				<name>Spring Framework Maven Milestone Repository</name>
-				<url>http://maven.springframework.org/milestone</url>
-			  </repository>
-			  <repository>
-				<id>repository.springframework.maven.snapshot</id>
-				<name>Spring Framework Maven Snapshot Repository</name>
-				<url>http://maven.springframework.org/snapshot</url>
-			  </repository>
+				<repository>
+					<id>repository.springframework.maven.release</id>
+					<name>Spring Framework Maven Release Repository</name>
+					<url>http://maven.springframework.org/release</url>
+				</repository>
+				<repository>
+					<id>repository.springframework.maven.milestone</id>
+					<name>Spring Framework Maven Milestone Repository</name>
+					<url>http://maven.springframework.org/milestone</url>
+				</repository>
+				<repository>
+					<id>repository.springframework.maven.snapshot</id>
+					<name>Spring Framework Maven Snapshot Repository</name>
+					<url>http://maven.springframework.org/snapshot</url>
+				</repository>
 			</repositories>
 		</profile>
 	</profiles>
@@ -524,6 +525,31 @@
 					</executions>
 					<configuration>
 						<failOnWarnings>true</failOnWarnings>
+					</configuration>
+				</plugin>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>com.springsource.bundlor</groupId>
+										<artifactId>com.springsource.bundlor.maven</artifactId>
+										<versionRange>[1.0,)</versionRange>
+										<goals>
+											<goal>bundlor</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
 					</configuration>
 				</plugin>
 			</plugins>
