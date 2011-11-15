@@ -9,6 +9,8 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.codehaus.jackson.map.type.TypeFactory.type;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -19,7 +21,6 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.type.JavaType;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -42,7 +43,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 
    private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-   private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
+   private JavaTypeMapper javaTypeMapper = new DefaultClassMapper();
 
    public JsonMessageConverter() {
       super();
@@ -151,7 +152,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
       if (bytes != null) {
          messageProperties.setContentLength(bytes.length);
       }
-      javaTypeMapper.fromJavaType(TypeFactory.type(objectToConvert.getClass()), messageProperties);
+      javaTypeMapper.fromJavaType(type(objectToConvert.getClass()), messageProperties);
       return new Message(bytes, messageProperties);
    }
 
