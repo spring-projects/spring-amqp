@@ -43,7 +43,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 
    private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-   private JavaTypeMapper javaTypeMapper = new DefaultClassMapper();
+   private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
 
    public JsonMessageConverter() {
       super();
