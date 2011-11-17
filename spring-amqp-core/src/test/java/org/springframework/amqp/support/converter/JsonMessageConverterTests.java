@@ -16,6 +16,7 @@ import java.util.Hashtable;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ser.BeanSerializerFactory;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -27,18 +28,25 @@ import org.springframework.amqp.core.MessageProperties;
  */
 public class JsonMessageConverterTests {
 
+	private JsonMessageConverter converter;
+	private SimpleTrade trade;
+
+	@Before
+	public void before(){
+		converter = new JsonMessageConverter();
+		trade = new SimpleTrade();
+		trade.setAccountName("Acct1");
+		trade.setBuyRequest(true);
+		trade.setOrderType("Market");
+		trade.setPrice(new BigDecimal(103.30));
+		trade.setQuantity(100);
+		trade.setRequestId("R123");
+		trade.setTicker("VMW");
+		trade.setUserName("Joe Trader");
+		
+	}
    @Test
    public void simpleTrade() {
-      SimpleTrade trade = new SimpleTrade();
-      trade.setAccountName("Acct1");
-      trade.setBuyRequest(true);
-      trade.setOrderType("Market");
-      trade.setPrice(new BigDecimal(103.30));
-      trade.setQuantity(100);
-      trade.setRequestId("R123");
-      trade.setTicker("VMW");
-      trade.setUserName("Joe Trader");
-      JsonMessageConverter converter = new JsonMessageConverter();
       Message message = converter.toMessage(trade, new MessageProperties());
 
       SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
@@ -47,19 +55,10 @@ public class JsonMessageConverterTests {
 
    @Test
    public void simpleTradeOverrideMapper() {
-      SimpleTrade trade = new SimpleTrade();
-      trade.setAccountName("Acct1");
-      trade.setBuyRequest(true);
-      trade.setOrderType("Market");
-      trade.setPrice(new BigDecimal(103.30));
-      trade.setQuantity(100);
-      trade.setRequestId("R123");
-      trade.setTicker("VMW");
-      trade.setUserName("Joe Trader");
-      JsonMessageConverter converter = new JsonMessageConverter();
       ObjectMapper mapper = new ObjectMapper();
       mapper.setSerializerFactory(BeanSerializerFactory.instance);
       converter.setJsonObjectMapper(mapper);
+      
       Message message = converter.toMessage(trade, new MessageProperties());
 
       SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
@@ -70,7 +69,7 @@ public class JsonMessageConverterTests {
    public void nestedBean() {
       Bar bar = new Bar();
       bar.getFoo().setName("spam");
-      JsonMessageConverter converter = new JsonMessageConverter();
+
       Message message = converter.toMessage(bar, new MessageProperties());
 
       Bar marshalled = (Bar) converter.fromMessage(message);
@@ -83,11 +82,23 @@ public class JsonMessageConverterTests {
       Hashtable<String, String> hashtable = new Hashtable<String, String>();
       hashtable.put("TICKER", "VMW");
       hashtable.put("PRICE", "103.2");
-      JsonMessageConverter converter = new JsonMessageConverter();
+      
       Message message = converter.toMessage(hashtable, new MessageProperties());
       Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
+      
       assertEquals("VMW", marhsalledHashtable.get("TICKER"));
       assertEquals("103.2", marhsalledHashtable.get("PRICE"));
+   }
+   
+   @Test
+   public void shouldUseClassMapperWhenProvided() {
+      Message message = converter.toMessage(trade, new MessageProperties());
+      
+      converter.setClassMapper(new DefaultClassMapper());
+      converter.setJavaTypeMapper(null);
+      
+      SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+      assertEquals(trade, marshalledTrade);
    }
 
    public static class Foo {

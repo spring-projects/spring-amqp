@@ -20,7 +20,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author James Carr
  * @author Sam Nelson
  */
-public interface JavaTypeMapper {
+public interface JavaTypeMapper extends ClassMapper {
 
    void fromJavaType(JavaType javaType, MessageProperties properties);
 
