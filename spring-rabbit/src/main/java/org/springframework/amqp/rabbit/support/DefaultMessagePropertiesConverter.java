@@ -29,7 +29,7 @@ import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.impl.LongString;
+import com.rabbitmq.client.LongString;
 
 /**
  * Default implementation of the {@link MessagePropertiesConverter} strategy.
