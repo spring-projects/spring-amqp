@@ -136,7 +136,7 @@ public class MulticastMain {
 				channel.exchangeDeclare(exchangeName, exchangeType);
 				final Producer p = new Producer(channel, exchangeName, id, flags, producerTxSize,
 						1000L * samplingInterval, rateLimit, minMsgSize, timeLimit, messageCount);
-				channel.setReturnListener(p);
+				channel.addReturnListener(p);
 				Thread t = new Thread(p);
 				producerThreads[i] = t;
 				t.start();
