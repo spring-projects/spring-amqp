@@ -70,6 +70,8 @@ public class BlockingQueueConsumer {
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
+	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
+
 	private final AcknowledgeMode acknowledgeMode;
 
 	private final ConnectionFactory connectionFactory;
@@ -166,7 +168,11 @@ public class BlockingQueueConsumer {
 			logger.debug("Retrieving delivery for " + this);
 		}
 		checkShutdown();
-		return handle(queue.poll(timeout, TimeUnit.MILLISECONDS));
+		Message message = handle(queue.poll(timeout, TimeUnit.MILLISECONDS));
+		if (message == null && cancelReceived.get()) {
+			throw new ConsumerCancelledException();
+		}
+		return message;
 	}
 
 	public void start() throws AmqpException {
@@ -178,20 +184,36 @@ public class BlockingQueueConsumer {
 		this.consumer = new InternalConsumer(channel);
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
-		try {
-			if (!acknowledgeMode.isAutoAck()) {
-				// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
-				// will send blocks of 100 messages)
-				channel.basicQos(prefetchCount);
+		int passiveDeclareTries = 3; // mirrored queue might be being moved
+		do {
+			try {
+				if (!acknowledgeMode.isAutoAck()) {
+					// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
+					// will send blocks of 100 messages)
+					channel.basicQos(prefetchCount);
+				}
+				for (int i = 0; i < queues.length; i++) {
+					channel.queueDeclarePassive(queues[i]);
+				}
+				passiveDeclareTries = 0;
+			} catch (IOException e) {
+				if (passiveDeclareTries > 0) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
+						try {
+							Thread.sleep(5000);
+						} catch (InterruptedException e1) {
+							Thread.currentThread().interrupt();
+						}
+					}
+				} else {
+					this.activeObjectCounter.release(this);
+					throw new FatalListenerStartupException("Cannot prepare queue for listener. "
+							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
+				}
 			}
-			for (int i = 0; i < queues.length; i++) {
-				channel.queueDeclarePassive(queues[i]);
-			}
-		} catch (IOException e) {
-			this.activeObjectCounter.release(this);
-			throw new FatalListenerStartupException("Cannot prepare queue for listener. "
-					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
-		}
+		} while (passiveDeclareTries-- > 0);
+
 		try {
 			for (int i = 0; i < queues.length; i++) {
 				channel.basicConsume(queues[i], acknowledgeMode.isAutoAck(), consumer);
@@ -206,13 +228,23 @@ public class BlockingQueueConsumer {
 
 	public void stop() {
 		cancelled.set(true);
-		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null) {
-			RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null
+				&& !this.cancelReceived.get()) {
+			try {
+				RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+			} catch (Exception e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Error closing consumer", e);
+				}
+			}
 		}
-		logger.debug("Closing Rabbit Channel: " + channel);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Closing Rabbit Channel: " + channel);
+		}
 		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
 		deliveryTags.clear();
+		consumer = null;
 	}
 
 	private class InternalConsumer extends DefaultConsumer {
@@ -229,6 +261,14 @@ public class BlockingQueueConsumer {
 			shutdown = sig;
 			// The delivery tags will be invalid if the channel shuts down
 			deliveryTags.clear();
+		}
+
+		@Override
+		public void handleCancel(String consumerTag) throws IOException {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Cancel received");
+			}
+			cancelReceived.set(true);
 		}
 
 		@Override

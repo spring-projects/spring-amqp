@@ -100,6 +100,13 @@ public class QueueParserTests {
 		assertEquals("spam", queue.getArguments().get("foo"));
 	}
 
+	@Test
+	public void testReferencedArgumentsQueue() throws Exception {
+		Queue queue = beanFactory.getBean("referencedArguments", Queue.class);
+		assertNotNull(queue);
+		assertEquals("qux", queue.getArguments().get("baz"));
+	}
+
 	@Test(expected=BeanDefinitionStoreException.class)
 	public void testIllegalAnonymousQueue() throws Exception {
 		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,15 +14,20 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -33,6 +38,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -73,9 +79,10 @@ import com.rabbitmq.client.GetResponse;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
+public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, MessageListener {
 
 	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct default exchange
 
@@ -98,7 +105,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private String encoding = DEFAULT_ENCODING;
+	private volatile String encoding = DEFAULT_ENCODING;
+
+	private volatile Queue replyQueue;
+
+	private final Map<String, LinkedBlockingQueue<Message>> replyHolder = new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
+
+	public static final String STACKED_CORRELATION_HEADER = "spring_reply_correlation";
+
+	public static final String STACKED_REPLY_TO_HEADER = "spring_reply_to";
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -162,6 +177,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 */
 	public void setEncoding(String encoding) {
 		this.encoding = encoding;
+	}
+
+
+	/**
+	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
+	 * be used for each reply.
+	 *
+	 * @param replyQueue the replyQueue to set
+	 */
+	public void setReplyQueue(Queue replyQueue) {
+		this.replyQueue = replyQueue;
 	}
 
 	/**
@@ -358,6 +384,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
+		if (this.replyQueue == null) {
+			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
+		}
+		else {
+			return doSendAndReceiveWithFixed(exchange, routingKey, message);
+		}
+	}
+
+	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
@@ -391,6 +426,50 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
 				channel.basicCancel(consumerTag);
+				return reply;
+			}
+		});
+		return replyMessage;
+	}
+
+	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
+		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+			public Message doInRabbit(Channel channel) throws Exception {
+				final LinkedBlockingQueue<Message> replyHandoff = new LinkedBlockingQueue<Message>();
+				String messageTag = UUID.randomUUID().toString();
+				RabbitTemplate.this.replyHolder.put(messageTag, replyHandoff);
+
+				String replyTo = message.getMessageProperties().getReplyTo();
+				if (StringUtils.hasLength(replyTo) && logger.isDebugEnabled()) {
+					logger.debug("Dropping replyTo header:" + replyTo
+							+ " in favor of template's configured reply-queue:"
+							+ RabbitTemplate.this.replyQueue.getName());
+				}
+				String springReplyTo = (String) message.getMessageProperties()
+						.getHeaders().get(STACKED_REPLY_TO_HEADER);
+				message.getMessageProperties().setHeader(
+						STACKED_REPLY_TO_HEADER,
+						pushHeaderValue(replyTo,
+										springReplyTo));
+				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyQueue.getName());
+				String correlation = (String) message.getMessageProperties()
+						.getHeaders().get(STACKED_CORRELATION_HEADER);
+				if (StringUtils.hasLength(correlation)) {
+					message.getMessageProperties().setHeader(
+							STACKED_CORRELATION_HEADER,
+							pushHeaderValue(messageTag, correlation));
+				} else {
+					message.getMessageProperties().setHeader(
+							"spring_reply_correlation", messageTag);
+				}
+
+				if (logger.isDebugEnabled()) {
+					logger.debug("Sending message with tag " + messageTag);
+				}
+				doSend(channel, exchange, routingKey, message);
+				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
+						TimeUnit.MILLISECONDS);
+				RabbitTemplate.this.replyHolder.remove(messageTag);
 				return reply;
 			}
 		});
@@ -480,4 +559,79 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		return name;
 	}
 
+	public void onMessage(Message message) {
+		String messageTag = (String) message.getMessageProperties()
+				.getHeaders().get(STACKED_CORRELATION_HEADER);
+		if (messageTag == null) {
+			logger.error("No correlation header in reply");
+			return;
+		}
+		PoppedHeader poppedHeaderValue = popHeaderValue(messageTag);
+		messageTag = poppedHeaderValue.getPoppedValue();
+		message.getMessageProperties().setHeader(STACKED_CORRELATION_HEADER,
+				poppedHeaderValue.getNewValue());
+		String springReplyTo = (String) message.getMessageProperties()
+				.getHeaders().get(STACKED_REPLY_TO_HEADER);
+		if (springReplyTo != null) {
+			poppedHeaderValue = popHeaderValue(springReplyTo);
+			springReplyTo = poppedHeaderValue.getNewValue();
+			message.getMessageProperties().setHeader(STACKED_REPLY_TO_HEADER, springReplyTo);
+			message.getMessageProperties().setReplyTo(null);
+		}
+		LinkedBlockingQueue<Message> queue = this.replyHolder.get(messageTag);
+		if (queue == null) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Reply received after timeout for " + messageTag);
+			}
+			return;
+		}
+		queue.add(message);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Reply received for " + messageTag);
+		}
+	}
+
+	private String pushHeaderValue(String newValue, String oldValue) {
+		if (oldValue == null) {
+			return newValue;
+		}
+		else {
+			return newValue + ":" + oldValue;
+		}
+	}
+
+	private PoppedHeader popHeaderValue(String value) {
+		int index = value.indexOf(":");
+		if (index < 0) {
+			return new PoppedHeader(value, null);
+		}
+		else {
+			return new PoppedHeader(value.substring(0, index), value.substring(index+1));
+		}
+	}
+
+	private static class PoppedHeader {
+
+		private final String poppedValue;
+
+		private final String newValue;
+
+		public PoppedHeader(String poppedValue, String newValue) {
+			this.poppedValue = poppedValue;
+			if (StringUtils.hasLength(newValue)) {
+				this.newValue = newValue;
+			}
+			else {
+				this.newValue = null;
+			}
+		}
+
+		public String getPoppedValue() {
+			return poppedValue;
+		}
+
+		public String getNewValue() {
+			return newValue;
+		}
+	}
 }
