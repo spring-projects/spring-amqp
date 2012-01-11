@@ -22,6 +22,7 @@ import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  */
 class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
@@ -40,6 +41,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 	private static final String ENCODING_ATTRIBUTE = "encoding";
 
 	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
+
+	private static final String REPLY_QUEUE_ARGUMENTS = "reply-queue-arguments";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -77,6 +80,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_QUEUE_ARGUMENTS);
 
 	}
 

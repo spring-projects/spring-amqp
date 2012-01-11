@@ -22,8 +22,11 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.Address;
+
 /**
  * @author Dave Syer
+ * @author Gary Russell
  * 
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean {
@@ -35,6 +38,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private final CompositeConnectionListener connectionListener = new CompositeConnectionListener();
 
 	private final CompositeChannelListener channelListener = new CompositeChannelListener();
+
+	private volatile Address[] addresses;
 
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
@@ -78,6 +83,17 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
+	 * Set addresses for clustering.
+	 * @param addresses list of addresses with form "host[:port],..."
+	 */
+	public void setAddresses(String addresses) {
+		Address[] addressArray = Address.parseAddresses(addresses);
+		if (addressArray.length > 0) {
+			this.addresses = addressArray;
+		}
+	}
+
+	/**
 	 * A composite connection listener to be used by subclasses when creating and closing connections.
 	 * 
 	 * @return the connection listener
@@ -113,6 +129,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	final protected Connection createBareConnection() {
 		try {
+			if (this.addresses != null) {
+				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.addresses));
+			}
 			return new SimpleConnection(this.rabbitConnectionFactory.newConnection());
 		} catch (IOException e) {
 			throw RabbitUtils.convertRabbitAccessException(e);

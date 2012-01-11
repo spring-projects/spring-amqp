@@ -14,6 +14,8 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +75,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
@@ -98,7 +101,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private String encoding = DEFAULT_ENCODING;
+	private volatile String encoding = DEFAULT_ENCODING;
+
+	private volatile Map<String, Object> replyQueueArguments;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -203,6 +208,23 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
 		this.messagePropertiesConverter = messagePropertiesConverter;
+	}
+
+	/**
+	 * @param replyQueueArguments the replyQueueArguments to set
+	 */
+	public void setReplyQueueArguments(Map<String, Object> replyQueueArguments) {
+		this.replyQueueArguments = replyQueueArguments;
+	}
+
+	public void setReplyQueueArguments(String arguments) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		String[] entries = arguments.split(",");
+		for (String entry : entries) {
+			String[] keyVal = entry.split("=");
+			map.put(keyVal[0].trim(), keyVal[1].trim());
+		}
+		this.replyQueueArguments = map;
 	}
 
 	/**
@@ -364,7 +386,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
-				DeclareOk queueDeclaration = channel.queueDeclare();
+				DeclareOk queueDeclaration = channel.queueDeclare("", false, true, true, replyQueueArguments);
 				String replyTo = queueDeclaration.getQueue();
 				message.getMessageProperties().setReplyTo(replyTo);
 
