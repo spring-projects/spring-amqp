@@ -25,6 +25,8 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.Address;
+
 /**
  * @author Dave Syer
  * @author Gary Russell
@@ -41,6 +43,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
 	private volatile ExecutorService executorService;
+
+	private volatile Address[] addresses;
 
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
@@ -81,6 +85,17 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public int getPort() {
 		return this.rabbitConnectionFactory.getPort();
+	}
+
+	/**
+	 * Set addresses for clustering.
+	 * @param addresses list of addresses with form "host[:port],..."
+	 */
+	public void setAddresses(String addresses) {
+		Address[] addressArray = Address.parseAddresses(addresses);
+		if (addressArray.length > 0) {
+			this.addresses = addressArray;
+		}
 	}
 
 	/**
@@ -138,7 +153,12 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	final protected Connection createBareConnection() {
 		try {
-			return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService));
+			if (this.addresses != null) {
+				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses));
+			}
+			else {
+				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService));
+			}
 		} catch (IOException e) {
 			throw RabbitUtils.convertRabbitAccessException(e);
 		}
