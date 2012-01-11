@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
-	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<rabbit:template id="template" connection-factory="connectionFactory" />
@@ -10,7 +10,17 @@
 		encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter" reply-timeout="1000" />
 
 	<rabbit:connection-factory id="connectionFactory" />
-	
+
 	<bean id="converter" class="org.springframework.amqp.support.converter.SerializerMessageConverter"/>
+
+	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="reply.queue">
+		<rabbit:reply-listener />
+	</rabbit:template>
+
+	<rabbit:queue name="reply.queue" queue-arguments="args" />
+
+	<rabbit:queue-arguments id="args">
+		<entry key="foo" value="bar" />
+	</rabbit:queue-arguments>
 
 </beans>
