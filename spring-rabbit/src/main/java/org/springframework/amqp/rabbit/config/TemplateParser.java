@@ -80,7 +80,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
-		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_QUEUE_ARGUMENTS);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ARGUMENTS);
 
 	}
 

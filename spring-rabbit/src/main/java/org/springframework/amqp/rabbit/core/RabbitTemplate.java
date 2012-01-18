@@ -214,17 +214,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * @param replyQueueArguments the replyQueueArguments to set
 	 */
 	public void setReplyQueueArguments(Map<String, Object> replyQueueArguments) {
-		this.replyQueueArguments = replyQueueArguments;
-	}
-
-	public void setReplyQueueArguments(String arguments) {
-		Map<String, Object> map = new HashMap<String, Object>();
-		String[] entries = arguments.split(",");
-		for (String entry : entries) {
-			String[] keyVal = entry.split("=");
-			map.put(keyVal[0].trim(), keyVal[1].trim());
-		}
-		this.replyQueueArguments = map;
+		Map<String, Object> newArgs = new HashMap<String, Object>();
+		newArgs.putAll(replyQueueArguments);
+		this.replyQueueArguments = newArgs;
 	}
 
 	/**

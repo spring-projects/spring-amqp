@@ -56,6 +56,18 @@
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="queue-arguments" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					A reference to a <queue-arguments/> element.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.Map" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -338,6 +350,7 @@
 	<xsd:complexType name="mapType">
 		<xsd:complexContent>
 			<xsd:extension base="beans:mapType">
+				<xsd:attribute name="id" type="xsd:string" />
 				<xsd:attribute name="ref" use="optional">
 					<xsd:annotation>
 						<xsd:documentation source="java:java.util.Map"><![CDATA[
@@ -620,6 +633,15 @@
 					]]></xsd:documentation>
 		</xsd:annotation>
 		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="reply-queue-arguments" type="mapType" minOccurs="0" maxOccurs="1">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+	Arguments used when creating temporary reply queues for sendAndReceive operations.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:sequence>
 			<xsd:attribute name="id" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
@@ -698,6 +720,11 @@
 					<xsd:documentation><![CDATA[
 	List of arguments used when creating a reply queue in sendAndReceive(). Default none.
 					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+						</tool:annotation>
+					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
 		</xsd:complexType>
