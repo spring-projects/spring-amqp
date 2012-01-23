@@ -66,4 +66,13 @@ public final class TemplateParserTests {
 		assertEquals("bar", args.get("foo"));
 	}
 
+	@Test
+	public void testWithAnonArgs() throws Exception {
+		RabbitTemplate template = beanFactory.getBean("withAnonArgs", RabbitTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		Map<?, ?> args = (Map<?, ?>) dfa.getPropertyValue("replyQueueArguments");
+		assertNotNull(args);
+		assertEquals("qux", args.get("baz"));
+	}
 }

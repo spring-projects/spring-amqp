@@ -13,11 +13,14 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.Map;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 /**
@@ -80,6 +83,22 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
+
+		String queueArguments = element.getAttribute(REPLY_QUEUE_ARGUMENTS);
+		Element argumentsElement = DomUtils.getChildElementByTagName(element, REPLY_QUEUE_ARGUMENTS);
+
+		if (argumentsElement != null) {
+			if (StringUtils.hasText(queueArguments)) {
+				parserContext
+						.getReaderContext()
+						.error("Template may have either a queue-attributes attribute or element, but not both",
+								element);
+			}
+			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+					builder.getRawBeanDefinition());
+			builder.addPropertyValue("replyQueueArguments", map);
+		}
+
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ARGUMENTS);
 
 	}

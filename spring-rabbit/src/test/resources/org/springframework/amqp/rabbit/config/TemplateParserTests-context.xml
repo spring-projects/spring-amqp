@@ -19,4 +19,10 @@
 		<entry key="foo" value="bar" />
 	</rabbit:queue-arguments>
 
+	<rabbit:template id="withAnonArgs" connection-factory="connectionFactory" >
+		<rabbit:reply-queue-arguments id="args">
+			<entry key="baz" value="qux" />
+		</rabbit:reply-queue-arguments>
+	</rabbit:template>
+
 </beans>
