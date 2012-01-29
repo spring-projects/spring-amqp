@@ -200,9 +200,9 @@ public class BlockingQueueConsumer {
 			} catch (IOException e) {
 				if (passiveDeclareTries > 0) {
 					if (logger.isWarnEnabled()) {
-						logger.warn("Reconnect failed; retries left=" + passiveDeclareTries, e);
+						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
 						try {
-							Thread.sleep(1000);
+							Thread.sleep(5000);
 						} catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
 						}

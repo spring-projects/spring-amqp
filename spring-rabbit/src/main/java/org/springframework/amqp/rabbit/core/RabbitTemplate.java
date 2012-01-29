@@ -399,12 +399,23 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 							Thread.currentThread().interrupt();
 						}
 					}
+					@Override
+					public void handleCancel(String consumerTag)
+							throws IOException {
+						logger.debug("CANCELLED");
+					}
 				};
 				channel.basicConsume(replyTo, noAck, consumerTag, noLocal, exclusive, null, consumer);
 				doSend(channel, exchange, routingKey, message);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
-				channel.basicCancel(consumerTag);
+				try {
+					channel.basicCancel(consumerTag);
+				} catch (Exception e) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Error cancelling consumerTag " + consumerTag, e);
+					}
+				}
 				return reply;
 			}
 		});
