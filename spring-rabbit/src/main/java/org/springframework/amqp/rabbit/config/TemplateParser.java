@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,14 +13,11 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.Map;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
-import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 /**
@@ -45,7 +42,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
 
-	private static final String REPLY_QUEUE_ARGUMENTS = "reply-queue-arguments";
+	private static final String REPLY_QUEUE = "reply-queue";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -83,23 +80,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
-
-		String queueArguments = element.getAttribute(REPLY_QUEUE_ARGUMENTS);
-		Element argumentsElement = DomUtils.getChildElementByTagName(element, REPLY_QUEUE_ARGUMENTS);
-
-		if (argumentsElement != null) {
-			if (StringUtils.hasText(queueArguments)) {
-				parserContext
-						.getReaderContext()
-						.error("Template may have either a queue-attributes attribute or element, but not both",
-								element);
-			}
-			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
-					builder.getRawBeanDefinition());
-			builder.addPropertyValue("replyQueueArguments", map);
-		}
-
-		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ARGUMENTS);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE);
 
 	}
 

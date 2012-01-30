@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,17 +14,20 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -78,7 +81,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Gary Russell
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
+public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, MessageListener {
 
 	private static final String DEFAULT_EXCHANGE = ""; // alias for amq.direct default exchange
 
@@ -103,7 +106,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 
 	private volatile String encoding = DEFAULT_ENCODING;
 
-	private volatile Map<String, Object> replyQueueArguments;
+	private volatile Queue replyQueue;
+
+	private final Map<String, LinkedBlockingQueue<Message>> replyHolder = new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -169,6 +174,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 		this.encoding = encoding;
 	}
 
+
+	/**
+	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
+	 * be used for each reply.
+	 *
+	 * @param replyQueue the replyQueue to set
+	 */
+	public void setReplyQueue(Queue replyQueue) {
+		this.replyQueue = replyQueue;
+	}
+
 	/**
 	 * Specify the timeout in milliseconds to be used when waiting for a reply Message when using one of the
 	 * sendAndReceive methods. The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value
@@ -208,15 +224,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
 		this.messagePropertiesConverter = messagePropertiesConverter;
-	}
-
-	/**
-	 * @param replyQueueArguments the replyQueueArguments to set
-	 */
-	public void setReplyQueueArguments(Map<String, Object> replyQueueArguments) {
-		Map<String, Object> newArgs = new HashMap<String, Object>();
-		newArgs.putAll(replyQueueArguments);
-		this.replyQueueArguments = newArgs;
 	}
 
 	/**
@@ -372,13 +379,22 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
+		if (this.replyQueue == null) {
+			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
+		}
+		else {
+			return doSendAndReceiveWithFixed(exchange, routingKey, message);
+		}
+	}
+
+	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
 				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
-				DeclareOk queueDeclaration = channel.queueDeclare("", false, true, true, replyQueueArguments);
+				DeclareOk queueDeclaration = channel.queueDeclare();
 				String replyTo = queueDeclaration.getQueue();
 				message.getMessageProperties().setReplyTo(replyTo);
 
@@ -399,23 +415,37 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 							Thread.currentThread().interrupt();
 						}
 					}
-					@Override
-					public void handleCancel(String consumerTag)
-							throws IOException {
-						logger.debug("CANCELLED");
-					}
 				};
 				channel.basicConsume(replyTo, noAck, consumerTag, noLocal, exclusive, null, consumer);
 				doSend(channel, exchange, routingKey, message);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
-				try {
-					channel.basicCancel(consumerTag);
-				} catch (Exception e) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Error cancelling consumerTag " + consumerTag, e);
-					}
+				channel.basicCancel(consumerTag);
+				return reply;
+			}
+		});
+		return replyMessage;
+	}
+
+	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
+		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+			public Message doInRabbit(Channel channel) throws Exception {
+				final LinkedBlockingQueue<Message> replyHandoff = new LinkedBlockingQueue<Message>();
+				String messageTag = UUID.randomUUID().toString();
+				RabbitTemplate.this.replyHolder.put(messageTag, replyHandoff);
+
+				Assert.isNull(message.getMessageProperties().getReplyTo(),
+						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
+				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyQueue.getName());
+				message.getMessageProperties().setHeader("spring_reply_correlation", messageTag);
+
+				if (logger.isDebugEnabled()) {
+					logger.debug("Sending message with tag " + messageTag);
 				}
+				doSend(channel, exchange, routingKey, message);
+				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
+						TimeUnit.MILLISECONDS);
+				RabbitTemplate.this.replyHolder.remove(messageTag);
 				return reply;
 			}
 		});
@@ -503,6 +533,25 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 			throw new AmqpIllegalStateException("No 'queue' specified. Check configuration of RabbitTemplate.");
 		}
 		return name;
+	}
+
+	public void onMessage(Message message) {
+		String messageTag = (String) message.getMessageProperties().getHeaders().get("spring_reply_correlation");
+		if (messageTag == null) {
+			logger.error("No correlation header in reply");
+			return;
+		}
+		LinkedBlockingQueue<Message> queue = this.replyHolder.get(messageTag);
+		if (queue == null) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Reply received after timeout for " + messageTag);
+			}
+			return;
+		}
+		queue.add(message);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Reply received for " + messageTag);
+		}
 	}
 
 }

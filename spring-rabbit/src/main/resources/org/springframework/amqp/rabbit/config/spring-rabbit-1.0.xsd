@@ -633,15 +633,6 @@
 					]]></xsd:documentation>
 		</xsd:annotation>
 		<xsd:complexType>
-			<xsd:sequence>
-				<xsd:element name="reply-queue-arguments" type="mapType" minOccurs="0" maxOccurs="1">
-					<xsd:annotation>
-						<xsd:documentation><![CDATA[
-	Arguments used when creating temporary reply queues for sendAndReceive operations.
-						]]></xsd:documentation>
-					</xsd:annotation>
-				</xsd:element>
-			</xsd:sequence>
 			<xsd:attribute name="id" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
@@ -715,14 +706,15 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="reply-queue-arguments" type="xsd:string" use="optional">
+			<xsd:attribute name="reply-queue" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	List of arguments used when creating a reply queue in sendAndReceive(). Default none.
+	A reference to a <queue/> for replies; optional; if not supplied, methods expecting replies
+	will use a temporary, exclusive, auto-delete queue.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+							<tool:expected-type type="org.springframework.amqp.core.Queue" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
