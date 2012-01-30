@@ -13,20 +13,25 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.SerializerMessageConverter;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
 
 /**
  * 
  * @author Dave Syer
+ * @author Gary Russell
  * 
  */
 public final class TemplateParserTests {
@@ -50,5 +55,24 @@ public final class TemplateParserTests {
 		assertNotNull(template);
 		assertTrue(template.getMessageConverter() instanceof SerializerMessageConverter);
 	}	
-	
+
+	@Test
+	public void testWithArgs() throws Exception {
+		RabbitTemplate template = beanFactory.getBean("withArgs", RabbitTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		Map<?, ?> args = (Map<?, ?>) dfa.getPropertyValue("replyQueueArguments");
+		assertNotNull(args);
+		assertEquals("bar", args.get("foo"));
+	}
+
+	@Test
+	public void testWithAnonArgs() throws Exception {
+		RabbitTemplate template = beanFactory.getBean("withAnonArgs", RabbitTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		Map<?, ?> args = (Map<?, ?>) dfa.getPropertyValue("replyQueueArguments");
+		assertNotNull(args);
+		assertEquals("qux", args.get("baz"));
+	}
 }

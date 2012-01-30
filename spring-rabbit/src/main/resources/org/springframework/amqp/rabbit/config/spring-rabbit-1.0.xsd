@@ -56,6 +56,18 @@
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="queue-arguments" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					A reference to a <queue-arguments/> element.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.Map" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -338,6 +350,7 @@
 	<xsd:complexType name="mapType">
 		<xsd:complexContent>
 			<xsd:extension base="beans:mapType">
+				<xsd:attribute name="id" type="xsd:string" />
 				<xsd:attribute name="ref" use="optional">
 					<xsd:annotation>
 						<xsd:documentation source="java:java.util.Map"><![CDATA[
@@ -693,6 +706,19 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="reply-queue" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to a <queue/> for replies; optional; if not supplied, methods expecting replies
+	will use a temporary, exclusive, auto-delete queue.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.Queue" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -721,6 +747,13 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Port number to connect to broker.  Default is 5672.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="addresses" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	List of addresses; e.g. host1,host2:4567,host3 - overrides host/port if supplied.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>

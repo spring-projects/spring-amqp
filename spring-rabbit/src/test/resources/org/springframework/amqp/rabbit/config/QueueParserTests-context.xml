@@ -28,4 +28,10 @@
 
 	<rabbit:queue id="anonymousOverride" durable="false" auto-delete="true" exclusive="true" />
 
+	<rabbit:queue-arguments id="topLevelArgs">
+		<beans:entry key="baz" value="qux" />
+	</rabbit:queue-arguments>
+
+	<rabbit:queue id="referencedArguments" queue-arguments="topLevelArgs" />
+
 </beans>

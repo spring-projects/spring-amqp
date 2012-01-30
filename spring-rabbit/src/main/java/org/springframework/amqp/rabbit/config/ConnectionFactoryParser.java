@@ -21,6 +21,7 @@ import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  */
 class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
@@ -31,6 +32,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 	private static final String HOST_ATTRIBUTE = "host";
 
 	private static final String PORT_ATTRIBUTE = "port";
+
+	private static final String ADDRESSES = "addresses";
 
 	private static final String VIRTUAL_HOST_ATTRIBUTE = "virtual-host";
 
@@ -63,6 +66,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, USER_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PASSWORD_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, VIRTUAL_HOST_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
 
 	}
 
