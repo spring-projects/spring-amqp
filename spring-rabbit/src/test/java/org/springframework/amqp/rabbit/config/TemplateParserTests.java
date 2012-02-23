@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.SerializerMessageConverter;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
@@ -64,6 +65,10 @@ public final class TemplateParserTests {
 		assertNotNull(queue);
 		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);
 		assertSame(queueBean, queue);
+		SimpleMessageListenerContainer container = beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
+		assertNotNull(container);
+		dfa = new DirectFieldAccessor(container);
+		assertSame(template, dfa.getPropertyValue("messageListener"));
 	}
 
 }

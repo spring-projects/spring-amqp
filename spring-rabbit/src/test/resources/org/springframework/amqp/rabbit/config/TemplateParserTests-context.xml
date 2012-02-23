@@ -13,7 +13,9 @@
 
 	<bean id="converter" class="org.springframework.amqp.support.converter.SerializerMessageConverter"/>
 
-	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="reply.queue" />
+	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="reply.queue">
+		<rabbit:reply-listener />
+	</rabbit:template>
 
 	<rabbit:queue name="reply.queue" queue-arguments="args" />
 
