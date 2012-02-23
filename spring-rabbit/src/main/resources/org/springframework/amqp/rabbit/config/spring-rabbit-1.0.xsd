@@ -367,7 +367,7 @@
 		</xsd:complexContent>
 	</xsd:complexType>
 
-	<xsd:element name="listener-container" type="listenerContainerType">
+	<xsd:element name="listener-container">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 	Each listener child element will be hosted by a container whose configuration
@@ -380,30 +380,50 @@
 				</tool:annotation>
 			</xsd:appinfo>
 		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="listenerContainerBaseType">
+					<xsd:sequence>
+						<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded" />
+					</xsd:sequence>
+					<xsd:attribute name="connection-factory" type="xsd:string" default="rabbitConnectionFactory">
+						<xsd:annotation>
+							<xsd:documentation><![CDATA[
+				A reference to the org.springframework.amqp.rabbit.connection.ConnectionFactory.
+				Default referenced bean name is "rabbitConnectionFactory".
+							]]></xsd:documentation>
+							<xsd:appinfo>
+								<tool:annotation kind="ref">
+									<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+								</tool:annotation>
+							</xsd:appinfo>
+						</xsd:annotation>
+					</xsd:attribute>
+					<xsd:attribute name="message-converter" type="xsd:string">
+						<xsd:annotation>
+							<xsd:documentation><![CDATA[
+				A reference to the MessageConverter strategy for converting AMQP Messages to
+				listener method arguments for any referenced 'listener' that is a POJO.
+				Default is a SimpleMessageConverter.
+							]]></xsd:documentation>
+							<xsd:appinfo>
+								<tool:annotation kind="ref">
+									<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+								</tool:annotation>
+							</xsd:appinfo>
+						</xsd:annotation>
+					</xsd:attribute>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
 	</xsd:element>
 
-	<xsd:complexType name="listenerContainerType">
-		<xsd:sequence>
-			<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded" />
-		</xsd:sequence>
+	<xsd:complexType name="listenerContainerBaseType">
 		<xsd:attribute name="id" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 	Optional bean id for the container.
 				]]></xsd:documentation>
-			</xsd:annotation>
-		</xsd:attribute>
-		<xsd:attribute name="connection-factory" type="xsd:string" default="rabbitConnectionFactory">
-			<xsd:annotation>
-				<xsd:documentation><![CDATA[
-	A reference to the org.springframework.amqp.rabbit.connection.ConnectionFactory.
-	Default referenced bean name is "rabbitConnectionFactory".
-				]]></xsd:documentation>
-				<xsd:appinfo>
-					<tool:annotation kind="ref">
-						<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
-					</tool:annotation>
-				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
 		<xsd:attribute name="task-executor" type="xsd:string">
@@ -415,20 +435,6 @@
 				<xsd:appinfo>
 					<tool:annotation kind="ref">
 						<tool:expected-type type="java.util.concurrent.Executor" />
-					</tool:annotation>
-				</xsd:appinfo>
-			</xsd:annotation>
-		</xsd:attribute>
-		<xsd:attribute name="message-converter" type="xsd:string">
-			<xsd:annotation>
-				<xsd:documentation><![CDATA[
-	A reference to the MessageConverter strategy for converting AMQP Messages to
-	listener method arguments for any referenced 'listener' that is a POJO.
-	Default is a SimpleMessageConverter.
-				]]></xsd:documentation>
-				<xsd:appinfo>
-					<tool:annotation kind="ref">
-						<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
 					</tool:annotation>
 				</xsd:appinfo>
 			</xsd:annotation>
@@ -635,11 +641,12 @@
 		</xsd:annotation>
 		<xsd:complexType>
 			<xsd:sequence>
-				<xsd:element name="reply-listener" type="listenerContainerType"
+				<xsd:element name="reply-listener" type="listenerContainerBaseType"
 					minOccurs="0" maxOccurs="1">
 					<xsd:annotation>
 						<xsd:documentation><![CDATA[
-	A <listener-container/> used to receive asynchronous replies on the reply-channel.
+	A <listener-container/> used to receive asynchronous replies on the reply-channel the
+	<listener/> child element is disallowed because the template itself is the listener.
 						]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:element>

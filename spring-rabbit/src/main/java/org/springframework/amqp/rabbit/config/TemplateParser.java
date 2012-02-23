@@ -137,19 +137,6 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		if (getChildElement(childElement, parserContext) != null) {
 			parserContext.getReaderContext().error("<reply-listener/> is not allowed any child elements.", element);
 		}
-		String childConnectionFactory = childElement.getAttribute(CONNECTION_FACTORY_ATTRIBUTE);
-		/*
-		 * Connection factory is not allowed on the child; if it's 'rabbitConnectionFactory', we'll
-		 * simply ignore it because that is the schema default.
-		 */
-		if (StringUtils.hasText(childConnectionFactory) && !childConnectionFactory.equals("rabbitConnectionFactory")) {
-			parserContext.getReaderContext().error("No connection-factory is allowed on the " +
-					"<reply-listener/>; the template's factory will be used.", element);
-		}
-		if (StringUtils.hasText(childElement.getAttribute(MESSAGE_CONVERTER_ATTRIBUTE))) {
-			parserContext.getReaderContext().error("No message-converter is allowed on the " +
-					"<reply-listener/>; the template's converter will be used.", element);
-		}
 		BeanDefinition replyContainer = RabbitNamespaceUtils.parseContainer(childElement, parserContext);
 		if (replyContainer != null) {
 			replyContainer.getPropertyValues().add(
