@@ -296,6 +296,17 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory" channel-cache-size="25"/>]]></programlisting>
     </para>
+    <para>
+    Host and port attributes can be provided using the namespace
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
+    id="connectionFactory" host="somehost" port="5672" />]]></programlisting>
+    </para>
+    <para>
+	Alternatively, if running in a clustered environment, use the addresses
+	attribute.
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
+    id="connectionFactory" addresses="host1:5672,host2:5672" />]]></programlisting>
+    </para>
   </section>
 
   <section id="amqp-template">
@@ -685,6 +696,23 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <para>Similar request/reply methods are also available where the <classname>MessageConverter</classname>
     is applied to both the request and reply. Those methods are named <methodname>convertSendAndReceive</methodname>.
     See the Javadoc of <classname>AmqpTemplate</classname> for more detail.</para>
+    <para>
+    By default, a new temporary queue is used for each reply. However, a single reply queue can be configured on the template,
+    which allows you to set arguments on that queue (such as 'ha_args="all"' for mirrored queues). In this case, however, 
+    you must also provide a &lt;reply-listener/&gt; sub element. This element provides a listener container for the
+    reply queue, with the template being the listener. All of the <xref linkend="containerAttributes" /> attributes
+    allowed on a &lt;listener-container/&gt; are allowed on the element, except for connection-factory and
+    message-converter, which are inherited from the template's configuration.
+    <programlisting language="xml"><![CDATA[<rabbit:template id="amqpTemplate"
+        connection-factory="connectionFactory" reply-queue="replies">
+    <rabbit:reply-listener />
+</rabbit:template>
+]]></programlisting>
+    </para>
+    <para>
+    While the container and template share a connection factory, they do not share a channel and therefore requests
+    and replies are not performed within the same transaction (if transactional).
+    </para>
   </section>
 
   <section id="broker-configuration">
@@ -997,13 +1025,17 @@ public class ExampleExternalTransactionAmqpConfiguration {
     </section>
   </section>
 
-  <section>
-    <title>Message Listener Container Features</title>
+  <section id="containerAttributes">
+    <title>Message Listener Container Configuration</title>
 
     <para>There are quite a few options for configuring a
     <classname>SimpleMessageListenerContainer</classname> related to
     transactions and quality of service, and some of them interact with each
     other.</para>
+
+    <para>When configuring with the XML namespace, the convention is to
+    use hyphenated attributes rather than camel case; for example, for
+    property 'connectionFactory', the XML equivalent is 'connection-factory'.</para>
 
     <para><table>
         <title>Configuration options for a message listener container</title>
@@ -1106,6 +1138,17 @@ public class ExampleExternalTransactionAmqpConfiguration {
             </row>
 
             <row>
+              <entry>phase</entry>
+
+              <entry>When autoStartup is true, the lifecycle phase within
+              which this container should start and stop. The lower the
+              value the earlier this container will start and the later it
+              will stop. The default is Integer.MAX_VALUE meaning the
+              container will start as late as possible and stop as
+              soon as possible.</entry>
+            </row>
+
+            <row>
               <entry>adviceChain</entry>
 
               <entry>An array of AOP Advice to apply to the listener
@@ -1114,6 +1157,46 @@ public class ExampleExternalTransactionAmqpConfiguration {
               Note that simple re-connection after an AMQP error is handled by
               the <classname>CachingConnectionFactory</classname>, as long as
               the broker is still alive.</entry>
+            </row>
+
+            <row>
+              <entry>taskExecutor</entry>
+              
+              <entry>A reference to a Spring TaskExecutor (or standard JDK 1.5+
+              Executor) for executing listener invokers. Default is a
+              SimpleAsyncTaskExecutor, using internally managed threads.</entry>
+            </row>
+
+            <row>
+              <entry>errorHandler</entry>
+              
+              <entry>A reference to an ErrorHandler strategy for handling any
+              uncaught Exceptions that may occur during the execution of the
+              MessageListener.</entry>
+            </row>
+
+            <row>
+              <entry>concurrency</entry>
+              
+              <entry>The number of concurrent consumers to start for each
+              listener.</entry>
+            </row>
+
+            <row>
+              <entry>connectionFactory</entry>
+              
+              <entry>A reference to the connectionFactory; when configuring
+              using the XML namespace, the default referenced bean name
+              is "rabbitConnectionFactory".</entry>
+            </row>
+
+            <row>
+              <entry>messageConverter</entry>
+              
+              <entry>A reference to the MessageConverter strategy for
+              converting AMQP Messages to listener method arguments
+              for any referenced 'listener' that is a POJO. Default is
+              a SimpleMessageConverter.</entry>
             </row>
           </tbody>
         </tgroup>
