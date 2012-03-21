@@ -355,7 +355,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData corrationData) throws AmqpException {
-		send(exchange, routingKey, getRequiredMessageConverter().toMessage(object, new MessageProperties()), corrationData);
+		send(exchange, routingKey, convertMessageIfNecessary(object), corrationData);
 	}
 
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
@@ -380,7 +380,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException {
-		Message messageToSend = getRequiredMessageConverter().toMessage(message, new MessageProperties());
+		Message messageToSend = convertMessageIfNecessary(message);
 		messageToSend = messagePostProcessor.postProcessMessage(messageToSend);
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
@@ -464,8 +464,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
-		MessageProperties messageProperties = new MessageProperties();
-		Message requestMessage = getRequiredMessageConverter().toMessage(message, messageProperties);
+		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
 			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
 		}
@@ -474,6 +473,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			return null;
 		}
 		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+	}
+
+	protected Message convertMessageIfNecessary(final Object object) {
+		if (object instanceof Message) {
+			return (Message) object;
+		}
+		return getRequiredMessageConverter().toMessage(object, new MessageProperties());
 	}
 
 	/**
