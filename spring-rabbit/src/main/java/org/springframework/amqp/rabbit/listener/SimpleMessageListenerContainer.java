@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import org.aopalliance.aop.Advice;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -93,6 +94,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
+
+	private volatile boolean defaultRequeueRejected = true;
 
 	public static interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -216,6 +219,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
 		this.messagePropertiesConverter = messagePropertiesConverter;
+	}
+
+	/**
+	 * Determines the default behavior when a message is rejected, for example because the listener
+	 * threw an exception. When true, messages will be requeued, when false, they will not. For
+	 * versions of Rabbit that support dead-lettering, the message must not be requeued in order
+	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
+	 * be requeued. When true, the default can be overridden by the listener throwing an
+	 * {@link AmqpRejectAndDontRequeueException}. Default true.
+	 * @param defaultRequeueRejected
+	 */
+	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
+		this.defaultRequeueRejected = defaultRequeueRejected;
 	}
 
 	/**
@@ -378,7 +394,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		// didn't get an ack for delivered messages
 		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
-				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, queues);
+				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected, queues);
 		return consumer;
 	}
 
