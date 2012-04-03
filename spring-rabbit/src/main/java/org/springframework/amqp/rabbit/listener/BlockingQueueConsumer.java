@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -315,9 +316,18 @@ public class BlockingQueueConsumer {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Rejecting messages");
 				}
+				boolean shouldRequeue = true;
+				Throwable t = ex;
+				while (t != null) {
+					if (t instanceof AmqpRejectAndDontRequeueException) {
+						shouldRequeue = false;
+						break;
+					}
+					t = t.getCause();
+				}
 				for (Long deliveryTag : deliveryTags) {
 					// With newer RabbitMQ brokers could use basicNack here...
-					channel.basicReject(deliveryTag, true);
+					channel.basicReject(deliveryTag, shouldRequeue);
 				}
 				if (transactional) {
 					// Need to commit the reject (=nack)
