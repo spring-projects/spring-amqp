@@ -292,9 +292,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doStart() throws Exception {
 		super.doStart();
 		synchronized (this.consumersMonitor) {
-			initializeConsumers();
+			int newConsumers = initializeConsumers();
 			if (this.consumers == null) {
-				logger.info("Consumers were initialized and then cleared (presumably the container was stopped concurrently)");
+				if (logger.isInfoEnabled()) {
+					logger.info("Consumers were initialized and then cleared (presumably the container was stopped concurrently)");
+				}
+				return;
+			}
+			if (newConsumers <= 0) {
+				if (logger.isInfoEnabled()) {
+					logger.info("Consumers are already running");
+				}
 				return;
 			}
 			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
@@ -343,7 +351,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	protected void initializeConsumers() {
+	protected int initializeConsumers() {
+		int count = 0;
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
 				cancellationLock.reset();
@@ -351,9 +360,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				for (int i = 0; i < this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
+					count++;
 				}
 			}
 		}
+		return count;
 	}
 
 	protected boolean isChannelLocallyTransacted(Channel channel) {
