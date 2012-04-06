@@ -64,6 +64,32 @@ public class BlockingQueueConsumerTests {
 		testRequeueOrNot(ex, false);
 	}
 
+	@Test
+	public void testRequeueDefaultNot() throws Exception {
+		Exception ex = new RuntimeException();
+		testRequeueOrNotDefaultNot(ex, false);
+	}
+
+	@Test
+	public void testRequeueNullExceptionDefaultNot() throws Exception {
+		Exception ex = null;
+		testRequeueOrNotDefaultNot(ex, false);
+	}
+
+	@Test
+	public void testDontRequeueDefaultNot() throws Exception {
+		Exception ex = new AmqpRejectAndDontRequeueException("fail");
+		testRequeueOrNotDefaultNot(ex, false);
+	}
+
+	@Test
+	public void testDontRequeueNestedDefaultNot() throws Exception {
+		Exception ex = new RuntimeException(
+				new RuntimeException(new AmqpRejectAndDontRequeueException(
+						"fail")));
+		testRequeueOrNotDefaultNot(ex, false);
+	}
+
 	private void testRequeueOrNot(Exception ex, boolean requeue)
 			throws Exception, IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -71,6 +97,22 @@ public class BlockingQueueConsumerTests {
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 1, "testQ");
+		testRequeueOrNotGuts(ex, requeue, channel, blockingQueueConsumer);
+	}
+
+	private void testRequeueOrNotDefaultNot(Exception ex, boolean requeue)
+			throws Exception, IOException {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Channel channel = mock(Channel.class);
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 1, false, "testQ");
+		testRequeueOrNotGuts(ex, requeue, channel, blockingQueueConsumer);
+	}
+
+	private void testRequeueOrNotGuts(Exception ex, boolean requeue,
+			Channel channel, BlockingQueueConsumer blockingQueueConsumer)
+			throws Exception, IOException {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(blockingQueueConsumer);
 		dfa.setPropertyValue("channel", channel);
 		Set<Long> deliveryTags = new HashSet<Long>();
@@ -79,4 +121,5 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
 		Mockito.verify(channel).basicReject(1L, requeue);
 	}
+
 }
