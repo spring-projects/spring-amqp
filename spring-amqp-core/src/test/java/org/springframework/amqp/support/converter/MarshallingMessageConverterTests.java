@@ -35,9 +35,9 @@ import org.springframework.oxm.XmlMappingException;
 
 /**
  * @author Mark Fisher
+ * @author James Carr
  */
 public class MarshallingMessageConverterTests {
-
 	@Test
 	public void marshal() throws Exception {
 		TestMarshaller marshaller = new TestMarshaller();
@@ -48,6 +48,29 @@ public class MarshallingMessageConverterTests {
 		assertEquals("MARSHAL TEST", response);
 	}
 
+	@Test
+	public void marshalIncludesContentType() throws Exception {
+		TestMarshaller marshaller = new TestMarshaller();
+		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
+		converter.setContentType("application/xml");
+    converter.afterPropertiesSet();
+
+		Message message = converter.toMessage("marshal test", new MessageProperties());
+		
+	  assertEquals("application/xml", message.getMessageProperties().getContentType());
+  }
+
+	@Test
+	public void dontSetNullContentType() throws Exception {
+		TestMarshaller marshaller = new TestMarshaller();
+		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
+    converter.afterPropertiesSet();
+    final String defaultContentType = new MessageProperties().getContentType();
+
+		Message message = converter.toMessage("marshal test", new MessageProperties());
+		
+	  assertEquals(defaultContentType, message.getMessageProperties().getContentType());
+  }
 	@Test
 	public void unmarshal() {
 		TestMarshaller marshaller = new TestMarshaller();
