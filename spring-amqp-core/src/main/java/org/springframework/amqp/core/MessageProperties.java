@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,6 +22,7 @@ import java.util.Map;
  * 
  * @author Mark Fisher
  * @author Mark Pollack
+ * @author Gary Russell
  */
 public class MessageProperties {
 
@@ -32,6 +33,8 @@ public class MessageProperties {
 	public static final String CONTENT_TYPE_SERIALIZED_OBJECT = "application/x-java-serialized-object";
 
 	public static final String CONTENT_TYPE_JSON = "application/json";
+
+	public static final String CONTENT_TYPE_XML = "application/xml";
 
 	private static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
