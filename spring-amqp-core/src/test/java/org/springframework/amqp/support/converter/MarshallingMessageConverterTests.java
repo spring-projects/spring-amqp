@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ import org.springframework.oxm.XmlMappingException;
 
 /**
  * @author Mark Fisher
+ * @author James Carr
  */
 public class MarshallingMessageConverterTests {
-
 	@Test
 	public void marshal() throws Exception {
 		TestMarshaller marshaller = new TestMarshaller();
@@ -46,6 +46,30 @@ public class MarshallingMessageConverterTests {
 		Message message = converter.toMessage("marshal test", new MessageProperties());
 		String response = new String(message.getBody(), "UTF-8");
 		assertEquals("MARSHAL TEST", response);
+	}
+
+	@Test
+	public void marshalIncludesContentType() throws Exception {
+		TestMarshaller marshaller = new TestMarshaller();
+		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
+		converter.setContentType(MessageProperties.CONTENT_TYPE_XML);
+		converter.afterPropertiesSet();
+
+		Message message = converter.toMessage("marshal test", new MessageProperties());
+
+		assertEquals("application/xml", message.getMessageProperties().getContentType());
+	}
+
+	@Test
+	public void dontSetNullContentType() throws Exception {
+		TestMarshaller marshaller = new TestMarshaller();
+		MarshallingMessageConverter converter = new MarshallingMessageConverter(marshaller);
+		converter.afterPropertiesSet();
+		final String defaultContentType = new MessageProperties().getContentType();
+
+		Message message = converter.toMessage("marshal test", new MessageProperties());
+
+		assertEquals(defaultContentType, message.getMessageProperties().getContentType());
 	}
 
 	@Test

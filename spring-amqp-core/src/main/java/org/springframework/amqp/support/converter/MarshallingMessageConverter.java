@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,16 @@ import org.springframework.util.Assert;
  * @author Mark Fisher
  * @author Arjen Poutsma
  * @author Juergen Hoeller
+ * @author James Carr
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#convertAndSend
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#receiveAndConvert
  */
 public class MarshallingMessageConverter extends AbstractMessageConverter implements InitializingBean {
+	private volatile Marshaller marshaller;
 
-	private Marshaller marshaller;
+	private volatile Unmarshaller unmarshaller;
 
-	private Unmarshaller unmarshaller;
+	private volatile String contentType;
 
 
 	/**
@@ -95,9 +97,17 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 
 
 	/**
+	 * Set the contentType to be used by this message converter.
+	 */
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
+	}
+
+	/**
 	 * Set the {@link Marshaller} to be used by this message converter.
 	 */
 	public void setMarshaller(Marshaller marshaller) {
+		Assert.notNull(marshaller, "marshaller must not be null");
 		this.marshaller = marshaller;
 	}
 
@@ -105,6 +115,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	 * Set the {@link Unmarshaller} to be used by this message converter.
 	 */
 	public void setUnmarshaller(Unmarshaller unmarshaller) {
+		Assert.notNull(unmarshaller, "unmarshaller must not be null");
 		this.unmarshaller = unmarshaller;
 	}
 
@@ -119,6 +130,9 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	 */
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		try {
+			if (contentType != null) {
+				messageProperties.setContentType(contentType);
+			}
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			StreamResult streamResult = new StreamResult(bos);
 			marshaller.marshal(object, streamResult);
