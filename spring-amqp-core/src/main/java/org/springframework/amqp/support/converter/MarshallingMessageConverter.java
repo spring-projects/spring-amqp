@@ -38,14 +38,16 @@ import org.springframework.util.Assert;
  * @author Mark Fisher
  * @author Arjen Poutsma
  * @author Juergen Hoeller
+ * @author James Carr
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#convertAndSend
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate#receiveAndConvert
  */
 public class MarshallingMessageConverter extends AbstractMessageConverter implements InitializingBean {
-
 	private Marshaller marshaller;
 
 	private Unmarshaller unmarshaller;
+  
+  private String contentType;
 
 
 	/**
@@ -95,6 +97,13 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 
 
 	/**
+	 * Set the contentType to be used by this message converter.
+	 */
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
+	}
+
+	/**
 	 * Set the {@link Marshaller} to be used by this message converter.
 	 */
 	public void setMarshaller(Marshaller marshaller) {
@@ -119,6 +128,9 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	 */
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		try {
+      if(contentType != null){
+        messageProperties.setContentType(contentType);
+      }
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			StreamResult streamResult = new StreamResult(bos);
 			marshaller.marshal(object, streamResult);
