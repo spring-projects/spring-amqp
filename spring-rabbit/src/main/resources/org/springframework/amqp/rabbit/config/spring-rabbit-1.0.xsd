@@ -480,6 +480,15 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="requeue-rejected" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Tells the container the default requeue behavior when rejecting messages. Default is 'true' meaning messages
+	will be requeued, unless the listener signals not to by throwing an AmqpRejectAndDontRequeueException. When
+	set to false, messages will never be requeued.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="phase" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[

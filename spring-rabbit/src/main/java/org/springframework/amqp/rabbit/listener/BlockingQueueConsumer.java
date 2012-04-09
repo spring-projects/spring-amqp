@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -46,6 +47,7 @@ import com.rabbitmq.utility.Utility;
  * 
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Gary Russell
  * 
  */
 public class BlockingQueueConsumer {
@@ -80,6 +82,20 @@ public class BlockingQueueConsumer {
 
 	private Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
+	private final boolean defaultRequeuRejected;
+
+	/**
+	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
+	 * until it is started. RequeueRejected defaults to true.
+	 */
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+			MessagePropertiesConverter messagePropertiesConverter,
+			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int prefetchCount, String... queues) {
+		this(connectionFactory, messagePropertiesConverter, activeObjectCounter,
+				acknowledgeMode, transactional, prefetchCount, true, queues);
+	}
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
@@ -87,13 +103,14 @@ public class BlockingQueueConsumer {
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
-			boolean transactional, int prefetchCount, String... queues) {
+			boolean transactional, int prefetchCount, boolean defaultRequeueRejected, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
+		this.defaultRequeuRejected = defaultRequeueRejected;
 		this.queues = queues;
 	}
 
@@ -315,9 +332,17 @@ public class BlockingQueueConsumer {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Rejecting messages");
 				}
+				boolean shouldRequeue = this.defaultRequeuRejected;
+				Throwable t = ex;
+				while (shouldRequeue && t != null) {
+					if (t instanceof AmqpRejectAndDontRequeueException) {
+						shouldRequeue = false;
+					}
+					t = t.getCause();
+				}
 				for (Long deliveryTag : deliveryTags) {
 					// With newer RabbitMQ brokers could use basicNack here...
-					channel.basicReject(deliveryTag, true);
+					channel.basicReject(deliveryTag, shouldRequeue);
 				}
 				if (transactional) {
 					// Need to commit the reject (=nack)

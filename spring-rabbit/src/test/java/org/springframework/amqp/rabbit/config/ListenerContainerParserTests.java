@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Mark Fisher
+ * @author Gary Russell
  */
 public class ListenerContainerParserTests {
 
@@ -84,6 +85,14 @@ public class ListenerContainerParserTests {
 	public void testParseWithDefaults() throws Exception {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container4", SimpleMessageListenerContainer.class);
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		assertEquals(true, ReflectionTestUtils.getField(container, "defaultRequeueRejected"));
+	}
+
+	@Test
+	public void testParseWithDefaultQueueRejectedFalse() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container5", SimpleMessageListenerContainer.class);
+		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		assertEquals(false, ReflectionTestUtils.getField(container, "defaultRequeueRejected"));
 	}
 
 	static class TestBean {

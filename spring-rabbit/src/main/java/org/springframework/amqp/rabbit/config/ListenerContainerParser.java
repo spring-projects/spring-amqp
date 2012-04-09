@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -33,6 +33,7 @@ import org.w3c.dom.NodeList;
 
 /**
  * @author Mark Fisher
+ * @author Gary Russell
  * @since 1.0
  */
 class ListenerContainerParser implements BeanDefinitionParser {
@@ -83,6 +84,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String ADVICE_CHAIN_ATTRIBUTE = "advice-chain";
 
+	private static final String REQUEUE_REJECTED_ATTRIBUTE = "requeue-rejected";
 
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
@@ -241,6 +243,11 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		String transactionSize = containerEle.getAttribute(TRANSACTION_SIZE_ATTRIBUTE);
 		if (StringUtils.hasText(transactionSize)) {
 			containerDef.getPropertyValues().add("txSize", new TypedStringValue(transactionSize));
+		}
+
+		String requeueRejected = containerEle.getAttribute(REQUEUE_REJECTED_ATTRIBUTE);
+		if (StringUtils.hasText(requeueRejected)) {
+			containerDef.getPropertyValues().add("defaultRequeueRejected", new TypedStringValue(requeueRejected));
 		}
 
 		String phase = containerEle.getAttribute(PHASE_ATTRIBUTE);
