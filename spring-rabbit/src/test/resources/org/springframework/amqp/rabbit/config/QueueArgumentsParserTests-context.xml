@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<rabbit:queue-arguments id="args">
+		<entry key="foo" value="bar" />
+	</rabbit:queue-arguments>
+
+	<rabbit:queue id="queue1">
+		<rabbit:queue-arguments>
+			<entry key="baz" value="qux" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+
+	<rabbit:queue id="queue2" queue-arguments="args" />
+
+</beans>

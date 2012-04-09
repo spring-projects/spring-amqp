@@ -23,10 +23,14 @@
                 <firstname>Dave</firstname>
                 <surname>Syer</surname>
             </author>
+            <author>
+                <firstname>Gary</firstname>
+                <surname>Russell</surname>
+            </author>
         </authorgroup>
 
         <legalnotice>
-            <para>Copyright &#xA9; 2010-2011</para>
+            <para>Copyright &#xA9; 2010-2012</para>
 			<para>
                 Copies of this document may be made for your own use and for distribution
                 to others, provided that you do not charge any fee for such copies and
