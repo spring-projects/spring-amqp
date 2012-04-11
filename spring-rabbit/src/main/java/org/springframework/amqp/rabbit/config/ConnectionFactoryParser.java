@@ -43,6 +43,10 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String EXECUTOR_ATTRIBUTE = "executor";
 
+	private static final String PUBLISHER_CONFIRMS = "publisher-confirms";
+
+	private static final String PUBLISHER_RETURNS = "publisher-returns";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return CachingConnectionFactory.class;
@@ -74,6 +78,9 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, VIRTUAL_HOST_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, EXECUTOR_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_CONFIRMS);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
+
 	}
 
 }

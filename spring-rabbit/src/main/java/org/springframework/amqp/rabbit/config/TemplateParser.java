@@ -13,6 +13,8 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -49,6 +52,14 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 	private static final String REPLY_QUEUE_ATTRIBUTE = "reply-queue";
 
 	private static final String LISTENER_ELEMENT = "reply-listener";
+
+	private static final String MANDATORY_ATTRIBUTE = "mandatory";
+
+	private static final String IMMEDIATE_ATTRIBUTE = "immediate";
+
+	private static final String RETURN_CALLBACK_ATTRIBUTE = "return-callback";
+
+	private static final String CONFIRM_CALLBACK_ATTRIBUTE = "confirm-callback";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -87,9 +98,17 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, MANDATORY_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, IMMEDIATE_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 
 		BeanDefinition replyContainer = null;
-		Element childElement = getChildElement(element, parserContext);
+		Element childElement = null;
+		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
+		if (childElements.size() > 0) {
+			childElement = childElements.get(0);
+		}
 		if (childElement != null) {
 			replyContainer = parseListener(childElement, element,
 					parserContext);
@@ -116,27 +135,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		}
 	}
 
-	private Element getChildElement(Element element,
-			ParserContext parserContext) {
-		Element childElement = null;
-		NodeList childNodes = element.getChildNodes();
-		for (int i = 0; i < childNodes.getLength(); i++) {
-			Node child = childNodes.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				String localName = parserContext.getDelegate().getLocalName(child);
-				if (LISTENER_ELEMENT.equals(localName)) {
-					childElement = (Element) child;
-				}
-			}
-		}
-		return childElement;
-	}
-
 	private BeanDefinition parseListener(Element childElement, Element element,
 			ParserContext parserContext) {
-		if (getChildElement(childElement, parserContext) != null) {
-			parserContext.getReaderContext().error("<reply-listener/> is not allowed any child elements.", element);
-		}
 		BeanDefinition replyContainer = RabbitNamespaceUtils.parseContainer(childElement, parserContext);
 		if (replyContainer != null) {
 			replyContainer.getPropertyValues().add(

@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -21,6 +22,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -56,6 +59,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 	private volatile boolean active = true;
 
 	private ChannelCachingConnectionProxy connection;
+
+	private volatile boolean publisherConfirms;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -118,6 +123,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		return this.channelCacheSize;
 	}
 
+	public boolean isPublisherConfirms() {
+		return publisherConfirms;
+	}
+
+	public void setPublisherConfirms(boolean publisherConfirms) {
+		this.publisherConfirms = publisherConfirms;
+	}
+
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
 		super.setConnectionListeners(listeners);
 		// If the connection is already alive we assume that the new listeners want to be notified
@@ -159,8 +172,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			logger.debug("Creating cached Rabbit Channel from " + targetChannel);
 		}
 		getChannelListener().onCreate(targetChannel, transactional);
+		Class<?>[] interfaces;
+		if (this.publisherConfirms) {
+			interfaces = new Class[] { ChannelProxy.class, PublisherCallbackChannel.class };
+		}
+		else {
+			interfaces = new Class[] { ChannelProxy.class };
+		}
 		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
-				new Class[] { ChannelProxy.class }, new CachedChannelInvocationHandler(targetChannel, channelList,
+				interfaces, new CachedChannelInvocationHandler(targetChannel, channelList,
 						transactional));
 	}
 
@@ -170,7 +190,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			// Use createConnection here not doCreateConnection so that the old one is properly disposed
 			createConnection();
 		}
-		return this.connection.createBareChannel(transactional);
+		Channel channel = this.connection.createBareChannel(transactional);
+		if (this.publisherConfirms) {
+			try {
+				channel.confirmSelect();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (!(channel instanceof PublisherCallbackChannelImpl)) {
+				channel = new PublisherCallbackChannelImpl(channel);
+			}
+		}
+		// TODO returns
+		return channel;
 	}
 
 	public final Connection createConnection() throws AmqpException {
