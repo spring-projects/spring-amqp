@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,14 +16,18 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  * 
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean {
@@ -35,6 +39,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private final CompositeConnectionListener connectionListener = new CompositeConnectionListener();
 
 	private final CompositeChannelListener channelListener = new CompositeChannelListener();
+
+	private volatile ExecutorService executorService;
 
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
@@ -111,9 +117,28 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.channelListener.addDelegate(listener);
 	}
 
+	/**
+	 * Provide an Executor for
+	 * use by the Rabbit ConnectionFactory when creating connections.
+	 * Can either be an ExecutorService or a Spring
+	 * ThreadPoolTaskExecutor, as defined by a &lt;task:executor/&gt; element.
+	 * @param executor The executor.
+	 */
+	public void setExecutor(Executor executor) {
+		boolean isExecutorService = executor instanceof ExecutorService;
+		boolean isThreadPoolTaskExecutor = executor instanceof ThreadPoolTaskExecutor;
+		Assert.isTrue(isExecutorService || isThreadPoolTaskExecutor);
+		if (isExecutorService) {
+			this.executorService = (ExecutorService) executor;
+		}
+		else {
+			this.executorService = ((ThreadPoolTaskExecutor) executor).getThreadPoolExecutor();
+		}
+	}
+
 	final protected Connection createBareConnection() {
 		try {
-			return new SimpleConnection(this.rabbitConnectionFactory.newConnection());
+			return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService));
 		} catch (IOException e) {
 			throw RabbitUtils.convertRabbitAccessException(e);
 		}

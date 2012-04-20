@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection()).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -60,7 +61,7 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 		connectionFactory.destroy();
 		verify(mockConnection, atLeastOnce()).close();
 
-		verify(mockConnectionFactory).newConnection();
+		verify(mockConnectionFactory).newConnection((ExecutorService) null);
 
 	}
 
