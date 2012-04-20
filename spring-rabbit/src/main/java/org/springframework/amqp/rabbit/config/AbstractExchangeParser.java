@@ -51,15 +51,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 		String exchangeName = element.getAttribute(NAME_ATTRIBUTE);
 		builder.addConstructorArgValue(new TypedStringValue(exchangeName));
-		Element bindings = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
-		if (bindings != null) {
-			for (Element binding : DomUtils.getChildElementsByTagName(bindings, BINDING_ELE)) {
-				AbstractBeanDefinition beanDefinition = parseBinding(exchangeName, binding,
-						parserContext);
-				registerBeanDefinition(new BeanDefinitionHolder(beanDefinition, parserContext.getReaderContext()
-						.generateBeanName(beanDefinition)), parserContext.getRegistry());
-			}
-		}
+		parseBindings(element, parserContext, builder, exchangeName);
 
 		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, true);
 		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
@@ -72,6 +64,24 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 			builder.addConstructorArgValue(map);
 		}
 
+	}
+
+	protected void parseBindings(Element element, ParserContext parserContext, BeanDefinitionBuilder builder,
+			String exchangeName) {
+		Element bindings = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
+		doParseBindings(parserContext, exchangeName, bindings, this);
+	}
+
+	protected void doParseBindings(ParserContext parserContext,
+			String exchangeName, Element bindings, AbstractExchangeParser parser) {
+		if (bindings != null) {
+			for (Element binding : DomUtils.getChildElementsByTagName(bindings, BINDING_ELE)) {
+				AbstractBeanDefinition beanDefinition = parser.parseBinding(exchangeName, binding,
+						parserContext);
+				registerBeanDefinition(new BeanDefinitionHolder(beanDefinition, parserContext.getReaderContext()
+						.generateBeanName(beanDefinition)), parserContext.getRegistry());
+			}
+		}
 	}
 
 	protected abstract AbstractBeanDefinition parseBinding(String exchangeName, Element binding,

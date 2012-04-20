@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -67,7 +68,12 @@ public abstract class AbstractExchange implements Exchange {
 		this.name = name;
 		this.durable = durable;
 		this.autoDelete = autoDelete;
-		this.arguments = arguments;
+		if (arguments != null) {
+			this.arguments = arguments;
+		}
+		else {
+			this.arguments = new HashMap<String, Object>();
+		}
 	}
 
 	public abstract String getType();
@@ -84,6 +90,9 @@ public abstract class AbstractExchange implements Exchange {
 		return autoDelete;
 	}
 
+	protected synchronized void addArgument(String argName, Object argValue) {
+		this.arguments.put(argName, argValue);
+	}
 	/**
 	 * Return the collection of arbitrary arguments to use when declaring an exchange.
 	 * @return the collection of arbitrary arguments to use when declaring an exchange.

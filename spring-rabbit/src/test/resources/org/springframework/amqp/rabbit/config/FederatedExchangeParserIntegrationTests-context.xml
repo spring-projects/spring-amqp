@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/rabbit"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<federated-exchange name="fedDirectTest" backing-type="direct"
+			upstream-set="upstream-set">
+		<direct-bindings>
+			<binding queue="bucket" />
+		</direct-bindings>
+	</federated-exchange>
+
+	<federated-exchange name="fedTopicTest" backing-type="topic"
+			upstream-set="upstream-set">
+		<topic-bindings>
+			<binding queue="bucket" pattern="bucket.#"/>
+		</topic-bindings>
+	</federated-exchange>
+
+	<federated-exchange name="fedFanoutTest" backing-type="fanout"
+			upstream-set="upstream-set">
+		<fanout-bindings>
+			<binding queue="bucket" />
+		</fanout-bindings>
+	</federated-exchange>
+
+	<federated-exchange name="fedHeadersTest" backing-type="headers"
+			upstream-set="upstream-set">
+		<headers-bindings>
+			<binding queue="bucket" key="type" value="bucket"  />
+		</headers-bindings>
+	</federated-exchange>
+
+	<fanout-exchange name="fanoutTest">
+		<bindings>
+			<binding queue="bucket" />
+		</bindings>
+	</fanout-exchange>
+
+	<queue name="bucket" />
+
+	<admin id="admin-test" connection-factory="connectionFactory" auto-startup="true"/>
+
+	<connection-factory id="connectionFactory"/>
+
+</beans:beans>
