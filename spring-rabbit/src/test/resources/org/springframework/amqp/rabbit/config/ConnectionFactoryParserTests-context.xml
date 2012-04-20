@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
-	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
 	<rabbit:connection-factory id="kitchenSink" host="foo" virtual-host="/bar"
 		channel-cache-size="10" port="6888" username="user" password="password" />
@@ -10,5 +16,17 @@
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
 	
 	<bean id="connectionFactory" class="com.rabbitmq.client.ConnectionFactory"/>
+
+	<rabbit:connection-factory id="withExecutor" host="foo" virtual-host="/bar"
+		channel-cache-size="10" port="6888" username="user" password="password"
+		executor="exec" />
+
+	<task:executor id="exec" />
+
+	<rabbit:connection-factory id="withExecutorService" host="foo" virtual-host="/bar"
+		channel-cache-size="10" port="6888" username="user" password="password"
+		executor="execService" />
+
+	<bean id="execService" class="java.util.concurrent.Executors" factory-method="newSingleThreadExecutor" />
 
 </beans>

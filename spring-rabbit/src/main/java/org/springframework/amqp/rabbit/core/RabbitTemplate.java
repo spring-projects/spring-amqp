@@ -379,6 +379,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations {
 						MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
 								properties, envelope, encoding);
 						Message reply = new Message(body, messageProperties);
+						if (logger.isTraceEnabled()) {
+							logger.trace("Message received " + reply);
+						}
 						try {
 							replyHandoff.put(reply);
 						} catch (InterruptedException e) {
