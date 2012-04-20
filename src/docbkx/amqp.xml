@@ -83,7 +83,7 @@
 
     String getName();
 
-    ExchangeType getExchangeType();
+    String getExchangeType();
 
     boolean isDurable();
 
@@ -93,19 +93,20 @@
 
 }]]></programlisting>
 
-      <para>As you can see, an Exchange also has a 'type' represented by the
-      enumeration <classname>ExchangeType</classname>. The basic types are:
-      <literal>Direct</literal>, <literal>Topic</literal> and
-      <literal>Fanout</literal>. In the core package you will find
+      <para>As you can see, an Exchange also has a 'type' represented by constants
+      defined in <classname>ExchangeTypes</classname>. The basic types are:
+      <literal>Direct</literal>, <literal>Topic</literal>,
+      <literal>Fanout</literal>, <literal>Headers</literal> and
+      <literal>Federated</literal>. In the core package you will find
       implementations of the <interfacename>Exchange</interfacename> interface
       for each of those types. The behavior varies across these Exchange types
-      in terms of how they handle bindings to Queues. A Direct exchange allows
+      in terms of how they handle bindings to Queues. For example, a Direct exchange allows
       for a Queue to be bound by a fixed routing key (often the Queue's name).
       A Topic exchange supports bindings with routing patterns that may
       include the '*' and '#' wildcards for 'exactly-one' and 'zero-or-more',
       respectively. The Fanout exchange publishes to all Queues that are bound
       to it without taking any routing key into consideration. For much more
-      information about Exchange types, check out <xref
+      information about these and the other Exchange types, check out <xref
       linkend="resources" />.</para>
 
       <note>
@@ -890,6 +891,34 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     <para>The client is declaring another queue via the declareQueue() method
     on the AmqpAdmin, and it binds that queue to the market data exchange with
     a routing pattern that is externalized in a properties file.</para>
+    <section>
+      <title>Federated Exchanges</title>
+      <para>
+        Rabbit supports federation; federated exchanges are backed by one of the
+        other exchange types. Therefore, when configuring a federated exchange, it
+        is important to supply bindings of the appropriate type for the backing
+        exchange. Examples include...
+      </para>
+      <para>
+        <programlisting><![CDATA[<federated-exchange name="fedDirect" backing-type="direct"
+            upstream-set="upstream-set">
+    <direct-bindings>
+        <binding queue="bucket" />
+    </direct-bindings>
+</federated-exchange>
+
+<federated-exchange name="fedTopic" backing-type="topic"
+        upstream-set="upstream-set">
+    <topic-bindings>
+        <binding queue="bucket" pattern="bucket.#"/>
+    </topic-bindings>
+</federated-exchange>]]></programlisting>
+      </para>
+      <para>
+        Notice that the child element, e.g. &lt;direct-bindings/&gt; matches the
+        backing-type attribute.
+      </para>
+    </section>
   </section>
 
   <section>

@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2012 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -21,8 +21,9 @@ import org.junit.runner.RunWith;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.BrokerFederated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
@@ -30,10 +31,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
-public final class ExchangeParserIntegrationTests {
+public final class FederatedExchangeParserIntegrationTests {
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerFederated brokerFederated = BrokerFederated.isRunning();
 
 	@Autowired
 	private ConnectionFactory connectionFactory;
@@ -45,9 +46,11 @@ public final class ExchangeParserIntegrationTests {
 	@Qualifier("bucket")
 	private Queue queue;
 
+	@Autowired
+	private RabbitAdmin admin;
+
 	@Test
 	public void testBindingsDeclared() throws Exception {
-
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.convertAndSend(fanoutTest.getName(), "", "message");
 		Thread.sleep(200);
@@ -55,7 +58,10 @@ public final class ExchangeParserIntegrationTests {
 		// we use the same connection
 		String result = (String) template.receiveAndConvert(queue.getName());
 		assertEquals("message", result);
-
+		admin.deleteExchange("fedDirectTest");
+		admin.deleteExchange("fedTopicTest");
+		admin.deleteExchange("fedFanoutTest");
+		admin.deleteExchange("fedHeadersTest");
 	}
 
 }

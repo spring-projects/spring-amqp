@@ -408,11 +408,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		}
 
 		public void destroy() {
+			reset();
 			if (this.target != null) {
 				getConnectionListener().onClose(target);
 				RabbitUtils.closeConnection(this.target);
 			}
-			reset();
 			this.target = null;
 		}
 
