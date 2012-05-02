@@ -14,7 +14,7 @@
 		<module>spring-rabbit</module>
 		<module>spring-erlang</module>
 	</modules>
-	<properties>
+	<properties> 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<!-- dist.* properties are used by the antrun tasks below -->
 		<dist.id>spring-amqp</dist.id>
