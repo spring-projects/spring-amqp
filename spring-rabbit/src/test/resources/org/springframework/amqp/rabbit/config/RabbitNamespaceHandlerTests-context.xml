@@ -22,6 +22,7 @@
 			<binding queue="bar" pattern="bar.#" />
 			<binding queue="spam" pattern="spam.#"/>
 			<binding queue="bucket" pattern="bucket.#"/>
+			<binding exchange="direct-test" pattern="qux" />
 		</bindings>
 	</topic-exchange>
 

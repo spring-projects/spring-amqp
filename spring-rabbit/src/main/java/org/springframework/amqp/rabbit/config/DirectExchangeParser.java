@@ -40,7 +40,7 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
-		builder.addPropertyReference("destinationQueue", binding.getAttribute(BINDING_QUEUE_ATTR));
+		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
 		String bindingKey = binding.getAttribute(BINDING_KEY_ATTR);
 		if (!StringUtils.hasText(bindingKey)) {
