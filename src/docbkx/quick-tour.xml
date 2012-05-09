@@ -29,12 +29,12 @@
       <programlisting><![CDATA[ConnectionFactory connectionFactory = new CachingConnectionFactory();
 
 AmqpAdmin admin = new RabbitAdmin(connectionFactory);
-admin.declareQueue("myqueue");
+admin.declareQueue(new Queue("myqueue"));
 
 AmqpTemplate template = new RabbitTemplate(connectionFactory);
 template.convertAndSend("myqueue", "foo");
 
-String foo = template.receiveAndConvert("myqueue");]]></programlisting>
+String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
 
       <para>Note that there is a <classname>ConnectionFactory</classname> in
       the native Java Rabbit client as well. We are using the Spring
@@ -56,7 +56,7 @@ AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
 template.convertAndSend("myqueue", "foo");
 
-String foo = template.receiveAndConvert("myqueue");]]></programlisting>
+String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
 
       <programlisting><![CDATA[<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns:rabbit="http://www.springframework.org/schema/rabbit"
@@ -94,7 +94,7 @@ AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
 template.convertAndSend("myqueue", "foo");
 
-String foo = template.receiveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
+String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
 public class RabbitConfiguration {
 
   @Bean
