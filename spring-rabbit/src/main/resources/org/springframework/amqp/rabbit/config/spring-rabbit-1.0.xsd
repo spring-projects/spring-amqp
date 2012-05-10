@@ -403,7 +403,6 @@
 					<xsd:annotation>
 						<xsd:documentation><![CDATA[
 							An explicit routing key binding the queue to this exchange.  
-							If not provided defaults to the queue name.
 						]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:attribute>
