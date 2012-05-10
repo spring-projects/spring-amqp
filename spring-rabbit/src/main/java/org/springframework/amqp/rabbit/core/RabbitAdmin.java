@@ -98,7 +98,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				if (isDeletingDefaultExchange(exchangeName)) {
 					return true;
 				}
-				
+
 				try {
 					channel.exchangeDelete(exchangeName);
 				} catch (IOException e) {
@@ -188,7 +188,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					if (isRemovingImplicitQueueBinding(binding)) {
 						return null;
 					}
-				
+
 					channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 							binding.getArguments());
 				} else {
@@ -325,13 +325,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 			if (logger.isDebugEnabled()) {
 				logger.debug("declaring Exchange '" + exchange.getName() + "'");
 			}
-			
-			if (isDeclaringDefaultExchange(exchange)) {
-				continue;
+
+			if (!isDeclaringDefaultExchange(exchange)) {
+				channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
+						exchange.isAutoDelete(), exchange.getArguments());
 			}
-			
-			channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
-					exchange.isAutoDelete(), exchange.getArguments());
 		}
 	}
 
@@ -356,14 +354,12 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						+ ")] to exchange [" + binding.getExchange() + "] with routing key [" + binding.getRoutingKey()
 						+ "]");
 			}
-			
-			if (binding.isDestinationQueue()) {
-				if (isDeclaringImplicitQueueBinding(binding)) {
-					continue;
-				}
 
-				channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-						binding.getArguments());
+			if (binding.isDestinationQueue()) {
+				if (!isDeclaringImplicitQueueBinding(binding)) {
+					channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+							binding.getArguments());
+				}
 			} else {
 				channel.exchangeBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 						binding.getArguments());
@@ -380,7 +376,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		}
 		return false;
 	}
-	
+
 	private boolean isDeletingDefaultExchange(String exchangeName) {
 		if (isDefaultExchange(exchangeName)) {
 			if (logger.isDebugEnabled()) {
@@ -390,30 +386,30 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		}
 		return false;
 	}
-	
+
 	private boolean isDefaultExchange(String exchangeName) {
 		return DEFAULT_EXCHANGE_NAME.equals(exchangeName);
 	}
-	
+
 	private boolean isDeclaringImplicitQueueBinding(Binding binding) {
 		if (isImplicitQueueBinding(binding)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("The default exchange is implicitly bound to every queue, with a routing key equal to the queue name.");	
-			}						
+			}
 			return true;
 		}
 		return false;
 	}
-	
+
 	private boolean isRemovingImplicitQueueBinding(Binding binding) {
 		if (isImplicitQueueBinding(binding)) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Cannot remove implicit default exchange binding to queue.");	
-			}						
+				logger.debug("Cannot remove implicit default exchange binding to queue.");
+			}
 			return true;
 		}
 		return false;
-	}	
+	}
 
 	private boolean isImplicitQueueBinding(Binding binding) {
 		return isDefaultExchange(binding.getExchange()) && binding.getDestination().equals(binding.getRoutingKey());

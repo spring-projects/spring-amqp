@@ -151,13 +151,13 @@ public class RabbitAdminIntegrationTests {
 		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
 		assertFalse(queueExists(queue));
 	}
-	
+
 	@Test
 	public void testDeclareExchangeWithDefaultExchange() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
-		
+
 		rabbitAdmin.declareExchange(exchange);
-		
+
 		// Pass by virtue of RabbitMQ not firing a 403 reply code
 	}
 
@@ -165,20 +165,20 @@ public class RabbitAdminIntegrationTests {
 	public void testSpringWithDefaultExchange() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
 		context.getBeanFactory().registerSingleton("foo", exchange);
-		rabbitAdmin.afterPropertiesSet();		
-		
+		rabbitAdmin.afterPropertiesSet();
+
 		rabbitAdmin.initialize();
-		
+
 		// Pass by virtue of RabbitMQ not firing a 403 reply code
 	}
-	
+
 	@Test
 	public void testDeleteExchangeWithDefaultExchange() throws Exception {
 		boolean result = rabbitAdmin.deleteExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
-		
-	    assertTrue(result);
-	}	
-	
+
+		assertTrue(result);
+	}
+
 	@Test
 	public void testDeclareBindingWithDefaultExchangeImplicitBinding() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
@@ -186,13 +186,13 @@ public class RabbitAdminIntegrationTests {
 		final Queue queue = new Queue(queueName, false, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), queueName, null);
-		
+
 		rabbitAdmin.declareBinding(binding);
-		
+
 		// Pass by virtue of RabbitMQ not firing a 403 reply code for both exchange and binding declaration
 		assertTrue(queueExists(queue));
 	}
-	
+
 	@Test
 	public void testSpringWithDefaultExchangeImplicitBinding() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
@@ -203,25 +203,25 @@ public class RabbitAdminIntegrationTests {
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), queueName, null);
 		context.getBeanFactory().registerSingleton("baz", binding);
 		rabbitAdmin.afterPropertiesSet();
-		
+
 		rabbitAdmin.initialize();
-		
+
 		// Pass by virtue of RabbitMQ not firing a 403 reply code for both exchange and binding declaration
 		assertTrue(queueExists(queue));
-	}	
-	
+	}
+
 	@Test
 	public void testRemoveBindingWithDefaultExchangeImplicitBinding() throws Exception {
 		String queueName = "test.queue";
 		final Queue queue = new Queue(queueName, false, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, RabbitAdmin.DEFAULT_EXCHANGE_NAME, queueName, null);
-		
+
 		rabbitAdmin.removeBinding(binding);
-		
+
 		// Pass by virtue of RabbitMQ not firing a 403 reply code
 	}
-	
+
 	@Test
 	public void testDeclareBindingWithDefaultExchangeNonImplicitBinding() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
@@ -229,7 +229,7 @@ public class RabbitAdminIntegrationTests {
 		final Queue queue = new Queue(queueName, false, false, false);
 		rabbitAdmin.declareQueue(queue);
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
-		
+
 		try {
 			rabbitAdmin.declareBinding(binding);
 		} catch (AmqpIOException ex) {
@@ -243,7 +243,7 @@ public class RabbitAdminIntegrationTests {
 			assertTrue(rootCause.getMessage().contains("operation not permitted on the default exchange"));
 		}
 	}
-	
+
 	@Test
 	public void testSpringWithDefaultExchangeNonImplicitBinding() throws Exception {
 		Exchange exchange = new DirectExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
@@ -254,7 +254,7 @@ public class RabbitAdminIntegrationTests {
 		Binding binding = new Binding(queueName, DestinationType.QUEUE, exchange.getName(), "test.routingKey", null);
 		context.getBeanFactory().registerSingleton("baz", binding);
 		rabbitAdmin.afterPropertiesSet();
-		
+
 		try {
 			rabbitAdmin.declareBinding(binding);
 		} catch (AmqpIOException ex) {
@@ -267,10 +267,10 @@ public class RabbitAdminIntegrationTests {
 			assertTrue(rootCause.getMessage().contains("reply-code=403"));
 			assertTrue(rootCause.getMessage().contains("operation not permitted on the default exchange"));
 		}
-	}	
-	
+	}
+
 	/**
-	 * Verify that a queue exists using the native Rabbit API to bypass all the connection and 
+	 * Verify that a queue exists using the native Rabbit API to bypass all the connection and
 	 * channel caching and callbacks in Spring AMQP.
 	 * 
 	 * @param Queue The queue to verify
@@ -292,5 +292,5 @@ public class RabbitAdminIntegrationTests {
 		} finally {
 			connection.close();
 		}
-	}	
+	}
 }
