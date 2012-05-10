@@ -20,6 +20,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
@@ -29,7 +30,7 @@ import org.w3c.dom.Element;
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final String ARGUMENTS_ELEMENT = "queue-arguments";
+	private static final String ARGUMENTS = "queue-arguments"; // element OR attribute
 	private static final String DURABLE_ATTRIBUTE = "durable";
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
@@ -79,11 +80,23 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 		}
 
-		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS_ELEMENT);
+		String queueArguments = element.getAttribute(ARGUMENTS);
+		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS);
+
 		if (argumentsElement != null) {
+			if (StringUtils.hasText(queueArguments)) {
+				parserContext
+						.getReaderContext()
+						.error("Queue may have either a queue-attributes attribute or element, but not both",
+								element);
+			}
 			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
 			builder.addConstructorArgValue(map);
+		}
+
+		if (StringUtils.hasText(queueArguments)) {
+			builder.addConstructorArgReference(queueArguments);
 		}
 
 	}
