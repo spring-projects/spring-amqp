@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,15 +13,23 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  */
 class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
@@ -41,6 +49,18 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
 
+	private static final String REPLY_QUEUE_ATTRIBUTE = "reply-queue";
+
+	private static final String LISTENER_ELEMENT = "reply-listener";
+
+	private static final String MANDATORY_ATTRIBUTE = "mandatory";
+
+	private static final String IMMEDIATE_ATTRIBUTE = "immediate";
+
+	private static final String RETURN_CALLBACK_ATTRIBUTE = "return-callback";
+
+	private static final String CONFIRM_CALLBACK_ATTRIBUTE = "confirm-callback";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return RabbitTemplate.class;
@@ -53,7 +73,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -77,7 +97,54 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, MANDATORY_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, IMMEDIATE_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 
+		BeanDefinition replyContainer = null;
+		Element childElement = null;
+		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
+		if (childElements.size() > 0) {
+			childElement = childElements.get(0);
+		}
+		if (childElement != null) {
+			replyContainer = parseListener(childElement, element,
+					parserContext);
+			if (replyContainer != null) {
+				replyContainer.getPropertyValues().add("messageListener",
+						new RuntimeBeanReference(element.getAttribute(ID_ATTRIBUTE)));
+				String replyContainerName = element.getAttribute(ID_ATTRIBUTE) + ".replyListener";
+				parserContext.getRegistry().registerBeanDefinition(replyContainerName, replyContainer);
+			}
+		}
+		if (replyContainer == null && element.hasAttribute(REPLY_QUEUE_ATTRIBUTE)) {
+			parserContext.getReaderContext().error(
+					"For template '" + element.getAttribute(ID_ATTRIBUTE)
+							+ "', when specifying a reply-queue, "
+							+ "a <reply-listener/> element is required",
+					element);
+		}
+		else if (replyContainer != null && !element.hasAttribute(REPLY_QUEUE_ATTRIBUTE)) {
+			parserContext.getReaderContext().error(
+					"For template '" + element.getAttribute(ID_ATTRIBUTE)
+							+ "', a <reply-listener/> element is not allowed if no " +
+							"'reply-queue' is supplied",
+					element);
+		}
+	}
+
+	private BeanDefinition parseListener(Element childElement, Element element,
+			ParserContext parserContext) {
+		BeanDefinition replyContainer = RabbitNamespaceUtils.parseContainer(childElement, parserContext);
+		if (replyContainer != null) {
+			replyContainer.getPropertyValues().add(
+					"connectionFactory",
+					new RuntimeBeanReference(element.getAttribute(CONNECTION_FACTORY_ATTRIBUTE)));
+		}
+		replyContainer.getPropertyValues().add("queues", element.getAttribute(REPLY_QUEUE_ATTRIBUTE));
+		return replyContainer;
 	}
 
 }

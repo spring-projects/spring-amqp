@@ -13,20 +13,27 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.SerializerMessageConverter;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
 
 /**
  * 
  * @author Dave Syer
+ * @author Gary Russell
  * 
  */
 public final class TemplateParserTests {
@@ -42,6 +49,22 @@ public final class TemplateParserTests {
 	public void testTemplate() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
 		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("mandatory"));
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("immediate"));
+		assertNull(dfa.getPropertyValue("returnCallback"));
+		assertNull(dfa.getPropertyValue("confirmCallback"));
+	}
+
+	@Test
+	public void testTemplateWithCallbacks() throws Exception {
+		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("mandatory"));
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("immediate"));
+		assertNotNull(dfa.getPropertyValue("returnCallback"));
+		assertNotNull(dfa.getPropertyValue("confirmCallback"));
 	}	
 	
 	@Test
@@ -50,5 +73,20 @@ public final class TemplateParserTests {
 		assertNotNull(template);
 		assertTrue(template.getMessageConverter() instanceof SerializerMessageConverter);
 	}	
-	
+
+	@Test
+	public void testWithReplyQ() throws Exception {
+		RabbitTemplate template = beanFactory.getBean("withReplyQ", RabbitTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		Queue queue = (Queue) dfa.getPropertyValue("replyQueue");
+		assertNotNull(queue);
+		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);
+		assertSame(queueBean, queue);
+		SimpleMessageListenerContainer container = beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
+		assertNotNull(container);
+		dfa = new DirectFieldAccessor(container);
+		assertSame(template, dfa.getPropertyValue("messageListener"));
+	}
+
 }

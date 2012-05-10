@@ -15,8 +15,6 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.List;
 
-import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
@@ -38,12 +36,6 @@ import org.w3c.dom.NodeList;
  */
 class ListenerContainerParser implements BeanDefinitionParser {
 
-	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
-
-	private static final String TASK_EXECUTOR_ATTRIBUTE = "task-executor";
-
-	private static final String ERROR_HANDLER_ATTRIBUTE = "error-handler";
-
 	private static final String LISTENER_ELEMENT = "listener";
 
 	private static final String ID_ATTRIBUTE = "id";
@@ -61,30 +53,6 @@ class ListenerContainerParser implements BeanDefinitionParser {
 	private static final String RESPONSE_EXCHANGE_ATTRIBUTE = "response-exchange";
 
 	private static final String RESPONSE_ROUTING_KEY_ATTRIBUTE = "response-routing-key";
-
-	private static final String ACKNOWLEDGE_ATTRIBUTE = "acknowledge";
-
-	private static final String ACKNOWLEDGE_AUTO = "auto";
-
-	private static final String ACKNOWLEDGE_MANUAL = "manual";
-
-	private static final String ACKNOWLEDGE_NONE = "none";
-
-	private static final String TRANSACTION_MANAGER_ATTRIBUTE = "transaction-manager";
-
-	private static final String CONCURRENCY_ATTRIBUTE = "concurrency";
-
-	private static final String PREFETCH_ATTRIBUTE = "prefetch";
-
-	private static final String TRANSACTION_SIZE_ATTRIBUTE = "transaction-size";
-
-	private static final String PHASE_ATTRIBUTE = "phase";
-
-	private static final String AUTO_STARTUP_ATTRIBUTE = "auto-startup";
-
-	private static final String ADVICE_CHAIN_ATTRIBUTE = "advice-chain";
-
-	private static final String REQUEUE_REJECTED_ATTRIBUTE = "requeue-rejected";
 
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
@@ -137,7 +105,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			}
 		}
 
-		BeanDefinition containerDef = parseContainer(listenerEle, containerEle, parserContext);
+		BeanDefinition containerDef = RabbitNamespaceUtils.parseContainer(containerEle, parserContext);
 
 		if (listenerEle.hasAttribute(RESPONSE_EXCHANGE_ATTRIBUTE)) {
 			String responseExchange = listenerEle.getAttribute(RESPONSE_EXCHANGE_ATTRIBUTE);
@@ -191,102 +159,4 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
 	}
-
-	private BeanDefinition parseContainer(Element listenerEle, Element containerEle, ParserContext parserContext) {
-		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
-		containerDef.setSource(parserContext.extractSource(containerEle));
-
-		String connectionFactoryBeanName = "rabbitConnectionFactory";
-		if (containerEle.hasAttribute(CONNECTION_FACTORY_ATTRIBUTE)) {
-			connectionFactoryBeanName = containerEle.getAttribute(CONNECTION_FACTORY_ATTRIBUTE);
-			if (!StringUtils.hasText(connectionFactoryBeanName)) {
-				parserContext.getReaderContext().error(
-						"Listener container 'connection-factory' attribute contains empty value.", containerEle);
-			}
-		}
-		if (StringUtils.hasText(connectionFactoryBeanName)) {
-			containerDef.getPropertyValues().add("connectionFactory",
-					new RuntimeBeanReference(connectionFactoryBeanName));
-		}
-
-		String taskExecutorBeanName = containerEle.getAttribute(TASK_EXECUTOR_ATTRIBUTE);
-		if (StringUtils.hasText(taskExecutorBeanName)) {
-			containerDef.getPropertyValues().add("taskExecutor", new RuntimeBeanReference(taskExecutorBeanName));
-		}
-
-		String errorHandlerBeanName = containerEle.getAttribute(ERROR_HANDLER_ATTRIBUTE);
-		if (StringUtils.hasText(errorHandlerBeanName)) {
-			containerDef.getPropertyValues().add("errorHandler", new RuntimeBeanReference(errorHandlerBeanName));
-		}
-
-		AcknowledgeMode acknowledgeMode = parseAcknowledgeMode(containerEle, parserContext);
-		if (acknowledgeMode != null) {
-			containerDef.getPropertyValues().add("acknowledgeMode", acknowledgeMode);
-		}
-
-		String transactionManagerBeanName = containerEle.getAttribute(TRANSACTION_MANAGER_ATTRIBUTE);
-		if (StringUtils.hasText(transactionManagerBeanName)) {
-			containerDef.getPropertyValues().add("transactionManager",
-					new RuntimeBeanReference(transactionManagerBeanName));
-		}
-
-		String concurrency = containerEle.getAttribute(CONCURRENCY_ATTRIBUTE);
-		if (StringUtils.hasText(concurrency)) {
-			containerDef.getPropertyValues().add("concurrentConsumers", new TypedStringValue(concurrency));
-		}
-
-		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
-		if (StringUtils.hasText(prefetch)) {
-			containerDef.getPropertyValues().add("prefetchCount", new TypedStringValue(prefetch));
-		}
-
-		String transactionSize = containerEle.getAttribute(TRANSACTION_SIZE_ATTRIBUTE);
-		if (StringUtils.hasText(transactionSize)) {
-			containerDef.getPropertyValues().add("txSize", new TypedStringValue(transactionSize));
-		}
-
-		String requeueRejected = containerEle.getAttribute(REQUEUE_REJECTED_ATTRIBUTE);
-		if (StringUtils.hasText(requeueRejected)) {
-			containerDef.getPropertyValues().add("defaultRequeueRejected", new TypedStringValue(requeueRejected));
-		}
-
-		String phase = containerEle.getAttribute(PHASE_ATTRIBUTE);
-		if (StringUtils.hasText(phase)) {
-			containerDef.getPropertyValues().add("phase", phase);
-		}
-
-		String autoStartup = containerEle.getAttribute(AUTO_STARTUP_ATTRIBUTE);
-		if (StringUtils.hasText(autoStartup)) {
-			containerDef.getPropertyValues().add("autoStartup", new TypedStringValue(autoStartup));
-		}
-
-		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);
-		if (StringUtils.hasText(adviceChain)) {
-			containerDef.getPropertyValues().add("adviceChain", new RuntimeBeanReference(adviceChain));
-		}
-
-		return containerDef;
-	}
-
-	private AcknowledgeMode parseAcknowledgeMode(Element ele, ParserContext parserContext) {
-		AcknowledgeMode acknowledgeMode = null;
-		String acknowledge = ele.getAttribute(ACKNOWLEDGE_ATTRIBUTE);
-		if (StringUtils.hasText(acknowledge)) {
-			if (ACKNOWLEDGE_AUTO.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.AUTO;
-			} else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.MANUAL;
-			} else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
-				acknowledgeMode = AcknowledgeMode.NONE;
-			} else {
-				parserContext.getReaderContext().error(
-						"Invalid listener container 'acknowledge' setting [" + acknowledge
-								+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
-			}
-			return acknowledgeMode;
-		} else {
-			return null;
-		}
-	}
-
 }
