@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  */
 class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
@@ -37,6 +38,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 	private static final String USER_ATTRIBUTE = "username";
 
 	private static final String PASSWORD_ATTRIBUTE = "password";
+
+	private static final String EXECUTOR_ATTRIBUTE = "executor";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -63,7 +66,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, USER_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PASSWORD_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, VIRTUAL_HOST_ATTRIBUTE);
-
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, EXECUTOR_ATTRIBUTE);
 	}
 
 }

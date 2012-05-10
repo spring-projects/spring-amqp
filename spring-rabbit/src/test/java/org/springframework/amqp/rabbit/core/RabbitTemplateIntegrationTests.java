@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,17 +17,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.logging.Log;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -39,6 +46,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
@@ -46,6 +54,9 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.FieldCallback;
+import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
@@ -317,6 +328,76 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertEquals(null, reply);
+	}
+
+	@Test
+	public void testAtomicSendAndReceiveExternalExecutor() throws Exception {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+		final String execName = "make-sure-exec-passed-in";
+		exec.setBeanName(execName);
+		exec.afterPropertiesSet();
+		connectionFactory.setExecutor(exec);
+		final Field[] fields = new Field[1];
+		ReflectionUtils.doWithFields(RabbitTemplate.class, new FieldCallback() {
+			public void doWith(Field field) throws IllegalArgumentException,
+					IllegalAccessException {
+				field.setAccessible(true);
+				fields[0] = field;
+			}
+		}, new FieldFilter() {
+			public boolean matches(Field field) {
+				return field.getName().equals("logger");
+			}
+		});
+		Log logger = Mockito.mock(Log.class);
+		when(logger.isTraceEnabled()).thenReturn(true);
+
+		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
+
+		doAnswer(new Answer<Object>(){
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				String log = (String) invocation.getArguments()[0];
+				if (log.startsWith("Message received") &&
+						Thread.currentThread().getName().startsWith(execName)) {
+					execConfiguredOk.set(true);
+				}
+				return null;
+			}
+		}).when(logger).trace(Mockito.anyString());
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		ReflectionUtils.setField(fields[0], template, logger);
+		template.setRoutingKey(ROUTE);
+		template.setQueue(ROUTE);
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		// Set up a consumer to respond to our producer
+		Future<Message> received = executor.submit(new Callable<Message>() {
+
+			public Message call() throws Exception {
+				Message message = null;
+				for (int i = 0; i < 10; i++) {
+					message = template.receive();
+					if (message != null) {
+						break;
+					}
+					Thread.sleep(100L);
+				}
+				assertNotNull("No message received", message);
+				template.send(message.getMessageProperties().getReplyTo(), message);
+				return message;
+			}
+
+		});
+		Message message = new Message("test-message".getBytes(), new MessageProperties());
+		Message reply = template.sendAndReceive(message);
+		assertEquals(new String(message.getBody()), new String(received.get(1000, TimeUnit.MILLISECONDS).getBody()));
+		assertNotNull("Reply is expected", reply);
+		assertEquals(new String(message.getBody()), new String(reply.getBody()));
+		// Message was consumed so nothing left on queue
+		reply = template.receive();
+		assertEquals(null, reply);
+
+		assertTrue(execConfiguredOk.get());
 	}
 
 	@Test
