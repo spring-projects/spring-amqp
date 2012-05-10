@@ -111,6 +111,7 @@ public class RabbitTemplateHeaderTests {
 				Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
+		assertNotNull(reply);
 
 		assertEquals(1, props.size());
 		BasicProperties basicProperties = props.get(0);

@@ -746,6 +746,50 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="mandatory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When 'true' sets the mandatory flag on basic.publish; only applies if
+	a 'return-callback' is provided.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="immediate" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When 'true' sets the immediate flag on basic.publish; only applies if
+	a 'return-callback' is provided.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="return-callback" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to an implementation of RabbitTemplate.ReturnCallback - invoked if
+	a return is received for a message published with mandatory or immediate set
+	that couldn't be delivered according to the semantics of those options.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="confirm-callback" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to an implementation of RabbitTemplate.ConfirmCallback - invoked if
+	a confirm (ack or nack) return is received for a published message.
+	Requires a 'connection-factory' that has 'publisher-confirms' set to 'true'.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ConfirmCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -837,6 +881,20 @@
 							<tool:expected-type type="java.util.concurrent.Executor" />
 						</tool:annotation>
 					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="publisher-confirms" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When true, channels on connections created by this factory support publisher confirms.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="publisher-returns" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When true, channels on connections created by this factory support publisher confirms.
+					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
 		</xsd:complexType>

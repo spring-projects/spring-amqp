@@ -13,7 +13,9 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -47,6 +49,22 @@ public final class TemplateParserTests {
 	public void testTemplate() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
 		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("mandatory"));
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("immediate"));
+		assertNull(dfa.getPropertyValue("returnCallback"));
+		assertNull(dfa.getPropertyValue("confirmCallback"));
+	}
+
+	@Test
+	public void testTemplateWithCallbacks() throws Exception {
+		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
+		assertNotNull(template);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("mandatory"));
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("immediate"));
+		assertNotNull(dfa.getPropertyValue("returnCallback"));
+		assertNotNull(dfa.getPropertyValue("confirmCallback"));
 	}	
 	
 	@Test

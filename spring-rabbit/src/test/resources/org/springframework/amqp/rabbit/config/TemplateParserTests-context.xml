@@ -23,4 +23,14 @@
 		<entry key="foo" value="bar" />
 	</rabbit:queue-arguments>
 
+	<rabbit:template id="withCallbacks" connection-factory="connectionFactory"
+		mandatory="true" immediate="true" return-callback="rcb" confirm-callback="ccb" />
+
+	<beans:bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
+		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnCallback" />
+	</beans:bean>
+
+	<beans:bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
+		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback" />
+	</beans:bean>
 </beans>
