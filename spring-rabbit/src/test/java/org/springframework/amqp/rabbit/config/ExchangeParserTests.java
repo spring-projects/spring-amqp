@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.FederatedExchange;
 import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
-
+/**
+ * @author Dave Syer
+ * @author Mark Fisher
+ * @author Gary Russell
+ * @since 1.0
+ *
+ */
 public final class ExchangeParserTests {
 
 	private XmlBeanFactory beanFactory;
@@ -99,6 +106,50 @@ public final class ExchangeParserTests {
 		assertNotNull(exchange);
 		assertEquals("direct-arguments", exchange.getName());
 		assertEquals("bar", exchange.getArguments().get("foo"));
+	}
+
+	@Test
+	public void testFederatedDirectExchange() throws Exception {
+		FederatedExchange exchange = beanFactory.getBean("fedDirect", FederatedExchange.class);
+		assertNotNull(exchange);
+		assertEquals("fedDirect", exchange.getName());
+		assertTrue(exchange.isDurable());
+		assertFalse(exchange.isAutoDelete());
+		assertEquals("direct", exchange.getArguments().get("type"));
+		assertEquals("upstream-set1", exchange.getArguments().get("upstream-set"));
+	}
+
+	@Test
+	public void testFederatedTopicExchange() throws Exception {
+		FederatedExchange exchange = beanFactory.getBean("fedTopic", FederatedExchange.class);
+		assertNotNull(exchange);
+		assertEquals("fedTopic", exchange.getName());
+		assertTrue(exchange.isDurable());
+		assertFalse(exchange.isAutoDelete());
+		assertEquals("topic", exchange.getArguments().get("type"));
+		assertEquals("upstream-set2", exchange.getArguments().get("upstream-set"));
+	}
+
+	@Test
+	public void testFederatedFanoutExchange() throws Exception {
+		FederatedExchange exchange = beanFactory.getBean("fedFanout", FederatedExchange.class);
+		assertNotNull(exchange);
+		assertEquals("fedFanout", exchange.getName());
+		assertTrue(exchange.isDurable());
+		assertFalse(exchange.isAutoDelete());
+		assertEquals("fanout", exchange.getArguments().get("type"));
+		assertEquals("upstream-set3", exchange.getArguments().get("upstream-set"));
+	}
+
+	@Test
+	public void testFederatedHeadersExchange() throws Exception {
+		FederatedExchange exchange = beanFactory.getBean("fedHeaders", FederatedExchange.class);
+		assertNotNull(exchange);
+		assertEquals("fedHeaders", exchange.getName());
+		assertTrue(exchange.isDurable());
+		assertFalse(exchange.isAutoDelete());
+		assertEquals("headers", exchange.getArguments().get("type"));
+		assertEquals("upstream-set4", exchange.getArguments().get("upstream-set"));
 	}
 
 }
