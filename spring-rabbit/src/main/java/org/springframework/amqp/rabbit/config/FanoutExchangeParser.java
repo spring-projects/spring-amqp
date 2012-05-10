@@ -36,7 +36,7 @@ public class FanoutExchangeParser extends AbstractExchangeParser {
 	@Override
 	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
-		builder.addPropertyReference("destinationQueue", binding.getAttribute(BINDING_QUEUE_ATTR));
+		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
 		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder.getBeanDefinition();

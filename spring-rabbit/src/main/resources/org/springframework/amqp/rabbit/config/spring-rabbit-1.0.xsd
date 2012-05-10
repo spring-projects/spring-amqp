@@ -441,7 +441,7 @@
 		<xsd:sequence>
 			<xsd:element ref="binding-arguments" minOccurs="0" maxOccurs="1" />
 		</xsd:sequence>
-		<xsd:attribute name="queue" use="required">
+		<xsd:attribute name="queue" use="optional">
 			<xsd:annotation>
 				<xsd:documentation source="java:org.springframework.amqp.core.Queue"><![CDATA[
 				The bean name of the Queue to bind to this exchange.
@@ -449,6 +449,18 @@
 				<xsd:appinfo>
 					<tool:annotation kind="ref">
 						<tool:expected-type type="org.springframework.amqp.core.Queue" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exchange" use="optional">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Exchange"><![CDATA[
+				The bean name of another exchange to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Exchange" />
 					</tool:annotation>
 				</xsd:appinfo>
 			</xsd:annotation>

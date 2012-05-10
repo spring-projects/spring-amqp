@@ -21,6 +21,7 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
@@ -41,6 +42,8 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 	private static String BINDING_ELE = "binding";
 
 	protected static final String BINDING_QUEUE_ATTR = "queue";
+
+	protected static final String BINDING_EXCHANGE_ATTR = "exchange";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
@@ -86,5 +89,21 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	protected abstract AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext);
+
+	protected void parseDestination(Element binding, ParserContext parserContext, BeanDefinitionBuilder builder) {
+		String queueAttribute = binding.getAttribute(BINDING_QUEUE_ATTR);
+		String exchangeAttribute = binding.getAttribute(BINDING_EXCHANGE_ATTR);
+		boolean hasQueueAttribute = StringUtils.hasText(queueAttribute);
+		boolean hasExchangeAttribute = StringUtils.hasText(exchangeAttribute);
+		if (!(hasQueueAttribute ^ hasExchangeAttribute)) {
+			parserContext.getReaderContext().error("Binding must have exactly one of 'queue' or 'exchange'", binding);
+		}
+		if (hasQueueAttribute) {
+			builder.addPropertyReference("destinationQueue", queueAttribute);
+		}
+		if (hasExchangeAttribute) {
+			builder.addPropertyReference("destinationExchange", exchangeAttribute);
+		}
+	}
 
 }

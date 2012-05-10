@@ -80,7 +80,7 @@ public final class RabbitNamespaceHandlerTests {
 	public void testBindings() throws Exception {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
 		// 4 for each exchange type
-		assertEquals(16, bindings.size());
+		assertEquals(17, bindings.size());
 	}
 	
 	@Test
