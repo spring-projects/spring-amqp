@@ -140,7 +140,7 @@
 
     /**
      * The queue is durable, non-exclusive and non auto-delete.
-     * 
+     *
      * @param name the name of the queue.
      */
     public Queue(String name) {
@@ -699,7 +699,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     See the Javadoc of <classname>AmqpTemplate</classname> for more detail.</para>
     <para>
     By default, a new temporary queue is used for each reply. However, a single reply queue can be configured on the template,
-    which allows you to set arguments on that queue (such as 'ha_args="all"' for mirrored queues). In this case, however, 
+    which allows you to set arguments on that queue (such as 'ha_args="all"' for mirrored queues). In this case, however,
     you must also provide a &lt;reply-listener/&gt; sub element. This element provides a listener container for the
     reply queue, with the template being the listener. All of the <xref linkend="containerAttributes" /> attributes
     allowed on a &lt;listener-container/&gt; are allowed on the element, except for connection-factory and
@@ -1052,6 +1052,47 @@ public class ExampleExternalTransactionAmqpConfiguration {
       also means that if it is under load there is a natural back off before
       the message can be consumed again.</para>
     </section>
+    <section>
+      <title>Using the RabbitTransactionManager</title>
+      <para>
+        The
+        <ulink url="http://static.springsource.org/spring-amqp/docs/latest-ga/apidocs/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html">RabbitTransactionManager</ulink>
+        is an alternative to executing Rabbit operations within, and synchronized
+        with, external transactions. This Transaction Manager is an implementation
+        of the
+        <interface><ulink url="http://static.springsource.org/spring/docs/current/javadoc-api/org/springframework/transaction/PlatformTransactionManager.html">PlatformTransactionManager</ulink></interface>
+        interface and should be used with a single Rabbit ConnectionFactory.
+      </para>
+      <important>
+        This strategy is not able to provide XA transactions, for example in
+        order to share transactions between messaging and database access.
+      </important>
+      <para>
+        Application code is required to retrieve the transactional Rabbit resources
+        via <code>ConnectionFactoryUtils.getTransactionalResourceHolder(ConnectionFactory, boolean)</code>
+        instead of a standard <code>Connection.createChannel()</code> call with
+        subsequent Channel creation. When using Spring's
+        <classname><ulink url="http://static.springsource.org/spring-amqp/docs/latest-ga/apidocs/org/springframework/amqp/rabbit/core/RabbitTemplate.html">RabbitTemplate</ulink></classname>,
+        it will autodetect a thread-bound Channel and automatically participate
+        in it.
+      </para>
+      <para>
+        With Java Configuration you can setup a new RabbitTransactionManager
+        using:
+      </para>
+      <programlisting><![CDATA[@Bean
+public RabbitTransactionManager rabbitTransactionManager() {
+    return new RabbitTransactionManager(connectionFactory);
+}]]></programlisting>
+      <para>
+        If you prefer using XML configuration, declare the following bean in your
+        XML Application Context file:
+      </para>
+      <programlisting><![CDATA[<bean id="rabbitTxManager"
+      class="org.springframework.amqp.rabbit.transaction.RabbitTransactionManager">
+    <property name="connectionFactory" ref="connectionFactory"/>
+</bean>]]></programlisting>
+    </section>
   </section>
 
   <section id="containerAttributes">
@@ -1190,7 +1231,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
             <row>
               <entry>taskExecutor</entry>
-              
+
               <entry>A reference to a Spring TaskExecutor (or standard JDK 1.5+
               Executor) for executing listener invokers. Default is a
               SimpleAsyncTaskExecutor, using internally managed threads.</entry>
@@ -1198,7 +1239,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
             <row>
               <entry>errorHandler</entry>
-              
+
               <entry>A reference to an ErrorHandler strategy for handling any
               uncaught Exceptions that may occur during the execution of the
               MessageListener.</entry>
@@ -1206,14 +1247,14 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
             <row>
               <entry>concurrency</entry>
-              
+
               <entry>The number of concurrent consumers to start for each
               listener.</entry>
             </row>
 
             <row>
               <entry>connectionFactory</entry>
-              
+
               <entry>A reference to the connectionFactory; when configuring
               using the XML namespace, the default referenced bean name
               is "rabbitConnectionFactory".</entry>
@@ -1221,7 +1262,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
 
             <row>
               <entry>messageConverter</entry>
-              
+
               <entry>A reference to the MessageConverter strategy for
               converting AMQP Messages to listener method arguments
               for any referenced 'listener' that is a POJO. Default is
@@ -1243,7 +1284,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
     the features and recovery scenarios individually.</para>
 
     <para>The primary reconnection features are enabled by the
-    <classname>CachingConnectionFactory</classname> itself. 
+    <classname>CachingConnectionFactory</classname> itself.
     It is also often beneficial to use the <classname>RabbitAdmin</classname>
     auto-declaration features. In addition, if you care about
     guaranteed delivery, you probably also need to use the
