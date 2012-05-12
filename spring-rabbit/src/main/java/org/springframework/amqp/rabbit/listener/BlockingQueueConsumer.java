@@ -214,7 +214,7 @@ public class BlockingQueueConsumer {
 				}
 				passiveDeclareTries = 0;
 			} catch (IOException e) {
-				if (passiveDeclareTries > 0) {
+				if (passiveDeclareTries > 0 && channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
 						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
 						try {
