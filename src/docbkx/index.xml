@@ -4,7 +4,9 @@
 
     <bookinfo>
         <title>Spring AMQP - Reference Documentation</title>
-        <releaseinfo>&version;</releaseinfo>
+        <titleabbrev>Spring AMQP ${version}</titleabbrev>
+        <productname>Spring AMQP</productname>
+        <releaseinfo>${version}</releaseinfo>
 
         <authorgroup>
             <author>
@@ -27,11 +29,15 @@
                 <firstname>Gary</firstname>
                 <surname>Russell</surname>
             </author>
+            <author>
+                <firstname>Gunnar</firstname>
+                <surname>Hillert</surname>
+            </author>
         </authorgroup>
 
         <legalnotice>
-            <para>Copyright &#xA9; 2010-2012</para>
-			<para>
+            <para>© SpringSource Inc., 2012</para>
+            <para>
                 Copies of this document may be made for your own use and for distribution
                 to others, provided that you do not charge any fee for such copies and
                 further provided that each copy contains this Copyright Notice, whether
@@ -64,7 +70,7 @@
                 This part of the reference documentation details the various components
                 that comprise Spring AMQP. The <link linkend="amqp">main chapter</link>
         covers the core classes to develop an AMQP application.  This part also
-        includes a chapter on <link lnkend="erlang">integration with
+        includes a chapter on <link linkend="erlang">integration with
         Erlang</link> and a chapter
         about the <link linkend="sample-apps">sample applications</link>.
             </para>
