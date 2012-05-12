@@ -63,7 +63,7 @@ public class RabbitBindingIntegrationTests {
 					assertEquals("message", result);
 
 				} finally {
-					channel.basicCancel(tag);
+					consumer.getChannel().basicCancel(tag);
 				}
 
 				return null;
@@ -102,7 +102,7 @@ public class RabbitBindingIntegrationTests {
 					assertEquals("message", result);
 
 				} finally {
-					channel.basicCancel(tag);
+					consumer.getChannel().basicCancel(tag);
 				}
 
 				return null;
@@ -239,6 +239,19 @@ public class RabbitBindingIntegrationTests {
 				accessor.getConnectionFactory(), new DefaultMessagePropertiesConverter(),
 				new ActiveObjectCounter<BlockingQueueConsumer>(), AcknowledgeMode.AUTO, true, 1, queue.getName());
 		consumer.start();
+		// wait for consumeOk...
+		int n = 0;
+		while (n++ < 100) {
+			if (consumer.getConsumerTag() == null) {
+				try {
+					Thread.sleep(100);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+		}
 		return consumer;
 	}
 
