@@ -50,7 +50,10 @@ public final class ConnectionFactoryParserTests {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("kitchenSink", CachingConnectionFactory.class);
 		assertNotNull(connectionFactory);
 		assertEquals(10, connectionFactory.getChannelCacheSize());
-		assertNull(new DirectFieldAccessor(connectionFactory).getPropertyValue("executorService"));
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		assertNull(dfa.getPropertyValue("executorService"));
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherConfirms"));
+		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherReturns"));
 	}	
 	
 	@Test
@@ -69,6 +72,9 @@ public final class ConnectionFactoryParserTests {
 		assertNotNull(executor);
 		ThreadPoolTaskExecutor exec = beanFactory.getBean("exec", ThreadPoolTaskExecutor.class);
 		assertSame(exec.getThreadPoolExecutor(), executor);
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherConfirms"));
+		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherReturns"));
 	}
 
 	@Test

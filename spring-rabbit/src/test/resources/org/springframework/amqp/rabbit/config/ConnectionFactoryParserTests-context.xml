@@ -11,7 +11,8 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
 	<rabbit:connection-factory id="kitchenSink" host="foo" virtual-host="/bar"
-		channel-cache-size="10" port="6888" username="user" password="password" />
+		channel-cache-size="10" port="6888" username="user" password="password"
+		publisher-confirms="true" publisher-returns="true"/>
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
 	

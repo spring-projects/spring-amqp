@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -47,6 +47,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 public class CachingConnectionFactory extends AbstractConnectionFactory {
 
@@ -61,6 +62,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 	private ChannelCachingConnectionProxy connection;
 
 	private volatile boolean publisherConfirms;
+
+	private volatile boolean publisherReturns;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -127,6 +130,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		return publisherConfirms;
 	}
 
+	public boolean isPublisherReturns() {
+		return publisherReturns;
+	}
+
+	public void setPublisherReturns(boolean publisherReturns) {
+		this.publisherReturns = publisherReturns;
+	}
+
 	public void setPublisherConfirms(boolean publisherConfirms) {
 		this.publisherConfirms = publisherConfirms;
 	}
@@ -173,7 +184,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		}
 		getChannelListener().onCreate(targetChannel, transactional);
 		Class<?>[] interfaces;
-		if (this.publisherConfirms) {
+		if (this.publisherConfirms || this.publisherReturns) {
 			interfaces = new Class[] { ChannelProxy.class, PublisherCallbackChannel.class };
 		}
 		else {
@@ -195,14 +206,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			try {
 				channel.confirmSelect();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.error("Could not configure the channel to receive publisher confirms", e);
 			}
+		}
+		if (this.publisherConfirms || this.publisherReturns) {
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
 				channel = new PublisherCallbackChannelImpl(channel);
 			}
 		}
-		// TODO returns
 		return channel;
 	}
 

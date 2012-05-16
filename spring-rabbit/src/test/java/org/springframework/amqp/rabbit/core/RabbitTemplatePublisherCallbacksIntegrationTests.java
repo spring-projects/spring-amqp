@@ -63,17 +63,34 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	private CachingConnectionFactory connectionFactory;
 
+	private CachingConnectionFactory connectionFactoryWithConfirmsEnabled;
+
+	private CachingConnectionFactory connectionFactoryWithReturnsEnabled;
+
 	private RabbitTemplate template;
+
+	private RabbitTemplate templateWithConfirmsEnabled;
+
+	private RabbitTemplate templateWithReturnsEnabled;
 
 	@Before
 	public void create() {
 		connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setChannelCacheSize(1);
+		connectionFactory.setPort(BrokerTestUtils.getPort());
+		template = new RabbitTemplate(connectionFactory);
+		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
 		// When using publisher confirms, the cache size needs to be large enough
 		// otherwise channels can be closed before confirms are received.
-		connectionFactory.setChannelCacheSize(10);
-		connectionFactory.setPort(BrokerTestUtils.getPort());
-		connectionFactory.setPublisherConfirms(true);
-		template = new RabbitTemplate(connectionFactory);
+		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(10);
+		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
+		connectionFactoryWithConfirmsEnabled.setPublisherConfirms(true);
+		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
+		connectionFactoryWithReturnsEnabled = new CachingConnectionFactory();
+		connectionFactoryWithReturnsEnabled.setChannelCacheSize(1);
+		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
+		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
+		templateWithReturnsEnabled = new RabbitTemplate(connectionFactoryWithReturnsEnabled);
 	}
 
 	@Rule
@@ -82,21 +99,21 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Test
 	public void testPublisherConfirmReceived() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
-		template.setConfirmCallback(new ConfirmCallback() {
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch.countDown();
 			}
 		});
-		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-		assertNull(template.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 	}
 
 	@Test
 	public void testPublisherConfirmReceivedConcurrentThreads() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(2);
-		template.setConfirmCallback(new ConfirmCallback() {
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch.countDown();
@@ -109,14 +126,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
 
 			public void run() {
-				template.execute(new ChannelCallback<Object>() {
+				templateWithConfirmsEnabled.execute(new ChannelCallback<Object>() {
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
 							threadLatch.await(10, TimeUnit.SECONDS);
 						} catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
-						template.doSend(channel, "", ROUTE,
+						templateWithConfirmsEnabled.doSend(channel, "", ROUTE,
 							new SimpleMessageConverter().toMessage("message", new MessageProperties()),
 							new CorrelationData("def"));
 						return null;
@@ -126,24 +143,24 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 
 		// Thread 2
-		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		threadLatch.countDown();
 		assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-		assertNull(template.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 	}
 
 	@Test
 	public void testPublisherConfirmReceivedTwoTemplates() throws Exception {
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		final CountDownLatch latch2 = new CountDownLatch(1);
-		template.setConfirmCallback(new ConfirmCallback() {
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch1.countDown();
 			}
 		});
-		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
-		RabbitTemplate secondTemplate = new RabbitTemplate(connectionFactory);
+		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		RabbitTemplate secondTemplate = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 		secondTemplate.setConfirmCallback(new ConfirmCallback() {
 
 			public void confirm(CorrelationData correlationData, boolean ack) {
@@ -153,7 +170,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		secondTemplate.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
 		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
 		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
-		assertNull(template.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 		assertNull(secondTemplate.getUnconfirmed(0));
 	}
 
@@ -161,16 +178,16 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherReturns() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
-		template.setReturnCallback(new ReturnCallback() {
+		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
 			public void returnedMessage(Message message, int replyCode,
 					String replyText, String exchange, String routingKey) {
 				returns.add(message);
 				latch.countDown();
 			}
 		});
-		template.setMandatory(true);
-		template.setImmediate(true);
-		template.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
+		templateWithReturnsEnabled.setMandatory(true);
+		templateWithReturnsEnabled.setImmediate(true);
+		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 		assertEquals(1, returns.size());
 		Message message = returns.get(0);
