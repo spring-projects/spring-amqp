@@ -696,7 +696,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			}
 		}
 		else {
-			throw new IllegalStateException("When using publisher confirms, channels must be wrapped in a PublisherCallbackChannelImpl");
+			throw new IllegalStateException(
+					"Channel does not support confirms or returns; " +
+					"is the connection factory configured for confirms or returns?");
 		}
 	}
 
