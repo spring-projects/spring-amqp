@@ -272,7 +272,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	}
 
 	private int getTimeout() {
-		return Math.min(1 + messageCount / (4 * concurrentConsumers), 30);
+		return Math.min(1 + messageCount / (2 * concurrentConsumers), 30);
 	}
 
 	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
