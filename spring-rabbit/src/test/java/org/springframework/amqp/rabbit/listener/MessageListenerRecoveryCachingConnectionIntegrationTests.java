@@ -185,7 +185,10 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		container = createContainer(queue.getName(), new AbortChannelListener(latch), createConnectionFactory());
-		Thread.sleep(500L);
+		int n = 0;
+		while (n++ < 100 && container.getActiveConsumerCount() != concurrentConsumers) {
+			Thread.sleep(50L);
+		}
 		assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 
 		for (int i = 0; i < messageCount; i++) {
@@ -272,7 +275,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	}
 
 	private int getTimeout() {
-		return Math.min(1 + messageCount / (2 * concurrentConsumers), 30);
+		return Math.min(1 + messageCount / (concurrentConsumers), 30);
 	}
 
 	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
