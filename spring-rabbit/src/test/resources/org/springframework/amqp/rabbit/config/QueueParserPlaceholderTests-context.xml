@@ -10,6 +10,8 @@
 				<prop key="foo">foo</prop>
 				<prop key="true">true</prop>
 				<prop key="bar">bar</prop>
+				<prop key="ttl">100</prop>
+				<prop key="ha">all</prop>
 			</props>
 		</property>
 	</bean>
@@ -27,6 +29,10 @@
 	<rabbit:queue name="arguments">
 		<rabbit:queue-arguments>
 			<beans:entry key="foo" value="${bar}" />
+			<beans:entry key="x-message-ttl">
+				<beans:value type="java.lang.Long">${ttl}</beans:value>
+			</beans:entry>
+			<beans:entry key="x-ha-policy" value="${ha}" />
 		</rabbit:queue-arguments>
 	</rabbit:queue>
 

@@ -157,6 +157,10 @@
       or other <emphasis>temporary</emphasis> situations. For that reason, the
       'exclusive' and 'autoDelete' properties of an auto-generated Queue would
       both be set to 'true'.</para>
+
+      <note>See the section on queues in <xref linkend="broker-configuration" />
+      for information about declaring queues using namespace support, including
+      queue arguments.</note>
     </sect2>
 
     <sect2>
@@ -799,6 +803,50 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     context. E.g.</para>
 
     <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
+
+	<para>Queues can be configured with additional arguments, for example,
+	'x-message-ttl' or 'x-ha-policy'. Using the namespace support, they are provided in the form of
+	a Map of argument name/argument value pairs, using the
+	&lt;rabbit:queue-arguments&gt; element.</para>
+
+    <programlisting><![CDATA[<rabbit:queue name="withArguments">
+	<rabbit:queue-arguments>
+		<entry key="x-ha-policy" value="all" />
+	</rabbit:queue-arguments>
+</rabbit:queue>
+]]></programlisting>
+
+	<para>By default, the arguments are assumed to be strings. For arguments
+	of other types, the type needs to be provided.</para>
+
+	<programlisting><![CDATA[<rabbit:queue name="withArguments">
+	<rabbit:queue-arguments value-type="java.lang.Long">
+		<entry key="x-message-ttl" value="100" />
+	</rabbit:queue-arguments>
+</rabbit:queue>
+]]></programlisting>
+
+	<para>When providing arguments of mixed types, the type is provided for each entry element:</para>
+
+	<programlisting><![CDATA[<rabbit:queue name="withArguments">
+	<rabbit:queue-arguments>
+		<entry key="x-message-ttl">
+			<value type="java.lang.Long">100</value>
+		</entry>
+		<entry key="x-ha-policy" value="all" />
+	</rabbit:queue-arguments>
+</rabbit:queue>
+]]></programlisting>
+
+	<para>With Spring Framework 3.2 and later, this can be declared a little more succinctly:</para>
+
+	<programlisting><![CDATA[<rabbit:queue name="withArguments">
+	<rabbit:queue-arguments>
+		<entry key="x-message-ttl" value="100" value-type="java.lang.Long" />
+		<entry key="x-ha-policy" value="all" />
+	</rabbit:queue-arguments>
+</rabbit:queue>
+]]></programlisting>
 
     <para>To see how to use Java to configure the AMQP infrastructure, look at
     the Stock sample application, where there is the <code>@Configuration</code>
