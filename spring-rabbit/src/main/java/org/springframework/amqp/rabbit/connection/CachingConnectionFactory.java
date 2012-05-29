@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2012 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -33,17 +33,17 @@ import com.rabbitmq.client.Channel;
  * A {@link ConnectionFactory} implementation that returns the same Connections from all {@link #createConnection()}
  * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and caches
  * {@link com.rabbitmq.client.Channel}.
- * 
+ *
  * <p>
  * By default, only one Channel will be cached, with further requested Channels being created and disposed on demand.
  * Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
  * environment.
- * 
+ *
  * <p>
  * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its shared Connection.</b>
  * This is the usual recommendation for native Rabbit access code anyway. However, with this ConnectionFactory, its use
  * is mandatory in order to actually allow for Channel reuse.
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
@@ -77,9 +77,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 	}
 
 	/**
-	 * Create a new CachingConnectionFactory given a host name.
-	 * 
+	 * Create a new CachingConnectionFactory given a host name
+	 * and port.
+	 *
 	 * @param hostname the host name to connect to
+	 * @param port the port number
 	 */
 	public CachingConnectionFactory(String hostname, int port) {
 		super(new com.rabbitmq.client.ConnectionFactory());
@@ -91,9 +93,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 	}
 
 	/**
-	 * Create a new CachingConnectionFactory given a host name.
-	 * 
-	 * @param hostName the host name to connect to
+	 * Create a new CachingConnectionFactory given a port on the hostname returned from
+	 * InetAddress.getLocalHost(), or "localhost" if getLocalHost() throws an exception.
+	 *
+	 * @param port the port number
 	 */
 	public CachingConnectionFactory(int port) {
 		this(null, port);
@@ -101,7 +104,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Create a new CachingConnectionFactory given a host name.
-	 * 
+	 *
 	 * @param hostname the host name to connect to
 	 */
 	public CachingConnectionFactory(String hostname) {
@@ -110,7 +113,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 	/**
 	 * Create a new CachingConnectionFactory for the given target ConnectionFactory.
-	 * 
+	 *
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
 	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
@@ -142,6 +145,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		this.publisherConfirms = publisherConfirms;
 	}
 
+	@Override
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
 		super.setConnectionListeners(listeners);
 		// If the connection is already alive we assume that the new listeners want to be notified
@@ -150,6 +154,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		}
 	}
 
+	@Override
 	public void addConnectionListener(ConnectionListener listener) {
 		super.addConnectionListener(listener);
 		// If the connection is already alive we assume that the new listener wants to be notified
@@ -234,6 +239,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 	 * As this bean implements DisposableBean, a bean factory will automatically invoke this on destruction of its
 	 * cached singletons.
 	 */
+	@Override
 	public final void destroy() {
 		synchronized (this.connectionMonitor) {
 			if (connection != null) {
@@ -358,7 +364,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 		/**
 		 * GUARDED by channelList
-		 * 
+		 *
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {

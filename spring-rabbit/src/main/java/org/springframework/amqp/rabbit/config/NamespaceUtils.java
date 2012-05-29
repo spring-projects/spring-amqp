@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -31,7 +31,7 @@ import org.w3c.dom.Element;
 
 /**
  * Shared utility methods for namespace parsers.
- * 
+ *
  */
 public abstract class NamespaceUtils {
 
@@ -43,7 +43,7 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the specified bean definition property with the value of the attribute whose name is provided if that
 	 * attribute is defined in the given element.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to populate the property
@@ -62,13 +62,13 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition property corresponding to the specified attributeName with the value of that
 	 * attribute if it is defined in the given element.
-	 * 
+	 *
 	 * <p>
 	 * The property name will be the camel-case equivalent of the lower case hyphen separated attribute (e.g. the
 	 * "foo-bar" attribute would match the "fooBar" property).
-	 * 
+	 *
 	 * @see Conventions#attributeNameToPropertyName(String)
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be set on the property
@@ -81,7 +81,7 @@ public abstract class NamespaceUtils {
 
 	/**
 	 * Checks the attribute to see if it is defined in the given element.
-	 * 
+	 *
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
 	 */
@@ -93,7 +93,7 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition constructor argument with the value of that attribute if it is defined in the given
 	 * element.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
@@ -111,7 +111,7 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition constructor argument with the boolean value of that attribute if it is defined in
 	 * the given element or else uses the default provided.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
@@ -130,7 +130,7 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition constructor argument with a reference to a bean with id equal to the attribute if
 	 * it is defined in the given element.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to set the reference
@@ -148,7 +148,7 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition constructor argument with a reference to a bean with parent id equal to the
 	 * attribute if it is defined in the given element.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to set the reference
@@ -168,13 +168,13 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the specified bean definition property with the reference to a bean. The bean reference is identified
 	 * by the value from the attribute whose name is provided if that attribute is defined in the given element.
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a bean reference to populate the
 	 * property
 	 * @param propertyName the name of the property to be populated
-	 * @return
+	 * @return true if the attribute is present and has text
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName, String propertyName) {
@@ -189,18 +189,18 @@ public abstract class NamespaceUtils {
 	/**
 	 * Populates the bean definition property corresponding to the specified attributeName with the reference to a bean
 	 * identified by the value of that attribute if the attribute is defined in the given element.
-	 * 
+	 *
 	 * <p>
 	 * The property name will be the camel-case equivalent of the lower case hyphen separated attribute (e.g. the
 	 * "foo-bar" attribute would match the "fooBar" property).
-	 * 
+	 *
 	 * @see Conventions#attributeNameToPropertyName(String)
-	 * 
+	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a bean reference to populate the
 	 * property
-	 * 
+	 *
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
