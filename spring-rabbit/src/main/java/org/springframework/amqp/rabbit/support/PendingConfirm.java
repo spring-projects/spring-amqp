@@ -31,7 +31,7 @@ public class PendingConfirm {
 	private final long timestamp;
 
 	/**
-	 * @param correlationId
+	 * @param correlationData
 	 * @param timestamp
 	 */
 	public PendingConfirm(CorrelationData correlationData, long timestamp) {

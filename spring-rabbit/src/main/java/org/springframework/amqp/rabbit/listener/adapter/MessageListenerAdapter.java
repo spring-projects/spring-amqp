@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -45,80 +45,80 @@ import com.rabbitmq.client.Channel;
  * Message listener adapter that delegates the handling of messages to target listener methods via reflection, with
  * flexible message type conversion. Allows listener methods to operate on message content types, completely independent
  * from the Rabbit API.
- * 
+ *
  * <p>
  * By default, the content of incoming Rabbit messages gets extracted before being passed into the target listener
  * method, to let the target method operate on message content types such as String or byte array instead of the raw
  * {@link Message}. Message type conversion is delegated to a Spring AMQ {@link MessageConverter}. By default, a
  * {@link SimpleMessageConverter} will be used. (If you do not want such automatic message conversion taking place, then
  * be sure to set the {@link #setMessageConverter MessageConverter} to <code>null</code>.)
- * 
+ *
  * <p>
  * If a target listener method returns a non-null object (typically of a message content type such as
  * <code>String</code> or byte array), it will get wrapped in a Rabbit <code>Message</code> and sent to the exchange of
  * the incoming message with the routingKey that comes from the Rabbit ReplyTo property or via
  * {@link #setResponseRoutingKey(String) specified routingKey}).
- * 
+ *
  * <p>
  * <b>Note:</b> The sending of response messages is only available when using the {@link ChannelAwareMessageListener}
  * entry point (typically through a Spring message listener container). Usage as {@link MessageListener} does <i>not</i>
  * support the generation of response messages.
- * 
+ *
  * <p>
  * Find below some examples of method signatures compliant with this adapter class. This first example handles all
  * <code>Message</code> types and gets passed the contents of each <code>Message</code> type as an argument. No
  * <code>Message</code> will be sent back as all of these methods return <code>void</code>.
- * 
+ *
  * <pre class="code">
  * public interface MessageContentsDelegate {
  * 	void handleMessage(String text);
- * 
+ *
  * 	void handleMessage(Map map);
- * 
+ *
  * 	void handleMessage(byte[] bytes);
- * 
+ *
  * 	void handleMessage(Serializable obj);
  * }
  * </pre>
- * 
+ *
  * This next example handle a <code>Message</code> type and gets passed the actual (raw) <code>Message</code> as an
  * argument. Again, no <code>Message</code> will be sent back as all of these methods return <code>void</code>.
- * 
+ *
  * <pre class="code">
  * public interface RawMessageDelegate {
  * 	void handleMessage(Message message);
  * }
  * </pre>
- * 
+ *
  * This next example illustrates a <code>Message</code> delegate that just consumes the <code>String</code> contents of
  * {@link Message Messages}. Notice also how the name of the <code>Message</code> handling method is different from the
  * {@link #ORIGINAL_DEFAULT_LISTENER_METHOD original} (this will have to be configured in the attandant bean
  * definition). Again, no <code>Message</code> will be sent back as the method returns <code>void</code>.
- * 
+ *
  * <pre class="code">
  * public interface TextMessageContentDelegate {
  * 	void onMessage(String text);
  * }
  * </pre>
- * 
+ *
  * This final example illustrates a <code>Message</code> delegate that just consumes the <code>String</code> contents of
  * {@link Message Messages}. Notice how the return type of this method is <code>String</code>: This will result in the
  * configured {@link MessageListenerAdapter} sending a {@link Message} in response.
- * 
+ *
  * <pre class="code">
  * public interface ResponsiveTextMessageContentDelegate {
  * 	String handleMessage(String text);
  * }
  * </pre>
- * 
+ *
  * For further examples and discussion please do refer to the Spring reference documentation which describes this class
  * (and its attendant XML configuration) in detail.
- * 
+ *
  * @author Juergen Hoeller
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
- * 
+ *
  * @see #setDelegate
  * @see #setDefaultListenerMethod
  * @see #setResponseRoutingKey(String)
@@ -208,7 +208,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 
 	/**
 	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
-	 * 
+	 *
 	 * @param encoding the encoding to set
 	 */
 	public void setEncoding(String encoding) {
@@ -362,8 +362,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * Handle the given exception that arose during listener execution. The default implementation logs the exception at
 	 * error level.
 	 * <p>
-	 * This method only applies when using a Rabbit {@link MessageListener}. In case of the Spring
-	 * {@link org.springframework.jms.listener.SessionAwareMessageListener} mechanism, exceptions get handled by the
+	 * This method only applies when using a Rabbit {@link MessageListener}. With
+	 * {@link ChannelAwareMessageListener}, exceptions get handled by the
 	 * caller instead.
 	 * @param ex the exception to handle
 	 * @see #onMessage(Message)
