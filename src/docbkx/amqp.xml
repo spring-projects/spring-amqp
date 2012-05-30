@@ -1316,6 +1316,14 @@ public RabbitTransactionManager rabbitTransactionManager() {
               for any referenced 'listener' that is a POJO. Default is
               a SimpleMessageConverter.</entry>
             </row>
+
+            <row>
+              <entry>requeueRejected</entry>
+
+              <entry>Determines whether messages that are
+              rejected because the listener
+              threw an exception should be requeued or not. Default 'true'.</entry>
+            </row>
           </tbody>
         </tgroup>
       </table></para>
@@ -1419,16 +1427,37 @@ public RabbitTransactionManager rabbitTransactionManager() {
       <para>Business exception handling, as opposed to protocol errors
       and dropped connections, might need more thought and some custom
       configuration, especially if transactions and/or container acks
-      are in use.  AMQP has no definition of dead letter behaviour, so
+      are in use.  Prior to 2.8.x, RabbitMQ had no definition of dead letter behaviour, so
       by default a message that is rejected or rolled back because of
       a business exception can be redelivered ad infinitum.  To put a
-      limit in the client on the number of re-deliveries your best
+      limit in the client on the number of re-deliveries, one
       choice is a
       <classname>StatefulRetryOperationsInterceptor</classname> in the
       advice chain of the listener.  The interceptor can have a
       recovery callback that implements a custom dead letter action:
       whatever is appropriate for your particular environment.</para>
 
+      <para>Another alternative is to set the container's rejectRequeued
+      property to false. This causes all failed messages to be discarded.
+      When using RabbitMQ 2.8.x or higher, this also facilitates
+      delivering the message to a Dead Letter Exchange.</para>
+
+      <para>Or, you can throw a <classname>AmqpRejectAndDontRequeueException</classname>;
+      this prevents message requeuing, regardless of the setting of the
+      rejectRequeued property.</para>
+
+      <para>Often, a combination of both techniques will be used. Use a
+      <classname>StatefulRetryOperationsInterceptor</classname> in the
+      advice chain, where it's <classname>MessageRecover</classname>
+      throws an <classname>AmqpRejectAndDontRequeueException</classname>.
+      The <classname>MessageRecover</classname> is called when all
+      retries have been exhausted. The default
+      <classname>MessageRecoverer</classname> simply consumes the
+      errant message and emits a WARN message. In which case,
+      the message is ACK'd and won't be sent to the Dead Letter
+      Exchange, if any.</para>
+
+      <para></para>
     </section>
 
   </section>
