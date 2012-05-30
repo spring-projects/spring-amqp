@@ -8,6 +8,18 @@
         <productname>Spring AMQP</productname>
         <releaseinfo>${version}</releaseinfo>
 
+	    <!-- TODO: this isn't showing up. -->
+	    <mediaobject>
+	      <imageobject role="fo">
+	        <imagedata fileref="images/logo.png"
+	          format="PNG" align="center"/>
+	      </imageobject>
+	      <imageobject role="html">
+	        <imagedata fileref="images/logo.png" format="PNG" align="center"/>
+	      </imageobject>
+	    </mediaobject>
+	    <!-- END TODO -->
+
         <authorgroup>
             <author>
                 <firstname>Mark</firstname>
