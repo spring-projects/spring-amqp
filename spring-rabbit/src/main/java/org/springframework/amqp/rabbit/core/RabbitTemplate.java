@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2012 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -61,14 +61,14 @@ import com.rabbitmq.client.GetResponse;
  * <p>
  * Helper class that simplifies synchronous RabbitMQ access (sending and receiving messages).
  * </p>
- * 
+ *
  * <p>
  * The default settings are for non-transactional messaging, which reduces the amount of data exchanged with the broker.
  * To use a new transaction for every send or receive set the {@link #setChannelTransacted(boolean) channelTransacted}
  * flag. To extend the transaction over multiple invocations (more efficient), you can use a Spring transaction to
  * bracket the calls (with <code>channelTransacted=true</code> as well).
  * </p>
- * 
+ *
  * <p>
  * The only mandatory property is the {@link #setConnectionFactory(ConnectionFactory) ConnectionFactory}. There are
  * strategies available for converting messages to and from Java objects (
@@ -77,7 +77,7 @@ import com.rabbitmq.client.GetResponse;
  * ). The defaults probably do something sensible for typical use cases, as long as the message content-type is set
  * appropriately.
  * </p>
- * 
+ *
  * <p>
  * The "send" methods all have overloaded versions that allow you to explicitly target an exchange and a routing key, or
  * you can set default values to be used in all send operations. The plain "receive" methods allow you to explicitly
@@ -85,7 +85,7 @@ import com.rabbitmq.client.GetResponse;
  * receives. The convenience methods for send <b>and</b> receive use the sender defaults if no exchange or routing key
  * is specified, but they always use a temporary queue for the receive leg, so the default queue is ignored.
  * </p>
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
@@ -147,7 +147,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * Create a rabbit template with default strategies and settings.
-	 * 
+	 *
 	 * @param connectionFactory the connection factory to use
 	 */
 	public RabbitTemplate(ConnectionFactory connectionFactory) {
@@ -166,7 +166,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	/**
 	 * The name of the default exchange to use for send operations when none is specified. Defaults to <code>""</code>
 	 * which is the default exchange in the broker (per the AMQP specification).
-	 * 
+	 *
 	 * @param exchange the exchange name to use for send operations
 	 */
 	public void setExchange(String exchange) {
@@ -177,8 +177,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * The value of a default routing key to use for send operations when none is specified. Default is empty which is
 	 * not helpful when using the default (or any direct) exchange, but fine if the exchange is a headers exchange for
 	 * instance.
-	 * 
-	 * @param exchange the default routing key to use for send operations
+	 *
+	 * @param routingKey the default routing key to use for send operations
 	 */
 	public void setRoutingKey(String routingKey) {
 		this.routingKey = routingKey;
@@ -186,7 +186,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * The name of the default queue to receive messages from when none is specified explicitly.
-	 * 
+	 *
 	 * @param queue the default queue name to use for receive
 	 */
 	public void setQueue(String queue) {
@@ -195,7 +195,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
-	 * 
+	 *
 	 * @param encoding the encoding to set
 	 */
 	public void setEncoding(String encoding) {
@@ -218,9 +218,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * sendAndReceive methods. The default value is defined as {@link #DEFAULT_REPLY_TIMEOUT}. A negative value
 	 * indicates an indefinite timeout. Not used in the plain receive methods because there is no blocking receive
 	 * operation defined in the protocol.
-	 * 
+	 *
 	 * @param replyTimeout the reply timeout in milliseconds
-	 * 
+	 *
 	 * @see #sendAndReceive(String, String, Message)
 	 * @see #convertSendAndReceive(String, String, Object)
 	 */
@@ -234,7 +234,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * <p>
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
 	 * Objects depending on the message content type header.
-	 * 
+	 *
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
@@ -484,7 +484,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * Send a message and wait for a reply.
-	 * 
+	 *
 	 * @param exchange the exchange name
 	 * @param routingKey the routing key
 	 * @param message the message to send
@@ -610,7 +610,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * Send the given message to the specified exchange.
-	 * 
+	 *
 	 * @param channel the RabbitMQ Channel to operate within
 	 * @param exchange the name of the RabbitMQ exchange to send to
 	 * @param routingKey the routing key
@@ -657,7 +657,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	/**
 	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
 	 * template's Channel handling and not by an external transaction coordinator.
-	 * 
+	 *
 	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see ConnectionFactoryUtils#isChannelTransactional
