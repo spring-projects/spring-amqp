@@ -275,8 +275,9 @@ task schemaZip(type: Zip) {
 	subprojects.each { subproject ->
 		def Properties schemas = new Properties();
 		def shortName = subproject.name.replaceFirst("${rootProject.name}-", '')
-		if (subproject.name.endsWith("-core")) {
-			shortName = ''
+
+		if (subproject.name.endsWith("-rabbit")) {
+			shortName = 'rabbit'
 		}
 
 		subproject.sourceSets.main.resources.find {
@@ -288,7 +289,7 @@ task schemaZip(type: Zip) {
 				it.path.endsWith(schemas.get(key))
 			}
 			assert xsdFile != null
-			into ("integration/${shortName}") {
+			into ("${shortName}") {
 				from xsdFile.path
 			}
 		}
@@ -323,8 +324,9 @@ task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
 	ext.baseDir = "${project.name}-${project.version}";
 
 	from('src/dist') {
-		include 'readme.txt'
-		include 'license.txt'
+		include 'README.md'
+		include 'apache-license.txt'
+		include 'epl-license.txt'
 		include 'notice.txt'
 		into "${baseDir}"
 	}

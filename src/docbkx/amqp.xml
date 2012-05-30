@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
-<chapter id="amqp">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="amqp"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
   <title>Using Spring AMQP</title>
 
   <para>In this chapter, we will explore the interfaces and classes that are the

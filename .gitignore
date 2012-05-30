@@ -12,6 +12,7 @@
 .springBeans
 bin
 build
+.DS_Store
 erl_crash.dump
 nohup.out
 src/ant/.ant-targets-upload-dist.xml
