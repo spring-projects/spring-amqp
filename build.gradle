@@ -212,7 +212,7 @@ project('spring-rabbit') {
 apply plugin: 'docbook-reference'
 
 reference {
-	sourceDir = file('src/docbkx') //should be src/reference/docbook
+	sourceDir = file('src/reference/docbook')
 }
 
 apply plugin: 'sonar'
