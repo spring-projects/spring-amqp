@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Convenient super class for application classes that need JMS access.
- * 
+ * Convenient super class for application classes that need RabbitMQ access.
+ *
  * <p>Requires a ConnectionFactory or a RabbitTemplate instance to be set.
  * It will create its own RabbitTemplate if a ConnectionFactory is passed in.
  * A custom RabbitTemplate instance can be created for a given ConnectionFactory
@@ -42,9 +42,9 @@ public class RabbitGatewaySupport implements InitializingBean {
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
-	
+
 	private RabbitTemplate rabbitTemplate;
-	
+
 	/**
 	 * Set the Rabbit connection factory to be used by the gateway.
 	 * Will automatically create a RabbitTemplate for the given ConnectionFactory.
@@ -55,7 +55,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.rabbitTemplate = createRabbitTemplate(connectionFactory);
 	}
-	
+
 	/**
 	 * Create a RabbitTemplate for the given ConnectionFactory.
 	 * Only invoked if populating the gateway with a ConnectionFactory reference.
@@ -66,14 +66,14 @@ public class RabbitGatewaySupport implements InitializingBean {
 	protected RabbitTemplate createRabbitTemplate(ConnectionFactory connectionFactory) {
 		return new RabbitTemplate(connectionFactory);
 	}
-	
+
 	/**
 	 * Return the Rabbit ConnectionFactory used by the gateway.
 	 */
 	public final ConnectionFactory getConnectionFactory() {
 		return (this.rabbitTemplate != null ? this.rabbitTemplate.getConnectionFactory() : null);
 	}
-	
+
 	/**
 	 * Set the RabbitTemplate for the gateway.
 	 * @param rabbitTemplate
@@ -82,14 +82,14 @@ public class RabbitGatewaySupport implements InitializingBean {
 	public final void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
 		this.rabbitTemplate = rabbitTemplate;
 	}
-	
+
 	/**
 	 * Return the RabbitTemplate for the gateway.
 	 */
 	public final RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
-	
+
 	public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
 		if (this.rabbitTemplate == null) {
 			throw new IllegalArgumentException("'connectionFactory' or 'rabbitTemplate' is required");
@@ -101,7 +101,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 			throw new BeanInitializationException("Initialization of Rabbit gateway failed: " + ex.getMessage(), ex);
 		}
 	}
-	
+
 	/**
 	 * Subclasses can override this for custom initialization behavior.
 	 * Gets called after population of this instance's bean properties.
