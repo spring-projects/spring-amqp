@@ -191,7 +191,7 @@
 	<scm>
 		<url>http://github.com/SpringSource/spring-amqp</url>
 		<connection>scm:git:git://github.com/SpringSource/spring-amqp.git</connection>
-		<developerConnection>scm:git:git://github.com/SpringSource/spring-amqp.git</developerConnection>
+		<developerConnection>scm:git:ssh://git@github.com/SpringSource/spring-amqp.git</developerConnection>
 	</scm>
 	<distributionManagement>
 		<!-- see 'staging' profile for dry-run deployment settings -->
