@@ -46,7 +46,7 @@ def customizePom(pom, gradleProject) {
 			scm {
 				url = 'https://github.com/SpringSource/spring-amqp'
 				connection = 'scm:git:git://github.com/SpringSource/spring-amqp'
-				developerConnection = 'scm:git:git://github.com/SpringSource/spring-amqp'
+				developerConnection = 'scm:git:ssh://git@github.com/SpringSource/spring-amqp.git'
 			}
 
 			developers {
