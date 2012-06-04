@@ -21,6 +21,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +48,7 @@ import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
@@ -272,6 +274,11 @@ public class RabbitTemplateIntegrationTests {
 				return null;
 			}
 		});
+		
+		@SuppressWarnings("unchecked")
+		List<Channel> txlist = (List<Channel>) ReflectionTestUtils.getField(template.getConnectionFactory(), "cachedChannelsTransactional");
+		assertEquals(1, txlist.size());
+		
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
