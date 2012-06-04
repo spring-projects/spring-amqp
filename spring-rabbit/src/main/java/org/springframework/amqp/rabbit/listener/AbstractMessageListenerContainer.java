@@ -497,7 +497,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			Channel channelToUse = channel;
 			if (!isExposeListenerChannel()) {
 				// We need to expose a separate Channel.
-				resourceHolder = getTransactionalResourceHolder();
+				resourceHolder = getTransactionalResourceHolder(false);
 				channelToUse = resourceHolder.getChannel();
 			}
 			// Actually invoke the message listener...

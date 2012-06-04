@@ -141,7 +141,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 		RabbitTransactionObject txObject = (RabbitTransactionObject) transaction;
 		RabbitResourceHolder resourceHolder = null;
 		try {
-			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(getConnectionFactory(), true);
+			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(getConnectionFactory(), true, false);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Created AMQP transaction on channel [" + resourceHolder.getChannel() + "]");
 			}

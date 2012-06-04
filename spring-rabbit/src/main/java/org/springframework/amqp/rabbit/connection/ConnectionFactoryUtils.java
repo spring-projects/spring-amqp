@@ -62,7 +62,7 @@ public class ConnectionFactoryUtils {
 	 * @return the transactional Channel, or <code>null</code> if none found
 	 */
 	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
-			final boolean synchedLocalTransactionAllowed) {
+			final boolean synchedLocalTransactionAllowed, final boolean listener) {
 
 		RabbitResourceHolder holder = doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
 			public Channel getChannel(RabbitResourceHolder holder) {
@@ -84,7 +84,7 @@ public class ConnectionFactoryUtils {
 			public boolean isSynchedLocalTransactionAllowed() {
 				return synchedLocalTransactionAllowed;
 			}
-		});
+		}, listener);
 		return holder;
 	}
 
@@ -96,7 +96,7 @@ public class ConnectionFactoryUtils {
 	 * @return the transactional Channel, or <code>null</code> if none found
 	 */
 	private static RabbitResourceHolder doGetTransactionalResourceHolder(ConnectionFactory connectionFactory,
-			ResourceFactory resourceFactory) {
+			ResourceFactory resourceFactory, boolean listener) {
 
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 		Assert.notNull(resourceFactory, "ResourceFactory must not be null");
@@ -126,7 +126,7 @@ public class ConnectionFactoryUtils {
 
 			if (resourceHolderToUse != resourceHolder) {
 				bindResourceToTransaction(resourceHolderToUse, connectionFactory,
-						resourceFactory.isSynchedLocalTransactionAllowed());
+						resourceFactory.isSynchedLocalTransactionAllowed(), listener);
 			}
 
 			return resourceHolderToUse;
@@ -147,7 +147,7 @@ public class ConnectionFactoryUtils {
 	}
 
 	public static void bindResourceToTransaction(RabbitResourceHolder resourceHolder,
-			ConnectionFactory connectionFactory, boolean synched) {
+			ConnectionFactory connectionFactory, boolean synched, boolean listener) {
 		if (TransactionSynchronizationManager.hasResource(connectionFactory)
 				|| !TransactionSynchronizationManager.isActualTransactionActive() || !synched) {
 			return;
@@ -156,7 +156,7 @@ public class ConnectionFactoryUtils {
 		resourceHolder.setSynchronizedWithTransaction(true);
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			TransactionSynchronizationManager.registerSynchronization(new RabbitResourceSynchronization(resourceHolder,
-					connectionFactory, synched));
+					connectionFactory, synched, listener));
 		}
 	}
 
@@ -228,17 +228,24 @@ public class ConnectionFactoryUtils {
 			ResourceHolderSynchronization<RabbitResourceHolder, Object> {
 
 		private final boolean transacted;
+		
+		private final boolean listener;
 
 		private final RabbitResourceHolder resourceHolder;
 
-		public RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey, boolean transacted) {
+		public RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey, boolean transacted, boolean listener) {
 			super(resourceHolder, resourceKey);
 			this.resourceHolder = resourceHolder;
 			this.transacted = transacted;
+			this.listener = listener;
 		}
 
 		protected boolean shouldReleaseBeforeCompletion() {
 			return !this.transacted;
+		}
+		
+		protected boolean shouldReleaseAfterCompletion(RabbitResourceHolder resourceHolder) {
+			return this.transacted && !this.listener;
 		}
 
 		protected void processResourceAfterCommit(RabbitResourceHolder resourceHolder) {
@@ -250,7 +257,7 @@ public class ConnectionFactoryUtils {
 			if (status != TransactionSynchronization.STATUS_COMMITTED) {
 				resourceHolder.rollbackAll();
 			}
-			// resourceHolder.setSynchronizedWithTransaction(false);
+			resourceHolder.setSynchronizedWithTransaction(false);
 			super.afterCompletion(status);
 		}
 
