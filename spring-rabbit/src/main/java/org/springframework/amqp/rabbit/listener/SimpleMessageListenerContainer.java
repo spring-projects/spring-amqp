@@ -429,7 +429,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						.execute(new TransactionCallback<Boolean>() {
 							public Boolean doInTransaction(TransactionStatus status) {
 								ConnectionFactoryUtils.bindResourceToTransaction(
-										new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), true, true);
+										new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), isChannelTransacted(), true);
 								try {
 									return doReceiveAndExecute(consumer);
 								} catch (RuntimeException e) {
