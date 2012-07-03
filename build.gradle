@@ -29,9 +29,9 @@ subprojects { subproject ->
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
 
-	// ensure JDK 5 compatibility (GRADLE-18; INT-1578)
-	sourceCompatibility=1.5
-	targetCompatibility=1.5
+	// ensure JDK 6 compatibility
+	sourceCompatibility=1.6
+	targetCompatibility=1.6
 
 	ext {
 		cglibVersion = '2.2'
