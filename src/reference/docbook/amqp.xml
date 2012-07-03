@@ -803,6 +803,14 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
     <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
+	<tip>
+		You can provide both an <emphasis>id</emphasis> and a <emphasis>name</emphasis> attribute.
+		This allows you to refer to the queue (for example in a binding) by an id that is
+		independent of the queue name. It also allows standard Spring features such as
+		property placeholders, and SpEL expressions for the queue name; these features
+		are not available when using the name as the bean identifier.
+	</tip>
+	
 	<para>Queues can be configured with additional arguments, for example,
 	'x-message-ttl' or 'x-ha-policy'. Using the namespace support, they are provided in the form of
 	a Map of argument name/argument value pairs, using the
