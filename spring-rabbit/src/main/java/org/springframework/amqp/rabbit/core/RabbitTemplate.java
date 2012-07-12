@@ -22,9 +22,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
@@ -502,7 +502,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
-				final SynchronousQueue<Message> replyHandoff = new SynchronousQueue<Message>();
+				final ArrayBlockingQueue<Message> replyHandoff = new ArrayBlockingQueue<Message>(1);
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
@@ -510,7 +510,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				String replyTo = queueDeclaration.getQueue();
 				message.getMessageProperties().setReplyTo(replyTo);
 
-				boolean noAck = false;
+				boolean noAck = true;
 				String consumerTag = UUID.randomUUID().toString();
 				boolean noLocal = true;
 				boolean exclusive = true;
