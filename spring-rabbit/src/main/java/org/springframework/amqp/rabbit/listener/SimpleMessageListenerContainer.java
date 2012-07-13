@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2011 the original author or authors.
- * 
+ * Copyright 2002-2012 the original author or authors.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -52,6 +52,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
@@ -117,7 +118,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Create a listener container from the connection factory (mandatory).
-	 * 
+	 *
 	 * @param connectionFactory the {@link ConnectionFactory}
 	 */
 	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
@@ -134,7 +135,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
 	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
 	 * </p>
-	 * 
+	 *
 	 * @param adviceChain the advice chain to set
 	 */
 	public void setAdviceChain(Advice[] adviceChain) {
@@ -170,7 +171,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * closed. If any workers are active when the shutdown signal comes they will be allowed to finish processing as
 	 * long as they can finish within this timeout. Otherwise the connection is closed and messages remain unacked (if
 	 * the channel is transactional). Defaults to 5 seconds.
-	 * 
+	 *
 	 * @param shutdownTimeout the shutdown timeout to set
 	 */
 	public void setShutdownTimeout(long shutdownTimeout) {
@@ -185,7 +186,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
 	 * to improve throughput. It should be greater than or equal to {@link #setTxSize(int) the transaction size}.
-	 * 
+	 *
 	 * @param prefetchCount the prefetch count
 	 */
 	public void setPrefetchCount(int prefetchCount) {
@@ -195,7 +196,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
 	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}.
-	 * 
+	 *
 	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
@@ -287,9 +288,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Creates the specified number of concurrent consumers, in the form of a Rabbit Channel plus associated
 	 * MessageConsumer.
-	 * 
+	 *
 	 * @throws Exception
 	 */
+	@Override
 	protected void doInitialize() throws Exception {
 		initializeProxy();
 	}
@@ -302,9 +304,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
 	 * to this container's task executor.
-	 * 
+	 *
 	 * @throws Exception
 	 */
+	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
 		synchronized (this.consumersMonitor) {
@@ -336,6 +339,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	@Override
 	protected void doStop() {
 		shutdown();
 		super.doStop();
@@ -383,6 +387,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return count;
 	}
 
+	@Override
 	protected boolean isChannelLocallyTransacted(Channel channel) {
 		return super.isChannelLocallyTransacted(channel) && this.transactionManager == null;
 	}
@@ -429,7 +434,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						.execute(new TransactionCallback<Boolean>() {
 							public Boolean doInTransaction(TransactionStatus status) {
 								ConnectionFactoryUtils.bindResourceToTransaction(
-										new RabbitResourceHolder(consumer.getChannel()), getConnectionFactory(), true);
+										new RabbitResourceHolder(consumer.getChannel(), false), getConnectionFactory(), true);
 								try {
 									return doReceiveAndExecute(consumer);
 								} catch (RuntimeException e) {
@@ -494,7 +499,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		/**
 		 * Retrieve the fatal startup exception if this processor completely failed to locate the broker resources it
 		 * needed. Blocks up to 60 seconds waiting (but should always return promptly in normal circumstances).
-		 * 
+		 *
 		 * @return a startup exception if there was one
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
@@ -590,7 +595,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval} to give the container a
 	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 * 
+	 *
 	 * @param t the exception that stopped the startup
 	 * @throws Exception if the shared connection still can't be established
 	 */

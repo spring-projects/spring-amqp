@@ -17,12 +17,30 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Gary Russell
@@ -30,6 +48,60 @@ import org.springframework.amqp.utils.SerializationUtils;
  *
  */
 public class RabbitTemplateTests {
+
+	@Test
+	public void returnConnectionAfterCommit() throws Exception {
+		@SuppressWarnings("serial")
+		TransactionTemplate txTemplate = new TransactionTemplate(new AbstractPlatformTransactionManager() {
+
+			@Override
+			protected Object doGetTransaction() throws TransactionException {
+				return new Object();
+			}
+
+			@Override
+			protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
+			}
+
+			@Override
+			protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
+			}
+
+			@Override
+			protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+			}
+		});
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+
+		when(mockChannel.isOpen()).thenReturn(true);
+
+		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory(mockConnectionFactory));
+		template.setChannelTransacted(true);
+
+		txTemplate.execute(new TransactionCallback<Object>() {
+			@Override
+			public Object doInTransaction(TransactionStatus status) {
+				template.convertAndSend("foo", "bar");
+				return null;
+			}
+		});
+		txTemplate.execute(new TransactionCallback<Object>() {
+			@Override
+			public Object doInTransaction(TransactionStatus status) {
+				template.convertAndSend("baz", "qux");
+				return null;
+			}
+		});
+		verify(mockConnectionFactory, Mockito.times(1)).newConnection(Mockito.any(ExecutorService.class));
+		// ensure we used the same channel
+		verify(mockConnection, Mockito.times(1)).createChannel();
+	}
 
 	@Test
 	public void testConvertbytes() {
