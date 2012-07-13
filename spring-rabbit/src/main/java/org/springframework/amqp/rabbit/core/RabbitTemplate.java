@@ -588,7 +588,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	public <T> T execute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
-		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
+		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder(false);
 		Channel channel = resourceHolder.getChannel();
 		if (this.confirmCallback != null || this.returnCallback != null) {
 			addListener(channel);

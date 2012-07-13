@@ -96,9 +96,9 @@ public abstract class RabbitAccessor implements InitializingBean {
 		return holder.getChannel();
 	}
 
-	protected RabbitResourceHolder getTransactionalResourceHolder() {
+	protected RabbitResourceHolder getTransactionalResourceHolder(boolean listener) {
 		RabbitResourceHolder holder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
-				isChannelTransacted());
+				isChannelTransacted(), listener);
 		return holder;
 	}
 

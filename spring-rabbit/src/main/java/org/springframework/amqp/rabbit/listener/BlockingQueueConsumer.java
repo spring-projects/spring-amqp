@@ -196,7 +196,7 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
 		}
-		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
+		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional, true)
 				.getChannel();
 		this.consumer = new InternalConsumer(channel);
 		this.deliveryTags.clear();
