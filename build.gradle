@@ -6,7 +6,7 @@ apply plugin: 'idea'
 
 buildscript {
 	repositories {
-		maven { url 'https://repo.springsource.org/plugins-release' }
+		maven { url 'http://repo.springsource.org/plugins-release' }
 	}
 	dependencies {
 		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.1.5'
