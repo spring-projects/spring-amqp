@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 by the original author(s).
+ * Copyright (c) 2011-2012 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import org.springframework.amqp.core.MessageListener;
 
 /**
  * @author Jon Brisbin <jbrisbin@vmware.com>
+ * @author Gary Russell
  */
 public class TestListener implements MessageListener {
 
   private CountDownLatch latch;
+
+  private Object id;
 
   public TestListener(int count) {
     latch = new CountDownLatch(count);
@@ -36,9 +39,14 @@ public class TestListener implements MessageListener {
     return latch;
   }
 
-  public void onMessage(Message message) {
+  public Object getId() {
+	return id;
+}
+
+public void onMessage(Message message) {
     System.out.println("MESSAGE: " + message);
     System.out.println("BODY: " + new String(message.getBody()));
+    this.id = message.getMessageProperties().getMessageId();
     latch.countDown();
   }
 
