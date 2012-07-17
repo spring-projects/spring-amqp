@@ -62,7 +62,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   log4j.appender.amqp.port=5672
  *   log4j.appender.amqp.username=guest
  *   log4j.appender.amqp.password=guest
- *   log4j.appender.amqp.generateId=true
  *   log4j.appender.amqp.virtualHost=/
  *   #-------------------------------
  *   ## Exchange name and type
@@ -88,6 +87,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   #-------------------------------
  *   log4j.appender.amqp.contentType=text/plain
  *   log4j.appender.amqp.contentEncoding=null
+ *   log4j.appender.amqp.generateId=false
  *   #-------------------------------
  *   ## Sender configuration
  *   #-------------------------------
