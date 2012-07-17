@@ -104,419 +104,426 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  */
 public class AmqpAppender extends AppenderSkeleton {
 
-	/**
-	 * Key name for the application id (if there is one set via the appender config) in the message properties.
-	 */
-	public static final String APPLICATION_ID = "applicationId";
+  /**
+   * Key name for the application id (if there is one set via the appender config) in the message properties.
+   */
+  public static final String APPLICATION_ID = "applicationId";
 
-	/**
-	 * Key name for the logger category name in the message properties
-	 */
-	public static final String CATEGORY_NAME = "categoryName";
+  /**
+   * Key name for the logger category name in the message properties
+   */
+  public static final String CATEGORY_NAME = "categoryName";
 
-	/**
-	 * Key name for the logger level name in the message properties
-	 */
-	public static final String CATEGORY_LEVEL = "level";
+  /**
+   * Key name for the logger level name in the message properties
+   */
+  public static final String CATEGORY_LEVEL = "level";
 
-	/**
-	 * Name of the exchange to publish log events to.
-	 */
-	private String exchangeName = "logs";
-	/**
-	 * Type of the exchange to publish log events to.
-	 */
-	private String exchangeType = "topic";
-	/**
-	 * Log4J pattern format to use to generate a routing key.
-	 */
-	private String routingKeyPattern = "%c.%p";
-	/**
-	 * Log4J Layout to use to generate routing key.
-	 */
-	private Layout routingKeyLayout = new PatternLayout(routingKeyPattern);
-	/**
-	 * Whether or not we've tried to declare this exchange yet.
-	 */
-	private AtomicBoolean exchangeDeclared = new AtomicBoolean(false);
-	/**
-	 * Configuration arbitrary application ID.
-	 */
-	private String applicationId = null;
-	/**
-	 * Where LoggingEvents are queued to send.
-	 */
-	private LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
-	/**
-	 * The pool of senders.
-	 */
-	private ExecutorService senderPool = null;
-	/**
-	 * How many senders to use at once. Use more senders if you have lots of log output going through this appender.
-	 */
-	private int senderPoolSize = 2;
-	/**
-	 * How many times to retry sending a message if the broker is unavailable or there is some other error.
-	 */
-	private int maxSenderRetries = 30;
-	/**
-	 * Retries are delayed like: N ^ log(N), where N is the retry number.
-	 */
-	private Timer retryTimer = new Timer("log-event-retry-delay", true);
-	/**
-	 * RabbitMQ ConnectionFactory.
-	 */
-	private AbstractConnectionFactory connectionFactory;
-	/**
-	 * RabbitMQ host to connect to.
-	 */
-	private String host = "localhost";
-	/**
-	 * RabbitMQ virtual host to connect to.
-	 */
-	private String virtualHost = "/";
-	/**
-	 * RabbitMQ port to connect to.
-	 */
-	private int port = 5672;
-	/**
-	 * RabbitMQ user to connect as.
-	 */
-	private String username = "guest";
-	/**
-	 * RabbitMQ password for this user.
-	 */
-	private String password = "guest";
-	/**
-	 * Default content-type of log messages.
-	 */
-	private String contentType = "text/plain";
-	/**
-	 * Default content-encoding of log messages.
-	 */
-	private String contentEncoding = null;
-	/**
-	 * Whether or not to try and declare the configured exchange when this appender starts.
-	 */
-	private boolean declareExchange = false;
-	/**
-	 * Used to synchronize access when creating the RabbitMQ ConnectionFactory.
-	 */
-	private final String mutex = "mutex";
+  /**
+   * Name of the exchange to publish log events to.
+   */
+  private String exchangeName = "logs";
+  /**
+   * Type of the exchange to publish log events to.
+   */
+  private String exchangeType = "topic";
+  /**
+   * Log4J pattern format to use to generate a routing key.
+   */
+  private String routingKeyPattern = "%c.%p";
+  /**
+   * Log4J Layout to use to generate routing key.
+   */
+  private Layout routingKeyLayout = new PatternLayout( routingKeyPattern );
+  private final Object rklayoutmutex = new Object();
+  /**
+   * Whether or not we've tried to declare this exchange yet.
+   */
+  private AtomicBoolean exchangeDeclared = new AtomicBoolean( false );
+  /**
+   * Configuration arbitrary application ID.
+   */
+  private String applicationId = null;
+  /**
+   * Where LoggingEvents are queued to send.
+   */
+  private LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
+  /**
+   * The pool of senders.
+   */
+  private ExecutorService senderPool = null;
+  /**
+   * How many senders to use at once. Use more senders if you have lots of log output going through this appender.
+   */
+  private int senderPoolSize = 2;
+  /**
+   * How many times to retry sending a message if the broker is unavailable or there is some other error.
+   */
+  private int maxSenderRetries = 30;
+  /**
+   * Retries are delayed like: N ^ log(N), where N is the retry number.
+   */
+  private Timer retryTimer = new Timer( "log-event-retry-delay", true );
+  /**
+   * RabbitMQ ConnectionFactory.
+   */
+  private AbstractConnectionFactory connectionFactory;
+  /**
+   * RabbitMQ host to connect to.
+   */
+  private String host = "localhost";
+  /**
+   * RabbitMQ virtual host to connect to.
+   */
+  private String virtualHost = "/";
+  /**
+   * RabbitMQ port to connect to.
+   */
+  private int port = 5672;
+  /**
+   * RabbitMQ user to connect as.
+   */
+  private String username = "guest";
+  /**
+   * RabbitMQ password for this user.
+   */
+  private String password = "guest";
+  /**
+   * Default content-type of log messages.
+   */
+  private String contentType = "text/plain";
+  /**
+   * Default content-encoding of log messages.
+   */
+  private String contentEncoding = null;
+  /**
+   * Whether or not to try and declare the configured exchange when this appender starts.
+   */
+  private boolean declareExchange = false;
+  /**
+   * Used to synchronize access when creating the RabbitMQ ConnectionFactory.
+   */
+  private final String mutex = "mutex";
 
-	private boolean durable = true;
+  private boolean durable = true;
 
-	private boolean autoDelete = false;
+  private boolean autoDelete = false;
 
-	public AmqpAppender() {
-	}
+  public AmqpAppender() {
+  }
 
-	public String getHost() {
-		return host;
-	}
+  public String getHost() {
+    return host;
+  }
 
-	public void setHost(String host) {
-		this.host = host;
-	}
+  public void setHost( String host ) {
+    this.host = host;
+  }
 
-	public int getPort() {
-		return port;
-	}
+  public int getPort() {
+    return port;
+  }
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+  public void setPort( int port ) {
+    this.port = port;
+  }
 
-	public String getVirtualHost() {
-		return virtualHost;
-	}
+  public String getVirtualHost() {
+    return virtualHost;
+  }
 
-	public void setVirtualHost(String virtualHost) {
-		this.virtualHost = virtualHost;
-	}
+  public void setVirtualHost( String virtualHost ) {
+    this.virtualHost = virtualHost;
+  }
 
-	public String getUsername() {
-		return username;
-	}
+  public String getUsername() {
+    return username;
+  }
 
-	public void setUsername(String username) {
-		this.username = username;
-	}
+  public void setUsername( String username ) {
+    this.username = username;
+  }
 
-	public String getPassword() {
-		return password;
-	}
+  public String getPassword() {
+    return password;
+  }
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
+  public void setPassword( String password ) {
+    this.password = password;
+  }
 
-	public String getExchangeName() {
-		return exchangeName;
-	}
+  public String getExchangeName() {
+    return exchangeName;
+  }
 
-	public void setExchangeName(String exchangeName) {
-		this.exchangeName = exchangeName;
-	}
+  public void setExchangeName( String exchangeName ) {
+    this.exchangeName = exchangeName;
+  }
 
-	public String getExchangeType() {
-		return exchangeType;
-	}
+  public String getExchangeType() {
+    return exchangeType;
+  }
 
-	public void setExchangeType(String exchangeType) {
-		this.exchangeType = exchangeType;
-	}
+  public void setExchangeType( String exchangeType ) {
+    this.exchangeType = exchangeType;
+  }
 
-	public String getRoutingKeyPattern() {
-		return routingKeyPattern;
-	}
+  public String getRoutingKeyPattern() {
+    return routingKeyPattern;
+  }
 
-	public void setRoutingKeyPattern(String routingKeyPattern) {
-		this.routingKeyPattern = routingKeyPattern;
-		this.routingKeyLayout = new PatternLayout(routingKeyPattern);
-	}
+  public void setRoutingKeyPattern( String routingKeyPattern ) {
+    this.routingKeyPattern = routingKeyPattern;
+    this.routingKeyLayout = new PatternLayout( routingKeyPattern );
+  }
 
-	public boolean isDeclareExchange() {
-		return declareExchange;
-	}
+  public boolean isDeclareExchange() {
+    return declareExchange;
+  }
 
-	public void setDeclareExchange(boolean declareExchange) {
-		this.declareExchange = declareExchange;
-	}
+  public void setDeclareExchange( boolean declareExchange ) {
+    this.declareExchange = declareExchange;
+  }
 
-	public String getContentType() {
-		return contentType;
-	}
+  public String getContentType() {
+    return contentType;
+  }
 
-	public void setContentType(String contentType) {
-		this.contentType = contentType;
-	}
+  public void setContentType( String contentType ) {
+    this.contentType = contentType;
+  }
 
-	public String getContentEncoding() {
-		return contentEncoding;
-	}
+  public String getContentEncoding() {
+    return contentEncoding;
+  }
 
-	public void setContentEncoding(String contentEncoding) {
-		this.contentEncoding = contentEncoding;
-	}
+  public void setContentEncoding( String contentEncoding ) {
+    this.contentEncoding = contentEncoding;
+  }
 
-	public String getApplicationId() {
-		return applicationId;
-	}
+  public String getApplicationId() {
+    return applicationId;
+  }
 
-	public void setApplicationId(String applicationId) {
-		this.applicationId = applicationId;
-	}
+  public void setApplicationId( String applicationId ) {
+    this.applicationId = applicationId;
+  }
 
-	public int getSenderPoolSize() {
-		return senderPoolSize;
-	}
+  public int getSenderPoolSize() {
+    return senderPoolSize;
+  }
 
-	public void setSenderPoolSize(int senderPoolSize) {
-		this.senderPoolSize = senderPoolSize;
-	}
+  public void setSenderPoolSize( int senderPoolSize ) {
+    this.senderPoolSize = senderPoolSize;
+  }
 
-	public int getMaxSenderRetries() {
-		return maxSenderRetries;
-	}
+  public int getMaxSenderRetries() {
+    return maxSenderRetries;
+  }
 
-	public void setMaxSenderRetries(int maxSenderRetries) {
-		this.maxSenderRetries = maxSenderRetries;
-	}
+  public void setMaxSenderRetries( int maxSenderRetries ) {
+    this.maxSenderRetries = maxSenderRetries;
+  }
 
-	public boolean isDurable() {
-		return durable;
-	}
+  public boolean isDurable() {
+    return durable;
+  }
 
-	public void setDurable(boolean durable) {
-		this.durable = durable;
-	}
+  public void setDurable( boolean durable ) {
+    this.durable = durable;
+  }
 
-	public boolean isAutoDelete() {
-		return autoDelete;
-	}
+  public boolean isAutoDelete() {
+    return autoDelete;
+  }
 
-	public void setAutoDelete(boolean autoDelete) {
-		this.autoDelete = autoDelete;
-	}
+  public void setAutoDelete( boolean autoDelete ) {
+    this.autoDelete = autoDelete;
+  }
 
-	/**
-	 * Submit the required number of senders into the pool.
-	 */
-	protected void startSenders() {
-		senderPool = Executors.newCachedThreadPool();
-		for (int i = 0; i < senderPoolSize; i++) {
-			senderPool.submit(new EventSender());
-		}
-	}
+  /**
+   * Submit the required number of senders into the pool.
+   */
+  protected void startSenders() {
+    senderPool = Executors.newCachedThreadPool();
+    for ( int i = 0; i < senderPoolSize; i++ ) {
+      senderPool.submit( new EventSender() );
+    }
+  }
 
-	/**
-	 * Maybe declare the exchange.
-	 */
-	protected void maybeDeclareExchange() {
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		if (declareExchange) {
-			Exchange x;
-			if ("topic".equals(exchangeType)) {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
-			} else if ("direct".equals(exchangeType)) {
-				x = new DirectExchange(exchangeName, durable, autoDelete);
-			} else if ("fanout".equals(exchangeType)) {
-				x = new FanoutExchange(exchangeName, durable, autoDelete);
-			} else if ("headers".equals(exchangeType)) {
-				x = new HeadersExchange(exchangeType, durable, autoDelete);
-			} else {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
-			}
-			// admin.deleteExchange(exchangeName);
-			admin.declareExchange(x);
-		}
-	}
+  /**
+   * Maybe declare the exchange.
+   */
+  protected void maybeDeclareExchange() {
+    RabbitAdmin admin = new RabbitAdmin( connectionFactory );
+    if ( declareExchange ) {
+      Exchange x;
+      if ( "topic".equals( exchangeType ) ) {
+        x = new TopicExchange( exchangeName, durable, autoDelete );
+      } else if ( "direct".equals( exchangeType ) ) {
+        x = new DirectExchange( exchangeName, durable, autoDelete );
+      } else if ( "fanout".equals( exchangeType ) ) {
+        x = new FanoutExchange( exchangeName, durable, autoDelete );
+      } else if ( "headers".equals( exchangeType ) ) {
+        x = new HeadersExchange( exchangeType, durable, autoDelete );
+      } else {
+        x = new TopicExchange( exchangeName, durable, autoDelete );
+      }
+      // admin.deleteExchange(exchangeName);
+      admin.declareExchange( x );
+    }
+  }
 
-	@Override
-	public void append(LoggingEvent event) {
-		if (null == senderPool) {
-			synchronized (mutex) {
-				connectionFactory = new CachingConnectionFactory();
-				connectionFactory.setHost(host);
-				connectionFactory.setPort(port);
-				connectionFactory.setUsername(username);
-				connectionFactory.setPassword(password);
-				connectionFactory.setVirtualHost(virtualHost);
-				maybeDeclareExchange();
-				exchangeDeclared.set(true);
+  @Override
+  public void append( LoggingEvent event ) {
+    if ( null == senderPool ) {
+      synchronized (mutex) {
+        connectionFactory = new CachingConnectionFactory();
+        connectionFactory.setHost( host );
+        connectionFactory.setPort( port );
+        connectionFactory.setUsername( username );
+        connectionFactory.setPassword( password );
+        connectionFactory.setVirtualHost( virtualHost );
+        maybeDeclareExchange();
+        exchangeDeclared.set( true );
 
-				startSenders();
-			}
-		}
-		events.add(new Event(event, event.getProperties()));
-	}
+        startSenders();
+      }
+    }
+    events.add( new Event( event, event.getProperties() ) );
+  }
 
-	public void close() {
-		if (null != senderPool) {
-			senderPool.shutdownNow();
-			senderPool = null;
-		}
-		if (null != connectionFactory) {
-			connectionFactory.destroy();
-		}
-	}
+  public void close() {
+    if ( null != senderPool ) {
+      senderPool.shutdownNow();
+      senderPool = null;
+    }
+    if ( null != connectionFactory ) {
+      connectionFactory.destroy();
+    }
+  }
 
-	public boolean requiresLayout() {
-		return true;
-	}
+  public boolean requiresLayout() {
+    return true;
+  }
 
-	/**
-	 * Helper class to actually send LoggingEvents asynchronously.
-	 */
-	protected class EventSender implements Runnable {
-		public void run() {
-			try {
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-				while (true) {
-					final Event event = events.take();
-					LoggingEvent logEvent = event.getEvent();
+  /**
+   * Helper class to actually send LoggingEvents asynchronously.
+   */
+  protected class EventSender implements Runnable {
+    public void run() {
+      try {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate( connectionFactory );
+        while ( true ) {
+          final Event event = events.take();
+          LoggingEvent logEvent = event.getEvent();
 
-					String name = logEvent.getLogger().getName();
-					Level level = logEvent.getLevel();
+          String name = logEvent.getLogger().getName();
+          Level level = logEvent.getLevel();
 
-					MessageProperties amqpProps = new MessageProperties();
-					amqpProps.setContentType(contentType);
-					if (null != contentEncoding) {
-						amqpProps.setContentEncoding(contentEncoding);
-					}
-					amqpProps.setHeader(CATEGORY_NAME, name);
-					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
+          MessageProperties amqpProps = new MessageProperties();
+          amqpProps.setContentType( contentType );
+          if ( null != contentEncoding ) {
+            amqpProps.setContentEncoding( contentEncoding );
+          }
+          amqpProps.setHeader( CATEGORY_NAME, name );
+          amqpProps.setHeader( CATEGORY_LEVEL, level.toString() );
 
-					// Set applicationId, if we're using one
-					if (null != applicationId) {
-						amqpProps.setAppId(applicationId);
-						MDC.put(APPLICATION_ID, applicationId);
-					}
+          // Set applicationId, if we're using one
+          if ( null != applicationId ) {
+            amqpProps.setAppId( applicationId );
+            MDC.put( APPLICATION_ID, applicationId );
+          }
 
-					// Set timestamp
-					Calendar tstamp = Calendar.getInstance();
-					tstamp.setTimeInMillis(logEvent.getTimeStamp());
-					amqpProps.setTimestamp(tstamp.getTime());
+          // Set timestamp
+          Calendar tstamp = Calendar.getInstance();
+          tstamp.setTimeInMillis( logEvent.getTimeStamp() );
+          amqpProps.setTimestamp( tstamp.getTime() );
 
-					// Copy properties in from MDC
-					@SuppressWarnings("rawtypes")
-					Map props = event.getProperties();
-					for (Object key : event.getProperties().entrySet()) {
-						amqpProps.setHeader(key.toString(), props.get(key));
-					}
-					LocationInfo locInfo = logEvent.getLocationInformation();
-					if (!"?".equals(locInfo.getClassName())) {
-						amqpProps.setHeader(
-								"location",
-								String.format("%s.%s()[%s]", locInfo.getClassName(), locInfo.getMethodName(),
-										locInfo.getLineNumber()));
-					}
+          // Copy properties in from MDC
+          @SuppressWarnings("rawtypes")
+          Map props = event.getProperties();
+          for ( Object key : event.getProperties().entrySet() ) {
+            amqpProps.setHeader( key.toString(), props.get( key ) );
+          }
+          LocationInfo locInfo = logEvent.getLocationInformation();
+          if ( !"?".equals( locInfo.getClassName() ) ) {
+            amqpProps.setHeader(
+                "location",
+                String.format( "%s.%s()[%s]", locInfo.getClassName(), locInfo.getMethodName(),
+                               locInfo.getLineNumber() ) );
+          }
 
-					StringBuffer msgBody = new StringBuffer(String.format("%s%n", logEvent.getRenderedMessage()));
-					if (null != logEvent.getThrowableInformation()) {
-						ThrowableInformation tinfo = logEvent.getThrowableInformation();
-						for (String line : tinfo.getThrowableStrRep()) {
-							msgBody.append(String.format("%s%n", line));
-						}
-					}
+          StringBuilder msgBody = new StringBuilder( layout.format( logEvent ) );
+          if ( null != logEvent.getThrowableInformation() ) {
+            ThrowableInformation tinfo = logEvent.getThrowableInformation();
+            for ( String line : tinfo.getThrowableStrRep() ) {
+              msgBody.append( String.format( "%s%n", line ) );
+            }
+          }
 
-					// Send a message
-					String routingKey = routingKeyLayout.format(logEvent);
-					try {
-						rabbitTemplate
-								.send(exchangeName, routingKey, new Message(msgBody.toString().getBytes(), amqpProps));
-					} catch (AmqpException e) {
-						int retries = event.incrementRetries();
-						if (retries < maxSenderRetries) {
-							// Schedule a retry based on the number of times I've tried to re-send this
-							retryTimer.schedule(new TimerTask() {
-								@Override
-								public void run() {
-									events.add(event);
-								}
-							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
-						} else {
-							errorHandler.error("Could not send log message " + logEvent.getRenderedMessage()
-									+ " after " + maxSenderRetries + " retries", e, ErrorCode.WRITE_FAILURE, logEvent);
-						}
-					} finally {
-						if (null != applicationId) {
-							MDC.remove(APPLICATION_ID);
-						}
-					}
-				}
-			} catch (Throwable t) {
-				throw new RuntimeException(t.getMessage(), t);
-			}
-		}
-	}
+          // Send a message
+          String routingKey;
+          synchronized (rklayoutmutex) {
+            routingKey = routingKeyLayout.format( logEvent );
+          }
+          try {
+            rabbitTemplate
+                .send( exchangeName, routingKey, new Message( msgBody.toString().getBytes(), amqpProps ) );
+          } catch ( AmqpException e ) {
+            int retries = event.incrementRetries();
+            if ( retries < maxSenderRetries ) {
+              // Schedule a retry based on the number of times I've tried to re-send this
+              retryTimer.schedule( new TimerTask() {
+                @Override
+                public void run() {
+                  events.add( event );
+                }
+              }, (long) (Math.pow( retries, Math.log( retries ) ) * 1000) );
+            } else {
+              errorHandler.error( "Could not send log message " + logEvent.getRenderedMessage()
+                                      + " after " + maxSenderRetries + " retries",
+                                  e,
+                                  ErrorCode.WRITE_FAILURE,
+                                  logEvent );
+            }
+          } finally {
+            if ( null != applicationId ) {
+              MDC.remove( APPLICATION_ID );
+            }
+          }
+        }
+      } catch ( Throwable t ) {
+        throw new RuntimeException( t.getMessage(), t );
+      }
+    }
+  }
 
-	/**
-	 * Small helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
-	 */
-	@SuppressWarnings("rawtypes")
-	protected class Event {
-		final LoggingEvent event;
-		final Map properties;
-		AtomicInteger retries = new AtomicInteger(0);
+  /**
+   * Small helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
+   */
+  @SuppressWarnings("rawtypes")
+  protected class Event {
+    final LoggingEvent event;
+    final Map properties;
+    AtomicInteger retries = new AtomicInteger( 0 );
 
-		public Event(LoggingEvent event, Map properties) {
-			this.event = event;
-			this.properties = properties;
-		}
+    public Event( LoggingEvent event, Map properties ) {
+      this.event = event;
+      this.properties = properties;
+    }
 
-		public LoggingEvent getEvent() {
-			return event;
-		}
+    public LoggingEvent getEvent() {
+      return event;
+    }
 
-		public Map getProperties() {
-			return properties;
-		}
+    public Map getProperties() {
+      return properties;
+    }
 
-		public int incrementRetries() {
-			return retries.incrementAndGet();
-		}
-	}
+    public int incrementRetries() {
+      return retries.incrementAndGet();
+    }
+  }
 
 }
