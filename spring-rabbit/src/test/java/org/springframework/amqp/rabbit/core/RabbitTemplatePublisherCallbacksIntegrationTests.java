@@ -366,4 +366,67 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(0);
 		assertNull(unconfirmed);
 	}
+
+	/**
+	 * Tests that piggy-backed confirms (multiple=true) are distributed to the proper
+	 * template.
+	 * @throws Exception
+	 */
+	@Test
+	public void testPublisherConfirmMultipleWithTwoListeners() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
+		when(mockConnection.createChannel()).thenReturn(callbackChannel);
+
+		final AtomicInteger count = new AtomicInteger();
+		doAnswer(new Answer<Object>(){
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				return count.incrementAndGet();
+			}}).when(mockChannel).getNextPublishSeqNo();
+
+		final RabbitTemplate template1 = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+
+		final Set<String> confirms = new HashSet<String>();
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		template1.setConfirmCallback(new ConfirmCallback() {
+
+			public void confirm(CorrelationData correlationData, boolean ack) {
+				if (ack) {
+					confirms.add(correlationData.getId() + "1");
+					latch1.countDown();
+				}
+			}
+		});
+		final RabbitTemplate template2 = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		template2.setConfirmCallback(new ConfirmCallback() {
+
+			public void confirm(CorrelationData correlationData, boolean ack) {
+				if (ack) {
+					confirms.add(correlationData.getId() + "2");
+					latch2.countDown();
+				}
+			}
+		});
+		template1.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		template2.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
+		template2.convertAndSend(ROUTE, (Object) "message", new CorrelationData("ghi"));
+		callbackChannel.handleAck(3, true);
+		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
+		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+		Collection<CorrelationData> unconfirmed1 = template1.getUnconfirmed(0);
+		assertNull(unconfirmed1);
+		Collection<CorrelationData> unconfirmed2 = template2.getUnconfirmed(0);
+		assertNull(unconfirmed2);
+		assertTrue(confirms.contains("abc1"));
+		assertTrue(confirms.contains("def2"));
+		assertTrue(confirms.contains("ghi2"));
+		assertEquals(3, confirms.size());
+	}
 }

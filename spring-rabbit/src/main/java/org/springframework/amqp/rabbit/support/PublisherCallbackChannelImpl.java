@@ -17,12 +17,15 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -72,7 +75,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	private final Map<Listener, SortedMap<Long, PendingConfirm>> pendingConfirms
 		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long,PendingConfirm>>();
 
-	private final Map<Long, Listener> listenerForSeq = new ConcurrentHashMap<Long, Listener>();
+	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this.delegate = delegate;
@@ -483,27 +486,55 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	}
 
 	private void processAck(long seq, boolean ack, boolean multiple) {
-		Listener listener = this.listenerForSeq.get(seq);
-		if (listener != null && listener.isConfirmListener()) {
-			if (multiple) {
-				Map<Long, PendingConfirm> headMap = this.pendingConfirms.get(listener).headMap(seq + 1);
-				synchronized(this.pendingConfirms) {
-					Iterator<Entry<Long, PendingConfirm>> iterator = headMap.entrySet().iterator();
-					while (iterator.hasNext()) {
-						Entry<Long, PendingConfirm> entry = iterator.next();
-						iterator.remove();
-						listener.handleConfirm(entry.getValue(), ack);
+		if (multiple) {
+			/*
+			 * Piggy-backed ack - extract all Listeners for this and earlier
+			 * sequences. Then, for each Listener, handle each of it's acks.
+			 */
+			synchronized(this.pendingConfirms) {
+				Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
+				// eliminate duplicates
+				Set<Listener> listeners = new HashSet<Listener>(involvedListeners.values());
+				for (Listener involvedListener : listeners) {
+					// find all unack'd confirms for this listener and handle them
+					SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
+					if (confirmsMap != null) {
+						Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
+						Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
+						while (iterator.hasNext()) {
+							Entry<Long, PendingConfirm> entry = iterator.next();
+							iterator.remove();
+							doHandleConfirm(ack, involvedListener, entry.getValue());
+						}
 					}
 				}
 			}
-			else {
+		}
+		else {
+			Listener listener = this.listenerForSeq.get(seq);
+			if (listener != null) {
 				PendingConfirm pendingConfirm = this.pendingConfirms.get(listener).remove(seq);
 				if (pendingConfirm != null) {
-					listener.handleConfirm(pendingConfirm, ack);
+					doHandleConfirm(ack, listener, pendingConfirm);
 				}
 			}
-		} else {
-			logger.error("No listener for seq:" + seq);
+			else {
+				logger.error("No listener for seq:" + seq);
+			}
+		}
+	}
+
+	private void doHandleConfirm(boolean ack, Listener listener, PendingConfirm pendingConfirm) {
+		try {
+			if (listener.isConfirmListener()) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Sending confirm " + pendingConfirm);
+				}
+				listener.handleConfirm(pendingConfirm, ack);
+			}
+		}
+		catch (Exception e) {
+			logger.error("Exception delivering confirm", e);
 		}
 	}
 
