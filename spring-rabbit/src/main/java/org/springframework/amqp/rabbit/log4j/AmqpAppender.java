@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011 by the original author(s).
- * 
+ * Copyright (c) 2011-2012 by the original author(s).
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -86,6 +87,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   #-------------------------------
  *   log4j.appender.amqp.contentType=text/plain
  *   log4j.appender.amqp.contentEncoding=null
+ *   log4j.appender.amqp.generateId=false
  *   #-------------------------------
  *   ## Sender configuration
  *   #-------------------------------
@@ -101,6 +103,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  * </pre>
  *
  * @author Jon Brisbin <jbrisbin@vmware.com>
+ * @author Gary Russell
  */
 public class AmqpAppender extends AppenderSkeleton {
 
@@ -207,6 +210,11 @@ public class AmqpAppender extends AppenderSkeleton {
 	private boolean durable = true;
 
 	private boolean autoDelete = false;
+
+	/**
+	 * Used to determine whether {@link MessageProperties#setMessageId(String)} is set.
+	 */
+	private boolean generateId = false;
 
 	public AmqpAppender() {
 	}
@@ -340,6 +348,14 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.autoDelete = autoDelete;
 	}
 
+	public boolean isGenerateId() {
+		return generateId;
+	}
+
+	public void setGenerateId(boolean generateId) {
+		this.generateId = generateId;
+	}
+
 	/**
 	 * Submit the required number of senders into the pool.
 	 */
@@ -427,6 +443,9 @@ public class AmqpAppender extends AppenderSkeleton {
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
+					if (generateId) {
+						amqpProps.setMessageId(UUID.randomUUID().toString());
+					}
 
 					// Set applicationId, if we're using one
 					if (null != applicationId) {
