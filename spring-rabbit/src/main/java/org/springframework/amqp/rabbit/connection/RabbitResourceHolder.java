@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2010 the original author or authors.
- * 
+ * Copyright 2002-2012 the original author or authors.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -35,13 +35,14 @@ import com.rabbitmq.client.Channel;
 /**
  * Rabbit resource holder, wrapping a RabbitMQ Connection and Channel. RabbitTransactionManager binds instances of this
  * class to the thread, for a given Rabbit ConnectionFactory.
- * 
+ *
  * <p>
  * Note: This is an SPI class, not intended to be used by applications.
- * 
+ *
  * @author Mark Fisher
  * @author Dave Syer
- * 
+ * @author Gary Russell
+ *
  * @see RabbitTransactionManager
  * @see RabbitTemplate
  */
@@ -61,6 +62,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private boolean transactional;
 
+	private boolean releaseAfterCompletion = true;
+
 	/**
 	 * Create a new RabbitResourceHolder that is open for resources to be added.
 	 */
@@ -70,13 +73,23 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	/**
 	 * @param channel a channel to add
 	 */
-	public RabbitResourceHolder(Channel channel) {
+	public RabbitResourceHolder(Channel channel, boolean releaseAfterCompletion) {
 		this();
 		addChannel(channel);
+		this.releaseAfterCompletion = releaseAfterCompletion;
 	}
 
 	public final boolean isFrozen() {
 		return this.frozen;
+	}
+
+	/**
+	 * Whether the resources should be released after transaction completion.
+	 * Default true. Listener containers set to false because the listener continues
+	 * to use the channel.
+	 */
+	public boolean isReleaseAfterCompletion() {
+		return releaseAfterCompletion;
 	}
 
 	public final void addConnection(Connection connection) {
