@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
+ * Copyright 2002-2012 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -27,7 +27,7 @@ import org.springframework.amqp.core.MessageProperties;
 
 /**
  * JSON converter that uses the Jackson Json library.
- * 
+ *
  * @author Mark Pollack
  * @author James Carr
  * @author Dave Syer
@@ -82,7 +82,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 	 * The {@link ObjectMapper} to use instead of using the default. An
 	 * alternative to injecting a mapper is to extend this class and override
 	 * {@link #initializeJsonObjectMapper()}.
-	 * 
+	 *
 	 * @param jsonObjectMapper
 	 *            the object mapper to set
 	 */
@@ -100,6 +100,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 						false);
 	}
 
+	@Override
 	public Object fromMessage(Message message)
 			throws MessageConversionException {
 		Object content = null;
@@ -119,7 +120,6 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 						content = convertBytesToObject(message.getBody(),
 								encoding, targetJavaType);
 					} else {
-						System.out.println("HERE " + getClassMapper());
 						Class<?> targetClass = getClassMapper().toClass(
 								message.getMessageProperties());
 						content = convertBytesToObject(message.getBody(),
@@ -163,6 +163,7 @@ public class JsonMessageConverter extends AbstractMessageConverter {
 		return jsonObjectMapper.readValue(contentAsString, type(targetClass));
 	}
 
+	@Override
 	protected Message createMessage(Object objectToConvert,
 			MessageProperties messageProperties)
 			throws MessageConversionException {
