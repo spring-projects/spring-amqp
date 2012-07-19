@@ -493,11 +493,8 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			 */
 			synchronized(this.pendingConfirms) {
 				Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
-				Set<Listener> listeners = new HashSet<Listener>();
 				// eliminate duplicates
-				for (Entry<Long, Listener> entry : involvedListeners.entrySet()) {
-					listeners.add(entry.getValue());
-				}
+				Set<Listener> listeners = new HashSet<Listener>(involvedListeners.values());
 				for (Listener involvedListener : listeners) {
 					// find all unack'd confirms for this listener and handle them
 					SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
