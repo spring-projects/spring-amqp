@@ -12,27 +12,7 @@
 
 	<rabbit:queue id="bar" />
 
-	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
-		<rabbit:listener id="testListener" queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
-	</rabbit:listener-container>
-
-	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
-		<rabbit:listener id="testListener" queues="foo, bar" ref="testBean" method="handle"/>
-	</rabbit:listener-container>
-
-	<rabbit:listener-container id="container3" connection-factory="connectionFactory" advice-chain="adviceChain">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
-	</rabbit:listener-container>
-
-	<rabbit:listener-container id="container4" connection-factory="connectionFactory">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
-	</rabbit:listener-container>
-
-	<rabbit:listener-container id="container5" connection-factory="connectionFactory" requeue-rejected="false">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
-	</rabbit:listener-container>
-
-	<rabbit:listener-container id="container6" connection-factory="connectionFactory" channel-transacted="true" transaction-size="5" >
+	<rabbit:listener-container id="container6" connection-factory="connectionFactory" channel-transacted="true" acknowledge="none" >
 		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
