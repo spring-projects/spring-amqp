@@ -52,6 +52,8 @@ public class RabbitNamespaceUtils {
 
 	private static final String PREFETCH_ATTRIBUTE = "prefetch";
 
+	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
+
 	private static final String TRANSACTION_SIZE_ATTRIBUTE = "transaction-size";
 
 	private static final String PHASE_ATTRIBUTE = "phase";
@@ -108,6 +110,16 @@ public class RabbitNamespaceUtils {
 		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
 		if (StringUtils.hasText(prefetch)) {
 			containerDef.getPropertyValues().add("prefetchCount", new TypedStringValue(prefetch));
+		}
+
+		String channelTransacted = containerEle.getAttribute(CHANNEL_TRANSACTED_ATTRIBUTE);
+		if (StringUtils.hasText(channelTransacted)) {
+			// Note: a placeholder will pass this test, but if it resolves to true, it will be caught during container initialization
+			if (acknowledgeMode.isAutoAck() && channelTransacted.equalsIgnoreCase("true")) {
+				parserContext.getReaderContext().error(
+						"Listener Container - cannot set channel-transacted with acknowledge='NONE'", containerEle);
+			}
+			containerDef.getPropertyValues().add("channelTransacted", new TypedStringValue(channelTransacted));
 		}
 
 		String transactionSize = containerEle.getAttribute(TRANSACTION_SIZE_ATTRIBUTE);

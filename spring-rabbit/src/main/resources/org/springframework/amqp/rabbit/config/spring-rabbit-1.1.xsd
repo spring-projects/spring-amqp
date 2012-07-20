@@ -605,6 +605,14 @@
 				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="channel-transacted" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Flag to indicate that the channel should be used transactionally.
+	Cannot be 'true' if acknowledge is 'none'. Default is false.
+					]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="concurrency" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
