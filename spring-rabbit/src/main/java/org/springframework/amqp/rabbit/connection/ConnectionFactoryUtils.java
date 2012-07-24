@@ -15,6 +15,8 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -36,6 +38,37 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  */
 public class ConnectionFactoryUtils {
+
+	private static final Log logger = LogFactory.getLog(ConnectionFactoryUtils.class);
+
+	private static final ThreadLocal<Channel> consumerChannel = new ThreadLocal<Channel>();
+
+	/**
+	 * If a listener container is configured to use a RabbitTransactionManager, the
+	 * consumer's channel is registered here so that it is used as the bound resource
+	 * when the transaction actually starts. It is normally not necessary to use
+	 * an external transaction manager because local transactions work the same in that
+	 * the channel is bound to the thread. This is for the case when a user happens
+	 * to wire in a RabbitTransactionManager.
+	 * @param channel
+	 */
+	public static void registerConsumerChannel(Channel channel) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Registering consumer channel" + channel);
+		}
+		consumerChannel.set(channel);
+	}
+
+	/**
+	 * See registerConsumerChannel. This method is called to unregister
+	 * the channel when the consumer exits.
+	 */
+	public static void unRegisterConsumerChannel() {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Unregistering consumer channel" + consumerChannel.get());
+		}
+		consumerChannel.remove();
+	}
 
 	/**
 	 * Determine whether the given RabbitMQ Channel is transactional, that is, bound to the current thread by Spring's
@@ -122,7 +155,10 @@ public class ConnectionFactoryUtils {
 				connection = resourceFactory.createConnection();
 				resourceHolderToUse.addConnection(connection);
 			}
-			channel = resourceFactory.createChannel(connection);
+			channel = consumerChannel.get();
+			if (channel == null) {
+				channel = resourceFactory.createChannel(connection);
+			}
 			resourceHolderToUse.addChannel(channel, connection);
 
 			if (resourceHolderToUse != resourceHolder) {
