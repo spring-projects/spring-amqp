@@ -293,6 +293,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	@Override
 	protected void doInitialize() throws Exception {
+		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
+			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
+		}
 		initializeProxy();
 	}
 
@@ -528,6 +531,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					throw t;
 				}
 
+				if (SimpleMessageListenerContainer.this.transactionManager != null) {
+					/*
+					 * Register the consumer's channel so it will be used by the transaction manager
+					 * if it's an instance of RabbitTransactionManager.
+					 */
+					ConnectionFactoryUtils.registerConsumerChannel(consumer.getChannel());
+				}
+
 				// Always better to stop receiving as soon as possible if
 				// transactional
 				boolean continuable = false;
@@ -561,6 +572,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				} else {
 					logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
 							+ "Exception summary: " + t);
+				}
+			}
+			finally {
+				if (SimpleMessageListenerContainer.this.transactionManager != null) {
+					ConnectionFactoryUtils.unRegisterConsumerChannel();
 				}
 			}
 
