@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -31,6 +32,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -46,6 +48,9 @@ import org.springframework.retry.support.RetryTemplate;
 public class MissingIdRetryTests {
 
 	private volatile CountDownLatch latch;
+
+	@Rule
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@SuppressWarnings("rawtypes")
 	@Test
