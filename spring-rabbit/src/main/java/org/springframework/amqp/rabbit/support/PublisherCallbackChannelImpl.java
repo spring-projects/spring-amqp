@@ -541,7 +541,9 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
 		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
 		Assert.notNull(pendingConfirmsForListener, "Listener not registered");
-		pendingConfirmsForListener.put(seq, pendingConfirm);
+		synchronized (this.pendingConfirms) {
+			pendingConfirmsForListener.put(seq, pendingConfirm);
+		}
 		this.listenerForSeq.put(seq, listener);
 	}
 
