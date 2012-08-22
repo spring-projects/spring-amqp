@@ -17,7 +17,10 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -34,8 +37,10 @@ import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -93,6 +98,26 @@ public class ListenerContainerParserTests {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container5", SimpleMessageListenerContainer.class);
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		assertEquals(false, ReflectionTestUtils.getField(container, "defaultRequeueRejected"));
+		assertFalse(container.isChannelTransacted());
+	}
+
+	@Test
+	public void testParseWithTx() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean("container6", SimpleMessageListenerContainer.class);
+		assertTrue(container.isChannelTransacted());
+		assertEquals(5, ReflectionTestUtils.getField(container, "txSize"));
+	}
+
+	@Test
+	public void testIncompatibleTxAtts() {
+		try {
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass());
+			fail("Parse exception exptected");
+		}
+		catch (BeanDefinitionParsingException e) {
+			assertTrue(e.getMessage().startsWith(
+					"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
+		}
 	}
 
 	static class TestBean {
