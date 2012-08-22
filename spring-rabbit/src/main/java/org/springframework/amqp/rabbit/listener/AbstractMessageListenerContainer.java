@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,10 +21,12 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 
@@ -35,6 +37,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author James Carr
+ * @author Gary Russell
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor implements BeanNameAware, DisposableBean,
 		SmartLifecycle {
@@ -468,7 +471,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
 		} else if (listener instanceof MessageListener) {
-			doInvokeListener((MessageListener) listener, message);
+			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted(channel);
+			if (bindChannel) {
+				TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
+						new RabbitResourceHolder(channel, false));
+			}
+			try {
+				doInvokeListener((MessageListener) listener, message);
+			}
+			finally {
+				if (bindChannel) {
+					// unbind if we bound
+					TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
+				}
+			}
 		} else if (listener != null) {
 			throw new IllegalArgumentException("Only MessageListener and SessionAwareMessageListener supported: "
 					+ listener);
@@ -493,12 +509,32 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			throws Exception {
 
 		RabbitResourceHolder resourceHolder = null;
+		Channel channelToUse = channel;
+		boolean boundHere = false;
 		try {
-			Channel channelToUse = channel;
 			if (!isExposeListenerChannel()) {
 				// We need to expose a separate Channel.
 				resourceHolder = getTransactionalResourceHolder();
 				channelToUse = resourceHolder.getChannel();
+				/*
+				 * If there is a real transaction, the resource will have been bound; otherwise
+				 * we need to bind it temporarily here. Any work done on this channel
+				 * will be committed in the finally block.
+				 */
+				if (isChannelLocallyTransacted(channelToUse) &&
+							!TransactionSynchronizationManager.isActualTransactionActive()) {
+						TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
+								resourceHolder);
+					boundHere = true;
+				}
+			}
+			else {
+				// if locally transacted, bind the current channel to make it available to RabbitTemplate
+				if (isChannelLocallyTransacted(channel)) {
+					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
+							new RabbitResourceHolder(channelToUse, false));
+					boundHere = true;
+				}
 			}
 			// Actually invoke the message listener...
 			try {
@@ -508,6 +544,19 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			}
 		} finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
+			if (boundHere) {
+				// unbind if we bound
+				TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
+				if (!isExposeListenerChannel() && isChannelLocallyTransacted(channelToUse)) {
+					/*
+					 *  commit the temporary channel we exposed; the consumer's channel
+					 *  will be committed later. Note that when exposing a different channel
+					 *  when there's no transaction manager, the exposed channel is committed
+					 *  on each message, and not based on txSize.
+					 */
+					RabbitUtils.commitIfNecessary(channelToUse);
+				}
+			}
 		}
 	}
 
