@@ -124,7 +124,7 @@ subprojects { subproject ->
 
 }
 
-project('spring-amqp-core') {
+project('spring-amqp') {
 	description = 'Spring AMQP Core'
 	dependencies {
 
@@ -182,7 +182,7 @@ project('spring-rabbit') {
 	description = 'Spring RabbitMQ Support'
 	dependencies {
 
-		compile project(":spring-amqp-core")
+		compile project(":spring-amqp")
 		testCompile project(":spring-erlang")
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"

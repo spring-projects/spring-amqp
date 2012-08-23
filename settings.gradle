@@ -1,6 +1,6 @@
-rootProject.name = 'spring-amqp'
+rootProject.name = 'spring-amqp-dist'
 
-include 'spring-amqp-core'
+include 'spring-amqp'
 include 'spring-erlang'
 include 'spring-rabbit'
 
