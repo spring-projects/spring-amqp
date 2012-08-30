@@ -13,7 +13,9 @@
 
 package org.springframework.amqp.rabbit.log4j;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +78,7 @@ public class AmqpAppenderIntegrationTests {
 		log.warn("This is a WARN message");
 		log.error("This is an ERROR message", new RuntimeException("Test exception"));
 
-		testListener.getLatch().await(5, TimeUnit.SECONDS);
+		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
 		assertNotNull(testListener.getId());
 	}
 
@@ -85,14 +88,20 @@ public class AmqpAppenderIntegrationTests {
 		listenerContainer.setMessageListener(testListener);
 		listenerContainer.start();
 
-		MDC.put("someproperty", "property.value");
+		String propertyName = "someproperty";
+		String propertyValue = "property.value";
+		MDC.put(propertyName, propertyValue);
 		log.debug("This is a DEBUG message with properties");
 		log.info("This is an INFO message with properties");
 		log.warn("This is a WARN message with properties");
 		log.error("This is an ERROR message with properties", new RuntimeException("Test exception"));
-		MDC.remove("someproperty");
+		MDC.remove(propertyName);
 
-		testListener.getLatch().await(5, TimeUnit.SECONDS);
+		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
+		MessageProperties messageProperties = testListener.getMessageProperties();
+		assertNotNull(messageProperties);
+		assertNotNull(messageProperties.getHeaders().get(propertyName));
+		assertEquals(propertyValue, messageProperties.getHeaders().get(propertyName));
 	}
 
 }
