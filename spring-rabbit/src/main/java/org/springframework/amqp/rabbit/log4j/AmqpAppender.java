@@ -15,6 +15,8 @@ package org.springframework.amqp.rabbit.log4j;
 
 import java.util.Calendar;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -491,8 +493,10 @@ public class AmqpAppender extends AppenderSkeleton {
 					// Copy properties in from MDC
 					@SuppressWarnings("rawtypes")
 					Map props = event.getProperties();
-					for (Object key : event.getProperties().entrySet()) {
-						amqpProps.setHeader(key.toString(), props.get(key));
+					@SuppressWarnings("unchecked")
+					Set<Entry<?,?>> entrySet = props.entrySet();
+					for (Entry<?, ?> entry : entrySet) {
+						amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
 					}
 					LocationInfo locInfo = logEvent.getLocationInformation();
 					if (!"?".equals(locInfo.getClassName())) {

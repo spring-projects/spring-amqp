@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author Jon Brisbin <jbrisbin@vmware.com>
@@ -29,7 +30,7 @@ public class TestListener implements MessageListener {
 
   private CountDownLatch latch;
 
-  private Object id;
+  private MessageProperties messageProperties;
 
   public TestListener(int count) {
     latch = new CountDownLatch(count);
@@ -40,13 +41,20 @@ public class TestListener implements MessageListener {
   }
 
   public Object getId() {
-	return id;
-}
+	if (this.messageProperties == null) {
+		throw new IllegalStateException("No MessageProperties received");
+	}
+	return this.messageProperties.getMessageId();
+  }
+
+  public MessageProperties getMessageProperties() {
+	return this.messageProperties;
+  }
 
 public void onMessage(Message message) {
     System.out.println("MESSAGE: " + message);
     System.out.println("BODY: " + new String(message.getBody()));
-    this.id = message.getMessageProperties().getMessageId();
+    this.messageProperties = message.getMessageProperties();
     latch.countDown();
   }
 
