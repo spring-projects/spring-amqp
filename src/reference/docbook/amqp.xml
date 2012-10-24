@@ -311,6 +311,30 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory" addresses="host1:5672,host2:5672" />]]></programlisting>
     </para>
+
+    <sect2>
+      <title>Publisher Confirms and Returns</title>
+      <para>
+        Confirmed and returned messages are supported by setting the
+        <classname>CachingConnectionFactory</classname>'s <code>publisherConfirms</code>
+        and <code>publisherReturns</code> properties to 'true' respectively.
+      </para>
+        When these options are set, <interfacename>Channel</interfacename>s created by
+        the factory are wrapped in an <interfacename>PublisherCallbackChannel</interfacename>
+        which is used to facilitate the callbacks. When such a channel is obtained, the
+        client can register a <interfacename>PublisherCallbackChannel.Listener</interfacename>
+        with the <interfacename>Channel</interfacename>. The
+        <interfacename>PublisherCallbackChannel</interfacename> implementation contains logic
+        to route a confirm/return to the appropriate listener.
+      <para>
+        These features are explained further in the following sections.
+      </para>
+		<tip>
+			For some more background information, please see the following blog
+			post by the RabbitMQ team titled
+			<ulink url="http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/">Introducing Publisher Confirms</ulink>.
+		</tip>
+    </sect2>
   </section>
 
   <section id="amqp-template">
@@ -338,6 +362,48 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     interface defines all of the basic operations for sending and receiving
     Messages. We will explore Message sending and reception, respectively, in
     the two sections that follow.</para>
+
+    <sect2>
+      <title>Publisher Confirms and Returns</title>
+      <para>
+        The <classname>RabbitTemplate</classname> implementation of <interfacename>AmqpTemplate</interfacename>
+        supports Publisher Confirms and Returns.
+      </para>
+      <para>
+        For returned messages, the template's
+        <code>mandatory</code> property must be set to 'true', and it requires
+        a <classname>CachingConnectionFactory</classname> that has its
+        <code>publisherReturns</code> property set to true. Returns are sent to
+        to the client by it registering a <interfacename>RabbitTemplate.ReturnCallback</interfacename>
+        by calling <code>setReturnCallback(ReturnCallback callback)</code>. The callback
+        must implement this method:
+      </para>
+      <programlisting language="java"><![CDATA[void returnedMessage(Message message, int replyCode, String replyText,
+          String exchange, String routingKey);
+      ]]></programlisting>
+      <para>
+        Only one <interfacename>ReturnCallback</interfacename> is supported by each
+        <classname>RabbitTemplate</classname>.
+      </para>
+      <para>
+        For Publisher Confirms (aka Publisher Acknowledgements), the template requires
+        a <classname>CachingConnectionFactory</classname> that has its
+        <code>publisherConfirms</code> property set to true.  Confirms are sent to
+        to the client by it registering a <interfacename>RabbitTemplate.ConfirmCallback</interfacename>
+        by calling <code>setConfirmCallback(ConfirmCallback callback)</code>. The callback
+        must implement this method:
+      </para>
+      <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack);
+      ]]></programlisting>
+      <para>
+        The <classname>CorrelationData</classname> is an object supplied by the client when sending the
+        original message. This is described further in the next section.
+      </para>
+      <para>
+        Only one <interfacename>ConfirmCallback</interfacename> is supported by a
+        <classname>RabbitTemplate</classname>.
+      </para>
+    </sect2>
   </section>
 
   <section>
@@ -407,7 +473,24 @@ template.send("queue.helloWorld", new Message("Hello World".getBytes(), someProp
 template.setRoutingKey("queue.helloWorld"); // but we'll always send to this Queue
 template.send(new Message("Hello World".getBytes(), someProperties));]]></programlisting>
 
-    <para></para>
+    <sect2>
+      <title>Publisher Confirms</title>
+      <para>
+        With the <classname>RabbitTemplate</classname> implementation of <interfacename>AmqpTemplate</interfacename>,
+        each of the <code>send()</code> methods has an overloaded version that takes an
+        additional <interfacename>CorrelationData</interfacename> object. When publisher confirms
+        are enabled, this object is returned in the callback described in
+        <xref linkend="amqp-template"/>. This allows the sender to correlate
+        a confirm (ack or nack) with the sent message.
+      </para>
+    </sect2>
+    <sect2>
+      <title>Publisher Returns</title>
+      <para>
+        When the template's <code>mandatory</code> property is 'true' returned messages are provided
+        by the callback described in <xref linkend="amqp-template"/>.
+      </para>
+    </sect2>
   </section>
 
   <section>
@@ -810,7 +893,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 		property placeholders, and SpEL expressions for the queue name; these features
 		are not available when using the name as the bean identifier.
 	</tip>
-	
+
 	<para>Queues can be configured with additional arguments, for example,
 	'x-message-ttl' or 'x-ha-policy'. Using the namespace support, they are provided in the form of
 	a Map of argument name/argument value pairs, using the
