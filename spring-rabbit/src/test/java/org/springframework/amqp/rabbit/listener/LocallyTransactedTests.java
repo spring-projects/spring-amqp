@@ -15,6 +15,7 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
@@ -138,6 +141,12 @@ public class LocallyTransactedTests {
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+
+		// verify close() was never called on the channel
+		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
+		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
+		assertEquals(0, channels.size());
+
 		container.stop();
 
 	}
@@ -153,7 +162,7 @@ public class LocallyTransactedTests {
 		final Channel onlyChannel = mock(Channel.class);
 		when(onlyChannel.isOpen()).thenReturn(true);
 
-		final SingleConnectionFactory cachingConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -199,11 +208,11 @@ public class LocallyTransactedTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new ChannelAwareMessageListener() {
 			public void onMessage(Message message, Channel channel) {
 				exposed.set(channel);
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
 				rabbitTemplate.setChannelTransacted(true);
 				// should use same channel as container
 				rabbitTemplate.convertAndSend("foo", "bar", "baz");
@@ -231,6 +240,10 @@ public class LocallyTransactedTests {
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+
+		// verify close() was never called on the channel
+		verify(onlyChannel, Mockito.never()).close();
+
 		container.stop();
 
 		assertSame(onlyChannel, exposed.get());
@@ -250,7 +263,7 @@ public class LocallyTransactedTests {
 		final Channel secondChannel = mock(Channel.class);
 		when(secondChannel.isOpen()).thenReturn(true);
 
-		final SingleConnectionFactory cachingConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -293,11 +306,11 @@ public class LocallyTransactedTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new ChannelAwareMessageListener() {
 			public void onMessage(Message message, Channel channel) {
 				exposed.set(channel);
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
 				rabbitTemplate.setChannelTransacted(true);
 				// should use same channel as container
 				rabbitTemplate.convertAndSend("foo", "bar", "baz");
@@ -331,5 +344,8 @@ public class LocallyTransactedTests {
 		container.stop();
 
 		assertSame(secondChannel, exposed.get());
+
+		verify(firstChannel, Mockito.never()).close();
+		verify(secondChannel, Mockito.times(1)).close();
 	}
 }
