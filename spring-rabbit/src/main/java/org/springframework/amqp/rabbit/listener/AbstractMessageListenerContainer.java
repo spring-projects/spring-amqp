@@ -473,8 +473,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		} else if (listener instanceof MessageListener) {
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted(channel);
 			if (bindChannel) {
+				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
+				resourceHolder.setSynchronizedWithTransaction(true);
 				TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-						new RabbitResourceHolder(channel, false));
+						resourceHolder);
 			}
 			try {
 				doInvokeListener((MessageListener) listener, message);
@@ -523,6 +525,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 				 */
 				if (isChannelLocallyTransacted(channelToUse) &&
 							!TransactionSynchronizationManager.isActualTransactionActive()) {
+						resourceHolder.setSynchronizedWithTransaction(true);
 						TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
 								resourceHolder);
 					boundHere = true;
@@ -531,8 +534,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 			else {
 				// if locally transacted, bind the current channel to make it available to RabbitTemplate
 				if (isChannelLocallyTransacted(channel)) {
+					RabbitResourceHolder localResourceHolder = new RabbitResourceHolder(channelToUse, false);
+					localResourceHolder.setSynchronizedWithTransaction(true);
 					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-							new RabbitResourceHolder(channelToUse, false));
+							localResourceHolder);
 					boundHere = true;
 				}
 			}
@@ -543,6 +548,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 				throw wrapToListenerExecutionFailedExceptionIfNeeded(e);
 			}
 		} finally {
+			if (resourceHolder != null && boundHere) {
+				// so the channel exposed (because exposeListenerChannel is false) will be closed
+				resourceHolder.setSynchronizedWithTransaction(false);
+			}
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 			if (boundHere) {
 				// unbind if we bound
