@@ -319,7 +319,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 				// Handle close method: don't pass the call on.
 				if (active) {
 					synchronized (this.channelList) {
-						if (this.channelList.size() < getChannelCacheSize()) {
+						if (!RabbitUtils.isMustPhysicallyClose() && this.channelList.size() < getChannelCacheSize()) {
 							logicalClose((ChannelProxy) proxy);
 							// Remain open in the channel list.
 							return null;
