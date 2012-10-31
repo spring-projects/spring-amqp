@@ -317,7 +317,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
       <para>
         Confirmed and returned messages are supported by setting the
         <classname>CachingConnectionFactory</classname>'s <code>publisherConfirms</code>
-        and <code>publisherReturns</code> properties are set to 'true' respectively.
+        and <code>publisherReturns</code> properties to 'true' respectively.
       </para>
         When these options are set, <interfacename>Channel</interfacename>s created by
         the factory are wrapped in an <interfacename>PublisherCallbackChannel</interfacename>
