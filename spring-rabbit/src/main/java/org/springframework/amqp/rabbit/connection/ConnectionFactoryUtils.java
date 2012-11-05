@@ -71,6 +71,14 @@ public class ConnectionFactoryUtils {
 	}
 
 	/**
+	 * See registerConsumerChannel. This method is called to retrieve the
+	 * channel for this consumer.
+	 */
+	public static Channel getConsumerChannel() {
+		return consumerChannel.get();
+	}
+
+	/**
 	 * Determine whether the given RabbitMQ Channel is transactional, that is, bound to the current thread by Spring's
 	 * transaction facilities.
 	 * @param channel the RabbitMQ Channel to check
