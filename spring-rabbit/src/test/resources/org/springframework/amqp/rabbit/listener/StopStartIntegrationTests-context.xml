@@ -20,7 +20,7 @@
         </rabbit:bindings>
     </rabbit:direct-exchange>
 
-	<rabbit:listener-container connection-factory="connectionFactory" concurrency="10" prefetch="20" auto-startup="false">
+	<rabbit:listener-container connection-factory="connectionFactory" concurrency="2" prefetch="5" auto-startup="false">
 		<rabbit:listener ref="listener" queue-names="stop.start.queue" />
 	</rabbit:listener-container>
 
