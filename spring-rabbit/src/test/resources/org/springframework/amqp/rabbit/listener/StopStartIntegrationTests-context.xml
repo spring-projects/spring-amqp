@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <rabbit:connection-factory id="connectionFactory"/>
+
+    <rabbit:template id="amqpTemplate" connection-factory="connectionFactory"
+		exchange="stop.start.exchange" routing-key="stop.start.binding" />
+
+    <rabbit:admin connection-factory="connectionFactory" />
+
+    <rabbit:queue name="stop.start.queue" />
+
+    <rabbit:direct-exchange name="stop.start.exchange">
+        <rabbit:bindings>
+            <rabbit:binding queue="stop.start.queue" key="stop.start.binding" />
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+	<rabbit:listener-container connection-factory="connectionFactory" concurrency="10" prefetch="20" auto-startup="false">
+		<rabbit:listener ref="listener" queue-names="stop.start.queue" />
+	</rabbit:listener-container>
+
+	<bean id="listener" class="org.springframework.amqp.rabbit.listener.StopStartIntegrationTests$StopStartListener" />
+
+</beans>
