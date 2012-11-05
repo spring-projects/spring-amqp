@@ -41,7 +41,7 @@ public abstract class RabbitUtils {
 
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
-	private static final ThreadLocal<Boolean> mustPhysicallyClose = new ThreadLocal<Boolean>();
+	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
@@ -157,21 +157,21 @@ public abstract class RabbitUtils {
 	 * Sets a ThreadLocal indicating the channel MUST be physically closed.
 	 * @param b
 	 */
-	public static void setMustPhysicallyClose(boolean b) {
-		mustPhysicallyClose.set(b);
+	public static void setPhysicalCloseRequired(boolean b) {
+		physicalCloseRequired.set(b);
 	}
 
 	/**
 	 * Gets and removes a ThreadLocal indicating the channel MUST be physically closed.
 	 * @return
 	 */
-	public static boolean isMustPhysicallyClose() {
-		Boolean mustClose = mustPhysicallyClose.get();
+	public static boolean isPhysicalCloseRequired() {
+		Boolean mustClose = physicalCloseRequired.get();
 		if (mustClose == null) {
 			mustClose = Boolean.FALSE;
 		}
 		else {
-			mustPhysicallyClose.remove();
+			physicalCloseRequired.remove();
 		}
 		return mustClose;
 	}

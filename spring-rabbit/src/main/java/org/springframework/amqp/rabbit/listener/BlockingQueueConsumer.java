@@ -258,7 +258,7 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Closing Rabbit Channel: " + channel);
 		}
-		RabbitUtils.setMustPhysicallyClose(true);
+		RabbitUtils.setPhysicalCloseRequired(true);
 		// This one never throws exceptions...
 		RabbitUtils.closeChannel(channel);
 		deliveryTags.clear();
