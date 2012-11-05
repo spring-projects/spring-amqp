@@ -154,7 +154,14 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	public void closeAll() {
 		for (Channel channel : this.channels) {
 			try {
-				channel.close();
+				if (channel != ConnectionFactoryUtils.getConsumerChannel()) {
+					channel.close();
+				}
+				else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Skipping close of consumer channel:" + channel.toString());
+					}
+				}
 			} catch (Throwable ex) {
 				logger.debug("Could not close synchronized Rabbit Channel after transaction", ex);
 			}
