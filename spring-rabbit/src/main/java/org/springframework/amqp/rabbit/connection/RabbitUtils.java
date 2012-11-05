@@ -163,7 +163,7 @@ public abstract class RabbitUtils {
 
 	/**
 	 * Gets and removes a ThreadLocal indicating the channel MUST be physically closed.
-	 * @return
+	 * @return true if the channel must be physically closed
 	 */
 	public static boolean isPhysicalCloseRequired() {
 		Boolean mustClose = physicalCloseRequired.get();

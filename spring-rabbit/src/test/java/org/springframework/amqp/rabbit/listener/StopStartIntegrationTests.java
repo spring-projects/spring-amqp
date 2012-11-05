@@ -45,7 +45,7 @@ public class StopStartIntegrationTests {
 
 	private static AtomicInteger deliveries = new AtomicInteger();
 
-	private static int COUNT = 300000;
+	private static int COUNT = 10000;
 
 	@Autowired
 	private ApplicationContext ctx;
@@ -66,7 +66,7 @@ public class StopStartIntegrationTests {
 		int n;
 		int lastN = 0;
 		while ((n = deliveries.get()) < COUNT) {
-			Thread.sleep(5000);
+			Thread.sleep(2000);
 			container.stop();
 			container.start();
 			if (System.currentTimeMillis() - t > 240000 && lastN == n) {
