@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package org.springframework.amqp.support.converter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.BDDMockito.given;
@@ -28,15 +29,18 @@ import org.junit.runner.RunWith;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.support.converter.JsonMessageConverterTests.Foo;
 
 /**
  * @author James Carr
- * 
+ * @author Gary Russell
+ *
  */
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultClassMapperTest {
 	@Spy
 	DefaultClassMapper classMapper = new DefaultClassMapper();
+
 	private final MessageProperties props = new MessageProperties();
 
 	@Test
@@ -113,6 +117,17 @@ public class DefaultClassMapperTest {
 				classMapper.getClassIdFieldName());
 
 		assertThat(className, equalTo("Hashtable"));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void shouldUseDefaultType() {
+		props.getHeaders().clear();
+		classMapper.setDefaultType(Foo.class);
+		Class<Foo> clazz = (Class<Foo>) classMapper.toClass(props);
+
+		assertSame(Foo.class, clazz);
+		classMapper.setDefaultType(null);
 	}
 
 	private Map<String, Class<?>> map(String string, Class<?> class1) {

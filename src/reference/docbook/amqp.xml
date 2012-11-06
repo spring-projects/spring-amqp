@@ -742,6 +742,22 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         </bean>
     </property>
 </bean>]]></programlisting>
+
+      <para>As shown above, the <classname>JsonMessageConverter</classname> uses a
+      <classname>DefaultClassMapper</classname> by default. Type information is
+      added to (and retrieved from) the <classname>MessageProperties</classname>.
+      If an inbound message does not contain type information in the
+      <classname>MessageProperties</classname>, but you know the expected type,
+      you can configure a static type using the <code>defaultType</code> property</para>
+
+      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType" class="org.springframework.amqp.support.converter.JsonMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType"
+                value="foo.PurchaseOrder" />
+        </bean>
+    </property>
+</bean>]]></programlisting>
     </sect2>
 
     <sect2>
