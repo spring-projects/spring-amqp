@@ -341,11 +341,11 @@ public class LocallyTransactedTests {
 		verify(secondChannel).txCommit();
 		verify(secondChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
 				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
-		container.stop();
 
 		assertSame(secondChannel, exposed.get());
 
 		verify(firstChannel, Mockito.never()).close();
 		verify(secondChannel, Mockito.times(1)).close();
+		container.stop();
 	}
 }
