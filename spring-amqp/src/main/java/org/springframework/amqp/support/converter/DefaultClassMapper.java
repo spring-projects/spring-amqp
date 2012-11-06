@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,21 +22,37 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
 
 /**
- * 
+ * Maps to/from JSON using type information in the {@link MessageProperties};
+ * the default name of the message property containing the type is '__TypeId__'.
+ * An optional property {@link #setDefaultType(Class)}
+ * is provided that allows mapping to a statically defined type, if no message property is
+ * found in the message properties.
  * @author Mark Pollack
- * 
+ * @author Gary Russell
+ *
  */
 public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 
-	private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+	private volatile Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 
-	private Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
+	private volatile Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
-	private String defaultHashtableTypeId = "Hashtable";
+	private final String defaultHashtableTypeId = "Hashtable";
 
-	private Class<?> defaultHashtableClass = Hashtable.class;
+	private volatile Class<?> defaultHashtableClass = Hashtable.class;
+
+	private volatile Class<?> defaultType;
+
+	/**
+	 * The type returned by {@link #toClass(MessageProperties)} if no type information
+	 * is found in the message properties.
+	 * @param defaultType the defaultType to set
+	 */
+	public void setDefaultType(Class<?> defaultType) {
+		this.defaultType = defaultType;
+	}
 
 	public void setDefaultHashtableClass(Class<?> defaultHashtableClass) {
 		this.defaultHashtableClass = defaultHashtableClass;
@@ -105,9 +121,15 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 			classId = classIdFieldNameValue.toString();
 		}
 		if (classId == null) {
-			throw new MessageConversionException(
-					"failed to convert Message content. Could not resolve "
-							+ getClassIdFieldName() + " in header");
+			if (this.defaultType != null) {
+				return this.defaultType;
+			}
+			else {
+				throw new MessageConversionException(
+						"failed to convert Message content. Could not resolve "
+								+ getClassIdFieldName() + " in header " +
+								"and no defaultType provided");
+			}
 		}
 		return toClass(classId);
 	}
