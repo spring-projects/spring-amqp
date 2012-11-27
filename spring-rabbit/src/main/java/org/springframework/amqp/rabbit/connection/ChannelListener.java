@@ -22,7 +22,7 @@ import com.rabbitmq.client.Channel;
  *
  */
 public interface ChannelListener {
-	
+
 	void onCreate(Channel channel, boolean transactional);
 
 }

@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package org.springframework.amqp.rabbit.connection;
 
@@ -31,10 +31,10 @@ public interface Connection {
      * @throws AmqpException if an I/O problem is encountered
      */
     void close() throws AmqpException;
-    
+
     /**
      * Flag to indicate the status of the connection.
-     * 
+     *
      * @return true if the connection is open
      */
     boolean isOpen();

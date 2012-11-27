@@ -39,9 +39,9 @@ public class MessageListenerManualAckIntegrationTests {
 	private int messageCount = 50;
 
 	private int txSize = 1;
-	
+
 	private boolean transactional = false;
-	
+
 	private SimpleMessageListenerContainer container;
 
 	@Rule

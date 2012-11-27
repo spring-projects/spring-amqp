@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -22,16 +22,16 @@ import org.springframework.util.StringUtils;
  * Represents an address for publication of an AMQP message. The AMQP 0-8 and 0-9 specifications have an unstructured
  * string that is used as a "reply to" address. There are however conventions in use and this class makes it easier to
  * follow these conventions, which can be easily summarised as:
- * 
+ *
  * <pre>
  * (exchangeType)://(exchange)/(routingKey)
  * </pre>
- * 
+ *
  * Here we also allow the exchange type to default to direct, and the exchange name to default to empty (so just a
  * routing key will work if you know the queue name).
- * 
+ *
  * @see ExchangeTypes
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
@@ -48,14 +48,14 @@ public class Address {
 
 	/**
 	 * Create an Address instance from a structured String in the form
-	 * 
+	 *
 	 * <pre>
 	 * (exchangeType)://(exchange)/(routingKey)
 	 * </pre>
-	 * 
+	 *
 	 * where examples of valid <code>exchangeType</code> values can be found in the {@link ExchangeTypes} static
 	 * constants.
-	 * 
+	 *
 	 * @param address a structured string.
 	 */
 	public Address(String address) {
@@ -81,7 +81,7 @@ public class Address {
 	/***
 	 * Create an Address given the exchange type, exchange name and routing key. This will set the exchange type, name
 	 * and the routing key explicitly.
-	 * 
+	 *
 	 * @param exchangeType
 	 * @param exchangeName
 	 * @param routingKey

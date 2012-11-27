@@ -48,7 +48,7 @@ public abstract class AbstractConnectionFactoryTests {
 		con.close();
 		assertEquals(1, called.get());
 		verify(mockConnection, never()).close();
-		
+
 		connectionFactory.createConnection();
 		assertEquals(1, called.get());
 
@@ -59,7 +59,7 @@ public abstract class AbstractConnectionFactoryTests {
 		verify(mockConnectionFactory, times(1)).newConnection((ExecutorService) null);
 
 	}
-	
+
 	@Test
 	public void testWithListenerRegisteredAfterOpen() throws IOException {
 
@@ -86,7 +86,7 @@ public abstract class AbstractConnectionFactoryTests {
 		con.close();
 		assertEquals(1, called.get());
 		verify(mockConnection, never()).close();
-		
+
 		connectionFactory.createConnection();
 		assertEquals(1, called.get());
 
@@ -110,13 +110,13 @@ public abstract class AbstractConnectionFactoryTests {
 		when(mockConnection1.isOpen()).thenReturn(false);
 
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
-		
+
 		Connection connection = connectionFactory.createConnection();
 		// the dead connection should be discarded
 		connection.createChannel(false);
 		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
 		verify(mockConnection2, times(1)).createChannel();
-		
+
 		connectionFactory.destroy();
 		verify(mockConnection2, times(1)).close();
 

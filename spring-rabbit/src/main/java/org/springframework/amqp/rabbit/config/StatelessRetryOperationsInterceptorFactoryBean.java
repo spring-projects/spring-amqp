@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -30,11 +30,11 @@ import org.springframework.retry.support.RetryTemplate;
  * retry attempts are exhausted it can be processed using a {@link MessageRecoverer} if one is provided, in the same
  * transaction (in which case no exception is propagated). If a recoverer is not provided the exception will be
  * propagated and the message may be redelivered if the channel is transactional.
- * 
+ *
  * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback)
- * 
+ *
  * @author Dave Syer
- * 
+ *
  */
 public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
 

@@ -15,7 +15,7 @@
  */
 
 /**
- * Describes an Erlang node. 
+ * Describes an Erlang node.
  */
 package org.springframework.erlang.core;
 
@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 /**
  * Simple description class for an Erlang node.
- * 
+ *
  * @author Mark Pollack
  *
  */
@@ -44,5 +44,5 @@ public class Node implements Serializable {
 	public String toString() {
 		return "Node [name=" + name + "]";
 	}
-	
+
 }

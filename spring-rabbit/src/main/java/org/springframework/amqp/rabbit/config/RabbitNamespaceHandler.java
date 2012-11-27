@@ -20,7 +20,7 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
  * Namespace handler for Rabbit.
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Gary Russell

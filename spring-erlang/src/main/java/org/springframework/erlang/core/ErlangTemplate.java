@@ -42,12 +42,12 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 		setConnectionFactory(connectionFactory);
 		afterPropertiesSet();
 	}
-	
+
 	public OtpErlangObject executeErlangRpc(final String module, final String function, final OtpErlangList args) {
 		return execute(new ConnectionCallback<OtpErlangObject>() {
-			public OtpErlangObject doInConnection(Connection connection) throws Exception {	
+			public OtpErlangObject doInConnection(Connection connection) throws Exception {
 				logger.debug("Sending RPC for module [" + module + "] function [" + function + "] args [" + args);
-				connection.sendRPC(module, function, args);		
+				connection.sendRPC(module, function, args);
 				//TODO consider dedicated response object.
 				OtpErlangObject response = connection.receiveRPC();
 				logger.debug("Response received = " + response.toString());
@@ -56,7 +56,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 			}
 		});
 	}
-	
+
 	public void handleResponseError(String module, String function, OtpErlangObject result) {
 		//{badrpc,{'EXIT',{undef,[{rabbit_access_control,list_users,[[]]},{rpc,'-handle_call/3-fun-0-',5}]}}}
 
@@ -66,7 +66,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 			{
 				OtpErlangAtom responseAtom = (OtpErlangAtom)msg.elementAt(0);
 				//TODO consider error handler strategy.
-				if (responseAtom.atomValue().equals("badrpc")) {		
+				if (responseAtom.atomValue().equals("badrpc")) {
 					if (msg.elementAt(1) instanceof OtpErlangTuple) {
 						throw new ErlangBadRpcException( (OtpErlangTuple)msg.elementAt(1));
 					} else {
@@ -82,23 +82,23 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 			}
 		}
 	}
-	
+
 	public OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args) {
 		return executeRpc(module, function, new OtpErlangList(args));
 	}
-		
+
 	public OtpErlangObject executeRpc(String module, String function, Object... args) {
 		return executeErlangRpc(module, function, (OtpErlangList) erlangConverter.toErlang(args));
 	}
-	
+
 	public Object executeAndConvertRpc(String module, String function, ErlangConverter converterToUse, Object... args) {
 		return converterToUse.fromErlang(executeRpc(module, function, converterToUse.toErlang(args)));
 	}
-	
-	public Object executeAndConvertRpc(String module, String function, Object... args) {		
+
+	public Object executeAndConvertRpc(String module, String function, Object... args) {
 		return erlangConverter.fromErlangRpc(module, function, executeErlangRpc(module, function, (OtpErlangList)erlangConverter.toErlang(args)));
 	}
-		
+
 	public ErlangConverter getErlangConverter() {
 		return erlangConverter;
 	}
@@ -111,23 +111,23 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 
 		Assert.notNull(action, "Callback object must not be null");
 		Connection con = null;
-		try {		
+		try {
 			con = createConnection();
 			return action.doInConnection(con);
-		}	
+		}
 		catch (OtpException ex) {
-			throw ex;			
+			throw ex;
 		}
 		catch (Exception ex) {
-			throw convertOtpAccessException(ex);			
+			throw convertOtpAccessException(ex);
 		}
-		finally {		
-			org.springframework.erlang.connection.ConnectionFactoryUtils.releaseConnection(con, getConnectionFactory());			
+		finally {
+			org.springframework.erlang.connection.ConnectionFactoryUtils.releaseConnection(con, getConnectionFactory());
 		}
 		// TODO: physically close and reopen the connection if there is an exception
-		
+
 	}
-	
+
 	/**
 	 * Convert the specified checked exception to
 	 * a Spring runtime exception equivalent.
@@ -144,10 +144,10 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 
 
 
-	
-	
-	
 
-	
+
+
+
+
 
 }

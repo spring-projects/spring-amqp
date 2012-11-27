@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -51,14 +51,14 @@ import com.ericsson.otp.erlang.OtpSelf;
  * of the short and long formats, in particular they cannot be mixed freely in a network of communicating nodes, however
  * Jinterface makes no distinction. See the Erlang documentation for more information about nodenames.
  * </p>
- * 
+ *
  * <p>
  * The constructors for the AbstractNode classes will create names exactly as you provide them as long as the name
  * contains '@'. If the string you provide contains no '@', it will be treated as an alivename and the name of the local
  * host will be appended, resulting in a shortname. Nodenames longer than 255 characters will be truncated without
  * warning.
  * </p>
- * 
+ *
  * <p>
  * Upon initialization, this class attempts to read the file .erlang.cookie in the user's home directory, and uses the
  * trimmed first line of the file as the default cookie by those constructors lacking a cookie argument. If for any
@@ -81,7 +81,7 @@ public class SimpleConnectionFactory implements ConnectionFactory, InitializingB
 	private final String peerNodeName;
 
 	private final String cookie;
-	
+
 	private OtpSelf otpSelf;
 
 	private OtpPeer otpPeer;

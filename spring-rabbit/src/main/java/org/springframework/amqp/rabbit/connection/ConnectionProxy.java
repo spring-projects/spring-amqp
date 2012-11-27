@@ -17,9 +17,9 @@
 package org.springframework.amqp.rabbit.connection;
 
 /**
- * Subinterface of {@link Connection} to be implemented by 
+ * Subinterface of {@link Connection} to be implemented by
  * Connection proxies.  Allows access to the underlying target Connection
- * 
+ *
  * @author Dave Syer
  * @see CachingConnectionFactory
  */

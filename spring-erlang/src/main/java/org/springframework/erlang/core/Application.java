@@ -21,9 +21,9 @@ import java.io.Serializable;
 /**
  * Describes an Erlang application.  Only three fields are supported as that is the level
  * of information that rabbitmq returns when performing a status request.
- *  
+ *
  * See http://www.erlang.org/doc/man/app.html for full details
- * 
+ *
  * @author Mark Pollack
  *
  */
@@ -31,9 +31,9 @@ import java.io.Serializable;
 public class Application implements Serializable {
 
 	private String description;
-	
+
 	private String id;
-	
+
 	private String version;
 
 	public Application(String description, String id, String version) {
@@ -63,5 +63,5 @@ public class Application implements Serializable {
 	}
 
 
-	
+
 }

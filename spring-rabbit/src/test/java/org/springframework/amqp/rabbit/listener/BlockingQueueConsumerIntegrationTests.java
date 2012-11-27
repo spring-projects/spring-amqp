@@ -15,7 +15,7 @@ import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 
 public class BlockingQueueConsumerIntegrationTests {
-	
+
 	private static Queue queue = new Queue("test.queue");
 
 	@Rule

@@ -16,9 +16,9 @@ import org.junit.runners.model.Statement;
  * A JUnit method &#064;Rule that changes the logger level for a set of classes
  * while a test method is running. Useful for performance or scalability tests
  * where we don't want to generate a large log in a tight inner loop.
- * 
+ *
  * @author Dave Syer
- * 
+ *
  */
 public class Log4jLevelAdjuster implements MethodRule {
 

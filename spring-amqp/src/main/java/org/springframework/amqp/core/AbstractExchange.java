@@ -21,11 +21,11 @@ import java.util.Map;
 
 
 /**
- * Common properties that describe all exchange types.  
+ * Common properties that describe all exchange types.
  * <p>Subclasses of this class are typically used with administrative operations that declare an exchange.
- * 
+ *
  * @author Mark Pollack
- * 
+ *
  * @see AmqpAdmin
  */
 public abstract class AbstractExchange implements Exchange {
@@ -36,18 +36,18 @@ public abstract class AbstractExchange implements Exchange {
 
 	private final boolean autoDelete;
 
-	private final Map<String, Object> arguments;	
+	private final Map<String, Object> arguments;
 
 	/**
-	 * Construct a new Exchange for bean usage. 
+	 * Construct a new Exchange for bean usage.
 	 * @param name the name of the exchange.
 	 */
 	public AbstractExchange(String name) {
 		this(name, true, false);
 	}
-	
+
 	/**
-	 * Construct a new Exchange, given a name, durability flag, auto-delete flag. 
+	 * Construct a new Exchange, given a name, durability flag, auto-delete flag.
 	 * @param name the name of the exchange.
 	 * @param durable true if we are declaring a durable exchange (the exchange will survive a server restart)
 	 * @param autoDelete true if the server should delete the exchange when it is no longer in use
@@ -57,7 +57,7 @@ public abstract class AbstractExchange implements Exchange {
 	}
 
 	/**
-	 * Construct a new Exchange, given a name, durability flag, and auto-delete flag, and arguments. 
+	 * Construct a new Exchange, given a name, durability flag, and auto-delete flag, and arguments.
 	 * @param name the name of the exchange.
 	 * @param durable true if we are declaring a durable exchange (the exchange will survive a server restart)
 	 * @param autoDelete true if the server should delete the exchange when it is no longer in use
@@ -103,10 +103,10 @@ public abstract class AbstractExchange implements Exchange {
 
 	@Override
 	public String toString() {
-		return "Exchange [name=" + name + 
+		return "Exchange [name=" + name +
 						 ", type=" + this.getType() +
 						 ", durable=" + durable +
-						 ", autoDelete=" + autoDelete + 
+						 ", autoDelete=" + autoDelete +
 						 ", arguments="	+ arguments + "]";
 	}
 

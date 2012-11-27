@@ -11,7 +11,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.context.support.GenericApplicationContext;
 
 public class RabbitAdminTests {
-	
+
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
 

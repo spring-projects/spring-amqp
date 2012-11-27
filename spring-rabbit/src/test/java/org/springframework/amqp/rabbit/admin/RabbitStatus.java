@@ -24,7 +24,7 @@ import org.springframework.erlang.core.Node;
 
 /**
  * The status object returned from querying the broker
- *  
+ *
  * @author Mark Pollack
  *
  */
@@ -32,11 +32,11 @@ import org.springframework.erlang.core.Node;
 public class RabbitStatus implements Serializable {
 
 	private List<Application> runningApplications;
-	
+
 	private List<Node> nodes;
-	
+
 	private List<Node> runningNodes;
-		
+
 	public RabbitStatus(List<Application> runningApplications,
 			List<Node> nodes, List<Node> runningNodes) {
 		super();
@@ -69,12 +69,12 @@ public class RabbitStatus implements Serializable {
 	public List<Application> getRunningApplications() {
 		return runningApplications;
 	}
-	
+
 	public List<Node> getNodes() {
 		return nodes;
 	}
-	
-	public List<Node> getRunningNodes() { 
+
+	public List<Node> getRunningNodes() {
 		return runningNodes;
 	}
 

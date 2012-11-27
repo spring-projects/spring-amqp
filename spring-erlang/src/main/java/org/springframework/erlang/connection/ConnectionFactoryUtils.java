@@ -42,5 +42,5 @@ public class ConnectionFactoryUtils {
 			logger.debug("Could not close Otp Connection", ex);
 		}
 	}
-	
+
 }

@@ -21,7 +21,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Dave Syer
  */
 public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests {
-	
+
 	@Override
 	protected AbstractConnectionFactory createConnectionFactory(ConnectionFactory connectionFactory) {
 		return new SingleConnectionFactory(connectionFactory);
@@ -50,10 +50,10 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 		Channel channel = con.createChannel(false);
 		assertEquals(1, called.get());
 		channel.close();
-		
+
 		con.close();
 		verify(mockConnection, never()).close();
-		
+
 		connectionFactory.createConnection();
 		con.createChannel(false);
 		assertEquals(2, called.get());

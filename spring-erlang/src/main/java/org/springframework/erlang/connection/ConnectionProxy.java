@@ -21,7 +21,7 @@ import com.ericsson.otp.erlang.OtpConnection;
 /**
  * Subinterface of {@link Connection} to be implemented by Connection proxies.
  * Allows access to the underlying target Connection
- * 
+ *
  * @author Mark Pollack
  *
  */

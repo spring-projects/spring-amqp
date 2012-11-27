@@ -21,9 +21,9 @@ import java.util.Map;
 /**
  * Simple container collecting information to describe a direct exchange.
  * Used in conjunction with administrative operations.
- * 
+ *
  * @see AmqpAdmin
- * 
+ *
  * @author Mark Pollack
  * @author Dave Syer
  */

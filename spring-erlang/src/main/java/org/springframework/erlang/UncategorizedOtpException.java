@@ -19,7 +19,7 @@ package org.springframework.erlang;
 /**
  * A "catch-all" exception type within the OtpException hierarchy
  * when no more specific cause is known.
- * 
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

@@ -31,20 +31,20 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 public class DefaultConnection implements ConnectionProxy {
 
 	private OtpConnection otpConnection;
-	
-	
+
+
 	public DefaultConnection(OtpConnection otpConnection) {
 		this.otpConnection = otpConnection;
 	}
 
 	public void close() {
-		otpConnection.close();		
+		otpConnection.close();
 	}
 
 	public void sendRPC(String mod, String fun, OtpErlangList args)
 			throws IOException {
 		otpConnection.sendRPC(mod, fun, args);
-		
+
 	}
 
 	public OtpErlangObject receiveRPC() throws IOException, OtpErlangExit,

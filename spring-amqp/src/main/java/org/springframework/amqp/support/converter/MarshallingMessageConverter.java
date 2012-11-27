@@ -153,7 +153,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(message.getBody());
 			StreamSource source = new StreamSource(bis);
-			return unmarshaller.unmarshal(source);			
+			return unmarshaller.unmarshal(source);
 		}
 		catch (IOException ex) {
 			throw new MessageConversionException("Could not access message content: " + message, ex);

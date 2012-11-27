@@ -37,7 +37,7 @@ import com.ericsson.otp.erlang.OtpErlangString;
 /**
  * Converter that supports the basic types and arrays.
  * @author Mark Pollack
- * 
+ *
  */
 public class SimpleErlangConverter implements ErlangConverter {
 
@@ -129,9 +129,9 @@ public class SimpleErlangConverter implements ErlangConverter {
 			} else if (erlangObject instanceof OtpErlangShort) {
 				return ((OtpErlangShort) erlangObject).shortValue();
 			} else if (erlangObject instanceof OtpErlangString) {
-				return ((OtpErlangString) erlangObject).stringValue();		
+				return ((OtpErlangString) erlangObject).stringValue();
 			} else if (erlangObject instanceof OtpErlangPid) {
-				return ((OtpErlangPid) erlangObject).toString();		
+				return ((OtpErlangPid) erlangObject).toString();
 			} else {
 				throw new ErlangConversionException(
 						"Could not convert Erlang object ["
@@ -147,7 +147,7 @@ public class SimpleErlangConverter implements ErlangConverter {
 	public static boolean extractBoolean(OtpErlangObject erlangObject) {
 		return ((OtpErlangBoolean) erlangObject).booleanValue();
 	}
-	
+
 	public static String extractPid(OtpErlangObject value) {
 		return ((OtpErlangPid)value).toString();
 	}

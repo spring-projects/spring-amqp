@@ -21,11 +21,11 @@ import org.springframework.util.StringUtils;
  * accessible. If the Rabbit broker is not running in the background all the tests here will simply be skipped because
  * of a violated assumption (showing as successful). Usage:
  * </p>
- * 
+ *
  * <pre>
  * &#064;Rule
  * public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
- * 
+ *
  * &#064;Test
  * public void testSendAndReceive() throws Exception {
  * 	// ... test using RabbitTemplate etc.
@@ -35,12 +35,12 @@ import org.springframework.util.StringUtils;
  * The rule can be declared as static so that it only has to check once for all tests in the enclosing test case, but
  * there isn't a lot of overhead in making it non-static.
  * </p>
- * 
+ *
  * @see Assume
  * @see AssumptionViolatedException
- * 
+ *
  * @author Dave Syer
- * 
+ *
  */
 public class BrokerRunning extends TestWatchman {
 
@@ -59,7 +59,7 @@ public class BrokerRunning extends TestWatchman {
 	private final boolean purge;
 
 	private Queue[] queues;
-	
+
 	private int DEFAULT_PORT = BrokerTestUtils.getPort();
 
 	private int port;
@@ -68,7 +68,7 @@ public class BrokerRunning extends TestWatchman {
 
 	/**
 	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
-	 * 
+	 *
 	 * @return a new rule that assumes an existing running broker
 	 */
 	public static BrokerRunning isRunningWithEmptyQueues(String... names) {
@@ -81,7 +81,7 @@ public class BrokerRunning extends TestWatchman {
 
 	/**
 	 * Ensure the broker is running and has an empty queue (which can be addressed via the default exchange).
-	 * 
+	 *
 	 * @return a new rule that assumes an existing running broker
 	 */
 	public static BrokerRunning isRunningWithEmptyQueues(Queue... queues) {
@@ -123,10 +123,10 @@ public class BrokerRunning extends TestWatchman {
 	public void setPort(int port) {
 		this.port = port;
 		if (!brokerOffline.containsKey(port)) {
-			brokerOffline.put(port, true);			
+			brokerOffline.put(port, true);
 		}
 		if (!brokerOnline.containsKey(port)) {
-			brokerOnline.put(port, true);			
+			brokerOnline.put(port, true);
 		}
 	}
 

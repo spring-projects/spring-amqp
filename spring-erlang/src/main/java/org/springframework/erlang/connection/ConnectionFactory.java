@@ -24,13 +24,13 @@ import com.ericsson.otp.erlang.OtpConnection;
 
 /**
  * An interface based ConnectionFactory for creating {@link OtpConnection}s.
- * 
+ *
  * <p>NOTE: The Rabbit API contains a ConnectionFactory class (same name).
- * 
+ *
  * @author Mark Pollack
  */
 public interface ConnectionFactory {
 
-	Connection createConnection() throws UnknownHostException, OtpAuthException, IOException; 
+	Connection createConnection() throws UnknownHostException, OtpAuthException, IOException;
 
 }

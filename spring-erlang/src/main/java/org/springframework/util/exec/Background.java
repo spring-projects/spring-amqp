@@ -22,7 +22,7 @@ import java.util.ArrayList;
 
 /**
  * Class to execute processes in the background.  These processes
- * will not exit once the controlling Java process exits.  
+ * will not exit once the controlling Java process exits.
  */
 public class Background {
     /**
@@ -33,9 +33,9 @@ public class Background {
         throws IOException
     {
         File devNull;
-        if(Os.isFamily("unix")) 
+        if(Os.isFamily("unix"))
             devNull = new File("/dev/null");
-        else if (Os.isFamily("windows")) 
+        else if (Os.isFamily("windows"))
             devNull = new File("NUL");
         else
             throw new IllegalStateException("Unhandled Java environment");
@@ -49,10 +49,10 @@ public class Background {
      * @param appendOut  If true, append the file with standard out,
      *                   else truncate or create a new file
      * @param errFile    File to send standard err from the process to
-     * @param appendErr  If true, append the file with standard error, 
+     * @param appendErr  If true, append the file with standard error,
      *                   else truncate or create a new file
      */
-    public static void exec(String[] cmd, 
+    public static void exec(String[] cmd,
                             File outFile, boolean appendOut,
                             File errFile, boolean appendErr)
         throws IOException
@@ -65,8 +65,8 @@ public class Background {
             throw new IllegalStateException("Unhandled Java environment");
     }
 
-    private static void execUnix(String[] cmd, 
-                                 File outFile, boolean appendOut, 
+    private static void execUnix(String[] cmd,
+                                 File outFile, boolean appendOut,
                                  File errFile, boolean appendErr)
         throws IOException
     {
@@ -82,11 +82,11 @@ public class Background {
         execCmd = new String[] {
             "/bin/sh",
             "-c",
-            escaped.toString() + 
-            (appendOut == true ? ">>" : ">") + 
+            escaped.toString() +
+            (appendOut == true ? ">>" : ">") +
             Escape.escape(outFile.getAbsolutePath()) +
             " 2" + (appendErr == true ? ">>" : " >") +
-            Escape.escape(errFile.getAbsolutePath()) + 
+            Escape.escape(errFile.getAbsolutePath()) +
             " </dev/null &"
         };
 
@@ -99,8 +99,8 @@ public class Background {
         }
     }
 
-    private static void execWin(String[] cmd, 
-                                File outFile, boolean appendOut, 
+    private static void execWin(String[] cmd,
+                                File outFile, boolean appendOut,
                                 File errFile, boolean appendErr)
         throws IOException
     {
@@ -115,11 +115,11 @@ public class Background {
         for(int i=0; i<cmd.length; i++){
             tmpCmd.add(cmd[i]);
         }
-        tmpCmd.add((appendOut == true ? ">>" : ">") + 
+        tmpCmd.add((appendOut == true ? ">>" : ">") +
             Escape.escape(outFile.getAbsolutePath()));
-        tmpCmd.add((outFile.equals(errFile) ? " 2&" : " 2") + 
+        tmpCmd.add((outFile.equals(errFile) ? " 2&" : " 2") +
             (appendErr == true ? ">>" : " >") +
-            Escape.escape(errFile.getAbsolutePath())); 
+            Escape.escape(errFile.getAbsolutePath()));
 
         Runtime.getRuntime().exec(tmpCmd.toArray(cmd));
     }

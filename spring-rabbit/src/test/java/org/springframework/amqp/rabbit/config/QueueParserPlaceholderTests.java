@@ -26,7 +26,7 @@ import org.springframework.core.io.ClassPathResource;
  *
  */
 public class QueueParserPlaceholderTests extends QueueParserTests {
-	
+
 	@Before
 	@Override
 	public void setUpDefaultBeanFactory() throws Exception {

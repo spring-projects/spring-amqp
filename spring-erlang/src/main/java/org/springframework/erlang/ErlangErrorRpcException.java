@@ -26,11 +26,11 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 public class ErlangErrorRpcException extends OtpException {
 
 	private OtpErlangTuple reasonTuple;
-	
+
 	public ErlangErrorRpcException(String message) {
 		super(message);
 	}
-	
+
 	public ErlangErrorRpcException(OtpErlangTuple tuple) {
 		super(tuple.toString());
 		this.reasonTuple = tuple;
@@ -40,5 +40,5 @@ public class ErlangErrorRpcException extends OtpException {
 		return reasonTuple;
 	}
 
-	
+
 }

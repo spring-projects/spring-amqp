@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -41,7 +41,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	/**
 	 * Flag to indicate that channels created by this component will be transactional.
-	 * 
+	 *
 	 * @param transactional the flag value to set
 	 */
 	public void setChannelTransacted(boolean transactional) {
@@ -78,7 +78,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	/**
 	 * Fetch an appropriate Connection from the given RabbitResourceHolder.
-	 * 
+	 *
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Connection fetched from the holder, or <code>null</code> if none found
 	 */
@@ -88,7 +88,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	/**
 	 * Fetch an appropriate Channel from the given RabbitResourceHolder.
-	 * 
+	 *
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Channel fetched from the holder, or <code>null</code> if none found
 	 */

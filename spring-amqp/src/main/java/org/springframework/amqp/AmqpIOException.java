@@ -21,7 +21,7 @@ import java.io.IOException;
 /**
  * RuntimeException wrapper for an {@link IOException} which
  * can be commonly thrown from AMQP operations.
- * 
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

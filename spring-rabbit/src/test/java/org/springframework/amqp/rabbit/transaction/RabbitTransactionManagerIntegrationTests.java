@@ -62,7 +62,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	@Test
 	public void testReceiveInTransactionWithRollback() throws Exception {
 		// Makes receive (and send in principle) transactional
-		template.setChannelTransacted(true); 
+		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
 		try {
 			transactionTemplate.execute(new TransactionCallback<String>() {

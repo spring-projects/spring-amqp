@@ -31,16 +31,16 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 public interface ErlangOperations {
 
 	<T> T execute(ConnectionCallback<T> action) throws OtpException;
-	
+
 	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args) throws OtpException;
-	
-	
+
+
 	OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args) throws OtpException;
-	
-	
+
+
 	OtpErlangObject executeRpc(String module, String function, Object... args) throws OtpException;
-	
+
 	Object executeAndConvertRpc(String module, String function, ErlangConverter converterToUse, Object... args) throws OtpException;
-	
+
 	Object executeAndConvertRpc(String module, String function, Object... args) throws OtpException;
 }

@@ -8,7 +8,7 @@ import org.springframework.amqp.AmqpException;
  */
 @SuppressWarnings("serial")
 public class MessageRejectedWhileStoppingException extends AmqpException {
-	
+
 	public MessageRejectedWhileStoppingException() {
 		super("Message listener container was stopping when a message was received");
 	}

@@ -104,7 +104,7 @@ public class MulticastMain {
 			Connection[] consumerConnections = new Connection[connectionCount];
 			for (int i = 0; i < connectionCount; i++) {
 				Connection conn = factory.newConnection();
-				consumerConnections[i] = conn;				
+				consumerConnections[i] = conn;
 			}
 			Thread[] consumerThreads = new Thread[consumerCount];
 			for (int i = 0; i < consumerCount; i++) {

@@ -212,7 +212,7 @@ public class DefaultJavaTypeMapperTest {
       assertThat(contentClassName, equalTo(String.class.getName()));
       assertThat(keyClassName, equalTo(SimpleTrade.class.getName()));
    }
-   
+
    @Test
    public void fromClassShouldPopulateWithJavaTypeNameByDefault() {
       javaTypeMapper.fromClass(SimpleTrade.class, properties);
@@ -230,7 +230,7 @@ public class DefaultJavaTypeMapperTest {
 
       assertEquals(SimpleTrade.class, clazz);
    }
-   
+
    private Map<String, Class<?>> map(String string, Class<?> clazz) {
       Map<String, Class<?>> map = new HashMap<String, Class<?>>();
       map.put(string, clazz);

@@ -82,7 +82,7 @@ public final class RabbitNamespaceHandlerTests {
 		// 4 for each exchange type
 		assertEquals(17, bindings.size());
 	}
-	
+
 	@Test
 	public void testAdmin() throws Exception {
 		assertNotNull(beanFactory.getBean("admin-test", RabbitAdmin.class));

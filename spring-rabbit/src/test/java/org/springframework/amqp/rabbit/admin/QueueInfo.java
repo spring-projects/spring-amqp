@@ -18,42 +18,42 @@ package org.springframework.amqp.rabbit.admin;
 
 /**
  * This class represents a Queue that is configured on the RabbitMQ broker
- * 
+ *
  * @author Mark Pollack
  *
  */
 public class QueueInfo {
-	/*{app.stock.request={transactions=0, acks_uncommitted=0, 
+	/*{app.stock.request={transactions=0, acks_uncommitted=0,
 	 * 					  consumers=0, pid=#Pid<rabbit@MARK6500.150.0>,
-	 *                    durable=false, messages=0, memory=2320, auto_delete=false, 
-	 *                    messages_ready=0, arguments=[], name=app.stock.request, 
-	 *                   messages_unacknowledged=0, messages_uncommitted=0}, 
+	 *                    durable=false, messages=0, memory=2320, auto_delete=false,
+	 *                    messages_ready=0, arguments=[], name=app.stock.request,
+	 *                   messages_unacknowledged=0, messages_uncommitted=0},
 	 */
 
 	private long transactions;
-	
+
 	private long acksUncommitted;
-	
+
 	private long consumers;
-	
+
 	private String pid;
-	
+
 	private boolean durable;
-	
+
 	private long messages;
-	
+
 	private long memory;
-	
+
 	private boolean autoDelete;
-	
+
 	private long messagesReady;
-	
+
 	private String[] arguments;
-	
+
 	private String name;
-	
+
 	private long messagesUnacknowledged;
-	
+
 	private long messageUncommitted;
 
 	public long getTransactions() {
@@ -171,6 +171,6 @@ public class QueueInfo {
 				+ ", messagesUnacknowledged=" + messagesUnacknowledged
 				+ ", pid=" + pid + "]";
 	}
-	
-	
+
+
 }

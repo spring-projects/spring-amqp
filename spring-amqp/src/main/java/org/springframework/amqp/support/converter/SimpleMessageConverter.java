@@ -35,7 +35,7 @@ import org.springframework.util.ClassUtils;
  * or byte arrays. The {@link #toMessage(Object, MessageProperties)} method simply checks the
  * type of the provided instance while the {@link #fromMessage(Message)} method relies upon the
  * {@link MessageProperties#getContentType() content-type} of the provided Message.
- * 
+ *
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  */
@@ -58,7 +58,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	 * spaces.
 	 * <p>
 	 * Follows RMI's codebase conventions for dynamic class download.
-	 * 
+	 *
 	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 * @see java.rmi.server.RMIClassLoader
 	 */
@@ -93,7 +93,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 				catch (UnsupportedEncodingException e) {
 					throw new MessageConversionException(
 							"failed to convert text-based Message content", e);
-				} 
+				}
 			}
 			else if (contentType != null &&
 					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
@@ -104,7 +104,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 							"failed to convert serialized Message content", e);
 				} catch (IllegalArgumentException e) {
 					throw new MessageConversionException(
-							"failed to convert serialized Message content", e);					
+							"failed to convert serialized Message content", e);
 				}
 			}
 		}
@@ -118,7 +118,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	 * Creates an AMQP Message from the provided Object.
 	 */
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
-		byte[] bytes = null;		
+		byte[] bytes = null;
 		if (object instanceof byte[]) {
 			bytes = (byte[]) object;
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_BYTES);
@@ -139,7 +139,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 				bytes = SerializationUtils.serialize(object);
 			} catch (IllegalArgumentException e) {
 				throw new MessageConversionException(
-						"failed to convert to serialized Message content", e);					
+						"failed to convert to serialized Message content", e);
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}

@@ -39,19 +39,19 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
-		
+
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockConnection.isOpen()).thenReturn(true);
-		
+
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		Connection con = ccf.createConnection();
-		
+
 		Channel channel = con.createChannel(false);
 		channel.close(); // should be ignored, and placed into channel cache.
 		con.close(); // should be ignored
-		
+
 		Connection con2 = ccf.createConnection();
 		/*
 		 * will retrieve same channel object that was just put into channel cache
@@ -59,12 +59,12 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel channel2 = con2.createChannel(false);
 		channel2.close(); // should be ignored
 		con2.close(); // should be ignored
-		
+
 		Assert.assertSame(con, con2);
 		Assert.assertSame(channel, channel2);
 		verify(mockConnection, never()).close();
 		verify(mockChannel, never()).close();
-		
+
 	}
 	@Test
 	public void testWithConnectionFactoryCacheSize() throws IOException {
@@ -304,17 +304,17 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Connection con = ccf.createConnection();
 
 		// This will return a proxy that surpresses calls to close
-		Channel channel1 = con.createChannel(false); 
+		Channel channel1 = con.createChannel(false);
 		Channel channel2 = con.createChannel(false);
 
 		// Should be ignored, and add last into channel cache.
-		channel1.close(); 
+		channel1.close();
 		channel2.close();
 
 		// remove first entry in cache (channel1)
 		Channel ch1 = con.createChannel(false);
 		// remove first entry in cache (channel2)
-		Channel ch2 = con.createChannel(false); 
+		Channel ch2 = con.createChannel(false);
 
 		Assert.assertSame(ch1, channel1);
 		Assert.assertSame(ch2, channel2);
@@ -323,7 +323,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel target2 = ((ChannelProxy) ch2).getTargetChannel();
 
 		// make sure mokito returned different mocks for the channel
-		Assert.assertNotSame(target1, target2); 
+		Assert.assertNotSame(target1, target2);
 
 		ch1.close();
 		ch2.close();
@@ -343,7 +343,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Assert.assertNotSame(con, con1);
 
 		// This will return a proxy that surpresses calls to close
-		Channel channel3 = con.createChannel(false); 
+		Channel channel3 = con.createChannel(false);
 		Assert.assertNotSame(channel3, channel1);
 		Assert.assertNotSame(channel3, channel2);
 	}
@@ -373,10 +373,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel channel = con.createChannel(false);
 		assertEquals(1, called.get());
 		channel.close();
-		
+
 		con.close();
 		verify(mockConnection, never()).close();
-		
+
 		connectionFactory.createConnection();
 		con.createChannel(false);
 		assertEquals(1, called.get());

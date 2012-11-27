@@ -11,7 +11,7 @@
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 				Creates a queue for consumers to retrieve messages.  Uses an existing queue
-				with the same name if it exists on the broker, or else declares a 
+				with the same name if it exists on the broker, or else declares a
 				new one.  If you want to send a message use an exchange.
 			]]></xsd:documentation>
 		</xsd:annotation>
@@ -83,9 +83,9 @@
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 					Creates a direct exchange for producers to send messages to.  Uses an existing exchange
-					with the same name if it exists on the broker, or declares a 
-					new one.  A direct exhange routes messages 
-					to queues that are bound to the exchange when the routing key in the message 
+					with the same name if it exists on the broker, or declares a
+					new one.  A direct exhange routes messages
+					to queues that are bound to the exchange when the routing key in the message
 					matches that in the binding exactly.  You can set up bindings here too, either with
 					explicit routing keys, or using the queue name implicitly.
 				]]></xsd:documentation>
@@ -123,10 +123,10 @@
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 					Creates a topic exchange for producers to send messages to.  Uses an existing exchange
-					with the same name if it exists on the broker, or declares a 
-					new one.  A topic exhange routes messages 
-					to queues that are bound to the exchange when the routing key in the message 
-					matches the routing pattern in the binding of the queue.  
+					with the same name if it exists on the broker, or declares a
+					new one.  A topic exhange routes messages
+					to queues that are bound to the exchange when the routing key in the message
+					matches the routing pattern in the binding of the queue.
 					You can set up bindings here too.
 				]]></xsd:documentation>
 		</xsd:annotation>
@@ -163,8 +163,8 @@
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 					Creates a fanout exchange for producers to send messages to.  Uses an existing exchange
-					with the same name if it exists on the broker, or declares a 
-					new one.  A fanout exhange routes messages 
+					with the same name if it exists on the broker, or declares a
+					new one.  A fanout exhange routes messages
 					to all queues that are bound to the exchange.  You can set up bindings here too.
 				]]></xsd:documentation>
 		</xsd:annotation>
@@ -183,7 +183,7 @@
 									<xsd:element name="binding" maxOccurs="unbounded" type="bindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
-												Binds a queue to this exchange.  All messages sent to this exchange will be 
+												Binds a queue to this exchange.  All messages sent to this exchange will be
 												placed on this queue by the broker.
 											]]></xsd:documentation>
 										</xsd:annotation>
@@ -201,9 +201,9 @@
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
 					Creates a headers exchange for producers to send messages to.  Uses an existing exchange
-					with the same name if it exists on the broker, or declares a 
-					new one.  A headers exhange routes messages 
-					to all queues where a message header matches that specified in the binding of the queue.  
+					with the same name if it exists on the broker, or declares a
+					new one.  A headers exhange routes messages
+					to all queues where a message header matches that specified in the binding of the queue.
 					You can set up bindings here too.
 				]]></xsd:documentation>
 		</xsd:annotation>
@@ -222,7 +222,7 @@
 									<xsd:element name="binding" maxOccurs="unbounded" type="headersBindingType">
 										<xsd:annotation>
 											<xsd:documentation><![CDATA[
-												Binds a queue to this exchange.  Messages sent to this exchange will be 
+												Binds a queue to this exchange.  Messages sent to this exchange will be
 												placed on this queue by the broker if they contain a header that matches
 												this binding (key-value pair).
 											]]></xsd:documentation>
@@ -402,7 +402,7 @@
 				<xsd:attribute name="key" use="optional">
 					<xsd:annotation>
 						<xsd:documentation><![CDATA[
-							An explicit routing key binding the queue to this exchange.  
+							An explicit routing key binding the queue to this exchange.
 						]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:attribute>
@@ -416,10 +416,10 @@
 				<xsd:attribute name="pattern" use="required">
 					<xsd:annotation>
 						<xsd:documentation><![CDATA[
-						An explicit routing pattern binding the queue to this exchange.  In the pattern, 
-						the symbol # matches one or more words and the symbol * matches any single word. 
-						Typical bindings might be "uk.#" for all items in the uk, "#.weather" for all 
-						weather items, or "uk.weather" for all uk weather items. 
+						An explicit routing pattern binding the queue to this exchange.  In the pattern,
+						the symbol # matches one or more words and the symbol * matches any single word.
+						Typical bindings might be "uk.#" for all items in the uk, "#.weather" for all
+						weather items, or "uk.weather" for all uk weather items.
 						]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:attribute>
@@ -741,7 +741,7 @@
 	<xsd:element name="admin">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
-	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin) 
+	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin)
 	for customers to manage exchanges, queues and bindings.
 					]]></xsd:documentation>
 		</xsd:annotation>
@@ -756,7 +756,7 @@
 			<xsd:attribute name="connection-factory" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Reference to rabbit connection factory. Either 'connection-factory' or 
+	Reference to rabbit connection factory. Either 'connection-factory' or
 	'template' attribute can be set.
 					]]></xsd:documentation>
 					<xsd:appinfo>
@@ -779,7 +779,7 @@
 	<xsd:element name="template">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
-	Creates a rabbit template (org.springframework.amqp.rabbit.core.RabbitTemplate) 
+	Creates a rabbit template (org.springframework.amqp.rabbit.core.RabbitTemplate)
 	for convenient access to the broker.
 					]]></xsd:documentation>
 		</xsd:annotation>
@@ -994,7 +994,7 @@
 			<xsd:attribute name="connection-factory" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Reference to native rabbit connection factory, where you can specify native features like heartbeat.  The other properties (host, port) etc. on this element 
+	Reference to native rabbit connection factory, where you can specify native features like heartbeat.  The other properties (host, port) etc. on this element
 	override the ones on the native connection factory (which is used as a parent bean definition).
 					]]></xsd:documentation>
 					<xsd:appinfo>

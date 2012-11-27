@@ -17,11 +17,11 @@
 package org.springframework.amqp.core;
 
 /**
- * Enumeration for the message delivery mode.  Can be persistent or 
+ * Enumeration for the message delivery mode.  Can be persistent or
  * non persistent.  Use the method 'toInt' to get the appropriate value
  * that is used the he AMQP protocol instead of the ordinal() value when
  * passing into AMQP APIs.
- * 
+ *
  * @author Mark Pollack
  *
  */
@@ -56,5 +56,5 @@ public enum MessageDeliveryMode {
 		}
 		}
 	}
-	
+
 }

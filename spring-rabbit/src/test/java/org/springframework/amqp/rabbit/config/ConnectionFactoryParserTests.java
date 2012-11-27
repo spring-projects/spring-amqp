@@ -1,11 +1,11 @@
 /*
  * Copyright 2010-2012 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -31,10 +31,10 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.rabbitmq.client.Address;
 
 /**
- * 
+ *
  * @author Dave Syer
  * @author Gary Russell
- * 
+ *
  */
 public final class ConnectionFactoryParserTests {
 
@@ -54,14 +54,14 @@ public final class ConnectionFactoryParserTests {
 		assertNull(dfa.getPropertyValue("executorService"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherReturns"));
-	}	
-	
+	}
+
 	@Test
 	public void testNative() throws Exception {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("native", CachingConnectionFactory.class);
 		assertNotNull(connectionFactory);
 		assertEquals(10, connectionFactory.getChannelCacheSize());
-	}	
+	}
 
 	@Test
 	public void testWithExecutor() throws Exception {
@@ -87,7 +87,7 @@ public final class ConnectionFactoryParserTests {
 		ExecutorService exec = beanFactory.getBean("execService", ExecutorService.class);
 		assertSame(exec, executor);
 	}
-	
+
 	@Test
 	public void testMultiHost() throws Exception {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("multiHost", CachingConnectionFactory.class);

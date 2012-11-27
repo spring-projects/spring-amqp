@@ -29,13 +29,13 @@ package org.springframework.util.exec;
  *              // it was killed on purpose by the watchdog
  * }
  * </pre>
- 
+
  * @author thomas.haas@softwired-inc.com
  * @author <a href="mailto:sbailliez@imediation.com">Stephane Bailliez</a>
  * @see Execute
  */
 public class ExecuteWatchdog implements Runnable {
-        
+
     /** the process to execute and watch for duration */
     private Process process;
 
@@ -44,7 +44,7 @@ public class ExecuteWatchdog implements Runnable {
 
     /** say whether or not the watchog is currently monitoring a process */
     private boolean watch = false;
-        
+
     /** exception that might be thrown during the process execution */
     private Exception caught = null;
 
@@ -69,7 +69,7 @@ public class ExecuteWatchdog implements Runnable {
     public void setDontkill( boolean b ) {
         dontkill=b;
     }
-    
+
     /**
      * Watches the given process and terminates it, if it runs for too long.
      * All information from the previous run are reset.
@@ -143,7 +143,7 @@ public class ExecuteWatchdog implements Runnable {
             cleanUp();
         }
     }
-    
+
 
     /**
      * reset the monitor flag and the process.

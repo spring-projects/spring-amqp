@@ -14,7 +14,7 @@ public class RabbitGatewaySupportTests {
 
 	@Test
 	public void testRabbitGatewaySupportWithConnectionFactory() throws Exception {
-		
+
 		org.springframework.amqp.rabbit.connection.ConnectionFactory mockConnectionFactory = mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
 		final List<String> test = new ArrayList<String>();
 		RabbitGatewaySupport gateway = new RabbitGatewaySupport() {
@@ -28,7 +28,7 @@ public class RabbitGatewaySupportTests {
 		assertEquals("Correct RabbitTemplate", mockConnectionFactory, gateway.getRabbitTemplate().getConnectionFactory());
 		assertEquals("initGatway called", test.size(), 1);
 	}
-	
+
 	@Test
 	public void testRabbitGatewaySupportWithJmsTemplate() throws Exception {
 		RabbitTemplate template = new RabbitTemplate();
@@ -41,6 +41,6 @@ public class RabbitGatewaySupportTests {
 		gateway.setRabbitTemplate(template);
 		gateway.afterPropertiesSet();
 		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitTemplate());
-		assertEquals("initGateway called", test.size(), 1);		
+		assertEquals("initGateway called", test.size(), 1);
 	}
 }

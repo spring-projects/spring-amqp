@@ -26,6 +26,6 @@ import org.springframework.amqp.core.AmqpTemplate;
  */
 public interface RabbitOperations extends AmqpTemplate {
 
-	<T> T execute(ChannelCallback<T> action) throws AmqpException;	
-			
+	<T> T execute(ChannelCallback<T> action) throws AmqpException;
+
 }

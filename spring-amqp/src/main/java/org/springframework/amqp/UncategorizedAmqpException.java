@@ -19,7 +19,7 @@ package org.springframework.amqp;
 /**
  * A "catch-all" exception type within the AmqpException hierarchy
  * when no more specific cause is known.
- * 
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

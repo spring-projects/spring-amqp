@@ -42,7 +42,7 @@ import org.springframework.core.io.ClassPathResource;
 public final class ListenerContainerPlaceholderParserTests {
 
 	private BeanFactory beanFactory;
-	
+
 	@Before
 	public void setUp() throws Exception {
 		beanFactory = new GenericXmlApplicationContext(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));

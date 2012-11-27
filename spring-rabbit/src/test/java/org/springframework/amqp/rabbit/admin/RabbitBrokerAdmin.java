@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2011 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -52,7 +52,7 @@ import org.springframework.util.exec.Os;
 
 /**
  * Rabbit broker administration. Features:
- * 
+ *
  * <ul>
  * <li>Basic AMQP admin commands are provided, like declaring queues, exchanges and bindings.</li>
  * <li>Manage user accounts and virtual hosts.</li>
@@ -60,13 +60,13 @@ import org.springframework.util.exec.Os;
  * <li>Start and stop the broker application (in a running process).</li>
  * <li>Inspect and manage the queues, e.g. listing message counts etc.</li>
  * </ul>
- * 
+ *
  * Depending on your platform, to {@link #startNode() start the broker} you might need to set some environment
  * properties. The most common are available via constructors or setters in this class (e.g.
  * {@link #setRabbitLogBaseDirectory(String) RABBITMQ_LOG_BASE}). All others you can set via the OS (any setting that
  * RabbtMQ allows in its startup script), and some work via System properties as special convenience cases (
  * <code>ERLANG_HOME</code> and <code>RABBITMQ_HOME</code> ).
- * 
+ *
  * @author Mark Pollack
  * @author Dave Syer
  * @author Helena Edelson
@@ -120,7 +120,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	/**
 	 * Create an instance by supplying the erlang node name (e.g. "rabbit@myserver"), or simply the hostname (if the
 	 * alive name is "rabbit").
-	 * 
+	 *
 	 * @param nodeName the node name or hostname to use
 	 */
 	public RabbitBrokerAdmin(String nodeName) {
@@ -129,9 +129,9 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	/**
 	 * Create an instance by supplying the erlang node name and cookie (unique string).
-	 * 
+	 *
 	 * @param nodeName the node name or hostname to use
-	 * 
+	 *
 	 * @param cookie the cookie value to use
 	 */
 	public RabbitBrokerAdmin(String nodeName, String cookie) {
@@ -144,7 +144,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * (usually "rabbit@&lt;servername&gt;" and 5672). If, as well as managing an existing broker, you need to start the
 	 * broker process, you will also need to set {@link #setRabbitLogBaseDirectory(String) RABBITMQ_LOG_BASE} and
 	 * {@link #setRabbitMnesiaBaseDirectory(String) RABBITMQ_MNESIA_BASE} to point to writable directories).
-	 * 
+	 *
 	 * @param nodeName the node name or hostname to use
 	 * @param port the port number (overriding the default which is 5672)
 	 */
@@ -156,7 +156,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * Create an instance by supplying the erlang node name, port number and cookie (unique string). If the node name
 	 * does not contain an <code>@</code> character, it will be prepended with an alivename <code>rabbit@</code>
 	 * (interpreting the supplied value as just the hostname).
-	 * 
+	 *
 	 * @param nodeName the node name or hostname to use
 	 * @param port the port number (overriding the default which is 5672)
 	 * @param cookie the cookie value to use
@@ -184,7 +184,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	/**
 	 * An async task executor for launching background processing when starting or stopping the broker.
-	 * 
+	 *
 	 * @param executor the executor to set
 	 */
 	public void setExecutor(AsyncTaskExecutor executor) {
@@ -194,7 +194,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	/**
 	 * The location of <code>RABBITMQ_LOG_BASE</code> to override the system default (which may be owned by another
 	 * user). Only needed for launching the broker process. Can also be set as a system property.
-	 * 
+	 *
 	 * @param rabbitLogBaseDirectory the rabbit log base directory to set
 	 */
 	public void setRabbitLogBaseDirectory(String rabbitLogBaseDirectory) {
@@ -204,7 +204,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	/**
 	 * The location of <code>RABBITMQ_MNESIA_BASE</code> to override the system default (which may be owned by another
 	 * user). Only needed for launching the broker process. Can also be set as a system property.
-	 * 
+	 *
 	 * @param rabbitMnesiaBaseDirectory the rabbit Mnesia base directory to set
 	 */
 	public void setRabbitMnesiaBaseDirectory(String rabbitMnesiaBaseDirectory) {
@@ -223,7 +223,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * Timeout (milliseconds) to wait for the broker to come up. If the provided timeout is greater than zero then we
 	 * wait for that period for the broker to be ready. If it is not ready after that time the process is stopped.
 	 * Defaults to 0 (no wait).
-	 * 
+	 *
 	 * @param timeout the timeout value to set in milliseconds
 	 */
 	public void setStartupTimeout(long timeout) {
@@ -234,7 +234,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * Allows users to adapt Erlang RPC <code>(module, function)</code> pairs to older, or different, versions of the
 	 * broker than the current target. The map is from String to String in the form
 	 * <code>input_module%input_function -> output_module%output_function</code> (using a <code>%</code> separator).
-	 * 
+	 *
 	 * @param moduleAdapter the module adapter to set
 	 */
 	public void setModuleAdapter(Map<String, String> moduleAdapter) {
@@ -557,7 +557,7 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	 * Find a directory whose name starts with a substring in a given parent directory. If there is none return null,
 	 * otherwise sort the results and return the best match (an exact match if there is one or the last one in a lexical
 	 * sort).
-	 * 
+	 *
 	 * @param parent
 	 * @param child
 	 * @return the full name of a directory
@@ -654,12 +654,12 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 	/**
 	 * Convenience method for lazy initialization of the {@link ErlangTemplate} and associated trimmings. All RPC calls
 	 * should go through this method.
-	 * 
+	 *
 	 * @param <T> the type of the result
 	 * @param module the module to address remotely
 	 * @param function the function to call
 	 * @param args the arguments to pass
-	 * 
+	 *
 	 * @return the result from the remote erl process converted to the correct type
 	 */
 	@SuppressWarnings("unchecked")
@@ -690,13 +690,13 @@ public class RabbitBrokerAdmin implements RabbitBrokerOperations {
 
 	/**
 	 * Safely convert a string to its bytes using the encoding provided.
-	 * 
+	 *
 	 * @see #setEncoding(String)
-	 * 
+	 *
 	 * @param string the value to convert
-	 * 
+	 *
 	 * @return the bytes from the string using the encoding provided
-	 * 
+	 *
 	 * @throws IllegalStateException if the encoding is ont supported
 	 */
 	private byte[] getBytes(String string) {

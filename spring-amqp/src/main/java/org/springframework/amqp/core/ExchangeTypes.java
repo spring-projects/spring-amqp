@@ -18,7 +18,7 @@ package org.springframework.amqp.core;
 
 /**
  * Constants for the standard Exchange type names.
- * 
+ *
  * @author Mark Fisher
  * @author Gary Russell
  */

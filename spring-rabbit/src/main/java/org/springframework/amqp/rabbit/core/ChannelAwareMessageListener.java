@@ -22,7 +22,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * A message listener that is aware of the Channel on which the message was received.
- *  
+ *
  * @author Mark Pollack
  */
 public interface ChannelAwareMessageListener {
@@ -33,7 +33,7 @@ public interface ChannelAwareMessageListener {
 	 * typically sending reply messages through the given Session.
 	 * @param message the received AMQP message (never <code>null</code>)
 	 * @param channel the underlying Rabbit Channel (never <code>null</code>)
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	void onMessage(Message message, Channel channel) throws Exception;
 

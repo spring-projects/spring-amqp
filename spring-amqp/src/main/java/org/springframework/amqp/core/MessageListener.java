@@ -18,7 +18,7 @@ package org.springframework.amqp.core;
 
 /**
  * Listener interface to receive asynchronous delivery of Amqp Messages.
- *  
+ *
  * @author Mark Pollack
  */
 public interface MessageListener {

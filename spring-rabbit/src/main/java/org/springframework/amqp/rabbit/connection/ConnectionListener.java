@@ -20,7 +20,7 @@ package org.springframework.amqp.rabbit.connection;
  *
  */
 public interface ConnectionListener {
-	
+
 	void onCreate(Connection connection);
 
 	void onClose(Connection connection);

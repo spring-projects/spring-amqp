@@ -5,19 +5,19 @@ import java.math.BigDecimal;
 public class SimpleTrade {
 
 	private String ticker;
-	
+
 	private long quantity;
-	
+
 	private BigDecimal price;
-	
+
 	private String orderType;
-	
+
 	private String accountName;
-	
+
 	private boolean buyRequest;
-	
+
 	private String userName;
-	
+
 	private String requestId;
 
 	public String getTicker() {
@@ -148,6 +148,6 @@ public class SimpleTrade {
 			return false;
 		return true;
 	}
-	
-	
+
+
 }

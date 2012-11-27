@@ -24,7 +24,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 /**
  * Strategy interface for converting between Spring AMQP {@link MessageProperties}
  * and RabbitMQ BasicProperties.
- * 
+ *
  * @author Mark Fisher
  * @since 1.0
  */

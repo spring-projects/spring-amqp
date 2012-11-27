@@ -19,9 +19,9 @@ package org.springframework.amqp.rabbit.connection;
 import com.rabbitmq.client.Channel;
 
 /**
- * Subinterface of {@link com.rabbitmq.client.Channel} to be implemented by 
+ * Subinterface of {@link com.rabbitmq.client.Channel} to be implemented by
  * Channel proxies.  Allows access to the underlying target Channel
- * 
+ *
  * @author Mark Pollack
  * @see CachingConnectionFactory
  */

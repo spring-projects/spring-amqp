@@ -40,17 +40,17 @@ public class ErlangUtils {
 		if (con == null) {
 			return;
 		}
-		con.close();		
+		con.close();
 	}
-	
+
 	public static OtpException convertOtpAccessException(Exception ex) {
 		Assert.notNull(ex, "Exception must not be null");
 		if (ex instanceof IOException) {
 			return new OtpIOException((IOException) ex);
-		}		
+		}
 		if (ex instanceof OtpAuthException) {
 			return new org.springframework.erlang.OtpAuthException((OtpAuthException) ex);
-		}		
+		}
 		//fallback
 		return new UncategorizedOtpException(ex);
 	}

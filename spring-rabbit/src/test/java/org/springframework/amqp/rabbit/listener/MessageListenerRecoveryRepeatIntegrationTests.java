@@ -34,9 +34,9 @@ import com.rabbitmq.client.Channel;
 
 /**
  * Long-running test created to facilitate profiling of SimpleMessageListenerContainer.
- * 
+ *
  * @author Dave Syer
- * 
+ *
  */
 @Ignore
 public class MessageListenerRecoveryRepeatIntegrationTests {

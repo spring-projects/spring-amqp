@@ -40,10 +40,10 @@ import com.ericsson.otp.erlang.OtpSelf;
 /**
  * A {@link ConnectionFactory} implementation that returns the same Connections from all
  * {@link #createConnection()} calls, and ignores calls to {@link Connection#close()}.
- * 
+ *
  * Provides a more traditional API to creating a connection to a remote erlang
  * node than the JInterface API.
- * 
+ *
  * <p>
  * The following is taken from the JInterface javadocs that describe the valid
  * node names that can be used. These naming constraints apply to the string
@@ -58,7 +58,7 @@ import com.ericsson.otp.erlang.OtpSelf;
  * however Jinterface makes no distinction. See the Erlang documentation for
  * more information about nodenames.
  * </p>
- * 
+ *
  * <p>
  * The constructors for the AbstractNode classes will create names exactly as
  * you provide them as long as the name contains '@'. If the string you provide
@@ -66,7 +66,7 @@ import com.ericsson.otp.erlang.OtpSelf;
  * host will be appended, resulting in a shortname. Nodenames longer than 255
  * characters will be truncated without warning.
  * </p>
- * 
+ *
  * <p>
  * Upon initialization, this class attempts to read the file .erlang.cookie in
  * the user's home directory, and uses the trimmed first line of the file as the
@@ -76,14 +76,14 @@ import com.ericsson.otp.erlang.OtpSelf;
  * using the system property "user.home", which may not be automatically set on
  * all platforms.
  * </p>
- * 
+ *
  * @author Mark Pollack
  */
 public class SingleConnectionFactory implements ConnectionFactory,
 		InitializingBean, DisposableBean {
 
 	protected final Log logger = LogFactory.getLog(getClass());
-	
+
 	private boolean uniqueSelfNodeName = true;
 
 	private String selfNodeName;
@@ -116,7 +116,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		this.selfNodeName = selfNodeName;
 		this.peerNodeName = peerNodeName;
 	}
-	
+
 	public boolean isUniqueSelfNodeName() {
 		return uniqueSelfNodeName;
 	}
@@ -156,7 +156,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 			this.connection = getSharedConnectionProxy(this.targetConnection);
 		}
 	}
-	
+
 	/**
 	 * Close the underlying shared connection.
 	 * The provider of this ConnectionFactory needs to care for proper shutdown.
@@ -166,7 +166,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	public void destroy() {
 		resetConnection();
 	}
-	
+
 	/**
 	 * Reset the underlying shared Connection, to be reinitialized on next access.
 	 */
@@ -182,7 +182,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 
 	/**
 	 * Close the given Connection.
-	 * 
+	 *
 	 * @param connection
 	 *            the Connection to close
 	 */
@@ -202,7 +202,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 
 	/**
 	 * Create a JInterface Connection via this class's ConnectionFactory.
-	 * 
+	 *
 	 * @return the new Otp Connection
 	 * @throws OtpAuthException
 	 */
@@ -219,7 +219,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	 * call to it but suppresses close calls. This is useful for allowing
 	 * application code to handle a special framework Connection just like an
 	 * ordinary Connection from a Rabbit ConnectionFactory.
-	 * 
+	 *
 	 * @param target
 	 *            the original Connection to wrap
 	 * @return the wrapped Connection
@@ -235,7 +235,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
 	 */
@@ -246,7 +246,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		if (isUniqueSelfNodeName()) {
 			selfNodeNameToUse = this.selfNodeName + "-" + UUID.randomUUID().toString();
 			logger.debug("Creating OtpSelf with node name = [" + selfNodeNameToUse + "]");
-		}		
+		}
 		try {
 			if (this.cookie == null) {
 				this.otpSelf = new OtpSelf(selfNodeNameToUse.trim());
@@ -256,7 +256,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		} catch (IOException e) {
 			throw new OtpIOException(e);
 		}
-		this.otpPeer = new OtpPeer(this.peerNodeName.trim());		
+		this.otpPeer = new OtpPeer(this.peerNodeName.trim());
 	}
 
 	private class SharedConnectionInvocationHandler implements

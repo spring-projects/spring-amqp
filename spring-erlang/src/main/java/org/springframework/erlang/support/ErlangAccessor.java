@@ -38,26 +38,26 @@ public abstract class ErlangAccessor implements InitializingBean {
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private ConnectionFactory connectionFactory;
-	
+
 	protected Connection createConnection() throws UnknownHostException, OtpAuthException, IOException {
 		return getConnectionFactory().createConnection();
 	}
-	
+
 	public void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
 	}
-	
+
 	public ConnectionFactory getConnectionFactory() {
 		return this.connectionFactory;
 	}
-	
+
 
 	public void afterPropertiesSet() {
 		if (getConnectionFactory() == null) {
 			throw new IllegalArgumentException("Property 'connectionFactory' is required");
 		}
 	}
-	
+
 	protected OtpException convertOtpAccessException(Exception ex) {
 		return ErlangUtils.convertOtpAccessException(ex);
 	}

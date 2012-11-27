@@ -25,7 +25,7 @@ import org.springframework.erlang.connection.Connection;
 public interface ConnectionCallback<T> {
 
 	/**
-	 * Execute any number of operations against the supplied OTP connection, 
+	 * Execute any number of operations against the supplied OTP connection,
 	 * possibly returning a result.
 	 */
 	T doInConnection(Connection connection) throws Exception;  //Not sure everything it throws

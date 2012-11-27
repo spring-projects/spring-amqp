@@ -18,7 +18,7 @@ package org.springframework.erlang;
 
 /**
  * Base RuntimeException for errors that occur when executing OTP operations.
- * 
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

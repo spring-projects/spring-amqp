@@ -21,7 +21,7 @@ import java.io.IOException;
 /**
  * RuntimeException wrapper for an {@link IOException} which
  * can be commonly thrown from OTP operations.
- * 
+ *
  * @author Mark Pollack
  * @author Mark Fisher
  */

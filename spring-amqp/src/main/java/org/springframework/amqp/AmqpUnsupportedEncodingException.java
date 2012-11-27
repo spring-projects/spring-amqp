@@ -17,8 +17,8 @@
 package org.springframework.amqp;
 
 /**
- * RuntimeException for unsupported encoding in an AMQP operation. 
- * 
+ * RuntimeException for unsupported encoding in an AMQP operation.
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

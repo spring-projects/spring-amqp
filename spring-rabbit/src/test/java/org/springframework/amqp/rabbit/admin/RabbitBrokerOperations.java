@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2011 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 /**
  * Performs administration tasks for RabbitMQ broker administration. <p>Goal is to support full CRUD of Exchanges,
  * Queues, Bindings, User, VHosts, etc. <p>Current implementations expose operations with basic type arguments via JMX.
- * 
+ *
  * @author Mark Pollack
  */
 public interface RabbitBrokerOperations {
@@ -66,7 +66,7 @@ public interface RabbitBrokerOperations {
 
 	/**
 	 * Starts the RabbitMQ application on an already running node. This command is typically run after performing other
-	 * management actions that required the RabbitMQ application to be stopped, e.g. reset. 
+	 * management actions that required the RabbitMQ application to be stopped, e.g. reset.
 	 */
 	void startBrokerApplication();
 

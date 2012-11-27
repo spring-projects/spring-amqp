@@ -19,12 +19,12 @@ package org.springframework.amqp.core;
 import org.springframework.amqp.AmqpException;
 
 /**
- * To be used with the send method of Amqp template classes (such as RabbitTemplate) 
+ * To be used with the send method of Amqp template classes (such as RabbitTemplate)
  * that convert an object to a message.
  * It allows for further modification of the message after it has been processed
  * by the converter. This is useful for setting of Header and Properties.
  *
- * <p>This often as an anonymous class within a method implementation. 
+ * <p>This often as an anonymous class within a method implementation.
  * @author Mark Pollack
  */
 public interface MessagePostProcessor {

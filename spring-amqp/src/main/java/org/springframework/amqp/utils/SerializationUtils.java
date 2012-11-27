@@ -24,14 +24,14 @@ import java.io.ObjectOutputStream;
 
 /**
  * Static utility to help with serialization.
- * 
+ *
  * @author Dave Syer
  */
 public class SerializationUtils {
 
 	/**
 	 * Serialize the object provided.
-	 * 
+	 *
 	 * @param object the object to serialize
 	 * @return an array of bytes representing the object in a portable fashion
 	 */

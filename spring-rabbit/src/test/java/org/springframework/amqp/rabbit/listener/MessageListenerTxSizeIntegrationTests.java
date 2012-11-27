@@ -39,9 +39,9 @@ public class MessageListenerTxSizeIntegrationTests {
 	private int messageCount = 12;
 
 	private int txSize = 4;
-	
+
 	private boolean transactional = true;
-	
+
 	private SimpleMessageListenerContainer container;
 
 	@Rule
@@ -114,7 +114,7 @@ public class MessageListenerTxSizeIntegrationTests {
 	}
 
 	public class TestListener implements ChannelAwareMessageListener {
-		
+
 		private ThreadLocal<Integer> count = new ThreadLocal<Integer>();
 
 		private final CountDownLatch latch;

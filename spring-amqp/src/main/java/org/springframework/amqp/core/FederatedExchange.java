@@ -19,7 +19,7 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 /**
- * 
+ *
  * @see AmqpAdmin
  *
  * @author Gary Russell

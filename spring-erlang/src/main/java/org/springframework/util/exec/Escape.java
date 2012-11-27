@@ -26,7 +26,7 @@ public class Escape {
     }
 
     /**
-     * Escape a string by quoting the magical elements 
+     * Escape a string by quoting the magical elements
      * (such as whitespace, quotes, slashes, etc.)
      */
     public static String escape(String in){
@@ -42,7 +42,7 @@ public class Escape {
             if(outChars.length - numOut < 5){
                 outChars = enlargeArray(outChars);
             }
-            
+  
             if(Character.isWhitespace(inChars[i]) ||
                inChars[i] == '\\' ||
                inChars[i] == '\'' ||

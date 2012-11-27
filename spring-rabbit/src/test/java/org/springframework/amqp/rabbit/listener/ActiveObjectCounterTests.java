@@ -30,9 +30,9 @@ import org.junit.Test;
  *
  */
 public class ActiveObjectCounterTests {
-	
+
 	private ActiveObjectCounter<Object> counter = new ActiveObjectCounter<Object>();
-	
+
 	@Test
 	public void testActiveCount() throws Exception {
 		final Object object1 = new Object();

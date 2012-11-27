@@ -25,7 +25,7 @@ import org.junit.Test;
  *
  */
 public class MessagePropertiesTests {
-	
+
 	@Test
 	public void testReplyTo() throws Exception {
 		MessageProperties properties = new MessageProperties();

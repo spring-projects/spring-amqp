@@ -272,7 +272,7 @@ public class RabbitAdminIntegrationTests {
 	/**
 	 * Verify that a queue exists using the native Rabbit API to bypass all the connection and
 	 * channel caching and callbacks in Spring AMQP.
-	 * 
+	 *
 	 * @param Queue The queue to verify
 	 * @return True if the queue exists
 	 */

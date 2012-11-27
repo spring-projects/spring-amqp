@@ -22,7 +22,7 @@ public class Producer {
 		final String routingKey = TestConstants.ROUTING_KEY;
 		QueueUtils.declareTestQueue(template, routingKey);
 
-		// send message		
+		// send message
 		sendMessages(template, TestConstants.EXCHANGE_NAME, routingKey, TestConstants.NUM_MESSAGES);
 	}
 

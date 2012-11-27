@@ -18,7 +18,7 @@ package org.springframework.erlang;
 
 /**
  * Runtime exception mirroring the OTP OtpAuthException.
- * 
+ *
  * @author Mark Pollack
  */
 @SuppressWarnings("serial")

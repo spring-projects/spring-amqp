@@ -18,7 +18,7 @@ package org.springframework.amqp;
 
 /**
  * Base RuntimeException for errors that occur when executing AMQP operations.
- * 
+ *
  * @author Mark Fisher
  */
 @SuppressWarnings("serial")

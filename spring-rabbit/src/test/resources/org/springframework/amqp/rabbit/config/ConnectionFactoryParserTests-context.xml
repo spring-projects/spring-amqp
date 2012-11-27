@@ -15,7 +15,7 @@
 		publisher-confirms="true" publisher-returns="true"/>
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
-	
+
 	<bean id="connectionFactory" class="com.rabbitmq.client.ConnectionFactory"/>
 
 	<rabbit:connection-factory id="withExecutor" host="foo" virtual-host="/bar"

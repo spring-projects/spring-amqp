@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * Simple container collecting information to describe a topic exchange.
  * Used in conjunction with administrative operations.
- * 
+ *
  * @author Mark Pollack
  * @author Dave Syer
  * @see AmqpAdmin
@@ -33,7 +33,7 @@ public class TopicExchange extends AbstractExchange {
 	}
 
 	public TopicExchange(String name, boolean durable, boolean autoDelete) {
-		super(name, durable, autoDelete);		
+		super(name, durable, autoDelete);
 	}
 
 	public TopicExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {

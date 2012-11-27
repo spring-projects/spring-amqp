@@ -18,8 +18,8 @@ package org.springframework.amqp.core;
 import java.util.UUID;
 
 /**
- * Create a queue with a unique name. 
- * 
+ * Create a queue with a unique name.
+ *
  * @author Mark Pollack
  *
  */
@@ -31,7 +31,7 @@ public class UniquelyNamedQueue extends Queue {
 	public UniquelyNamedQueue() {
 		super(UUID.randomUUID().toString());
 	}
-	
+
 	/**
 	 * Create a uniquely named queue with a fixed prefix.  The constructor argument specifies
 	 * the prefix which is prepended to a random UUID.

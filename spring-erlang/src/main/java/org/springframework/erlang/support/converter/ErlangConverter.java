@@ -19,8 +19,8 @@ package org.springframework.erlang.support.converter;
 import com.ericsson.otp.erlang.OtpErlangObject;
 
 /**
- * Converter between Java and Erlang Types.  Additional support for converting results from RPC calls. 
- * 
+ * Converter between Java and Erlang Types.  Additional support for converting results from RPC calls.
+ *
  * @author Mark Pollack
  */
 public interface ErlangConverter {
@@ -40,6 +40,6 @@ public interface ErlangConverter {
 	 * @throws ErlangConversionException in case of conversion failure
 	 */
 	Object fromErlang(OtpErlangObject erlangObject) throws ErlangConversionException;
-	
+
 	Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject) throws ErlangConversionException;
 }

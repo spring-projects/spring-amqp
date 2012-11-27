@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -28,8 +28,8 @@ import org.apache.commons.logging.LogFactory;
  * Runs an external program. Derived from ant exec task. All the 'backward compat with jdk1.1, 1.2' removed. Since
  * jdk1.3 supports working dir, no need for scripts. All ant-specific code has been removed as well, this is a
  * completely independent component.
- * 
- * 
+ *
+ *
  * @author thomas.haas@softwired-inc.com
  * @author Costin Leau
  */
@@ -133,7 +133,7 @@ public class Execute {
 
 	/**
 	 * Creates a new execute object.
-	 * 
+	 *
 	 * @param streamHandler the stream handler used to handle the input and output streams of the subprocess.
 	 */
 	public Execute(ExecuteStreamHandler streamHandler) {
@@ -142,7 +142,7 @@ public class Execute {
 
 	/**
 	 * Creates a new execute object.
-	 * 
+	 *
 	 * @param streamHandler the stream handler used to handle the input and output streams of the subprocess.
 	 * @param watchdog a watchdog for the subprocess or <code>null</code> to to disable a timeout for the subprocess.
 	 */
@@ -153,7 +153,7 @@ public class Execute {
 
 	/**
 	 * Returns the commandline used to create a subprocess.
-	 * 
+	 *
 	 * @return the commandline used to create a subprocess
 	 */
 	public String[] getCommandline() {
@@ -166,7 +166,7 @@ public class Execute {
 
 	/**
 	 * Sets the commandline of the subprocess to launch.
-	 * 
+	 *
 	 * @param commandline the commandline of the subprocess to launch
 	 */
 	public void setCommandline(String[] commandline) {
@@ -175,7 +175,7 @@ public class Execute {
 
 	/**
 	 * Set whether to propagate the default environment or not.
-	 * 
+	 *
 	 * @param newenv whether to propagate the process environment.
 	 */
 	public void setNewenvironment(boolean newenv) {
@@ -184,7 +184,7 @@ public class Execute {
 
 	/**
 	 * Returns the environment used to create a subprocess.
-	 * 
+	 *
 	 * @return the environment used to create a subprocess
 	 */
 	public String[] getEnvironment() {
@@ -195,7 +195,7 @@ public class Execute {
 
 	/**
 	 * Sets the environment variables for the subprocess to launch.
-	 * 
+	 *
 	 * @param env array of Strings, each element of which has an environment variable settings in format
 	 * <em>key=value</em>
 	 */
@@ -205,10 +205,10 @@ public class Execute {
 
 	/**
 	 * Sets the working directory of the process to execute.
-	 * 
+	 *
 	 * <p> This is emulated using the antRun scripts unless the OS is Windows NT in which case a cmd.exe is spawned, or
 	 * MRJ and setting user.dir works, or JDK 1.3 and there is official support in java.lang.Runtime.
-	 * 
+	 *
 	 * @param wd the working directory of the process.
 	 */
 	public void setWorkingDirectory(File wd) {
@@ -217,7 +217,7 @@ public class Execute {
 
 	/**
 	 * Runs a process defined by the command line and returns its exit status.
-	 * 
+	 *
 	 * @return the exit status of the subprocess or <code>INVALID</code>
 	 * @throws Exception if launching of the subprocess failed
 	 */
@@ -300,7 +300,7 @@ public class Execute {
 
 	/**
 	 * query the exit value of the process.
-	 * 
+	 *
 	 * @return the exit value, 1 if the process was killed, or Project.INVALID if no exit value has been received
 	 */
 	public int getExitValue() {
@@ -309,7 +309,7 @@ public class Execute {
 
 	/**
 	 * Patch the current environment with the new values from the user.
-	 * 
+	 *
 	 * @return the patched environment
 	 */
 	private String[] patchEnvironment() {
@@ -349,7 +349,7 @@ public class Execute {
 
 	/**
 	 * Wrapper for common execution patterns
-	 * 
+	 *
 	 * @param envVars Environment variables to execute with (optional)
 	 * @param cmd a vector of the commands to execute
 	 * @param baseDir the base directory to run from (optional)

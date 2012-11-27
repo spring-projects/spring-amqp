@@ -22,16 +22,16 @@ import java.util.Map;
  * Simple container collecting information to describe a fanout exchange.
  * Used in conjunction with administrative operations.
  * @see AmqpAdmin
- * 
+ *
  * @author Mark Pollack
  * @author Dave Syer
  */
 public class FanoutExchange extends AbstractExchange {
 
 	public FanoutExchange(String name) {
-		super(name);		
+		super(name);
 	}
-	
+
 	public FanoutExchange(String name, boolean durable, boolean autoDelete) {
 		super(name, durable, autoDelete);
 	}

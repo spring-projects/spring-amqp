@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2010 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -30,7 +30,7 @@ import org.springframework.core.serializer.Serializer;
  * {@link Serializer} and {@link Deserializer} abstractions in Spring. The {@link #toMessage(Object, MessageProperties)}
  * method simply checks the type of the provided instance while the {@link #fromMessage(Message)} method relies upon the
  * {@link MessageProperties#getContentType() content-type} of the provided Message.
- * 
+ *
  * @author Dave Syer
  */
 public class SerializerMessageConverter extends AbstractMessageConverter {
@@ -48,7 +48,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 	/**
 	 * Flag to signal that the content type should be ignored and the deserializer used irrespective if it is a text
 	 * message. Defaults to false, in which case the default encoding is used to convert a text message to a String.
-	 * 
+	 *
 	 * @param ignoreContentType the flag value to set
 	 */
 	public void setIgnoreContentType(boolean ignoreContentType) {
@@ -65,7 +65,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 
 	/**
 	 * The serializer to use for converting Java objects to message bodies.
-	 * 
+	 *
 	 * @param serializer the serializer to set
 	 */
 	public void setSerializer(Serializer<Object> serializer) {
@@ -74,7 +74,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 
 	/**
 	 * The deserializer to use for converting from message body to Java object.
-	 * 
+	 *
 	 * @param deserializer the deserializer to set
 	 */
 	public void setDeserializer(Deserializer<Object> deserializer) {
