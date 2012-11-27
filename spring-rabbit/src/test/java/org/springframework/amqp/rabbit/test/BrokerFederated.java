@@ -22,7 +22,6 @@ import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.springframework.amqp.core.FederatedExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.util.StringUtils;
@@ -102,6 +101,7 @@ public class BrokerFederated extends TestWatchman {
 		this.hostName = hostName;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public Statement apply(Statement base, FrameworkMethod method, Object target) {
 
@@ -121,7 +121,7 @@ public class BrokerFederated extends TestWatchman {
 				connectionFactory.setHost(hostName);
 			}
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-			FederatedExchange exchange = new FederatedExchange("fedDirectRuleTest");
+			org.springframework.amqp.core.FederatedExchange exchange = new org.springframework.amqp.core.FederatedExchange("fedDirectRuleTest");
 			exchange.setBackingType("direct");
 			exchange.setUpstreamSet("upstream-set");
 			admin.declareExchange(exchange);

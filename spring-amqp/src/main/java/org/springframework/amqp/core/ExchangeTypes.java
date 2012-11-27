@@ -34,6 +34,10 @@ public abstract class ExchangeTypes {
 
 	public static final String SYSTEM = "system";
 
+	/**
+	 * @deprecated
+	 */
+	@Deprecated
 	public static final String FEDERATED = "x-federation";
 
 }

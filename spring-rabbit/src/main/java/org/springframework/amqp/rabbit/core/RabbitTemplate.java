@@ -278,8 +278,16 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		this.mandatory = mandatory;
 	}
 
+	/**
+	 * @deprecated - RabbitMQ no longer supports this option
+	 * when publishing messages.
+	 */
+	@Deprecated
 	public void setImmediate(boolean immediate) {
 		this.immediate = immediate;
+		if (logger.isWarnEnabled()) {
+			logger.warn("RabbitMQ 3.0.0 and above no longer supports 'immediate'.");
+		}
 	}
 
 	/**

@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
-import org.springframework.amqp.core.FederatedExchange;
 import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.xml.XmlBeanFactory;
@@ -108,9 +107,11 @@ public final class ExchangeParserTests {
 		assertEquals("bar", exchange.getArguments().get("foo"));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testFederatedDirectExchange() throws Exception {
-		FederatedExchange exchange = beanFactory.getBean("fedDirect", FederatedExchange.class);
+		org.springframework.amqp.core.FederatedExchange exchange =
+			beanFactory.getBean("fedDirect", org.springframework.amqp.core.FederatedExchange.class);
 		assertNotNull(exchange);
 		assertEquals("fedDirect", exchange.getName());
 		assertTrue(exchange.isDurable());
@@ -119,9 +120,11 @@ public final class ExchangeParserTests {
 		assertEquals("upstream-set1", exchange.getArguments().get("upstream-set"));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testFederatedTopicExchange() throws Exception {
-		FederatedExchange exchange = beanFactory.getBean("fedTopic", FederatedExchange.class);
+		org.springframework.amqp.core.FederatedExchange exchange =
+			beanFactory.getBean("fedTopic", org.springframework.amqp.core.FederatedExchange.class);
 		assertNotNull(exchange);
 		assertEquals("fedTopic", exchange.getName());
 		assertTrue(exchange.isDurable());
@@ -130,9 +133,11 @@ public final class ExchangeParserTests {
 		assertEquals("upstream-set2", exchange.getArguments().get("upstream-set"));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testFederatedFanoutExchange() throws Exception {
-		FederatedExchange exchange = beanFactory.getBean("fedFanout", FederatedExchange.class);
+		org.springframework.amqp.core.FederatedExchange exchange =
+			beanFactory.getBean("fedFanout", org.springframework.amqp.core.FederatedExchange.class);
 		assertNotNull(exchange);
 		assertEquals("fedFanout", exchange.getName());
 		assertTrue(exchange.isDurable());
@@ -141,9 +146,11 @@ public final class ExchangeParserTests {
 		assertEquals("upstream-set3", exchange.getArguments().get("upstream-set"));
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testFederatedHeadersExchange() throws Exception {
-		FederatedExchange exchange = beanFactory.getBean("fedHeaders", FederatedExchange.class);
+		org.springframework.amqp.core.FederatedExchange exchange =
+			beanFactory.getBean("fedHeaders", org.springframework.amqp.core.FederatedExchange.class);
 		assertNotNull(exchange);
 		assertEquals("fedHeaders", exchange.getName());
 		assertTrue(exchange.isDurable());

@@ -41,7 +41,7 @@ subprojects { subproject ->
 		junitVersion = '4.8.2'
 		log4jVersion = '1.2.15'
 		mockitoVersion = '1.8.4'
-		rabbitmqVersion = '2.8.4'
+		rabbitmqVersion = '3.0.0'
 
 		springVersion = '3.0.7.RELEASE'
 	}

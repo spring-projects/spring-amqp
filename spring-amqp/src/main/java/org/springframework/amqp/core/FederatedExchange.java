@@ -21,9 +21,11 @@ import java.util.Map;
 /**
  *
  * @see AmqpAdmin
+ * @deprecated RabbitMQ no longer supports 'x-federation' exchanges.
  *
  * @author Gary Russell
  */
+@Deprecated
 public class FederatedExchange extends AbstractExchange {
 
 	public static final FederatedExchange DEFAULT = new FederatedExchange("");
