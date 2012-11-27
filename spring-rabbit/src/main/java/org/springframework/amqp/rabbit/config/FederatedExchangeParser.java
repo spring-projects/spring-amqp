@@ -26,6 +26,7 @@ import org.w3c.dom.Element;
  * @author Gary Russell
  *
  */
+@SuppressWarnings("deprecation")
 public class FederatedExchangeParser extends AbstractExchangeParser {
 
 	private final static String BACKING_TYPE_ATTRIBUTE = "backing-type";

@@ -184,7 +184,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		templateWithReturnsEnabled.setMandatory(true);
-		templateWithReturnsEnabled.setImmediate(true);
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 		assertEquals(1, returns.size());
