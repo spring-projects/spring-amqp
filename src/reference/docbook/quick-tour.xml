@@ -17,7 +17,7 @@
     <programlisting><![CDATA[<dependency>
   <groupId>org.springframework.amqp</groupId>
   <artifactId>spring-rabbit</artifactId>
-  <version>1.0.0.RELEASE</version>
+  <version>1.2.0.RELEASE</version>
 </dependency>]]></programlisting>
 
     <section>
