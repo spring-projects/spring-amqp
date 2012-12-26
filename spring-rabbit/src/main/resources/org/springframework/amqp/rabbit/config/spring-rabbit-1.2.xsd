@@ -671,6 +671,26 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="consumer-start-timeout" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time to wait for a consumer to start in milliseconds; default 60000.
+	The time that the listener container will wait for a consumer to start. If this time is exceeded,
+	the application context will fail to initialize. Typically, this is not needed. If, however, the
+	operating system's TCP stack is configured to wait a long time before failing a connection due to
+	dropped SYN packets, it may be necessary to increase this value. When a SYN (socket open) packet is
+	dropped by the network (or firewall), typically, operating systems will retry a number of times,
+	often with an increasing delay between attempts. After a number of such attempts, the OS fails
+	the connection with a timeout. If the total time exceeds the default 60 seconds, the container
+	will fail to initialize.
+	As long as the connection fails within this timeout, the container will initialize and begin to
+	continually retry the connection.
+	This is not an issue for fail-fast conditions (e.g. the server is reachable but
+	the broker is not running) because the OS immediately fails the connection and connection retry
+	begins. It is only a problem when the connection failure exceeds this timeout.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="listenerType">

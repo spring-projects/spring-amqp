@@ -63,6 +63,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
+	private static final long DEFAULT_CONSUMER_START_TIMEOUT = 60000L;
+
 	/**
 	 * The default recovery interval: 5000 ms = 5 seconds.
 	 */
@@ -97,6 +99,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	private volatile boolean defaultRequeueRejected = true;
+
+	private volatile long consumerStartTimeout = DEFAULT_CONSUMER_START_TIMEOUT;
 
 	public static interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -233,6 +237,27 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
 		this.defaultRequeueRejected = defaultRequeueRejected;
+	}
+
+	/**
+	 * The time to wait for a consumer to start in milliseconds; default 60000.
+	 * The time that the listener container will wait for a consumer to start. If this time is exceeded,
+	 * the application context will fail to initialize. Typically, this is not needed. If, however, the
+	 * operating system's TCP stack is configured to wait a long time before failing a connection due to
+	 * dropped SYN packets, it may be necessary to increase this value. When a SYN (socket open) packet is
+	 * dropped by the network (or firewall), typically, operating systems will retry a number of times,
+	 * often with an increasing delay between attempts. After a number of such attempts, the OS fails
+	 * the connection with a timeout. If the total time exceeds the default 60 seconds, the container
+	 * will fail to initialize.<p/>
+	 * As long as the connection fails within this timeout, the container will initialize and begin to
+	 * continually retry the connection.</p>
+	 * This is <strong>not</strong> an issue for fail-fast conditions (e.g. the server is reachable but
+	 * the broker is not running) because the OS immediately fails the connection and connection retry
+	 * begins. It is <strong>only</strong> a problem when the connection failure exceeds this timeout.
+	 * @param consumerStartTimeout the consumerStartTimeout to set.
+	 */
+	public void setConsumerStartTimeout(long consumerStartTimeout) {
+		this.consumerStartTimeout = consumerStartTimeout;
 	}
 
 	/**
@@ -508,7 +533,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
+			if (!start.await(consumerStartTimeout, TimeUnit.MILLISECONDS)) {
 				throw new TimeoutException("Timed out waiting for startup");
 			}
 			return startupException;

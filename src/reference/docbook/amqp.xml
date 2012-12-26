@@ -311,7 +311,29 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory" addresses="host1:5672,host2:5672" />]]></programlisting>
     </para>
+	<important>
+		<para>
+			The Spring AMQP Connection Factories use a native RabbitMQ Client Connection
+			Factory. Additional properties are available on that object and a reference can
+			be provided to the Spring Connection Factory.
+		</para>
+		<para>
+			For example, to set the <code>connectionTimeout</code> property, you might use
+			the following:
+		</para>
+		<programlisting language="xml"><![CDATA[<rabbit:connection-factory
+	id="connectionFactory" connection-factory="nativeCF" />
 
+<bean id="nativeCF" class="com.rabbitmq.client.ConnectionFactory">
+	<property name="connectionTimeout" value="10000"/>
+</bean>]]></programlisting>
+		<para>
+			This prevents a condition where a listener container would fail to initialize if
+			SYN (socket open) packets are dropped by the network and the operating system
+			is configured to not report the failure within the default container start up
+			time (60 seconds).
+		</para>
+	</important>
     <sect2>
       <title>Publisher Confirms and Returns</title>
       <para>
