@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -59,6 +59,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String CONFIRM_CALLBACK_ATTRIBUTE = "confirm-callback";
 
+	private static final String CORRELATION_KEY = "correlation-key";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return RabbitTemplate.class;
@@ -100,6 +102,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, IMMEDIATE_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
 
 		BeanDefinition replyContainer = null;
 		Element childElement = null;

@@ -75,6 +75,8 @@ public final class TemplateParserTests {
 		RabbitTemplate template = beanFactory.getBean("kitchenSink", RabbitTemplate.class);
 		assertNotNull(template);
 		assertTrue(template.getMessageConverter() instanceof SerializerMessageConverter);
+		DirectFieldAccessor accessor = new DirectFieldAccessor(template);
+		assertEquals("foo", accessor.getPropertyValue("correlationKey"));
 	}
 
 	@Test
@@ -82,6 +84,7 @@ public final class TemplateParserTests {
 		RabbitTemplate template = beanFactory.getBean("withReplyQ", RabbitTemplate.class);
 		assertNotNull(template);
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
+		assertNull(dfa.getPropertyValue("correlationKey"));
 		Queue queue = (Queue) dfa.getPropertyValue("replyQueue");
 		assertNotNull(queue);
 		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);

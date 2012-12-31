@@ -6,14 +6,14 @@
 
 	<rabbit:template id="template" connection-factory="connectionFactory" />
 
-	<rabbit:template id="kitchenSink" connection-factory="connectionFactory" channel-transacted="true"
+	<rabbit:template id="kitchenSink" connection-factory="connectionFactory" channel-transacted="true" correlation-key="foo"
 		encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter" reply-timeout="1000" />
 
 	<rabbit:connection-factory id="connectionFactory" />
 
 	<bean id="converter" class="org.springframework.amqp.support.converter.SerializerMessageConverter"/>
 
-	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="replyQId">
+	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="replyQId" correlation-key="correlationId">
 		<rabbit:reply-listener />
 	</rabbit:template>
 
