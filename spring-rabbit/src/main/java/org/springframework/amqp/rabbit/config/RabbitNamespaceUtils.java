@@ -64,8 +64,6 @@ public class RabbitNamespaceUtils {
 
 	private static final String REQUEUE_REJECTED_ATTRIBUTE = "requeue-rejected";
 
-	private static final String CONSUMER_START_TIMEOUT = "consumer-start-timeout";
-
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
 		containerDef.setSource(parserContext.extractSource(containerEle));
@@ -147,11 +145,6 @@ public class RabbitNamespaceUtils {
 		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);
 		if (StringUtils.hasText(adviceChain)) {
 			containerDef.getPropertyValues().add("adviceChain", new RuntimeBeanReference(adviceChain));
-		}
-
-		String consumerStartTimeout = containerEle.getAttribute(CONSUMER_START_TIMEOUT);
-		if (StringUtils.hasText(consumerStartTimeout)) {
-			containerDef.getPropertyValues().add("consumerStartTimeout", consumerStartTimeout);
 		}
 
 		return containerDef;

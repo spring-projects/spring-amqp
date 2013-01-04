@@ -69,8 +69,6 @@ public class ListenerContainerParserTests {
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
 		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
-		DirectFieldAccessor containerAccessor = new DirectFieldAccessor(container);
-		assertEquals(Long.valueOf(123L), containerAccessor.getPropertyValue("consumerStartTimeout"));
 	}
 
 	@Test
