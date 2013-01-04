@@ -501,16 +501,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		/**
 		 * Retrieve the fatal startup exception if this processor completely failed to locate the broker resources it
-		 * needed. Blocks up to 60 seconds waiting (but should always return promptly in normal circumstances).
+		 * needed. Blocks up to 60 seconds waiting for an exception to occur
+		 * (but should always return promptly in normal circumstances).
+		 * No longer fatal if the processor does not start up in 60 seconds.
 		 *
 		 * @return a startup exception if there was one
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			if (!start.await(60000L, TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("Timed out waiting for startup");
-			}
+			start.await(60000L, TimeUnit.MILLISECONDS);
 			return startupException;
 		}
 
