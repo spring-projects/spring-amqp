@@ -84,7 +84,7 @@
 			<xsd:documentation><![CDATA[
 					Creates a direct exchange for producers to send messages to.  Uses an existing exchange
 					with the same name if it exists on the broker, or declares a
-					new one.  A direct exhange routes messages
+					new one.  A direct exchange routes messages
 					to queues that are bound to the exchange when the routing key in the message
 					matches that in the binding exactly.  You can set up bindings here too, either with
 					explicit routing keys, or using the queue name implicitly.
@@ -124,7 +124,7 @@
 			<xsd:documentation><![CDATA[
 					Creates a topic exchange for producers to send messages to.  Uses an existing exchange
 					with the same name if it exists on the broker, or declares a
-					new one.  A topic exhange routes messages
+					new one.  A topic exchange routes messages
 					to queues that are bound to the exchange when the routing key in the message
 					matches the routing pattern in the binding of the queue.
 					You can set up bindings here too.
@@ -164,7 +164,7 @@
 			<xsd:documentation><![CDATA[
 					Creates a fanout exchange for producers to send messages to.  Uses an existing exchange
 					with the same name if it exists on the broker, or declares a
-					new one.  A fanout exhange routes messages
+					new one.  A fanout exchange routes messages
 					to all queues that are bound to the exchange.  You can set up bindings here too.
 				]]></xsd:documentation>
 		</xsd:annotation>
@@ -202,7 +202,7 @@
 			<xsd:documentation><![CDATA[
 					Creates a headers exchange for producers to send messages to.  Uses an existing exchange
 					with the same name if it exists on the broker, or declares a
-					new one.  A headers exhange routes messages
+					new one.  A headers exchange routes messages
 					to all queues where a message header matches that specified in the binding of the queue.
 					You can set up bindings here too.
 				]]></xsd:documentation>
@@ -240,7 +240,7 @@
 	<xsd:element name="federated-exchange">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
-					DEPRECATED - RabbitMQ no longer supports 'x-federation' exchanges; exhange federation
+					DEPRECATED - RabbitMQ no longer supports 'x-federation' exchanges; exchange federation
 					is now dynamic.
 					Creates a federated exchange for producers to send messages to.  Uses an existing exchange
 					with the same name if it exists on the broker, or declares a
@@ -285,7 +285,7 @@
 										<xsd:element name="binding" maxOccurs="unbounded" type="topicBindingType">
 											<xsd:annotation>
 												<xsd:documentation><![CDATA[
-												Declares a binding of a queue to this exchange either with
+												Declares a binding of a queue to this exchange with
 												a routing pattern, e.g. "uk.weather.*" or "uk.#".
 											]]></xsd:documentation>
 											</xsd:annotation>
@@ -338,7 +338,7 @@
 						<xsd:annotation>
 							<xsd:documentation><![CDATA[
 								The type of the exchange used as a backing exchange for the
-								federated exhange.
+								federated exchange.
 							]]></xsd:documentation>
 						</xsd:annotation>
 					</xsd:attribute>
@@ -743,8 +743,8 @@
 	<xsd:element name="admin">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
-	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin)
-	for customers to manage exchanges, queues and bindings.
+	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin),
+	used to manage exchanges, queues and bindings.
 					]]></xsd:documentation>
 		</xsd:annotation>
 		<xsd:complexType>
@@ -842,7 +842,7 @@
 			<xsd:attribute name="encoding" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Encoding to use for packing and unpacking MessagePoperties of type String.  Default is UTF-8.
+	Encoding to use for packing and unpacking MessageProperties of type String.  Default is UTF-8.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1031,7 +1031,7 @@
 			<xsd:attribute name="publisher-returns" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	When true, channels on connections created by this factory support publisher confirms.
+	When true, channels on connections created by this factory support publisher returns.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
