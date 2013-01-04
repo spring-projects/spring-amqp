@@ -174,6 +174,12 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				props, body);
 	}
 
+	public void basicPublish(String exchange, String routingKey,
+			boolean mandatory, BasicProperties props, byte[] body)
+			throws IOException {
+		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
+	}
+
 	public DeclareOk exchangeDeclare(String exchange, String type)
 			throws IOException {
 		return this.delegate.exchangeDeclare(exchange, type);
