@@ -153,7 +153,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * Whether or not we've tried to declare this exchange yet.
 	 */
-	private AtomicBoolean exchangeDeclared = new AtomicBoolean(false);
+	private final AtomicBoolean exchangeDeclared = new AtomicBoolean(false);
 
 	/**
 	 * Configuration arbitrary application ID.
@@ -163,7 +163,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * Where LoggingEvents are queued to send.
 	 */
-	private LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
+	private final LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
 
 	/**
 	 * The pool of senders.
@@ -183,7 +183,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * Retries are delayed like: N ^ log(N), where N is the retry number.
 	 */
-	private Timer retryTimer = new Timer("log-event-retry-delay", true);
+	private final Timer retryTimer = new Timer("log-event-retry-delay", true);
 
 	/**
 	 * RabbitMQ ConnectionFactory.
@@ -448,6 +448,7 @@ public class AmqpAppender extends AppenderSkeleton {
 		if (null != connectionFactory) {
 			connectionFactory.destroy();
 		}
+		retryTimer.cancel();
 	}
 
 	public boolean requiresLayout() {
