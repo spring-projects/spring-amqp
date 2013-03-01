@@ -19,6 +19,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 import org.apache.log4j.MDC;
 import org.junit.After;
@@ -104,4 +106,14 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(propertyValue, messageProperties.getHeaders().get(propertyName));
 	}
 
+	/*
+	 * When running as main(); should shutdown cleanly.
+	 */
+	public static void main(String[] args) throws Exception {
+		Log4jConfigurer.initLogging("classpath:log4j-amqp.properties");
+		Log logger = LogFactory.getLog(AmqpAppenderIntegrationTests.class);
+		logger.info("foo");
+		Thread.sleep(1000);
+		Log4jConfigurer.shutdownLogging();
+	}
 }
