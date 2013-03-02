@@ -9,7 +9,7 @@ buildscript {
 		maven { url 'http://repo.springsource.org/plugins-release' }
 	}
 	dependencies {
-		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.1.5'
+		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.6'
 	}
 }
 
@@ -19,6 +19,10 @@ allprojects {
 	repositories {
 		maven { url 'http://repo.springsource.org/libs-release' }
 	}
+}
+
+ext {
+	expandPlaceholders='**/quick-tour.xml'
 }
 
 subprojects { subproject ->
