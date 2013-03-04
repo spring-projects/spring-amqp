@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 by the original author(s).
+ * Copyright (c) 2011-2013 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import org.springframework.amqp.core.MessageProperties;
  */
 public class TestListener implements MessageListener {
 
-  private CountDownLatch latch;
+  private final CountDownLatch latch;
 
-  private MessageProperties messageProperties;
+  private volatile Message message;
 
   public TestListener(int count) {
     latch = new CountDownLatch(count);
@@ -40,21 +40,28 @@ public class TestListener implements MessageListener {
     return latch;
   }
 
+  public Message getMessage() {
+	return message;
+  }
+
   public Object getId() {
-	if (this.messageProperties == null) {
+	if (this.message == null || this.getMessageProperties() == null) {
 		throw new IllegalStateException("No MessageProperties received");
 	}
-	return this.messageProperties.getMessageId();
+	return this.message.getMessageProperties().getMessageId();
   }
 
   public MessageProperties getMessageProperties() {
-	return this.messageProperties;
+    if (this.message == null) {
+      throw new IllegalStateException("No Message received");
+    }
+    return this.message.getMessageProperties();
   }
 
-public void onMessage(Message message) {
+  public void onMessage(Message message) {
     System.out.println("MESSAGE: " + message);
     System.out.println("BODY: " + new String(message.getBody()));
-    this.messageProperties = message.getMessageProperties();
+    this.message = message;
     latch.countDown();
   }
 

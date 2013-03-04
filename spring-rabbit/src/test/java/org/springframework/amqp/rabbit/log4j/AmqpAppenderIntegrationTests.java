@@ -106,6 +106,25 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(propertyValue, messageProperties.getHeaders().get(propertyName));
 	}
 
+	@Test
+	public void testCharset() throws InterruptedException {
+		Logger packageLogger = Logger.getLogger("org.springframework.amqp.rabbit.log4j");
+		AmqpAppender appender = (AmqpAppender) packageLogger.getAppender("amqp");
+		assertEquals("UTF-8", appender.getCharset());
+
+		TestListener testListener = (TestListener) applicationContext.getBean("testListener", 1);
+		listenerContainer.setMessageListener(testListener);
+		listenerContainer.start();
+
+		String foo = new String("\u0fff"); // UTF-8 -> 0xe0bfbf
+		log.info(foo);
+		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
+		byte[] body = testListener.getMessage().getBody();
+		assertEquals(0xe0, body[body.length-5] & 0xff);
+		assertEquals(0xbf, body[body.length-4] & 0xff);
+		assertEquals(0xbf, body[body.length-3] & 0xff);
+	}
+
 	/*
 	 * When running as main(); should shutdown cleanly.
 	 */
