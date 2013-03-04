@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 by the original author(s).
+ * Copyright (c) 2011-2013 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.log4j;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -91,6 +92,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   log4j.appender.amqp.contentType=text/plain
  *   log4j.appender.amqp.contentEncoding=null
  *   log4j.appender.amqp.generateId=false
+ *   log4j.appender.amqp.charset=null
  *   #-------------------------------
  *   ## Sender configuration
  *   #-------------------------------
@@ -234,6 +236,13 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Used to synchronize access when creating the RabbitMQ ConnectionFactory.
 	 */
 	private final String mutex = "mutex";
+
+	/**
+	 * charset to use when converting String to byte[], default null (system default charset used).
+	 * If the charset is unsupported on the current platform, we fall back to using
+	 * the system charset.
+	 */
+	private String charset;
 
 	private boolean durable = true;
 
@@ -384,6 +393,14 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.generateId = generateId;
 	}
 
+	public String getCharset() {
+		return charset;
+	}
+
+	public void setCharset(String charset) {
+		this.charset = charset;
+	}
+
 	/**
 	 * Submit the required number of senders into the pool.
 	 */
@@ -522,8 +539,17 @@ public class AmqpAppender extends AppenderSkeleton {
 
 					// Send a message
 					try {
-						rabbitTemplate.send(exchangeName, routingKey, new Message(msgBody.toString().getBytes(),
-								amqpProps));
+						Message message = null;
+						if (AmqpAppender.this.charset != null) {
+							try {
+								message = new Message(msgBody.toString().getBytes(AmqpAppender.this.charset), amqpProps);
+							}
+							catch (UnsupportedEncodingException e) {/* fall back to default */}
+						}
+						if (message == null) {
+							message = new Message(msgBody.toString().getBytes(), amqpProps);
+						}
+						rabbitTemplate.send(exchangeName, routingKey, message);
 					}
 					catch (AmqpException e) {
 						int retries = event.incrementRetries();
