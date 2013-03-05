@@ -1285,17 +1285,21 @@ public RabbitTransactionManager rabbitTransactionManager() {
             <row>
               <entry>acknowledgeMode</entry>
 
-              <entry><literal>NONE</literal> = no acks will be sent (the
-              default and incompatible with
+              <entry><literal>NONE</literal> = no acks will be sent
+              (incompatible with
               <literal>channelTransacted=true</literal>). RabbitMQ calls this
               "autoack" because the broker assumes all messages are acked
               without any action from the consumer. MANUAL = the listener must
               acknowledge all messages by calling
               <code>Channel.basicAck()</code>. AUTO = the container will
-              acknowledge the message automatically. Note that
+              acknowledge the message automatically, unless the
+              <interfacename>MessageListener</interfacename> throws an
+              exception. Note that
               <literal>acknowledgeMode</literal> is complementary to
               channelTransacted - if the channel is transacted then the broker
-              requires a commit notification in addition to the ack.</entry>
+              requires a commit notification in addition to the ack.
+              This is the default mode.
+              See also <code>txSize</code>.</entry>
             </row>
 
             <row>
@@ -1315,7 +1319,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
               socket frame. The higher this is the faster the messages can be
               delivered, but the higher the risk of non-sequential processing.
               Ignored if the <literal>acknowledgeMode</literal> is
-              NONE.</entry>
+              NONE. This will be increased, if necessary, to match the
+              <code>txSize</code>.</entry>
             </row>
 
             <row>
@@ -1331,10 +1336,13 @@ public RabbitTransactionManager rabbitTransactionManager() {
             <row>
               <entry>txSize</entry>
 
-              <entry>If the channel is transacted or an external transaction
-              manager is provided, the container will attempt to process up to
-              this number of messages per transaction (waiting for each one up
-              to the receive timeout setting).</entry>
+              <entry>When used with <code>acknowledgeMode</code> AUTO,
+              the container will attempt to process up to
+              this number of messages before sending an ack (waiting for each one up
+              to the receive timeout setting). This is also when a
+              transactional channel is committed. If the <code>prefetchCount</code>
+              is less than the <code>txSize</code>, it will be increased
+              to match the <code>txSize</code>.</entry>
             </row>
 
             <row>
