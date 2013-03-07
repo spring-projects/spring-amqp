@@ -1,6 +1,10 @@
 package org.springframework.amqp.rabbit.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+
+import java.util.Properties;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,6 +13,9 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.context.support.GenericApplicationContext;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
 
 public class RabbitAdminTests {
 
@@ -50,6 +57,35 @@ public class RabbitAdminTests {
 		rabbitAdmin.afterPropertiesSet();
 		exception.expect(IllegalArgumentException.class);
 		rabbitAdmin.declareQueue();
+	}
+
+	@Test
+	public void testProperties() throws Exception {
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+		String queueName = "test.properties." + System.currentTimeMillis();
+		try {
+			rabbitAdmin.declareQueue(new Queue(queueName));
+			new RabbitTemplate(connectionFactory).convertAndSend(queueName, "foo");
+			Properties props = rabbitAdmin.getQueueProperties(queueName);
+			assertNotNull(props);
+			assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			assertEquals(1, props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			Channel channel = connectionFactory.createConnection().createChannel(false);
+			DefaultConsumer consumer = new DefaultConsumer(channel);
+			channel.basicConsume(queueName, true, consumer);
+			props = rabbitAdmin.getQueueProperties(queueName);
+			assertNotNull(props);
+			assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			assertEquals(0, props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			assertNotNull(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+			assertEquals(1, props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+			channel.close();
+		}
+		finally {
+			rabbitAdmin.deleteQueue(queueName);
+			connectionFactory.destroy();
+		}
 	}
 
 }
