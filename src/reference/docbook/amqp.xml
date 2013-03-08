@@ -954,6 +954,29 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 </rabbit:queue>
 ]]></programlisting>
 
+	<important>
+		<para>
+			The RabbitMQ broker will not allow declaration of a queue with mismatched
+			arguments. For example, if a <code>queue</code> already exists with no
+			<code>time to live</code> argument, and you attempt to declare it with,
+			say, <code>key="x-message-ttl" value="100"</code>, an exception will be
+			thrown.
+		</para>
+		<para>
+			By default, the <classname>RabbitAdmin</classname> will immediately stop
+			processing all declarations when any exception occurs; this could cause
+			downstream issues - such as a <emphasis>listener container</emphasis> failing
+			to initialize because another queue (defined after the one in error) is not
+			declared.
+		</para>
+		<para>
+			This behavior can be modified by setting the <code>ignore-declaration-failures</code>
+			attribute to <code>true</code> on the <classname>RabbitAdmin</classname>.
+			This option instructs the <classname>RabbitAdmin</classname> to log
+			the exception, and continue declaring other elements.
+		</para>
+	</important>
+
     <para>To see how to use Java to configure the AMQP infrastructure, look at
     the Stock sample application, where there is the <code>@Configuration</code>
     class <classname>AbstractStockRabbitConfiguration</classname> which in
