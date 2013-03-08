@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,11 +26,11 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -118,6 +118,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  *
  * @see #setDelegate
  * @see #setDefaultListenerMethod
@@ -574,7 +575,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
 					this.immediatePublish, this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding), message.getBody());
 		} catch (Exception ex) {
-			throw RabbitUtils.convertRabbitAccessException(ex);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,8 +14,17 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+
 import com.rabbitmq.client.Channel;
 
+/**
+ * Simply a Connection.
+ * @Dave Syer
+ * @author Gary Russell
+ * @since 1.0
+ *
+ */
 public class SimpleConnection implements Connection {
 
 	private final com.rabbitmq.client.Connection delegate;
@@ -33,7 +42,7 @@ public class SimpleConnection implements Connection {
 			}
 			return channel;
 		} catch (IOException e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
 
@@ -41,7 +50,7 @@ public class SimpleConnection implements Connection {
 		try {
 			delegate.close();
 		} catch (IOException e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
 

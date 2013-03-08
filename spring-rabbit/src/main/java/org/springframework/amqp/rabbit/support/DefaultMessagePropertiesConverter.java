@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,7 +24,6 @@ import java.util.Map;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -35,6 +34,7 @@ import com.rabbitmq.client.LongString;
  * Default implementation of the {@link MessagePropertiesConverter} strategy.
  *
  * @author Mark Fisher
+ * @author Gary Russell
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -154,7 +154,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				return longString.getStream();
 			}
 		} catch (Exception e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
 
