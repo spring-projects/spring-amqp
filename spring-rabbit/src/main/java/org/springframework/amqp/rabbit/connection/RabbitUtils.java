@@ -14,21 +14,15 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.ConnectException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.AmqpConnectException;
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpUnsupportedEncodingException;
-import org.springframework.amqp.UncategorizedAmqpException;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Fisher
@@ -97,27 +91,6 @@ public abstract class RabbitUtils {
 		}
 	}
 
-	public static RuntimeException convertRabbitAccessException(Throwable ex) {
-		Assert.notNull(ex, "Exception must not be null");
-		if (ex instanceof AmqpException) {
-			return (AmqpException) ex;
-		}
-		if (ex instanceof ShutdownSignalException) {
-			return new AmqpConnectException((ShutdownSignalException) ex);
-		}
-		if (ex instanceof ConnectException) {
-			return new AmqpConnectException((ConnectException) ex);
-		}
-		if (ex instanceof IOException) {
-			return new AmqpIOException((IOException) ex);
-		}
-		if (ex instanceof UnsupportedEncodingException) {
-			return new AmqpUnsupportedEncodingException(ex);
-		}
-		// fallback
-		return new UncategorizedAmqpException(ex);
-	}
-
 	public static void closeMessageConsumer(Channel channel, String consumerTag, boolean transactional) {
 		if (!channel.isOpen()) {
 			return;
@@ -136,7 +109,7 @@ public abstract class RabbitUtils {
 			 * Messages are going to be lost in general.
 			 */
 		} catch (Exception ex) {
-			throw convertRabbitAccessException(ex);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 	}
 
@@ -149,7 +122,7 @@ public abstract class RabbitUtils {
 		try {
 			channel.txSelect();
 		} catch (IOException e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
 
