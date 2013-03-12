@@ -15,8 +15,6 @@ import static org.junit.Assert.assertTrue;
 import java.math.BigDecimal;
 import java.util.Hashtable;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ser.BeanSerializerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,25 +24,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+
 /**
  * @author Mark Pollack
  * @author Dave Syer
  * @author Sam Nelson
  * @author Gary Russell
+ * @author Andreas Asplund
  */
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
-public class JsonMessageConverterTests {
+public class Jackson2JsonMessageConverterTests {
 
-	private JsonMessageConverter converter;
+	private Jackson2JsonMessageConverter converter;
 	private SimpleTrade trade;
 
 	@Autowired
-	private JsonMessageConverter jsonConverterWithDefaultType;
+	private Jackson2JsonMessageConverter jsonConverterWithDefaultType;
 
 	@Before
 	public void before(){
-		converter = new JsonMessageConverter();
+		converter = new Jackson2JsonMessageConverter();
 		trade = new SimpleTrade();
 		trade.setAccountName("Acct1");
 		trade.setBuyRequest(true);

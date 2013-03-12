@@ -8,14 +8,10 @@
  */
 package org.springframework.amqp.support.converter;
 
-import static org.codehaus.jackson.map.type.TypeFactory.collectionType;
-import static org.codehaus.jackson.map.type.TypeFactory.mapType;
-import static org.codehaus.jackson.map.type.TypeFactory.type;
-
-import java.util.Collection;
-import java.util.Map;
-
-import org.codehaus.jackson.type.JavaType;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.ClassUtils;
 
@@ -24,9 +20,8 @@ import org.springframework.util.ClassUtils;
  * @author Sam Nelson
  * @author Andreas Asplund
  */
-public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements JavaTypeMapper, ClassMapper {
+public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper, ClassMapper {
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType classType = getClassIdType(retrieveHeader(properties,
 				getClassIdFieldName()));
@@ -37,35 +32,33 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 		JavaType contentClassType = getClassIdType(retrieveHeader(properties,
 				getContentClassIdFieldName()));
 		if (classType.getKeyType() == null) {
-			return collectionType(
-					(Class<? extends Collection>) classType.getRawClass(),
-					contentClassType);
+			return CollectionType.construct(
+                    classType.getRawClass(),
+                    contentClassType);
 		}
 
 		JavaType keyClassType = getClassIdType(retrieveHeader(properties,
 				getKeyClassIdFieldName()));
-		JavaType mapType = mapType(
-				(Class<? extends Map>) classType.getRawClass(), keyClassType,
-				contentClassType);
+		JavaType mapType = MapType.construct(
+                classType.getRawClass(), keyClassType,
+                contentClassType);
 		return mapType;
 
 	}
 
 	private JavaType getClassIdType(String classId) {
 		if (getIdClassMapping().containsKey(classId)) {
-			return type(getIdClassMapping().get(classId));
+            return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
 		}
 
 		try {
-			return type(ClassUtils.forName(classId, getClass()
+			return TypeFactory.defaultInstance().constructType(ClassUtils.forName(classId, getClass()
 					.getClassLoader()));
-		}
-		catch (ClassNotFoundException e) {
+		} catch (ClassNotFoundException e) {
 			throw new MessageConversionException(
 					"failed to resolve class name. Class not found [" + classId
 							+ "]", e);
-		}
-		catch (LinkageError e) {
+		} catch (LinkageError e) {
 			throw new MessageConversionException(
 					"failed to resolve class name. Linkage error [" + classId
 							+ "]", e);
@@ -74,7 +67,7 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 
 	public void fromJavaType(JavaType javaType, MessageProperties properties) {
 		addHeader(properties, getClassIdFieldName(),
-				javaType.getRawClass());
+				(Class<?>) javaType.getRawClass());
 
 		if (javaType.isContainerType()) {
 			addHeader(properties, getContentClassIdFieldName(), javaType
@@ -88,7 +81,7 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 	}
 
 	public void fromClass(Class<?> clazz, MessageProperties properties) {
-		fromJavaType(type(clazz), properties);
+		fromJavaType(TypeFactory.defaultInstance().constructType(clazz), properties);
 
 	}
 
