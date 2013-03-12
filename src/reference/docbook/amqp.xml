@@ -723,15 +723,18 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </sect2>
 
     <sect2>
-      <title>JsonMessageConverter</title>
+      <title>JsonMessageConverter and Jackson2JsonMessageConverter</title>
 
       <para>As mentioned in the previous section, relying on Java
       serialization is generally not recommended. One rather common
       alternative that is more flexible and portable across different
-      languages and platforms is JSON (JavaScript Object Notation). An
-      implementation is available and can be configured on any
+      languages and platforms is JSON (JavaScript Object Notation). Two
+      implementations are available and can be configured on any
       <classname>RabbitTemplate</classname> instance to override its usage of
-      the <classname>SimpleMessageConverter</classname> default.</para>
+      the <classname>SimpleMessageConverter</classname> default.
+      The <classname>JsonMessageConverter</classname> which uses the org.codehaus.jackson 1.x library
+      and <classname>Jackson2JsonMessageConverter</classname> which uses the com.fasterxml.jackson 2.x library.
+      </para>
 
       <programlisting language="xml"><![CDATA[<bean class="org.springframework.amqp.rabbit.core.RabbitTemplate">
     <property name="connectionFactory" ref="rabbitConnectionFactory"/>
@@ -743,7 +746,16 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </property>
 </bean>]]></programlisting>
 
-      <para>As shown above, the <classname>JsonMessageConverter</classname> uses a
+      <programlisting language="xml"><![CDATA[<bean class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+    <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+    <property name="messageConverter">
+        <bean class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter">
+            <!-- if necessary, override the DefaultClassMapper -->
+            <property name="classMapper" ref="customClassMapper"/>
+        </bean>
+    </property>
+</bean>]]></programlisting>
+      <para>As shown above, the <classname>JsonMessageConverter</classname> and <classname>Jackson2JsonMessageConverter</classname> uses a
       <classname>DefaultClassMapper</classname> by default. Type information is
       added to (and retrieved from) the <classname>MessageProperties</classname>.
       If an inbound message does not contain type information in the
@@ -751,6 +763,15 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       you can configure a static type using the <code>defaultType</code> property</para>
 
       <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType" class="org.springframework.amqp.support.converter.JsonMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType"
+                value="foo.PurchaseOrder" />
+        </bean>
+    </property>
+</bean>]]></programlisting>
+
+      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter">
     <property name="classMapper">
         <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
             <property name="defaultType"
