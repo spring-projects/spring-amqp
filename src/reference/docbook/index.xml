@@ -84,6 +84,7 @@
             </para>
         </partintro>
         <xi:include href="quick-tour.xml"/>
+        <xi:include href="whats-new.xml"/>
     </part>
 
     <part>
