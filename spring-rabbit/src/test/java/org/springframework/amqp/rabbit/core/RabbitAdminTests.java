@@ -12,6 +12,7 @@ import org.junit.rules.ExpectedException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.Channel;
@@ -21,6 +22,9 @@ public class RabbitAdminTests {
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
+
+	@Rule
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Test
 	public void testSettingOfNullRabbitTemplate() {

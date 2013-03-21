@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -60,7 +61,7 @@ public class MismatchedQueueDeclarationTests {
 		this.admin.deleteQueue("mismatch.bar");
 	}
 
-	@Test
+	@Test @Ignore
 	public void testAdminFailsWithMismatchedQueue() throws Exception {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
 		context.setConfigLocation("org/springframework/amqp/rabbit/config/MismatchedQueueDeclarationTests-context.xml");
