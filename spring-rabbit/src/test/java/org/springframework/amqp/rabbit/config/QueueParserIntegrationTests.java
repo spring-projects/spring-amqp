@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2008 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,19 +25,28 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
 
+/**
+ * @author Dave Syer
+ * @author Gary Russell
+ * @since 1.0
+ *
+ */
 public final class QueueParserIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
-	private XmlBeanFactory beanFactory;
+	private DefaultListableBeanFactory beanFactory;
 
 	@Before
 	public void setUpDefaultBeanFactory() throws Exception {
-		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		beanFactory = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@Test

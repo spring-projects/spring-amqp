@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,16 +25,26 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
 
+/**
+ * @author Dave Syer
+ * @author Gary Russell
+ * @since 1.0
+ *
+ */
 public class QueueParserTests {
 
 	protected BeanFactory beanFactory;
 
 	@Before
 	public void setUpDefaultBeanFactory() throws Exception {
-		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
+		this.beanFactory = beanFactory;
 	}
 
 	@Test
@@ -111,7 +121,9 @@ public class QueueParserTests {
 
 	@Test(expected=BeanDefinitionStoreException.class)
 	public void testIllegalAnonymousQueue() throws Exception {
-		beanFactory = new XmlBeanFactory(new ClassPathResource(getClass().getSimpleName()
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName()
 				+ "IllegalAnonymous-context.xml", getClass()));
 		Queue queue = beanFactory.getBean("anonymous", Queue.class);
 		assertNotNull(queue);

@@ -39,8 +39,8 @@ import org.springframework.util.Assert;
  * @author Arjen Poutsma
  * @author Juergen Hoeller
  * @author James Carr
- * @see org.springframework.amqp.rabbit.core.RabbitTemplate#convertAndSend
- * @see org.springframework.amqp.rabbit.core.RabbitTemplate#receiveAndConvert
+ * @see org.springframework.amqp.core.AmqpTemplate#convertAndSend(Object)
+ * @see org.springframework.amqp.core.AmqpTemplate#receiveAndConvert()
  */
 public class MarshallingMessageConverter extends AbstractMessageConverter implements InitializingBean {
 	private volatile Marshaller marshaller;
@@ -128,6 +128,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	/**
 	 * Marshals the given object to a {@link Message}.
 	 */
+	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		try {
 			if (contentType != null) {
@@ -149,6 +150,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	/**
 	 * Unmarshals the given {@link Message} into an object.
 	 */
+	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(message.getBody());
