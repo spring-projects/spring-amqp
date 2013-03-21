@@ -29,6 +29,8 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String AUTO_STARTUP_ATTRIBUTE = "auto-startup";
 
+	private static final String IGNORE_DECLARATION_EXCEPTIONS = "ignore-declaration-exceptions";
+
 	@Override
 	protected String getBeanClassName(Element element) {
 		return "org.springframework.amqp.rabbit.core.RabbitAdmin";
@@ -64,5 +66,7 @@ class AdminParser extends AbstractSingleBeanDefinitionParser {
 		if (StringUtils.hasText(attributeValue)) {
 			builder.addPropertyValue("autoStartup", attributeValue);
 		}
+
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, IGNORE_DECLARATION_EXCEPTIONS);
 	}
 }

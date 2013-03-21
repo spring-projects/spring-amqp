@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -42,10 +43,17 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Ed Scriven
+ * @author Gary Russell
  */
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, InitializingBean {
 
 	protected static final String DEFAULT_EXCHANGE_NAME = "";
+
+	protected static final Object QUEUE_NAME = "QUEUE_NAME";
+
+	protected static final Object QUEUE_MESSAGE_COUNT = "QUEUE_MESSAGE_COUNT";
+
+	protected static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -57,6 +65,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private volatile boolean autoStartup = true;
 
 	private volatile ApplicationContext applicationContext;
+
+	private volatile boolean ignoreDeclarationExceptions;
 
 	private final Object lifecycleMonitor = new Object();
 
@@ -74,6 +84,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	public void setApplicationContext(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
+	}
+
+	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
+		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
 	}
 
 	public RabbitTemplate getRabbitTemplate() {
@@ -200,6 +214,32 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		});
 	}
 
+	/**
+	 * Returns 3 properties {@link #QUEUE_NAME}, {@link #QUEUE_MESSAGE_COUNT},
+	 * {@link #QUEUE_CONSUMER_COUNT}, or null if the queue doesn't exist.
+	 */
+	public Properties getQueueProperties(final String queueName) {
+		Assert.hasText(queueName, "'queueName' cannot be null or empty");
+		return this.rabbitTemplate.execute(new ChannelCallback<Properties>() {
+			public Properties doInRabbit(Channel channel) throws Exception {
+				try {
+					DeclareOk declareOk = channel.queueDeclarePassive(queueName);
+					Properties props = new Properties();
+					props.put(QUEUE_NAME, declareOk.getQueue());
+					props.put(QUEUE_MESSAGE_COUNT, declareOk.getMessageCount());
+					props.put(QUEUE_CONSUMER_COUNT, declareOk.getConsumerCount());
+					return props;
+				}
+				catch (Exception e) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Queue '" + queueName + "' does not exist");
+					}
+					return null;
+				}
+			}
+		});
+	}
+
 	// Lifecycle implementation
 
 	public boolean isAutoStartup() {
@@ -226,7 +266,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 			connectionFactory.addConnectionListener(new ConnectionListener() {
 
 				// Prevent stack overflow...
-				private AtomicBoolean initializing = new AtomicBoolean(false);
+				private final AtomicBoolean initializing = new AtomicBoolean(false);
 
 				public void onCreate(Connection connection) {
 					if (!initializing.compareAndSet(false, true)) {
@@ -327,8 +367,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 			}
 
 			if (!isDeclaringDefaultExchange(exchange)) {
-				channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
+				try {
+					channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
 						exchange.isAutoDelete(), exchange.getArguments());
+				}
+				catch (IOException e) {
+					if (this.ignoreDeclarationExceptions) {
+						if (logger.isWarnEnabled()) {
+							logger.warn("Failed to declare exchange:" + exchange + ", continuing...", e);
+						}
+					}
+					else {
+						throw e;
+					}
+				}
 			}
 		}
 	}
@@ -339,8 +391,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				if (logger.isDebugEnabled()) {
 					logger.debug("declaring Queue '" + queue.getName() + "'");
 				}
-				channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
-						queue.getArguments());
+				try {
+					channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
+							queue.getArguments());
+				}
+				catch (IOException e) {
+					if (this.ignoreDeclarationExceptions) {
+						if (logger.isWarnEnabled()) {
+							logger.warn("Failed to declare queue:" + queue + ", continuing...", e);
+						}
+					}
+					else {
+						throw e;
+					}
+				}
 			} else if (logger.isDebugEnabled()) {
 				logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
 			}
@@ -355,14 +419,26 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						+ "]");
 			}
 
-			if (binding.isDestinationQueue()) {
-				if (!isDeclaringImplicitQueueBinding(binding)) {
-					channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+			try {
+				if (binding.isDestinationQueue()) {
+					if (!isDeclaringImplicitQueueBinding(binding)) {
+						channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+								binding.getArguments());
+					}
+				} else {
+					channel.exchangeBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 							binding.getArguments());
 				}
-			} else {
-				channel.exchangeBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-						binding.getArguments());
+			}
+			catch (IOException e) {
+				if (this.ignoreDeclarationExceptions) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Failed to declare binding:" + binding + ", continuing...", e);
+					}
+				}
+				else {
+					throw e;
+				}
 			}
 		}
 	}

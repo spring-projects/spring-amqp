@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<rabbit:connection-factory id="connectionFactory" />
+
+	<beans profile="basicAdmin">
+		<rabbit:admin connection-factory="connectionFactory" />
+	</beans>
+
+	<beans profile="advancedAdmin">
+		<rabbit:admin connection-factory="connectionFactory" ignore-declaration-exceptions="true" />
+	</beans>
+
+	<beans profile="basic">
+		<rabbit:queue name="mismatch.foo" durable="true" />
+		<rabbit:queue name="mismatch.bar" durable="true" />
+	</beans>
+
+	<beans profile="ttl">
+		<rabbit:queue name="mismatch.foo" durable="true">
+			<rabbit:queue-arguments>
+				<entry key="x-message-ttl" value="1000" />
+			</rabbit:queue-arguments>
+		</rabbit:queue>
+		<rabbit:queue name="mismatch.bar" durable="true" />
+	</beans>
+
+</beans>

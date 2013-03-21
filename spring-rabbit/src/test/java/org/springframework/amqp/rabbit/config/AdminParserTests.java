@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,13 +23,15 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StringUtils;
 
 /**
  *
  * @author tomas.lukosius@opencredo.com
+ * @author Gary Russell
  *
  */
 public final class AdminParserTests {
@@ -65,7 +67,7 @@ public final class AdminParserTests {
 
 	private void doTest() throws Exception {
 		// Create context
-		XmlBeanFactory beanFactory = loadContext();
+		DefaultListableBeanFactory beanFactory = loadContext();
 		if (beanFactory == null) {
 			// Context was invalid
 			return;
@@ -91,15 +93,17 @@ public final class AdminParserTests {
 	 * Load application context. Fail if tests expects invalid spring-context, but spring-context is valid.
 	 * @return
 	 */
-	private XmlBeanFactory loadContext() {
-		XmlBeanFactory beanFactory = null;
+	private DefaultListableBeanFactory loadContext() {
+		DefaultListableBeanFactory beanFactory = null;
 		try {
 			// Resource file name template: <class-name>-<contextIndex>-context.xml
 			ClassPathResource resource = new ClassPathResource(getClass().getSimpleName() + "-" + contextIndex
 					+ "-context.xml", getClass());
-			beanFactory = new XmlBeanFactory(resource);
+			beanFactory = new DefaultListableBeanFactory();
+			XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+			reader.loadBeanDefinitions(resource);
 			if (!validContext) {
-				fail("Context " + resource + " suppose to fail");
+				fail("Context " + resource + " failed to load");
 			}
 		} catch (BeanDefinitionParsingException e) {
 			if (validContext) {
@@ -108,6 +112,7 @@ public final class AdminParserTests {
 			}
 
 			logger.warn("Failure was expected", e);
+			beanFactory = null;
 		}
 		return beanFactory;
 	}
