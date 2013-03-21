@@ -216,9 +216,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	/**
 	 * Returns 3 properties {@link #QUEUE_NAME}, {@link #QUEUE_MESSAGE_COUNT},
-	 * {@value #QUEUE_CONSUMER_COUNT}, or null if the queue doesn't exist.
+	 * {@link #QUEUE_CONSUMER_COUNT}, or null if the queue doesn't exist.
 	 */
 	public Properties getQueueProperties(final String queueName) {
+		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(new ChannelCallback<Properties>() {
 			public Properties doInRabbit(Channel channel) throws Exception {
 				try {

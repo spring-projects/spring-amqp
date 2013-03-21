@@ -768,14 +768,17 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="auto-startup" type="xsd:string" default="true">
+			<xsd:attribute name="auto-startup" default="true">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Specifies if the queues, exchanges and bindings in the context should be automatically declared (lazily on first connection to the broker). Default value is 'true'.
 					]]></xsd:documentation>
 				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
 			</xsd:attribute>
-			<xsd:attribute name="ignore-declaration-exceptions" type="xsd:string" default="false">
+			<xsd:attribute name="ignore-declaration-exceptions" default="false">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	If automatic declaration is enabled (see 'auto-startup'), if this is set to 'true', exceptions will
@@ -783,6 +786,9 @@
 	cease when an exception occurs. Default value is 'false'.
 					]]></xsd:documentation>
 				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
