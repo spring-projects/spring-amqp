@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
@@ -58,7 +59,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private final Map<Connection, List<Channel>> channelsPerConnection = new HashMap<Connection, List<Channel>>();
 
-	private MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
+	private final MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
 
 	private boolean transactional;
 
@@ -154,7 +155,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	public void closeAll() {
 		for (Channel channel : this.channels) {
 			try {
-				if (channel != ConnectionFactoryUtils.getConsumerChannel()) {
+				if (channel != ConsumerChannelRegistry.getConsumerChannel()) {
 					channel.close();
 				}
 				else {

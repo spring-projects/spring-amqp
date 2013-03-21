@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
@@ -25,6 +26,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 public abstract class RabbitAccessor implements InitializingBean {
 
@@ -103,7 +105,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	}
 
 	protected RuntimeException convertRabbitAccessException(Exception ex) {
-		return RabbitUtils.convertRabbitAccessException(ex);
+		return RabbitExceptionTranslator.convertRabbitAccessException(ex);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
@@ -160,7 +161,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService));
 			}
 		} catch (IOException e) {
-			throw RabbitUtils.convertRabbitAccessException(e);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
 

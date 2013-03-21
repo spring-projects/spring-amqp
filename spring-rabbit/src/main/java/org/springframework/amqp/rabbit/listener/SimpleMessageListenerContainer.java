@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,6 +30,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
+import org.springframework.amqp.rabbit.support.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
@@ -92,7 +93,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile Advice[] adviceChain = new Advice[0];
 
-	private ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
+	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
@@ -102,7 +103,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		void invokeListener(Channel channel, Message message) throws Exception;
 	}
 
-	private ContainerDelegate delegate = new ContainerDelegate() {
+	private final ContainerDelegate delegate = new ContainerDelegate() {
 		public void invokeListener(Channel channel, Message message) throws Exception {
 			SimpleMessageListenerContainer.super.invokeListener(channel, message);
 		}
@@ -536,7 +537,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					 * Register the consumer's channel so it will be used by the transaction manager
 					 * if it's an instance of RabbitTransactionManager.
 					 */
-					ConnectionFactoryUtils.registerConsumerChannel(consumer.getChannel());
+					ConsumerChannelRegistry.registerConsumerChannel(consumer.getChannel());
 				}
 
 				// Always better to stop receiving as soon as possible if
@@ -576,7 +577,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			finally {
 				if (SimpleMessageListenerContainer.this.transactionManager != null) {
-					ConnectionFactoryUtils.unRegisterConsumerChannel();
+					ConsumerChannelRegistry.unRegisterConsumerChannel();
 				}
 			}
 
