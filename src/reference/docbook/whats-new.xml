@@ -50,6 +50,13 @@
 				property when using RabbitMQ 3.0.x or greater.
 			</para>
 		</section>
+		<section>
+			<title>JSON Message Converters</title>
+			<para>
+				A Jackson 2.x <classname>MessageConverter</classname> is now provided, along
+				with the existing converter that uses Jackson 1.x.
+			</para>
+		</section>
 	</section>
 
 	<section>
