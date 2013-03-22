@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
+ * Copyright 2002-2013 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -9,24 +9,21 @@
 
 package org.springframework.amqp.support.converter;
 
-import static org.codehaus.jackson.map.type.TypeFactory.type;
-
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 /**
- * JSON converter that uses the Jackson Json library.
+ * JSON converter that uses the Jackson 2 Json library.
  *
  * @author Mark Pollack
  * @author James Carr
@@ -34,29 +31,29 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Sam Nelson
  * @author Andreas Asplund
  */
-public class JsonMessageConverter extends AbstractJsonMessageConverter {
+public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
-	private static Log log = LogFactory.getLog(JsonMessageConverter.class);
+	private static Log log = LogFactory.getLog(Jackson2JsonMessageConverter.class);
 
 	private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-	private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
+	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
-	public JsonMessageConverter() {
+	public Jackson2JsonMessageConverter() {
 		super();
 		initializeJsonObjectMapper();
 	}
 
-	public JavaTypeMapper getJavaTypeMapper() {
+	public Jackson2JavaTypeMapper getJavaTypeMapper() {
 		return javaTypeMapper;
 	}
 
-	public void setJavaTypeMapper(JavaTypeMapper javaTypeMapper) {
+	public void setJavaTypeMapper(Jackson2JavaTypeMapper javaTypeMapper) {
 		this.javaTypeMapper = javaTypeMapper;
 	}
 
 	/**
-	 * The {@link ObjectMapper} to use instead of using the default. An
+	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
 	 * alternative to injecting a mapper is to extend this class and override
 	 * {@link #initializeJsonObjectMapper()}.
 	 *
@@ -71,10 +68,7 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 	 * Subclass and override to customize.
 	 */
 	protected void initializeJsonObjectMapper() {
-		jsonObjectMapper
-				.configure(
-						DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,
-						false);
+		jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	@Override
@@ -137,7 +131,7 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 			Class<?> targetClass) throws JsonParseException,
 			JsonMappingException, IOException {
 		String contentAsString = new String(body, encoding);
-		return jsonObjectMapper.readValue(contentAsString, type(targetClass));
+		return jsonObjectMapper.readValue(contentAsString, jsonObjectMapper.constructType(targetClass));
 	}
 
 	@Override
@@ -169,7 +163,7 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 
 		if (getClassMapper() == null) {
-			getJavaTypeMapper().fromJavaType(type(objectToConvert.getClass()),
+			getJavaTypeMapper().fromJavaType(jsonObjectMapper.constructType(objectToConvert.getClass()),
 					messageProperties);
 
 		} else {
@@ -181,5 +175,4 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 		return new Message(bytes, messageProperties);
 
 	}
-
 }
