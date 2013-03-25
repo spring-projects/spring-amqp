@@ -1,3 +1,15 @@
+/*
+ * Copyright 2010-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
@@ -34,22 +46,28 @@ import org.springframework.amqp.rabbit.test.EnvironmentAvailable;
 
 import com.rabbitmq.client.Channel;
 
+/**
+ * @author Dave Syer
+ * @author Gunnar Hillert
+ * @since 1.0
+ *
+ */
 public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerBrokerInterruptionIntegrationTests.class);
 
 	// Ensure queue is durable, or it won't survive the broker restart
-	private Queue queue = new Queue("test.queue", true);
+	private final Queue queue = new Queue("test.queue", true);
 
-	private int concurrentConsumers = 2;
+	private final int concurrentConsumers = 2;
 
-	private int messageCount = 60;
+	private final int messageCount = 60;
 
-	private int txSize = 1;
+	private final int txSize = 1;
 
-	private boolean transactional = false;
+	private final boolean transactional = false;
 
-	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
+	private final AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
 	private SimpleMessageListenerContainer container;
 
@@ -65,9 +83,9 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
-	private ConnectionFactory connectionFactory;
+	private CachingConnectionFactory connectionFactory;
 
-	private RabbitBrokerAdmin brokerAdmin;
+	private final RabbitBrokerAdmin brokerAdmin;
 
 	public MessageListenerBrokerInterruptionIntegrationTests() throws Exception {
 		FileUtils.deleteDirectory(new File("target/rabbitmq"));
@@ -102,6 +120,10 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 			brokerAdmin.stopNode();
 			// Remove all trace of the durable queue...
 			FileUtils.deleteDirectory(new File("target/rabbitmq"));
+
+			if (this.connectionFactory != null) {
+				this.connectionFactory.destroy();
+			}
 		}
 	}
 

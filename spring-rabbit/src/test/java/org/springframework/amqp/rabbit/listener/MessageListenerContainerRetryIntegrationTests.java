@@ -1,3 +1,15 @@
+/*
+ * Copyright 2002-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
@@ -32,10 +44,18 @@ import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.annotation.Repeat;
 
+/**
+ * @author Dave Syer
+ * @author Gary Russell
+ * @author Gunnar Hillert
+ * @since 1.0
+ *
+ */
 public class MessageListenerContainerRetryIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerContainerRetryIntegrationTests.class);
@@ -236,13 +256,15 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 		} finally {
 			container.shutdown();
+			((DisposableBean) template.getConnectionFactory()).destroy();
+
 			assertEquals(0, container.getActiveConsumerCount());
 		}
 
 	}
 
 	public static class PojoListener {
-		private AtomicInteger count = new AtomicInteger();
+		private final AtomicInteger count = new AtomicInteger();
 		private final int failFrequency;
 
 		public PojoListener(int failFrequency) {

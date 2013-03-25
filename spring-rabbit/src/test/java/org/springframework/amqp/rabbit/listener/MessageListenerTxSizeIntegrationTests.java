@@ -1,3 +1,15 @@
+/*
+ * Copyright 2002-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertNull;
@@ -23,22 +35,29 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.beans.factory.DisposableBean;
 
 import com.rabbitmq.client.Channel;
 
+/**
+ * @author Dave Syer
+ * @author Gunnar Hillert
+ * @since 1.0
+ *
+ */
 public class MessageListenerTxSizeIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(MessageListenerTxSizeIntegrationTests.class);
 
-	private Queue queue = new Queue("test.queue");
+	private final Queue queue = new Queue("test.queue");
 
-	private RabbitTemplate template = new RabbitTemplate();
+	private final RabbitTemplate template = new RabbitTemplate();
 
-	private int concurrentConsumers = 1;
+	private final int concurrentConsumers = 1;
 
-	private int messageCount = 12;
+	private final int messageCount = 12;
 
-	private int txSize = 4;
+	private final int txSize = 4;
 
 	private boolean transactional = true;
 
@@ -67,6 +86,9 @@ public class MessageListenerTxSizeIntegrationTests {
 		if (container != null) {
 			container.shutdown();
 		}
+
+		((DisposableBean) template.getConnectionFactory()).destroy();
+
 	}
 
 	@Test
@@ -115,7 +137,7 @@ public class MessageListenerTxSizeIntegrationTests {
 
 	public class TestListener implements ChannelAwareMessageListener {
 
-		private ThreadLocal<Integer> count = new ThreadLocal<Integer>();
+		private final ThreadLocal<Integer> count = new ThreadLocal<Integer>();
 
 		private final CountDownLatch latch;
 

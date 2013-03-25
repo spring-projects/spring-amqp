@@ -20,7 +20,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * Simply a Connection.
- * @Dave Syer
+ * @author Dave Syer
  * @author Gary Russell
  * @since 1.0
  *

@@ -32,6 +32,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Gunnar Hillert
  * @since 1.0
  *
  */
@@ -54,8 +55,8 @@ public final class QueueParserIntegrationTests {
 
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
 		assertNotNull(queue);
-
-		RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory(BrokerTestUtils.getPort()));
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin rabbitAdmin = new RabbitAdmin(template.getConnectionFactory());
 		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.declareQueue(queue);
@@ -66,6 +67,8 @@ public final class QueueParserIntegrationTests {
 		Thread.sleep(200);
 		String result = (String) template.receiveAndConvert(queue.getName());
 		assertEquals(null, result);
+
+		connectionFactory.destroy();
 
 	}
 
