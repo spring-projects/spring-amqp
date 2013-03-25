@@ -29,6 +29,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.StandardEnvironment;
 
@@ -36,6 +37,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
+ * @author Gunnar Hillert
  * @since 1.2
  *
  */
@@ -49,16 +51,18 @@ public class MismatchedQueueDeclarationTests {
 	private RabbitAdmin admin;
 
 	@Before
-	public void setup() {
+	public void setup() throws Exception {
 		connectionFactory = new SingleConnectionFactory();
 		this.admin = new RabbitAdmin(this.connectionFactory);
 		deleteQueues();
 	}
 
 	@After
-	public void deleteQueues() {
+	public void deleteQueues() throws Exception {
 		this.admin.deleteQueue("mismatch.foo");
 		this.admin.deleteQueue("mismatch.bar");
+
+		((DisposableBean) connectionFactory).destroy();
 	}
 
 	@Test @Ignore

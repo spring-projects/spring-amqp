@@ -1,8 +1,22 @@
+/*
+ * Copyright 2002-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -12,7 +26,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.listener.ActiveObjectCounter;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
@@ -23,16 +36,32 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
 import com.rabbitmq.client.Channel;
 
+/**
+ * @author Gunnar Hillert
+ */
 public class RabbitBindingIntegrationTests {
 
 	private static Queue queue = new Queue("test.queue");
 
-	private ConnectionFactory connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
+	private CachingConnectionFactory connectionFactory;
 
-	private RabbitTemplate template = new RabbitTemplate(connectionFactory );
+	private RabbitTemplate template;
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
+
+	@Before
+	public void setup() {
+		connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
+		template = new RabbitTemplate(connectionFactory );
+	}
+
+	@After
+	public void cleanUp() {
+		if (connectionFactory != null) {
+			connectionFactory.destroy();
+		}
+	}
 
 	@Test
 	public void testSendAndReceiveWithTopicSingleCallback() throws Exception {
@@ -123,7 +152,8 @@ public class RabbitBindingIntegrationTests {
 
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setExchange(exchange.getName());
 
 		BlockingQueueConsumer consumer = template.execute(new ChannelCallback<BlockingQueueConsumer>() {
@@ -147,6 +177,7 @@ public class RabbitBindingIntegrationTests {
 		assertEquals("message", result);
 
 		consumer.stop();
+		cachingConnectionFactory.destroy();
 
 	}
 
