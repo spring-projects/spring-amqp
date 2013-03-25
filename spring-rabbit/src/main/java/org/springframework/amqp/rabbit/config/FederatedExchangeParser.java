@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,7 +14,6 @@
 package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.core.ExchangeTypes;
-import org.springframework.amqp.core.FederatedExchange;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -43,7 +42,7 @@ public class FederatedExchangeParser extends AbstractExchangeParser {
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
-		return FederatedExchange.class;
+		return org.springframework.amqp.core.FederatedExchange.class;
 	}
 
 

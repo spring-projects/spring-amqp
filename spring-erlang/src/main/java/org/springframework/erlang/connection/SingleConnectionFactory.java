@@ -229,7 +229,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		classes.add(Connection.class);
 		return (Connection) Proxy.newProxyInstance(
 				Connection.class.getClassLoader(),
-				classes.toArray(new Class[classes.size()]),
+				classes.toArray(new Class<?>[classes.size()]),
 				new SharedConnectionInvocationHandler(target));
 	}
 
