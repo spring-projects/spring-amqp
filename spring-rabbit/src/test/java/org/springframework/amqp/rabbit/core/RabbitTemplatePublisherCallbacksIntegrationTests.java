@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,6 +90,21 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
 		templateWithReturnsEnabled = new RabbitTemplate(connectionFactoryWithReturnsEnabled);
+	}
+
+	@After
+	public void cleanUp() {
+		if (connectionFactory != null) {
+			connectionFactory.destroy();
+		}
+
+		if (connectionFactoryWithConfirmsEnabled != null) {
+			connectionFactoryWithConfirmsEnabled.destroy();
+		}
+
+		if (connectionFactoryWithReturnsEnabled != null) {
+			connectionFactoryWithReturnsEnabled.destroy();
+		}
 	}
 
 	@Rule

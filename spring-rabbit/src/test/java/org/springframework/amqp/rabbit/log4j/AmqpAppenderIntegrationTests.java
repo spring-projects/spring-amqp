@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 by the original author(s).
+ * Copyright (c) 2011-2013 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -33,6 +33,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.Log4jConfigurer;
@@ -43,6 +44,7 @@ import org.springframework.util.Log4jConfigurer;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "org.springframework.amqp.rabbit.log4j" }, loader = AnnotationConfigContextLoader.class)
+@DirtiesContext
 public class AmqpAppenderIntegrationTests {
 
 	@Rule

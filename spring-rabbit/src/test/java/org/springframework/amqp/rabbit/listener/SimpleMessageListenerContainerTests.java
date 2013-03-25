@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -37,7 +37,8 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testInconsistentTransactionConfiguration() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setChannelTransacted(false);
@@ -45,32 +46,38 @@ public class SimpleMessageListenerContainerTests {
 		container.setTransactionManager(new TestTransactionManager());
 		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+		singleConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testInconsistentAcknowledgeConfiguration() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setChannelTransacted(true);
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+		singleConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testDefaultConsumerCount() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory());
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setAutoStartup(false);
 		container.afterPropertiesSet();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		singleConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testLazyConsumerCount() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(new SingleConnectionFactory()) {
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory) {
 			@Override
 			protected void doStart() throws Exception {
 				// do nothing
@@ -78,6 +85,7 @@ public class SimpleMessageListenerContainerTests {
 		};
 		container.start();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		singleConnectionFactory.destroy();
 	}
 
 	@SuppressWarnings("serial")

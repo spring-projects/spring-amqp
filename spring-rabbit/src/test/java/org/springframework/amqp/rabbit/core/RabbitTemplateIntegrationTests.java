@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -69,9 +71,14 @@ public class RabbitTemplateIntegrationTests {
 
 	@Before
 	public void create() {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template = new RabbitTemplate(connectionFactory);
+	}
+
+	@After
+	public void cleanup() throws Exception {
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	@Rule
@@ -131,13 +138,15 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveTransactedWithUncachedConnection() throws Exception {
-		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory());
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		RabbitTemplate template = new RabbitTemplate(singleConnectionFactory);
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals(null, result);
+		singleConnectionFactory.destroy();
 	}
 
 	@Test
@@ -298,7 +307,8 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testAtomicSendAndReceive() throws Exception {
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -328,11 +338,12 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive();
 		assertEquals(null, reply);
+		cachingConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testAtomicSendAndReceiveExternalExecutor() throws Exception {
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
 		final String execName = "make-sure-exec-passed-in";
 		exec.setBeanName(execName);
@@ -398,11 +409,13 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals(null, reply);
 
 		assertTrue(execConfiguredOk.get());
+		connectionFactory.destroy();
 	}
 
 	@Test
 	public void testAtomicSendAndReceiveWithRoutingKey() throws Exception {
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(new Callable<Message>() {
@@ -430,11 +443,13 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive(ROUTE);
 		assertEquals(null, reply);
+		cachingConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testAtomicSendAndReceiveWithExchangeAndRoutingKey() throws Exception {
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(new Callable<Message>() {
@@ -462,11 +477,13 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		reply = template.receive(ROUTE);
 		assertEquals(null, reply);
+		cachingConnectionFactory.destroy();
 	}
 
 	@Test
 	public void testAtomicSendAndReceiveWithConversion() throws Exception {
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -494,6 +511,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert();
 		assertEquals(null, result);
+		cachingConnectionFactory.destroy();
 	}
 
 	@Test
@@ -556,7 +574,8 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testAtomicSendAndReceiveWithConversionAndMessagePostProcessor() throws Exception {
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory());
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -594,6 +613,7 @@ public class RabbitTemplateIntegrationTests {
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert();
 		assertEquals(null, result);
+		cachingConnectionFactory.destroy();
 	}
 
 	@Test
