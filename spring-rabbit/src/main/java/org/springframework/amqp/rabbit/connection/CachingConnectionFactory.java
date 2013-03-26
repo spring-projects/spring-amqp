@@ -448,18 +448,23 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if (this == obj) {
 				return true;
-			if (obj == null)
+			}
+			if (obj == null) {
 				return false;
-			if (getClass() != obj.getClass())
+			}
+			if (getClass() != obj.getClass()) {
 				return false;
+			}
 			ChannelCachingConnectionProxy other = (ChannelCachingConnectionProxy) obj;
 			if (target == null) {
-				if (other.target != null)
+				if (other.target != null) {
 					return false;
-			} else if (!target.equals(other.target))
+				}
+			} else if (!target.equals(other.target)) {
 				return false;
+			}
 			return true;
 		}
 

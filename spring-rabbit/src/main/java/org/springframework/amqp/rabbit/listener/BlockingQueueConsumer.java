@@ -202,7 +202,9 @@ public class BlockingQueueConsumer {
 		this.consumer = new InternalConsumer(channel);
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
-		int passiveDeclareTries = 3; // mirrored queue might be being moved
+
+		// mirrored queue might be being moved
+		int passiveDeclareTries = 3;
 		do {
 			try {
 				if (!acknowledgeMode.isAutoAck()) {

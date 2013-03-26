@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -40,7 +40,7 @@ public class MessageProperties {
 
 	private static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
-	private static final Integer DEFAULT_PRIORITY = new Integer(0);
+	private static final Integer DEFAULT_PRIORITY = Integer.valueOf(0);
 
 	private final Map<String, Object> headers = new HashMap<String, Object>();
 
@@ -135,7 +135,6 @@ public class MessageProperties {
 	// qpid 1.0 .NET: is not present
 	public void setClusterId(String clusterId) {
 		this.clusterId = clusterId;
-		;
 	}
 
 	public String getClusterId() {

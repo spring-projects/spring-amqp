@@ -28,9 +28,9 @@ import org.w3c.dom.Element;
 @SuppressWarnings("deprecation")
 public class FederatedExchangeParser extends AbstractExchangeParser {
 
-	private final static String BACKING_TYPE_ATTRIBUTE = "backing-type";
+	private static final String BACKING_TYPE_ATTRIBUTE = "backing-type";
 
-	private final static String UPSTREAM_SET_ATTRIBUTE = "upstream-set";
+	private static final String UPSTREAM_SET_ATTRIBUTE = "upstream-set";
 
 	private static final String DIRECT_BINDINGS_ELE = "direct-bindings";
 
