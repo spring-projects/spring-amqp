@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.rabbitmq.client.Channel;
  */
 public interface PublisherCallbackChannel extends Channel {
 
-	static String RETURN_CORRELATION = "spring_return_correlation";
+	String RETURN_CORRELATION = "spring_return_correlation";
 
 	/**
 	 * Adds a {@link Listener} and returns a reference to
@@ -66,7 +66,7 @@ public interface PublisherCallbackChannel extends Channel {
 	 * AMQP channels do not support a listener being
 	 * registered on multiple channels.
 	 */
-	public static interface Listener {
+	interface Listener {
 
 		/**
 		 * Invoked by the channel when a confirm is received.

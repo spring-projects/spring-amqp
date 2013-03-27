@@ -152,7 +152,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	final protected Connection createBareConnection() {
+	protected final Connection createBareConnection() {
 		try {
 			if (this.addresses != null) {
 				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses));
@@ -165,7 +165,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	final protected  String getDefaultHostName() {
+	protected final  String getDefaultHostName() {
 		String temp;
 		try {
 			InetAddress localMachine = InetAddress.getLocalHost();

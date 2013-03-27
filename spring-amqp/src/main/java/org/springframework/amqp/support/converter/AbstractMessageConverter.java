@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -64,8 +64,8 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	 * @param messageProperties the message properties (headers)
 	 * @return a message
 	 */
-	abstract protected Message createMessage(Object object, MessageProperties messageProperties);
+	protected abstract Message createMessage(Object object, MessageProperties messageProperties);
 
-	abstract public Object fromMessage(Message message) throws MessageConversionException;
+	public abstract Object fromMessage(Message message) throws MessageConversionException;
 
 }

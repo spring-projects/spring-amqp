@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,15 @@ public class Background {
         throws IOException
     {
         File devNull;
-        if(Os.isFamily("unix"))
+        if(Os.isFamily("unix")) {
             devNull = new File("/dev/null");
-        else if (Os.isFamily("windows"))
+        }
+        else if (Os.isFamily("windows")) {
             devNull = new File("NUL");
-        else
+        }
+        else {
             throw new IllegalStateException("Unhandled Java environment");
+        }
         exec(cmd, devNull, false, devNull, false);
     }
 
@@ -57,12 +60,15 @@ public class Background {
                             File errFile, boolean appendErr)
         throws IOException
     {
-        if(Os.isFamily("unix"))
+        if(Os.isFamily("unix")) {
             execUnix(cmd, outFile, appendOut, errFile, appendErr);
-        else if (Os.isFamily("windows"))
+        }
+        else if (Os.isFamily("windows")) {
             execWin(cmd, outFile, appendOut, errFile, appendErr);
-        else
+        }
+        else {
             throw new IllegalStateException("Unhandled Java environment");
+        }
     }
 
     private static void execUnix(String[] cmd,
@@ -95,7 +101,7 @@ public class Background {
             p.waitFor();
         } catch(Exception exc){
             throw new IOException("Unable to properly background process: " +
-                                  exc.getMessage());
+                                  exc.getMessage(), exc);
         }
     }
 

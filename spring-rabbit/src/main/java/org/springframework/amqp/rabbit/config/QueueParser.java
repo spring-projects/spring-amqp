@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,7 +30,8 @@ import org.w3c.dom.Element;
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
-	private static final String ARGUMENTS = "queue-arguments"; // element OR attribute
+	/**  Element OR attribute */
+	private static final String ARGUMENTS = "queue-arguments";
 	private static final String DURABLE_ATTRIBUTE = "durable";
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
