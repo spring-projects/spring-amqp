@@ -827,7 +827,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     See the Javadoc of <classname>AmqpTemplate</classname> for more detail.</para>
     <para>
     By default, a new temporary queue is used for each reply. However, a single reply queue can be configured on the template,
-    which allows you to set arguments on that queue (such as 'ha_args="all"' for mirrored queues). In this case, however,
+    which can be more efficient, and also allows you to set arguments on that queue. In this case, however,
     you must also provide a &lt;reply-listener/&gt; sub element. This element provides a listener container for the
     reply queue, with the template being the listener. All of the <xref linkend="containerAttributes" /> attributes
     allowed on a &lt;listener-container/&gt; are allowed on the element, except for connection-factory and
@@ -842,6 +842,23 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     While the container and template share a connection factory, they do not share a channel and therefore requests
     and replies are not performed within the same transaction (if transactional).
     </para>
+    <section>
+      <title>Message Correlation With A Reply Queue</title>
+      <para>
+      When using a fixed reply queue, it is necessary to provide correlation data so that replies can be correlated
+      to requests. See <ulink url="http://www.rabbitmq.com/tutorials/tutorial-six-java.html">
+      RabbitMQ Remote Procedure Call (RPC)</ulink>. By default, the standard <code>correlationId</code> property will
+      be used to hold the correlation data. However, if you wish to use a custom propertry to hold correlation
+      data, you can set the <code>correlation-key</code> attribute on the &lt;rabbit-template/&gt;. Explicitly
+      setting the attribute to <code>correlationId</code> is the same as omitting the attribute.
+      Of course, the client and server must use the same header for correlation data.
+      </para>
+      <note>
+      Spring AMQP version 1.1 used a custom property <code>spring_reply_correlation</code> for this data. If you
+      wish to revert to this behavior with the current version, perhaps to maintain compatibility with another
+      application using 1.1, you must set the attribute to <code>spring_reply_correlation</code>.
+      </note>
+    </section>
   </section>
 
   <section id="broker-configuration">
