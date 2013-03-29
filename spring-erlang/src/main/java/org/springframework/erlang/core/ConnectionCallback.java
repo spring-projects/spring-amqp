@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ public interface ConnectionCallback<T> {
 	/**
 	 * Execute any number of operations against the supplied OTP connection,
 	 * possibly returning a result.
+	 *
+	 * @throws Exception We are not sure everything it throws
 	 */
-	T doInConnection(Connection connection) throws Exception;  //Not sure everything it throws
+	T doInConnection(Connection connection) throws Exception;
 
 }

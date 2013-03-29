@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -38,7 +38,7 @@ public class Execute {
 	private static Log log = LogFactory.getLog(Execute.class);
 
 	/** Invalid exit code. **/
-	public final static int INVALID = Integer.MAX_VALUE;
+	public static final int INVALID = Integer.MAX_VALUE;
 
 	private String[] cmdl = null;
 	private String[] env = null;
@@ -55,8 +55,10 @@ public class Execute {
 	 * Find the list of environment variables for this process.
 	 */
 	public static synchronized Vector<String> getProcEnvironment() {
-		if (procEnvironment != null)
+
+		if (procEnvironment != null) {
 			return procEnvironment;
+		}
 
 		procEnvironment = new Vector<String>();
 		try {
@@ -188,8 +190,9 @@ public class Execute {
 	 * @return the environment used to create a subprocess
 	 */
 	public String[] getEnvironment() {
-		if (env == null || newEnvironment)
+		if (env == null || newEnvironment) {
 			return env;
+		}
 		return patchEnvironment();
 	}
 
@@ -258,8 +261,9 @@ public class Execute {
 		}
 		if (watchdog != null) {
 			Exception ex = watchdog.getException();
-			if (ex != null)
+			if (ex != null) {
 				throw ex;
+			}
 		}
 		int exit = getExitValue();
 
@@ -276,11 +280,13 @@ public class Execute {
 	}
 
 	private String array2string(String sa[]) {
-		if (sa == null)
+		if (sa == null) {
 			return "null";
+		}
 		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < sa.length; i++)
+		for (int i = 0; i < sa.length; i++) {
 			sb.append(sa[i]).append(" ");
+		}
 		return sb.toString();
 	}
 
@@ -381,8 +387,9 @@ public class Execute {
 			}
 
 			exec.setNewenvironment(false);
-			if (baseDir != null)
+			if (baseDir != null) {
 				exec.setWorkingDirectory(baseDir);
+			}
 
 			exec.execute();
 			int status = exec.getExitValue();

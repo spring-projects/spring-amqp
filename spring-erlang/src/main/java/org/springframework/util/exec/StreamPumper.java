@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,43 +27,43 @@ import java.io.OutputStream;
  */
 public class StreamPumper implements Runnable {
 
-    // TODO: make SIZE and SLEEP instance variables.
-    // TODO: add a status flag to note if an error occured in run.
+	// TODO: make SIZE and SLEEP instance variables.
+	// TODO: add a status flag to note if an error occured in run.
 
-    private final static int SLEEP = 5;
-    private final static int SIZE = 128;
-    private InputStream is;
-    private OutputStream os;
-
-
-    /**
-     * Create a new stream pumper.
-     *
-     * @param is input stream to read data from
-     * @param os output stream to write data to.
-     */
-    public StreamPumper(InputStream is, OutputStream os) {
-        this.is = is;
-        this.os = os;
-    }
+	private static final int SLEEP = 5;
+	private static final int SIZE = 128;
+	private InputStream is;
+	private OutputStream os;
 
 
-    /**
-     * Copies data from the input stream to the output stream.
-     *
-     * Terminates as soon as the input stream is closed or an error occurs.
-     */
-    public void run() {
-        final byte[] buf = new byte[SIZE];
+	/**
+	 * Create a new stream pumper.
+	 *
+	 * @param is input stream to read data from
+	 * @param os output stream to write data to.
+	 */
+	public StreamPumper(InputStream is, OutputStream os) {
+		this.is = is;
+		this.os = os;
+	}
 
-        int length;
-        try {
-            while ((length = is.read(buf)) > 0) {
-                os.write(buf, 0, length);
-                try {
-                    Thread.sleep(SLEEP);
-                } catch (InterruptedException e) {}
-            }
-        } catch(IOException e) {}
-    }
+
+	/**
+	 * Copies data from the input stream to the output stream.
+	 *
+	 * Terminates as soon as the input stream is closed or an error occurs.
+	 */
+	public void run() {
+		final byte[] buf = new byte[SIZE];
+
+		int length;
+		try {
+			while ((length = is.read(buf)) > 0) {
+				os.write(buf, 0, length);
+				try {
+					Thread.sleep(SLEEP);
+				} catch (InterruptedException e) {}
+			}
+		} catch(IOException e) {}
+	}
 }
