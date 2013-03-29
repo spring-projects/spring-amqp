@@ -48,9 +48,9 @@
     reply-to address, configure an &lt;inbound-gateway&gt;.</para>
 
     <programlisting language="xml"><![CDATA[<amqp:inbound-gateway request-channel="fromAMQP"
-                               reply-channel="toAMQP"
-                               queue-names="some.queue"
-                               connection-factory="rabbitConnectionFactory"/>]]></programlisting>
+                      reply-channel="toAMQP"
+                      queue-names="some.queue"
+                      connection-factory="rabbitConnectionFactory"/>]]></programlisting>
 
   </section>
 
@@ -63,10 +63,10 @@
     provided in addition to the exchange name.</para>
 
     <programlisting language="xml"><![CDATA[<amqp:outbound-gateway request-channel="toAMQP"
-                               reply-channel="fromAMQP"
-                               exchange-name="some.exchange"
-                               routing-key="foo"
-                               amqp-template="rabbitTemplate"/>]]></programlisting>
+                       reply-channel="fromAMQP"
+                       exchange-name="some.exchange"
+                       routing-key="foo"
+                       amqp-template="rabbitTemplate"/>]]></programlisting>
   </section>
 
 </chapter>

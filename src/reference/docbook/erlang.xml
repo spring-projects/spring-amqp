@@ -30,7 +30,7 @@
       <title>Executing RPC</title>
 
       <para>The interface ErlangOperations is the high level API for
-      interacting with an Erlang process. </para>
+      interacting with an Erlang process.</para>
 
       <programlisting language="java">public interface ErlangOperations {
 
@@ -39,8 +39,8 @@
     OtpErlangObject executeErlangRpc(String module, String function, OtpErlangList args)
             throws OtpException;
 
-    OtpErlangObject executeErlangRpc(String module, String function, OtpErlangObject... args)
-            throws OtpException;
+    OtpErlangObject executeErlangRpc(String module, String function,
+        OtpErlangObject... args) throws OtpException;
 
     OtpErlangObject executeRpc(String module, String function, Object... args)
             throws OtpException;
@@ -67,7 +67,7 @@
       <programlisting language="java"><![CDATA[@ManagedOperation
 public void deleteUser(String username) {
     erlangTemplate.executeAndConvertRpc(
-            "rabbit_access_control", "delete_user", username.getBytes());
+        "rabbit_access_control", "delete_user", username.getBytes());
 }]]></programlisting>
 
       <para>As the JInterface library uses specific classes such as
@@ -106,7 +106,7 @@ public void deleteUser(String username) {
      * The return value from executing the Erlang RPC.
      */
     Object fromErlangRpc(String module, String function, OtpErlangObject erlangObject)
-            throws ErlangConversionException;
+        throws ErlangConversionException;
 }]]></programlisting>
     </section>
   </section>
