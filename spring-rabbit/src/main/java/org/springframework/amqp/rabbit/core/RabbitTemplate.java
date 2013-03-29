@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -121,7 +122,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private volatile Queue replyQueue;
 
-	private final Map<String, LinkedBlockingQueue<Message>> replyHolder = new ConcurrentHashMap<String, LinkedBlockingQueue<Message>>();
+	private final Map<String, PendingReply> replyHolder = new ConcurrentHashMap<String, PendingReply>();
 
 	private volatile ConfirmCallback confirmCallback;
 
@@ -135,9 +136,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private final String uuid = UUID.randomUUID().toString();
 
-	public static final String STACKED_CORRELATION_HEADER = "spring_reply_correlation";
-
-	public static final String STACKED_REPLY_TO_HEADER = "spring_reply_to";
+	private volatile String correlationKey = null;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -288,6 +287,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		this.immediate = immediate;
 		if (logger.isWarnEnabled()) {
 			logger.warn("RabbitMQ 3.0.0 and above no longer supports 'immediate'.");
+		}
+	}
+
+	/**
+	 * If set to 'correlationId' (default) the correlationId property
+	 * will be used; otherwise the supplied key will be used.
+	 * @param correlationKey the correlationKey to set
+	 */
+	public void setCorrelationKey(String correlationKey) {
+		Assert.hasText(correlationKey, "'correlationKey' must not be null or empty");
+		if (!correlationKey.trim().equals("correlationId")) {
+			this.correlationKey = correlationKey.trim();
 		}
 	}
 
@@ -554,38 +565,45 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 			public Message doInRabbit(Channel channel) throws Exception {
-				final LinkedBlockingQueue<Message> replyHandoff = new LinkedBlockingQueue<Message>();
+				final PendingReply pendingReply = new PendingReply();
 				String messageTag = UUID.randomUUID().toString();
-				RabbitTemplate.this.replyHolder.put(messageTag, replyHandoff);
-
-				String replyTo = message.getMessageProperties().getReplyTo();
-				if (StringUtils.hasLength(replyTo) && logger.isDebugEnabled()) {
-					logger.debug("Dropping replyTo header:" + replyTo
+				RabbitTemplate.this.replyHolder.put(messageTag, pendingReply);
+				// Save any existing replyTo and correlation data
+				String savedReplyTo = message.getMessageProperties().getReplyTo();
+				pendingReply.setSavedReplyTo(savedReplyTo);
+				if (StringUtils.hasLength(savedReplyTo) && logger.isDebugEnabled()) {
+					logger.debug("Replacing replyTo header:" + savedReplyTo
 							+ " in favor of template's configured reply-queue:"
 							+ RabbitTemplate.this.replyQueue.getName());
 				}
-				String springReplyTo = (String) message.getMessageProperties()
-						.getHeaders().get(STACKED_REPLY_TO_HEADER);
-				message.getMessageProperties().setHeader(
-						STACKED_REPLY_TO_HEADER,
-						pushHeaderValue(replyTo,
-										springReplyTo));
 				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyQueue.getName());
-				String correlation = (String) message.getMessageProperties()
-						.getHeaders().get(STACKED_CORRELATION_HEADER);
-				if (StringUtils.hasLength(correlation)) {
+				String savedCorrelation = null;
+				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
+					byte[] correlationId = message.getMessageProperties().getCorrelationId();
+					if (correlationId != null) {
+						savedCorrelation = new String(correlationId,
+								RabbitTemplate.this.encoding);
+					}
+				}
+				else {
+					savedCorrelation = (String) message.getMessageProperties()
+						.getHeaders().get(RabbitTemplate.this.correlationKey);
+				}
+				pendingReply.setSavedCorrelation(savedCorrelation);
+				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
+					message.getMessageProperties().setCorrelationId(messageTag
+							.getBytes(RabbitTemplate.this.encoding));
+				}
+				else {
 					message.getMessageProperties().setHeader(
-							STACKED_CORRELATION_HEADER,
-							pushHeaderValue(messageTag, correlation));
-				} else {
-					message.getMessageProperties().setHeader(
-							"spring_reply_correlation", messageTag);
+							RabbitTemplate.this.correlationKey, messageTag);
 				}
 
 				if (logger.isDebugEnabled()) {
 					logger.debug("Sending message with tag " + messageTag);
 				}
 				doSend(channel, exchange, routingKey, message, null);
+				LinkedBlockingQueue<Message> replyHandoff = pendingReply.getQueue();
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
 				RabbitTemplate.this.replyHolder.remove(messageTag);
@@ -766,79 +784,97 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	public void onMessage(Message message) {
-		String messageTag = (String) message.getMessageProperties()
-				.getHeaders().get(STACKED_CORRELATION_HEADER);
-		if (messageTag == null) {
-			logger.error("No correlation header in reply");
-			return;
-		}
-		PoppedHeader poppedHeaderValue = popHeaderValue(messageTag);
-		messageTag = poppedHeaderValue.getPoppedValue();
-		message.getMessageProperties().setHeader(STACKED_CORRELATION_HEADER,
-				poppedHeaderValue.getNewValue());
-		String springReplyTo = (String) message.getMessageProperties()
-				.getHeaders().get(STACKED_REPLY_TO_HEADER);
-		if (springReplyTo != null) {
-			poppedHeaderValue = popHeaderValue(springReplyTo);
-			springReplyTo = poppedHeaderValue.getNewValue();
-			message.getMessageProperties().setHeader(STACKED_REPLY_TO_HEADER, springReplyTo);
-			message.getMessageProperties().setReplyTo(null);
-		}
-		LinkedBlockingQueue<Message> queue = this.replyHolder.get(messageTag);
-		if (queue == null) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("Reply received after timeout for " + messageTag);
-			}
-			return;
-		}
-		queue.add(message);
-		if (logger.isDebugEnabled()) {
-			logger.debug("Reply received for " + messageTag);
-		}
-	}
-
-	private String pushHeaderValue(String newValue, String oldValue) {
-		if (oldValue == null) {
-			return newValue;
-		}
-		else {
-			return newValue + ":" + oldValue;
-		}
-	}
-
-	private PoppedHeader popHeaderValue(String value) {
-		int index = value.indexOf(":");
-		if (index < 0) {
-			return new PoppedHeader(value, null);
-		}
-		else {
-			return new PoppedHeader(value.substring(0, index), value.substring(index+1));
-		}
-	}
-
-	private static class PoppedHeader {
-
-		private final String poppedValue;
-
-		private final String newValue;
-
-		public PoppedHeader(String poppedValue, String newValue) {
-			this.poppedValue = poppedValue;
-			if (StringUtils.hasLength(newValue)) {
-				this.newValue = newValue;
+		try {
+			String messageTag;
+			if (this.correlationKey == null) { // using standard correlationId property
+				messageTag = new String(message.getMessageProperties().getCorrelationId(), this.encoding);
 			}
 			else {
-				this.newValue = null;
+				messageTag = (String) message.getMessageProperties()
+						.getHeaders().get(this.correlationKey);
+			}
+			if (messageTag == null) {
+				logger.error("No correlation header in reply");
+				return;
+			}
+			PendingReply pendingReply = this.replyHolder.get(messageTag);
+			if (pendingReply == null) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Reply received after timeout for " + messageTag);
+				}
+				return;
+			}
+			else {
+				// Restore the inbound correlation data
+				String savedCorrelation = pendingReply.getSavedCorrelation();
+				if (this.correlationKey == null) {
+					if (savedCorrelation == null) {
+						message.getMessageProperties().setCorrelationId(null);
+					}
+					else {
+						message.getMessageProperties().setCorrelationId(
+								savedCorrelation.getBytes(this.encoding));
+					}
+				}
+				else {
+					if (savedCorrelation != null) {
+						message.getMessageProperties().setHeader(this.correlationKey,
+							savedCorrelation);
+					}
+					else {
+						message.getMessageProperties().getHeaders().remove(this.correlationKey);
+					}
+				}
+				// Restore any inbound replyTo
+				String savedReplyTo = pendingReply.getSavedReplyTo();
+				message.getMessageProperties().setReplyTo(savedReplyTo);
+				LinkedBlockingQueue<Message> queue = pendingReply.getQueue();
+				queue.add(message);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Reply received for " + messageTag);
+					if (savedReplyTo != null) {
+						logger.debug("Restored replyTo to " + savedReplyTo);
+					}
+				}
 			}
 		}
+		catch (UnsupportedEncodingException e) {
+			throw new AmqpIllegalStateException("Invalid Character Set:" + this.encoding, e);
+		}
+	}
 
-		public String getPoppedValue() {
-			return poppedValue;
+	private static class PendingReply {
+
+		private volatile String savedReplyTo;
+
+		private volatile String savedCorrelation;
+
+		private final LinkedBlockingQueue<Message> queue;
+
+		public PendingReply() {
+			this.queue = new LinkedBlockingQueue<Message>();
 		}
 
-		public String getNewValue() {
-			return newValue;
+		public String getSavedReplyTo() {
+			return savedReplyTo;
 		}
+
+		public void setSavedReplyTo(String savedReplyTo) {
+			this.savedReplyTo = savedReplyTo;
+		}
+
+		public String getSavedCorrelation() {
+			return savedCorrelation;
+		}
+
+		public void setSavedCorrelation(String savedCorrelation) {
+			this.savedCorrelation = savedCorrelation;
+		}
+
+		public LinkedBlockingQueue<Message> getQueue() {
+			return queue;
+		}
+
 	}
 
 	interface ConfirmCallback {
