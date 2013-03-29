@@ -877,11 +877,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	}
 
-	interface ConfirmCallback {
+	public interface ConfirmCallback {
 		void confirm(CorrelationData correlationData, boolean ack);
 	}
 
-	interface ReturnCallback {
+	public interface ReturnCallback {
 		void returnedMessage(Message message, int replyCode, String replyText,
 				String exchange, String routingKey);
 	}

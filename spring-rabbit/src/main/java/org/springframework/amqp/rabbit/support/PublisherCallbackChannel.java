@@ -66,7 +66,7 @@ public interface PublisherCallbackChannel extends Channel {
 	 * AMQP channels do not support a listener being
 	 * registered on multiple channels.
 	 */
-	interface Listener {
+	public interface Listener {
 
 		/**
 		 * Invoked by the channel when a confirm is received.

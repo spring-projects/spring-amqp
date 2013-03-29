@@ -99,7 +99,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean defaultRequeueRejected = true;
 
-	interface ContainerDelegate {
+	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
 	}
 
