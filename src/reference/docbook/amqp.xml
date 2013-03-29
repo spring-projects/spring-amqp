@@ -61,6 +61,7 @@
 
     public MessageProperties getMessageProperties() {
         return this.messageProperties;
+    }
 }]]></programlisting>
 
       <para>The <interfacename>MessageProperties</interfacename> interface
@@ -269,7 +270,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <property name="password" value="guest"/>
 </bean>]]></programlisting>
 
-    <para><note> There is also a <classname>SingleConnectionFactory</classname>
+    <note> There is also a <classname>SingleConnectionFactory</classname>
     implementation which is only available in the unit test code of the framework.
     It is simpler than <classname>CachingConnectionFactory</classname> since it does
     not cache channels, but it is not intended for practical usage
@@ -277,11 +278,13 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     If you find a need to implement your own <classname>ConnectionFactory</classname>
     for some reason, the <classname>AbstractConnectionFactory</classname>
     base class may provide a nice starting point.</note>
-
+    <para>
     A <classname>ConnectionFactory</classname> can
     be created quickly and conveniently using the rabbit namespace:
-    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
-    id="connectionFactory"/>]]></programlisting> In most cases this
+    </para>
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>]]></programlisting>
+    <para>
+    In most cases this
     will be preferable since the framework can choose the best
     defaults for you. The created instance will be a
     <classname>CachingConnectionFactory</classname>.
@@ -289,6 +292,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     Keep in mind that the default cache size for channels is 1.
     If you want more channels to be cached set a larger value via the
     'channelCacheSize' property. In XML it would look like this:
+    </para>
     <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
       class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
     <constructor-arg value="somehost"/>
@@ -296,21 +300,22 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <property name="password" value="guest"/>
     <property name="channelCacheSize" value="25"/>
 </bean>]]></programlisting>
-    And with the namespace you can just add the 'channel-cache-size' attribute:
+    <para>
+        And with the namespace you can just add the 'channel-cache-size' attribute:
+    </para>
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory" channel-cache-size="25"/>]]></programlisting>
-    </para>
     <para>
-    Host and port attributes can be provided using the namespace
-    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
-    id="connectionFactory" host="somehost" port="5672" />]]></programlisting>
+        Host and port attributes can be provided using the namespace
     </para>
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory
+    id="connectionFactory" host="somehost" port="5672"/>]]></programlisting>
     <para>
 	Alternatively, if running in a clustered environment, use the addresses
 	attribute.
+	</para>
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
-    id="connectionFactory" addresses="host1:5672,host2:5672" />]]></programlisting>
-    </para>
+    id="connectionFactory" addresses="host1:5672,host2:5672"/>]]></programlisting>
 
     <sect2>
       <title>Publisher Confirms and Returns</title>
@@ -379,8 +384,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         must implement this method:
       </para>
       <programlisting language="java"><![CDATA[void returnedMessage(Message message, int replyCode, String replyText,
-          String exchange, String routingKey);
-      ]]></programlisting>
+          String exchange, String routingKey);]]></programlisting>
       <para>
         Only one <interfacename>ReturnCallback</interfacename> is supported by each
         <classname>RabbitTemplate</classname>.
@@ -393,8 +397,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         by calling <code>setConfirmCallback(ConfirmCallback callback)</code>. The callback
         must implement this method:
       </para>
-      <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack);
-      ]]></programlisting>
+      <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack);]]></programlisting>
       <para>
         The <classname>CorrelationData</classname> is an object supplied by the client when sending the
         original message. This is described further in the next section.
@@ -412,7 +415,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <para>When sending a Message, one can use any of the following
     methods:</para>
 
-    <programlisting language="xml"><![CDATA[void send(Message message) throws AmqpException;
+    <programlisting language="java"><![CDATA[void send(Message message) throws AmqpException;
 
 void send(String routingKey, Message message) throws AmqpException;
 
@@ -425,7 +428,8 @@ void send(String exchange, String routingKey, Message message) throws AmqpExcept
     An example of using this method to send a Message might look this
     this:</para>
 
-    <programlisting language="java"><![CDATA[amqpTemplate.send("marketData.topic", "quotes.nasdaq.FOO", new Message("12.34".getBytes(), someProperties));]]></programlisting>
+    <programlisting language="java"><![CDATA[amqpTemplate.send("marketData.topic", "quotes.nasdaq.FOO",
+    new Message("12.34".getBytes(), someProperties));]]></programlisting>
 
     <para>The "exchange" property can be set on the template itself if you
     plan to use that template instance to send to the same exchange most or
@@ -527,7 +531,7 @@ Message receive(String queueName) throws AmqpException;]]></programlisting>
       <classname>Object</classname> returned:</para>
 
       <para>
-        <programlisting><![CDATA[Object receiveAndConvert() throws AmqpException;
+        <programlisting language="java"><![CDATA[Object receiveAndConvert() throws AmqpException;
 
 Object receiveAndConvert(String queueName) throws AmqpException;]]></programlisting>
       </para>
@@ -543,23 +547,22 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     simplest of these is to implement the
     <interfacename>MessageListener</interfacename> interface:</para>
     <programlisting language="java"><![CDATA[public interface MessageListener {
-
     void onMessage(Message message);
-
 }]]></programlisting> <para>If your callback logic depends upon the AMQP
     Channel instance for any reason, you may instead use the
     <interfacename>ChannelAwareMessageListener</interfacename>. It looks
     similar but with an extra parameter:</para> <programlisting
     language="java"><![CDATA[public interface ChannelAwareMessageListener {
-
     void onMessage(Message message, Channel channel) throws Exception;
-
 }]]></programlisting> <para>If you prefer to maintain a stricter separation
     between your application logic and the messaging API, you can rely upon an
     adapter implementation that is provided by the framework. This is often
     referred to as "Message-driven POJO" support. When using the adapter, you
     only need to provide a reference to the instance that the adapter itself
-    should invoke.</para><programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>Now
+    should invoke.</para>
+    <programlisting language="java"><![CDATA[MessageListener listener = new MessageListenerAdapter(somePojo);]]></programlisting>
+    <para>
+    Now
     that you've seen the various options for the Message-listening callback,
     we can turn our attention to the container. Basically, the container
     handles the "active" responsibilities so that the listener callback can
@@ -571,18 +574,26 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <interfacename>ConnectionFactory</interfacename> and the queue name or
     Queue instance(s) from which that listener should consume Messages. Here
     is the most basic example using the default implementation,
-    <classname>SimpleMessageListenerContainer</classname> : <programlisting
-    language="java"><![CDATA[SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+    <classname>SimpleMessageListenerContainer</classname> :
+    </para>
+    <programlisting language="java"><![CDATA[SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 container.setConnectionFactory(rabbitConnectionFactory);
 container.setQueueNames("some.queue");
 container.setMessageListener(new MessageListenerAdapter(somePojo));]]></programlisting>
+    <para>
     As an "active" component, it's most common to create the listener
     container with a bean definition so that it can simply run in the
-    background. This can be done via XML: <programlisting language="xml"><![CDATA[<rabbit:listener-container connection-factory="rabbitConnectionFactory">
+    background. This can be done via XML:
+    </para>
+    <programlisting language="xml"><![CDATA[<rabbit:listener-container connection-factory="rabbitConnectionFactory">
     <rabbit:listener queues="some.queue" ref="somePojo" method="handle"/>
-</rabbit:listener-container>]]></programlisting> Or, you may prefer to use the
+</rabbit:listener-container>]]></programlisting>
+    <para>
+    Or, you may prefer to use the
     @Configuration style which will look very similar to the actual code
-    snippet above: <programlisting language="java"><![CDATA[@Configuration
+    snippet above:
+    </para>
+    <programlisting language="java"><![CDATA[@Configuration
 public class ExampleAmqpConfiguration {
 
     @Bean
@@ -596,7 +607,8 @@ public class ExampleAmqpConfiguration {
 
     @Bean
     public ConnectionFactory rabbitConnectionFactory() {
-        CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+        CachingConnectionFactory connectionFactory =
+            new CachingConnectionFactory("localhost");
         connectionFactory.setUsername("guest");
         connectionFactory.setPassword("guest");
         return connectionFactory;
@@ -649,15 +661,17 @@ public class ExampleAmqpConfiguration {
 
 void convertAndSend(String routingKey, Object message) throws AmqpException;
 
-void convertAndSend(String exchange, String routingKey, Object message) throws AmqpException;
+void convertAndSend(String exchange, String routingKey, Object message)
+    throws AmqpException;
 
-void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
+void convertAndSend(Object message, MessagePostProcessor messagePostProcessor)
+    throws AmqpException;
 
-void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
-        throws AmqpException;
+void convertAndSend(String routingKey, Object message,
+    MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 void convertAndSend(String exchange, String routingKey, Object message,
-        MessagePostProcessor messagePostProcessor) throws AmqpException;]]></programlisting>
+    MessagePostProcessor messagePostProcessor) throws AmqpException;]]></programlisting>
 
     <para>On the receiving side, there are only two methods: one that accepts
     the queue name and one that relies on the template's "queue" property
@@ -767,20 +781,20 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       <classname>MessageProperties</classname>, but you know the expected type,
       you can configure a static type using the <code>defaultType</code> property</para>
 
-      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType" class="org.springframework.amqp.support.converter.JsonMessageConverter">
+      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType"
+      class="o.s.amqp.support.converter.JsonMessageConverter">
     <property name="classMapper">
         <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
-            <property name="defaultType"
-                value="foo.PurchaseOrder" />
+            <property name="defaultType" value="foo.PurchaseOrder"/>
         </bean>
     </property>
 </bean>]]></programlisting>
 
-      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter">
+      <programlisting language="xml"><![CDATA[<bean id="jsonConverterWithDefaultType"
+      class="o.s.amqp.support.converter.Jackson2JsonMessageConverter">
     <property name="classMapper">
         <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
-            <property name="defaultType"
-                value="foo.PurchaseOrder" />
+            <property name="defaultType" value="foo.PurchaseOrder"/>
         </bean>
     </property>
 </bean>]]></programlisting>
@@ -832,12 +846,12 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     reply queue, with the template being the listener. All of the <xref linkend="containerAttributes" /> attributes
     allowed on a &lt;listener-container/&gt; are allowed on the element, except for connection-factory and
     message-converter, which are inherited from the template's configuration.
+    </para>
     <programlisting language="xml"><![CDATA[<rabbit:template id="amqpTemplate"
         connection-factory="connectionFactory" reply-queue="replies">
-    <rabbit:reply-listener />
+    <rabbit:reply-listener/>
 </rabbit:template>
 ]]></programlisting>
-    </para>
     <para>
     While the container and template share a connection factory, they do not share a channel and therefore requests
     and replies are not performed within the same transaction (if transactional).
@@ -891,10 +905,11 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       </note></para>
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
-    when configured using Spring XML would look like this:<programlisting
-    language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>
+    when configured using Spring XML would look like this:
+    </para>
+    <programlisting language="xml"><![CDATA[<rabbit:connection-factory id="connectionFactory"/>
 
-<rabbit:admin id="amqpAdmin" connection-factory="connectionFactory"/>]]></programlisting></para>
+<rabbit:admin id="amqpAdmin" connection-factory="connectionFactory"/>]]></programlisting>
 
     <para>The <classname>RabbitAdmin</classname> implementation does automatic
     lazy declaration of <classname>Queues</classname>,
@@ -904,20 +919,22 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     is opened to the broker. There are some namespace features that make this
     very convenient, e.g. in the Stocks sample application we have:</para>
 
-    <programlisting><![CDATA[<rabbit:queue id="tradeQueue" />
+    <programlisting language="xml"><![CDATA[<rabbit:queue id="tradeQueue"/>
 
-<rabbit:queue id="marketDataQueue" />
+<rabbit:queue id="marketDataQueue"/>
 
-<fanout-exchange name="broadcast.responses" xmlns="http://www.springframework.org/schema/rabbit">
-  <bindings>
-    <binding queue="tradeQueue" />
-  </bindings>
+<fanout-exchange name="broadcast.responses"
+                 xmlns="http://www.springframework.org/schema/rabbit">
+    <bindings>
+        <binding queue="tradeQueue"/>
+    </bindings>
 </fanout-exchange>
 
-<topic-exchange name="app.stock.marketdata" xmlns="http://www.springframework.org/schema/rabbit">
-  <bindings>
-    <binding queue="marketDataQueue" pattern="${stocks.quote.pattern}" />
-  </bindings>
+<topic-exchange name="app.stock.marketdata"
+                xmlns="http://www.springframework.org/schema/rabbit">
+    <bindings>
+        <binding queue="marketDataQueue" pattern="${stocks.quote.pattern}"/>
+    </bindings>
 </topic-exchange>]]></programlisting>
 
     <para>In the example above we are using anonymous Queues (actually
@@ -926,7 +943,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     names, which also serve as identifiers for their bean definitions in the
     context. E.g.</para>
 
-    <programlisting><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
+    <programlisting language="xml"><![CDATA[<rabbit:queue name="stocks.trade.queue"/>]]></programlisting>
 
 	<tip>
 		You can provide both an <emphasis>id</emphasis> and a <emphasis>name</emphasis> attribute.
@@ -941,44 +958,40 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 	a Map of argument name/argument value pairs, using the
 	&lt;rabbit:queue-arguments&gt; element.</para>
 
-    <programlisting><![CDATA[<rabbit:queue name="withArguments">
-	<rabbit:queue-arguments>
-		<entry key="x-ha-policy" value="all" />
-	</rabbit:queue-arguments>
-</rabbit:queue>
-]]></programlisting>
+    <programlisting language="xml"><![CDATA[<rabbit:queue name="withArguments">
+    <rabbit:queue-arguments>
+        <entry key="x-ha-policy" value="all"/>
+    </rabbit:queue-arguments>
+</rabbit:queue>]]></programlisting>
 
 	<para>By default, the arguments are assumed to be strings. For arguments
 	of other types, the type needs to be provided.</para>
 
-	<programlisting><![CDATA[<rabbit:queue name="withArguments">
-	<rabbit:queue-arguments value-type="java.lang.Long">
-		<entry key="x-message-ttl" value="100" />
-	</rabbit:queue-arguments>
-</rabbit:queue>
-]]></programlisting>
+	<programlisting language="xml"><![CDATA[<rabbit:queue name="withArguments">
+    <rabbit:queue-arguments value-type="java.lang.Long">
+        <entry key="x-message-ttl" value="100"/>
+    </rabbit:queue-arguments>
+</rabbit:queue>]]></programlisting>
 
 	<para>When providing arguments of mixed types, the type is provided for each entry element:</para>
 
-	<programlisting><![CDATA[<rabbit:queue name="withArguments">
-	<rabbit:queue-arguments>
-		<entry key="x-message-ttl">
-			<value type="java.lang.Long">100</value>
-		</entry>
-		<entry key="x-ha-policy" value="all" />
-	</rabbit:queue-arguments>
-</rabbit:queue>
-]]></programlisting>
+	<programlisting language="xml"><![CDATA[<rabbit:queue name="withArguments">
+    <rabbit:queue-arguments>
+        <entry key="x-message-ttl">
+            <value type="java.lang.Long">100</value>
+        </entry>
+        <entry key="x-ha-policy" value="all"/>
+    </rabbit:queue-arguments>
+</rabbit:queue>]]></programlisting>
 
 	<para>With Spring Framework 3.2 and later, this can be declared a little more succinctly:</para>
 
-	<programlisting><![CDATA[<rabbit:queue name="withArguments">
-	<rabbit:queue-arguments>
-		<entry key="x-message-ttl" value="100" value-type="java.lang.Long" />
-		<entry key="x-ha-policy" value="all" />
-	</rabbit:queue-arguments>
-</rabbit:queue>
-]]></programlisting>
+	<programlisting language="xml"><![CDATA[<rabbit:queue name="withArguments">
+    <rabbit:queue-arguments>
+        <entry key="x-message-ttl" value="100" value-type="java.lang.Long"/>
+        <entry key="x-ha-policy" value="all"/>
+    </rabbit:queue-arguments>
+</rabbit:queue>]]></programlisting>
 
 	<important>
 		<para>
@@ -1015,7 +1028,8 @@ public abstract class AbstractStockAppRabbitConfiguration {
 
     @Bean
     public ConnectionFactory connectionFactory() {
-        CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+        CachingConnectionFactory connectionFactory =
+            new CachingConnectionFactory("localhost");
         connectionFactory.setUsername("guest");
         connectionFactory.setPassword("guest");
         return connectionFactory;
@@ -1102,11 +1116,10 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
         is important to supply bindings of the appropriate type for the backing
         exchange. Examples include...
       </para>
-      <para>
-        <programlisting><![CDATA[<federated-exchange name="fedDirect" backing-type="direct"
+        <programlisting language="xml"><![CDATA[<federated-exchange name="fedDirect" backing-type="direct"
             upstream-set="upstream-set">
     <direct-bindings>
-        <binding queue="bucket" />
+        <binding queue="bucket"/>
     </direct-bindings>
 </federated-exchange>
 
@@ -1116,7 +1129,6 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
         <binding queue="bucket" pattern="bucket.#"/>
     </topic-bindings>
 </federated-exchange>]]></programlisting>
-      </para>
       <para>
         Notice that the child element, e.g. &lt;direct-bindings/&gt; matches the
         backing-type attribute.
@@ -1184,7 +1196,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     non-invasive), where the template has been configured with
     <code>channelTransacted=true</code>:</para>
 
-    <programlisting><![CDATA[@Transactional
+    <programlisting language="java"><![CDATA[@Transactional
 public void doSomething() {
     String incoming = rabbitTemplate.receiveAndConvert();
     // do some more database processing...
@@ -1208,7 +1220,7 @@ public void doSomething() {
     <classname>PlatformTransactionManager</classname> to the container when it
     is configured. For example:</para>
 
-    <programlisting><![CDATA[@Configuration
+    <programlisting language="java"><![CDATA[@Configuration
 public class ExampleExternalTransactionAmqpConfiguration {
 
     @Bean
@@ -1283,7 +1295,7 @@ public class ExampleExternalTransactionAmqpConfiguration {
         With Java Configuration you can setup a new RabbitTransactionManager
         using:
       </para>
-      <programlisting><![CDATA[@Bean
+      <programlisting language="java"><![CDATA[@Bean
 public RabbitTransactionManager rabbitTransactionManager() {
     return new RabbitTransactionManager(connectionFactory);
 }]]></programlisting>
@@ -1291,7 +1303,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
         If you prefer using XML configuration, declare the following bean in your
         XML Application Context file:
       </para>
-      <programlisting><![CDATA[<bean id="rabbitTxManager"
+      <programlisting language="xml"><![CDATA[<bean id="rabbitTxManager"
       class="org.springframework.amqp.rabbit.transaction.RabbitTransactionManager">
     <property name="connectionFactory" ref="connectionFactory"/>
 </bean>]]></programlisting>

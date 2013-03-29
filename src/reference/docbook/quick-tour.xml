@@ -14,7 +14,7 @@
     to do that is to declare a dependency in your build tool, e.g. for
     Maven:</para>
 
-    <programlisting><![CDATA[<dependency>
+    <programlisting language="xml"><![CDATA[<dependency>
   <groupId>org.springframework.amqp</groupId>
   <artifactId>spring-rabbit</artifactId>
   <version>${version}</version>
@@ -25,7 +25,7 @@
 
       <para>Using plain, imperative Java to send and receive a message:</para>
 
-      <programlisting><![CDATA[ConnectionFactory connectionFactory = new CachingConnectionFactory();
+      <programlisting language="java"><![CDATA[ConnectionFactory connectionFactory = new CachingConnectionFactory();
 
 AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 admin.declareQueue(new Queue("myqueue"));
@@ -50,28 +50,29 @@ String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
       <para>The same example as above, but externalizing the resource
       configuration to XML:</para>
 
-      <programlisting><![CDATA[ApplicationContext context = new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
+      <programlisting language="java"><![CDATA[ApplicationContext context =
+    new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
 template.convertAndSend("myqueue", "foo");
 
 String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
 
-      <programlisting><![CDATA[<beans xmlns="http://www.springframework.org/schema/beans"
+      <programlisting language="xml"><![CDATA[<beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:rabbit="http://www.springframework.org/schema/rabbit"
        xsi:schemaLocation="http://www.springframework.org/schema/rabbit
-                           http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd
-                           http://www.springframework.org/schema/beans
-                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+           http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-<rabbit:connection-factory id="connectionFactory"/>
+    <rabbit:connection-factory id="connectionFactory"/>
 
-<rabbit:template id="amqpTemplate" connection-factory="connectionFactory"/>
+    <rabbit:template id="amqpTemplate" connection-factory="connectionFactory"/>
 
-<rabbit:admin connection-factory="connectionFactory"/>
+    <rabbit:admin connection-factory="connectionFactory"/>
 
-<rabbit:queue name="myqueue"/>
+    <rabbit:queue name="myqueue"/>
 
 </beans>]]></programlisting>
 
@@ -91,36 +92,38 @@ String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
       <para>The same example again with the external configuration in
       Java:</para>
 
-      <para><programlisting><![CDATA[ApplicationContext context = new AnnotationConfigApplicationContext(RabbitConfiguration.class);
+      <programlisting language="java"><![CDATA[ApplicationContext context =
+    new AnnotationConfigApplicationContext(RabbitConfiguration.class);
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
 
 template.convertAndSend("myqueue", "foo");
 
-String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting><programlisting><![CDATA[@Configuration
+String foo = (String) template.receiveAndConvert("myqueue");]]></programlisting>
+      <programlisting language="java"><![CDATA[@Configuration
 public class RabbitConfiguration {
 
-  @Bean
-  public ConnectionFactory connectionFactory() {
-    CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
-    return connectionFactory;
-  }
+    @Bean
+    public ConnectionFactory connectionFactory() {
+        CachingConnectionFactory connectionFactory =
+            new CachingConnectionFactory("localhost");
+        return connectionFactory;
+    }
 
-  @Bean
-  public AmqpAdmin amqpAdmin() {
-    return new RabbitAdmin(connectionFactory());
-  }
+    @Bean
+    public AmqpAdmin amqpAdmin() {
+        return new RabbitAdmin(connectionFactory());
+    }
 
-  @Bean
-  public RabbitTemplate rabbitTemplate() {
-    return new RabbitTemplate(connectionFactory());
-  }
+    @Bean
+    public RabbitTemplate rabbitTemplate() {
+        return new RabbitTemplate(connectionFactory());
+    }
 
-  @Bean
-  public Queue myQueue() {
-    return new Queue("myqueue");
-  }
-
-}]]></programlisting></para>
+    @Bean
+    public Queue myQueue() {
+       return new Queue("myqueue");
+    }
+}]]></programlisting>
     </section>
   </section>
 </chapter>
