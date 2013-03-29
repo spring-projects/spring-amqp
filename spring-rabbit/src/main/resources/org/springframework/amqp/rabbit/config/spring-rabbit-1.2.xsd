@@ -943,6 +943,15 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="correlation-key" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Header name used to convey correlation data for send and receive operations. If not specified, the standard
+	correlationId message property is used. Previous versions of spring-amqp used a header 'spring_reply_correlation'; if you
+	wish to continue to use that value, specify it here.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
