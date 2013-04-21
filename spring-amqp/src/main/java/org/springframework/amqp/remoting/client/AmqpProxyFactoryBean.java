@@ -13,7 +13,6 @@
 
 package org.springframework.amqp.remoting.client;
 
-import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
 import org.springframework.aop.framework.ProxyFactory;
@@ -45,8 +44,6 @@ public class AmqpProxyFactoryBean extends AmqpClientInterceptor implements Facto
 
 	private Object serviceProxy;
 
-	private AmqpAdmin amqpAdmin;
-
 	@Override
 	public void afterPropertiesSet() {
 		if (getServiceInterface() == null) {
@@ -68,17 +65,6 @@ public class AmqpProxyFactoryBean extends AmqpClientInterceptor implements Facto
 	@Override
 	public boolean isSingleton() {
 		return true;
-	}
-
-	public AmqpAdmin getAmqpAdmin() {
-		return amqpAdmin;
-	}
-
-	/**
-	 * The AmqpAdmin that is used for creating the service queue on the message broker
-	 */
-	public void setAmqpAdmin(AmqpAdmin amqpAdmin) {
-		this.amqpAdmin = amqpAdmin;
 	}
 
 }

@@ -107,7 +107,7 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 
 		Object argumentsRaw = messageConverter.fromMessage(message);
 		Object[] arguments;
-		if (argumentsRaw instanceof Object[]) {
+		if (argumentsRaw == null || argumentsRaw instanceof Object[]) {
 			arguments = (Object[]) argumentsRaw;
 		} else {
 			send(new RuntimeException("The message does not contain an argument array"), replyToAddress);
