@@ -57,6 +57,13 @@
 				with the existing converter that uses Jackson 1.x.
 			</para>
 		</section>
+		<section>
+			<title>AMQP Remoting</title>
+			<para>
+				Facilities are now provided for using Spring Remoting techniques, using AMQP
+				as the transport for the RPC calls. For more information see <xref linkend="remoting"/>
+			</para>
+		</section>
 	</section>
 
 	<section>
