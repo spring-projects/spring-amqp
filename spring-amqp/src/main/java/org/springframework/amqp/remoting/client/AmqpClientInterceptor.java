@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,12 +26,11 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.remoting.support.RemoteAccessor;
 
-
 /**
  * {@link org.aopalliance.intercept.MethodInterceptor} for accessing RMI-style AMQP services.
  * 
  * @author David Bilge
- * @since 13.04.2013
+ * @since 1.2
  * @see AmqpServiceMessageListener
  * @see AmqpProxyFactoryBean
  * @see org.springframework.remoting.RemoteAccessException

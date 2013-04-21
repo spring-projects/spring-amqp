@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,17 +18,16 @@ import java.lang.reflect.Method;
 import org.springframework.amqp.remoting.client.AmqpClientInterceptor;
 import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
 
-
 /**
  * A strategy to create a unique method identifier by which client and service can determine which method is to be
- * called. Used in both the {@link AmqpClientInterceptor} and the {@link AmqpServiceMessageListener} and has to match in a pair
- * of those.
+ * called. Used in both the {@link AmqpClientInterceptor} and the {@link AmqpServiceMessageListener} and has to match in
+ * a pair of those.
  * 
  * <p>
  * The method identifier is put in the message header and passed along with the serialized arguments.
  * 
  * @author David Bilge
- * @since 13.04.2013
+ * @since 1.2
  * 
  */
 public interface MethodHeaderNamingStrategy {
