@@ -17,6 +17,7 @@ package org.springframework.amqp.rabbit.support;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 import com.rabbitmq.client.Channel;
 
@@ -35,7 +36,7 @@ public class ConsumerChannelRegistry {
 
 	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class);
 
-	private static final ThreadLocal<Channel> consumerChannel = new ThreadLocal<Channel>();
+	private static final ThreadLocal<ChannelHolder> consumerChannel = new ThreadLocal<ChannelHolder>();
 
 	/**
 	 * If a listener container is configured to use a RabbitTransactionManager, the
@@ -46,11 +47,12 @@ public class ConsumerChannelRegistry {
 	 * to wire in a RabbitTransactionManager.
 	 * @param channel
 	 */
-	public static void registerConsumerChannel(Channel channel) {
+	public static void registerConsumerChannel(Channel channel, ConnectionFactory connectionFactory) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("Registering consumer channel" + channel);
+			logger.debug("Registering consumer channel" + channel + " from factory " +
+							connectionFactory);
 		}
-		consumerChannel.set(channel);
+		consumerChannel.set(new ChannelHolder(channel, connectionFactory));
 	}
 
 	/**
@@ -69,7 +71,45 @@ public class ConsumerChannelRegistry {
 	 * channel for this consumer.
 	 */
 	public static Channel getConsumerChannel() {
-		return consumerChannel.get();
+		ChannelHolder channelHolder = consumerChannel.get();
+		Channel channel = null;
+		if (channelHolder != null) {
+			channel = channelHolder.getChannel();
+		}
+		return channel;
 	}
 
+	/**
+	 * See registerConsumerChannel. This method is called to retrieve the
+	 * channel for this consumer if the connection factory matches.
+	 * @param connectionFactory The connection factory.
+	 */
+	public static Channel getConsumerChannel(ConnectionFactory connectionFactory) {
+		ChannelHolder channelHolder = consumerChannel.get();
+		Channel channel = null;
+		if (channelHolder != null && channelHolder.getConnectionFactory() == connectionFactory) {
+			channel = channelHolder.getChannel();
+		}
+		return channel;
+	}
+
+	private static class ChannelHolder {
+
+		private final Channel channel;
+
+		private final ConnectionFactory connectionFactory;
+
+		private ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
+			this.channel = channel;
+			this.connectionFactory = connectionFactory;
+		}
+
+		private Channel getChannel() {
+			return channel;
+		}
+
+		private ConnectionFactory getConnectionFactory() {
+			return connectionFactory;
+		}
+	}
 }

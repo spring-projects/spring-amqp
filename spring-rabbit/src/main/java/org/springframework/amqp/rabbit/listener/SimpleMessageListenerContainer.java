@@ -537,7 +537,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					 * Register the consumer's channel so it will be used by the transaction manager
 					 * if it's an instance of RabbitTransactionManager.
 					 */
-					ConsumerChannelRegistry.registerConsumerChannel(consumer.getChannel());
+					ConsumerChannelRegistry.registerConsumerChannel(consumer.getChannel(), getConnectionFactory());
 				}
 
 				// Always better to stop receiving as soon as possible if

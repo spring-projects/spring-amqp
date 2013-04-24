@@ -117,12 +117,15 @@ public class ConnectionFactoryUtils {
 		Connection connection = resourceFactory.getConnection(resourceHolderToUse);
 		Channel channel = null;
 		try {
-			boolean isExistingCon = (connection != null);
-			if (!isExistingCon) {
+			/*
+			 * If we are in a listener container, first see if there's a channel registered
+			 * for this consumer and the consumer is using the same connection factory.
+			 */
+			channel = ConsumerChannelRegistry.getConsumerChannel(connectionFactory);
+			if (channel == null && connection == null) {
 				connection = resourceFactory.createConnection();
 				resourceHolderToUse.addConnection(connection);
 			}
-			channel = ConsumerChannelRegistry.getConsumerChannel();
 			if (channel == null) {
 				channel = resourceFactory.createChannel(connection);
 			}
