@@ -49,7 +49,8 @@ public class ConsumerChannelRegistry {
 	 */
 	public static void registerConsumerChannel(Channel channel, ConnectionFactory connectionFactory) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("Registering consumer channel" + channel);
+			logger.debug("Registering consumer channel" + channel + " from factory " +
+							connectionFactory);
 		}
 		consumerChannel.set(new ChannelHolder(channel, connectionFactory));
 	}
