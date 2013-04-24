@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2013 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -31,55 +32,42 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.remoting.support.RemoteExporter;
+import org.springframework.util.Assert;
 
 /**
  * This message listener exposes a plain java service via AMQP. Such services can be accessed via plain AMQP or via
  * {@link AmqpProxyFactoryBean}.
- * 
+ *
  * To configure this message listener so that it actually receives method calls via AMQP, it needs to be put into a
- * listener container. That could be spring-rabbit's {@link SimpleMessageConverter}, for example (see below for an
- * example configuration).
- * 
+ * listener container. See {@link MessageListener}.
+ *
  * <p>
  * When receiving a message, a service method is called - which is determined by the
  * {@link Constants#INVOKED_METHOD_HEADER_NAME} header. An exception thrown by the invoked method is serialized and
  * returned to the client as is a regular method return value.
- * 
+ *
  * <p>
  * This listener responds to "Request/Reply"-style messages as described <a href=
  * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >here</a>.
- * 
- * <p>
- * You could use an (xml) configuration like this:
- * 
- * <pre>
- * &lt;bean id="amqpMessageListener" class="org.springframework.amqp.remoting.service.AmqpServiceMessageListener"&gt;
- *    &lt;property name="amqpTemplate" ref="amqpTemplate" /&gt;
- *    &lt;property name="service" ref="xyzService" /&gt;
- *    &lt;property name="serviceInterface" value="x.y.z.ServiceInterface" /&gt;
- * &lt;/bean&gt;
- * &lt;rabbit:queue name="ServiceQueue" /&gt;
- * &lt;rabbit:listener-container&gt;
- *   &lt;rabbit:listener ref="amqpMessageListener" queues="ServiceQueue" /&gt;
- * &lt;/rabbit:listener-container&gt;
- * </pre>
- * 
+ *
  * @author David Bilge
  * @since 1.2
  */
-public class AmqpServiceMessageListener extends RemoteExporter implements MessageListener, InitializingBean {
+public class AmqpInvokerServiceExporter extends RemoteExporter implements MessageListener, InitializingBean {
 
 	private AmqpTemplate amqpTemplate;
 
 	private MethodHeaderNamingStrategy methodHeaderNamingStrategy = new SimpleHeaderNamingStrategy();
 
-	private Map<String, Method> methodCache = new HashMap<String, Method>();
+	private final Map<String, Method> methodCache = new HashMap<String, Method>();
 
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		Method[] methods = getService().getClass().getMethods();
+		Object service = getService();
+		Assert.notNull(service, "'service' cannot be null");
+		Method[] methods = service.getClass().getMethods();
 		for (Method method : methods) {
 			methodCache.put(getMethodHeaderNamingStrategy().generateMethodName(method), method);
 		}
@@ -92,7 +80,8 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 		Map<String, Object> headers = message.getMessageProperties().getHeaders();
 		Object invokedMethodRaw = headers.get(Constants.INVOKED_METHOD_HEADER_NAME);
 		if (invokedMethodRaw == null || !(invokedMethodRaw instanceof String)) {
-			send(new RuntimeException("The 'invoked method' header is missing (expected name '"
+			send(new RuntimeException("The 'invoked method' header is missing or not of type " +
+					"String (expected name '"
 					+ Constants.INVOKED_METHOD_HEADER_NAME + "')"), replyToAddress);
 			return;
 		}
@@ -109,7 +98,8 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 		Object[] arguments;
 		if (argumentsRaw == null || argumentsRaw instanceof Object[]) {
 			arguments = (Object[]) argumentsRaw;
-		} else {
+		}
+		else {
 			send(new RuntimeException("The message does not contain an argument array"), replyToAddress);
 			return;
 		}
@@ -117,21 +107,36 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 		Object retVal;
 		try {
 			retVal = invokedMethod.invoke(getService(), arguments);
-		} catch (InvocationTargetException ite) {
+		}
+		catch (InvocationTargetException ite) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Exception on method invocation", ite);
+			}
 			send(ite.getCause(), replyToAddress);
 			return;
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Exception on method invocation", e);
+			}
 			send(e, replyToAddress);
+			/*
+			 * Catching Throwable is not good (could be an Error), but we have no choice.
+			 * At least wrap and rethrow.
+			 */
+			if (e instanceof Error) {
+				throw new UncategorizedAmqpException(e);
+			}
 			return;
 		}
 
 		send(retVal, replyToAddress);
 	}
 
-	private void send(Object o, Address replyToAddress) {
-		Message m = messageConverter.toMessage(o, new MessageProperties());
+	private void send(Object object, Address replyToAddress) {
+		Message message = messageConverter.toMessage(object, new MessageProperties());
 
-		getAmqpTemplate().send(replyToAddress.getExchangeName(), replyToAddress.getRoutingKey(), m);
+		getAmqpTemplate().send(replyToAddress.getExchangeName(), replyToAddress.getRoutingKey(), message);
 	}
 
 	public AmqpTemplate getAmqpTemplate() {
@@ -140,7 +145,7 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 
 	/**
 	 * The AMQP template to use for sending the return value.
-	 * 
+	 *
 	 * <p>
 	 * Note that the exchange and routing key parameters on this template are ignored for these return messages. Instead
 	 * of those the respective parameters from the original message's <code>returnAddress</code> are being used.
@@ -159,7 +164,7 @@ public class AmqpServiceMessageListener extends RemoteExporter implements Messag
 	 * <p>
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
 	 * Objects depending on the message content type header.
-	 * 
+	 *
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {

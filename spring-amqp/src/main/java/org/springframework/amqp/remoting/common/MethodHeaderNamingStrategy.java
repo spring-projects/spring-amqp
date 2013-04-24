@@ -16,11 +16,11 @@ package org.springframework.amqp.remoting.common;
 import java.lang.reflect.Method;
 
 import org.springframework.amqp.remoting.client.AmqpClientInterceptor;
-import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
+import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 
 /**
  * A strategy to create a unique method identifier by which client and service can determine which method is to be
- * called. Used in both the {@link AmqpClientInterceptor} and the {@link AmqpServiceMessageListener} and has to match in
+ * called. Used in both the {@link AmqpClientInterceptor} and the {@link AmqpInvokerServiceExporter} and has to match in
  * a pair of those.
  * 
  * <p>

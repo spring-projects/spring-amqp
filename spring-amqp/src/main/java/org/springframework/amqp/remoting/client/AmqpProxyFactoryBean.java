@@ -14,7 +14,7 @@
 package org.springframework.amqp.remoting.client;
 
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
+import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.FactoryBean;
@@ -30,7 +30,7 @@ import org.springframework.remoting.rmi.RmiServiceExporter;
  * broader scope of execution styles, which are not the scope of the mechanism at hand.
  * <p>
  * Calling a method on the proxy will cause an AMQP message being sent according to the configured {@link AmqpTemplate}.
- * This can be received and answered by an {@link AmqpServiceMessageListener}.
+ * This can be received and answered by an {@link AmqpInvokerServiceExporter}.
  * 
  * @author David Bilge
  * @since 1.2

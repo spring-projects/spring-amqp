@@ -21,7 +21,7 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.remoting.client.AmqpProxyFactoryBean;
-import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
+import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.amqp.remoting.testhelper.AbstractAmqpTemplate;
 import org.springframework.amqp.remoting.testhelper.SentSavingTemplate;
 import org.springframework.amqp.remoting.testservice.GeneralException;
@@ -44,7 +44,7 @@ public class RemotingTest {
 	public void initializeTestRig() throws Exception {
 		// Set up the service
 		TestServiceInterface testService = new TestServiceImpl();
-		final AmqpServiceMessageListener serviceListener = new AmqpServiceMessageListener();
+		final AmqpInvokerServiceExporter serviceListener = new AmqpInvokerServiceExporter();
 		final SentSavingTemplate sentSavingTemplate = new SentSavingTemplate();
 		serviceListener.setAmqpTemplate(sentSavingTemplate);
 		serviceListener.setService(testService);

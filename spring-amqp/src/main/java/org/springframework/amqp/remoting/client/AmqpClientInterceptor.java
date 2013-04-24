@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2013 the original author or authors.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -21,17 +21,19 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.remoting.common.Constants;
 import org.springframework.amqp.remoting.common.MethodHeaderNamingStrategy;
 import org.springframework.amqp.remoting.common.SimpleHeaderNamingStrategy;
-import org.springframework.amqp.remoting.service.AmqpServiceMessageListener;
+import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.remoting.RemoteProxyFailureException;
 import org.springframework.remoting.support.RemoteAccessor;
 
 /**
  * {@link org.aopalliance.intercept.MethodInterceptor} for accessing RMI-style AMQP services.
- * 
+ *
  * @author David Bilge
+ * @author Gary Russell
  * @since 1.2
- * @see AmqpServiceMessageListener
+ * @see AmqpInvokerServiceExporter
  * @see AmqpProxyFactoryBean
  * @see org.springframework.remoting.RemoteAccessException
  */
@@ -51,26 +53,33 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 		messageProperties.setHeader(Constants.INVOKED_METHOD_HEADER_NAME,
 				methodHeaderNamingStrategy.generateMethodName(invocation.getMethod()));
 
-		Message m = getMessageConverter().toMessage(invocation.getArguments(), messageProperties);
+		Message requestMessage = getMessageConverter().toMessage(invocation.getArguments(), messageProperties);
 
 		Message resultMessage;
 		if (getRoutingKey() == null) {
 			// Use the template's default routing key
-			resultMessage = amqpTemplate.sendAndReceive(m);
-		} else {
-			resultMessage = amqpTemplate.sendAndReceive(getRoutingKey(), m);
+			resultMessage = amqpTemplate.sendAndReceive(requestMessage);
+		}
+		else {
+			resultMessage = amqpTemplate.sendAndReceive(getRoutingKey(), requestMessage);
+		}
+
+		if (resultMessage == null) {
+			throw new RemoteProxyFailureException("No reply received - perhaps a timeout in the template?", null);
 		}
 
 		Object result = getMessageConverter().fromMessage(resultMessage);
 
 		if (invocation.getMethod().getReturnType().getCanonicalName().equals(Void.class.getCanonicalName())) {
 			return null;
-		} else if (result instanceof Throwable
+		}
+		else if (result instanceof Throwable
 				&& !invocation.getMethod().getReturnType().isAssignableFrom(result.getClass())) {
 			// TODO handle for case where exceptions that are not known to the
 			// caller are being thrown (might be nested unchecked exceptions)
 			throw (Throwable) result;
-		} else {
+		}
+		else {
 			return result;
 		}
 	}
@@ -99,7 +108,7 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	 * <p>
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
 	 * Objects depending on the message content type header.
-	 * 
+	 *
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {

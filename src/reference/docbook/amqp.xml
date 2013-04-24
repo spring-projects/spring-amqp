@@ -873,6 +873,68 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       application using 1.1, you must set the attribute to <code>spring_reply_correlation</code>.
       </note>
     </section>
+    <section id="remoting">
+      <title>Spring Remoting with AMQP</title>
+      <para>
+        The Spring Framework has a general remoting capability, allowing
+        <ulink url="http://static.springsource.org/spring/docs/current/spring-framework-reference/html/remoting.html">
+        Remote Procedure Calls (RPC)</ulink> using various transports.
+        Spring-AMQP supports a similar mechanism with a <classname>AmqpProxyFactoryBean</classname> on the client
+        and a <classname>AmqpInvokerServiceExporter</classname> on the server. This provides RPC over AMQP.
+        On the client side, a <classname>RabbitTemplate</classname> is used as described above; on the server side,
+        the invoker (configured as a <interfacename>MessageListener</interfacename>) receives the message, invokes
+        the configured service, and returns the reply using the inbound message's <code>replyTo</code> information.
+      </para>
+      <para>
+        The client factory bean can be injected into any bean (using its <code>serviceInterface</code>); the client
+        can then invoke methods on the proxy, resulting in remote execution over AMQP.
+      </para>
+      <note>
+        With the default <interfacename>MessageConverter</interfacename>s, the method paramters must be
+        <interfacename>Serializable</interfacename>.
+      </note>
+      <para>
+        Sample client and server configurations are shown below.
+      </para>
+      <programlisting language="xml"><![CDATA[<bean id="client"
+	class="org.springframework.amqp.remoting.client.AmqpProxyFactoryBean">
+	<property name="amqpTemplate" ref="template" />
+	<property name="serviceInterface" value="foo.ServiceInterface" />
+</bean>
+
+<rabbit:connection-factory id="connectionFactory" />
+
+<rabbit:template id="template" connection-factory="connectionFactory" reply-timeout="2000"
+	routing-key="remoting.binding" exchange="remoting.exchange" />
+
+<rabbit:admin connection-factory="connectionFactory" />
+
+<rabbit:queue name="remoting.queue" />
+
+<rabbit:direct-exchange name="remoting.exchange">
+	<rabbit:bindings>
+		<rabbit:binding queue="remoting.queue" key="remoting.binding" />
+	</rabbit:bindings>
+</rabbit:direct-exchange>]]></programlisting>
+      <programlisting language="xml"><![CDATA[<bean id="listener"
+	class="org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter">
+	<property name="serviceInterface" value="foo.ServiceInterface" />
+	<property name="service" ref="service" />
+	<property name="amqpTemplate" ref="template" />		
+</bean>
+
+<bean id="service" class="foo.ServiceImpl" />
+
+<rabbit:connection-factory id="connectionFactory" />
+
+<rabbit:template id="template" connection-factory="connectionFactory" />
+
+<rabbit:queue name="remoting.queue" />
+
+<rabbit:listener-container connection-factory="connectionFactory">
+	<rabbit:listener ref="listener" queue-names="remoting.queue" />
+</rabbit:listener-container>]]></programlisting>
+    </section>
   </section>
 
   <section id="broker-configuration">
