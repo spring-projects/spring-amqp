@@ -373,16 +373,18 @@ public class BlockingQueueConsumer {
 				RabbitUtils.rollbackIfNecessary(channel);
 			}
 			if (ackRequired) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rejecting messages");
-				}
-				boolean shouldRequeue = this.defaultRequeuRejected;
+				// We should always requeue if the container was stopping
+				boolean shouldRequeue = this.defaultRequeuRejected ||
+						ex instanceof MessageRejectedWhileStoppingException;
 				Throwable t = ex;
 				while (shouldRequeue && t != null) {
 					if (t instanceof AmqpRejectAndDontRequeueException) {
 						shouldRequeue = false;
 					}
 					t = t.getCause();
+				}
+				if (logger.isDebugEnabled()) {
+					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
 				}
 				for (Long deliveryTag : deliveryTags) {
 					// With newer RabbitMQ brokers could use basicNack here...
