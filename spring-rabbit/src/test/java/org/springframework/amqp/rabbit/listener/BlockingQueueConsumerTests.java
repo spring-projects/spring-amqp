@@ -41,19 +41,19 @@ public class BlockingQueueConsumerTests {
 	@Test
 	public void testRequeue() throws Exception {
 		Exception ex = new RuntimeException();
-		testRequeueOrNot(ex, true);
+		testRequeueOrNotDefaultYes(ex, true);
 	}
 
 	@Test
 	public void testRequeueNullException() throws Exception {
 		Exception ex = null;
-		testRequeueOrNot(ex, true);
+		testRequeueOrNotDefaultYes(ex, true);
 	}
 
 	@Test
 	public void testDontRequeue() throws Exception {
 		Exception ex = new AmqpRejectAndDontRequeueException("fail");
-		testRequeueOrNot(ex, false);
+		testRequeueOrNotDefaultYes(ex, false);
 	}
 
 	@Test
@@ -61,25 +61,25 @@ public class BlockingQueueConsumerTests {
 		Exception ex = new RuntimeException(
 				new RuntimeException(new AmqpRejectAndDontRequeueException(
 						"fail")));
-		testRequeueOrNot(ex, false);
+		testRequeueOrNotDefaultYes(ex, false);
 	}
 
 	@Test
 	public void testRequeueDefaultNot() throws Exception {
 		Exception ex = new RuntimeException();
-		testRequeueOrNotDefaultNot(ex, false);
+		testRequeueOrNotDefaultNo(ex, false);
 	}
 
 	@Test
 	public void testRequeueNullExceptionDefaultNot() throws Exception {
 		Exception ex = null;
-		testRequeueOrNotDefaultNot(ex, false);
+		testRequeueOrNotDefaultNo(ex, false);
 	}
 
 	@Test
 	public void testDontRequeueDefaultNot() throws Exception {
 		Exception ex = new AmqpRejectAndDontRequeueException("fail");
-		testRequeueOrNotDefaultNot(ex, false);
+		testRequeueOrNotDefaultNo(ex, false);
 	}
 
 	@Test
@@ -87,30 +87,41 @@ public class BlockingQueueConsumerTests {
 		Exception ex = new RuntimeException(
 				new RuntimeException(new AmqpRejectAndDontRequeueException(
 						"fail")));
-		testRequeueOrNotDefaultNot(ex, false);
+		testRequeueOrNotDefaultNo(ex, false);
 	}
 
-	private void testRequeueOrNot(Exception ex, boolean requeue)
+	/**
+	 * We should always requeue if the exception is a
+	 * {@link MessageRejectedWhileStoppingException}.
+	 */
+	@Test
+	public void testDoRequeueStoppingDefaultNot() throws Exception {
+		Exception ex = new MessageRejectedWhileStoppingException();
+		testRequeueOrNotDefaultNo(ex, true);
+	}
+
+	private void testRequeueOrNotDefaultYes(Exception ex, boolean expectedRequeue)
 			throws Exception, IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Channel channel = mock(Channel.class);
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 1, "testQ");
-		testRequeueOrNotGuts(ex, requeue, channel, blockingQueueConsumer);
+		testRequeueOrNotGuts(ex, expectedRequeue, channel, blockingQueueConsumer);
 	}
 
-	private void testRequeueOrNotDefaultNot(Exception ex, boolean requeue)
+	private void testRequeueOrNotDefaultNo(Exception ex, boolean expectedRequeue)
 			throws Exception, IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Channel channel = mock(Channel.class);
+		boolean defaultRequeueRejected = false;
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
-				AcknowledgeMode.AUTO, true, 1, false, "testQ");
-		testRequeueOrNotGuts(ex, requeue, channel, blockingQueueConsumer);
+				AcknowledgeMode.AUTO, true, 1, defaultRequeueRejected, "testQ");
+		testRequeueOrNotGuts(ex, expectedRequeue, channel, blockingQueueConsumer);
 	}
 
-	private void testRequeueOrNotGuts(Exception ex, boolean requeue,
+	private void testRequeueOrNotGuts(Exception ex, boolean expectedRequeue,
 			Channel channel, BlockingQueueConsumer blockingQueueConsumer)
 			throws Exception, IOException {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(blockingQueueConsumer);
@@ -119,7 +130,7 @@ public class BlockingQueueConsumerTests {
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
-		Mockito.verify(channel).basicReject(1L, requeue);
+		Mockito.verify(channel).basicReject(1L, expectedRequeue);
 	}
 
 }
