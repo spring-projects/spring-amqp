@@ -1,10 +1,23 @@
+/*
+ * Copyright 2002-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package org.springframework.amqp.rabbit.connection;
 
+import static junit.framework.Assert.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -12,8 +25,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,7 +37,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import junit.framework.Assert;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Channel;
@@ -31,6 +51,7 @@ import com.rabbitmq.client.GetResponse;
 /**
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Gary Russell
  */
 public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTests {
 
@@ -453,7 +474,148 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertSame(notSame, closed.get());
 
 		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
+	}
 
+	@Test
+	public void testWithConnectionFactoryCachedConnection() throws IOException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+
+		final List<com.rabbitmq.client.Connection> mockConnections = new ArrayList<com.rabbitmq.client.Connection>();
+		final List<Channel> mockChannels = new ArrayList<Channel>();
+
+		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
+			private int connectionNumber;
+			@Override
+			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
+				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+				doAnswer(new Answer<Channel>() {
+					private int channelNumber;
+					@Override
+					public Channel answer(InvocationOnMock invocation) throws Throwable {
+						Channel channel = mock(Channel.class);
+						when(channel.isOpen()).thenReturn(true);
+						int channelNumnber = ++this.channelNumber;
+						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
+						mockChannels.add(channel);
+						return channel;
+					}
+				}).when(connection).createChannel();
+				int connectionNumber = ++this.connectionNumber;
+				when(connection.toString()).thenReturn("mockConnection" + connectionNumber);
+				when(connection.isOpen()).thenReturn(true);
+				mockConnections.add(connection);
+				return connection;
+			}
+		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+
+		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
+		assertEquals(0, openConnections.size());
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
+		assertEquals(0, idleConnections.size());
+
+		Connection con1 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(0), con1);
+		assertEquals(1, openConnections.size());
+		assertEquals(0, idleConnections.size());
+
+		Channel channel1 = con1.createChannel(false);
+		verifyChannelIs(mockChannels.get(0), channel1);
+		channel1.close();
+		verify(mockChannels.get(0)).close();
+
+		con1.close(); // should be ignored, and placed into connection cache.
+		verify(mockConnections.get(0), never()).close();
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+		/*
+		 * will retrieve same connection that was just put into cache, and new channel
+		 */
+		Connection con2 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(0), con2);
+		Channel channel2 = con2.createChannel(false);
+		verifyChannelIs(mockChannels.get(1), channel2);
+		channel2.close();
+		verify(mockChannels.get(1)).close();
+		con2.close();
+		verify(mockConnections.get(0), never()).close();
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+		/*
+		 * Now check for multiple connections/channels
+		 */
+		con1 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(0), con1);
+		con2 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(1), con2);
+		channel1 = con1.createChannel(false);
+		verifyChannelIs(mockChannels.get(2), channel1);
+		channel2 = con2.createChannel(false);
+		verifyChannelIs(mockChannels.get(3), channel2);
+		assertEquals(2, openConnections.size());
+		assertEquals(0, idleConnections.size());
+		// put mock1 in cache
+		channel1.close();
+		verify(mockChannels.get(2)).close();
+		con1.close();
+		verify(mockConnections.get(0), never()).close();
+		assertEquals(2, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+		Connection con3 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(0), con3);
+		Channel channel3 = con3.createChannel(false);
+		verifyChannelIs(mockChannels.get(4), channel3);
+
+		assertEquals(2, openConnections.size());
+		assertEquals(0, idleConnections.size());
+
+		channel2.close();
+		con2.close();
+		assertEquals(2, openConnections.size());
+		assertEquals(1, idleConnections.size());
+		channel3.close();
+		con3.close();
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+		/*
+		 *  Cache size is 1; con3 (mock1) should have been a real close.
+		 *  con2 (mock2) should still be in the cache.
+		 */
+		verify(mockConnections.get(0)).close(30000);
+		verify(mockChannels.get(4)).close();
+		verify(mockConnections.get(1), never()).close(30000);
+		verify(mockChannels.get(3)).close();
+		verifyConnectionIs(mockConnections.get(1), idleConnections.iterator().next());
+		/*
+		 * Now a closed cached connection
+		 */
+		when(mockConnections.get(1).isOpen()).thenReturn(false);
+		con3 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(2), con3);
+		assertEquals(1, openConnections.size());
+		assertEquals(0, idleConnections.size());
+		channel3 = con3.createChannel(false);
+		verifyChannelIs(mockChannels.get(5), channel3);
+		channel3.close();
+		con3.close();
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+	}
+
+	private void verifyConnectionIs(com.rabbitmq.client.Connection mockConnection, Object con) {
+		assertSame(mockConnection, TestUtils.getPropertyValue(con, "target.delegate",
+				com.rabbitmq.client.Connection.class));
+	}
+
+	private void verifyChannelIs(Channel mockChannel, Channel channel) {
+		ChannelProxy proxy = (ChannelProxy) channel;
+		assertSame(mockChannel, proxy.getTargetChannel());
 	}
 
 }

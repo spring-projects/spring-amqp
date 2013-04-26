@@ -50,6 +50,10 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String REQUESTED_HEARTBEAT = "requested-heartbeat";
 
+	private static final String CACHE_MODE = "cache-mode";
+
+	private static final String CONNECTION_CACHE_SIZE_ATTRIBUTE = "connection-cache-size";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return CachingConnectionFactory.class;
@@ -84,6 +88,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_CONFIRMS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REQUESTED_HEARTBEAT, "requestedHeartBeat");
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, CACHE_MODE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_CACHE_SIZE_ATTRIBUTE);
 
 	}
 

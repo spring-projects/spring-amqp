@@ -34,6 +34,7 @@ import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -428,7 +429,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		if (this.getConnectionFactory() instanceof CachingConnectionFactory) {
 			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
-			if (cf.getChannelCacheSize() < this.concurrentConsumers) {
+			if (cf.getCacheMode() == CacheMode.CHANNEL && cf.getChannelCacheSize() < this.concurrentConsumers) {
 				cf.setChannelCacheSize(this.concurrentConsumers);
 				logger.warn("CachingConnectionFactory's channelCacheSize can not be less than the number of concurrentConsumers so it was reset to match: "
 						+ this.concurrentConsumers);
