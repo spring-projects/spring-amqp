@@ -20,6 +20,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.remoting.client.AmqpProxyFactoryBean;
 import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.amqp.remoting.testhelper.AbstractAmqpTemplate;
@@ -28,6 +29,7 @@ import org.springframework.amqp.remoting.testservice.GeneralException;
 import org.springframework.amqp.remoting.testservice.SpecialException;
 import org.springframework.amqp.remoting.testservice.TestServiceImpl;
 import org.springframework.amqp.remoting.testservice.TestServiceInterface;
+import org.springframework.amqp.support.converter.MessageConverter;
 
 /**
  * @author David Bilge
@@ -44,23 +46,29 @@ public class RemotingTest {
 	public void initializeTestRig() throws Exception {
 		// Set up the service
 		TestServiceInterface testService = new TestServiceImpl();
-		final AmqpInvokerServiceExporter serviceListener = new AmqpInvokerServiceExporter();
+		final AmqpInvokerServiceExporter serviceExporter = new AmqpInvokerServiceExporter();
 		final SentSavingTemplate sentSavingTemplate = new SentSavingTemplate();
-		serviceListener.setAmqpTemplate(sentSavingTemplate);
-		serviceListener.setService(testService);
-		serviceListener.setServiceInterface(TestServiceInterface.class);
-		serviceListener.afterPropertiesSet();
+		serviceExporter.setAmqpTemplate(sentSavingTemplate);
+		serviceExporter.setService(testService);
+		serviceExporter.setServiceInterface(TestServiceInterface.class);
 
 		// Set up the client
 		AmqpProxyFactoryBean amqpProxyFactoryBean = new AmqpProxyFactoryBean();
 		amqpProxyFactoryBean.setServiceInterface(TestServiceInterface.class);
 		AmqpTemplate directForwardingTemplate = new AbstractAmqpTemplate() {
 			@Override
-			public Message sendAndReceive(Message message) throws AmqpException {
+			public Object convertSendAndReceive(Object payload) throws AmqpException {
+				MessageConverter messageConverter = serviceExporter.getMessageConverter();
+
 				Address replyTo = new Address("fakeExchange", "fakeExchangeName", "fakeRoutingKey");
-				message.getMessageProperties().setReplyToAddress(replyTo);
-				serviceListener.onMessage(message);
-				return sentSavingTemplate.getLastMessage();
+				MessageProperties messageProperties = new MessageProperties();
+				messageProperties.setReplyToAddress(replyTo);
+				Message message = messageConverter.toMessage(payload, messageProperties);
+
+				serviceExporter.onMessage(message);
+
+				Message resultMessage = sentSavingTemplate.getLastMessage();
+				return messageConverter.fromMessage(resultMessage);
 			}
 		};
 		amqpProxyFactoryBean.setAmqpTemplate(directForwardingTemplate);

@@ -1,11 +1,11 @@
 /*
  * Copyright 2002-2013 the original author or authors.
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- *
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -16,20 +16,17 @@ package org.springframework.amqp.remoting.client;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.remoting.common.Constants;
-import org.springframework.amqp.remoting.common.MethodHeaderNamingStrategy;
-import org.springframework.amqp.remoting.common.SimpleHeaderNamingStrategy;
 import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
-import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.remoting.RemoteProxyFailureException;
+import org.springframework.remoting.support.DefaultRemoteInvocationFactory;
 import org.springframework.remoting.support.RemoteAccessor;
+import org.springframework.remoting.support.RemoteInvocation;
+import org.springframework.remoting.support.RemoteInvocationFactory;
+import org.springframework.remoting.support.RemoteInvocationResult;
 
 /**
  * {@link org.aopalliance.intercept.MethodInterceptor} for accessing RMI-style AMQP services.
- *
+ * 
  * @author David Bilge
  * @author Gary Russell
  * @since 1.2
@@ -41,47 +38,32 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 
 	private AmqpTemplate amqpTemplate;
 
-	private MethodHeaderNamingStrategy methodHeaderNamingStrategy = new SimpleHeaderNamingStrategy();
-
-	private MessageConverter messageConverter = new SimpleMessageConverter();
-
 	private String routingKey = null;
+
+	private RemoteInvocationFactory remoteInvocationFactory = new DefaultRemoteInvocationFactory();
 
 	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
-		MessageProperties messageProperties = new MessageProperties();
-		messageProperties.setHeader(Constants.INVOKED_METHOD_HEADER_NAME,
-				methodHeaderNamingStrategy.generateMethodName(invocation.getMethod()));
+		RemoteInvocation remoteInvocation = getRemoteInvocationFactory().createRemoteInvocation(invocation);
 
-		Message requestMessage = getMessageConverter().toMessage(invocation.getArguments(), messageProperties);
-
-		Message resultMessage;
+		Object rawResult;
 		if (getRoutingKey() == null) {
 			// Use the template's default routing key
-			resultMessage = amqpTemplate.sendAndReceive(requestMessage);
-		}
-		else {
-			resultMessage = amqpTemplate.sendAndReceive(getRoutingKey(), requestMessage);
+			rawResult = amqpTemplate.convertSendAndReceive(remoteInvocation);
+		} else {
+			rawResult = amqpTemplate.convertSendAndReceive(routingKey, remoteInvocation);
 		}
 
-		if (resultMessage == null) {
+		if (rawResult == null) {
 			throw new RemoteProxyFailureException("No reply received - perhaps a timeout in the template?", null);
+		} else if (!(rawResult instanceof RemoteInvocationResult)) {
+			throw new RemoteProxyFailureException("Expected a result of type "
+					+ RemoteInvocationResult.class.getCanonicalName() + " but found "
+					+ rawResult.getClass().getCanonicalName(), null);
 		}
 
-		Object result = getMessageConverter().fromMessage(resultMessage);
-
-		if (invocation.getMethod().getReturnType().getCanonicalName().equals(Void.class.getCanonicalName())) {
-			return null;
-		}
-		else if (result instanceof Throwable
-				&& !invocation.getMethod().getReturnType().isAssignableFrom(result.getClass())) {
-			// TODO handle for case where exceptions that are not known to the
-			// caller are being thrown (might be nested unchecked exceptions)
-			throw (Throwable) result;
-		}
-		else {
-			return result;
-		}
+		RemoteInvocationResult result = (RemoteInvocationResult) rawResult;
+		return result.recreate();
 	}
 
 	public AmqpTemplate getAmqpTemplate() {
@@ -98,35 +80,6 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 		this.amqpTemplate = amqpTemplate;
 	}
 
-	public MessageConverter getMessageConverter() {
-		return messageConverter;
-	}
-
-	/**
-	 * Set the message converter for this remote service. Used to serialize arguments to called methods and to
-	 * deserialize their return values.
-	 * <p>
-	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
-	 * Objects depending on the message content type header.
-	 *
-	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
-	 */
-	public void setMessageConverter(MessageConverter messageConverter) {
-		this.messageConverter = messageConverter;
-	}
-
-	public MethodHeaderNamingStrategy getMethodHeaderNamingStrategy() {
-		return methodHeaderNamingStrategy;
-	}
-
-	/**
-	 * A strategy to name methods in the message header for lookup in the service. Make sure to use the same strategy on
-	 * the service side.
-	 */
-	public void setMethodHeaderNamingStrategy(MethodHeaderNamingStrategy methodHeaderNamingStrategy) {
-		this.methodHeaderNamingStrategy = methodHeaderNamingStrategy;
-	}
-
 	public String getRoutingKey() {
 		return routingKey;
 	}
@@ -139,6 +92,19 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	 */
 	public void setRoutingKey(String routingKey) {
 		this.routingKey = routingKey;
+	}
+
+	public RemoteInvocationFactory getRemoteInvocationFactory() {
+		return remoteInvocationFactory;
+	}
+
+	/**
+	 * Set the RemoteInvocationFactory to use for this accessor. Default is a {@link DefaultRemoteInvocationFactory}.
+	 * <p>
+	 * A custom invocation factory can add further context information to the invocation, for example user credentials.
+	 */
+	public void setRemoteInvocationFactory(RemoteInvocationFactory remoteInvocationFactory) {
+		this.remoteInvocationFactory = remoteInvocationFactory;
 	}
 
 }
