@@ -38,6 +38,11 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  * the <code>ReplyToAddress</code> of the received message.
  * 
  * <p>
+ * Please note that this exporter does not use the {@link MessageConverter} of the injected {@link AmqpTemplate} to
+ * convert incoming calls and their results. Instead you have to directly inject the <code>MessageConverter</code> into
+ * this class.
+ * 
+ * <p>
  * This listener responds to "Request/Reply"-style messages as described <a href=
  * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >here</a>.
  * 
