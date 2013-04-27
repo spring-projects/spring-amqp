@@ -28,7 +28,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.remoting.rmi.CodebaseAwareObjectInputStream;
-import java.rmi.server.RMIClassLoader;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -78,6 +77,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	/**
 	 * Converts from a AMQP Message to an Object.
 	 */
+	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
@@ -118,6 +118,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	/**
 	 * Creates an AMQP Message from the provided Object.
 	 */
+	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;
 		if (object instanceof byte[]) {

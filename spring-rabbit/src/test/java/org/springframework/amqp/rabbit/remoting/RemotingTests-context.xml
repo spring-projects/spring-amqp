@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit-1.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="client" class="org.springframework.amqp.remoting.client.AmqpProxyFactoryBean">
+		<property name="amqpTemplate" ref="template" />
+		<property name="serviceInterface" value="org.springframework.amqp.rabbit.remoting.RemotingTests$ServiceInterface" />
+	</bean>
+
+	<bean id="listener" class="org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter">
+		<property name="serviceInterface" value="org.springframework.amqp.rabbit.remoting.RemotingTests$ServiceInterface" />
+		<property name="service" ref="service" />
+		<property name="amqpTemplate" ref="template" />		
+	</bean>
+
+	<bean id="service" class="org.springframework.amqp.rabbit.remoting.RemotingTests$ServiceImpl" />
+	
+	<rabbit:connection-factory id="connectionFactory" />
+
+	<rabbit:template id="template" connection-factory="connectionFactory" reply-timeout="2000"
+		routing-key="remoting.test.binding" exchange="remoting.test.exchange" />
+
+	<rabbit:admin connection-factory="connectionFactory" />
+
+	<rabbit:queue name="remoting.test.queue" />
+
+	<rabbit:direct-exchange name="remoting.test.exchange">
+		<rabbit:bindings>
+			<rabbit:binding queue="remoting.test.queue" key="remoting.test.binding" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener ref="listener" queue-names="remoting.test.queue" />
+	</rabbit:listener-container>
+</beans>
