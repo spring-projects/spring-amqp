@@ -189,6 +189,17 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	}
 
 	/**
+	 * Create a new {@link MessageListenerAdapter} for the given delegate while also
+	 * declaring its POJO method.
+	 * @param delegate the delegate object
+	 * @param defaultListenerMethod name of the POJO method to call upon message receipt
+	 */
+	public MessageListenerAdapter(Object delegate, String defaultListenerMethod) {
+		this(delegate);
+		setDefaultListenerMethod(defaultListenerMethod);
+	}
+
+	/**
 	 * Set a target object to delegate message listening to. Specified listener methods have to be present on this
 	 * target object.
 	 * <p>
