@@ -19,6 +19,7 @@ import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
@@ -119,6 +120,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Greg Turnquist
  *
  * @see #setDelegate
  * @see #setDefaultListenerMethod
@@ -186,6 +188,17 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 		initDefaultStrategies();
 		setDelegate(delegate);
 		setMessageConverter(messageConverter);
+	}
+
+	/**
+	 * Create a new {@link MessageListenerAdapter} for the given delegate while also
+	 * declaring its POJO method.
+	 * @param delegate the delegate object
+	 * @param defaultListenerMethod name of the POJO method to call upon message receipt
+	 */
+	public MessageListenerAdapter(Object delegate, String defaultListenerMethod) {
+		this(delegate);
+		setDefaultListenerMethod(defaultListenerMethod);
 	}
 
 	/**
