@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -57,6 +58,9 @@ public final class ConnectionFactoryParserTests {
 		assertNull(dfa.getPropertyValue("executorService"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherReturns"));
+		assertEquals(123,
+				((com.rabbitmq.client.ConnectionFactory) dfa.getPropertyValue("rabbitConnectionFactory"))
+						.getRequestedHeartbeat());
 	}
 
 	@Test

@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -82,6 +83,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setPort(int port) {
 		this.rabbitConnectionFactory.setPort(port);
+	}
+
+	public void setRequestedHeartBeat(int requestedHeartBeat) {
+		this.rabbitConnectionFactory.setRequestedHeartbeat(requestedHeartBeat);
 	}
 
 	public int getPort() {
