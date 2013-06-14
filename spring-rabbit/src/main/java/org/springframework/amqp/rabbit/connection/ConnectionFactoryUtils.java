@@ -16,7 +16,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.rabbit.support.ConsumerChannelRegistry;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;

@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 import com.rabbitmq.client.Channel;
 
