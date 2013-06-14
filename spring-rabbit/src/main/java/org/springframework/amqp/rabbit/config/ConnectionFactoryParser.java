@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,11 +13,12 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
@@ -46,6 +47,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 	private static final String PUBLISHER_CONFIRMS = "publisher-confirms";
 
 	private static final String PUBLISHER_RETURNS = "publisher-returns";
+
+	private static final String REQUESTED_HEARTBEAT = "requested-heartbeat";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -80,6 +83,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ADDRESSES);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_CONFIRMS);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, PUBLISHER_RETURNS);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, REQUESTED_HEARTBEAT, "requestedHeartBeat");
 
 	}
 

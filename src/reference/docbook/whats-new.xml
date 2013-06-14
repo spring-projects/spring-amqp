@@ -8,9 +8,9 @@
 		<section>
 			<title>RabbitMQ Version</title>
 			<para>
-				Spring AMQP now using RabbitMQ 3.0.x by default (but retains
+				Spring AMQP now using RabbitMQ 3.1.x by default (but retains
 				compatibility with earlier versions). Certain deprecations have
-				been added for features no longer supported by RabbitMQ 3.0.x -
+				been added for features no longer supported by RabbitMQ 3.1.x -
 				federated exchanges and the <code>immediate</code> property on
 				the <classname>RabbitTemplate</classname>.
 			</para>
@@ -62,6 +62,15 @@
 			<para>
 				Facilities are now provided for using Spring Remoting techniques, using AMQP
 				as the transport for the RPC calls. For more information see <xref linkend="remoting"/>
+			</para>
+		</section>
+		<section>
+			<title>Requested Heart Beats</title>
+			<para>
+				Several users have asked for the underlying client connection factory's <code>requestedHeartBeats</code>
+				property to be exposed on the Spring AMQP <classname>CachingConnectionFactory</classname>. This is
+				now available; previously, it was necessary to configure the AMQP client factory as
+				a separate bean and provide a reference to it in the <classname>CachingConnectionFactory</classname>.
 			</para>
 		</section>
 	</section>
