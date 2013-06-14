@@ -91,8 +91,8 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 	 * Note that the exchange and routing key parameters on this template are ignored for these return messages. Instead
 	 * of those the respective parameters from the original message's <code>returnAddress</code> are being used.
 	 * <p>
-	 * Also, the templates {@link MessageConverter} is not used for the reply.
-	 * @see {@link AmqpInvokerServiceExporter#setMessageConverter(MessageConverter)}
+	 * Also, the template's {@link MessageConverter} is not used for the reply.
+	 * @see #setMessageConverter(MessageConverter)
 	 */
 	public void setAmqpTemplate(AmqpTemplate amqpTemplate) {
 		this.amqpTemplate = amqpTemplate;
