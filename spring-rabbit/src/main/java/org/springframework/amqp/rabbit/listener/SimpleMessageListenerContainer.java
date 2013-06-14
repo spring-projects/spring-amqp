@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.aopalliance.aop.Advice;
+
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -566,7 +568,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
 			} catch (Throwable t) {
-				if (logger.isDebugEnabled()) {
+				if (logger.isDebugEnabled() || !(t instanceof AmqpConnectException)) {
 					logger.warn(
 							"Consumer raised exception, processing can restart if the connection factory supports it",
 							t);
