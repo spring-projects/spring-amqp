@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serializable;
 import java.nio.charset.Charset;
 
 import org.springframework.amqp.utils.SerializationUtils;
@@ -28,8 +29,11 @@ import org.springframework.amqp.utils.SerializationUtils;
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  * @author Dave Syer
+ * @author Gary Russell
  */
-public class Message {
+public class Message implements Serializable {
+
+	private static final long serialVersionUID = -7177590352110605597L;
 
 	private static final String ENCODING = Charset.defaultCharset().name();
 
@@ -50,6 +54,7 @@ public class Message {
 		return this.messageProperties;
 	}
 
+	@Override
 	public String toString() {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("(");

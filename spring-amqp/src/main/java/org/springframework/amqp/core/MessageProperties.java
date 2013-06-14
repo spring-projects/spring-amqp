@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.core;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +25,9 @@ import java.util.Map;
  * @author Mark Pollack
  * @author Gary Russell
  */
-public class MessageProperties {
+public class MessageProperties implements Serializable {
+
+	private static final long serialVersionUID = 1619000546531112290L;
 
 	public static final String CONTENT_TYPE_BYTES = "application/octet-stream";
 
