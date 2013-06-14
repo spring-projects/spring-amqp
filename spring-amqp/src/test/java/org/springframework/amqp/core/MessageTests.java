@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,23 @@
 
 package org.springframework.amqp.core;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Date;
 
 import org.junit.Test;
+
 import org.springframework.amqp.utils.SerializationUtils;
 
 /**
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 public class MessageTests {
 
@@ -64,4 +71,20 @@ public class MessageTests {
 		assertNotNull(message.toString());
 	}
 
+	@Test
+	public void serialization() throws Exception {
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+		messageProperties.setHeader("foo", "bar");
+		messageProperties.setContentType("text/plain");
+		Message message = new Message("baz".getBytes(), messageProperties);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream os = new ObjectOutputStream(baos);
+		os.writeObject(message);
+		os.close();
+		ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+		Message out = (Message) is.readObject();
+		assertEquals(new String(message.getBody()), new String(out.getBody()));
+		assertEquals(message.toString(), out.toString());
+	}
 }
