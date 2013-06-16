@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,9 +19,10 @@ import java.util.Map;
  * Simple container collecting information to describe a queue. Used in conjunction with AmqpAdmin.
  *
  * @author Mark Pollack
+ * @author Gary Russell
  * @see AmqpAdmin
  */
-public class Queue {
+public class Queue extends AbstractDeclarable {
 
 	private final String name;
 

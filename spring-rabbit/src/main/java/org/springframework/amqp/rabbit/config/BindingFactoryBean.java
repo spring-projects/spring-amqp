@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.Exchange;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.FactoryBean;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class BindingFactoryBean implements FactoryBean<Binding> {
@@ -31,6 +33,8 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 	private String exchange;
 	private Queue destinationQueue;
 	private Exchange destinationExchange;
+	private Boolean shouldDeclare;
+	private AmqpAdmin[] adminsThatShouldDeclare;
 
 	public void setArguments(Map<String, Object> arguments) {
 		this.arguments = arguments;
@@ -52,6 +56,14 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		this.destinationExchange = destinationExchange;
 	}
 
+	public void setShouldDeclare(boolean shouldDeclare) {
+		this.shouldDeclare = shouldDeclare;
+	}
+
+	public void setAdminsThatShouldDeclare(AmqpAdmin... adminsThatShouldDeclare) {
+		this.adminsThatShouldDeclare = adminsThatShouldDeclare;
+	}
+
 	public Binding getObject() throws Exception {
 		String destination;
 		DestinationType destinationType;
@@ -62,7 +74,14 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 			destination = destinationExchange.getName();
 			destinationType = DestinationType.EXCHANGE;
 		}
-		return new Binding(destination, destinationType, exchange, routingKey, arguments);
+		Binding binding = new Binding(destination, destinationType, exchange, routingKey, arguments);
+		if (this.shouldDeclare != null) {
+			binding.setShouldDeclare(this.shouldDeclare);
+		}
+		if (this.adminsThatShouldDeclare != null) {
+			binding.setAdminsThatShouldDeclare(this.adminsThatShouldDeclare);
+		}
+		return binding;
 	}
 
 	public Class<?> getObjectType() {

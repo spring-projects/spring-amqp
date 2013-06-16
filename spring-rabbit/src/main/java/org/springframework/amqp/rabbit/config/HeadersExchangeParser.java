@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,17 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.beans.factory.config.TypedStringValue;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class HeadersExchangeParser extends AbstractExchangeParser {
@@ -36,7 +37,7 @@ public class HeadersExchangeParser extends AbstractExchangeParser {
 	}
 
 	@Override
-	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
+	protected BeanDefinitionBuilder parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
@@ -45,7 +46,7 @@ public class HeadersExchangeParser extends AbstractExchangeParser {
 		String value = binding.getAttribute("value");
 		map.put(new TypedStringValue(key), new TypedStringValue(value));
 		builder.addPropertyValue("arguments", map);
-		return builder.getBeanDefinition();
+		return builder;
 	}
 
 }

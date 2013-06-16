@@ -96,8 +96,8 @@
       <para>As you can see, an Exchange also has a 'type' represented by constants
       defined in <classname>ExchangeTypes</classname>. The basic types are:
       <literal>Direct</literal>, <literal>Topic</literal>,
-      <literal>Fanout</literal>, <literal>Headers</literal> and
-      <literal>Federated</literal>. In the core package you will find
+      <literal>Fanout</literal>, and <literal>Headers</literal>.
+      In the core package you will find
       implementations of the <interfacename>Exchange</interfacename> interface
       for each of those types. The behavior varies across these Exchange types
       in terms of how they handle bindings to Queues. For example, a Direct exchange allows
@@ -1289,31 +1289,88 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
     <para>The client is declaring another queue via the declareQueue() method
     on the AmqpAdmin, and it binds that queue to the market data exchange with
     a routing pattern that is externalized in a properties file.</para>
-    <section>
-      <title>Federated Exchanges</title>
+    <section id="conditional-declaration">
+      <title>Conditional Declaration</title>
       <para>
-        Rabbit supports federation; federated exchanges are backed by one of the
-        other exchange types. Therefore, when configuring a federated exchange, it
-        is important to supply bindings of the appropriate type for the backing
-        exchange. Examples include...
+        By default, all queues, exchanges, and bindings are declared by all <classname>
+        RabbitAdmin</classname> instances (that have <code>auto-startup="true"</code>)
+        in the application context. Before the 1.2 release
+        there was no simple way to modify this behavior; there is now more
+        flexibility.
       </para>
-        <programlisting language="xml"><![CDATA[<federated-exchange name="fedDirect" backing-type="direct"
-            upstream-set="upstream-set">
-    <direct-bindings>
-        <binding queue="bucket"/>
-    </direct-bindings>
-</federated-exchange>
+      <para>
+        These classes now implement <interfacename>Declarable</interfacename> which
+        has two methods: <code>shouldDeclare()</code> and <code>getDeclaringAdmins()</code>.
+        The <classname>RabbitAdmin</classname> uses these methods to determine whether
+        a particular instance should actually process the declarations on its
+        <interfacename>Connection</interfacename>.
+      </para>
+      <para>
+        The properties are available as attributes in the namespace, as shown in the following
+        examples.
+      </para>
+      <programlisting language="xml"><![CDATA[<rabbit:admin id="admin1" connection-factory="CF1" />
 
-<federated-exchange name="fedTopic" backing-type="topic"
-        upstream-set="upstream-set">
-    <topic-bindings>
-        <binding queue="bucket" pattern="bucket.#"/>
-    </topic-bindings>
-</federated-exchange>]]></programlisting>
+<rabbit:admin id="admin2" connection-factory="CF2" />
+
+<rabbit:queue id="declaredByBothAdminsImplicitly" />
+
+<rabbit:queue id="declaredByBothAdmins" declared-by="admin1, admin2" />
+
+<rabbit:queue id="declaredByAdmin1Only" declared-by="admin1" />
+
+<rabbit:queue id="notDeclaredByAny" auto-declare="false" />
+
+<rabbit:direct-exchange name="direct" declared-by="admin1, admin2">
+	<rabbit:bindings>
+		<rabbit:binding key="foo" queue="bar"/>
+	</rabbit:bindings>
+</rabbit:direct-exchange>]]></programlisting>
+      <note>
+        The <code>auto-declare</code> attribute is <code>true</code> by default and if the <code>declared-by</code>
+        is not supplied (or is empty) then all <classname>RabbitAdmin</classname>s will declare the
+        object (as long as the admin's <code>auto-startup</code> attribute is true; the default).
+        <code></code>
+      </note>
       <para>
-        Notice that the child element, e.g. &lt;direct-bindings/&gt; matches the
-        backing-type attribute.
+        Similarly, you can use Java-based <code>@Configuration</code> to achieve the same
+        effect. In this example, the components will be declared by <code>admin1</code> but not
+        <code>admin2</code>:
       </para>
+      <programlisting language="java"><![CDATA[@Bean
+public RabbitAdmin admin() {
+	RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
+	rabbitAdmin.afterPropertiesSet();
+	return rabbitAdmin;
+}
+
+@Bean
+public RabbitAdmin admin2() {
+	RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
+	rabbitAdmin.afterPropertiesSet();
+	return rabbitAdmin;
+}
+
+@Bean
+public Queue queue() {
+	Queue queue = new Queue("foo");
+	queue.setAdminsThatShouldDeclare(admin());
+	return queue;
+}
+
+@Bean
+public Exchange exchange() {
+	DirectExchange exchange = new DirectExchange("bar");
+	exchange.setAdminsThatShouldDeclare(admin());
+	return exchange;
+}
+
+@Bean
+public Binding binding() {
+	Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
+	binding.setAdminsThatShouldDeclare(admin());
+	return binding;
+}]]></programlisting>
     </section>
   </section>
 

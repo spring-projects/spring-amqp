@@ -21,8 +21,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -117,6 +119,27 @@ public class QueueParserTests {
 		Queue queue = beanFactory.getBean("referencedArguments", Queue.class);
 		assertNotNull(queue);
 		assertEquals("qux", queue.getArguments().get("baz"));
+	}
+
+	@Test
+	public void testDeclaredBy() throws Exception {
+		Queue queue = beanFactory.getBean("autoDeclareTwoAdmins", Queue.class);
+		RabbitAdmin admin1 = beanFactory.getBean("admin1", RabbitAdmin.class);
+		RabbitAdmin admin2 = beanFactory.getBean("admin2", RabbitAdmin.class);
+		assertEquals(2, queue.getDeclaringAdmins().size());
+		assertTrue(queue.getDeclaringAdmins().contains(admin1));
+		assertTrue(queue.getDeclaringAdmins().contains(admin2));
+		assertTrue(queue.shouldDeclare());
+
+		queue = beanFactory.getBean("autoDeclareOneAdmin", Queue.class);
+		assertEquals(1, queue.getDeclaringAdmins().size());
+		assertTrue(queue.getDeclaringAdmins().contains(admin1));
+		assertFalse(queue.getDeclaringAdmins().contains(admin2));
+		assertTrue(queue.shouldDeclare());
+
+		queue = beanFactory.getBean("noAutoDeclare", Queue.class);
+		assertEquals(0, queue.getDeclaringAdmins().size());
+		assertFalse(queue.shouldDeclare());
 	}
 
 	@Test(expected=BeanDefinitionStoreException.class)
