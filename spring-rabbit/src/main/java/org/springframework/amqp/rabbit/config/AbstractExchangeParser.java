@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,18 +15,21 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.w3c.dom.Element;
+
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.TypedStringValue;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
+ *
  *
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
@@ -67,27 +70,30 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 			builder.addConstructorArgValue(map);
 		}
 
+		NamespaceUtils.parseDeclarationControls(element, builder);
 	}
 
 	protected void parseBindings(Element element, ParserContext parserContext, BeanDefinitionBuilder builder,
 			String exchangeName) {
-		Element bindings = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
-		doParseBindings(parserContext, exchangeName, bindings, this);
+		Element bindingsElement = DomUtils.getChildElementByTagName(element, BINDINGS_ELE);
+		doParseBindings(element, parserContext, exchangeName, bindingsElement, this);
 	}
 
-	protected void doParseBindings(ParserContext parserContext,
+	protected void doParseBindings(Element element, ParserContext parserContext,
 			String exchangeName, Element bindings, AbstractExchangeParser parser) {
 		if (bindings != null) {
 			for (Element binding : DomUtils.getChildElementsByTagName(bindings, BINDING_ELE)) {
-				AbstractBeanDefinition beanDefinition = parser.parseBinding(exchangeName, binding,
+				BeanDefinitionBuilder bindingBuilder = parser.parseBinding(exchangeName, binding,
 						parserContext);
+				NamespaceUtils.parseDeclarationControls(element, bindingBuilder);
+				BeanDefinition beanDefinition = bindingBuilder.getBeanDefinition();
 				registerBeanDefinition(new BeanDefinitionHolder(beanDefinition, parserContext.getReaderContext()
 						.generateBeanName(beanDefinition)), parserContext.getRegistry());
 			}
 		}
 	}
 
-	protected abstract AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
+	protected abstract BeanDefinitionBuilder parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext);
 
 	protected void parseDestination(Element binding, ParserContext parserContext, BeanDefinitionBuilder builder) {

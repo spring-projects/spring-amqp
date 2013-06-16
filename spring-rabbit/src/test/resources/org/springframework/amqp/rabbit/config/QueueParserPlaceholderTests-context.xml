@@ -50,4 +50,18 @@
 
 	<rabbit:queue id="referencedArguments" queue-arguments="topLevelArgs" />
 
+	<rabbit:admin id="admin1" auto-startup="false" connection-factory="mockCF" />
+
+	<rabbit:admin id="admin2" auto-startup="false" connection-factory="mockCF" />
+
+	<rabbit:queue id="autoDeclareTwoAdmins" declared-by="admin1, admin2" />
+
+	<rabbit:queue id="autoDeclareOneAdmin" declared-by="  admin1  " />
+
+	<rabbit:queue id="noAutoDeclare" auto-declare="false" />
+
+	<beans:bean id="mockCF" class="org.mockito.Mockito" factory-method="mock">
+		<beans:constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+	</beans:bean>
+
 </beans>

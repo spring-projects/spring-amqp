@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.HeadersExchange;
@@ -30,6 +32,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
+
 /**
  * @author Dave Syer
  * @author Mark Fisher
@@ -55,6 +58,12 @@ public final class ExchangeParserTests {
 		assertEquals("direct", exchange.getName());
 		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
+		assertFalse(exchange.shouldDeclare());
+		assertEquals(2, exchange.getDeclaringAdmins().size());
+		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
+		assertFalse(binding.shouldDeclare());
+		assertEquals(2, binding.getDeclaringAdmins().size());
+
 	}
 
 	@Test
@@ -73,6 +82,9 @@ public final class ExchangeParserTests {
 		assertEquals("topic", exchange.getName());
 		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+
 	}
 
 	@Test
@@ -82,6 +94,9 @@ public final class ExchangeParserTests {
 		assertEquals("fanout", exchange.getName());
 		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+
 	}
 
 	@Test
@@ -91,6 +106,9 @@ public final class ExchangeParserTests {
 		assertEquals("headers", exchange.getName());
 		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isAutoDelete());
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+
 	}
 
 	@Test
@@ -121,6 +139,11 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertEquals("direct", exchange.getArguments().get("type"));
 		assertEquals("upstream-set1", exchange.getArguments().get("upstream-set"));
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#1", Binding.class);
+		assertTrue(binding.shouldDeclare());
+		assertEquals(1, binding.getDeclaringAdmins().size());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -134,6 +157,11 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertEquals("topic", exchange.getArguments().get("type"));
 		assertEquals("upstream-set2", exchange.getArguments().get("upstream-set"));
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#2", Binding.class);
+		assertTrue(binding.shouldDeclare());
+		assertEquals(1, binding.getDeclaringAdmins().size());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -147,6 +175,11 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertEquals("fanout", exchange.getArguments().get("type"));
 		assertEquals("upstream-set3", exchange.getArguments().get("upstream-set"));
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#3", Binding.class);
+		assertTrue(binding.shouldDeclare());
+		assertEquals(1, binding.getDeclaringAdmins().size());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -160,6 +193,11 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertEquals("headers", exchange.getArguments().get("type"));
 		assertEquals("upstream-set4", exchange.getArguments().get("upstream-set"));
+		assertTrue(exchange.shouldDeclare());
+		assertEquals(1, exchange.getDeclaringAdmins().size());
+		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#4", Binding.class);
+		assertTrue(binding.shouldDeclare());
+		assertEquals(1, binding.getDeclaringAdmins().size());
 	}
 
 }

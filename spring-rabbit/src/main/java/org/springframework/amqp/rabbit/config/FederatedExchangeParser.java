@@ -13,13 +13,13 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.core.ExchangeTypes;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
 
 /**
  * @author Gary Russell
@@ -59,32 +59,32 @@ public class FederatedExchangeParser extends AbstractExchangeParser {
 	protected void parseBindings(Element element, ParserContext parserContext,
 			BeanDefinitionBuilder builder, String exchangeName) {
 		String backingType = element.getAttribute(BACKING_TYPE_ATTRIBUTE);
-		Element bindings;
-		bindings = DomUtils.getChildElementByTagName(element, DIRECT_BINDINGS_ELE);
-		if (bindings != null && !ExchangeTypes.DIRECT.equals(backingType)) {
+		Element bindingsElement;
+		bindingsElement = DomUtils.getChildElementByTagName(element, DIRECT_BINDINGS_ELE);
+		if (bindingsElement != null && !ExchangeTypes.DIRECT.equals(backingType)) {
 			parserContext.getReaderContext().error(
 					"Cannot have direct-bindings if backing-type not 'direct'",
 					element);
 		}
-		if (bindings == null) {
-			bindings = DomUtils.getChildElementByTagName(element, TOPIC_BINDINGS_ELE);
-			if (bindings != null && !ExchangeTypes.TOPIC.equals(backingType)) {
+		if (bindingsElement == null) {
+			bindingsElement = DomUtils.getChildElementByTagName(element, TOPIC_BINDINGS_ELE);
+			if (bindingsElement != null && !ExchangeTypes.TOPIC.equals(backingType)) {
 				parserContext.getReaderContext().error(
 						"Cannot have topic-bindings if backing-type not 'topic'",
 						element);
 			}
 		}
-		if (bindings == null) {
-			bindings = DomUtils.getChildElementByTagName(element, TOPIC_FANOUT_ELE);
-			if (bindings != null && !ExchangeTypes.FANOUT.equals(backingType)) {
+		if (bindingsElement == null) {
+			bindingsElement = DomUtils.getChildElementByTagName(element, TOPIC_FANOUT_ELE);
+			if (bindingsElement != null && !ExchangeTypes.FANOUT.equals(backingType)) {
 				parserContext.getReaderContext().error(
 						"Cannot have fanout-bindings if backing-type not 'fanout'",
 						element);
 			}
 		}
-		if (bindings == null) {
-			bindings = DomUtils.getChildElementByTagName(element, TOPIC_HEADERS_ELE);
-			if (bindings != null && !ExchangeTypes.HEADERS.equals(backingType)) {
+		if (bindingsElement == null) {
+			bindingsElement = DomUtils.getChildElementByTagName(element, TOPIC_HEADERS_ELE);
+			if (bindingsElement != null && !ExchangeTypes.HEADERS.equals(backingType)) {
 				parserContext.getReaderContext().error(
 						"Cannot have headers-bindings if backing-type not 'headers'",
 						element);
@@ -92,22 +92,22 @@ public class FederatedExchangeParser extends AbstractExchangeParser {
 		}
 		if (StringUtils.hasText(backingType)) {
 			if (ExchangeTypes.DIRECT.equals(backingType)) {
-				doParseBindings(parserContext, exchangeName, bindings, new DirectExchangeParser());
+				doParseBindings(element, parserContext, exchangeName, bindingsElement, new DirectExchangeParser());
 			}
 			else if (ExchangeTypes.TOPIC.equals(backingType)) {
-				doParseBindings(parserContext, exchangeName, bindings, new TopicExchangeParser());
+				doParseBindings(element, parserContext, exchangeName, bindingsElement, new TopicExchangeParser());
 			}
 			else if (ExchangeTypes.FANOUT.equals(backingType)) {
-				doParseBindings(parserContext, exchangeName, bindings, new FanoutExchangeParser());
+				doParseBindings(element, parserContext, exchangeName, bindingsElement, new FanoutExchangeParser());
 			}
 			else if (ExchangeTypes.HEADERS.equals(backingType)) {
-				doParseBindings(parserContext, exchangeName, bindings, new HeadersExchangeParser());
+				doParseBindings(element, parserContext, exchangeName, bindingsElement, new HeadersExchangeParser());
 			}
 		}
 	}
 
 	@Override
-	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding,
+	protected BeanDefinitionBuilder parseBinding(String exchangeName, Element binding,
 			ParserContext parserContext) {
 		throw new UnsupportedOperationException("Not supported for federated exchange");
 	}

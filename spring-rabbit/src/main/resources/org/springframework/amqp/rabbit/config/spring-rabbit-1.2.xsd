@@ -68,6 +68,7 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attributeGroup ref="declarable" />
 		</xsd:complexType>
 	</xsd:element>
 
@@ -388,6 +389,7 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attributeGroup ref="declarable" />
 	</xsd:complexType>
 
 	<xsd:element name="exchange-arguments" type="mapType">
@@ -771,7 +773,8 @@
 			<xsd:attribute name="auto-startup" default="true">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Specifies if the queues, exchanges and bindings in the context should be automatically declared (lazily on first connection to the broker). Default value is 'true'.
+	Specifies if the queues, exchanges and bindings in the context should automatically be declared
+	(lazily, when a connection is established to the broker). Default value is 'true'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 				<xsd:simpleType>
@@ -1068,5 +1071,32 @@
 			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
+
+	<xsd:attributeGroup name="declarable">
+		<xsd:attribute name="auto-declare">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Specifies if the this element should automatically be declared
+	(lazily, when a connection is established to the broker).
+	See also 'declared-by'.
+	Default value is 'true'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:union memberTypes="xsd:boolean xsd:string" />
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="declared-by" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	If 'auto-declare' is true, specifies a (comma-delimited) list of
+	RabbitAdmins (if they have 'auto-startup="true"') that should
+	declare this element (lazily, when a connection is established with the broker).
+	If not specified, or empty, then all auto-startup RabbitAdmins will declare the element.
+	Default value is all RabbitAdmins.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:attributeGroup>
 
 </xsd:schema>

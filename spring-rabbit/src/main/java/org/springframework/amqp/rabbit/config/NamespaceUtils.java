@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,22 +15,29 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.List;
 
+import org.w3c.dom.Element;
+
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
+import org.springframework.beans.factory.config.BeanReference;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
+import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.Conventions;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
 
 /**
  * Shared utility methods for namespace parsers.
+ * @author Mark Pollack
+ * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public abstract class NamespaceUtils {
@@ -244,6 +251,22 @@ public abstract class NamespaceUtils {
 								.getBeanDefinition().getBeanClassName()) + " declaration and \"ref\" " + ref
 						+ " are not allowed together.");
 		return innerComponentDefinition;
+	}
+
+	/**
+	 * Parses 'auto-declare' and 'declared-by' attributes.
+	 */
+	public static void parseDeclarationControls(Element element, BeanDefinitionBuilder builder) {
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, "auto-declare", "shouldDeclare");
+		String admins = element.getAttribute("declared-by");
+		if (StringUtils.hasText(admins)) {
+			String[] adminBeanNames = admins.split(",");
+			ManagedList<BeanReference> adminBeanRefs = new ManagedList<BeanReference>();
+			for (String adminBeanName : adminBeanNames) {
+				adminBeanRefs.add(new RuntimeBeanReference(adminBeanName.trim()));
+			}
+			builder.addPropertyValue("adminsThatShouldDeclare", adminBeanRefs);
+		}
 	}
 
 }
