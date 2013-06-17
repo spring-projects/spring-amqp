@@ -16,16 +16,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.net.ServerSocketFactory;
+import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
@@ -178,6 +187,68 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(route);
 		assertEquals(null, result);
+	}
+
+	@Test
+	@Ignore // Don't run this on the CI build server
+	public void hangOnClose() throws Exception {
+		final Socket proxy = SocketFactory.getDefault().createSocket("localhost", 5672);
+		final ServerSocket server = ServerSocketFactory.getDefault().createServerSocket(2765);
+		final AtomicBoolean hangOnClose = new AtomicBoolean();
+		// create a simple proxy so we can drop the close response
+		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					final Socket socket = server.accept();
+					Executors.newSingleThreadExecutor().execute(new Runnable() {
+
+						@Override
+						public void run() {
+							while (!socket.isClosed()) {
+								try {
+									int c = socket.getInputStream().read();
+									if (c >= 0) {
+										proxy.getOutputStream().write(c);
+									}
+								}
+								catch (Exception e) {
+									try {
+										socket.close();
+										proxy.close();
+									}
+									catch (Exception ee) {}
+								}
+							}
+						}
+					});
+					while (!proxy.isClosed()) {
+						try {
+							int c = proxy.getInputStream().read();
+							if (c >= 0 && !hangOnClose.get()) {
+								socket.getOutputStream().write(c);
+							}
+						}
+						catch (Exception e) {
+							try {
+								socket.close();
+								proxy.close();
+							}
+							catch (Exception ee) {}
+						}
+					}
+					socket.close();
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		CachingConnectionFactory factory = new CachingConnectionFactory(2765);
+		factory.createConnection();
+		hangOnClose.set(true);
+		factory.destroy();
 	}
 
 }

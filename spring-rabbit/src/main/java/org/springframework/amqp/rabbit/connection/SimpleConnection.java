@@ -48,7 +48,8 @@ public class SimpleConnection implements Connection {
 
 	public void close() {
 		try {
-			delegate.close();
+			// let the physical close time out if necessary
+			delegate.close(RabbitUtils.CLOSE_TIMEOUT);
 		} catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}

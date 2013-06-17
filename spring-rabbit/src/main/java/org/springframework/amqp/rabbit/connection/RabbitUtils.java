@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
@@ -34,6 +35,8 @@ public abstract class RabbitUtils {
 	public static final int DEFAULT_PORT = AMQP.PROTOCOL.PORT;
 
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
+
+	public static int CLOSE_TIMEOUT = 30000;
 
 	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
 
