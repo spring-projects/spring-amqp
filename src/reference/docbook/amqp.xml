@@ -1510,7 +1510,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
               <entry>receiveTimeout</entry>
 
               <entry>The maximum time to wait for each message. If
-              acknowledgeMode=NONE (the default) this has very little effect -
+              acknowledgeMode=NONE this has very little effect -
               the container just spins round and asks for another message. It
               has the biggest effect for a transactional
               <classname>Channel</classname> with <code>txSize &gt; 1</code>,
