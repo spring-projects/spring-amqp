@@ -236,13 +236,12 @@ public class RabbitAdminDeclarationTests {
 		assertEquals(2, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare((AmqpAdmin) null);
 		assertEquals(0, queue.getDeclaringAdmins().size());
+		queue.setAdminsThatShouldDeclare(admin1, admin2);
+		assertEquals(2, queue.getDeclaringAdmins().size());
+		queue.setAdminsThatShouldDeclare((AmqpAdmin[]) null);
+		assertEquals(0, queue.getDeclaringAdmins().size());
 		try {
 			queue.setAdminsThatShouldDeclare(new AmqpAdmin[] {null, admin1});
-			fail("Expected Exception");
-		}
-		catch (IllegalArgumentException e) {}
-		try {
-			queue.setAdminsThatShouldDeclare((AmqpAdmin[]) null);
 			fail("Expected Exception");
 		}
 		catch (IllegalArgumentException e) {}

@@ -42,7 +42,7 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	/**
 	 * Whether or not this object should be automatically declared
-	 * by any {@link AmqpAdmin}.
+	 * by any {@link AmqpAdmin}. Default is {@code true}.
 	 * @param shouldDeclare true or false.
 	 */
 	public void setShouldDeclare(boolean shouldDeclare) {
@@ -55,18 +55,23 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	/**
-	 * The {@link AmqpAdmin}s that should declare this
-	 * object. A single null argument clears the collection.
+	 * The {@link AmqpAdmin}s that should declare this object; default is
+	 * all admins.
+	 * <br><br>A null argument, or an array/varArg with a single null argument, clears the collection
+	 * ({@code setAdminsThatShouldDeclare((AmqpAdmin) null)} or
+	 * {@code setAdminsThatShouldDeclare((AmqpAdmin[]) null)}). Clearing the collection resets
+	 * the behavior such that all admins will declare the object.
 	 * @param admins The admins.
 	 */
 	public void setAdminsThatShouldDeclare(AmqpAdmin... admins) {
-		Assert.notNull(admins, "'admins' cannot be null");
-		if (admins.length > 1) {
-			Assert.noNullElements(admins, "'admins' cannot contain null elements");
-		}
 		Collection<AmqpAdmin> declaringAdmins = new ArrayList<AmqpAdmin>();
-		if (admins.length > 0 && !(admins.length == 1 && admins[0] == null)) {
-			declaringAdmins.addAll(Arrays.asList(admins));
+		if (admins != null) {
+			if (admins.length > 1) {
+				Assert.noNullElements(admins, "'admins' cannot contain null elements");
+			}
+			if (admins.length > 0 && !(admins.length == 1 && admins[0] == null)) {
+				declaringAdmins.addAll(Arrays.asList(admins));
+			}
 		}
 		this.declaringAdmins = declaringAdmins;
 	}

@@ -14,8 +14,8 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -314,12 +314,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		}
 
 		logger.debug("Initializing declarations");
-		final Collection<Exchange> exchanges = applicationContext.getBeansOfType(Exchange.class).values();
-		this.filterDeclarables(exchanges);
-		final Collection<Queue> queues = applicationContext.getBeansOfType(Queue.class).values();
-		this.filterDeclarables(queues);
-		final Collection<Binding> bindings = applicationContext.getBeansOfType(Binding.class).values();
-		this.filterDeclarables(bindings);
+		final Collection<Exchange> exchanges = filterDeclarables(applicationContext.getBeansOfType(Exchange.class).values());
+		final Collection<Queue> queues = filterDeclarables(applicationContext.getBeansOfType(Queue.class).values());
+		final Collection<Binding> bindings = filterDeclarables(applicationContext.getBeansOfType(Binding.class).values());
 
 		for (Exchange exchange : exchanges) {
 			if (!exchange.isDurable()) {
@@ -366,18 +363,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	/**
 	 * Remove any instances that should not be declared by this admin.
-	 * @param declarables the collection of {@link Declarables}.
+	 * @param declarables the collection of {@link Declarable}s.
+	 * @return a new collection containing {@link Declarable}s that should be declared by this
+	 * admin.
 	 */
-	private void filterDeclarables(Collection<? extends Declarable> declarables) {
-		Iterator<? extends Declarable> iterator = declarables.iterator();
-		while (iterator.hasNext()) {
-			Declarable declarable = iterator.next();
+	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables) {
+		Collection<T> filtered = new ArrayList<T>();
+		for (T declarable : declarables) {
 			Collection<?> adminsWithWhichToDeclare = declarable.getDeclaringAdmins();
-			if (!declarable.shouldDeclare() ||
-				(!adminsWithWhichToDeclare.isEmpty() && !adminsWithWhichToDeclare.contains(this))) {
-				iterator.remove();
+			if (declarable.shouldDeclare() &&
+				(adminsWithWhichToDeclare.isEmpty() || adminsWithWhichToDeclare.contains(this))) {
+				filtered.add(declarable);
 			}
 		}
+		return filtered;
 	}
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel

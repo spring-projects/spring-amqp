@@ -262,8 +262,8 @@ public abstract class NamespaceUtils {
 		if (StringUtils.hasText(admins)) {
 			String[] adminBeanNames = admins.split(",");
 			ManagedList<BeanReference> adminBeanRefs = new ManagedList<BeanReference>();
-			for (String adminBean : adminBeanNames) {
-				adminBeanRefs.add(new RuntimeBeanReference(adminBean.trim()));
+			for (String adminBeanName : adminBeanNames) {
+				adminBeanRefs.add(new RuntimeBeanReference(adminBeanName.trim()));
 			}
 			builder.addPropertyValue("adminsThatShouldDeclare", adminBeanRefs);
 		}

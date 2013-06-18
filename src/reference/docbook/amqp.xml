@@ -1294,12 +1294,17 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
       <para>
         By default, all queues, exchanges, and bindings are declared by all <classname>
         RabbitAdmin</classname> instances (that have <code>auto-startup="true"</code>)
-        in the application context. Before the 1.2 release
-        there was no simple way to modify this behavior; there is now more
-        flexibility.
+        in the application context.
       </para>
+      <note>
+        Starting with the 1.2 release, it is possible to conditionally
+        declare these elements. This is particularly useful when an application
+        connects to multiple brokers and needs to specify with which broker(s) a
+        particular element should be declared.
+      </note>
       <para>
-        These classes now implement <interfacename>Declarable</interfacename> which
+        The classes representing these elements
+        implement <interfacename>Declarable</interfacename> which
         has two methods: <code>shouldDeclare()</code> and <code>getDeclaringAdmins()</code>.
         The <classname>RabbitAdmin</classname> uses these methods to determine whether
         a particular instance should actually process the declarations on its
