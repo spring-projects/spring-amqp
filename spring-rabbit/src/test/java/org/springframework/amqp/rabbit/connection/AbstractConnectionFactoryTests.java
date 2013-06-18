@@ -1,6 +1,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,14 +48,14 @@ public abstract class AbstractConnectionFactoryTests {
 
 		con.close();
 		assertEquals(1, called.get());
-		verify(mockConnection, never()).close();
+		verify(mockConnection, never()).close(anyInt());
 
 		connectionFactory.createConnection();
 		assertEquals(1, called.get());
 
 		connectionFactory.destroy();
 		assertEquals(0, called.get());
-		verify(mockConnection, atLeastOnce()).close();
+		verify(mockConnection, atLeastOnce()).close(anyInt());
 
 		verify(mockConnectionFactory, times(1)).newConnection((ExecutorService) null);
 
@@ -85,14 +86,14 @@ public abstract class AbstractConnectionFactoryTests {
 
 		con.close();
 		assertEquals(1, called.get());
-		verify(mockConnection, never()).close();
+		verify(mockConnection, never()).close(anyInt());
 
 		connectionFactory.createConnection();
 		assertEquals(1, called.get());
 
 		connectionFactory.destroy();
 		assertEquals(0, called.get());
-		verify(mockConnection, atLeastOnce()).close();
+		verify(mockConnection, atLeastOnce()).close(anyInt());
 
 		verify(mockConnectionFactory, times(1)).newConnection((ExecutorService) null);
 
@@ -118,7 +119,7 @@ public abstract class AbstractConnectionFactoryTests {
 		verify(mockConnection2, times(1)).createChannel();
 
 		connectionFactory.destroy();
-		verify(mockConnection2, times(1)).close();
+		verify(mockConnection2, times(1)).close(anyInt());
 
 	}
 
