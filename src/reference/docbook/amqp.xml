@@ -872,6 +872,73 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       wish to revert to this behavior with the current version, perhaps to maintain compatibility with another
       application using 1.1, you must set the attribute to <code>spring_reply_correlation</code>.
       </note>
+      <section>
+        <title>Reply Listener Container</title>
+        <para>
+        When using a fixed reply queue, a <classname>SimpleListenerContainer</classname> is used to receive the
+        replies; with the <classname>RabbitTemplate</classname> being the <interfacename>MessageListener</interfacename>.
+        When defining a template with the <code>&lt;rabbit:template/&gt;</code> namespace element, as shown above,
+        the parser defines the container and wires in the template as the listener.
+        </para>
+        <note>
+        When the template does not use a fixed <code>replyQueue</code>, a listener container is not needed.
+        </note>
+        <para>
+        If you define your <classname>RabbitTemplate</classname> as a <code>&lt;bean/&gt;</code>, or using an
+        <code>@Configuration</code> class to define it as an <code>@Bean</code>, or when creating 
+        the template programmatically, you will need to define and
+        wire up the reply listener container yourself. If you fail to do this, the template will never receive
+        the replies and will eventually time out and return null as the reply to a call to a
+        <code>sendAndReceive</code> method.
+        </para>
+        <important>
+        When wiring the reply listener and template yourself, it is important to ensure that the template's
+        <code>replyQueue</code> and the container's <code>queues</code> (or <code>queueNames</code>) properties
+        refer to the same queue. The template inserts the reply queue into the outbound message
+        <code>replyTo</code> property.
+        </important>
+        <para>
+        The following are examples of how to manually wire up the beans.
+        </para>
+        <programlisting language="xml"><![CDATA[<bean id="amqpTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+    <constructor-arg ref="connectionFactory" />
+    <property name="exchange" value="foo.exchange" />
+    <property name="routingKey" value="foo" />
+    <property name="replyQueue" ref="replyQ" />
+    <property name="replyTimeout" value="600000" />
+</bean>
+
+<bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
+    <constructor-arg ref="connectionFactory" />
+    <property name="queues" ref="replyQ" />
+    <property name="messageListener" ref="amqpTemplate" />
+</bean>
+
+<rabbit:queue id="replyQ" name="my.reply.queue" />]]></programlisting>
+
+        <programlisting language="java"><![CDATA[    @Bean
+    public RabbitTemplate amqpTemplate() {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory());
+        rabbitTemplate.setMessageConverter(msgConv());
+        rabbitTemplate.setReplyQueue(replyQueue());
+        rabbitTemplate.setReplyTimeout(60000);
+        return rabbitTemplate;
+    }
+
+    @Bean
+    public SimpleMessageListenerContainer replyListenerContainer() {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory());
+        container.setQueues(replyQueue());
+        container.setMessageListener(amqpTemplate());
+        return container;
+    }
+
+    @Bean
+    public Queue replyQueue() {
+        return new Queue("my.reply.queue");
+    }]]></programlisting>
+      </section>
     </section>
     <section id="remoting">
       <title>Spring Remoting with AMQP</title>
