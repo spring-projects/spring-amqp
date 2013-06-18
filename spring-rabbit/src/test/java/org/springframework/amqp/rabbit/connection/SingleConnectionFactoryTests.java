@@ -1,6 +1,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,7 +60,7 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 		assertEquals(2, called.get());
 
 		connectionFactory.destroy();
-		verify(mockConnection, atLeastOnce()).close();
+		verify(mockConnection, atLeastOnce()).close(anyInt());
 
 		verify(mockConnectionFactory).newConnection((ExecutorService) null);
 

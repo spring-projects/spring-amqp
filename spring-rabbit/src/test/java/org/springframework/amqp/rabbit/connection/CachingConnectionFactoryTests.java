@@ -1,6 +1,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.junit.Test;
+
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.rabbitmq.client.Channel;
@@ -333,7 +335,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		verify(mockConnection, times(2)).createChannel();
 
-		verify(mockConnection).close();
+		verify(mockConnection).close(anyInt());
 
 		// verify(mockChannel1).close();
 		verify(mockChannel2).close();
@@ -382,7 +384,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(1, called.get());
 
 		connectionFactory.destroy();
-		verify(mockConnection, atLeastOnce()).close();
+		verify(mockConnection, atLeastOnce()).close(anyInt());
 
 		verify(mockConnectionFactory).newConnection((ExecutorService) null);
 
