@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -46,6 +47,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private volatile ExecutorService executorService;
 
 	private volatile Address[] addresses;
+
+	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
+
+	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
 	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
@@ -152,13 +157,25 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
+	/**
+	 * How long to wait (milliseconds) for a response to a connection close
+	 * operation from the broker; default 30000 (30 seconds).
+	 *
+	 * @param closeTimeout the closeTimeout to set.
+	 */
+	public void setCloseTimeout(int closeTimeout) {
+		this.closeTimeout = closeTimeout;
+	}
+
 	protected final Connection createBareConnection() {
 		try {
 			if (this.addresses != null) {
-				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses));
+				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses),
+									this.closeTimeout);
 			}
 			else {
-				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService));
+				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService),
+									this.closeTimeout);
 			}
 		} catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
