@@ -36,8 +36,6 @@ public abstract class RabbitUtils {
 
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
-	public static int CLOSE_TIMEOUT = 30000;
-
 	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
 
 	/**
