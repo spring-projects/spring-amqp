@@ -139,9 +139,17 @@ public class SimpleMessageListenerContainerTests {
 				return null;
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		final CountDownLatch latch = new CountDownLatch(2);
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				latch.countDown();
+				return null;
+			}
+		}).when(channel).basicAck(anyLong(), anyBoolean());
 
 		final List<Message> messages = new ArrayList<Message>();
-		final CountDownLatch latch = new CountDownLatch(4);
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
 		container.setTxSize(2);
@@ -150,7 +158,6 @@ public class SimpleMessageListenerContainerTests {
 			@Override
 			public void onMessage(Message message) {
 				messages.add(message);
-				latch.countDown();
 			}
 		});
 		container.start();
