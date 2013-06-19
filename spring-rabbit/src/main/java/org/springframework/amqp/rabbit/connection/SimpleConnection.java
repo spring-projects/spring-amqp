@@ -29,8 +29,12 @@ public class SimpleConnection implements Connection {
 
 	private final com.rabbitmq.client.Connection delegate;
 
-	public SimpleConnection(com.rabbitmq.client.Connection delegate) {
+	private final int closeTimeout;
+
+	public SimpleConnection(com.rabbitmq.client.Connection delegate,
+			int closeTimeout) {
 		this.delegate = delegate;
+		this.closeTimeout = closeTimeout;
 	}
 
 	public Channel createChannel(boolean transactional) {
@@ -48,7 +52,8 @@ public class SimpleConnection implements Connection {
 
 	public void close() {
 		try {
-			delegate.close();
+			// let the physical close time out if necessary
+			delegate.close(closeTimeout);
 		} catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
