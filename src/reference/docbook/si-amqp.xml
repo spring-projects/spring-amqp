@@ -6,7 +6,7 @@
   <section id="spring-integration-amqp-introduction">
     <title>Introduction</title>
 
-    <para>The <ulink url="http://springsource.org/spring-integration">Spring Integration</ulink> project
+    <para>The <ulink url="http://www.springsource.org/spring-integration">Spring Integration</ulink> project
       includes AMQP Channel Adapters and Gateways that build upon the Spring AMQP project. Those adapters are developed and released in the
       Spring Integration project.
       In Spring Integration, "Channel Adapters" are unidirectional (one-way) whereas "Gateways" are
