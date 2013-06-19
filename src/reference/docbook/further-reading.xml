@@ -5,7 +5,7 @@
 
   <para>
     For those who are not familiar with AMQP, the
-    <ulink url="http://www.amqp.org/confluence/display/AMQP/AMQP+Specification">specification</ulink>
+    <ulink url="http://www.amqp.org/resources/download">specification</ulink>
     is actually quite readable. It is of course the authoritative source of information, and the Spring
     AMQP code should be very easy to understand for anyone who is familiar with the spec. Our current
     implementation of the RabbitMQ support is based on their 2.8.x version, and it officially supports
