@@ -8,7 +8,6 @@
         <productname>Spring AMQP</productname>
         <releaseinfo>${version}</releaseinfo>
 
-	    <!-- TODO: this isn't showing up. -->
 	    <mediaobject>
 	      <imageobject role="fo">
 	        <imagedata fileref="images/logo.png"
@@ -18,7 +17,6 @@
 	        <imagedata fileref="images/logo.png" format="PNG" align="center"/>
 	      </imageobject>
 	    </mediaobject>
-	    <!-- END TODO -->
 
         <authorgroup>
             <author>
@@ -47,15 +45,9 @@
             </author>
         </authorgroup>
         <copyright>
-            <year>2010</year>
-            <year>2011</year>
-            <year>2012</year>
-            <year>2013</year>
+            <year>2010-2013</year>
             <holder>
-              VMware, Inc. All rights reserved. VMware is a registered trademark or
-              trademark of VMware, Inc. in the United States and/or other jurisdictions.
-              All other marks and names mentioned herein may be trademarks of their respective
-              companies.
+                GoPivotal, Inc. All Rights Reserved.
             </holder>
         </copyright>
 
