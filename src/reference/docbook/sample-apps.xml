@@ -6,7 +6,7 @@
   <section>
     <title>Introduction</title>
 
-    <para>The <ulink url="http://github.com/SpringSource/spring-amqp-samples">Spring
+    <para>The <ulink url="https://github.com/SpringSource/spring-amqp-samples">Spring
     AMQP Samples</ulink> project includes two sample applications.
     The first is a simple "Hello World" example that demonstrates both
     synchronous and asynchronous message reception. It provides an
@@ -18,7 +18,7 @@
     can focus on the most important components. The samples are both
     Maven-based, so you should be able to import them directly into
     any Maven-aware IDE (such
-    as <ulink url="http://www.springsource.com/products/sts">SpringSource
+    as <ulink url="http://www.springsource.org/sts">SpringSource
     Tool Suite</ulink>).</para>
   </section>
 
