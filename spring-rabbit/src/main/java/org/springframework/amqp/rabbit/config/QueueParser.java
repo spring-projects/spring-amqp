@@ -15,6 +15,8 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -22,10 +24,10 @@ import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
@@ -100,6 +102,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 			builder.addConstructorArgReference(queueArguments);
 		}
 
+		NamespaceUtils.parseDeclarationControls(element, builder);
 	}
 
 	private boolean attributeHasIllegalOverride(Element element, String name, String allowed) {

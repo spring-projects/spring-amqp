@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,16 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Collections;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.config.TypedStringValue;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class TopicExchangeParser extends AbstractExchangeParser {
@@ -39,13 +40,13 @@ public class TopicExchangeParser extends AbstractExchangeParser {
 	}
 
 	@Override
-	protected AbstractBeanDefinition parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
+	protected BeanDefinitionBuilder parseBinding(String exchangeName, Element binding, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
 		builder.addPropertyValue("routingKey", new TypedStringValue(binding.getAttribute(BINDING_PATTERN_ATTR)));
 		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
-		return builder.getBeanDefinition();
+		return builder;
 	}
 
 }

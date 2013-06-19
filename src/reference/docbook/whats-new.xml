@@ -58,6 +58,19 @@
 			</para>
 		</section>
 		<section>
+			<title>Automatic Declaration of Queues, etc</title>
+			<para>
+				Previously, when declaring queues, exchanges and bindings, it was not possible
+				to define which connection factory was used for the declarations, each
+				<classname>RabbitAdmin</classname> would declare all components using
+				its connection.
+			</para>
+			<para>
+				Starting with this release, it is now possible to limit declarations to specific
+				<classname>RabbitAdmin</classname> instances. See <xref linkend="conditional-declaration" />.
+			</para>
+		</section>
+		<section>
 			<title>AMQP Remoting</title>
 			<para>
 				Facilities are now provided for using Spring Remoting techniques, using AMQP
