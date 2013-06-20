@@ -10,6 +10,7 @@ buildscript {
 	}
 	dependencies {
 		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.6'
+		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 	}
 }
 
@@ -28,6 +29,7 @@ allprojects {
 	repositories {
 		maven { url 'http://repo.springsource.org/libs-release' }
 	}
+	apply plugin: 'javadocHotfix'
 }
 
 ext {
