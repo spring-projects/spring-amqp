@@ -16,18 +16,24 @@ package org.springframework.amqp.rabbit.log4j;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.MDC;
+import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -68,6 +74,59 @@ public class AmqpAppenderIntegrationTests {
 	@After
 	public void tearDown() {
 		listenerContainer.shutdown();
+	}
+
+	@Test
+	public void testInit() {
+		final AtomicInteger count = new AtomicInteger();
+		final LoggingEvent event = new LoggingEvent
+				("foo", null, 1, Level.INFO, "bar",
+				 "baz", null, null, null,
+				 new HashMap<String, String>());
+		AmqpAppender appender = new AmqpAppender() {
+
+			@Override
+			protected void maybeDeclareExchange() {
+				super.maybeDeclareExchange();
+				if (count.incrementAndGet() < 2) {
+					// ensure we don't try to initialize again while initializing
+					append(event);
+				}
+			}
+
+		};
+		appender.append(event);
+		assertEquals(1, count.get());
+	}
+
+	@Test
+	public void testInitRetry() {
+		final AtomicInteger count = new AtomicInteger();
+		final LoggingEvent event = new LoggingEvent
+				("foo", null, 1, Level.INFO, "bar",
+				 "baz", null, null, null,
+				 new HashMap<String, String>());
+		AmqpAppender appender = new AmqpAppender() {
+
+			@Override
+			protected void maybeDeclareExchange() {
+				super.maybeDeclareExchange();
+				if (count.incrementAndGet() < 2) {
+					throw new RuntimeException("foo");
+				}
+			}
+
+		};
+		try {
+			appender.append(event);
+			fail("Expected exception");
+		}
+		catch (RuntimeException e) {
+			assertEquals("foo", e.getMessage());
+		}
+		// ensure we initialize again if the first time failed
+		appender.append(event);
+		assertEquals(2, count.get());
 	}
 
 	@Test
