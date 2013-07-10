@@ -36,6 +36,7 @@ import org.apache.log4j.spi.ErrorCode;
 import org.apache.log4j.spi.LocationInfo;
 import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.spi.ThrowableInformation;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
@@ -233,11 +234,6 @@ public class AmqpAppender extends AppenderSkeleton {
 	private boolean declareExchange = false;
 
 	/**
-	 * Used to synchronize access when creating the RabbitMQ ConnectionFactory.
-	 */
-	private final String mutex = "mutex";
-
-	/**
 	 * charset to use when converting String to byte[], default null (system default charset used).
 	 * If the charset is unsupported on the current platform, we fall back to using
 	 * the system charset.
@@ -252,6 +248,8 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Used to determine whether {@link MessageProperties#setMessageId(String)} is set.
 	 */
 	private boolean generateId = false;
+
+	private final AtomicBoolean initializing = new AtomicBoolean();
 
 	public AmqpAppender() {
 	}
@@ -440,8 +438,8 @@ public class AmqpAppender extends AppenderSkeleton {
 
 	@Override
 	public void append(LoggingEvent event) {
-		if (null == senderPool) {
-			synchronized (mutex) {
+		if (null == senderPool && this.initializing.compareAndSet(false, true)) {
+			try {
 				connectionFactory = new CachingConnectionFactory();
 				connectionFactory.setHost(host);
 				connectionFactory.setPort(port);
@@ -452,6 +450,9 @@ public class AmqpAppender extends AppenderSkeleton {
 				exchangeDeclared.set(true);
 
 				startSenders();
+			}
+			finally {
+				this.initializing.set(false);
 			}
 		}
 		events.add(new Event(event, event.getProperties()));
