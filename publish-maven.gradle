@@ -50,24 +50,30 @@ def customizePom(pom, gradleProject) {
 			}
 			developers {
 				developer {
+					id = 'garyrussell'
+					name = 'Gary Russell'
+					email = 'grussell@gopivotal.com'
+					roles = ['project lead']
+				}
+				developer {
 					id = 'dsyer'
 					name = 'Dave Syer'
-					email = 'dsyer@vmware.com'
+					email = 'dsyer@gopivotal.com'
 				}
 				developer {
 					id = 'markfisher'
 					name = 'Mark Fisher'
-					email = 'markfisher@vmware.com'
+					email = 'markfisher@gopivotal.com'
 				}
 				developer {
 					id = 'mpollack'
 					name = 'Mark Pollack'
-					email = 'mpollack@vmware.com'
+					email = 'mpollack@gopivotal.com'
 				}
 				developer {
 					id = 'jbrisbin'
 					name = 'Jon Brisbin'
-					email = 'jbrisbin@vmware.com'
+					email = 'jbrisbin@gopivotal.com'
 				}
 				developer {
 					id = 'tomas.lukosius'
