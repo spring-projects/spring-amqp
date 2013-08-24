@@ -317,7 +317,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     <programlisting language="xml"><![CDATA[<rabbit:connection-factory
     id="connectionFactory" addresses="host1:5672,host2:5672"/>]]></programlisting>
 
-    <sect2>
+    <section>
       <title>Configuring the Underlying Client Connection Factory</title>
       <para>
         The <classname>CachingConnectionFactory</classname> uses an instance of the Rabbit
@@ -332,8 +332,8 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
       </para>
       <programlisting language="xml"><![CDATA[<rabbit:connection-factory
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
-    </sect2>
-    <sect2>
+    </section>
+    <section id="cf-pub-conf-ret">
       <title>Publisher Confirms and Returns</title>
       <para>
         Confirmed and returned messages are supported by setting the
@@ -355,7 +355,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
 			post by the RabbitMQ team titled
 			<ulink url="http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/">Introducing Publisher Confirms</ulink>.
 		</tip>
-    </sect2>
+    </section>
   </section>
 
   <section id="amqp-template">
@@ -384,7 +384,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     Messages. We will explore Message sending and reception, respectively, in
     the two sections that follow.</para>
 
-    <sect2>
+    <section>
       <title>Publisher Confirms and Returns</title>
       <para>
         The <classname>RabbitTemplate</classname> implementation of <interfacename>AmqpTemplate</interfacename>
@@ -394,7 +394,9 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         For returned messages, the template's
         <code>mandatory</code> property must be set to 'true', and it requires
         a <classname>CachingConnectionFactory</classname> that has its
-        <code>publisherReturns</code> property set to true. Returns are sent to
+        <code>publisherReturns</code> property set to true
+        (see <xref linkend="cf-pub-conf-ret"/>).
+        Returns are sent to
         to the client by it registering a <interfacename>RabbitTemplate.ReturnCallback</interfacename>
         by calling <code>setReturnCallback(ReturnCallback callback)</code>. The callback
         must implement this method:
@@ -422,7 +424,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         Only one <interfacename>ConfirmCallback</interfacename> is supported by a
         <classname>RabbitTemplate</classname>.
       </para>
-    </sect2>
+    </section>
   </section>
 
   <section>
@@ -493,7 +495,7 @@ template.send("queue.helloWorld", new Message("Hello World".getBytes(), someProp
 template.setRoutingKey("queue.helloWorld"); // but we'll always send to this Queue
 template.send(new Message("Hello World".getBytes(), someProperties));]]></programlisting>
 
-    <sect2>
+    <section>
       <title>Publisher Confirms</title>
       <para>
         With the <classname>RabbitTemplate</classname> implementation of <interfacename>AmqpTemplate</interfacename>,
@@ -503,14 +505,14 @@ template.send(new Message("Hello World".getBytes(), someProperties));]]></progra
         <xref linkend="amqp-template"/>. This allows the sender to correlate
         a confirm (ack or nack) with the sent message.
       </para>
-    </sect2>
-    <sect2>
+    </section>
+    <section>
       <title>Publisher Returns</title>
       <para>
         When the template's <code>mandatory</code> property is 'true' returned messages are provided
         by the callback described in <xref linkend="amqp-template"/>.
       </para>
-    </sect2>
+    </section>
   </section>
 
   <section>
@@ -525,7 +527,7 @@ template.send(new Message("Hello World".getBytes(), someProperties));]]></progra
     asynchronously. We will look at an example of each approach in the next
     two sub-sections.</para>
 
-    <sect2>
+    <section>
       <title>Synchronous Consumer</title>
 
       <para>The <interfacename>AmqpTemplate</interfacename> itself can be used
@@ -551,9 +553,9 @@ Message receive(String queueName) throws AmqpException;]]></programlisting>
 
 Object receiveAndConvert(String queueName) throws AmqpException;]]></programlisting>
       </para>
-    </sect2>
+    </section>
 
-    <sect2 id="async-consumer"><title>Asynchronous Consumer</title><para>For asynchronous Message
+    <section id="async-consumer"><title>Asynchronous Consumer</title><para>For asynchronous Message
     reception, a dedicated component (not the
     <interfacename>AmqpTemplate</interfacename>) is involved. That component
     is a container for a Message consuming callback. We will look at the
@@ -638,7 +640,7 @@ public class ExampleAmqpConfiguration {
             }
         };
     }
-}]]></programlisting></sect2>
+}]]></programlisting></section>
   </section>
 
   <section>
