@@ -567,6 +567,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
+			} catch (Error e) {
+				logger.error("Consumer thread error, processing aborted.", e);
+				aborted = true;
 			} catch (Throwable t) {
 				if (logger.isDebugEnabled() || !(t instanceof AmqpConnectException)) {
 					logger.warn(
