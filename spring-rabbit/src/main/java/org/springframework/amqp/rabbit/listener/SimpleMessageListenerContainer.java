@@ -567,6 +567,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
+			} catch (Error e) {
+				logger.error("Consumer thread error, thread abort.", e);
+				aborted = true;
 			} catch (Throwable t) {
 				if (logger.isDebugEnabled() || !(t instanceof AmqpConnectException)) {
 					logger.warn(
@@ -576,8 +579,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
 							+ "Exception summary: " + t);
 				}
-			}
-			finally {
+			} finally {
 				if (SimpleMessageListenerContainer.this.transactionManager != null) {
 					ConsumerChannelRegistry.unRegisterConsumerChannel();
 				}
