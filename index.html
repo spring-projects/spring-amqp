@@ -1,0 +1,160 @@
+---
+# The name of your project
+title: Spring AMQP
+
+badges:
+
+  # Specify your project's twitter handle, if any. Delete if none.
+
+  # Customize your project's badges. Delete any entries that do not apply.
+  custom:
+    - name: Source (GitHub)
+      url:  https://github.com/spring-projects/spring-amqp
+      icon: github
+
+    - name: Issues (JIRA)
+      url:  http://jira.springsource.org/browse/AMQP
+      icon: tracking
+
+    - name: CI (Bamboo)
+      url:  https://build.springsource.org/browse/AMQP
+      icon: ci
+
+    - name: Forum
+      url:  http://forum.spring.io/forum/spring-projects/integration/amqp
+      icon: forum
+
+    - name: StackOverflow
+      url:  http://stackoverflow.com/questions/tagged/spring-amqp
+      icon: stackoverflow
+
+    - name: Metrics (SonarQube)
+      url:  https://sonar.springsource.org/dashboard/index/org.springframework.amqp:spring-amqp-dist
+      icon: metrics
+
+---
+<!DOCTYPE HTML>
+<html lang="en-US">
+
+{% capture billboard_description %}
+
+The Spring AMQP project applies core Spring concepts to the development of AMQP-based messaging solutions. It provides a "template" as a high-level abstraction for sending and receiving messages. It also provides support for Message-driven POJOs with a "listener container". These libraries facilitate management of AMQP resources while promoting the use of dependency injection and declarative configuration. In all of these cases, you will see similarities to the JMS support in the Spring Framework.
+{% endcapture %}
+
+{% capture main_content %}
+
+The project consists of two parts; `spring-amqp` is the base abstraction, and `spring-rabbit` is the [RabbitMQ](http://www.rabbitmq.com) implementation.
+## Features
+
+* Listener container for asynchronous processing of inbound messages
+* RabbitTemplate for sending and receiving messages
+* RabbitAdmin for automatically declaring queues, exchanges and bindings
+
+<span id="quick-start"></span>
+## Quick Start
+
+{% include download_widget.md %}
+
+
+####just Java...
+
+````java
+public static void main(final String... args) throws Exception {
+
+	ConnectionFactory cf = new CachingConnectionFactory();
+
+	// set up the queue, exchange, binding on the broker
+	RabbitAdmin admin = new RabbitAdmin(cf);
+	Queue queue = new Queue("myQueue");
+	admin.declareQueue(queue);
+	TopicExchange exchange = new TopicExchange("myExchange");
+	admin.declareExchange(exchange);
+	admin.declareBinding(
+		BindingBuilder.bind(queue).to(exchange).with("foo.*"));
+
+	// set up the listener and container
+	SimpleMessageListenerContainer container =
+			new SimpleMessageListenerContainer(cf);
+	Object listener = new Object() {
+		public void handleMessage(String foo) {
+			System.out.println(foo);
+		}
+	};
+	MessageListenerAdapter adapter = new MessageListenerAdapter(listener);
+	container.setMessageListener(adapter);
+	container.setQueueNames("myQueue");
+	container.start();
+
+	// send something
+	RabbitTemplate template = new RabbitTemplate(cf);
+	template.convertAndSend("myExchange", "foo.bar", "Hello, world!");
+	Thread.sleep(1000);
+	container.stop();
+}
+````
+####Or, the Spring way...
+
+````java
+public static void main(final String... args) throws Exception {
+
+	AbstractApplicationContext ctx =
+		new ClassPathXmlApplicationContext("context.xml");
+	RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
+	template.convertAndSend("Hello, world!");
+	Thread.sleep(1000);
+	ctx.destroy();
+}
+````
+````java
+public class Foo {
+
+	public void listen(String foo) {
+		System.out.println(foo);
+	}
+}
+````
+````xml
+<rabbit:connection-factory id="connectionFactory" />
+
+<rabbit:template id="amqpTemplate" connection-factory="connectionFactory"
+	exchange="myExchange" routing-key="foo.bar"/>
+
+<rabbit:admin connection-factory="connectionFactory" />
+
+<rabbit:queue name="myQueue" />
+
+<rabbit:topic-exchange name="myExchange">
+	<rabbit:bindings>
+		<rabbit:binding queue="myQueue" pattern="foo.*" />
+	</rabbit:bindings>
+</rabbit:topic-exchange>
+
+
+<rabbit:listener-container connection-factory="connectionFactory">
+	<rabbit:listener ref="foo" method="listen" queue-names="myQueue" />
+</rabbit:listener-container>
+
+<bean id="foo" class="foo.Foo" />
+````
+{% endcapture %}
+
+{% capture related_resources %}
+
+### Sample Projects
+
+* The sample applications are discussed in the
+[Reference Manual](http://docs.spring.io/spring-amqp/reference/html/sample-apps.html)
+and are available on [GitHub](https://github.com/SpringSource/spring-amqp-samples)
+
+### Other Resources
+
+* See also the
+[Spring Integration AMQP Sample Application](https://github.com/SpringSource/spring-integration-samples/tree/master/basic/amqp)
+which shows the [Spring Integration]({{site.main_site_url}}/projects/spring-integration)
+'spring-integration-amqp' module endpoints to send and receive messages.
+
+{% endcapture %}
+
+{% include project_page.html %}
+
+</html>
