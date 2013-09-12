@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2010-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,7 +13,11 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import org.w3c.dom.Element;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
@@ -25,9 +29,7 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.springframework.util.xml.DomUtils;
 
 /**
  * @author Mark Fisher
@@ -54,27 +56,25 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String RESPONSE_ROUTING_KEY_ATTRIBUTE = "response-routing-key";
 
+	private final Set<String> listenerIds = new HashSet<String>();
+
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
-		NodeList childNodes = element.getChildNodes();
-		for (int i = 0; i < childNodes.getLength(); i++) {
-			Node child = childNodes.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				String localName = parserContext.getDelegate().getLocalName(child);
-				if (LISTENER_ELEMENT.equals(localName)) {
-					parseListener((Element) child, element, parserContext);
-				}
-			}
+		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
+		for (int i = 0; i < childElements.size(); i++) {
+			parseListener(childElements.get(i), element, parserContext,
+							i, childElements.size() > 1);
 		}
 
 		parserContext.popAndRegisterContainingComponent();
 		return null;
 	}
 
-	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext) {
+	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext,
+			int index, boolean multipleElements) {
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
 
@@ -120,11 +120,22 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		listenerDef.setBeanClassName("org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter");
 		containerDef.getPropertyValues().add("messageListener", listenerDef);
 
-		String containerBeanName = containerEle.getAttribute(ID_ATTRIBUTE);
+		String parentElementId = containerEle.getAttribute(ID_ATTRIBUTE);
 		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator
-		if (!StringUtils.hasText(containerBeanName)) {
-			containerBeanName = parserContext.getReaderContext().generateBeanName(containerDef);
+		if (!StringUtils.hasText(parentElementId)) {
+			parentElementId = parserContext.getReaderContext().generateBeanName(containerDef);
 		}
+		String childElementId = listenerEle.getAttribute(ID_ATTRIBUTE);
+		boolean hasChildElementId = StringUtils.hasText(childElementId);
+		String containerBeanName = parentElementId + (hasChildElementId ? ("$" + childElementId) : "");
+		if (multipleElements && !hasChildElementId) {
+			containerBeanName += "." + index;
+		}
+		if (this.listenerIds.contains(containerBeanName)) {
+			parserContext.getReaderContext().error("You cannot have multiple listener elements with the same 'id'",
+					listenerEle);
+		}
+		this.listenerIds.add(containerBeanName);
 
 		if (!NamespaceUtils.isAttributeDefined(listenerEle, QUEUE_NAMES_ATTRIBUTE)
 				&& !NamespaceUtils.isAttributeDefined(listenerEle, QUEUES_ATTRIBUTE)) {

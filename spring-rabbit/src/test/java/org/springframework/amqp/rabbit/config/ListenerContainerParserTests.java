@@ -28,6 +28,7 @@ import java.util.Arrays;
 import org.aopalliance.aop.Advice;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -107,6 +108,33 @@ public class ListenerContainerParserTests {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container6", SimpleMessageListenerContainer.class);
 		assertTrue(container.isChannelTransacted());
 		assertEquals(5, ReflectionTestUtils.getField(container, "txSize"));
+	}
+
+	@Test
+	public void testNamedListeners() throws Exception {
+		beanFactory.getBean("containerWithNamedListeners$testListener1", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("containerWithNamedListeners$testListener2", SimpleMessageListenerContainer.class);
+	}
+
+	@Test
+	public void testAnonListeners() throws Exception {
+		beanFactory.getBean("containerWithAnonListener", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("containerWithAnonListeners.0", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("containerWithAnonListeners$namedListener", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("containerWithAnonListeners.2", SimpleMessageListenerContainer.class);
+	}
+
+	@Test
+	public void testAnonEverything() throws Exception {
+		SimpleMessageListenerContainer container = beanFactory.getBean(
+				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0.0",
+				SimpleMessageListenerContainer.class);
+		assertEquals("ex1", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
+				"responseExchange"));
+		container = beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0.1",
+				SimpleMessageListenerContainer.class);
+		assertEquals("ex2", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
+				"responseExchange"));
 	}
 
 	@Test
