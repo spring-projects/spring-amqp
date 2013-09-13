@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.codehaus.jackson.type.JavaType;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.ClassUtils;
 
@@ -23,6 +24,7 @@ import org.springframework.util.ClassUtils;
  * @author Mark Pollack
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Artem Bilan
  */
 public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements JavaTypeMapper, ClassMapper {
 
@@ -30,7 +32,7 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType classType = getClassIdType(retrieveHeader(properties,
 				getClassIdFieldName()));
-		if (!classType.isContainerType()) {
+		if (!classType.isContainerType() || classType.isArrayType()) {
 			return classType;
 		}
 
@@ -44,10 +46,9 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 
 		JavaType keyClassType = getClassIdType(retrieveHeader(properties,
 				getKeyClassIdFieldName()));
-		JavaType mapType = mapType(
+		return mapType(
 				(Class<? extends Map>) classType.getRawClass(), keyClassType,
 				contentClassType);
-		return mapType;
 
 	}
 
@@ -76,7 +77,7 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 		addHeader(properties, getClassIdFieldName(),
 				javaType.getRawClass());
 
-		if (javaType.isContainerType()) {
+		if (javaType.isContainerType() && !javaType.isArrayType()) {
 			addHeader(properties, getContentClassIdFieldName(), javaType
 					.getContentType().getRawClass());
 		}
@@ -95,4 +96,5 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 	public Class<?> toClass(MessageProperties properties) {
 		return toJavaType(properties).getRawClass();
 	}
+
 }

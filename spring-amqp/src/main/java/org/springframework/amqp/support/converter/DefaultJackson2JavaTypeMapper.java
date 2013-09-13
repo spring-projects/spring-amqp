@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.ClassUtils;
 
@@ -19,13 +20,14 @@ import org.springframework.util.ClassUtils;
  * @author Mark Pollack
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Artem Bilan
  */
 public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper, ClassMapper {
 
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType classType = getClassIdType(retrieveHeader(properties,
 				getClassIdFieldName()));
-		if (!classType.isContainerType()) {
+		if (!classType.isContainerType() || classType.isArrayType()) {
 			return classType;
 		}
 
@@ -39,10 +41,9 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 		JavaType keyClassType = getClassIdType(retrieveHeader(properties,
 				getKeyClassIdFieldName()));
-		JavaType mapType = MapType.construct(
+		return MapType.construct(
                 classType.getRawClass(), keyClassType,
                 contentClassType);
-		return mapType;
 
 	}
 
@@ -66,10 +67,9 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	}
 
 	public void fromJavaType(JavaType javaType, MessageProperties properties) {
-		addHeader(properties, getClassIdFieldName(),
-				(Class<?>) javaType.getRawClass());
+		addHeader(properties, getClassIdFieldName(), javaType.getRawClass());
 
-		if (javaType.isContainerType()) {
+		if (javaType.isContainerType() && !javaType.isArrayType()) {
 			addHeader(properties, getContentClassIdFieldName(), javaType
 					.getContentType().getRawClass());
 		}
@@ -88,4 +88,5 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 	public Class<?> toClass(MessageProperties properties) {
 		return toJavaType(properties).getRawClass();
 	}
+
 }
