@@ -9,6 +9,7 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -18,14 +19,16 @@ import java.util.Hashtable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 
 /**
  * @author Mark Pollack
@@ -33,6 +36,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
  * @author Sam Nelson
  * @author Gary Russell
  * @author Andreas Asplund
+ * @author Artem Bilan
  */
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -124,7 +128,22 @@ public class Jackson2JsonMessageConverterTests {
       assertEquals(trade, marshalledTrade);
    }
 
-   @Test
+	@Test
+	public void testAmqp330StringArray() {
+		String[] testData = {"test"};
+		Message message = converter.toMessage(testData, new MessageProperties());
+		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+	}
+
+	@Test
+	public void testAmqp330ObjectArray() {
+		SimpleTrade[] testData = {trade};
+		Message message = converter.toMessage(testData, new MessageProperties());
+		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+	}
+
+
+	@Test
    public void testDefaultType() {
 	   byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
 	   MessageProperties messageProperties = new MessageProperties();

@@ -9,17 +9,20 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.Hashtable;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ser.BeanSerializerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ser.BeanSerializerFactory;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @author Dave Syer
  * @author Sam Nelson
  * @author Gary Russell
+ * @author Artem Bilan
  */
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -120,6 +124,20 @@ public class JsonMessageConverterTests {
 
       SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
       assertEquals(trade, marshalledTrade);
+   }
+
+   @Test
+   public void testAmqp330StringArray() {
+	   String[] testData = {"test"};
+	   Message message = converter.toMessage(testData, new MessageProperties());
+	   assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+   }
+
+   @Test
+   public void testAmqp330ObjectArray() {
+	   SimpleTrade[] testData = {trade};
+	   Message message = converter.toMessage(testData, new MessageProperties());
+	   assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
    }
 
    @Test
