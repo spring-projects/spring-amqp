@@ -62,6 +62,16 @@
 		<rabbit:listener queues="bar" ref="testBean" method="handle" response-exchange="ex2" />
 	</rabbit:listener-container>
 
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener id="anonParentL1" queues="foo" ref="testBean" method="handle" />
+		<rabbit:listener id="anonParentL2" queues="bar" ref="testBean" method="handle" />
+	</rabbit:listener-container>
+
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener id="anonParentL1" queues="foo" ref="testBean" method="handle" />
+		<rabbit:listener id="anonParentL2" queues="bar" ref="testBean" method="handle" />
+	</rabbit:listener-container>
+
 	<util:list id="adviceChain">
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>

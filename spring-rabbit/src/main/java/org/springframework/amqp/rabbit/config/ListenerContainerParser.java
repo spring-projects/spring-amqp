@@ -16,9 +16,11 @@ package org.springframework.amqp.rabbit.config;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.w3c.dom.Element;
 
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
@@ -58,6 +60,10 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private final Set<String> listenerIds = new HashSet<String>();
 
+	private static final AtomicInteger instance = new AtomicInteger();
+
+	private boolean instanceUsed;
+
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
@@ -70,6 +76,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		}
 
 		parserContext.popAndRegisterContainingComponent();
+		if (this.instanceUsed) {
+			instance.incrementAndGet();
+		}
 		return null;
 	}
 
@@ -123,7 +132,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		String parentElementId = containerEle.getAttribute(ID_ATTRIBUTE);
 		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator
 		if (!StringUtils.hasText(parentElementId)) {
-			parentElementId = parserContext.getReaderContext().generateBeanName(containerDef);
+			parentElementId = this.generateBeanName();
 		}
 		String childElementId = listenerEle.getAttribute(ID_ATTRIBUTE);
 		boolean hasChildElementId = StringUtils.hasText(childElementId);
@@ -132,8 +141,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			containerBeanName += "." + index;
 		}
 		if (this.listenerIds.contains(containerBeanName)) {
-			parserContext.getReaderContext().error("You cannot have multiple listener elements with the same 'id'",
-					listenerEle);
+			parserContext.getReaderContext().error("You cannot have multiple listener elements with the same 'id' ("
+					+ containerBeanName + ")",
+				listenerEle);
 		}
 		this.listenerIds.add(containerBeanName);
 
@@ -169,5 +179,10 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
+	}
+
+	private String generateBeanName() {
+		this.instanceUsed = true;
+		return SimpleMessageListenerContainer.class.getName() + "#" + instance.get();
 	}
 }
