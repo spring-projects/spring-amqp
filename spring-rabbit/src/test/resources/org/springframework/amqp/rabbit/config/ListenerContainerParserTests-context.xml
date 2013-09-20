@@ -13,27 +13,63 @@
 	<rabbit:queue id="bar" />
 
 	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
-		<rabbit:listener id="testListener" queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
+		<rabbit:listener queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
-		<rabbit:listener id="testListener" queues="foo, bar" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo, bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container3" connection-factory="connectionFactory" advice-chain="adviceChain">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container4" connection-factory="connectionFactory">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container5" connection-factory="connectionFactory" requeue-rejected="false">
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container6" connection-factory="connectionFactory" channel-transacted="true" transaction-size="5" >
-		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<rabbit:listener-container id="containerWithNamedListeners" connection-factory="connectionFactory">
+		<rabbit:listener id="testListener1" queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener id="testListener2" queues="bar" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+<!-- Invalid -->
+<!-- 	<rabbit:listener-container id="containerWithNamedListenersSame" connection-factory="connectionFactory"> -->
+<!-- 		<rabbit:listener id="testListener3" queues="foo" ref="testBean" method="handle"/> -->
+<!-- 		<rabbit:listener id="testListener3" queues="bar" ref="testBean" method="handle"/> -->
+<!-- 	</rabbit:listener-container> -->
+
+	<rabbit:listener-container id="containerWithAnonListener" connection-factory="connectionFactory">
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<rabbit:listener-container id="containerWithAnonListeners" connection-factory="connectionFactory">
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener id="namedListener" queues="bar" ref="testBean" method="handle"/>
+		<rabbit:listener queues="bar" ref="testBean" method="handle"/>
+	</rabbit:listener-container>
+
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener queues="foo" ref="testBean" method="handle" response-exchange="ex1" />
+		<rabbit:listener queues="bar" ref="testBean" method="handle" response-exchange="ex2" />
+	</rabbit:listener-container>
+
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener id="anonParentL1" queues="foo" ref="testBean" method="handle" />
+		<rabbit:listener id="anonParentL2" queues="bar" ref="testBean" method="handle" />
+	</rabbit:listener-container>
+
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener id="anonParentL1" queues="foo" ref="testBean" method="handle" />
+		<rabbit:listener id="anonParentL2" queues="bar" ref="testBean" method="handle" />
 	</rabbit:listener-container>
 
 	<util:list id="adviceChain">
