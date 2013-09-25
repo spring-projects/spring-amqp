@@ -34,6 +34,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Felipe Gutierrez
  * @since 1.0
  *
  */
@@ -49,7 +50,7 @@ public class QueueParserTests {
 		this.beanFactory = beanFactory;
 	}
 
-	@Test
+	@Test	
 	public void testQueue() throws Exception {
 		Queue queue = beanFactory.getBean("foo", Queue.class);
 		assertNotNull(queue);
@@ -59,7 +60,7 @@ public class QueueParserTests {
 		assertFalse(queue.isExclusive());
 	}
 
-	@Test
+	@Test	
 	public void testAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("alias", Queue.class);
 		assertNotNull(queue);
@@ -97,7 +98,16 @@ public class QueueParserTests {
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
 	}
-
+	
+	@Test
+	public void testReferenceArgumentsQueue() throws Exception {
+		Queue queue = beanFactory.getBean("refArguments", Queue.class);
+		assertNotNull(queue);
+		assertEquals("bar", queue.getArguments().get("foo"));
+		assertEquals(200L, queue.getArguments().get("x-message-ttl"));
+		assertEquals("all", queue.getArguments().get("x-ha-policy"));
+	}
+	
 	@Test
 	public void testArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("arguments", Queue.class);

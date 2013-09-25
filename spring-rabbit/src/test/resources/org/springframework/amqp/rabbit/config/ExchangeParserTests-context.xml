@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
+	
 	<rabbit:direct-exchange name="direct" auto-declare="false" declared-by="admin1, admin2">
 		<rabbit:bindings>
 			<rabbit:binding key="foo" queue="bar"/>
@@ -21,7 +26,15 @@
 			<beans:entry key="foo" value="bar" />
 		</exchange-arguments>
 	</direct-exchange>
-
+	
+	<util:map id="myRefArguments">
+		<beans:entry key="foo" value="bar" />
+	</util:map>
+	
+	<direct-exchange name="direct-ref-arguments" xmlns="http://www.springframework.org/schema/rabbit">
+		<rabbit:exchange-arguments ref="myRefArguments"/>    
+	</direct-exchange>
+	
 	<rabbit:topic-exchange name="topic" declared-by="admin1" />
 
 	<rabbit:fanout-exchange name="fanout" declared-by="admin2" />
@@ -64,5 +77,5 @@
 	<bean id="mockCF" class="org.mockito.Mockito" factory-method="mock">
 		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
 	</bean>
-
+	
 </beans>

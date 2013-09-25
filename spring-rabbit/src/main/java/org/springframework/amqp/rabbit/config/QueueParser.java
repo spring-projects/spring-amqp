@@ -16,7 +16,6 @@ package org.springframework.amqp.rabbit.config;
 import java.util.Map;
 
 import org.w3c.dom.Element;
-
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -28,7 +27,8 @@ import org.springframework.util.xml.DomUtils;
 /**
  * @author Dave Syer
  * @author Gary Russell
- *
+ * @author Felipe Gutierrez
+ * 
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
@@ -37,7 +37,8 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	private static final String DURABLE_ATTRIBUTE = "durable";
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
-
+	private static final String REF_ATTRIBUTE = "ref";
+	
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
 		return true;
@@ -85,17 +86,23 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 		String queueArguments = element.getAttribute(ARGUMENTS);
 		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS);
-
+				
 		if (argumentsElement != null) {
 			if (StringUtils.hasText(queueArguments)) {
 				parserContext
 						.getReaderContext()
 						.error("Queue may have either a queue-attributes attribute or element, but not both",
 								element);
-			}
-			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+			}			
+			
+			String ref = argumentsElement.getAttribute(REF_ATTRIBUTE);
+			if(StringUtils.hasText(ref)){
+				builder.addConstructorArgReference(ref);
+			}else{
+				Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
-			builder.addConstructorArgValue(map);
+				builder.addConstructorArgValue(map);
+			}
 		}
 
 		if (StringUtils.hasText(queueArguments)) {
