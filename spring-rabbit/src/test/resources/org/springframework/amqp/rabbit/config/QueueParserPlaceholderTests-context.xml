@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:rabbit="http://www.springframework.org/schema/rabbit" xmlns:beans="http://www.springframework.org/schema/beans"
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="properties">
@@ -25,6 +29,18 @@
 	<rabbit:queue id="overrideAlias" name="bar" durable="true" auto-delete="true" exclusive="true" />
 
 	<rabbit:queue id="anonymous" />
+
+	<util:map id="myRefArguments">
+		<beans:entry key="foo" value="bar" />
+		<beans:entry key="x-message-ttl">
+			<beans:value type="java.lang.Long">200</beans:value>
+		</beans:entry>
+		<beans:entry key="x-ha-policy" value="${ha}" />
+	</util:map>
+
+	<rabbit:queue name="refArguments">
+		<rabbit:queue-arguments ref="myRefArguments"/>
+	</rabbit:queue>
 
 	<rabbit:queue name="arguments">
 		<rabbit:queue-arguments>

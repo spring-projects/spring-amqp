@@ -34,6 +34,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Felipe Gutierrez
  * @since 1.0
  *
  */
@@ -96,6 +97,15 @@ public class QueueParserTests {
 		assertFalse(queue.isDurable());
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
+	}
+
+	@Test
+	public void testReferenceArgumentsQueue() throws Exception {
+		Queue queue = beanFactory.getBean("refArguments", Queue.class);
+		assertNotNull(queue);
+		assertEquals("bar", queue.getArguments().get("foo"));
+		assertEquals(200L, queue.getArguments().get("x-message-ttl"));
+		assertEquals("all", queue.getArguments().get("x-ha-policy"));
 	}
 
 	@Test

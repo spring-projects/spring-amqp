@@ -28,6 +28,7 @@ import org.springframework.util.xml.DomUtils;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Felipe Gutierrez
  *
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
@@ -37,6 +38,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	private static final String DURABLE_ATTRIBUTE = "durable";
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
+	private static final String REF_ATTRIBUTE = "ref";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
@@ -47,7 +49,8 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	protected Class<?> getBeanClass(Element element) {
 		if (NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {
 			return Queue.class;
-		} else {
+		}
+		else {
 			return AnonymousQueue.class;
 		}
 	}
@@ -73,7 +76,8 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 				return;
 			}
 
-		} else {
+		}
+		else {
 
 			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, false);
 			NamespaceUtils
@@ -93,9 +97,20 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 						.error("Queue may have either a queue-attributes attribute or element, but not both",
 								element);
 			}
+
+			String ref = argumentsElement.getAttribute(REF_ATTRIBUTE);
 			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
-			builder.addConstructorArgValue(map);
+			if (StringUtils.hasText(ref)) {
+				if (map != null && map.size() > 0) {
+					parserContext.getReaderContext()
+							.error("You cannot have both a 'ref' and a nested map", element);
+				}
+				builder.addConstructorArgReference(ref);
+			}
+			else {
+				builder.addConstructorArgValue(map);
+			}
 		}
 
 		if (StringUtils.hasText(queueArguments)) {

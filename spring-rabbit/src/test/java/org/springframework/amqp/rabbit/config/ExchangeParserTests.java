@@ -37,6 +37,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Dave Syer
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Felipe Gutierrez
  * @since 1.0
  *
  */
@@ -125,6 +126,14 @@ public final class ExchangeParserTests {
 		DirectExchange exchange = beanFactory.getBean("direct-arguments", DirectExchange.class);
 		assertNotNull(exchange);
 		assertEquals("direct-arguments", exchange.getName());
+		assertEquals("bar", exchange.getArguments().get("foo"));
+	}
+
+	@Test
+	public void testDirectExchangeWithReferencedArguments() throws Exception {
+		DirectExchange exchange = beanFactory.getBean("direct-ref-arguments", DirectExchange.class);
+		assertNotNull(exchange);
+		assertEquals("direct-ref-arguments", exchange.getName());
 		assertEquals("bar", exchange.getArguments().get("foo"));
 	}
 
