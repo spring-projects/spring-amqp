@@ -34,6 +34,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Felipe Gutierrez
  * @since 1.0
  *
  */
@@ -49,8 +50,7 @@ public class QueueParserTests {
 		this.beanFactory = beanFactory;
 	}
 
-	@Test
-	@org.junit.Ignore
+	@Test	
 	public void testQueue() throws Exception {
 		Queue queue = beanFactory.getBean("foo", Queue.class);
 		assertNotNull(queue);
@@ -60,8 +60,7 @@ public class QueueParserTests {
 		assertFalse(queue.isExclusive());
 	}
 
-	@Test
-	@org.junit.Ignore
+	@Test	
 	public void testAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("alias", Queue.class);
 		assertNotNull(queue);
@@ -70,7 +69,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testOverrideQueue() throws Exception {
 		Queue queue = beanFactory.getBean("override", Queue.class);
 		assertNotNull(queue);
@@ -81,7 +79,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testOverrideAliasQueue() throws Exception {
 		Queue queue = beanFactory.getBean("overrideAlias", Queue.class);
 		assertNotNull(queue);
@@ -92,7 +89,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testAnonymousQueue() throws Exception {
 		Queue queue = beanFactory.getBean("anonymous", Queue.class);
 		assertNotNull(queue);
@@ -122,7 +118,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testAnonymousArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("anonymousArguments", Queue.class);
 		assertNotNull(queue);
@@ -130,7 +125,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testReferencedArgumentsQueue() throws Exception {
 		Queue queue = beanFactory.getBean("referencedArguments", Queue.class);
 		assertNotNull(queue);
@@ -138,7 +132,6 @@ public class QueueParserTests {
 	}
 
 	@Test
-	@org.junit.Ignore
 	public void testDeclaredBy() throws Exception {
 		Queue queue = beanFactory.getBean("autoDeclareTwoAdmins", Queue.class);
 		RabbitAdmin admin1 = beanFactory.getBean("admin1", RabbitAdmin.class);
@@ -160,7 +153,6 @@ public class QueueParserTests {
 	}
 
 	@Test(expected=BeanDefinitionStoreException.class)
-	@org.junit.Ignore
 	public void testIllegalAnonymousQueue() throws Exception {
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);

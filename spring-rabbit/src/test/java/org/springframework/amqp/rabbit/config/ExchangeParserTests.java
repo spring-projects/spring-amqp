@@ -37,6 +37,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Dave Syer
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Felipe Gutierrez
  * @since 1.0
  *
  */
