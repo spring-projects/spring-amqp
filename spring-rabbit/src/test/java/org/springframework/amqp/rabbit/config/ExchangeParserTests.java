@@ -127,9 +127,17 @@ public final class ExchangeParserTests {
 		assertEquals("direct-arguments", exchange.getName());
 		assertEquals("bar", exchange.getArguments().get("foo"));
 	}
+	
+	@Test
+	public void testDirectExchangeWithReferencedArguments() throws Exception {
+		DirectExchange exchange = beanFactory.getBean("direct-ref-arguments", DirectExchange.class);
+		assertNotNull(exchange);
+		assertEquals("direct-ref-arguments", exchange.getName());
+		assertEquals("bar", exchange.getArguments().get("foo"));
+	}
 
 	@SuppressWarnings("deprecation")
-	@Test
+	@Test	
 	public void testFederatedDirectExchange() throws Exception {
 		org.springframework.amqp.core.FederatedExchange exchange =
 			beanFactory.getBean("fedDirect", org.springframework.amqp.core.FederatedExchange.class);
@@ -147,7 +155,7 @@ public final class ExchangeParserTests {
 	}
 
 	@SuppressWarnings("deprecation")
-	@Test
+	@Test	
 	public void testFederatedTopicExchange() throws Exception {
 		org.springframework.amqp.core.FederatedExchange exchange =
 			beanFactory.getBean("fedTopic", org.springframework.amqp.core.FederatedExchange.class);
@@ -165,7 +173,7 @@ public final class ExchangeParserTests {
 	}
 
 	@SuppressWarnings("deprecation")
-	@Test
+	@Test	
 	public void testFederatedFanoutExchange() throws Exception {
 		org.springframework.amqp.core.FederatedExchange exchange =
 			beanFactory.getBean("fedFanout", org.springframework.amqp.core.FederatedExchange.class);
@@ -183,7 +191,7 @@ public final class ExchangeParserTests {
 	}
 
 	@SuppressWarnings("deprecation")
-	@Test
+	@Test	
 	public void testFederatedHeadersExchange() throws Exception {
 		org.springframework.amqp.core.FederatedExchange exchange =
 			beanFactory.getBean("fedHeaders", org.springframework.amqp.core.FederatedExchange.class);

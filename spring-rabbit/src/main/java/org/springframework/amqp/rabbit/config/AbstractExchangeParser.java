@@ -16,7 +16,6 @@ package org.springframework.amqp.rabbit.config;
 import java.util.Map;
 
 import org.w3c.dom.Element;
-
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.TypedStringValue;
@@ -29,7 +28,7 @@ import org.springframework.util.xml.DomUtils;
 /**
  * @author Dave Syer
  * @author Gary Russell
- *
+ * @author Felipe Gutierrez
  *
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
@@ -47,6 +46,8 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 	protected static final String BINDING_QUEUE_ATTR = "queue";
 
 	protected static final String BINDING_EXCHANGE_ATTR = "exchange";
+	
+	private static final String REF_ATTRIBUTE = "ref";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
@@ -65,9 +66,15 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS_ELEMENT);
 		if (argumentsElement != null) {
-			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+			
+			String ref = argumentsElement.getAttribute(REF_ATTRIBUTE);
+			if(StringUtils.hasText(ref)){
+				builder.addConstructorArgReference(ref);
+			}else{
+				Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
 					builder.getRawBeanDefinition());
-			builder.addConstructorArgValue(map);
+				builder.addConstructorArgValue(map);
+			}
 		}
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
