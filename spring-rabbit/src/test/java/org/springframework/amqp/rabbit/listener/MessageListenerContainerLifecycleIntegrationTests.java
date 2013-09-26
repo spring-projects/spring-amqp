@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -34,6 +35,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.beans.factory.DisposableBean;
 
 /**
@@ -93,6 +95,9 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			return this.value;
 		}
 	}
+
+	@Rule
+	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
