@@ -19,10 +19,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.test.annotation.Repeat;
 import org.springframework.transaction.TransactionDefinition;
@@ -36,6 +38,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
@@ -44,6 +47,9 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	private static final String ROUTE = "test.queue";
 
 	private final RabbitTemplate template = new RabbitTemplate();
+
+	@Rule
+	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
 	public RepeatProcessor repeat = new RepeatProcessor(4);

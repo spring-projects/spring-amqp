@@ -15,6 +15,7 @@ import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
@@ -31,6 +32,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.beans.factory.DisposableBean;
 
 import com.rabbitmq.client.Channel;
@@ -58,6 +60,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	private AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
 
 	private SimpleMessageListenerContainer container;
+
+	@Rule
+	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
