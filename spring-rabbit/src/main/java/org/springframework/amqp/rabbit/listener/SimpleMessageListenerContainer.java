@@ -56,9 +56,12 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Nick Koza
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
+
+	public static final long MAX_STARTUP_TIME = 30000;
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
@@ -336,8 +339,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				processors.add(processor);
 				this.taskExecutor.execute(processor);
 			}
+
+			Long startTime = System.nanoTime();
 			for (AsyncMessageProcessingConsumer processor : processors) {
-				FatalListenerStartupException startupException = processor.getStartupException();
+				FatalListenerStartupException startupException = processor.waitForStartup(startTime);
 				if (startupException != null) {
 					throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
 				}
@@ -512,9 +517,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			start.await(60000L, TimeUnit.MILLISECONDS);
+		public FatalListenerStartupException waitForStartup(Long startTime) throws TimeoutException, InterruptedException {
+			Long elapsedTime = nanoSecondToMilisecond(System.nanoTime() - startTime);
+			if (elapsedTime < MAX_STARTUP_TIME) {
+				start.await(MAX_STARTUP_TIME - elapsedTime, TimeUnit.MILLISECONDS);
+			}
 			return startupException;
+		}
+
+		private Long nanoSecondToMilisecond(Long nanoSecond) {
+			return nanoSecond / 1000000;
 		}
 
 		public void run() {
