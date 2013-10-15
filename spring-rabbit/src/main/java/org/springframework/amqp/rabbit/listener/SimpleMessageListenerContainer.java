@@ -61,7 +61,7 @@ import com.rabbitmq.client.Channel;
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
-	public static final long MAX_STARTUP_TIME = 30000;
+	public static final long MAX_STARTUP_TIME = 5000;
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
