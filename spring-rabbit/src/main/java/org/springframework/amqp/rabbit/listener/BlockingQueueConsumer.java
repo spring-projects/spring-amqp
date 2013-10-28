@@ -18,12 +18,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -73,6 +75,8 @@ public class BlockingQueueConsumer {
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
+	private volatile long shutdownTimeout;
+
 	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
 
 	private final AcknowledgeMode acknowledgeMode;
@@ -86,6 +90,8 @@ public class BlockingQueueConsumer {
 	private final Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
 	private final boolean defaultRequeuRejected;
+
+	private final CountDownLatch suspendClientThread = new CountDownLatch(1);
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
@@ -123,6 +129,15 @@ public class BlockingQueueConsumer {
 
 	public String getConsumerTag() {
 		return consumer.getConsumerTag();
+	}
+
+	/**
+	 * Stop receiving new messages; drain the queue of any prefetched messages.
+	 * @param shutdownTimeout how long (ms) to suspend the client thread.
+	 */
+	public final void setQuiesce(long shutdownTimeout) {
+		this.shutdownTimeout = shutdownTimeout;
+		this.cancelled.set(true);
 	}
 
 	/**
@@ -247,7 +262,7 @@ public class BlockingQueueConsumer {
 	}
 
 	public void stop() {
-		cancelled.set(true);
+		this.suspendClientThread.countDown();
 		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null
 				&& !this.cancelReceived.get()) {
 			try {
@@ -305,8 +320,15 @@ public class BlockingQueueConsumer {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
 			if (cancelled.get()) {
-				if (acknowledgeMode.isTransactionAllowed()) {
+				try {
+					BlockingQueueConsumer.this.suspendClientThread.await(
+							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS);
+					// AcknowlwdgeMode.NONE message will be lost
 					return;
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IOException(e);
 				}
 			}
 			if (logger.isDebugEnabled()) {

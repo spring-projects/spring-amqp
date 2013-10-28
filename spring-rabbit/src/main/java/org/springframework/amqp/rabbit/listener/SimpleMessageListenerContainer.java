@@ -359,6 +359,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		try {
+			for (BlockingQueueConsumer consumer : this.consumers) {
+				consumer.setQuiesce(this.shutdownTimeout);
+			}
 			logger.info("Waiting for workers to finish.");
 			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {

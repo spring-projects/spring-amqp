@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,6 +29,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -36,6 +39,7 @@ import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
 
 /**
@@ -243,6 +247,85 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		assertNull(template.receiveAndConvert(queue.getName()));
 
 		((DisposableBean) template.getConnectionFactory()).destroy();
+	}
+
+	/*
+	 * Tests that only prefetch is processed after stop().
+	 */
+	@Test
+	public void testShutDownWithPrefetch() throws Exception {
+
+		int messageCount = 10;
+		int concurrentConsumers = 1;
+
+		RabbitTemplate template = createTemplate(concurrentConsumers);
+
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		final CountDownLatch awaitStart1 = new CountDownLatch(1);
+		final CountDownLatch awaitStart2 = new CountDownLatch(6);
+		final CountDownLatch awaitStop = new CountDownLatch(1);
+		final AtomicInteger received = new AtomicInteger();
+		final CountDownLatch awaitConsumeFirst = new CountDownLatch(5);
+		final CountDownLatch awaitConsumeSecond = new CountDownLatch(10);
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				try {
+					awaitStart1.countDown();
+					awaitStart2.countDown();
+					awaitStop.await();
+					received.incrementAndGet();
+					awaitConsumeFirst.countDown();
+					awaitConsumeSecond.countDown();
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
+		});
+		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+		container.setConcurrentConsumers(concurrentConsumers);
+
+		container.setPrefetchCount(5);
+		container.setQueueNames(queue.getName());
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(awaitStart1.await(10, TimeUnit.SECONDS));
+		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
+			@Override
+			public void run() {
+				container.stop();
+			}
+		});
+		int n = 0;
+		while (container.isActive() && n++ < 100) {
+			Thread.sleep(100);
+		}
+		assertTrue(n < 100);
+
+		awaitStop.countDown();
+
+		assertTrue(awaitConsumeFirst.await(10, TimeUnit.SECONDS));
+		n = 0;
+		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
+		while (dfa.getPropertyValue("consumers") != null && n++ < 100) {
+			Thread.sleep(100);
+		}
+		assertTrue(n < 100);
+		// make sure we stopped receiving after the prefetch was consumed
+		assertEquals(5, received.get());
+		assertEquals(1, awaitStart2.getCount());
+
+		container.start();
+		assertTrue(awaitStart2.await(10, TimeUnit.SECONDS));
+		assertTrue(awaitConsumeSecond.await(10, TimeUnit.SECONDS));
+		container.stop();
 	}
 
 	public static class PojoListener {
