@@ -262,6 +262,7 @@ public class BlockingQueueConsumer {
 	}
 
 	public void stop() {
+		this.cancelled.set(true);
 		this.suspendClientThread.countDown();
 		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null
 				&& !this.cancelReceived.get()) {

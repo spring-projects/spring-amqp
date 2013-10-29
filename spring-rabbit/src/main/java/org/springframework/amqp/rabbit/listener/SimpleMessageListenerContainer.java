@@ -81,7 +81,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
-	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
+	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
 
