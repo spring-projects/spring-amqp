@@ -81,7 +81,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
-	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
+	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
 
@@ -359,6 +359,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		try {
+			for (BlockingQueueConsumer consumer : this.consumers) {
+				consumer.setQuiesce(this.shutdownTimeout);
+			}
 			logger.info("Waiting for workers to finish.");
 			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {
