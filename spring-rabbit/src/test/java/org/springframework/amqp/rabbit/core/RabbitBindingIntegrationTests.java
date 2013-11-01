@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.FanoutExchange;
@@ -39,6 +40,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  */
 public class RabbitBindingIntegrationTests {
 
@@ -288,7 +290,7 @@ public class RabbitBindingIntegrationTests {
 	}
 
 	private String getResult(final BlockingQueueConsumer consumer) throws InterruptedException {
-		Message response = consumer.nextMessage(200L);
+		Message response = consumer.nextMessage(2000L);
 		if (response == null) {
 			return null;
 		}

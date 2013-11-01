@@ -79,6 +79,7 @@ public class RabbitAdminDeclarationTests {
 		context.getBeanFactory().registerSingleton("bar", exchange);
 		Binding binding = new Binding("foo", DestinationType.QUEUE, "bar", "foo", null);
 		context.getBeanFactory().registerSingleton("baz", binding);
+		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
 		assertNotNull(listener.get());
@@ -116,6 +117,7 @@ public class RabbitAdminDeclarationTests {
 		Binding binding = new Binding("foo", DestinationType.QUEUE, "bar", "foo", null);
 		binding.setAdminsThatShouldDeclare(admin);
 		context.getBeanFactory().registerSingleton("baz", binding);
+		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
 		assertNotNull(listener.get());
@@ -154,6 +156,7 @@ public class RabbitAdminDeclarationTests {
 		Binding binding = new Binding("foo", DestinationType.QUEUE, "bar", "foo", null);
 		binding.setAdminsThatShouldDeclare(other);
 		context.getBeanFactory().registerSingleton("baz", binding);
+		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
 		assertNotNull(listener.get());
@@ -191,6 +194,7 @@ public class RabbitAdminDeclarationTests {
 		Binding binding = new Binding("foo", DestinationType.QUEUE, "bar", "foo", null);
 		binding.setShouldDeclare(false);
 		context.getBeanFactory().registerSingleton("baz", binding);
+		context.refresh();
 		admin.setApplicationContext(context);
 		admin.afterPropertiesSet();
 		assertNotNull(listener.get());

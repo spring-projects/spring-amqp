@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -39,7 +40,7 @@ import com.rabbitmq.client.ConnectionFactory;
 
 public class RabbitAdminIntegrationTests {
 
-	private CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
@@ -55,6 +56,7 @@ public class RabbitAdminIntegrationTests {
 	@Before
 	public void init() {
 		context = new GenericApplicationContext();
+		context.refresh();
 		rabbitAdmin = new RabbitAdmin(connectionFactory);
 		rabbitAdmin.deleteQueue("test.queue");
 		// Force connection factory to forget that it has been used to delete the queue
