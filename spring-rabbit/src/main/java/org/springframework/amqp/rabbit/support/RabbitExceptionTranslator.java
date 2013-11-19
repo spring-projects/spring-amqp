@@ -24,8 +24,10 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
+import org.springframework.amqp.rabbit.listener.FatalListenerStartupException;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
@@ -50,11 +52,14 @@ public class RabbitExceptionTranslator {
 		if (ex instanceof ConnectException) {
 			return new AmqpConnectException((ConnectException) ex);
 		}
-		if (ex instanceof IOException) {
-			return new AmqpIOException((IOException) ex);
+		if (ex instanceof PossibleAuthenticationFailureException) {
+			return new FatalListenerStartupException("Authentication failure", ex);
 		}
 		if (ex instanceof UnsupportedEncodingException) {
 			return new AmqpUnsupportedEncodingException(ex);
+		}
+		if (ex instanceof IOException) {
+			return new AmqpIOException((IOException) ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);
