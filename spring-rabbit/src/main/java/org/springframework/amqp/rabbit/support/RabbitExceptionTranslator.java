@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -26,13 +27,15 @@ import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * Translates Rabbit Exceptions to the {@link AmqpException} class
  * hierarchy.
  * This functionality was previously in RabbitUtils, but that
- * caused a package tange.
+ * caused a package tangle.
+ *
  * @author Gary Russell
  * @since 1.2
  *
@@ -50,11 +53,14 @@ public class RabbitExceptionTranslator {
 		if (ex instanceof ConnectException) {
 			return new AmqpConnectException((ConnectException) ex);
 		}
-		if (ex instanceof IOException) {
-			return new AmqpIOException((IOException) ex);
+		if (ex instanceof PossibleAuthenticationFailureException) {
+			return new AmqpAuthenticationException(ex);
 		}
 		if (ex instanceof UnsupportedEncodingException) {
 			return new AmqpUnsupportedEncodingException(ex);
+		}
+		if (ex instanceof IOException) {
+			return new AmqpIOException((IOException) ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);

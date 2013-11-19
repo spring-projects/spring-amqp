@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -212,8 +213,13 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
 		}
-		this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
-				.getChannel();
+		try {
+			this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
+					.getChannel();
+		}
+		catch (AmqpAuthenticationException e) {
+			throw new FatalListenerStartupException("Authentication failure", e);
+		}
 		this.consumer = new InternalConsumer(channel);
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);

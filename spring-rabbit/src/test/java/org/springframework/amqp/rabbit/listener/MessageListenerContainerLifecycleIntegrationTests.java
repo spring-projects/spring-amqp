@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -28,11 +29,13 @@ import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -151,20 +154,42 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		doTest(MessageCount.HIGH, Concurrency.HIGH, TransactionMode.OFF);
 	}
 
+	@Test
+	public void testBadCredentials() throws Exception {
+		RabbitTemplate template = createTemplate(1);
+		com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
+		cf.setUsername("foo");
+		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory(cf);
+		try {
+			this.doTest(MessageCount.LOW, Concurrency.LOW, TransactionMode.OFF, template, connectionFactory);
+			fail("expected exception");
+		}
+		catch (AmqpIllegalStateException e) {
+			assertTrue("Expected FatalListenerStartupException", e.getCause() instanceof FatalListenerStartupException);
+		}
+		catch (Throwable t) {
+			fail("expected FatalListenerStartupException:" + t.getClass() + ":" + t.getMessage());
+		}
+	}
+
 	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {
+		RabbitTemplate template = createTemplate(concurrency.value);
+		this.doTest(level, concurrency, transactionMode, template, template.getConnectionFactory());
+	}
+
+	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode,
+			RabbitTemplate template, ConnectionFactory connectionFactory) throws Exception {
 
 		int messageCount = level.value();
 		int concurrentConsumers = concurrency.value();
 		boolean transactional = transactionMode.isTransactional();
-
-		RabbitTemplate template = createTemplate(concurrentConsumers);
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		PojoListener listener = new PojoListener(latch);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setAcknowledgeMode(transactionMode.getAcknowledgeMode());
