@@ -1882,6 +1882,31 @@ public RabbitTransactionManager rabbitTransactionManager() {
       <para></para>
     </section>
 
+    <section>
+      <title>Exception Classification for Retry</title>
+	</section>
+	<para>
+		Spring Retry has a great deal of flexibility for determining which
+		exceptions can invoke retry. The default configuration will retry
+		for all exceptions. Given that user exceptions will be wrapped in
+		a <classname>ListenerExecutionFailedException</classname> we need
+		to ensure that the classification examines the exception causes.
+		The default classifier just looks at the top level exception.
+	</para>
+	<para>
+		Since <emphasis>Spring Retry 1.0.3</emphasis>, the
+		<classname>BinaryExceptionClassifier</classname> has a property
+		<code>traverseCauses</code> (default <code>false</code>). When
+		<code>true</code> it will traverse exception causes until it
+		finds a match or there is no cause.
+	</para>
+	<para>
+		To use this classifier for retry, use a <classname>SimpleRetryPolicy</classname>
+		created with the constructor that takes the max attempts, the
+		<interfacename>Map</interfacename> of <classname>Exception</classname>s
+		and the boolean (traverseCauses), and inject this policy into the
+		<classname>RetryTemplate</classname>.
+	</para>
   </section>
 
 </chapter>
