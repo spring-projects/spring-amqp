@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +45,9 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -103,6 +107,59 @@ public class SimpleMessageListenerContainerTests {
 		container.afterPropertiesSet();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		singleConnectionFactory.destroy();
+	}
+
+	@Test
+	public void testChangeConsumerCount() throws Exception {
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
+		container.setMessageListener(new MessageListenerAdapter(this));
+		container.setQueueNames("foo");
+		container.setAutoStartup(false);
+		container.setConcurrentConsumers(2);
+		container.afterPropertiesSet();
+		assertEquals(2, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		container.start();
+		waitForNConsumers(container, 2);
+		container.setConcurrentConsumers(1);
+		waitForNConsumers(container, 1);
+		container.setMaxConcurrentConsumers(3);
+		RabbitTemplate template = new RabbitTemplate(singleConnectionFactory);
+		for (int i = 0; i < 20; i++) {
+			template.convertAndSend("foo", "foo");
+		}
+		waitForNConsumers(container, 2); // increase due to work
+		waitForNConsumers(container, 1, 20000); // will decay after 10 seconds idle
+		container.setConcurrentConsumers(3);
+		waitForNConsumers(container, 3);
+		container.stop();
+		waitForNConsumers(container, 0);
+		singleConnectionFactory.destroy();
+	}
+
+	public void handleMessage(String foo) {
+		System.out.println(foo);
+	}
+
+	private void waitForNConsumers(SimpleMessageListenerContainer container, int n) throws InterruptedException {
+		this.waitForNConsumers(container, n, 10000);
+	}
+
+	private void waitForNConsumers(SimpleMessageListenerContainer container, int n, int howLong) throws InterruptedException {
+		int i = 0;
+		while (true) {
+			Map<?, ?> consumers = (Map<?, ?>) TestUtils.getPropertyValue(container, "consumers");
+			if (n == 0 && consumers == null) {
+				break;
+			}
+			if (consumers != null && consumers.size() == n) {
+				break;
+			}
+			Thread.sleep(100);
+			if (i++ > howLong / 100) {
+				fail("Never reached " + n + " consumers");
+			}
+		}
 	}
 
 	@Test
