@@ -191,7 +191,7 @@ project('spring-rabbit') {
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-tx:$springVersion"
 
-		compile ("org.springframework.retry:spring-retry:1.0.1.RELEASE", optional)
+		compile ("org.springframework.retry:spring-retry:1.0.3.RELEASE", optional)
 
 		testCompile "commons-cli:commons-cli:1.2"
 
