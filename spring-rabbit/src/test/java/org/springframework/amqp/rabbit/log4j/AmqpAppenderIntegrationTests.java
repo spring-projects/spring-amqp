@@ -182,9 +182,10 @@ public class AmqpAppenderIntegrationTests {
 		log.info(foo);
 		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
 		byte[] body = testListener.getMessage().getBody();
-		assertEquals(0xe0, body[body.length-5] & 0xff);
-		assertEquals(0xbf, body[body.length-4] & 0xff);
-		assertEquals(0xbf, body[body.length-3] & 0xff);
+		int lineSeparatorExtraBytes = System.getProperty("line.separator").getBytes().length - 1;
+		assertEquals(0xe0, body[body.length - 5 - lineSeparatorExtraBytes] & 0xff);
+		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
+		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
 	}
 
 	/*
