@@ -31,6 +31,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -64,6 +65,14 @@ import com.rabbitmq.client.Channel;
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
+	private static final long DEFAULT_START_CONSUMER_MIN_INTERVAL = 10000;
+
+	private static final long DEFAULT_STOP_CONSUMER_MIN_INTERVAL = 60000;
+
+	private static final int DEFAULT_CONSECUTIVE_ACTIVE_TRIGGER = 10;
+
+	private static final int DEFAULT_CONSECUTIVE_IDLE_TRIGGER = 10;
+
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
 	public static final int DEFAULT_PREFETCH_COUNT = 1;
@@ -76,6 +85,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
+
+	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
+
+	private volatile long stopConsumerMinInterval = DEFAULT_STOP_CONSUMER_MIN_INTERVAL;
+
+	private volatile int consecutiveActiveTrigger = DEFAULT_CONSECUTIVE_ACTIVE_TRIGGER;
+
+	private volatile int consecutiveIdleTrigger = DEFAULT_CONSECUTIVE_IDLE_TRIGGER;
 
 	private volatile int txSize = 1;
 
@@ -170,7 +187,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * <p>
 	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
 	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
-	 * general, stick with 1 consumer for low-volume queues.
+	 * general, stick with 1 consumer for low-volume queues. Cannot be less than {@link #maxConcurrentConsumers} (if set).
+	 *
+	 * @see #setMaxConcurrentConsumers(int)
+	 *
+	 * @param concurrentConsumers the minimum number of consumers to create.
 	 */
 	public void setConcurrentConsumers(final int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
@@ -184,7 +205,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			int delta = this.concurrentConsumers - concurrentConsumers;
 			this.concurrentConsumers = concurrentConsumers;
-			if (isActive()) {
+			if (isActive() && this.consumers != null) {
 				if (delta > 0) {
 					Iterator<Entry<BlockingQueueConsumer, Boolean>> entryIterator = consumers.entrySet()
 							.iterator();
@@ -206,12 +227,105 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	protected final void setMaxConcurrentConsumers(int maxConcurrentConsumers) {
+	/**
+	 * Sets an upper limit to the number of consumers; defaults to 'concurrentConsumers'. Consumers
+	 * will be added on demand. Cannot be less than {@link #concurrentConsumers}.
+	 *
+	 * @param maxConcurrentConsumers the maximum number of consumers.
+	 *
+	 * @see #setConcurrentConsumers(int)
+	 * @see #setStartConsumerMinInterval(int)
+	 * @see #stopConsumerMinInterval
+	 * @see #setConsecutiveMessagesTrigger
+	 * @see #setConsecutiveIdleTrigger(int)
+	 */
+	public void setMaxConcurrentConsumers(int maxConcurrentConsumers) {
 		Assert.isTrue(maxConcurrentConsumers >= this.concurrentConsumers,
 				"'maxConcurrentConsumers' value must be at least 'concurrentConsumers'");
 		this.maxConcurrentConsumers = maxConcurrentConsumers;
 	}
 
+	/**
+	 * If {@link #maxConcurrentConsumers} is greater then {@link #concurrentConsumers}, and
+	 * {@link #maxConcurrentConsumers} has not been reached, specifies
+	 * the minimum time (milliseconds) between starting new consumers on demand. Default is 10000
+	 * (10 seconds).
+	 *
+	 * @param startConsumerMinInterval
+	 *
+	 * @see #setMaxConcurrentConsumers(int)
+	 * @see #setStartConsumerMinInterval(long)
+	 */
+	public final void setStartConsumerMinInterval(long startConsumerMinInterval) {
+		Assert.isTrue(startConsumerMinInterval > 0, "'startConsumerMinInterval' must be > 0");
+		this.startConsumerMinInterval = startConsumerMinInterval;
+	}
+
+	/**
+	 * If {@link #maxConcurrentConsumers} is greater then {@link #concurrentConsumers}, and
+	 * the number of consumers exceeds {@link #concurrentConsumers}, specifies the
+	 * minimum time (milliseconds) between stopping idle consumers. Default is 60000
+	 * (1 minute).
+	 *
+	 * @param stopConsumerMinInterval
+	 *
+	 * @see #setMaxConcurrentConsumers(int)
+	 * @see #setStopConsumerMinInterval(long)
+	 */
+	public final void setStopConsumerMinInterval(long stopConsumerMinInterval) {
+		Assert.isTrue(stopConsumerMinInterval > 0, "'stopConsumerMinInterval' must be > 0");
+		this.stopConsumerMinInterval = stopConsumerMinInterval;
+	}
+
+	/**
+	 * If {@link #maxConcurrentConsumers} is greater then {@link #concurrentConsumers}, and
+	 * {@link #maxConcurrentConsumers} has not been reached, specifies the number of
+	 * consecutive cycles when a single consumer was active, in order to consider
+	 * starting a new consumer. If the consumer goes idle for one cycle, the counter is reset.
+	 * This is impacted by the {@link #txSize}.
+	 * Default is 10 consecutive messages.
+	 *
+	 * @param consecutiveActiveTrigger
+	 *
+	 * @see #setMaxConcurrentConsumers(int)
+	 * @see #setStartConsumerMinInterval(long)
+	 * @see #setTxSize(int)
+	 */
+	public final void setConsecutiveActiveTrigger(int consecutiveActiveTrigger) {
+		Assert.isTrue(consecutiveActiveTrigger > 0, "'consecutiveActiveTrigger' must be > 0");
+		this.consecutiveActiveTrigger = consecutiveActiveTrigger;
+	}
+
+	/**
+	 * If {@link #maxConcurrentConsumers} is greater then {@link #concurrentConsumers}, and
+	 * the number of consumers exceeds {@link #concurrentConsumers}, specifies the
+	 * number of consecutive receive attempts that return no data; after which we consider
+	 * stopping a consumer. The idle time is effectively
+	 * {@link #receiveTimeout} * {@link #txSize} * this value because the consumer thread waits for
+	 * a message for up to {@link #receiveTimeout} up to {@link #txSize} times.
+	 *
+	 * Default is 10 consecutive idles.
+	 *
+	 * @param consecutiveIdleTrigger
+	 *
+	 * @see #setMaxConcurrentConsumers(int)
+	 * @see #setStopConsumerMinInterval(long)
+	 * @see #setReceiveTimeout(long)
+	 * @see #setTxSize(int)
+	 */
+	public final void setConsecutiveIdleTrigger(int consecutiveIdleTrigger) {
+		Assert.isTrue(consecutiveIdleTrigger > 0, "'consecutiveIdleTrigger' must be > 0");
+		this.consecutiveIdleTrigger = consecutiveIdleTrigger;
+	}
+
+	/**
+	 * The time (in milliseconds) that a consumer should wait for data. Default
+	 * 1000 (1 second).
+	 *
+	 * @param receiveTimeout the timeout.
+	 *
+	 * @see #setConsecutiveIdleTrigger(int)
+	 */
 	public void setReceiveTimeout(long receiveTimeout) {
 		this.receiveTimeout = receiveTimeout;
 	}
@@ -245,7 +359,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
-	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}.
+	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
+	 * how often acks are sent when using {@link AcknowledgeMode#AUTO} - one ack per txSize. Default is 1.
 	 *
 	 * @param txSize the transaction size
 	 */
@@ -406,17 +521,23 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		try {
-			for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
-				consumer.setQuiesce(this.shutdownTimeout);
+			synchronized (consumersMonitor) {
+				if (this.consumers != null) {
+					for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
+						consumer.setQuiesce(this.shutdownTimeout);
+					}
+				}
 			}
 			logger.info("Waiting for workers to finish.");
 			boolean finished = cancellationLock.await(shutdownTimeout, TimeUnit.MILLISECONDS);
 			if (finished) {
 				logger.info("Successfully waited for workers to finish.");
-			} else {
+			}
+			else {
 				logger.info("Workers not finished.  Forcing connections to close.");
 			}
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			logger.warn("Interrupted waiting for workers.  Continuing with shutdown.");
 		}
@@ -439,9 +560,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		int count = 0;
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
-				this.consumers = new HashMap<BlockingQueueConsumer, Boolean>(this.concurrentConsumers);
 				cancellationLock.reset();
-				while (this.consumers.size() < this.concurrentConsumers) {
+				this.consumers = new HashMap<BlockingQueueConsumer, Boolean>(this.concurrentConsumers);
+				for (int i = 0; i < this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.put(consumer, true);
 					count++;
@@ -453,25 +574,27 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected void addAndStartConsumers(int delta) {
 		synchronized (this.consumersMonitor) {
-			for (int i = 0; i < delta; i++) {
-				BlockingQueueConsumer consumer = createBlockingQueueConsumer();
-				this.consumers.put(consumer, true);
-				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
-				this.taskExecutor.execute(processor);
-				try {
-					FatalListenerStartupException startupException = processor.getStartupException();
-					if (startupException != null) {
-						this.consumers.remove(consumer);
-						throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
+			if (this.consumers != null) {
+				for (int i = 0; i < delta; i++) {
+					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
+					this.consumers.put(consumer, true);
+					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
+					this.taskExecutor.execute(processor);
+					try {
+						FatalListenerStartupException startupException = processor.getStartupException();
+						if (startupException != null) {
+							this.consumers.remove(consumer);
+							throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
+						}
 					}
-				}
-				catch (InterruptedException ie) {
-					Thread.currentThread().interrupt();
-				}
-				catch (Exception e) {
-					consumer.stop();
-					logger.error("Error starting new consumer", e);
-					consumers.remove(consumer);
+					catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+					}
+					catch (Exception e) {
+						consumer.stop();
+						logger.error("Error starting new consumer", e);
+						consumers.remove(consumer);
+					}
 				}
 			}
 		}
@@ -479,9 +602,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void considerAddingAConsumer() {
 		synchronized(consumersMonitor) {
-			if (this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
+			if (this.consumers != null
+					&& this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
 				long now = System.currentTimeMillis();
-				if (this.lastConsumerStarted + 10000 < now) {
+				if (this.lastConsumerStarted + startConsumerMinInterval < now) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Starting a new consumer");
 					}
@@ -494,10 +618,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		synchronized (consumersMonitor) {
-			if (consumers.size() > concurrentConsumers) {
+			if (this.consumers != null && this.consumers.size() > concurrentConsumers) {
 				long now = System.currentTimeMillis();
-				if (this.lastConsumerStopped + 60000 < now) {
-					consumers.put(consumer, false);
+				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
+					this.consumers.put(consumer, false);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Idle consumer terminating");
 					}
@@ -645,14 +769,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 
 				try {
-					consumer.start();
-					start.countDown();
+					this.consumer.start();
+					this.start.countDown();
 				}
 				catch (FatalListenerStartupException ex) {
 					throw ex;
 				}
 				catch (Throwable t) {
-					start.countDown();
+					this.start.countDown();
 					handleStartupFailure(t);
 					throw t;
 				}
@@ -668,22 +792,24 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Always better to stop receiving as soon as possible if
 				// transactional
 				boolean continuable = false;
-				while (isActive(consumer) || continuable) {
+				while (isActive(this.consumer) || continuable) {
 					try {
 						// Will come back false when the queue is drained
-						continuable = receiveAndExecute(consumer) && !isChannelTransacted();
-						if (continuable) {
-							consecutiveIdles = 0;
-							if (consecutiveMessages++ > 10) {
-								considerAddingAConsumer();
-								consecutiveMessages = 0;
-							}
-						}
-						else {
-							consecutiveMessages = 0;
-							if (consecutiveIdles++ > 10) {
-								considerStoppingAConsumer(consumer);
+						continuable = receiveAndExecute(this.consumer) && !isChannelTransacted();
+						if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
+							if (continuable) {
 								consecutiveIdles = 0;
+								if (consecutiveMessages++ > SimpleMessageListenerContainer.this.consecutiveActiveTrigger) {
+									considerAddingAConsumer();
+									consecutiveMessages = 0;
+								}
+							}
+							else {
+								consecutiveMessages = 0;
+								if (consecutiveIdles++ > SimpleMessageListenerContainer.this.consecutiveIdleTrigger) {
+									considerStoppingAConsumer(this.consumer);
+									consecutiveIdles = 0;
+								}
 							}
 						}
 					}
@@ -734,12 +860,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			start.countDown();
 
 			if (!isActive(consumer) || aborted) {
-				logger.debug("Cancelling " + consumer);
+				logger.debug("Cancelling " + this.consumer);
 				try {
-					consumer.stop();
+					this.consumer.stop();
 					synchronized (consumersMonitor) {
-						if (consumers != null) {
-							consumers.remove(consumer);
+						if (SimpleMessageListenerContainer.this.consumers != null) {
+							SimpleMessageListenerContainer.this.consumers.remove(this.consumer);
 						}
 					}
 				}
@@ -752,8 +878,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
-				logger.info("Restarting " + consumer);
-				restart(consumer);
+				logger.info("Restarting " + this.consumer);
+				restart(this.consumer);
 			}
 
 		}

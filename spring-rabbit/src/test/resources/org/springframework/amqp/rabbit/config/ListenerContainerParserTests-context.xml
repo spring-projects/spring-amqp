@@ -11,7 +11,9 @@
 
 	<rabbit:queue id="bar" />
 
-	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
+	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
+			max-concurrency="6" receive-timeout="9876"
+			min-start-interval="1234" min-stop-interval="2345" min-consecutive-active="12" min-consecutive-idle="34">
 		<rabbit:listener queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
