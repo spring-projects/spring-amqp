@@ -1,6 +1,8 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -14,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import junit.framework.Assert;
 
@@ -365,6 +368,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		connectionFactory.setChannelListeners(Arrays.asList(new ChannelListener() {
+			@Override
 			public void onCreate(Channel channel, boolean transactional) {
 				called.incrementAndGet();
 			}
@@ -389,4 +393,67 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnectionFactory).newConnection((ExecutorService) null);
 
 	}
+
+	@Test
+	public void testWithConnectionListener() throws IOException {
+
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1, mockConnection2);
+		when(mockConnection1.isOpen()).thenReturn(true);
+		when(mockChannel.isOpen()).thenReturn(true);
+		when(mockConnection1.createChannel()).thenReturn(mockChannel);
+		when(mockConnection2.createChannel()).thenReturn(mockChannel);
+
+		final AtomicReference<Connection> created = new AtomicReference<Connection>();
+		final AtomicReference<Connection> closed = new AtomicReference<Connection>();
+		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
+		connectionFactory.addConnectionListener(new ConnectionListener() {
+
+			@Override
+			public void onCreate(Connection connection) {
+				created.set(connection);
+			}
+
+			@Override
+			public void onClose(Connection connection) {
+				closed.set(connection);
+			}
+		});
+		((CachingConnectionFactory)connectionFactory).setChannelCacheSize(1);
+
+		Connection con = connectionFactory.createConnection();
+		Channel channel = con.createChannel(false);
+		assertSame(con, created.get());
+		channel.close();
+
+		con.close();
+		verify(mockConnection1, never()).close();
+
+		Connection same = connectionFactory.createConnection();
+		channel = con.createChannel(false);
+		assertSame(con, same);
+		channel.close();
+
+		when(mockConnection1.isOpen()).thenReturn(false);
+		when(mockChannel.isOpen()).thenReturn(false); // force a connection refresh
+		channel.basicCancel("foo");
+		channel.close();
+
+		Connection notSame = connectionFactory.createConnection();
+		assertNotSame(con, notSame);
+		assertSame(con, closed.get());
+		assertSame(notSame, created.get());
+
+		connectionFactory.destroy();
+		verify(mockConnection2, atLeastOnce()).close(anyInt());
+		assertSame(notSame, closed.get());
+
+		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
+
+	}
+
 }

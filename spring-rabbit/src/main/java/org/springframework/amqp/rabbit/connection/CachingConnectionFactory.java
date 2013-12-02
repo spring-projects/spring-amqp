@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -67,6 +68,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
+
+	private final AtomicReference<Connection> closeNotifiedForConnection = new AtomicReference<Connection>();
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -202,9 +205,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 
 	private Channel createBareChannel(boolean transactional) {
 		if (this.connection == null || !this.connection.isOpen()) {
-			this.connection = null;
-			// Use createConnection here not doCreateConnection so that the old one is properly disposed
-			createConnection();
+			synchronized (this.connectionMonitor) {
+				if (this.connection != null
+						&& (!this.connection.isOpen() && this.closeNotifiedForConnection.getAndSet(this.connection) != this.connection)) {
+					this.getConnectionListener().onClose(this.connection);
+				}
+				if (this.connection == null || !this.connection.isOpen()) {
+					this.connection = null;
+					createConnection();
+				}
+			}
 		}
 		Channel channel = this.connection.createBareChannel(transactional);
 		if (this.publisherConfirms) {
@@ -222,6 +232,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 		return channel;
 	}
 
+	@Override
 	public final Connection createConnection() throws AmqpException {
 		synchronized (this.connectionMonitor) {
 			if (this.connection == null) {
@@ -302,6 +313,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			this.transactional = transactional;
 		}
 
+		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			String methodName = method.getName();
 			if (methodName.equals("txSelect") && !this.transactional) {
@@ -310,12 +322,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			if (methodName.equals("equals")) {
 				// Only consider equal when proxies are identical.
 				return (proxy == args[0]);
-			} else if (methodName.equals("hashCode")) {
+			}
+			else if (methodName.equals("hashCode")) {
 				// Use hashCode of Channel proxy.
 				return System.identityHashCode(proxy);
-			} else if (methodName.equals("toString")) {
+			}
+			else if (methodName.equals("toString")) {
 				return "Cached Rabbit Channel: " + this.target;
-			} else if (methodName.equals("close")) {
+			}
+			else if (methodName.equals("close")) {
 				// Handle close method: don't pass the call on.
 				if (active) {
 					synchronized (this.channelList) {
@@ -330,10 +345,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 				// If we get here, we're supposed to shut down.
 				physicalClose();
 				return null;
-			} else if (methodName.equals("getTargetChannel")) {
+			}
+			else if (methodName.equals("getTargetChannel")) {
 				// Handle getTargetChannel method: return underlying Channel.
 				return this.target;
-			} else if (methodName.equals("isOpen")) {
+			}
+			else if (methodName.equals("isOpen")) {
 				// Handle isOpen method: we are closed if the target is closed
 				return this.target != null && this.target.isOpen();
 			}
@@ -347,11 +364,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 					}
 					return method.invoke(this.target, args);
 				}
-			} catch (InvocationTargetException ex) {
+			}
+			catch (InvocationTargetException ex) {
 				if (this.target == null || !this.target.isOpen()) {
 					// Basic re-connection logic...
 					this.target = null;
-					logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
+					}
 					synchronized (targetMonitor) {
 						if (this.target == null) {
 							this.target = createBareChannel(transactional);
@@ -416,27 +436,35 @@ public class CachingConnectionFactory extends AbstractConnectionFactory {
 			return target.createChannel(transactional);
 		}
 
+		@Override
 		public Channel createChannel(boolean transactional) {
 			Channel channel = getChannel(transactional);
 			return channel;
 		}
 
+		@Override
 		public void close() {
 		}
 
 		public void destroy() {
 			reset();
 			if (this.target != null) {
-				getConnectionListener().onClose(target);
+				synchronized (CachingConnectionFactory.this.connectionMonitor) {
+					if (!(this == CachingConnectionFactory.this.closeNotifiedForConnection.get())) {
+						getConnectionListener().onClose(this);
+					}
+				}
 				RabbitUtils.closeConnection(this.target);
 			}
 			this.target = null;
 		}
 
+		@Override
 		public boolean isOpen() {
 			return target != null && target.isOpen();
 		}
 
+		@Override
 		public Connection getTargetConnection() {
 			return target;
 		}
