@@ -32,6 +32,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 /**
  * @author Gary Russell
  *
+ * @since 1.2.1
+ *
  */
 public class SimpleMessageListenerContainerLongTests {
 
