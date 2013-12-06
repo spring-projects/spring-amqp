@@ -75,6 +75,13 @@ public class ListenerContainerParserTests {
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
 		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
+		assertEquals(5, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		assertEquals(6, ReflectionTestUtils.getField(container, "maxConcurrentConsumers"));
+		assertEquals(1234L, ReflectionTestUtils.getField(container, "startConsumerMinInterval"));
+		assertEquals(2345L, ReflectionTestUtils.getField(container, "stopConsumerMinInterval"));
+		assertEquals(12, ReflectionTestUtils.getField(container, "consecutiveActiveTrigger"));
+		assertEquals(34, ReflectionTestUtils.getField(container, "consecutiveIdleTrigger"));
+		assertEquals(9876L, ReflectionTestUtils.getField(container, "receiveTimeout"));
 	}
 
 	@Test
@@ -172,6 +179,7 @@ public class ListenerContainerParserTests {
 	}
 
 	static class TestAdvice implements MethodBeforeAdvice {
+		@Override
 		public void before(Method method, Object[] args, Object target) throws Throwable {
 		}
 	}

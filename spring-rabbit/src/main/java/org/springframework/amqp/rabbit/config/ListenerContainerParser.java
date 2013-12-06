@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
@@ -64,6 +65,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private boolean instanceUsed;
 
+	@Override
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
@@ -109,7 +111,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			if (!StringUtils.hasText(messageConverter)) {
 				parserContext.getReaderContext().error(
 						"Listener container 'message-converter' attribute contains empty value.", containerEle);
-			} else {
+			}
+			else {
 				listenerDef.getPropertyValues().add("messageConverter", new RuntimeBeanReference(messageConverter));
 			}
 		}
@@ -126,7 +129,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			listenerDef.getPropertyValues().add("responseRoutingKey", responseRoutingKey);
 		}
 
-		listenerDef.setBeanClassName("org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter");
+		listenerDef.setBeanClass(MessageListenerAdapter.class);
 		containerDef.getPropertyValues().add("messageListener", listenerDef);
 
 		String parentElementId = containerEle.getAttribute(ID_ATTRIBUTE);

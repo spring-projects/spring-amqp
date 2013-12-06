@@ -1563,27 +1563,30 @@ public RabbitTransactionManager rabbitTransactionManager() {
     transactions and quality of service, and some of them interact with each
     other.</para>
 
-    <para>When configuring with the XML namespace, the convention is to
-    use hyphenated attributes rather than camel case; for example, for
-    property 'connectionFactory', the XML equivalent is 'connection-factory'.</para>
+    <para>The table below shows the container property names and their
+    equivalent attribute names (in parentheses) when using the namespace to configure a
+    <code>&lt;rabbit:message-listener-container/&gt;</code></para>. Some
+    properties are not exposed by the namespace; indicated by <code>N/A</code> for
+    the attribute.
 
     <para><table>
         <title>Configuration options for a message listener container</title>
 
         <tgroup cols="2">
-        <colspec colnum="1"  colname="col01" colwidth="1*"/>
+        <colspec colnum="1"  colname="col01" colwidth="2*"/>
         <colspec colnum="2"  colname="col02" colwidth="3*" align="left"/>
           <thead>
             <row>
-              <entry>Property</entry>
-
+              <entry><literallayout>Property
+(Attribute)</literallayout></entry>
               <entry>Description</entry>
             </row>
           </thead>
 
           <tbody>
             <row>
-              <entry>channelTransacted</entry>
+              <entry><literallayout>channelTransacted
+(channel-transacted)</literallayout></entry>
 
               <entry>Boolean flag to signal that all messages should be
               acknowledged in a transaction (either manually or
@@ -1591,7 +1594,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>acknowledgeMode</entry>
+              <entry><literallayout>acknowledgeMode
+(acknowledge)</literallayout></entry>
 
               <entry><literal>NONE</literal> = no acks will be sent
               (incompatible with
@@ -1611,7 +1615,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>transactionManager</entry>
+              <entry><literallayout>transactionManager
+(transaction-manager)</literallayout></entry>
 
               <entry>External transaction manager for the operation of the
               listener. Also complementary to channelTransacted - if the
@@ -1621,7 +1626,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>prefetchCount</entry>
+              <entry><literallayout>prefetchCount
+(prefetch)</literallayout></entry>
 
               <entry>The number of messages to accept from the broker in one
               socket frame. The higher this is the faster the messages can be
@@ -1632,17 +1638,19 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>shutdownTimeout</entry>
+              <entry><literallayout>shutdownTimeout
+(N/A)</literallayout></entry>
 
               <entry>When a container shuts down (e.g. if its enclosing
               <classname>ApplicationContext</classname> is closed) it waits
               for in-flight messages to be processed up to this limit.
-              Defaults to 10 seconds. After the limit is reached, if the
+              Defaults to 5 seconds. After the limit is reached, if the
               channel is not transacted messages will be discarded.</entry>
             </row>
 
             <row>
-              <entry>txSize</entry>
+              <entry><literallayout>txSize
+(transaction-size)</literallayout></entry>
 
               <entry>When used with <code>acknowledgeMode</code> AUTO,
               the container will attempt to process up to
@@ -1654,7 +1662,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>receiveTimeout</entry>
+              <entry><literallayout>receiveTimeout
+(receive-timeout)</literallayout></entry>
 
               <entry>The maximum time to wait for each message. If
               acknowledgeMode=NONE this has very little effect -
@@ -1666,7 +1675,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>autoStartup</entry>
+              <entry><literallayout>autoStartup
+(auto-startup)</literallayout></entry>
 
               <entry>Flag to indicate that the container should start when the
               <classname>ApplicationContext</classname> does (as part of the
@@ -1678,7 +1688,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>phase</entry>
+              <entry><literallayout>phase
+(phase)</literallayout></entry>
 
               <entry>When autoStartup is true, the lifecycle phase within
               which this container should start and stop. The lower the
@@ -1689,7 +1700,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>adviceChain</entry>
+              <entry><literallayout>adviceChain
+(advice-chain)</literallayout></entry>
 
               <entry>An array of AOP Advice to apply to the listener
               execution. This can be used to apply additional cross cutting
@@ -1700,7 +1712,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>taskExecutor</entry>
+              <entry><literallayout>taskExecutor
+(task-executor)</literallayout></entry>
 
               <entry>A reference to a Spring TaskExecutor (or standard JDK 1.5+
               Executor) for executing listener invokers. Default is a
@@ -1708,7 +1721,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>errorHandler</entry>
+              <entry><literallayout>errorHandler
+(error-handler)</literallayout></entry>
 
               <entry>A reference to an ErrorHandler strategy for handling any
               uncaught Exceptions that may occur during the execution of the
@@ -1716,14 +1730,64 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>concurrency</entry>
+              <entry><literallayout>concurrentConsumers
+(concurrency)</literallayout></entry>
 
-              <entry>The number of concurrent consumers to start for each
-              listener.</entry>
+              <entry>The number of concurrent consumers to initially start for each
+              listener. See <xref linkend="listener-concurrency"/>.</entry>
             </row>
 
             <row>
-              <entry>connectionFactory</entry>
+              <entry><literallayout>maxConcurrentConsumers
+(max-concurrency)</literallayout></entry>
+
+              <entry>The maximum number of concurrent consumers to start, if needed,
+              on demand. Must be greater than or equal to 'concurrentConsumers'.
+              See <xref linkend="listener-concurrency"/>.</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>startConsumerMinInterval
+(min-start-interval)</literallayout></entry>
+
+              <entry>The time in milliseconds which must elapse before each new consumer
+              is started on demand. See <xref linkend="listener-concurrency"/>.
+              Default 10000 (10 seconds).</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>stopConsumerMinInterval
+(min-stop-interval)</literallayout></entry>
+
+              <entry>The time in milliseconds which must elapse before a consumer
+              is stopped, since the last consumer was stopped, when an idle consumer
+              is detected. See <xref linkend="listener-concurrency"/>.
+              Default 60000 (1 minute).</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>consecutiveActiveTrigger
+(min-consecutive-active)</literallayout></entry>
+
+              <entry>The minimum number of consecutive messages received by a consumer,
+              without a receive timeout occurring, when considering starting a new
+              consumer.  Also impacted by 'txSize'.
+              See <xref linkend="listener-concurrency"/>. Default 10.</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>consecutiveIdleTrigger
+(min-consecutive-idle)</literallayout></entry>
+
+              <entry>The minimum number of receive timeouts a consumer must experience
+              before considering stopping a consumer. Also impacted by 'txSize'.
+              See <xref linkEnd="listener-concurrency"/>. Default 10.
+              .</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>connectionFactory
+(connection-factory)</literallayout></entry>
 
               <entry>A reference to the connectionFactory; when configuring
               using the XML namespace, the default referenced bean name
@@ -1731,16 +1795,8 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry>messageConverter</entry>
-
-              <entry>A reference to the MessageConverter strategy for
-              converting AMQP Messages to listener method arguments
-              for any referenced 'listener' that is a POJO. Default is
-              a SimpleMessageConverter.</entry>
-            </row>
-
-            <row>
-              <entry>requeueRejected</entry>
+              <entry><literallayout>requeueRejected
+(requeue-rejected)</literallayout></entry>
 
               <entry>Determines whether messages that are
               rejected because the listener
@@ -1749,6 +1805,65 @@ public RabbitTransactionManager rabbitTransactionManager() {
           </tbody>
         </tgroup>
       </table></para>
+  </section>
+
+  <section id="listener-concurrency">
+    <title>Listener Concurrency</title>
+
+    <para>
+      By default, the listener container will start a single consumer which
+      will receive messages from the queue(s).
+    </para>
+    <para>
+      When examining the table in the previous section, you will see a number
+      of properties/attributes that control concurrency. The simplest is
+      <code>concurrentConsumers</code>, which simply creates that (fixed) number
+      of consumers which will concurrently process messages.
+    </para>
+    <para>
+      Prior to <emphasis>version 1.2.1</emphasis>, this was the only setting available
+      and the container had to be stopped and started again to change the setting.
+    </para>
+    <para>
+      Since <emphasis>version 1.2.1</emphasis>, you can now dynamically
+      adjust the <code>concurrentConsumers</code> property. If it is
+      changed while the container is running, consumers will be added or
+      removed as necessary to adjust to the new setting.
+    </para>
+    <para>
+      In addition, a new property <code>maxConcurrentConsumers</code> has been
+      added and the container will dynamically adjust the concurrency based on
+      workload. This works in conjunction with four additional properties:
+      <code>consecutiveActiveTrigger</code>, <code>startConsumerMinInterval</code>,
+      <code>consecutiveIdleTrigger</code>, <code>stopConsumerMinInterval</code>. With
+      the default settings, the algorithm to increase consumers works as follows:
+    </para>
+    <para>
+      If the <code>maxConcurrentConsumers</code> has not been reached and an existing
+      consumer is active for 10 consecutive cycles AND at least 10 seconds
+      has elapsed since the last consumer was started, a new consumer is started.
+      A consumer is considered active if it received at least one message in
+      <code>txSize</code> * <code>receiveTimeout</code> milliseconds.
+    </para>
+    <para>
+      With the default settings, the algorithm to decrease consumers works as follows:
+    </para>
+    <para>
+      If there are more than <code>concurrentConsumers</code> running and a consumer
+      detects 10 consecutive timeouts (idle) AND the last consumer was stopped at
+      least 60 seconds ago, a consumer will be stopped. The timeout depends on the
+      <code>receiveTimeout</code> and the <code>txSize</code> properties. A consumer
+      is considered idle if it receives no messages in <code>txSize</code> *
+      <code>receiveTimeout</code> milliseconds. So, with the
+      default timeout (1 second) and a <code>txSize</code> of 4, stopping a consumer
+      will be considered after 40 seconds of idle time (4 timeouts correspond to 1
+      idle detection).
+    </para>
+    <note>
+      Practically, consumers will only be stopped if the whole container is idle for
+      some time. This is because the broker will share its work across all the active
+      consumers.
+    </note>
   </section>
 
   <section>

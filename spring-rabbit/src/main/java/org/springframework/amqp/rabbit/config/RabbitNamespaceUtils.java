@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.springframework.amqp.rabbit.config;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -23,7 +25,6 @@ import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
-import org.w3c.dom.Element;
 
 /**
  * @author Gary Russell
@@ -50,7 +51,19 @@ public class RabbitNamespaceUtils {
 
 	private static final String CONCURRENCY_ATTRIBUTE = "concurrency";
 
+	private static final String MAX_CONCURRENCY_ATTRIBUTE = "max-concurrency";
+
+	private static final String MIN_START_INTERVAL_ATTRIBUTE = "min-start-interval";
+
+	private static final String MIN_STOP_INTERVAL_ATTRIBUTE = "min-stop-interval";
+
+	private static final String MIN_CONSECUTIVE_ACTIVE_ATTRIBUTE = "min-consecutive-active";
+
+	private static final String MIN_CONSECUTIVE_IDLE_ATTRIBUTE = "min-consecutive-idle";
+
 	private static final String PREFETCH_ATTRIBUTE = "prefetch";
+
+	private static final String RECEIVE_TIMEOUT_ATTRIBUTE = "receive-timeout";
 
 	private static final String CHANNEL_TRANSACTED_ATTRIBUTE = "channel-transacted";
 
@@ -107,9 +120,39 @@ public class RabbitNamespaceUtils {
 			containerDef.getPropertyValues().add("concurrentConsumers", new TypedStringValue(concurrency));
 		}
 
+		String maxConcurrency = containerEle.getAttribute(MAX_CONCURRENCY_ATTRIBUTE);
+		if (StringUtils.hasText(maxConcurrency)) {
+			containerDef.getPropertyValues().add("maxConcurrentConsumers", new TypedStringValue(maxConcurrency));
+		}
+
+		String minStartInterval = containerEle.getAttribute(MIN_START_INTERVAL_ATTRIBUTE);
+		if (StringUtils.hasText(minStartInterval)) {
+			containerDef.getPropertyValues().add("startConsumerMinInterval", new TypedStringValue(minStartInterval));
+		}
+
+		String minStopInterval = containerEle.getAttribute(MIN_STOP_INTERVAL_ATTRIBUTE);
+		if (StringUtils.hasText(minStopInterval)) {
+			containerDef.getPropertyValues().add("stopConsumerMinInterval", new TypedStringValue(minStopInterval));
+		}
+
+		String minConsecutiveMessages = containerEle.getAttribute(MIN_CONSECUTIVE_ACTIVE_ATTRIBUTE);
+		if (StringUtils.hasText(minConsecutiveMessages)) {
+			containerDef.getPropertyValues().add("consecutiveActiveTrigger", new TypedStringValue(minConsecutiveMessages));
+		}
+
+		String minConsecutiveIdle = containerEle.getAttribute(MIN_CONSECUTIVE_IDLE_ATTRIBUTE);
+		if (StringUtils.hasText(minConsecutiveIdle)) {
+			containerDef.getPropertyValues().add("consecutiveIdleTrigger", new TypedStringValue(minConsecutiveIdle));
+		}
+
 		String prefetch = containerEle.getAttribute(PREFETCH_ATTRIBUTE);
 		if (StringUtils.hasText(prefetch)) {
 			containerDef.getPropertyValues().add("prefetchCount", new TypedStringValue(prefetch));
+		}
+
+		String receiveTimeout = containerEle.getAttribute(RECEIVE_TIMEOUT_ATTRIBUTE);
+		if (StringUtils.hasText(receiveTimeout)) {
+			containerDef.getPropertyValues().add("receiveTimeout", new TypedStringValue(receiveTimeout));
 		}
 
 		String channelTransacted = containerEle.getAttribute(CHANNEL_TRANSACTED_ATTRIBUTE);

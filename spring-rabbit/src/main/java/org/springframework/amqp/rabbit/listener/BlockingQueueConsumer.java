@@ -58,8 +58,7 @@ public class BlockingQueueConsumer {
 
 	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
-	// This must be an unbounded queue or we risk blocking the Connection thread.
-	private final BlockingQueue<Delivery> queue = new LinkedBlockingQueue<Delivery>();
+	private final BlockingQueue<Delivery> queue;
 
 	// When this is non-null the connection has been closed (should never happen in normal operation).
 	private volatile ShutdownSignalException shutdown;
@@ -122,6 +121,7 @@ public class BlockingQueueConsumer {
 		this.prefetchCount = prefetchCount;
 		this.defaultRequeuRejected = defaultRequeueRejected;
 		this.queues = queues;
+		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
 	}
 
 	public Channel getChannel() {
