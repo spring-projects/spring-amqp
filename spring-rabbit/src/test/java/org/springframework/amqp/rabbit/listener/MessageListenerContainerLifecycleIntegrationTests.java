@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -49,6 +50,7 @@ import org.springframework.beans.factory.DisposableBean;
  * @author Dave Syer
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Artem Bilan
  * @since 1.0
  *
  */
@@ -116,7 +118,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
-		// SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
@@ -223,19 +224,13 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 				int messagesReceivedAfterStop = listener.getCount();
 				waited = latch.await(500, TimeUnit.MILLISECONDS);
+				// AMQP-338
 				logger.info("All messages received after stop: " + waited);
-				if (messageCount < 100) {
-					assertTrue("Expected to receive all messages after stop", waited);
-				}
+
+				assertFalse("Isn't expected to receive all messages after stop", waited);
+
 				assertEquals("Unexpected additional messages received after stop", messagesReceivedAfterStop,
 						listener.getCount());
-
-				for (int i = 0; i < messageCount; i++) {
-					template.convertAndSend(queue.getName(), i + "bar");
-				}
-				latch = new CountDownLatch(messageCount);
-				listener.reset(latch);
-
 			}
 
 			int messagesReceivedBeforeStart = listener.getCount();
@@ -251,7 +246,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			} else {
 				int count = listener.getCount();
 				assertTrue("Expected additional messages received after start: " + messagesReceivedBeforeStart + ">="
-						+ count, messagesReceivedBeforeStart < count);
+						+ count, messagesReceivedBeforeStart <= count);
 				assertNull("Messages still available", template.receive(queue.getName()));
 			}
 
