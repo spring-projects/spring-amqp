@@ -15,7 +15,6 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -231,6 +230,13 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 				assertEquals("Unexpected additional messages received after stop", messagesReceivedAfterStop,
 						listener.getCount());
+
+				for (int i = 0; i < messageCount; i++) {
+					template.convertAndSend(queue.getName(), i + "bar");
+				}
+				latch = new CountDownLatch(messageCount);
+				listener.reset(latch);
+
 			}
 
 			int messagesReceivedBeforeStart = listener.getCount();
@@ -246,7 +252,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			} else {
 				int count = listener.getCount();
 				assertTrue("Expected additional messages received after start: " + messagesReceivedBeforeStart + ">="
-						+ count, messagesReceivedBeforeStart <= count);
+						+ count, messagesReceivedBeforeStart < count);
 				assertNull("Messages still available", template.receive(queue.getName()));
 			}
 
