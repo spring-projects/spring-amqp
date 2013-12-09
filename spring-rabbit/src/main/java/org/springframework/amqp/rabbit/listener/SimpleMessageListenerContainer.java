@@ -365,6 +365,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
+		Assert.isTrue(txSize > 0, "'txSize' must be > 0");
 		this.txSize = txSize;
 	}
 
