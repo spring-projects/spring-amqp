@@ -49,6 +49,7 @@ import org.springframework.beans.factory.DisposableBean;
  * @author Dave Syer
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Artem Bilan
  * @since 1.0
  *
  */
@@ -59,9 +60,9 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	private static Queue queue = new Queue("test.queue");
 
 	private enum TransactionMode {
-		ON, OFF, PREFETCH;
+		ON, OFF, PREFETCH, PREFETCH_NO_TX;
 		public boolean isTransactional() {
-			return this != OFF;
+			return this != OFF && this != PREFETCH_NO_TX;
 		}
 
 		public AcknowledgeMode getAcknowledgeMode() {
@@ -69,11 +70,11 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 
 		public int getPrefetch() {
-			return this == PREFETCH ? 10 : -1;
+			return this == PREFETCH || this == PREFETCH_NO_TX ? 10 : -1;
 		}
 
 		public int getTxSize() {
-			return this == PREFETCH ? 5 : -1;
+			return this == PREFETCH || this == PREFETCH_NO_TX ? 5 : -1;
 		}
 	}
 
@@ -116,7 +117,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 	private RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
-		// SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
@@ -155,6 +155,16 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	}
 
 	@Test
+	public void testNonTransactionalLowLevelWithPrefetch() throws Exception {
+		doTest(MessageCount.MEDIUM, Concurrency.LOW, TransactionMode.PREFETCH_NO_TX);
+	}
+
+	@Test
+	public void testNonTransactionalHighLevelWithPrefetch() throws Exception {
+		doTest(MessageCount.HIGH, Concurrency.HIGH, TransactionMode.PREFETCH_NO_TX);
+	}
+
+	@Test
 	public void testBadCredentials() throws Exception {
 		RabbitTemplate template = createTemplate(1);
 		com.rabbitmq.client.ConnectionFactory cf = new com.rabbitmq.client.ConnectionFactory();
@@ -177,6 +187,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		this.doTest(level, concurrency, transactionMode, template, template.getConnectionFactory());
 	}
 
+	/**
+	 * If transactionMode is OFF, the undelivered messages will be lost (ack=NONE). If it is
+	 * ON, PREFETCH, or PREFETCH_NO_TX, ack=AUTO, so we should not lose any messages.
+	 */
 	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode,
 			RabbitTemplate template, ConnectionFactory connectionFactory) throws Exception {
 
@@ -223,17 +237,21 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 				int messagesReceivedAfterStop = listener.getCount();
 				waited = latch.await(500, TimeUnit.MILLISECONDS);
-				logger.info("All messages received after stop: " + waited);
-				if (messageCount < 100) {
-					assertTrue("Expected to receive all messages after stop", waited);
-				}
+				// AMQP-338
+				logger.info("All messages received after stop: " + waited + " (" + messagesReceivedAfterStop + ")");
+
+				assertFalse("Didn't expect to receive all messages after stop", waited);
+
 				assertEquals("Unexpected additional messages received after stop", messagesReceivedAfterStop,
 						listener.getCount());
 
 				for (int i = 0; i < messageCount; i++) {
 					template.convertAndSend(queue.getName(), i + "bar");
 				}
-				latch = new CountDownLatch(messageCount);
+				// Even though not transactional, we shouldn't lose messages for PREFETCH_NO_TX
+				int expectedAfterRestart = transactionMode == TransactionMode.PREFETCH_NO_TX ?
+						messageCount * 2 - messagesReceivedAfterStop : messageCount;
+				latch = new CountDownLatch(expectedAfterRestart);
 				listener.reset(latch);
 
 			}
@@ -248,7 +266,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 			if (transactional) {
 				assertTrue("Timed out waiting for message", waited);
-			} else {
+			}
+			else {
 				int count = listener.getCount();
 				assertTrue("Expected additional messages received after start: " + messagesReceivedBeforeStart + ">="
 						+ count, messagesReceivedBeforeStart < count);
@@ -257,7 +276,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 			assertEquals(concurrentConsumers, container.getActiveConsumerCount());
 
-		} finally {
+		}
+		finally {
 			// Wait for broker communication to finish before trying to stop
 			// container
 			Thread.sleep(500L);

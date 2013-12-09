@@ -342,10 +342,9 @@ public class BlockingQueueConsumer {
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
 			try {
-				// N.B. we can't use a bounded queue and offer() here with a timeout
-				// in case the connection thread gets blocked
 				queue.put(new Delivery(envelope, properties, body));
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
