@@ -57,8 +57,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  * </p>
  * <p/>
  *
- * <pre>
- * <code>
+ * <pre class="code">
  *   log4j.appender.amqp=org.springframework.amqp.log4j.AmqpAppender
  *   #-------------------------------
  *   ## Connection settings
@@ -105,7 +104,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   #-------------------------------
  *   log4j.appender.amqp.layout=org.apache.log4j.PatternLayout
  *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - <%m>%n
- * </code>
  * </pre>
  *
  * @author Jon Brisbin <jbrisbin@vmware.com>
@@ -458,6 +456,7 @@ public class AmqpAppender extends AppenderSkeleton {
 		events.add(new Event(event, event.getProperties()));
 	}
 
+	@Override
 	public void close() {
 		if (null != senderPool) {
 			senderPool.shutdownNow();
@@ -469,6 +468,7 @@ public class AmqpAppender extends AppenderSkeleton {
 		retryTimer.cancel();
 	}
 
+	@Override
 	public boolean requiresLayout() {
 		return true;
 	}
@@ -477,6 +477,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
+		@Override
 		public void run() {
 			try {
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
  * string that is used as a "reply to" address. There are however conventions in use and this class makes it easier to
  * follow these conventions, which can be easily summarised as:
  *
- * <pre>
+ * <pre class="code">
  * (exchangeType)://(exchange)/(routingKey)
  * </pre>
  *
@@ -49,7 +49,7 @@ public class Address {
 	/**
 	 * Create an Address instance from a structured String in the form
 	 *
-	 * <pre>
+	 * <pre class="code">
 	 * (exchangeType)://(exchange)/(routingKey)
 	 * </pre>
 	 *
@@ -104,6 +104,7 @@ public class Address {
 		return this.routingKey;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(this.exchangeType + "://" + this.exchangeName + "/");
 		if (StringUtils.hasText(this.routingKey)) {

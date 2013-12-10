@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package org.springframework.util.exec;
 /**
  * Destroys a process running for too long.
  * For example:
- * <pre>
+ * <pre class="code">
  * ExecuteWatchdog watchdog = new ExecuteWatchdog(30000);
  * Execute exec = new Execute(myloghandler, watchdog);
  * exec.setCommandLine(mycmdline);
@@ -40,7 +40,7 @@ public class ExecuteWatchdog implements Runnable {
     private Process process;
 
     /** timeout duration. Once the process running time exceeds this it should be killed */
-    private int timeout;
+    private final int timeout;
 
     /** say whether or not the watchog is currently monitoring a process */
     private boolean watch = false;
@@ -105,6 +105,7 @@ public class ExecuteWatchdog implements Runnable {
     /**
      * Watches the process and terminates it, if it runs for too long.
      */
+    @Override
     public synchronized void run() {
         try {
             // This isn't a Task, don't have a Project object to log.

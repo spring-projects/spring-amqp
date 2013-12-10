@@ -234,9 +234,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param maxConcurrentConsumers the maximum number of consumers.
 	 *
 	 * @see #setConcurrentConsumers(int)
-	 * @see #setStartConsumerMinInterval(int)
-	 * @see #stopConsumerMinInterval
-	 * @see #setConsecutiveMessagesTrigger
+	 * @see #setStartConsumerMinInterval(long)
+	 * @see #setStopConsumerMinInterval(long)
+	 * @see #setConsecutiveActiveTrigger(int)
 	 * @see #setConsecutiveIdleTrigger(int)
 	 */
 	public void setMaxConcurrentConsumers(int maxConcurrentConsumers) {
