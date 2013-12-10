@@ -113,6 +113,13 @@ subprojects { subproject ->
 		jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
 	}
 
+	task testAll() {
+		doFirst {
+			tasks.test.systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
+		}
+		finalizedBy test
+	}
+
 	task sourcesJar(type: Jar) {
 		classifier = 'sources'
 		from sourceSets.main.allJava
@@ -374,5 +381,5 @@ task dist(dependsOn: assemble) {
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
-	gradleVersion = '1.6'
+	gradleVersion = '1.9'
 }
