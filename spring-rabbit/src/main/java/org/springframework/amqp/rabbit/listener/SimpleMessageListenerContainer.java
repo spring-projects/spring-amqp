@@ -106,6 +106,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private final ContainerDelegate delegate = new ContainerDelegate() {
+		@Override
 		public void invokeListener(Channel channel, Message message) throws Exception {
 			SimpleMessageListenerContainer.super.invokeListener(channel, message);
 		}
@@ -442,6 +443,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				return new TransactionTemplate(transactionManager, transactionAttribute)
 						.execute(new TransactionCallback<Boolean>() {
+							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
 								ConnectionFactoryUtils.bindResourceToTransaction(
 										new RabbitResourceHolder(consumer.getChannel(), false), getConnectionFactory(), true);
@@ -521,6 +523,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			return startupException;
 		}
 
+		@Override
 		public void run() {
 
 			boolean aborted = false;
