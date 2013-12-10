@@ -27,20 +27,33 @@ import org.junit.runners.model.Statement;
  * variable RUN_LONG_INTEGRATION_TESTS on a CI nightly build to ensure coverage.
  *
  * @author Gary Russell
- * @since 3.0
+ * @author Artem Bilan
+ * @since 1.2.1
  *
  */
 public class LongRunningIntegrationTest extends TestWatchman {
 
 	private final static Log logger = LogFactory.getLog(LongRunningIntegrationTest.class);
 
+	private static final String RUN_LONG_PROP = "RUN_LONG_INTEGRATION_TESTS";
+
+	private boolean shouldRun = false;
+
+	public LongRunningIntegrationTest() {
+		for(String value: new String[]{System.getenv(RUN_LONG_PROP), System.getProperty(RUN_LONG_PROP)}) {
+			if ("true".equalsIgnoreCase(value)) {
+				this.shouldRun = true;
+				break;
+			}
+		}
+	}
+
 	@Override
 	public Statement apply(Statement base, FrameworkMethod method, Object target) {
-		boolean shouldRun = "true".equalsIgnoreCase(System.getenv("RUN_LONG_INTEGRATION_TESTS"));
-		if (!shouldRun) {
-			logger.info("Skipping long running test " + this.getClass().getSimpleName() + "." + method.getName());
+		if (!this.shouldRun) {
+			logger.info("Skipping long running test " + target.getClass().getSimpleName() + "#" + method.getName());
 		}
-		Assume.assumeTrue(shouldRun);
+		Assume.assumeTrue(this.shouldRun);
 		return super.apply(base, method, target);
 	}
 
