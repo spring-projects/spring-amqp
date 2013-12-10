@@ -234,6 +234,7 @@ task api(type: Javadoc) {
 	options.author = true
 	options.header = rootProject.description
 	options.overview = 'src/api/overview.html'
+	options.stylesheetFile = file("src/api/stylesheet.css")
 	options.links(rootProject.ext.javadocLinks)
 
 	source subprojects.collect { project ->

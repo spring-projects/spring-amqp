@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,6 +22,7 @@ import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.util.StringUtils;
@@ -30,7 +31,7 @@ import org.springframework.util.StringUtils;
  * <p>
  * A rule that prevents integration tests from failing if the Rabbit broker application is not running or not
  * accessible, with test federation configuration:
- * <pre>
+ * <pre class="code">
  * [
  *    {rabbitmq_federation,
  *     [
@@ -63,7 +64,7 @@ public class BrokerFederated extends TestWatchman {
 
 	private final boolean assumeOnline;
 
-	private int DEFAULT_PORT = BrokerTestUtils.getPort();
+	private final int DEFAULT_PORT = BrokerTestUtils.getPort();
 
 	private int port;
 

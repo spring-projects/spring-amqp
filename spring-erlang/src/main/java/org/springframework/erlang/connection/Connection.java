@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public interface Connection {
      * Send an RPC request to the remote Erlang node. This convenience function
      * creates the following message and sends it to 'rex' on the remote node:
      *
-     * <pre>
+     * <pre class="code">
      * { self, { call, Mod, Fun, Args, user } }
      * </pre>
      *
@@ -74,7 +74,7 @@ public interface Connection {
      * function receives a message from the remote node, and expects it to have
      * the following format:
      *
-     * <pre>
+     * <pre class="code">
      * { rex, Term }
      * </pre>
      *
