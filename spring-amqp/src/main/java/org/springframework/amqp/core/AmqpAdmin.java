@@ -50,8 +50,9 @@ public interface AmqpAdmin {
 	/**
 	 * Declare the given queue
 	 * @param queue the queue to declare
+	 * @return the name of the queue.
 	 */
-	void declareQueue(Queue queue);
+	String declareQueue(Queue queue);
 
 	/**
 	 * Delete a queue, without regard for whether it is in use or has messages on it

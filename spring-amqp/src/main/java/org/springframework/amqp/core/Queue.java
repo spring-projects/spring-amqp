@@ -15,6 +15,8 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.springframework.util.Assert;
+
 /**
  * Simple container collecting information to describe a queue. Used in conjunction with AmqpAdmin.
  *
@@ -67,7 +69,7 @@ public class Queue extends AbstractDeclarable {
 
 	/**
 	 * Construct a new queue, given a name, durability flag, and auto-delete flag, and arguments.
-	 * @param name the name of the queue.
+	 * @param name the name of the queue - must not be null; set to "" to have the broker generate the name.
 	 * @param durable true if we are declaring a durable queue (the queue will survive a server restart)
 	 * @param exclusive true if we are declaring an exclusive queue (the queue will only be used by the declarer's
 	 * connection)
@@ -75,7 +77,7 @@ public class Queue extends AbstractDeclarable {
 	 * @param arguments the arguments used to declare the queue
 	 */
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) {
-		super();
+		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
 		this.durable = durable;
 		this.exclusive = exclusive;

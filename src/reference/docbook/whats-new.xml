@@ -4,11 +4,20 @@
 	<title>What's New</title>
 
 	<section>
-		<title>Changes in 1.2.1 Since 1.2.0</title>
+		<title>Changes in 1.3 Since 1.2</title>
 		<section>
+			<title>Consumer Priority</title>
 			<para>
 				The listener container now supports consumer arguments, allowing the
 				<code>x-priority</code> argument to be set. See <xref linkend="consumer-priority" />.
+			</para>
+		</section>
+		<section>
+			<title>Rabbit Admin</title>
+			<para>
+				It is now possible to have the Broker to generate the queue name, regardless
+				of durable, autoDelete and exclusive settings.
+				See <xref linkend="broker-configuration" />.
 			</para>
 		</section>
 	</section>
