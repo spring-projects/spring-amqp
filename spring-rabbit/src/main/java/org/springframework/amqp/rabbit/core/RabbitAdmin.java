@@ -30,6 +30,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -47,6 +48,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Ed Scriven
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, InitializingBean {
 
@@ -413,8 +415,12 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					logger.debug("declaring Queue '" + queue.getName() + "'");
 				}
 				try {
-					channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
+					DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
 							queue.getArguments());
+					if (!queue.getName().equals(declareOk.getQueue())) {
+						DirectFieldAccessor dfa = new DirectFieldAccessor(queue);
+						dfa.setPropertyValue("name", declareOk.getQueue());
+					}
 				}
 				catch (IOException e) {
 					if (this.ignoreDeclarationExceptions) {

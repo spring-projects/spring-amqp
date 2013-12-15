@@ -38,6 +38,13 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+/**
+ * @author Dave Syer
+ * @author Ed Scriven
+ * @author Gary Russell
+ * @author Gunnar Hillert
+ * @author Artem Bilan
+ */
 public class RabbitAdminIntegrationTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -150,6 +157,34 @@ public class RabbitAdminIntegrationTests {
 		context.getBeanFactory().registerSingleton("foo", queue);
 		rabbitAdmin.afterPropertiesSet();
 
+		// Queue created on Spring startup
+		rabbitAdmin.initialize();
+		assertTrue(queueExists(queue));
+
+		// Stop and broker retains queue (only verifiable in native API)
+		connectionFactory.destroy();
+		assertTrue(queueExists(queue));
+
+		// Start and queue still exists
+		connectionFactory.createConnection();
+		assertTrue(queueExists(queue));
+
+		// Queue manually deleted
+		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
+		assertFalse(queueExists(queue));
+
+		connectionFactory.destroy();
+	}
+
+	@Test
+	public void testQueueWithoutName() throws Exception {
+
+		final Queue queue = new Queue("", true, false, true);
+		context.getBeanFactory().registerSingleton("foo", queue);
+		rabbitAdmin.afterPropertiesSet();
+		rabbitAdmin.initialize();
+
+		assertFalse("".equals(queue.getName()));
 		// Queue created on Spring startup
 		rabbitAdmin.initialize();
 		assertTrue(queueExists(queue));
@@ -290,7 +325,7 @@ public class RabbitAdminIntegrationTests {
 	 * Verify that a queue exists using the native Rabbit API to bypass all the connection and
 	 * channel caching and callbacks in Spring AMQP.
 	 *
-	 * @param Queue The queue to verify
+	 * @param queue The queue to verify
 	 * @return True if the queue exists
 	 */
 	private boolean queueExists(final Queue queue) throws Exception {
@@ -302,10 +337,7 @@ public class RabbitAdminIntegrationTests {
 			DeclareOk result = channel.queueDeclarePassive(queue.getName());
 			return result != null;
 		} catch (IOException e) {
-			if (e.getCause().getMessage().contains("RESOURCE_LOCKED")) {
-				return true;
-			}
-			return false;
+			return e.getCause().getMessage().contains("RESOURCE_LOCKED");
 		} finally {
 			connection.close();
 		}

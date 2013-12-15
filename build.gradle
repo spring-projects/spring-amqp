@@ -73,14 +73,6 @@ subprojects { subproject ->
 		}
 	}
 
-	sourceSets {
-		test {
-			resources {
-				srcDirs = ['src/test/resources', 'src/test/java']
-			}
-		}
-	}
-
 	// See http://www.gradle.org/docs/current/userguide/dependency_management.html#sub:configurations
 	// and http://www.gradle.org/docs/current/dsl/org.gradle.api.artifacts.ConfigurationContainer.html
 	configurations {
