@@ -55,6 +55,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
@@ -844,6 +845,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (FatalListenerExecutionException ex) {
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
+				aborted = true;
+			}
+			catch (ShutdownSignalException e) {
+				logger.debug("Consumer received Shutdown Signal, processing stopped.", e);
 				aborted = true;
 			}
 			catch (Error e) {
