@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -42,8 +43,11 @@ import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
+
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -371,6 +375,29 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		assertTrue(awaitStart2.await(10, TimeUnit.SECONDS));
 		assertTrue(awaitConsumeSecond.await(10, TimeUnit.SECONDS));
 		container.stop();
+	}
+
+	@Test
+	public void testSimpleMessageListenerContainerStoppedWithoutWarn() throws Exception {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setPort(BrokerTestUtils.getPort());
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		Log log = Mockito.spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
+		dfa.setPropertyValue("logger", log);
+		container.setQueues(queue);
+		container.setMessageListener(new MessageListenerAdapter());
+		container.afterPropertiesSet();
+		container.start();
+
+		connectionFactory.destroy();
+
+		Thread.sleep(1000);
+		Mockito.verify(log).debug(
+				Mockito.eq("Consumer received Shutdown Signal, processing stopped."),
+				Mockito.any(ShutdownSignalException.class));
+		Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
 	}
 
 	public static class PojoListener {

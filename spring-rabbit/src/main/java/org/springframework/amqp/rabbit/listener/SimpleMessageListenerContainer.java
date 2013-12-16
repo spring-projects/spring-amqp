@@ -54,7 +54,9 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
@@ -845,6 +847,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
+			}
+			catch (ShutdownSignalException e) {
+				Object shutdownReason = e.getReason();
+				if (shutdownReason instanceof AMQP.Connection.Close &&
+						AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
+						&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText())) {
+					logger.debug("Consumer received Shutdown Signal, processing stopped.", e);
+					aborted = true;
+				}
+				else {
+					throw e;
+				}
 			}
 			catch (Error e) {
 				logger.error("Consumer thread error, thread abort.", e);
