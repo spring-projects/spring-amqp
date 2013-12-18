@@ -640,7 +640,23 @@ public class ExampleAmqpConfiguration {
             }
         };
     }
-}]]></programlisting></section>
+}]]></programlisting>
+    <para id="consumer-priority">
+        Starting with <emphasis>RabbitMQ Version 3.2</emphasis>, the broker now supports consumer priority (see
+        <ulink url="http://www.rabbitmq.com/blog/2013/12/16/using-consumer-priorities-with-rabbitmq/"/>).
+        This is enabled by setting the <code>x-priority</code> argument on the consumer.
+        The <classname>SimpleMessageListenerContainer</classname> now supports setting consumer arguments:
+    </para>
+    <programlisting language="java"><![CDATA[
+container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));]]></programlisting>
+    <para>
+        For convenience, the namespace provides the <code>priority</code> attribute on the
+        <code>listener</code> element:
+    </para>
+    <programlisting language="xml"><![CDATA[<rabbit:listener-container connection-factory="rabbitConnectionFactory">
+    <rabbit:listener queues="some.queue" ref="somePojo" method="handle" priority="10" />
+</rabbit:listener-container>]]></programlisting>
+    </section>
   </section>
 
   <section>

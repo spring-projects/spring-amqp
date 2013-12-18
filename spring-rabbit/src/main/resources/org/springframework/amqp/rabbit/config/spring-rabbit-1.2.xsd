@@ -753,6 +753,13 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="priority" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The priority of this listener's Consumer. Requires RabbitMQ 3.2 or higher.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="ref" type="xsd:string" use="required">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[

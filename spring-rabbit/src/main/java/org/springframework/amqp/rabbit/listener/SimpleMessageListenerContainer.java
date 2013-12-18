@@ -129,6 +129,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean defaultRequeueRejected = true;
 
+	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
 	}
@@ -401,6 +403,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.defaultRequeueRejected = defaultRequeueRejected;
 	}
 
+	public void setConsumerArguments(Map<String, Object> args) {
+		synchronized(consumersMonitor) {
+			this.consumerArgs.clear();
+			this.consumerArgs.putAll(args);
+		}
+	}
+
 	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
@@ -644,7 +653,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		// didn't get an ack for delivered messages
 		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
-				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected, queues);
+				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
+				this.consumerArgs, queues);
 		return consumer;
 	}
 

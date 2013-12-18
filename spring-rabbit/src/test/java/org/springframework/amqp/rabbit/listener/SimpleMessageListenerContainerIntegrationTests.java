@@ -251,6 +251,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
+		// requires RabbitMQ 3.2.x
+//		container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
 		if (externalTransaction) {
 			container.setTransactionManager(new TestTransactionManager());
 		}
@@ -306,6 +308,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			this.fail = fail;
 		}
 
+		@Override
 		public void onMessage(Message message) {
 			String value = new String(message.getBody());
 			try {
@@ -338,6 +341,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			this.fail = fail;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			try {

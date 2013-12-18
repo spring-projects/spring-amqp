@@ -4,6 +4,16 @@
 	<title>What's New</title>
 
 	<section>
+		<title>Changes in 1.2.1 Since 1.2.0</title>
+		<section>
+			<para>
+				The listener container now supports consumer arguments, allowing the
+				<code>x-priority</code> argument to be set. See <xref linkend="consumer-priority" />.
+			</para>
+		</section>
+	</section>
+
+	<section>
 		<title>Changes to 1.2 Since 1.1</title>
 		<section>
 			<title>RabbitMQ Version</title>
