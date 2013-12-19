@@ -180,10 +180,15 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			}
 			containerDef.getPropertyValues().add("queues", values);
 		}
+
+		ManagedMap<String, TypedStringValue> args = new ManagedMap<String, TypedStringValue>();
+
 		String priority = listenerEle.getAttribute("priority");
 		if (StringUtils.hasText(priority)) {
-			ManagedMap<String, TypedStringValue> args = new ManagedMap<String, TypedStringValue>();
 			args.put("x-priority", new TypedStringValue(priority, Integer.class));
+		}
+
+		if (args.size() > 0) {
 			containerDef.getPropertyValues().add("consumerArguments", args);
 		}
 

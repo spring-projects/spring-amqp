@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -282,7 +281,7 @@ public class BlockingQueueConsumer {
 		try {
 			for (int i = 0; i < queues.length; i++) {
 				if (this.consumerArgs.size() > 0) {
-					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), UUID.randomUUID().toString(), false,
+					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), "", false,
 							false, this.consumerArgs, this.consumer);
 				}
 				else {
