@@ -12,6 +12,7 @@
  */
 package org.springframework.amqp.rabbit.core;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -180,26 +181,23 @@ public class RabbitAdminIntegrationTests {
 	public void testQueueWithoutName() throws Exception {
 
 		final Queue queue = new Queue("", true, false, true);
-		context.getBeanFactory().registerSingleton("foo", queue);
-		rabbitAdmin.afterPropertiesSet();
-		rabbitAdmin.initialize();
+		String generatedName = rabbitAdmin.declareQueue(queue);
 
-		assertFalse("".equals(queue.getName()));
-		// Queue created on Spring startup
-		rabbitAdmin.initialize();
-		assertTrue(queueExists(queue));
+		assertEquals("", queue.getName());
+		Queue queueWithGeneratedName = new Queue(generatedName, true, false, true);
+		assertTrue(queueExists(queueWithGeneratedName));
 
 		// Stop and broker retains queue (only verifiable in native API)
 		connectionFactory.destroy();
-		assertTrue(queueExists(queue));
+		assertTrue(queueExists(queueWithGeneratedName));
 
 		// Start and queue still exists
 		connectionFactory.createConnection();
-		assertTrue(queueExists(queue));
+		assertTrue(queueExists(queueWithGeneratedName));
 
 		// Queue manually deleted
-		assertTrue(rabbitAdmin.deleteQueue(queue.getName()));
-		assertFalse(queueExists(queue));
+		assertTrue(rabbitAdmin.deleteQueue(generatedName));
+		assertFalse(queueExists(queueWithGeneratedName));
 
 		connectionFactory.destroy();
 	}

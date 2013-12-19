@@ -96,7 +96,7 @@ subprojects { subproject ->
 	}
 
 	// enable all compiler warnings; individual projects may customize further
-	ext.xLintArg = '-Xlint:all'
+	ext.xLintArg = '-Xlint:all,-options'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
 	test {
@@ -202,6 +202,9 @@ project('spring-rabbit') {
 		}
 
 	}
+
+	// suppress deprecation warnings (@SuppressWarnings("deprecation") is not enough for javac)
+	compileJava.options.compilerArgs = ["${xLintArg},-deprecation"]
 
 }
 
@@ -373,5 +376,6 @@ task dist(dependsOn: assemble) {
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
-	gradleVersion = '1.9'
+	gradleVersion = '1.10'
+	distributionUrl = "http://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
