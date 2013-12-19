@@ -857,7 +857,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					aborted = true;
 				}
 				else {
-					throw e;
+					this.logConsumerException(e);
 				}
 			}
 			catch (Error e) {
@@ -865,15 +865,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				aborted = true;
 			}
 			catch (Throwable t) {
-				if (logger.isDebugEnabled() || !(t instanceof AmqpConnectException)) {
-					logger.warn(
-							"Consumer raised exception, processing can restart if the connection factory supports it",
-							t);
-				}
-				else {
-					logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
-							+ "Exception summary: " + t);
-				}
+				this.logConsumerException(t);
 			}
 			finally {
 				if (SimpleMessageListenerContainer.this.transactionManager != null) {
@@ -907,6 +899,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				restart(this.consumer);
 			}
 
+		}
+
+		private void logConsumerException(Throwable t) {
+			if (logger.isDebugEnabled() || !(t instanceof AmqpConnectException)) {
+				logger.warn(
+						"Consumer raised exception, processing can restart if the connection factory supports it",
+						t);
+			}
+			else {
+				logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
+						+ "Exception summary: " + t);
+			}
 		}
 
 	}
