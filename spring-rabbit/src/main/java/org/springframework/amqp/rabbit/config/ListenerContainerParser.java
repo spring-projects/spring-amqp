@@ -28,6 +28,7 @@ import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -178,6 +179,17 @@ class ListenerContainerParser implements BeanDefinitionParser {
 				values.add(new RuntimeBeanReference(names[i].trim()));
 			}
 			containerDef.getPropertyValues().add("queues", values);
+		}
+
+		ManagedMap<String, TypedStringValue> args = new ManagedMap<String, TypedStringValue>();
+
+		String priority = listenerEle.getAttribute("priority");
+		if (StringUtils.hasText(priority)) {
+			args.put("x-priority", new TypedStringValue(priority, Integer.class));
+		}
+
+		if (args.size() > 0) {
+			containerDef.getPropertyValues().add("consumerArguments", args);
 		}
 
 		// Register the listener and fire event

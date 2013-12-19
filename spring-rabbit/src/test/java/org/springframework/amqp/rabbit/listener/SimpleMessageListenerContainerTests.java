@@ -25,7 +25,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -116,6 +118,7 @@ public class SimpleMessageListenerContainerTests {
 		};
 		container.start();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		container.stop();
 		singleConnectionFactory.destroy();
 	}
 
@@ -184,6 +187,7 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel, times(2)).basicAck(anyLong(), anyBoolean());
 		verify(channel).basicAck(2, true);
 		verify(channel).basicAck(4, true);
+		container.stop();
 	}
 
 	/*
@@ -251,6 +255,46 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel).basicAck(2, true);
 		// second set was short
 		verify(channel).basicAck(3, true);
+		container.stop();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testConsumerArgs() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(false)).thenReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?,?>>();
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				consumer.set((Consumer) invocation.getArguments()[6]);
+				consumer.get().handleConsumeOk((String) invocation.getArguments()[2]);
+				args.set((Map<?, ?>) invocation.getArguments()[5]);
+				return null;
+			}
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+			}
+		});
+		container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
+		container.afterPropertiesSet();
+		container.start();
+		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
+		assertTrue(args.get() != null);
+		assertEquals(10, args.get().get("x-priority"));
+		consumer.get().handleCancelOk("foo");
+		container.stop();
 	}
 
 	@SuppressWarnings("serial")

@@ -15,7 +15,9 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -87,6 +89,8 @@ public class BlockingQueueConsumer {
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
+	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+
 	private final Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
 	private final boolean defaultRequeuRejected;
@@ -113,6 +117,19 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected, String... queues) {
+		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
+				prefetchCount, defaultRequeueRejected, null, queues);
+	}
+
+	/**
+	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
+	 * until it is started.
+	 */
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+			MessagePropertiesConverter messagePropertiesConverter,
+			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
+			Map<String, Object> consumerArgs, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
@@ -120,6 +137,9 @@ public class BlockingQueueConsumer {
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
 		this.defaultRequeuRejected = defaultRequeueRejected;
+		if (consumerArgs != null && consumerArgs.size() > 0) {
+			this.consumerArgs.putAll(consumerArgs);
+		}
 		this.queues = queues;
 		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
 	}
@@ -237,7 +257,8 @@ public class BlockingQueueConsumer {
 					channel.queueDeclarePassive(queues[i]);
 				}
 				passiveDeclareTries = 0;
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				if (passiveDeclareTries > 0 && channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
 						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
@@ -247,17 +268,25 @@ public class BlockingQueueConsumer {
 							Thread.currentThread().interrupt();
 						}
 					}
-				} else {
+				}
+				else {
 					this.activeObjectCounter.release(this);
 					throw new FatalListenerStartupException("Cannot prepare queue for listener. "
 							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 				}
 			}
-		} while (passiveDeclareTries-- > 0);
+		}
+		while (passiveDeclareTries-- > 0);
 
 		try {
 			for (int i = 0; i < queues.length; i++) {
-				channel.basicConsume(queues[i], acknowledgeMode.isAutoAck(), consumer);
+				if (this.consumerArgs.size() > 0) {
+					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), "", false,
+							false, this.consumerArgs, this.consumer);
+				}
+				else {
+					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), consumer);
+				}
 				if (logger.isDebugEnabled()) {
 					logger.debug("Started on queue '" + queues[i] + "': " + this);
 				}

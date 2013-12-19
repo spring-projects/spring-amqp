@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.aopalliance.aop.Advice;
@@ -35,6 +36,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
@@ -82,6 +84,11 @@ public class ListenerContainerParserTests {
 		assertEquals(12, ReflectionTestUtils.getField(container, "consecutiveActiveTrigger"));
 		assertEquals(34, ReflectionTestUtils.getField(container, "consecutiveIdleTrigger"));
 		assertEquals(9876L, ReflectionTestUtils.getField(container, "receiveTimeout"));
+		Map<?, ?> consumerArgs = TestUtils.getPropertyValue(container, "consumerArgs", Map.class);
+		assertEquals(1, consumerArgs.size());
+		Object xPriority = consumerArgs.get("x-priority");
+		assertNotNull(xPriority);
+		assertEquals(10, xPriority);
 	}
 
 	@Test

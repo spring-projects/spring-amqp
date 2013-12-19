@@ -43,7 +43,7 @@ public class RabbitExceptionTranslatorTests {
 	@Test
 	public void testConvertRabbitAccessException() {
 
-		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new PossibleAuthenticationFailureException(null)),
+		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new PossibleAuthenticationFailureException(new RuntimeException())),
 				instanceOf(AmqpAuthenticationException.class));
 
 		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new AmqpException("")),
