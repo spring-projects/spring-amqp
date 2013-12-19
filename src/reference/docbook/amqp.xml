@@ -1543,14 +1543,19 @@ public class ExampleExternalTransactionAmqpConfiguration {
       broker, so when there is a rollback of a Spring transaction and a
       message has been received, what Spring AMQP has to do is not just
       rollback the transaction, but also manually reject the message (sort of
-      a nack, but that's not what the specification calls it). Such messages
-      (and any that are unacked when a channel is closed or aborts) go to the
-      back of the queue on a Rabbit broker, and this behaviour is not what
-      some users expect, especially if they come from a JMS background, so
-      it's good to be aware of it. The re-queuing order is not mandated by the
-      AMQP specification, but it makes the broker much more efficient, and
-      also means that if it is under load there is a natural back off before
-      the message can be consumed again.</para>
+      a nack, but that's not what the specification calls it). The action
+      taken on message rejection is independent of transactions and
+      depends the <code>defaultRequeueRejected</code>
+      property (default <code>true</code>). For more information about
+      rejecting failed messages, see <xref linkend="async-listeners" />.</para>
+      <para>For more information about RabbitMQ transactions, and their limitations,
+      refer to <ulink url="http://www.rabbitmq.com/semantics.html">
+      RabbitMQ Broker Semantics</ulink>.</para>
+      <note>Prior to <emphasis>RabbitMQ 2.7.0</emphasis>, such messages
+      (and any that are unacked when a channel is closed or aborts) went to the
+      back of the queue on a Rabbit broker, since 2.7.0, rejected messages
+      go to the front of the queue, in a similar manner to JMS rolled
+      back messages.</note>
     </section>
     <section>
       <title>Using the RabbitTransactionManager</title>
@@ -1835,7 +1840,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
             </row>
 
             <row>
-              <entry><literallayout>requeueRejected
+              <entry><literallayout>defaultRequeueRejected
 (requeue-rejected)</literallayout></entry>
 
               <entry>Determines whether messages that are
@@ -1988,7 +1993,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
 
     </section>
 
-    <section>
+    <section id="async-listeners">
       <title>Message Listeners and the Asynchronous Case</title>
 
       <para>If a <classname>MessageListener</classname> fails because
