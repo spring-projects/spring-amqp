@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,9 +48,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.impl.AMQImpl;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.2
  *
  */
@@ -62,6 +65,7 @@ public class RabbitAdminDeclarationTests {
 		Channel channel = mock(Channel.class);
 		when(cf.createConnection()).thenReturn(conn);
 		when(conn.createChannel(false)).thenReturn(channel);
+		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(new Answer<Object>() {
 
@@ -97,6 +101,7 @@ public class RabbitAdminDeclarationTests {
 		Channel channel = mock(Channel.class);
 		when(cf.createConnection()).thenReturn(conn);
 		when(conn.createChannel(false)).thenReturn(channel);
+		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(new Answer<Object>() {
 
@@ -135,6 +140,7 @@ public class RabbitAdminDeclarationTests {
 		Channel channel = mock(Channel.class);
 		when(cf.createConnection()).thenReturn(conn);
 		when(conn.createChannel(false)).thenReturn(channel);
+		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(new Answer<Object>() {
 
@@ -174,6 +180,7 @@ public class RabbitAdminDeclarationTests {
 		Channel channel = mock(Channel.class);
 		when(cf.createConnection()).thenReturn(conn);
 		when(conn.createChannel(false)).thenReturn(channel);
+		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(new Answer<Object>() {
 
@@ -234,7 +241,7 @@ public class RabbitAdminDeclarationTests {
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
 		assertEquals(2, queue.getDeclaringAdmins().size());
-		queue.setAdminsThatShouldDeclare(new AmqpAdmin[0]);
+		queue.setAdminsThatShouldDeclare();
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
 		assertEquals(2, queue.getDeclaringAdmins().size());
@@ -245,7 +252,7 @@ public class RabbitAdminDeclarationTests {
 		queue.setAdminsThatShouldDeclare((AmqpAdmin[]) null);
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		try {
-			queue.setAdminsThatShouldDeclare(new AmqpAdmin[] {null, admin1});
+			queue.setAdminsThatShouldDeclare(null, admin1);
 			fail("Expected Exception");
 		}
 		catch (IllegalArgumentException e) {}
@@ -267,10 +274,11 @@ public class RabbitAdminDeclarationTests {
 		private static ConnectionListener listener2;
 
 		@Bean
-		public ConnectionFactory cf1() {
+		public ConnectionFactory cf1() throws IOException {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn1);
 			when(conn1.createChannel(false)).thenReturn(channel1);
+			when(channel1.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(new Answer<Object>() {
 
 				@Override
@@ -283,10 +291,11 @@ public class RabbitAdminDeclarationTests {
 		}
 
 		@Bean
-		public ConnectionFactory cf2() {
+		public ConnectionFactory cf2() throws IOException {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn2);
 			when(conn2.createChannel(false)).thenReturn(channel2);
+			when(channel2.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(new Answer<Object>() {
 
 				@Override
@@ -299,35 +308,35 @@ public class RabbitAdminDeclarationTests {
 		}
 
 		@Bean
-		public RabbitAdmin admin1() {
+		public RabbitAdmin admin1() throws IOException {
 			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
 			rabbitAdmin.afterPropertiesSet();
 			return rabbitAdmin;
 		}
 
 		@Bean
-		public RabbitAdmin admin2() {
+		public RabbitAdmin admin2() throws IOException {
 			RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
 			rabbitAdmin.afterPropertiesSet();
 			return rabbitAdmin;
 		}
 
 		@Bean
-		public Queue queue() {
+		public Queue queue() throws IOException {
 			Queue queue = new Queue("foo");
 			queue.setAdminsThatShouldDeclare(admin1());
 			return queue;
 		}
 
 		@Bean
-		public Exchange exchange() {
+		public Exchange exchange() throws IOException {
 			DirectExchange exchange = new DirectExchange("bar");
 			exchange.setAdminsThatShouldDeclare(admin1());
 			return exchange;
 		}
 
 		@Bean
-		public Binding binding() {
+		public Binding binding() throws IOException {
 			Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
 			binding.setAdminsThatShouldDeclare(admin1());
 			return binding;

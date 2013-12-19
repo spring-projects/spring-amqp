@@ -1082,7 +1082,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
     Queue declareQueue();
 
-    void declareQueue(Queue queue);
+    String declareQueue(Queue queue);
 
     void deleteQueue(String queueName);
 
@@ -1094,14 +1094,30 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 
     void declareBinding(Binding binding);
 
+    void removeBinding(Binding binding);
+
+    Properties getQueueProperties(String queueName);
+
 }]]></programlisting>
 
     <para>The no-arg declareQueue() method defines a queue on the broker whose name
     is automatically generated. The additional properties of this auto-generated
-    queue are exclusive=true, autoDelete=true, and durable=false.<note>
-        <para>Removing a binding was not introduced until the 0.9 version of
-        the AMQP spec.</para>
-      </note></para>
+    queue are <code>exclusive=true</code>, <code>autoDelete=true</code>, and <code>durable=false</code>.</para>
+
+    <para>The <code>declareQueue(Queue queue)</code> method returns the name of the declared queue.
+		If provided <classname>Queue</classname>
+		doesn't have a value (or it is an empty String) for the <code>name</code> property,
+		the Broker declares that queue with generated name and that name is returned to the client.
+		The empty name of the <classname>Queue</classname> object is remain as is. This functionality
+		has a limitation only with direct usage of <classname>RabbitAdmin</classname> class from Java code.
+		Namespace doesn't support auto-generation of queue names, because the name of the <classname>Queue</classname> bean
+		may be used within SpEL:
+		<programlisting language="xml"><![CDATA[<rabbit:listener-container>
+    <rabbit:listener ref="listener" queue-names="#{someQueue.name}" />
+</rabbit:listener-container>]]></programlisting>
+		But the real queue will be declared (and with generated name, if needed) on Broker on demand.
+		See <xref linkend="automatic-declaration" />.
+	</para>
 
     <para>The RabbitMQ implementation of this interface is RabbitAdmin which
     when configured using Spring XML would look like this:
@@ -1904,7 +1920,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
     yourself) in the
     <classname>SimpleMessageListenerContainer</classname>.</para>
 
-    <section>
+    <section id="automatic-declaration">
       <title>Automatic Declaration of Exchanges, Queues and
       Bindings</title>
 

@@ -43,6 +43,15 @@
 				the current number of messages in the queue, as well as the current number
 				of consumers is returned.
 			</para>
+			<para>
+				It is now possible to allow for Broker to generate queue name.
+				For this purpose the <code>RabbitAdmin#declareQueue</code> method returns the name of the queue.
+				If provided <classname>Queue</classname>
+				doesn't have a value (or it is an empty String) for the <code>name</code> property,
+				the Broker declares that queue with generated name and that name is returned to the client.
+				The empty name of the <classname>Queue</classname> object is remain as is.
+				See <xref linkend="broker-configuration" />.
+			</para>
 		</section>
 		<section>
 			<title>Rabbit Template</title>
