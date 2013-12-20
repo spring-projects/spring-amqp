@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
  *
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Artem Bilan
  */
 public interface AmqpTemplate {
 
@@ -157,6 +158,100 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	Object receiveAndConvert(String queueName) throws AmqpException;
+
+	// receive and send methods for provided callback
+
+	/**
+	 * Receive a message if there is one from a default queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the {@code replyTo} {@link org.springframework.amqp.core.Address}
+	 * from {@link org.springframework.amqp.core.MessageProperties}
+	 * or to default exchange and default routingKey.
+	 *
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @return {@code true}, if message was received
+	 * @throws AmqpException if there is a problem
+	 */
+	<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from provided queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the {@code replyTo} {@link org.springframework.amqp.core.Address}
+	 * from {@link org.springframework.amqp.core.MessageProperties}
+	 * or to default exchange and default routingKey.
+	 *
+	 * @param queueName the queue name to receive a message.
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @return {@code true}, if message was received.
+	 * @throws AmqpException if there is a problem.
+	 */
+	<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from default queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the provided {@code exchange} and {@code routingKey}.
+	 *
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @param replyExchange the exchange name to send reply message.
+	 * @param replyRoutingKey the routing key to send reply message.
+	 * @return {@code true}, if message was received.
+	 * @throws AmqpException if there is a problem.
+	 */
+	<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, String replyExchange, String replyRoutingKey)
+			throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from provided queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the provided {@code exchange} and {@code routingKey}.
+	 *
+	 *
+	 * @param queueName the queue name to receive a message.
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @param replyExchange the exchange name to send reply message.
+	 * @param replyRoutingKey the routing key to send reply message.
+	 * @return {@code true}, if message was received
+	 * @throws AmqpException if there is a problem
+	 */
+	<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback, String replyExchange,
+								   String replyRoutingKey) throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from a default queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the {@code replyTo} {@link org.springframework.amqp.core.Address}
+	 * from result of {@link ReplyToAddressCallback}.
+	 *
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @param replyToAddressCallback the callback to determine replyTo address at runtime.
+	 * @return {@code true}, if message was received.
+	 * @throws AmqpException if there is a problem.
+	 */
+	<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
+			throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from provided queue, invoke provided {@link ReceiveAndReplyCallback}
+	 * and send reply message, if the {@code callback} returns one,
+	 * to the {@code replyTo} {@link org.springframework.amqp.core.Address}
+	 * from result of {@link ReplyToAddressCallback}.
+	 *
+	 * @param queueName the queue name to receive a message.
+	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
+	 *                 and return a reply message.
+	 * @param replyToAddressCallback the callback to determine replyTo address at runtime.
+	 * @return {@code true}, if message was received
+	 * @throws AmqpException if there is a problem
+	 */
+	<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException;
 
 	// send and receive methods for messages
 

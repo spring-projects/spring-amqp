@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,11 +30,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
+import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -91,6 +95,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, MessageListener,
@@ -137,6 +142,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	private final String uuid = UUID.randomUUID().toString();
 
 	private volatile String correlationKey = null;
+
+
+	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
+
+		@Override
+		public Address getReplyToAddress(Message request, Object reply) {
+			return RabbitTemplate.this.getReplyToAddress(request);
+		}
+
+	};
+
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -347,6 +363,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
 		execute(new ChannelCallback<Object>() {
+
 			public Object doInRabbit(Channel channel) throws Exception {
 				doSend(channel, exchange, routingKey, message, correlationData);
 				return null;
@@ -412,6 +429,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	public Message receive(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
+
 			public Message doInRabbit(Channel channel) throws IOException {
 				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 				// Response can be null is the case that there is no message on the queue.
@@ -420,15 +438,14 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 					if (isChannelLocallyTransacted(channel)) {
 						channel.basicAck(deliveryTag, false);
 						channel.txCommit();
-					} else if (isChannelTransacted()) {
+					}
+					else if (isChannelTransacted()) {
 						// Not locally transacted but it is transacted so it
 						// could be synchronized with an external transaction
 						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 					}
-					MessageProperties messageProps = messagePropertiesConverter.toMessageProperties(
-							response.getProps(), response.getEnvelope(), encoding);
-					messageProps.setMessageCount(response.getMessageCount());
-					return new Message(response.getBody(), messageProps);
+
+					return RabbitTemplate.this.buildMessageFromResponse(response);
 				}
 				return null;
 			}
@@ -445,6 +462,134 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			return getRequiredMessageConverter().fromMessage(response);
 		}
 		return null;
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+		return this.receiveAndReply(this.getRequiredQueue(), callback);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+		return this.receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
+
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, final String exchange, final String routingKey)
+			throws AmqpException {
+		return this.receiveAndReply(this.getRequiredQueue(), callback, exchange, routingKey);
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
+										  final String replyRoutingKey) throws AmqpException {
+		return this.receiveAndReply(queueName, callback, new ReplyToAddressCallback<S>() {
+
+			@Override
+			public Address getReplyToAddress(Message request, S reply) {
+				return new Address(null, replyExchange, replyRoutingKey);
+			}
+
+		});
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
+			throws AmqpException {
+		return this.receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+		return this.doReceiveAndReply(queueName, callback, replyToAddressCallback);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
+											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+		return this.execute(new ChannelCallback<Boolean>() {
+
+			@Override
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				boolean channelTransacted = RabbitTemplate.this.isChannelTransacted();
+
+				GetResponse response = channel.basicGet(queueName, !channelTransacted);
+				// Response can be null in the case that there is no message on the queue.
+				if (response != null) {
+					long deliveryTag = response.getEnvelope().getDeliveryTag();
+					boolean channelLocallyTransacted = RabbitTemplate.this.isChannelLocallyTransacted(channel);
+
+					if (channelLocallyTransacted) {
+						channel.basicAck(deliveryTag, false);
+					}
+					else if (channelTransacted) {
+						// Not locally transacted but it is transacted so it could be synchronized with an external transaction
+						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel, deliveryTag);
+					}
+
+					Message receiveMessage = RabbitTemplate.this.buildMessageFromResponse(response);
+
+					Object receive = receiveMessage;
+					if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
+						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
+					}
+
+					S reply = null;
+					try {
+						reply = callback.handle((R) receive);
+					}
+					catch (ClassCastException e) {
+						StackTraceElement[] trace = e.getStackTrace();
+						if (trace[0].getMethodName().equals("handle") && trace[1].getFileName().equals("RabbitTemplate.java")) {
+							throw new IllegalArgumentException("ReceiveAndReplyCallback '" + callback
+									+ "' can't handle received object '" + receive + "'", e);
+						}
+						else {
+							throw e;
+						}
+					}
+
+					if (reply != null) {
+						Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
+
+						Message replyMessage = RabbitTemplate.this.convertMessageIfNecessary(reply);
+
+						MessageProperties receiveMessageProperties = receiveMessage.getMessageProperties();
+						MessageProperties replyMessageProperties = replyMessage.getMessageProperties();
+
+						Object correlation = RabbitTemplate.this.correlationKey == null
+								? receiveMessageProperties.getCorrelationId()
+								: receiveMessageProperties.getHeaders().get(RabbitTemplate.this.correlationKey);
+
+						if (RabbitTemplate.this.correlationKey == null || correlation == null) {
+							// using standard correlationId property
+							if (correlation == null) {
+								String messageId = receiveMessageProperties.getMessageId();
+								if (messageId != null) {
+									correlation = messageId.getBytes(RabbitTemplate.this.encoding);
+								}
+							}
+							replyMessageProperties.setCorrelationId((byte[]) correlation);
+						}
+						else {
+							replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey, correlation);
+						}
+
+						// 'doSend()' takes care about 'channel.txCommit()'.
+						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(), replyMessage, null);
+					}
+					else if (channelLocallyTransacted) {
+						channel.txCommit();
+					}
+
+					return true;
+				}
+				return false;
+			}
+		});
 	}
 
 	public Message sendAndReceive(final Message message) throws AmqpException {
@@ -521,6 +666,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+
 			public Message doInRabbit(Channel channel) throws Exception {
 				final ArrayBlockingQueue<Message> replyHandoff = new ArrayBlockingQueue<Message>(1);
 
@@ -535,9 +681,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				boolean noLocal = true;
 				boolean exclusive = true;
 				DefaultConsumer consumer = new DefaultConsumer(channel) {
+
 					@Override
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-							byte[] body) throws IOException {
+											   byte[] body) throws IOException {
 						MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
 								properties, envelope, encoding);
 						Message reply = new Message(body, messageProperties);
@@ -546,7 +693,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						}
 						try {
 							replyHandoff.put(reply);
-						} catch (InterruptedException e) {
+						}
+						catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
 					}
@@ -564,6 +712,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
 				String messageTag = UUID.randomUUID().toString();
@@ -587,7 +736,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				}
 				else {
 					savedCorrelation = (String) message.getMessageProperties()
-						.getHeaders().get(RabbitTemplate.this.correlationKey);
+							.getHeaders().get(RabbitTemplate.this.correlationKey);
 				}
 				pendingReply.setSavedCorrelation(savedCorrelation);
 				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
@@ -694,6 +843,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
 	}
 
+	private Message buildMessageFromResponse(GetResponse response) {
+		MessageProperties messageProps = this.messagePropertiesConverter.toMessageProperties(
+				response.getProps(), response.getEnvelope(), this.encoding);
+		messageProps.setMessageCount(response.getMessageCount());
+		return new Message(response.getBody(), messageProps);
+	}
+
 	private MessageConverter getRequiredMessageConverter() throws IllegalStateException {
 		MessageConverter converter = this.getMessageConverter();
 		if (converter == null) {
@@ -709,6 +865,32 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			throw new AmqpIllegalStateException("No 'queue' specified. Check configuration of RabbitTemplate.");
 		}
 		return name;
+	}
+
+	/**
+	 * Determine a reply-to Address for the given message.
+	 * <p>
+	 * The default implementation first checks the Rabbit Reply-To Address of the supplied request; if that is not
+	 * <code>null</code> it is returned; if it is <code>null</code>, then the configured default Exchange and
+	 * routing key are used to construct a reply-to Address. If the exchange property is also <code>null</code>,
+	 * then an {@link AmqpException} is thrown.
+	 * @param request the original incoming Rabbit message
+	 * @return the reply-to Address (never <code>null</code>)
+	 * @throws AmqpException if no {@link Address} can be determined
+	 * @see org.springframework.amqp.core.Message#getMessageProperties()
+	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
+	 */
+	private Address getReplyToAddress(Message request) throws AmqpException {
+		Address replyTo = request.getMessageProperties().getReplyToAddress();
+		if (replyTo == null) {
+			if (this.exchange == null) {
+				throw new AmqpException(
+						"Cannot determine ReplyTo message property value: "
+								+ "Request message does not contain reply-to property, and no default Exchange was set.");
+			}
+			replyTo = new Address(null, this.exchange, this.routingKey);
+		}
+		return replyTo;
 	}
 
 	private void addListener(Channel channel) {
