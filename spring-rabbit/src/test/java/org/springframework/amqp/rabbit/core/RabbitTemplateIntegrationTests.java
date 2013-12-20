@@ -41,6 +41,8 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -64,6 +66,14 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 
+/**
+ * @author Dave Syer
+ * @author Mark Fisher
+ * @author Tomas Lukosius
+ * @author Gary Russell
+ * @author Gunnar Hillert
+ * @author Artem Bilan
+ */
 public class RabbitTemplateIntegrationTests {
 
 	private static final String ROUTE = "test.queue";
@@ -696,6 +706,49 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals(null, result);
 	}
 
+	@Test
+	public void testReceiveAndReply() {
+		this.template.setQueue(ROUTE);
+		this.template.setRoutingKey(ROUTE);
+		this.template.convertAndSend(ROUTE, "test");
+		this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				message.getMessageProperties().setHeader("foo", "bar");
+				return message;
+			}
+		});
+		Message receive = this.template.receive();
+		assertEquals("bar", receive.getMessageProperties().getHeaders().get("foo"));
+
+		this.template.convertAndSend(ROUTE, 1);
+
+		this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+
+			@Override
+			public Integer handle(Integer payload) {
+				return payload + 1;
+			}
+		});
+		Object result = this.template.receiveAndConvert(ROUTE);
+		assertTrue(result instanceof Integer);
+		assertEquals(2, result);
+
+		this.template.convertAndSend(ROUTE, 2);
+
+		this.template.receiveAndReplyTo(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+
+			@Override
+			public Integer handle(Integer payload) {
+				return payload * 2;
+			}
+		}, "", ROUTE);
+
+		result = this.template.receiveAndConvert(ROUTE);
+		assertTrue(result instanceof Integer);
+		assertEquals(4, result);
+	}
 
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {

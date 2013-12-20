@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
  *
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Artem Bilan
  */
 public interface AmqpTemplate {
 
@@ -157,6 +158,18 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	Object receiveAndConvert(String queueName) throws AmqpException;
+
+
+	<R, S> void receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException;
+
+	<R, S> void receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException;
+
+	<R, S> void receiveAndReplyTo(ReceiveAndReplyCallback<R, S> callback, String exchange, String routingKey)
+			throws AmqpException;
+
+	<R, S> void receiveAndReplyTo(String queueName, ReceiveAndReplyCallback<R, S> callback, String exchange,
+								  String routingKey) throws AmqpException;
+
 
 	// send and receive methods for messages
 
