@@ -14,6 +14,8 @@
 package org.springframework.amqp.core;
 
 /**
+ * {@link Message} exchanging contract of {@link ReceiveAndReplyCallback}.
+ *
  * @author Artem Bilan
  * @since 1.3
  */

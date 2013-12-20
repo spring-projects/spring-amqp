@@ -18,6 +18,7 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.core.ReplyToAddressCallback;
 
 /**
  * @author David Bilge
@@ -93,22 +94,36 @@ public abstract class AbstractAmqpTemplate implements AmqpTemplate {
 	}
 
 	@Override
-	public <R, S> void receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <R, S> void receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <R, S> void receiveAndReplyTo(ReceiveAndReplyCallback<R, S> callback, String exchange, String routingKey) throws AmqpException {
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, String exchange, String routingKey)
+			throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public <R, S> void receiveAndReplyTo(String queueName, ReceiveAndReplyCallback<R, S> callback, String exchange, String routingKey) throws AmqpException {
+	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback, String replyExchange,
+										  String replyRoutingKey) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
+			throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 

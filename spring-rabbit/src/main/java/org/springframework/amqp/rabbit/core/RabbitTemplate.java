@@ -38,6 +38,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
+import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -143,11 +144,11 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	private volatile String correlationKey = null;
 
 
-	private final ReplyToAddressCallback defaultReplyToAddressCallback = new ReplyToAddressCallback() {
+	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
 
 		@Override
-		public Address getReplyToAddress(Message message) {
-			return RabbitTemplate.this.getReplyToAddress(message);
+		public Address getReplyToAddress(Message request, Object reply) {
+			return RabbitTemplate.this.getReplyToAddress(request);
 		}
 
 	};
@@ -466,49 +467,65 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	@Override
-	public <R, S> void receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
-		this.receiveAndReply(this.getRequiredQueue(), callback);
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+		return this.receiveAndReply(this.getRequiredQueue(), callback);
 	}
 
 	@Override
-	public <R, S> void receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
-		this.doReceiveAndReplyTo(queueName, callback, this.defaultReplyToAddressCallback);
+	@SuppressWarnings("unchecked")
+	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
+		return this.receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
 
 	}
 
 	@Override
-	public <R, S> void receiveAndReplyTo(ReceiveAndReplyCallback<R, S> callback, final String exchange, final String routingKey)
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, final String exchange, final String routingKey)
 			throws AmqpException {
-		this.receiveAndReplyTo(this.getRequiredQueue(), callback, exchange, routingKey);
+		return this.receiveAndReply(this.getRequiredQueue(), callback, exchange, routingKey);
 	}
 
 	@Override
-	public <R, S> void receiveAndReplyTo(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String exchange,
-										 final String routingKey) throws AmqpException {
-		this.doReceiveAndReplyTo(queueName, callback, new ReplyToAddressCallback() {
+	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
+										  final String replyRoutingKey) throws AmqpException {
+		return this.receiveAndReply(queueName, callback, new ReplyToAddressCallback<S>() {
 
 			@Override
-			public Address getReplyToAddress(Message message) {
-				return new Address(null, exchange, routingKey);
+			public Address getReplyToAddress(Message request, S reply) {
+				return new Address(null, replyExchange, replyRoutingKey);
 			}
 
 		});
 	}
 
-	private <R, S> void doReceiveAndReplyTo(final String queueName, ReceiveAndReplyCallback<R, S> callback,
-											ReplyToAddressCallback replyToAddressCallback) throws AmqpException {
+	@Override
+	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
+			throws AmqpException {
+		return this.receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
+	}
+
+	@Override
+	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+		return this.doReceiveAndReply(queueName, callback, replyToAddressCallback);
+	}
+
+	private <R, S> boolean doReceiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback,
+											 ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		Message message = this.receive(queueName);
 		if (message != null) {
-			Address replyTo = replyToAddressCallback.getReplyToAddress(message);
 			Object receive = message;
 			if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
 				receive = getRequiredMessageConverter().fromMessage(message);
 			}
 			@SuppressWarnings("unchecked")
 			S reply = callback.handle((R) receive);
-			Assert.notNull(reply, "'reply' must not be 'null'. Use 'receive' methods instead.");
-			this.convertAndSend(replyTo.getExchangeName(), replyTo.getRoutingKey(), reply);
+			if (reply != null) {
+				Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
+				this.convertAndSend(replyTo.getExchangeName(), replyTo.getRoutingKey(), reply);
+			}
+			return true;
 		}
+		return false;
 	}
 
 	public Message sendAndReceive(final Message message) throws AmqpException {
@@ -779,8 +796,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * Determine a reply-to Address for the given message.
 	 * <p>
 	 * The default implementation first checks the Rabbit Reply-To Address of the supplied request; if that is not
-	 * <code>null</code> it is returned; if it is <code>null</code>, then the configured default response Exchange and
-	 * routing key are used to construct a reply-to Address. If the responseExchange property is also <code>null</code>,
+	 * <code>null</code> it is returned; if it is <code>null</code>, then the configured default Exchange and
+	 * routing key are used to construct a reply-to Address. If the exchange property is also <code>null</code>,
 	 * then an {@link AmqpException} is thrown.
 	 * @param request the original incoming Rabbit message
 	 * @return the reply-to Address (never <code>null</code>)
@@ -965,11 +982,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			return queue;
 		}
 
-	}
-
-	private interface ReplyToAddressCallback {
-
-		Address getReplyToAddress(Message message);
 	}
 
 	public interface ConfirmCallback {

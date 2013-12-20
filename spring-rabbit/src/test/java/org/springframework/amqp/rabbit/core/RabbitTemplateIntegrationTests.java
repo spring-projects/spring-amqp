@@ -14,7 +14,9 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -38,11 +40,13 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
+import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -711,7 +715,8 @@ public class RabbitTemplateIntegrationTests {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		this.template.convertAndSend(ROUTE, "test");
-		this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+		boolean received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
 			@Override
 			public Message handle(Message message) {
@@ -719,35 +724,85 @@ public class RabbitTemplateIntegrationTests {
 				return message;
 			}
 		});
+		assertTrue(received);
+
 		Message receive = this.template.receive();
 		assertEquals("bar", receive.getMessageProperties().getHeaders().get("foo"));
 
 		this.template.convertAndSend(ROUTE, 1);
 
-		this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+		received = this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
 
 			@Override
 			public Integer handle(Integer payload) {
 				return payload + 1;
 			}
 		});
+		assertTrue(received);
+
 		Object result = this.template.receiveAndConvert(ROUTE);
 		assertTrue(result instanceof Integer);
 		assertEquals(2, result);
 
 		this.template.convertAndSend(ROUTE, 2);
 
-		this.template.receiveAndReplyTo(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+		received = this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
 
 			@Override
 			public Integer handle(Integer payload) {
 				return payload * 2;
 			}
 		}, "", ROUTE);
+		assertTrue(received);
 
 		result = this.template.receiveAndConvert(ROUTE);
 		assertTrue(result instanceof Integer);
 		assertEquals(4, result);
+
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				return message;
+			}
+		});
+		assertFalse(received);
+
+		this.template.convertAndSend(ROUTE, "test");
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				return null;
+			}
+		});
+		assertTrue(received);
+
+		result = this.template.receive();
+		assertNull(result);
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				MessageProperties messageProperties = new MessageProperties();
+				messageProperties.setContentType(message.getMessageProperties().getContentType());
+				messageProperties.setHeader("testReplyTo", new Address("", "", ROUTE));
+				return new Message(message.getBody(), messageProperties);
+			}
+
+		}, new ReplyToAddressCallback<Message>() {
+
+			@Override
+			public Address getReplyToAddress(Message request, Message reply) {
+				return (Address) reply.getMessageProperties().getHeaders().get("testReplyTo");
+			}
+
+		});
+		assertTrue(received);
+		result = this.template.receiveAndConvert(ROUTE);
+		assertEquals("TEST", result);
 	}
 
 	@SuppressWarnings("serial")

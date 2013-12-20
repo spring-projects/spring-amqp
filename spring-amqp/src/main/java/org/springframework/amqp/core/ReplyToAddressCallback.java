@@ -15,15 +15,16 @@ package org.springframework.amqp.core;
 
 /**
  * To be used with the receive-and-reply methods of {@link org.springframework.amqp.core.AmqpTemplate}
- * as processor for inbound object and producer for outbound object.
+ * to determine {@link org.springframework.amqp.core.Address} for {@link org.springframework.amqp.core.Message}
+ * to send at runtime.
  *
  * <p>This often as an anonymous class within a method implementation.
  *
- * @author Artem Bilan
- * @since 1.3
- */
-public interface ReceiveAndReplyCallback<R, S> {
+* @author Artem Bilan
+* @since 1.3
+*/
+public interface ReplyToAddressCallback<T> {
 
-	S handle(R payload);
+	Address getReplyToAddress(Message request, T reply);
 
 }

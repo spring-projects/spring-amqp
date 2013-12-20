@@ -515,7 +515,7 @@ template.send(new Message("Hello World".getBytes(), someProperties));]]></progra
     </section>
   </section>
 
-  <section>
+  <section id="receiving-messages">
     <title>Receiving messages</title>
 
     <para>Message reception is always a bit more complicated than sending. The
@@ -553,6 +553,36 @@ Message receive(String queueName) throws AmqpException;]]></programlisting>
 
 Object receiveAndConvert(String queueName) throws AmqpException;]]></programlisting>
       </para>
+	  <para>As opposed to <code>sendAndReceive</code> methods <interfacename>AmqpTemplate</interfacename>
+		    has several convenience <code>receiveAndReply</code> methods for
+			receiving, processing and replying messages or POJOs:
+	  <programlisting language="java"><![CDATA[<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback)
+	   throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback)
+ 	throws AmqpException;
+
+<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback,
+	String replyExchange, String replyRoutingKey) throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+	String replyExchange, String replyRoutingKey) throws AmqpException;
+
+<R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback,
+ 	ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException;
+
+<R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
+			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException;]]></programlisting>
+		  <interfacename>AmqpTemplate</interfacename> implementation takes care of 'receive' and 'reply' phases.
+		  In most cases you should provide only implementation of <interfacename>ReceiveAndReplyCallback</interfacename>
+		  processor to do some business logic for received message and build reply message, if need.
+		  Note, a <interfacename>ReceiveAndReplyCallback</interfacename> may return <code>null</code>. In this case
+		  there won't be sent any reply and <code>receiveAndReply</code> works like <code>receive</code> method.
+		  The automatic message conversion is applied only if provided callback is not an instance of
+		  <interfacename>ReceiveAndReplyMessageCallback</interfacename> - message exchanging contract.
+		  <interfacename>ReplyToAddressCallback</interfacename> is useful for cases to determine <code>replyTo</code>
+		  address at runtime against received message and reply from <interfacename>ReceiveAndReplyCallback</interfacename>.
+		</para>
     </section>
 
     <section id="async-consumer"><title>Asynchronous Consumer</title><para>For asynchronous Message
