@@ -509,23 +509,49 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		return this.doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
-	private <R, S> boolean doReceiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback,
-											 ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
-		Message message = this.receive(queueName);
-		if (message != null) {
-			Object receive = message;
-			if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
-				receive = getRequiredMessageConverter().fromMessage(message);
+	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
+											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+		return this.execute(new ChannelCallback<Boolean>() {
+
+			@Override
+			public Boolean doInRabbit(Channel channel) throws Exception {
+				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
+				// Response can be null is the case that there is no message on the queue.
+				if (response != null) {
+					long deliveryTag = response.getEnvelope().getDeliveryTag();
+					if (isChannelLocallyTransacted(channel)) {
+						channel.basicAck(deliveryTag, false);
+						channel.txCommit();
+					}
+					else if (isChannelTransacted()) {
+						// Not locally transacted but it is transacted so it
+						// could be synchronized with an external transaction
+						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+					}
+
+					MessageProperties messageProps = RabbitTemplate.this.messagePropertiesConverter.toMessageProperties(
+							response.getProps(), response.getEnvelope(), RabbitTemplate.this.encoding);
+					messageProps.setMessageCount(response.getMessageCount());
+					Message message = new Message(response.getBody(), messageProps);
+
+					Object receive = message;
+					if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
+						receive = getRequiredMessageConverter().fromMessage(message);
+					}
+
+					@SuppressWarnings("unchecked")
+					S reply = callback.handle((R) receive);
+					if (reply != null) {
+						Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
+						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(),
+								RabbitTemplate.this.convertMessageIfNecessary(reply), null);
+					}
+
+					return true;
+				}
+				return false;
 			}
-			@SuppressWarnings("unchecked")
-			S reply = callback.handle((R) receive);
-			if (reply != null) {
-				Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
-				this.convertAndSend(replyTo.getExchangeName(), replyTo.getRoutingKey(), reply);
-			}
-			return true;
-		}
-		return false;
+		});
 	}
 
 	public Message sendAndReceive(final Message message) throws AmqpException {

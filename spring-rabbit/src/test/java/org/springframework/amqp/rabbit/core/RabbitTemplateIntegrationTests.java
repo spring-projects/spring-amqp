@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.junit.After;
@@ -62,6 +63,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
@@ -803,6 +805,61 @@ public class RabbitTemplateIntegrationTests {
 		assertTrue(received);
 		result = this.template.receiveAndConvert(ROUTE);
 		assertEquals("TEST", result);
+
+		assertEquals(null, template.receive(ROUTE));
+
+		template.setChannelTransacted(true);
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		result = new TransactionTemplate(new TestTransactionManager())
+				.execute(new TransactionCallback<String>() {
+					public String doInTransaction(TransactionStatus status) {
+						final AtomicReference<String> payloadReference = new AtomicReference<String>();
+						boolean received = template.receiveAndReply(new ReceiveAndReplyCallback<String, Void>() {
+
+							@Override
+							public Void handle(String payload) {
+								payloadReference.set(payload);
+								return null;
+							}
+						});
+						assertTrue(received);
+						return payloadReference.get();
+					}
+				});
+		assertEquals("TEST", result);
+		assertEquals(null, template.receive(ROUTE));
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		try {
+			new TransactionTemplate(new TestTransactionManager())
+					.execute(new TransactionCallbackWithoutResult() {
+
+						public void doInTransactionWithoutResult(TransactionStatus status) {
+							template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+														 @Override
+														 public Message handle(Message message) {
+															 return message;
+														 }
+													 }, new ReplyToAddressCallback<Message>() {
+
+														 @Override
+														 public Address getReplyToAddress(Message request, Message reply) {
+															 throw new PlannedException();
+														 }
+													 });
+						}
+					});
+			fail("Expected PlannedException");
+		}
+		catch (Exception e) {
+			assertTrue(e.getCause() instanceof PlannedException);
+		}
+
+		assertEquals("TEST", template.receiveAndConvert(ROUTE));
+		assertEquals(null, template.receive(ROUTE));
+
 	}
 
 	@SuppressWarnings("serial")
