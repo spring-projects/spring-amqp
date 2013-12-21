@@ -444,10 +444,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						// could be synchronized with an external transaction
 						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
 					}
-					MessageProperties messageProps = messagePropertiesConverter.toMessageProperties(
-							response.getProps(), response.getEnvelope(), encoding);
-					messageProps.setMessageCount(response.getMessageCount());
-					return new Message(response.getBody(), messageProps);
+
+					return RabbitTemplate.this.buildMessageFromResponse(response);
 				}
 				return null;
 			}
@@ -515,28 +513,29 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 			@Override
 			public Boolean doInRabbit(Channel channel) throws Exception {
-				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
+				boolean channelTransacted = RabbitTemplate.this.isChannelTransacted();
+
+				GetResponse response = channel.basicGet(queueName, !channelTransacted);
 				// Response can be null is the case that there is no message on the queue.
 				if (response != null) {
 					long deliveryTag = response.getEnvelope().getDeliveryTag();
-					if (isChannelLocallyTransacted(channel)) {
+					boolean channelLocallyTransacted = RabbitTemplate.this.isChannelLocallyTransacted(channel);
+
+					if (channelLocallyTransacted) {
 						channel.basicAck(deliveryTag, false);
-						channel.txCommit();
 					}
-					else if (isChannelTransacted()) {
+					else if (channelTransacted) {
 						// Not locally transacted but it is transacted so it
 						// could be synchronized with an external transaction
-						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel,
+								deliveryTag);
 					}
 
-					MessageProperties messageProps = RabbitTemplate.this.messagePropertiesConverter.toMessageProperties(
-							response.getProps(), response.getEnvelope(), RabbitTemplate.this.encoding);
-					messageProps.setMessageCount(response.getMessageCount());
-					Message message = new Message(response.getBody(), messageProps);
+					Message message = RabbitTemplate.this.buildMessageFromResponse(response);
 
 					Object receive = message;
 					if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
-						receive = getRequiredMessageConverter().fromMessage(message);
+						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(message);
 					}
 
 					@SuppressWarnings("unchecked")
@@ -545,6 +544,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
 						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(),
 								RabbitTemplate.this.convertMessageIfNecessary(reply), null);
+					}
+					else if (channelLocallyTransacted) {
+						channel.txCommit();
 					}
 
 					return true;
@@ -628,6 +630,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+
 			public Message doInRabbit(Channel channel) throws Exception {
 				final ArrayBlockingQueue<Message> replyHandoff = new ArrayBlockingQueue<Message>(1);
 
@@ -642,9 +645,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				boolean noLocal = true;
 				boolean exclusive = true;
 				DefaultConsumer consumer = new DefaultConsumer(channel) {
+
 					@Override
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-							byte[] body) throws IOException {
+											   byte[] body) throws IOException {
 						MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
 								properties, envelope, encoding);
 						Message reply = new Message(body, messageProperties);
@@ -653,7 +657,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						}
 						try {
 							replyHandoff.put(reply);
-						} catch (InterruptedException e) {
+						}
+						catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
 					}
@@ -671,6 +676,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
 				String messageTag = UUID.randomUUID().toString();
@@ -694,7 +700,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				}
 				else {
 					savedCorrelation = (String) message.getMessageProperties()
-						.getHeaders().get(RabbitTemplate.this.correlationKey);
+							.getHeaders().get(RabbitTemplate.this.correlationKey);
 				}
 				pendingReply.setSavedCorrelation(savedCorrelation);
 				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
@@ -799,6 +805,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 */
 	protected boolean isChannelLocallyTransacted(Channel channel) {
 		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
+	}
+
+	private Message buildMessageFromResponse(GetResponse response) {
+		MessageProperties messageProps = this.messagePropertiesConverter.toMessageProperties(
+				response.getProps(), response.getEnvelope(), this.encoding);
+		messageProps.setMessageCount(response.getMessageCount());
+		return new Message(response.getBody(), messageProps);
 	}
 
 	private MessageConverter getRequiredMessageConverter() throws IllegalStateException {
