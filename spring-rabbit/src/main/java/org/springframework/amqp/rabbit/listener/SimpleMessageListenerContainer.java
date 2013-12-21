@@ -854,7 +854,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
 						&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText())) {
 					logger.debug("Consumer received Shutdown Signal, processing stopped.", e);
-					aborted = true;
 				}
 				else {
 					this.logConsumerException(e);
