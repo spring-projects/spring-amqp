@@ -542,8 +542,19 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 					S reply = callback.handle((R) receive);
 					if (reply != null) {
 						Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
+						Message replyMessage = RabbitTemplate.this.convertMessageIfNecessary(reply);
+						byte[] correlation = message.getMessageProperties().getCorrelationId();
+
+						if (correlation == null) {
+							String messageId = message.getMessageProperties().getMessageId();
+							if (messageId != null) {
+								correlation = messageId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET);
+							}
+						}
+						replyMessage.getMessageProperties().setCorrelationId(correlation);
+
 						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(),
-								RabbitTemplate.this.convertMessageIfNecessary(reply), null);
+								replyMessage, null);
 					}
 					else if (channelLocallyTransacted) {
 						channel.txCommit();

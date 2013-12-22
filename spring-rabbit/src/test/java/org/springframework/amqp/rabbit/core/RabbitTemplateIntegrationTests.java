@@ -23,12 +23,17 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
@@ -55,6 +60,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionDefinition;
@@ -199,6 +205,7 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 		String result = template.execute(new ChannelCallback<String>() {
+
 			public String doInRabbit(Channel channel) throws Exception {
 				// We need noAck=false here for the message to be expicitly
 				// acked
@@ -860,6 +867,75 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals("TEST", template.receiveAndConvert(ROUTE));
 		assertEquals(null, template.receive(ROUTE));
 
+	}
+
+	@Test
+	public void testSymmetricalReceiveAndReply() throws InterruptedException {
+		this.template.setQueue(ROUTE);
+		this.template.setRoutingKey(ROUTE);
+		this.template.setReplyTimeout(10000);
+
+		int count = 10;
+
+		final Map<Double, Object> results = new HashMap<Double, Object>(count);
+
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+
+		final CountDownLatch termination = new CountDownLatch(count);
+
+		for (int i = 0; i < count; i++) {
+			executor.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Double request = Math.random() * 100;
+					Object reply = template.convertSendAndReceive(request);
+					results.put(request, reply);
+					termination.countDown();
+				}
+			});
+		}
+
+		for (int i = 0; i < count; i++) {
+			executor.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Double request = Math.random() * 100;
+					MessageProperties messageProperties = new MessageProperties();
+					messageProperties.setCorrelationId(SerializationUtils.serialize(UUID.randomUUID()));
+					messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+					Message reply = template.sendAndReceive(new Message(SerializationUtils.serialize(request), messageProperties));
+					results.put(request, SerializationUtils.deserialize(reply.getBody()));
+					termination.countDown();
+				}
+			});
+		}
+
+		final AtomicInteger receiveCount = new AtomicInteger();
+
+		long start = System.currentTimeMillis();
+		do {
+			template.receiveAndReply(new ReceiveAndReplyCallback<Double, Double>() {
+
+				@Override
+				public Double handle(Double payload) {
+					receiveCount.incrementAndGet();
+					return payload * 3;
+				}
+			});
+			if (System.currentTimeMillis() > start + 10000) {
+				fail("Something wrong with RabbitMQ");
+			}
+		}
+		while (receiveCount.get() < count * 2);
+
+		assertTrue(termination.await(10, TimeUnit.SECONDS));
+
+		for (Map.Entry<Double, Object> entry : results.entrySet()) {
+			assertEquals(entry.getKey() * 3, entry.getValue());
+		}
+		executor.shutdownNow();
 	}
 
 	@SuppressWarnings("serial")
