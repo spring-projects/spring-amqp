@@ -398,6 +398,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				Mockito.eq("Consumer received Shutdown Signal, processing stopped."),
 				Mockito.any(ShutdownSignalException.class));
 		Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
+		container.stop();
 	}
 
 	public static class PojoListener {
