@@ -21,7 +21,6 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.util.StringUtils;
 
 /**
  * @author Dave Syer
@@ -44,10 +43,7 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
-		String bindingKey = binding.getAttribute(BINDING_KEY_ATTR);
-		if (!StringUtils.hasText(bindingKey)) {
-			bindingKey = "";
-		}
+		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) : null;
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
 		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder;

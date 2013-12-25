@@ -20,6 +20,14 @@
 				See <xref linkend="broker-configuration" />.
 			</para>
 		</section>
+		<section>
+			<title>Direct Exchange Binding</title>
+			<para>
+				Omitting <code>key</code> attribute from <code>binding</code> element
+				of the <code>direct-exchange</code> configuration now ends up with real binding to
+				the name of the provided <classname>Queue</classname> or <classname>Exchange</classname>.
+			</para>
+		</section>
 	</section>
 
 	<section>

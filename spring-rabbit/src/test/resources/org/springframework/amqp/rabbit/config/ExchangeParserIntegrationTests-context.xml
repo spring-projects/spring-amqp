@@ -8,6 +8,7 @@
 	<direct-exchange name="directTest">
 		<bindings>
 			<binding queue="bucket" />
+			<binding queue="bucket2" key="" />
 		</bindings>
 	</direct-exchange>
 
@@ -30,6 +31,7 @@
 	</headers-exchange>
 
 	<queue id="bucket" />
+	<queue id="bucket2" />
 
 	<admin id="admin-test" connection-factory="connectionFactory" auto-startup="true"/>
 
