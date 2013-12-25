@@ -20,6 +20,17 @@
 				See <xref linkend="broker-configuration" />.
 			</para>
 		</section>
+		<section>
+			<title>Direct Exchange Binding</title>
+			<para>
+				Previously, omitting the <code>key</code> attribute from a <code>binding</code> element
+				of a <code>direct-exchange</code> configuration caused the queue or exchange to be bound with an
+				empty string as the routing key. Now it is bound with the
+				the name of the provided <classname>Queue</classname> or <classname>Exchange</classname>.
+				Users wishing to bind with an empty string routing key need to specify
+				<code>key=""</code>.
+			</para>
+		</section>
 	</section>
 
 	<section>

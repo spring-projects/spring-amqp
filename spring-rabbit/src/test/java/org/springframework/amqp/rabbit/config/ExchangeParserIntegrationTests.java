@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +30,12 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+/**
+ * @author Dave Syer
+ * @author Gary Russell
+ * @author Gunnar Hillert
+ * @author Artem Bilan
+ */
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
@@ -44,20 +51,54 @@ public final class ExchangeParserIntegrationTests {
 	private Exchange fanoutTest;
 
 	@Autowired
+	private Exchange directTest;
+
+	@Autowired
 	@Qualifier("bucket")
 	private Queue queue;
+
+	@Autowired
+	@Qualifier("bucket2")
+	private Queue queue2;
 
 	@Test
 	public void testBindingsDeclared() throws Exception {
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.convertAndSend(fanoutTest.getName(), "", "message");
+		template.convertAndSend(fanoutTest.getName(), queue.getName(), "message");
 		Thread.sleep(200);
 		// The queue is anonymous so it will be deleted at the end of the test, but it should get the message as long as
 		// we use the same connection
 		String result = (String) template.receiveAndConvert(queue.getName());
 		assertEquals("message", result);
+		result = (String) template.receiveAndConvert(queue.getName());
+		assertEquals("message", result);
+	}
 
+	@Test
+	public void testDirectExchangeBindings() throws Exception {
+
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+
+		template.convertAndSend(directTest.getName(), queue.getName(), "message");
+		Thread.sleep(200);
+
+		String result = (String) template.receiveAndConvert(queue.getName());
+		assertEquals("message", result);
+
+		template.convertAndSend(directTest.getName(), "", "message2");
+		Thread.sleep(200);
+
+		assertNull(template.receiveAndConvert(queue.getName()));
+
+		result = (String) template.receiveAndConvert(queue2.getName());
+		assertEquals("message2", result);
+
+		template.convertAndSend(directTest.getName(), queue2.getName(), "message2");
+		Thread.sleep(200);
+
+		assertNull(template.receiveAndConvert(queue2.getName()));
 	}
 
 }
