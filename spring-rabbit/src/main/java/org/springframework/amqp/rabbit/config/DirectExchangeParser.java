@@ -42,10 +42,11 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
-		String queueAttribute = binding.getAttribute(BINDING_QUEUE_ATTR);
+		String queueId = binding.getAttribute(BINDING_QUEUE_ATTR);
+		String exchangeId = binding.getAttribute(BINDING_EXCHANGE_ATTR);
 
 		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) :
-				StringUtils.hasText(queueAttribute) ? queueAttribute : binding.getAttribute(BINDING_EXCHANGE_ATTR);
+				"#{@" + (StringUtils.hasText(queueId) ? queueId : exchangeId)  + ".name}";
 
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
 		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
