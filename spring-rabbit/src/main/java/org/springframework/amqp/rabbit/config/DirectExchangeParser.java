@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,12 +21,11 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Dave Syer
  * @author Gary Russell
- *
- *
  */
 public class DirectExchangeParser extends AbstractExchangeParser {
 
@@ -39,11 +38,15 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 
 	@Override
 	protected BeanDefinitionBuilder parseBinding(String exchangeName, Element binding,
-			ParserContext parserContext) {
+												 ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
-		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) : null;
+		String queueAttribute = binding.getAttribute(BINDING_QUEUE_ATTR);
+
+		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) :
+				StringUtils.hasText(queueAttribute) ? queueAttribute : binding.getAttribute(BINDING_EXCHANGE_ATTR);
+
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
 		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder;

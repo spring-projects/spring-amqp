@@ -74,7 +74,7 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 			destination = destinationExchange.getName();
 			destinationType = DestinationType.EXCHANGE;
 		}
-		Binding binding = new Binding(destination, destinationType, exchange, routingKey != null ? routingKey : destination, arguments);
+		Binding binding = new Binding(destination, destinationType, exchange, routingKey, arguments);
 		if (this.shouldDeclare != null) {
 			binding.setShouldDeclare(this.shouldDeclare);
 		}
