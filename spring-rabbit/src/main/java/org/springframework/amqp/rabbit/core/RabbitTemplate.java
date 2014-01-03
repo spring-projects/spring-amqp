@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -516,7 +516,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				boolean channelTransacted = RabbitTemplate.this.isChannelTransacted();
 
 				GetResponse response = channel.basicGet(queueName, !channelTransacted);
-				// Response can be null is the case that there is no message on the queue.
+				// Response can be null in the case that there is no message on the queue.
 				if (response != null) {
 					long deliveryTag = response.getEnvelope().getDeliveryTag();
 					boolean channelLocallyTransacted = RabbitTemplate.this.isChannelLocallyTransacted(channel);
@@ -527,34 +527,36 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 					else if (channelTransacted) {
 						// Not locally transacted but it is transacted so it
 						// could be synchronized with an external transaction
-						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel,
-								deliveryTag);
+						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel, deliveryTag);
 					}
 
-					Message message = RabbitTemplate.this.buildMessageFromResponse(response);
+					Message receiveMessage = RabbitTemplate.this.buildMessageFromResponse(response);
 
-					Object receive = message;
+					Object receive = receiveMessage;
 					if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
-						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(message);
+						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
 					}
 
 					@SuppressWarnings("unchecked")
 					S reply = callback.handle((R) receive);
 					if (reply != null) {
-						Address replyTo = replyToAddressCallback.getReplyToAddress(message, reply);
+						Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
+
 						Message replyMessage = RabbitTemplate.this.convertMessageIfNecessary(reply);
-						byte[] correlation = message.getMessageProperties().getCorrelationId();
 
-						if (correlation == null) {
-							String messageId = message.getMessageProperties().getMessageId();
-							if (messageId != null) {
-								correlation = messageId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET);
-							}
+						MessageProperties receiveMessageProperties = receiveMessage.getMessageProperties();
+						MessageProperties replyMessageProperties = replyMessage.getMessageProperties();
+
+						if (RabbitTemplate.this.correlationKey == null) {
+							// using standard correlationId property
+							replyMessageProperties.setCorrelationId(receiveMessageProperties.getCorrelationId());
 						}
-						replyMessage.getMessageProperties().setCorrelationId(correlation);
+						else {
+							replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey,
+									receiveMessageProperties.getHeaders().get(RabbitTemplate.this.correlationKey));
+						}
 
-						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(),
-								replyMessage, null);
+						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(), replyMessage, null);
 					}
 					else if (channelLocallyTransacted) {
 						channel.txCommit();

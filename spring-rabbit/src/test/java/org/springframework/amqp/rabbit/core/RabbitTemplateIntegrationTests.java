@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -50,11 +49,13 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -90,6 +91,8 @@ public class RabbitTemplateIntegrationTests {
 
 	private static final String ROUTE = "test.queue";
 
+	private static final Queue REPLY_QUEUE = new Queue("test.reply.queue");
+
 	private RabbitTemplate template;
 
 	@Before
@@ -105,7 +108,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
 
 	@Test
 	public void testSendToNonExistentAndThenReceive() throws Exception {
@@ -873,7 +876,14 @@ public class RabbitTemplateIntegrationTests {
 	public void testSymmetricalReceiveAndReply() throws InterruptedException {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
+		this.template.setReplyQueue(REPLY_QUEUE);
 		this.template.setReplyTimeout(10000);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConnectionFactory(this.template.getConnectionFactory());
+		container.setQueues(REPLY_QUEUE);
+		container.setMessageListener(this.template);
+		container.start();
 
 		int count = 10;
 
@@ -896,6 +906,8 @@ public class RabbitTemplateIntegrationTests {
 			});
 		}
 
+		this.template.setCorrelationKey("CorrelationKey");
+
 		for (int i = 0; i < count; i++) {
 			executor.execute(new Runnable() {
 
@@ -903,7 +915,6 @@ public class RabbitTemplateIntegrationTests {
 				public void run() {
 					Double request = Math.random() * 100;
 					MessageProperties messageProperties = new MessageProperties();
-					messageProperties.setCorrelationId(SerializationUtils.serialize(UUID.randomUUID()));
 					messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 					Message reply = template.sendAndReceive(new Message(SerializationUtils.serialize(request), messageProperties));
 					results.put(request, SerializationUtils.deserialize(reply.getBody()));
@@ -924,13 +935,16 @@ public class RabbitTemplateIntegrationTests {
 					return payload * 3;
 				}
 			});
-			if (System.currentTimeMillis() > start + 10000) {
+			if (System.currentTimeMillis() > start + 20000) {
 				fail("Something wrong with RabbitMQ");
 			}
+			Thread.sleep(100);
 		}
 		while (receiveCount.get() < count * 2);
 
 		assertTrue(termination.await(10, TimeUnit.SECONDS));
+
+		assertEquals(count * 2, results.size());
 
 		for (Map.Entry<Double, Object> entry : results.entrySet()) {
 			assertEquals(entry.getKey() * 3, entry.getValue());
