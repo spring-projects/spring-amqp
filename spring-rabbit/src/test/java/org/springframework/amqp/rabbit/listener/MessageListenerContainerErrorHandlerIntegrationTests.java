@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,10 +15,8 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +27,9 @@ import org.apache.log4j.Level;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -48,6 +49,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Dave Syer
  * @author Gunar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
@@ -60,6 +62,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 	// Mock error handler
 	private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
+	private volatile CountDownLatch errorsHandled;
+
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
@@ -70,7 +74,14 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 	@Before
 	public void setUp() {
-		reset(errorHandler);
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				errorsHandled.countDown();
+				return null;
+			}
+		}).when(errorHandler).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -79,9 +90,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new MessageListenerAdapter(new PojoThrowingExceptionListener(latch,
 				new Exception("Pojo exception"))));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -90,9 +98,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new MessageListenerAdapter(new PojoThrowingExceptionListener(latch,
 				new RuntimeException("Pojo runtime exception"))));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -101,9 +106,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionListener(latch,
 				new ListenerExecutionFailedException("Listener throws specific runtime exception", null)));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -112,9 +114,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionListener(latch, new RuntimeException(
 				"Listener runtime exception")));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -123,9 +122,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionChannelAwareListener(latch, new Exception(
 				"Channel aware listener exception")));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	@Test
@@ -134,13 +130,11 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionChannelAwareListener(latch,
 				new RuntimeException("Channel aware listener runtime exception")));
-
-		// Verify that error handler was invoked
-		verify(errorHandler, times(messageCount)).handleError(any(Throwable.class));
 	}
 
 	public void doTest(int messageCount, ErrorHandler errorHandler, CountDownLatch latch, Object listener)
 			throws Exception {
+		this.errorsHandled = new CountDownLatch(messageCount);
 		int concurrentConsumers = 1;
 		RabbitTemplate template = createTemplate(concurrentConsumers);
 
@@ -162,14 +156,17 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		boolean waited = latch.await(500, TimeUnit.MILLISECONDS);
-		if (messageCount > 1) {
-			assertTrue("Expected to receive all messages before stop", waited);
-		}
-
 		try {
+			boolean waited = latch.await(5000, TimeUnit.MILLISECONDS);
+			if (messageCount > 1) {
+				assertTrue("Expected to receive all messages before stop", waited);
+			}
+
+			assertTrue("Not enough error handling, remaining:" + this.errorsHandled.getCount(),
+					this.errorsHandled.await(10, TimeUnit.SECONDS));
 			assertNull(template.receiveAndConvert(queue.getName()));
-		} finally {
+		}
+		finally {
 			container.shutdown();
 		}
 
@@ -218,6 +215,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 			this.exception = exception;
 		}
 
+		@Override
 		public void onMessage(Message message) {
 			try {
 				String value = new String(message.getBody());
@@ -243,6 +241,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 			this.exception = exception;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			try {
 				String value = new String(message.getBody());
