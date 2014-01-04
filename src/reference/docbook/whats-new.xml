@@ -34,8 +34,8 @@
 		<section>
 			<title>AMQP Template</title>
 			<para>
-				With this release the <interfacename>AmqpTemplate</interfacename>
-				provides several <code>receiveAndReply</code> methods.
+				The <interfacename>AmqpTemplate</interfacename> now
+				provides several synchronous <code>receiveAndReply</code> methods.
 				For more information see <xref linkend="receiving-messages" />.
 			</para>
 		</section>

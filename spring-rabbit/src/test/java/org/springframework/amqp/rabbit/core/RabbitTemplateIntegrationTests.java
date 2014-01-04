@@ -22,11 +22,12 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -870,10 +871,27 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals("TEST", template.receiveAndConvert(ROUTE));
 		assertEquals(null, template.receive(ROUTE));
 
+		template.convertAndSend("test");
+
+		try {
+			this.template.receiveAndReply(new ReceiveAndReplyCallback<Double, Void>() {
+
+				@Override
+				public Void handle(Double message) {
+					return null;
+				}
+			});
+			fail("IllegalArgumentException expected");
+		}
+		catch (Exception e) {
+			assertTrue(e.getCause() instanceof IllegalArgumentException);
+			assertTrue(e.getCause().getCause() instanceof ClassCastException);
+		}
+
 	}
 
 	@Test
-	public void testSymmetricalReceiveAndReply() throws InterruptedException {
+	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		this.template.setReplyQueue(REPLY_QUEUE);
@@ -887,11 +905,9 @@ public class RabbitTemplateIntegrationTests {
 
 		int count = 10;
 
-		final Map<Double, Object> results = new HashMap<Double, Object>(count);
+		final Map<Double, Object> results = new HashMap<Double, Object>();
 
 		ExecutorService executor = Executors.newFixedThreadPool(10);
-
-		final CountDownLatch termination = new CountDownLatch(count);
 
 		for (int i = 0; i < count; i++) {
 			executor.execute(new Runnable() {
@@ -901,7 +917,6 @@ public class RabbitTemplateIntegrationTests {
 					Double request = Math.random() * 100;
 					Object reply = template.convertSendAndReceive(request);
 					results.put(request, reply);
-					termination.countDown();
 				}
 			});
 		}
@@ -918,7 +933,6 @@ public class RabbitTemplateIntegrationTests {
 					messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 					Message reply = template.sendAndReceive(new Message(SerializationUtils.serialize(request), messageProperties));
 					results.put(request, SerializationUtils.deserialize(reply.getBody()));
-					termination.countDown();
 				}
 			});
 		}
@@ -935,21 +949,42 @@ public class RabbitTemplateIntegrationTests {
 					return payload * 3;
 				}
 			});
-			if (System.currentTimeMillis() > start + 20000) {
+			if (System.currentTimeMillis() > start + 10000) {
 				fail("Something wrong with RabbitMQ");
 			}
-			Thread.sleep(100);
-		}
-		while (receiveCount.get() < count * 2);
+		} while (receiveCount.get() < count * 2);
 
-		assertTrue(termination.await(10, TimeUnit.SECONDS));
+
+		executor.shutdown();
+		assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+		container.stop();
 
 		assertEquals(count * 2, results.size());
 
 		for (Map.Entry<Double, Object> entry : results.entrySet()) {
 			assertEquals(entry.getKey() * 3, entry.getValue());
 		}
-		executor.shutdownNow();
+
+		String messageId = UUID.randomUUID().toString();
+
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setMessageId(messageId);
+		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
+		messageProperties.setReplyTo(REPLY_QUEUE.getName());
+
+		template.send(new Message("test".getBytes(), messageProperties));
+
+		template.receiveAndReply(new ReceiveAndReplyCallback<String, String>() {
+
+			@Override
+			public String handle(String payload) {
+				return payload.toUpperCase();
+			}
+		});
+
+		Message result = this.template.receive(REPLY_QUEUE.getName());
+		assertEquals("TEST", new String(result.getBody()));
+		assertEquals(messageId, new String(result.getMessageProperties().getCorrelationId()));
 	}
 
 	@SuppressWarnings("serial")

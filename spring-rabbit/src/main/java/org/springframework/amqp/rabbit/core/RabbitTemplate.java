@@ -507,6 +507,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		return this.doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
+	@SuppressWarnings("unchecked")
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return this.execute(new ChannelCallback<Boolean>() {
@@ -525,8 +526,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						channel.basicAck(deliveryTag, false);
 					}
 					else if (channelTransacted) {
-						// Not locally transacted but it is transacted so it
-						// could be synchronized with an external transaction
+						// Not locally transacted but it is transacted so it could be synchronized with an external transaction
 						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel, deliveryTag);
 					}
 
@@ -537,8 +537,21 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
 					}
 
-					@SuppressWarnings("unchecked")
-					S reply = callback.handle((R) receive);
+					S reply = null;
+					try {
+						reply = callback.handle((R) receive);
+					}
+					catch (ClassCastException e) {
+						StackTraceElement[] trace = e.getStackTrace();
+						if (trace[0].getMethodName().equals("handle") && trace[1].getFileName().equals("RabbitTemplate.java")) {
+							throw new IllegalArgumentException("ReceiveAndReplyCallback '" + callback
+									+ "' can't handle received object '" + receive + "'", e);
+						}
+						else {
+							throw e;
+						}
+					}
+
 					if (reply != null) {
 						Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
 
@@ -547,15 +560,25 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						MessageProperties receiveMessageProperties = receiveMessage.getMessageProperties();
 						MessageProperties replyMessageProperties = replyMessage.getMessageProperties();
 
-						if (RabbitTemplate.this.correlationKey == null) {
+						Object correlation = RabbitTemplate.this.correlationKey == null
+								? receiveMessageProperties.getCorrelationId()
+								: receiveMessageProperties.getHeaders().get(RabbitTemplate.this.correlationKey);
+
+						if (RabbitTemplate.this.correlationKey == null || correlation == null) {
 							// using standard correlationId property
-							replyMessageProperties.setCorrelationId(receiveMessageProperties.getCorrelationId());
+							if (correlation == null) {
+								String messageId = receiveMessageProperties.getMessageId();
+								if (messageId != null) {
+									correlation = messageId.getBytes(RabbitTemplate.this.encoding);
+								}
+							}
+							replyMessageProperties.setCorrelationId((byte[]) correlation);
 						}
 						else {
-							replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey,
-									receiveMessageProperties.getHeaders().get(RabbitTemplate.this.correlationKey));
+							replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey, correlation);
 						}
 
+						// 'doSend()' takes care about 'channel.txCommit()'.
 						RabbitTemplate.this.doSend(channel, replyTo.getExchangeName(), replyTo.getRoutingKey(), replyMessage, null);
 					}
 					else if (channelLocallyTransacted) {
