@@ -1017,8 +1017,7 @@
 			<xsd:attribute name="channel-cache-size" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	The size of the cache when cache-mode is 'CHANNEL'.
-	More channels can be used by clients, but in excess of this number they will not be cached.
+	Cache size for channels.  More channels can be used by clients, but in excess of this number they will not be cached.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1070,29 +1069,6 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="cache-mode" use="optional">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	When 'CHANNEL', channels are cached within a single connection (default); when 'CONNECTION',
-	connections are cached (and channels are not). CONNECTION might be suitable for a listener
-	container.
-					]]></xsd:documentation>
-				</xsd:annotation>
-				<xsd:simpleType>
-					<xsd:union memberTypes="cacheModes xsd:string"/>
-				</xsd:simpleType>
-			</xsd:attribute>
-			<xsd:attribute name="connection-cache-size" use="optional">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	The size of the cache when cache-mode is 'CONNECTION'.
-	More connections can be used by clients, but in excess of this number they will not be cached.
-					]]></xsd:documentation>
-				</xsd:annotation>
-				<xsd:simpleType>
-					<xsd:union memberTypes="cacheModes xsd:string"/>
-				</xsd:simpleType>
-			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
@@ -1122,12 +1098,5 @@
 			</xsd:annotation>
 		</xsd:attribute>
 	</xsd:attributeGroup>
-
-	<xsd:simpleType name="cacheModes">
-		<xsd:restriction base="xsd:token">
-			<xsd:enumeration value="CHANNEL"/>
-			<xsd:enumeration value="CONNECTION"/>
-		</xsd:restriction>
-	</xsd:simpleType>
 
 </xsd:schema>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Dave Syer
@@ -75,6 +76,12 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 				(element.hasAttribute(HOST_ATTRIBUTE) || element.hasAttribute(PORT_ATTRIBUTE))) {
 			parserContext.getReaderContext().error("If the 'addresses' attribute is provided, a connection " +
 					"factory can not have 'host' or 'port' attributes.", element);
+		}
+		String channelCacheSize = element.getAttribute(CHANNEL_CACHE_SIZE_ATTRIBUTE);
+		String connectionCacheSize = element.getAttribute(CONNECTION_CACHE_SIZE_ATTRIBUTE);
+		if (StringUtils.hasText(channelCacheSize) && StringUtils.hasText(connectionCacheSize)) {
+			parserContext.getReaderContext().error(
+					"Cannot have both 'connection-cache-size' and 'channel-cache-size' attributes", element);
 		}
 		NamespaceUtils.addConstructorArgParentRefIfAttributeDefined(builder, element, CONNECTION_FACTORY_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CHANNEL_CACHE_SIZE_ATTRIBUTE);
