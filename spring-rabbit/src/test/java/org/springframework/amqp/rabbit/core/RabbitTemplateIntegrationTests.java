@@ -959,6 +959,8 @@ public class RabbitTemplateIntegrationTests {
 
 		ExecutorService executor = Executors.newFixedThreadPool(10);
 
+		this.template.setCorrelationKey("CorrelationKey");
+
 		for (int i = 0; i < count; i++) {
 			executor.execute(new Runnable() {
 
@@ -970,8 +972,6 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 		}
-
-		this.template.setCorrelationKey("CorrelationKey");
 
 		for (int i = 0; i < count; i++) {
 			executor.execute(new Runnable() {
