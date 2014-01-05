@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,19 +14,27 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.junit.After;
@@ -38,16 +46,23 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
+import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionDefinition;
@@ -56,6 +71,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
@@ -64,9 +80,19 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 
+/**
+ * @author Dave Syer
+ * @author Mark Fisher
+ * @author Tomas Lukosius
+ * @author Gary Russell
+ * @author Gunnar Hillert
+ * @author Artem Bilan
+ */
 public class RabbitTemplateIntegrationTests {
 
 	private static final String ROUTE = "test.queue";
+
+	private static final Queue REPLY_QUEUE = new Queue("test.reply.queue");
 
 	private RabbitTemplate template;
 
@@ -83,7 +109,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
 
 	@Test
 	public void testSendToNonExistentAndThenReceive() throws Exception {
@@ -183,6 +209,7 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 		String result = template.execute(new ChannelCallback<String>() {
+
 			public String doInRabbit(Channel channel) throws Exception {
 				// We need noAck=false here for the message to be expicitly
 				// acked
@@ -696,6 +723,269 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals(null, result);
 	}
 
+	@Test
+	public void testReceiveAndReply() {
+		this.template.setQueue(ROUTE);
+		this.template.setRoutingKey(ROUTE);
+		this.template.convertAndSend(ROUTE, "test");
+
+		boolean received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				message.getMessageProperties().setHeader("foo", "bar");
+				return message;
+			}
+		});
+		assertTrue(received);
+
+		Message receive = this.template.receive();
+		assertEquals("bar", receive.getMessageProperties().getHeaders().get("foo"));
+
+		this.template.convertAndSend(ROUTE, 1);
+
+		received = this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+
+			@Override
+			public Integer handle(Integer payload) {
+				return payload + 1;
+			}
+		});
+		assertTrue(received);
+
+		Object result = this.template.receiveAndConvert(ROUTE);
+		assertTrue(result instanceof Integer);
+		assertEquals(2, result);
+
+		this.template.convertAndSend(ROUTE, 2);
+
+		received = this.template.receiveAndReply(ROUTE, new ReceiveAndReplyCallback<Integer, Integer>() {
+
+			@Override
+			public Integer handle(Integer payload) {
+				return payload * 2;
+			}
+		}, "", ROUTE);
+		assertTrue(received);
+
+		result = this.template.receiveAndConvert(ROUTE);
+		assertTrue(result instanceof Integer);
+		assertEquals(4, result);
+
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				return message;
+			}
+		});
+		assertFalse(received);
+
+		this.template.convertAndSend(ROUTE, "test");
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				return null;
+			}
+		});
+		assertTrue(received);
+
+		result = this.template.receive();
+		assertNull(result);
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+			@Override
+			public Message handle(Message message) {
+				MessageProperties messageProperties = new MessageProperties();
+				messageProperties.setContentType(message.getMessageProperties().getContentType());
+				messageProperties.setHeader("testReplyTo", new Address("", "", ROUTE));
+				return new Message(message.getBody(), messageProperties);
+			}
+
+		}, new ReplyToAddressCallback<Message>() {
+
+			@Override
+			public Address getReplyToAddress(Message request, Message reply) {
+				return (Address) reply.getMessageProperties().getHeaders().get("testReplyTo");
+			}
+
+		});
+		assertTrue(received);
+		result = this.template.receiveAndConvert(ROUTE);
+		assertEquals("TEST", result);
+
+		assertEquals(null, template.receive(ROUTE));
+
+		template.setChannelTransacted(true);
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		result = new TransactionTemplate(new TestTransactionManager())
+				.execute(new TransactionCallback<String>() {
+					public String doInTransaction(TransactionStatus status) {
+						final AtomicReference<String> payloadReference = new AtomicReference<String>();
+						boolean received = template.receiveAndReply(new ReceiveAndReplyCallback<String, Void>() {
+
+							@Override
+							public Void handle(String payload) {
+								payloadReference.set(payload);
+								return null;
+							}
+						});
+						assertTrue(received);
+						return payloadReference.get();
+					}
+				});
+		assertEquals("TEST", result);
+		assertEquals(null, template.receive(ROUTE));
+
+		this.template.convertAndSend(ROUTE, "TEST");
+		try {
+			new TransactionTemplate(new TestTransactionManager())
+					.execute(new TransactionCallbackWithoutResult() {
+
+						public void doInTransactionWithoutResult(TransactionStatus status) {
+							template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
+
+														 @Override
+														 public Message handle(Message message) {
+															 return message;
+														 }
+													 }, new ReplyToAddressCallback<Message>() {
+
+														 @Override
+														 public Address getReplyToAddress(Message request, Message reply) {
+															 throw new PlannedException();
+														 }
+													 });
+						}
+					});
+			fail("Expected PlannedException");
+		}
+		catch (Exception e) {
+			assertTrue(e.getCause() instanceof PlannedException);
+		}
+
+		assertEquals("TEST", template.receiveAndConvert(ROUTE));
+		assertEquals(null, template.receive(ROUTE));
+
+		template.convertAndSend("test");
+
+		try {
+			this.template.receiveAndReply(new ReceiveAndReplyCallback<Double, Void>() {
+
+				@Override
+				public Void handle(Double message) {
+					return null;
+				}
+			});
+			fail("IllegalArgumentException expected");
+		}
+		catch (Exception e) {
+			assertTrue(e.getCause() instanceof IllegalArgumentException);
+			assertTrue(e.getCause().getCause() instanceof ClassCastException);
+		}
+
+	}
+
+	@Test
+	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
+		this.template.setQueue(ROUTE);
+		this.template.setRoutingKey(ROUTE);
+		this.template.setReplyQueue(REPLY_QUEUE);
+		this.template.setReplyTimeout(10000);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConnectionFactory(this.template.getConnectionFactory());
+		container.setQueues(REPLY_QUEUE);
+		container.setMessageListener(this.template);
+		container.start();
+
+		int count = 10;
+
+		final Map<Double, Object> results = new HashMap<Double, Object>();
+
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+
+		for (int i = 0; i < count; i++) {
+			executor.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Double request = Math.random() * 100;
+					Object reply = template.convertSendAndReceive(request);
+					results.put(request, reply);
+				}
+			});
+		}
+
+		this.template.setCorrelationKey("CorrelationKey");
+
+		for (int i = 0; i < count; i++) {
+			executor.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Double request = Math.random() * 100;
+					MessageProperties messageProperties = new MessageProperties();
+					messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+					Message reply = template.sendAndReceive(new Message(SerializationUtils.serialize(request), messageProperties));
+					results.put(request, SerializationUtils.deserialize(reply.getBody()));
+				}
+			});
+		}
+
+		final AtomicInteger receiveCount = new AtomicInteger();
+
+		long start = System.currentTimeMillis();
+		do {
+			template.receiveAndReply(new ReceiveAndReplyCallback<Double, Double>() {
+
+				@Override
+				public Double handle(Double payload) {
+					receiveCount.incrementAndGet();
+					return payload * 3;
+				}
+			});
+			if (System.currentTimeMillis() > start + 10000) {
+				fail("Something wrong with RabbitMQ");
+			}
+		} while (receiveCount.get() < count * 2);
+
+
+		executor.shutdown();
+		assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
+		container.stop();
+
+		assertEquals(count * 2, results.size());
+
+		for (Map.Entry<Double, Object> entry : results.entrySet()) {
+			assertEquals(entry.getKey() * 3, entry.getValue());
+		}
+
+		String messageId = UUID.randomUUID().toString();
+
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setMessageId(messageId);
+		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
+		messageProperties.setReplyTo(REPLY_QUEUE.getName());
+
+		template.send(new Message("test".getBytes(), messageProperties));
+
+		template.receiveAndReply(new ReceiveAndReplyCallback<String, String>() {
+
+			@Override
+			public String handle(String payload) {
+				return payload.toUpperCase();
+			}
+		});
+
+		Message result = this.template.receive(REPLY_QUEUE.getName());
+		assertEquals("TEST", new String(result.getBody()));
+		assertEquals(messageId, new String(result.getMessageProperties().getCorrelationId()));
+	}
 
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
