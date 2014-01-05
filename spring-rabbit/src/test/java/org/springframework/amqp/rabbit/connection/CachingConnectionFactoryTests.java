@@ -480,7 +480,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testWithConnectionFactoryCachedConnection() throws IOException {
+	public void testWithConnectionFactoryCachedConnection() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 
 		final List<com.rabbitmq.client.Connection> mockConnections = new ArrayList<com.rabbitmq.client.Connection>();
@@ -513,6 +513,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.afterPropertiesSet();
 
 		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
 		assertEquals(0, openConnections.size());
@@ -642,10 +643,31 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(1, openConnections.size());
 		assertEquals(1, idleConnections.size());
 
+		/*
+		 * Now a closed cached connection when creating a channel
+		 */
+		con3 = ccf.createConnection();
+		verifyConnectionIs(mockConnections.get(2), con3);
+		assertNull(createNotification.get());
+		assertEquals(1, openConnections.size());
+		assertEquals(0, idleConnections.size());
+		when(mockConnections.get(2).isOpen()).thenReturn(false);
+		channel3 = con3.createChannel(false);
+		assertNotNull(closedNotification.get());
+		closedNotification.set(null);
+		assertNotNull(createNotification.get());
+		assertSame(mockConnections.get(3), targetDelegate(createNotification.getAndSet(null)));
+		verifyChannelIs(mockChannels.get(6), channel3);
+		channel3.close();
+		con3.close();
+		assertNull(closedNotification.get());
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
 		// destroy
 		ccf.destroy();
 		assertNotNull(closedNotification.get());
-		verify(mockConnections.get(2)).close(30000);
+		verify(mockConnections.get(3)).close(30000);
 	}
 
 	private void verifyConnectionIs(com.rabbitmq.client.Connection mockConnection, Object con) {

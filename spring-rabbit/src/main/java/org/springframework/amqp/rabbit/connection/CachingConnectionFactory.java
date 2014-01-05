@@ -307,7 +307,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			if (!connection.isOpen()) {
 				this.openConnections.remove(connection);
 				connection.notifyCloseIfNecessary();
-				connection = (ChannelCachingConnectionProxy) createConnection();
+				ChannelCachingConnectionProxy newConnection = (ChannelCachingConnectionProxy) createConnection();
+				// Applications already have a reference to the proxy, so update it's target.
+				connection.target = newConnection.target;
 			}
 			return doCreateBareChannel(connection, transactional);
 		}
