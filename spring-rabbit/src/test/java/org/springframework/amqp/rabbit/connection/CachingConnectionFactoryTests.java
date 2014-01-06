@@ -670,6 +670,74 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnections.get(3)).close(30000);
 	}
 
+	@Test
+	public void testWithConnectionFactoryCachedConnectionIdleAreClosed() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+
+		final List<com.rabbitmq.client.Connection> mockConnections = new ArrayList<com.rabbitmq.client.Connection>();
+		final List<Channel> mockChannels = new ArrayList<Channel>();
+
+		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
+			private int connectionNumber;
+			@Override
+			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
+				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+				doAnswer(new Answer<Channel>() {
+					private int channelNumber;
+					@Override
+					public Channel answer(InvocationOnMock invocation) throws Throwable {
+						Channel channel = mock(Channel.class);
+						when(channel.isOpen()).thenReturn(true);
+						int channelNumnber = ++this.channelNumber;
+						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
+						mockChannels.add(channel);
+						return channel;
+					}
+				}).when(connection).createChannel();
+				int connectionNumber = ++this.connectionNumber;
+				when(connection.toString()).thenReturn("mockConnection" + connectionNumber);
+				when(connection.isOpen()).thenReturn(true);
+				mockConnections.add(connection);
+				return connection;
+			}
+		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setConnectionCacheSize(5);
+		ccf.afterPropertiesSet();
+
+		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
+		assertEquals(0, openConnections.size());
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
+		assertEquals(0, idleConnections.size());
+
+		Connection conn1 = ccf.createConnection();
+		Connection conn2 = ccf.createConnection();
+		Connection conn3 = ccf.createConnection();
+		assertEquals(3, openConnections.size());
+		assertEquals(0, idleConnections.size());
+		conn1.close();
+		conn2.close();
+		conn3.close();
+		assertEquals(3, openConnections.size());
+		assertEquals(3, idleConnections.size());
+
+		when(mockConnections.get(0).isOpen()).thenReturn(false);
+		when(mockConnections.get(1).isOpen()).thenReturn(false);
+		Connection conn4 = ccf.createConnection();
+		assertEquals(1, openConnections.size());
+		assertEquals(0, idleConnections.size());
+		assertSame(conn3, conn4);
+		conn4.close();
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+		ccf.destroy();
+		assertEquals(0, openConnections.size());
+		assertEquals(0, idleConnections.size());
+	}
+
 	private void verifyConnectionIs(com.rabbitmq.client.Connection mockConnection, Object con) {
 		assertSame(mockConnection, targetDelegate(con));
 	}

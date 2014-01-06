@@ -347,7 +347,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			}
 			else if (this.cacheMode == CacheMode.CONNECTION) {
 				ChannelCachingConnectionProxy connection = null;
-				while (connection == null) {
+				while (connection == null && !this.idleConnections.isEmpty()) {
 					connection = this.idleConnections.poll();
 					if (connection != null) {
 						if (!connection.isOpen()) {
@@ -359,21 +359,21 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 							connection = null;
 						}
 					}
-					if (connection == null) {
-						connection = new ChannelCachingConnectionProxy(super.createBareConnection());
-						getConnectionListener().onCreate(connection);
-						if (logger.isDebugEnabled()) {
-							logger.debug("Adding new connection '" + connection + "'");
-						}
-						this.openConnections.add(connection);
-					}
-					else {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Obtained connection '" + connection + "' from cache");
-						}
-					}
-					return connection;
 				}
+				if (connection == null) {
+					connection = new ChannelCachingConnectionProxy(super.createBareConnection());
+					getConnectionListener().onCreate(connection);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Adding new connection '" + connection + "'");
+					}
+					this.openConnections.add(connection);
+				}
+				else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Obtained connection '" + connection + "' from cache");
+					}
+				}
+				return connection;
 			}
 		}
 		return null;
@@ -624,7 +624,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 
 		public void destroy() {
-			reset();
+			if (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL) {
+				reset();
+			}
 			if (this.target != null) {
 				RabbitUtils.closeConnection(this.target);
 				this.notifyCloseIfNecessary();
