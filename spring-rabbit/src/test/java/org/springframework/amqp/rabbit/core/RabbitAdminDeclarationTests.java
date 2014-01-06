@@ -26,7 +26,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -39,6 +42,8 @@ import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
@@ -92,6 +97,55 @@ public class RabbitAdminDeclarationTests {
 		verify(channel).queueDeclare("foo", true, false, false, null);
 		verify(channel).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
 		verify(channel).queueBind("foo", "bar", "foo", null);
+	}
+
+	@Test
+	public void testNoDeclareWithCachedConnections() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+
+		final List<com.rabbitmq.client.Connection> mockConnections = new ArrayList<com.rabbitmq.client.Connection>();
+		final List<Channel> mockChannels = new ArrayList<Channel>();
+
+		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
+			private int connectionNumber;
+			@Override
+			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
+				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+				doAnswer(new Answer<Channel>() {
+					private int channelNumber;
+					@Override
+					public Channel answer(InvocationOnMock invocation) throws Throwable {
+						Channel channel = mock(Channel.class);
+						when(channel.isOpen()).thenReturn(true);
+						int channelNumnber = ++this.channelNumber;
+						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
+						mockChannels.add(channel);
+						return channel;
+					}
+				}).when(connection).createChannel();
+				int connectionNumber = ++this.connectionNumber;
+				when(connection.toString()).thenReturn("mockConnection" + connectionNumber);
+				when(connection.isOpen()).thenReturn(true);
+				mockConnections.add(connection);
+				return connection;
+			}
+		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.afterPropertiesSet();
+
+		RabbitAdmin admin = new RabbitAdmin(ccf);
+		GenericApplicationContext context = new GenericApplicationContext();
+		Queue queue = new Queue("foo");
+		context.getBeanFactory().registerSingleton("foo", queue);
+		context.refresh();
+		admin.setApplicationContext(context);
+		admin.afterPropertiesSet();
+		ccf.createConnection().close();
+		ccf.destroy();
+
+		assertEquals("Admin should not have created a channel", 0,  mockChannels.size());
 	}
 
 	@Test

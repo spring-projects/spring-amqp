@@ -39,6 +39,13 @@
 				For more information see <xref linkend="receiving-messages" />.
 			</para>
 		</section>
+		<section>
+			<title>Caching Connection Factory</title>
+			<para>
+				The caching connection factory can now be configured to cache <code>Connection</code>s
+				instead of <code>Channel</code>s. See <xref linkend="connections"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
