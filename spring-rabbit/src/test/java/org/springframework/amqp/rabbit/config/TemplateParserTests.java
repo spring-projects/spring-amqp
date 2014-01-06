@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -54,7 +54,6 @@ public final class TemplateParserTests {
 		assertNotNull(template);
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("mandatory"));
-		assertEquals(Boolean.FALSE, dfa.getPropertyValue("immediate"));
 		assertNull(dfa.getPropertyValue("returnCallback"));
 		assertNull(dfa.getPropertyValue("confirmCallback"));
 	}
@@ -65,7 +64,6 @@ public final class TemplateParserTests {
 		assertNotNull(template);
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("mandatory"));
-		assertEquals(Boolean.TRUE, dfa.getPropertyValue("immediate"));
 		assertNotNull(dfa.getPropertyValue("returnCallback"));
 		assertNotNull(dfa.getPropertyValue("confirmCallback"));
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -154,8 +154,6 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 
 	private volatile boolean mandatoryPublish;
 
-	private volatile boolean immediatePublish;
-
 	private MessageConverter messageConverter;
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
@@ -290,8 +288,12 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 		this.mandatoryPublish = mandatoryPublish;
 	}
 
+	/**
+	 * @deprecated 'immediate' no longer support by RabbitMQ.
+	 */
+	@Deprecated
 	public void setImmediatePublish(boolean immediatePublish) {
-		this.immediatePublish = immediatePublish;
+		// No-op
 	}
 
 	/**
@@ -586,7 +588,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 			logger.debug("Publishing response to exchanage = [" + replyTo.getExchangeName() + "], routingKey = ["
 					+ replyTo.getRoutingKey() + "]");
 			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
-					this.immediatePublish, this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding), message.getBody());
+					this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding), message.getBody());
 		} catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}

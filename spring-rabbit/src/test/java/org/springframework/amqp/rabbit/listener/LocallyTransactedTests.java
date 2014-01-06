@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ public class LocallyTransactedTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
@@ -239,7 +239,7 @@ public class LocallyTransactedTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		verify(onlyChannel, Mockito.never()).close();
@@ -340,7 +340,7 @@ public class LocallyTransactedTests {
 		verify(firstChannel).txCommit();
 		verify(secondChannel).txCommit();
 		verify(secondChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		assertSame(secondChannel, exposed.get());
 

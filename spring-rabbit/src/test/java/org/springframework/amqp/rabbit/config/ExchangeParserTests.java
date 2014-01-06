@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,78 +135,6 @@ public final class ExchangeParserTests {
 		assertNotNull(exchange);
 		assertEquals("direct-ref-arguments", exchange.getName());
 		assertEquals("bar", exchange.getArguments().get("foo"));
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void testFederatedDirectExchange() throws Exception {
-		org.springframework.amqp.core.FederatedExchange exchange =
-			beanFactory.getBean("fedDirect", org.springframework.amqp.core.FederatedExchange.class);
-		assertNotNull(exchange);
-		assertEquals("fedDirect", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertEquals("direct", exchange.getArguments().get("type"));
-		assertEquals("upstream-set1", exchange.getArguments().get("upstream-set"));
-		assertTrue(exchange.shouldDeclare());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
-		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#1", Binding.class);
-		assertTrue(binding.shouldDeclare());
-		assertEquals(1, binding.getDeclaringAdmins().size());
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void testFederatedTopicExchange() throws Exception {
-		org.springframework.amqp.core.FederatedExchange exchange =
-			beanFactory.getBean("fedTopic", org.springframework.amqp.core.FederatedExchange.class);
-		assertNotNull(exchange);
-		assertEquals("fedTopic", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertEquals("topic", exchange.getArguments().get("type"));
-		assertEquals("upstream-set2", exchange.getArguments().get("upstream-set"));
-		assertTrue(exchange.shouldDeclare());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
-		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#2", Binding.class);
-		assertTrue(binding.shouldDeclare());
-		assertEquals(1, binding.getDeclaringAdmins().size());
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void testFederatedFanoutExchange() throws Exception {
-		org.springframework.amqp.core.FederatedExchange exchange =
-			beanFactory.getBean("fedFanout", org.springframework.amqp.core.FederatedExchange.class);
-		assertNotNull(exchange);
-		assertEquals("fedFanout", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertEquals("fanout", exchange.getArguments().get("type"));
-		assertEquals("upstream-set3", exchange.getArguments().get("upstream-set"));
-		assertTrue(exchange.shouldDeclare());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
-		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#3", Binding.class);
-		assertTrue(binding.shouldDeclare());
-		assertEquals(1, binding.getDeclaringAdmins().size());
-	}
-
-	@SuppressWarnings("deprecation")
-	@Test
-	public void testFederatedHeadersExchange() throws Exception {
-		org.springframework.amqp.core.FederatedExchange exchange =
-			beanFactory.getBean("fedHeaders", org.springframework.amqp.core.FederatedExchange.class);
-		assertNotNull(exchange);
-		assertEquals("fedHeaders", exchange.getName());
-		assertTrue(exchange.isDurable());
-		assertFalse(exchange.isAutoDelete());
-		assertEquals("headers", exchange.getArguments().get("type"));
-		assertEquals("upstream-set4", exchange.getArguments().get("upstream-set"));
-		assertTrue(exchange.shouldDeclare());
-		assertEquals(1, exchange.getDeclaringAdmins().size());
-		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#4", Binding.class);
-		assertTrue(binding.shouldDeclare());
-		assertEquals(1, binding.getDeclaringAdmins().size());
 	}
 
 }

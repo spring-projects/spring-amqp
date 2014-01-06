@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ public class ExternalTxManagerTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
@@ -260,7 +260,7 @@ public class ExternalTxManagerTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(listenerChannel).txCommit();
 		verify(templateChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		verify(templateChannel).txCommit();
 
 		// verify close() was never called on the channel
@@ -361,7 +361,7 @@ public class ExternalTxManagerTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		verify(onlyChannel, Mockito.never()).close();
@@ -462,7 +462,7 @@ public class ExternalTxManagerTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		verify(onlyChannel, Mockito.never()).close();
@@ -559,7 +559,7 @@ public class ExternalTxManagerTests {
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 
 		// verify close() was never called on the channel
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);

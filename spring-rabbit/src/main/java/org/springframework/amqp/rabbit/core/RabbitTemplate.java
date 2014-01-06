@@ -137,8 +137,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private volatile boolean mandatory;
 
-	private volatile boolean immediate;
-
 	private final String uuid = UUID.randomUUID().toString();
 
 	private volatile String correlationKey = null;
@@ -292,18 +290,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	public void setMandatory(boolean mandatory) {
 		this.mandatory = mandatory;
-	}
-
-	/**
-	 * @deprecated - RabbitMQ no longer supports this option
-	 * when publishing messages.
-	 */
-	@Deprecated
-	public void setImmediate(boolean immediate) {
-		this.immediate = immediate;
-		if (logger.isWarnEnabled()) {
-			logger.warn("RabbitMQ 3.0.0 and above no longer supports 'immediate'.");
-		}
 	}
 
 	/**
@@ -814,15 +800,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
 		}
 		boolean mandatory = this.returnCallback == null ? false : this.mandatory;
-		boolean immediate = this.returnCallback == null ? false : this.immediate;
 		MessageProperties messageProperties = message.getMessageProperties();
-		if (mandatory || immediate) {
+		if (mandatory) {
 			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_CORRELATION, this.uuid);
 		}
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
 				.fromMessageProperties(messageProperties, encoding);
-		channel.basicPublish(exchange, routingKey, mandatory, immediate,
-				convertedMessageProperties, message.getBody());
+		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
