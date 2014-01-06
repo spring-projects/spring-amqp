@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -28,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,10 +45,14 @@ import org.mockito.stubbing.Answer;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -56,6 +63,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
+
 
 /**
  * @author David Syer
@@ -295,6 +303,92 @@ public class SimpleMessageListenerContainerTests {
 		assertEquals(10, args.get().get("x-priority"));
 		consumer.get().handleCancelOk("foo");
 		container.stop();
+	}
+
+	@Test
+	public void testWithConnectionPerListenerThread() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
+		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+		Channel mockChannel2 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null))
+			.thenReturn(mockConnection1)
+			.thenReturn(mockConnection2)
+			.thenReturn(null);
+		when(mockConnection1.createChannel()).thenReturn(mockChannel1).thenReturn(null);
+		when(mockConnection2.createChannel()).thenReturn(mockChannel2).thenReturn(null);
+		when(mockChannel1.isOpen()).thenReturn(true);
+		when(mockConnection1.isOpen()).thenReturn(true);
+		when(mockChannel2.isOpen()).thenReturn(true);
+		when(mockConnection2.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(ccf);
+		container.setConcurrentConsumers(2);
+		container.setQueueNames("foo");
+		container.afterPropertiesSet();
+
+		CountDownLatch latch1 = new CountDownLatch(2);
+		CountDownLatch latch2 = new CountDownLatch(2);
+		doAnswer(messageToConsumer(mockChannel1, container, false, latch1))
+		.when(mockChannel1).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		doAnswer(messageToConsumer(mockChannel2, container, false, latch1))
+			.when(mockChannel2).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		doAnswer(messageToConsumer(mockChannel1, container, true, latch2)).when(mockChannel1).basicCancel(anyString());
+		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
+
+		container.start();
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
+		container.stop();
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+
+		waitForConsumersToStop(consumers);
+		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
+		assertEquals(1, openConnections.size());
+	}
+
+	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
+			final boolean cancel, final CountDownLatch latch) {
+		return new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
+				for (Object consumer : consumers) {
+					ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
+					if (channel.getTargetChannel() == mockChannel) {
+						Consumer rabbitConsumer = TestUtils.getPropertyValue(consumer, "consumer", Consumer.class);
+						if (cancel) {
+							rabbitConsumer.handleCancelOk((String) invocation.getArguments()[0]);
+						}
+						else {
+							rabbitConsumer.handleConsumeOk("foo");
+						}
+						latch.countDown();
+					}
+				}
+				return null;
+			}
+		};
+
+	}
+
+	private void waitForConsumersToStop(Set<?> consumers) throws Exception {
+		int n = 0;
+		boolean stillUp = true;
+		while (stillUp && n++ < 1000) {
+			stillUp = false;
+			for (Object consumer : consumers) {
+				stillUp |= TestUtils.getPropertyValue(consumer, "consumer") != null;
+			}
+			Thread.sleep(10);
+		}
+		assertFalse(stillUp);
 	}
 
 	@SuppressWarnings("serial")

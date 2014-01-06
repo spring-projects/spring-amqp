@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -61,6 +61,7 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(123,
 				((com.rabbitmq.client.ConnectionFactory) dfa.getPropertyValue("rabbitConnectionFactory"))
 						.getRequestedHeartbeat());
+		assertEquals(CachingConnectionFactory.CacheMode.CHANNEL, connectionFactory.getCacheMode());
 	}
 
 	@Test
@@ -74,7 +75,6 @@ public final class ConnectionFactoryParserTests {
 	public void testWithExecutor() throws Exception {
 		CachingConnectionFactory connectionFactory = beanFactory.getBean("withExecutor", CachingConnectionFactory.class);
 		assertNotNull(connectionFactory);
-		assertEquals(10, connectionFactory.getChannelCacheSize());
 		Object executor = new DirectFieldAccessor(connectionFactory).getPropertyValue("executorService");
 		assertNotNull(executor);
 		ThreadPoolTaskExecutor exec = beanFactory.getBean("exec", ThreadPoolTaskExecutor.class);
@@ -82,6 +82,8 @@ public final class ConnectionFactoryParserTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherReturns"));
+		assertEquals(CachingConnectionFactory.CacheMode.CONNECTION, connectionFactory.getCacheMode());
+		assertEquals(10, connectionFactory.getConnectionCachesize());
 	}
 
 	@Test

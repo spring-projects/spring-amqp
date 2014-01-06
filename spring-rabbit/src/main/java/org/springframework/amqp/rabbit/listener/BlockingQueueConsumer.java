@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -36,6 +36,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -72,6 +73,8 @@ public class BlockingQueueConsumer {
 	private final boolean transactional;
 
 	private Channel channel;
+
+	private RabbitResourceHolder resourceHolder;
 
 	private InternalConsumer consumer;
 
@@ -234,8 +237,8 @@ public class BlockingQueueConsumer {
 			logger.debug("Starting consumer " + this);
 		}
 		try {
-			this.channel = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional)
-					.getChannel();
+			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional);
+			this.channel = resourceHolder.getChannel();
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -313,8 +316,7 @@ public class BlockingQueueConsumer {
 			logger.debug("Closing Rabbit Channel: " + channel);
 		}
 		RabbitUtils.setPhysicalCloseRequired(true);
-		// This one never throws exceptions...
-		RabbitUtils.closeChannel(channel);
+		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 		deliveryTags.clear();
 		consumer = null;
 	}

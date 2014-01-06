@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,11 +13,16 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,11 +42,13 @@ import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.utils.test.TestUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -75,6 +82,34 @@ public class CachingConnectionFactoryIntegrationTests {
 	@After
 	public void close() {
 		connectionFactory.destroy();
+	}
+
+	@Test
+	public void testCachedConnections() {
+		connectionFactory.setCacheMode(CacheMode.CONNECTION);
+		connectionFactory.setConnectionCacheSize(5);
+		List<Connection> connections = new ArrayList<Connection>();
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		assertNotSame(connections.get(0), connections.get(1));
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		assertEquals(6, TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class).size());
+		for (Connection connection : connections) {
+			connection.close();
+		}
+		assertEquals(5, TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class).size());
+		assertEquals(5, TestUtils.getPropertyValue(connectionFactory, "idleConnections", BlockingQueue.class).size());
+		connections.clear();
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		assertEquals(5, TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class).size());
+		assertEquals(3, TestUtils.getPropertyValue(connectionFactory, "idleConnections", BlockingQueue.class).size());
+		for (Connection connection : connections) {
+			connection.close();
+		}
 	}
 
 	@Test
@@ -140,6 +175,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		exception.expect(AmqpIOException.class);
 
 		template2.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 				// Should be an exception because the channel is not transactional
 				channel.txRollback();
@@ -161,8 +197,10 @@ public class CachingConnectionFactoryIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		try {
 			template.execute(new ChannelCallback<Object>() {
+				@Override
 				public Object doInRabbit(Channel channel) throws Exception {
 					channel.getConnection().addShutdownListener(new ShutdownListener() {
+						@Override
 						public void shutdownCompleted(ShutdownSignalException cause) {
 							logger.info("Error", cause);
 							latch.countDown();
