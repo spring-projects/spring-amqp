@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,8 +170,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void basicPublish(String exchange, String routingKey,
 			boolean mandatory, boolean immediate, BasicProperties props,
 			byte[] body) throws IOException {
-		this.delegate.basicPublish(exchange, routingKey, mandatory, immediate,
-				props, body);
+		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
 	}
 
 	public void basicPublish(String exchange, String routingKey,
@@ -348,9 +347,9 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		return this.delegate.basicRecover(requeue);
 	}
 
-	@SuppressWarnings("deprecation")
+	@Deprecated
 	public void basicRecoverAsync(boolean requeue) throws IOException {
-		this.delegate.basicRecoverAsync(requeue);
+		this.delegate.basicRecover(requeue);
 	}
 
 	public SelectOk txSelect() throws IOException {

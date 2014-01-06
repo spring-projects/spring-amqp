@@ -42,34 +42,6 @@
 	<rabbit:headers-exchange name="headers" xmlns="http://www.springframework.org/schema/rabbit"
 		declared-by="admin2" />
 
-	<rabbit:federated-exchange name="fedDirect" backing-type="direct"
-			upstream-set="upstream-set1" declared-by="admin1">
-		<rabbit:direct-bindings>
-			<rabbit:binding key="x" queue="bar" />
-		</rabbit:direct-bindings>
-	</rabbit:federated-exchange>
-
-	<rabbit:federated-exchange name="fedTopic" backing-type="topic"
-			upstream-set="upstream-set2" declared-by="admin1">
-		<rabbit:topic-bindings>
-			<rabbit:binding pattern="xx.*" queue="bar" />
-		</rabbit:topic-bindings>
-	</rabbit:federated-exchange>
-
-	<rabbit:federated-exchange name="fedFanout" backing-type="fanout"
-			upstream-set="upstream-set3" declared-by="admin1">
-		<rabbit:fanout-bindings>
-			<rabbit:binding queue="bar" />
-		</rabbit:fanout-bindings>
-	</rabbit:federated-exchange>
-
-	<rabbit:federated-exchange name="fedHeaders" backing-type="headers"
-			upstream-set="upstream-set4" declared-by="admin1">
-		<rabbit:headers-bindings>
-			<rabbit:binding key="head" value="head" queue="bar" />
-		</rabbit:headers-bindings>
-	</rabbit:federated-exchange>
-
 	<rabbit:admin id="admin1" auto-startup="false" connection-factory="mockCF" />
 
 	<rabbit:admin id="admin2" auto-startup="false" connection-factory="mockCF" />

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[4];
+				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
 				if (standardHeader) {
 					correlationId.set(basicProps.getCorrelationId());
@@ -100,9 +100,8 @@ public class RabbitTemplateHeaderTests {
 				template.onMessage(replyMessage);
 				return null;
 			}}
-		).when(mockChannel).basicPublish(Mockito.any(String.class),
-				Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -141,7 +140,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[4];
+				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
 				correlationId.set(basicProps.getCorrelationId());
 				MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -150,9 +149,8 @@ public class RabbitTemplateHeaderTests {
 				template.onMessage(replyMessage);
 				return null;
 			}}
-		).when(mockChannel).basicPublish(Mockito.any(String.class),
-				Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -187,7 +185,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		doAnswer(new Answer<Object>() {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[4];
+				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				nestedReplyTo.add(basicProps.getReplyTo());
 				nestedCorrelation.add(basicProps.getCorrelationId());
 				MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -203,9 +201,8 @@ public class RabbitTemplateHeaderTests {
 				template.onMessage(replyMessage);
 				return null;
 			}}
-		).when(mockChannel).basicPublish(Mockito.any(String.class),
-				Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -242,7 +239,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[4];
+				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
 				correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
 
@@ -252,9 +249,8 @@ public class RabbitTemplateHeaderTests {
 				template.onMessage(replyMessage);
 				return null;
 			}}
-		).when(mockChannel).basicPublish(Mockito.any(String.class),
-				Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -291,7 +287,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		doAnswer(new Answer<Object>() {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[4];
+				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				nestedReplyTo.add(basicProps.getReplyTo());
 				nestedCorrelation.add(basicProps.getCorrelationId());
 				MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -307,9 +303,8 @@ public class RabbitTemplateHeaderTests {
 				template.onMessage(replyMessage);
 				return null;
 			}}
-		).when(mockChannel).basicPublish(Mockito.any(String.class),
-				Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.anyBoolean(), Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 

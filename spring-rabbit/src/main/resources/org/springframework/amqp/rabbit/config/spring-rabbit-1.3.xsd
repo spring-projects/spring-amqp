@@ -238,124 +238,6 @@
 		</xsd:complexType>
 	</xsd:element>
 
-	<xsd:element name="federated-exchange">
-		<xsd:annotation>
-			<xsd:documentation><![CDATA[
-					DEPRECATED - RabbitMQ no longer supports 'x-federation' exchanges; exchange federation
-					is now dynamic.
-					Creates a federated exchange for producers to send messages to.  Uses an existing exchange
-					with the same name if it exists on the broker, or declares a
-					new one.  A federated exchange uses a backing exchange of type defined by
-					the backing-type attribute. It connects to a set of upstream exchanges as
-					defined by the upstream-set. The bindings elements must match the bindings
-					for the backing exchange.
-				]]></xsd:documentation>
-		</xsd:annotation>
-		<xsd:complexType>
-			<xsd:complexContent>
-				<xsd:extension base="exchangeType">
-					<xsd:sequence>
-						<xsd:choice>
-							<xsd:element name="direct-bindings" minOccurs="0" maxOccurs="1">
-								<xsd:annotation>
-									<xsd:documentation><![CDATA[
-										Groups bindings of queues to this exchange.
-									]]></xsd:documentation>
-								</xsd:annotation>
-								<xsd:complexType>
-									<xsd:choice>
-										<xsd:element name="binding" maxOccurs="unbounded" type="directBindingType">
-											<xsd:annotation>
-												<xsd:documentation><![CDATA[
-												Declares a binding of a queue to this exchange either with
-												an explicit routing key, or using the queue name implicitly.
-											]]></xsd:documentation>
-											</xsd:annotation>
-										</xsd:element>
-									</xsd:choice>
-								</xsd:complexType>
-							</xsd:element>
-							<xsd:element name="topic-bindings" minOccurs="0" maxOccurs="1">
-								<xsd:annotation>
-									<xsd:documentation><![CDATA[
-										Groups bindings of queues to this exchange.
-									]]></xsd:documentation>
-								</xsd:annotation>
-								<xsd:complexType>
-									<xsd:choice>
-										<xsd:element name="binding" maxOccurs="unbounded" type="topicBindingType">
-											<xsd:annotation>
-												<xsd:documentation><![CDATA[
-												Declares a binding of a queue to this exchange with
-												a routing pattern, e.g. "uk.weather.*" or "uk.#".
-											]]></xsd:documentation>
-											</xsd:annotation>
-										</xsd:element>
-									</xsd:choice>
-								</xsd:complexType>
-							</xsd:element>
-							<xsd:element name="fanout-bindings" minOccurs="0" maxOccurs="1">
-								<xsd:annotation>
-									<xsd:documentation><![CDATA[
-										Groups bindings of queues to this exchange.
-									]]></xsd:documentation>
-								</xsd:annotation>
-								<xsd:complexType>
-									<xsd:choice>
-										<xsd:element name="binding" maxOccurs="unbounded" type="bindingType">
-											<xsd:annotation>
-												<xsd:documentation><![CDATA[
-													Binds a queue to this exchange.  All messages sent to this exchange will be
-													placed on this queue by the broker.
-												]]></xsd:documentation>
-											</xsd:annotation>
-										</xsd:element>
-									</xsd:choice>
-								</xsd:complexType>
-							</xsd:element>
-							<xsd:element name="headers-bindings" minOccurs="0" maxOccurs="1">
-								<xsd:annotation>
-									<xsd:documentation><![CDATA[
-										Groups bindings of queues to this exchange.
-									]]></xsd:documentation>
-								</xsd:annotation>
-								<xsd:complexType>
-									<xsd:choice>
-										<xsd:element name="binding" maxOccurs="unbounded" type="headersBindingType">
-											<xsd:annotation>
-												<xsd:documentation><![CDATA[
-													Binds a queue to this exchange.  Messages sent to this exchange will be
-													placed on this queue by the broker if they contain a header that matches
-													this binding (key-value pair).
-												]]></xsd:documentation>
-											</xsd:annotation>
-										</xsd:element>
-									</xsd:choice>
-								</xsd:complexType>
-						</xsd:element>
-						</xsd:choice>
-					</xsd:sequence>
-					<xsd:attribute name="backing-type" use="optional" type="xsd:string">
-						<xsd:annotation>
-							<xsd:documentation><![CDATA[
-								The type of the exchange used as a backing exchange for the
-								federated exchange.
-							]]></xsd:documentation>
-						</xsd:annotation>
-					</xsd:attribute>
-					<xsd:attribute name="upstream-set" use="optional" type="xsd:string">
-						<xsd:annotation>
-							<xsd:documentation><![CDATA[
-								The names of the set of upstream exchanges to which this
-								federated exchange connects.
-							]]></xsd:documentation>
-						</xsd:annotation>
-					</xsd:attribute>
-				</xsd:extension>
-			</xsd:complexContent>
-		</xsd:complexType>
-	</xsd:element>
-
 	<xsd:complexType name="exchangeType">
 		<xsd:sequence>
 			<xsd:element ref="exchange-arguments" minOccurs="0" maxOccurs="1" />
@@ -382,7 +264,7 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
-		<xsd:attribute name="durable" use="optional" type="xsd:string " default="true">
+		<xsd:attribute name="durable" use="optional" type="xsd:string" default="true">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 					Flag indicating that the exchange is durable, i.e. will survive broker restart.  Default is true.
@@ -968,15 +850,6 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	When 'true' sets the mandatory flag on basic.publish; only applies if
-	a 'return-callback' is provided.
-					]]></xsd:documentation>
-				</xsd:annotation>
-			</xsd:attribute>
-			<xsd:attribute name="immediate" type="xsd:string" use="optional">
-				<xsd:annotation>
-					<xsd:documentation><![CDATA[
-	DEPRECATED - RabbitMQ No longer supports the immediate flag when publishing messages.
-	When 'true' sets the immediate flag on basic.publish; only applies if
 	a 'return-callback' is provided.
 					]]></xsd:documentation>
 				</xsd:annotation>
