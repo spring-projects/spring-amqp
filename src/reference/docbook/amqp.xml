@@ -2153,4 +2153,20 @@ public RabbitTransactionManager rabbitTransactionManager() {
 	</para>
   </section>
 
+  <section>
+	<title>Debugging</title>
+	<para>
+		Spring AMQP provides extensive logging, especially at <code>DEBUG</code> level.
+	</para>
+	<para>
+		If you wish to monitor the AMQP protocol between the application and broker, you could
+		use a tool such as WireShark, which has a plugin to decode the protocol. Alternatively
+		the RabbitMQ java client comes with a very useful class <classname>Tracer</classname>.
+		When run as a <code>main</code>, by default, it listens on port 5673 and connects
+		to port 5672 on localhost. Simply run it, and change your connection factory
+		configuration to connect to port 5673 on localhost. It displays the decoded protocol
+		on the console. Refer to the <classname>Tracer</classname> javadocs for more information.
+	</para>
+  </section>
+
 </chapter>
