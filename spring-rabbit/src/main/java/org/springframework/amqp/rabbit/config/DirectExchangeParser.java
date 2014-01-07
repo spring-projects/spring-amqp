@@ -13,8 +13,6 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.Collections;
-
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.DirectExchange;
@@ -50,7 +48,6 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 				"#{@" + (StringUtils.hasText(queueId) ? queueId : exchangeId)  + ".name}";
 
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
-		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder;
 	}
 

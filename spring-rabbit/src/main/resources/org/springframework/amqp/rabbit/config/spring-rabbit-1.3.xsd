@@ -314,12 +314,44 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="headersBindingType">
-		<xsd:complexContent>
-			<xsd:extension base="bindingType">
-				<xsd:attribute name="key" use="required" />
-				<xsd:attribute name="value" use="required" />
-			</xsd:extension>
-		</xsd:complexContent>
+		<xsd:attribute name="queue" use="optional">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Queue"><![CDATA[
+				The bean name of the Queue to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Queue" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exchange" use="optional">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Exchange"><![CDATA[
+				The bean name of another exchange to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Exchange" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="key" use="required">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+						The header name to match messages for routing.
+						]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="value" use="required">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+						The header value to match messages for routing.
+						]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="bindingType">

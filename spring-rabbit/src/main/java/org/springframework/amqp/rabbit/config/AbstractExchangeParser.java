@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -30,6 +30,7 @@ import org.springframework.util.xml.DomUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Felipe Gutierrez
+ * @author Artem Bilan
  *
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
@@ -40,13 +41,15 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
 
-	private static String BINDINGS_ELE = "bindings";
+	private static final String BINDINGS_ELE = "bindings";
 
-	private static String BINDING_ELE = "binding";
+	private static final String BINDING_ELE = "binding";
 
 	protected static final String BINDING_QUEUE_ATTR = "queue";
 
 	protected static final String BINDING_EXCHANGE_ATTR = "exchange";
+
+	private static final String BINDING_ARGUMENTS = "binding-arguments";
 
 	private static final String REF_ATTRIBUTE = "ref";
 
@@ -65,22 +68,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
 				false);
 
-		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS_ELEMENT);
-		if (argumentsElement != null) {
-
-			String ref = argumentsElement.getAttribute(REF_ATTRIBUTE);
-			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
-					builder.getRawBeanDefinition());
-			if (StringUtils.hasText(ref)) {
-				if (map != null && map.size() > 0) {
-					parserContext.getReaderContext().error("You cannot have both a 'ref' and a nested map", element);
-				}
-				builder.addConstructorArgReference(ref);
-			}
-			else {
-				builder.addConstructorArgValue(map);
-			}
-		}
+		this.parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
 	}
@@ -121,6 +109,38 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		}
 		if (hasExchangeAttribute) {
 			builder.addPropertyReference("destinationExchange", exchangeAttribute);
+		}
+
+		this.parseArguments(binding, BINDING_ARGUMENTS, parserContext, builder, "arguments");
+	}
+
+	private void parseArguments(Element element, String argumentsElementName, ParserContext parserContext,
+								BeanDefinitionBuilder builder, String propertyName) {
+		Element argumentsElement = DomUtils.getChildElementByTagName(element, argumentsElementName);
+		if (argumentsElement != null) {
+
+			String ref = argumentsElement.getAttribute(REF_ATTRIBUTE);
+			Map<?, ?> map = parserContext.getDelegate().parseMapElement(argumentsElement,
+					builder.getRawBeanDefinition());
+			if (StringUtils.hasText(ref)) {
+				if (map != null && map.size() > 0) {
+					parserContext.getReaderContext().error("You cannot have both a 'ref' and a nested map", element);
+				}
+				if (propertyName == null) {
+					builder.addConstructorArgReference(ref);
+				}
+				else {
+					builder.addPropertyReference(propertyName, ref);
+				}
+			}
+			else {
+				if (propertyName == null) {
+					builder.addConstructorArgValue(map);
+				}
+				else {
+					builder.addPropertyValue(propertyName, map);
+				}
+			}
 		}
 	}
 
