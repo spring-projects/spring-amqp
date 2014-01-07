@@ -13,8 +13,6 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.Collections;
-
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.FanoutExchange;
@@ -39,7 +37,6 @@ public class FanoutExchangeParser extends AbstractExchangeParser {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(BindingFactoryBean.class);
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
-		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder;
 	}
 

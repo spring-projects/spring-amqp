@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.Collections;
-
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.TopicExchange;
@@ -45,7 +43,6 @@ public class TopicExchangeParser extends AbstractExchangeParser {
 		parseDestination(binding, parserContext, builder);
 		builder.addPropertyValue("exchange", new TypedStringValue(exchangeName));
 		builder.addPropertyValue("routingKey", new TypedStringValue(binding.getAttribute(BINDING_PATTERN_ATTR)));
-		builder.addPropertyValue("arguments", Collections.<String, Object>emptyMap());
 		return builder;
 	}
 

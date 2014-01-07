@@ -316,8 +316,22 @@
 	<xsd:complexType name="headersBindingType">
 		<xsd:complexContent>
 			<xsd:extension base="bindingType">
-				<xsd:attribute name="key" use="required" />
-				<xsd:attribute name="value" use="required" />
+				<xsd:attribute name="key" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						The header name to match messages for routing.
+						This attribute is mutually exclusive with 'binding-arguments' sub-element.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="value" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						The header value to match messages for routing.
+						This attribute is mutually exclusive with 'binding-arguments' sub-element.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
 			</xsd:extension>
 		</xsd:complexContent>
 	</xsd:complexType>

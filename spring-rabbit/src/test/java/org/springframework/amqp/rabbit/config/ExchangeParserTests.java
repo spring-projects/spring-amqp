@@ -21,6 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,6 +40,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Mark Fisher
  * @author Gary Russell
  * @author Felipe Gutierrez
+ * @author Artem Bilan
  * @since 1.0
  *
  */
@@ -49,7 +52,7 @@ public final class ExchangeParserTests {
 	public void setUp() throws Exception {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
-		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName()+"-context.xml", getClass()));
+		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@Test
@@ -64,6 +67,12 @@ public final class ExchangeParserTests {
 		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
 		assertFalse(binding.shouldDeclare());
 		assertEquals(2, binding.getDeclaringAdmins().size());
+
+		Map<String, Object> arguments = binding.getArguments();
+		assertNotNull(arguments);
+		assertEquals(1, arguments.size());
+		assertTrue(arguments.containsKey("x-match"));
+		assertEquals("any", arguments.get("x-match"));
 
 	}
 

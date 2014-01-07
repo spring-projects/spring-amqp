@@ -30,6 +30,18 @@
 		</bindings>
 	</headers-exchange>
 
+	<headers-exchange name="headersTestMulti">
+		<bindings>
+			<binding queue="bucket">
+				<binding-arguments>
+					<beans:entry key="foo" value="bar" />
+					<beans:entry key="baz" value="qux" />
+					<beans:entry key="x-match" value="all" />
+				</binding-arguments>
+			</binding>
+		</bindings>
+	</headers-exchange>
+
 	<queue id="bucket" />
 	<queue id="bucket2" />
 
