@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.core;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import org.springframework.amqp.utils.SerializationUtils;
 
@@ -60,14 +61,7 @@ public class Message implements Serializable {
 		buffer.append("(");
 		buffer.append("Body:'" + this.getBodyContentAsString() + "'");
 		if (messageProperties != null) {
-			buffer.append("; ID:" + messageProperties.getMessageId());
-			buffer.append("; Content:" + messageProperties.getContentType());
-			buffer.append("; Headers:" + messageProperties.getHeaders());
-			buffer.append("; Exchange:" + messageProperties.getReceivedExchange());
-			buffer.append("; RoutingKey:" + messageProperties.getReceivedRoutingKey());
-			buffer.append("; Reply:" + messageProperties.getReplyTo());
-			buffer.append("; DeliveryMode:" + messageProperties.getDeliveryMode());
-			buffer.append("; DeliveryTag:" + messageProperties.getDeliveryTag());
+			buffer.append(messageProperties.toString());
 		}
 		buffer.append(")");
 		return buffer.toString();
@@ -82,17 +76,54 @@ public class Message implements Serializable {
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 				return SerializationUtils.deserialize(body).toString();
 			}
-			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)) {
+			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
+					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
+					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
+					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
 				return new String(body, ENCODING);
 			}
-			if (MessageProperties.CONTENT_TYPE_JSON.equals(contentType)) {
-				return new String(body, ENCODING);
-			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// ignore
 		}
 		// Comes out as '[B@....b' (so harmless)
 		return body.toString()+"(byte["+body.length+"])";
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(body);
+		result = prime * result + ((messageProperties == null) ? 0 : messageProperties.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		Message other = (Message) obj;
+		if (!Arrays.equals(body, other.body)) {
+			return false;
+		}
+		if (messageProperties == null) {
+			if (other.messageProperties != null) {
+				return false;
+			}
+		}
+		else if (!messageProperties.equals(other.messageProperties)) {
+			return false;
+		}
+		return true;
+	}
+
 
 }
