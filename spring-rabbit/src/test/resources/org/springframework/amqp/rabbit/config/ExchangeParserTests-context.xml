@@ -11,7 +11,11 @@
 
 	<rabbit:direct-exchange name="direct" auto-declare="false" declared-by="admin1, admin2">
 		<rabbit:bindings>
-			<rabbit:binding key="foo" queue="bar"/>
+			<rabbit:binding key="foo" queue="bar">
+				<rabbit:binding-arguments>
+					<entry key="x-match" value="any"/>
+				</rabbit:binding-arguments>
+			</rabbit:binding>
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 

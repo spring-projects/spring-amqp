@@ -36,15 +36,20 @@
 		</bindings>
 	</fanout-exchange>
 
-	<headers-exchange name="headers-test"
-		xmlns="http://www.springframework.org/schema/rabbit">
-		<bindings>
-			<binding queue="foo" key="type" value="foo" />
-			<binding queue="bar" key="type" value="bar" />
-			<binding queue="spam" key="type" value="spam" />
-			<binding queue="bucket" key="type" value="bucket"  />
-		</bindings>
-	</headers-exchange>
+	<rabbit:headers-exchange name="headers-test">
+		<rabbit:bindings>
+			<rabbit:binding queue="foo" key="type" value="foo" />
+			<rabbit:binding queue="bar" key="type" value="bar" />
+			<rabbit:binding queue="spam" key="type" value="spam" />
+			<rabbit:binding queue="bucket">
+				<rabbit:binding-arguments>
+					<entry key="type" value="bucket"/>
+					<entry key="foo" value="bar"/>
+					<entry key="x-match" value="all"/>
+				</rabbit:binding-arguments>
+			</rabbit:binding>
+		</rabbit:bindings>
+	</rabbit:headers-exchange>
 
 	<rabbit:queue name="foo" />
 
