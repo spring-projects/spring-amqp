@@ -49,7 +49,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 
 	protected static final String BINDING_EXCHANGE_ATTR = "exchange";
 
-	private static final String BINDING_ARGUMENTS = "binding-arguments";
+	protected static final String BINDING_ARGUMENTS = "binding-arguments";
 
 	private static final String REF_ATTRIBUTE = "ref";
 

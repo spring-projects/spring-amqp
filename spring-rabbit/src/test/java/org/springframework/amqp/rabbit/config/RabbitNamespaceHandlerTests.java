@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
@@ -41,6 +42,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Tomas Lukosius
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0
  *
  */
@@ -91,6 +93,14 @@ public final class RabbitNamespaceHandlerTests {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
 		// 4 for each exchange type
 		assertEquals(17, bindings.size());
+		for (Map.Entry<String, Binding> bindingEntry : bindings.entrySet()) {
+			Binding binding = bindingEntry.getValue();
+			if ("headers-test".equals(binding.getExchange()) && "bucket".equals(binding.getDestination())) {
+				Map<String, Object> arguments = binding.getArguments();
+				assertEquals(3, arguments.size());
+				break;
+			}
+		}
 	}
 
 	@Test

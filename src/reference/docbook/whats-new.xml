@@ -46,6 +46,17 @@
 				instead of <code>Channel</code>s. See <xref linkend="connections"/>.
 			</para>
 		</section>
+		<section>
+			<title>Binding Arguments</title>
+			<para>
+				The <code>&lt;exchange&gt;</code>'s <code>&lt;binding&gt;</code> now supports parsing of
+				<code>&lt;binding-arguments&gt;</code> sub-element. The <code>&lt;headers-exchange&gt;</code>'s
+				<code>&lt;binding&gt;</code> now can be configured with <code>key/value</code> attributes pair
+				as well with <code>&lt;binding-arguments&gt;</code> sub-element, but as mutually exclusive.
+				With that the <classname>Binding</classname> to a <classname>HeadersExchange</classname>
+				now can match to several headers and their values and <code>x-match=any/all</code> can be configured too.
+			</para>
+		</section>
 	</section>
 
 	<section>
