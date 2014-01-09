@@ -632,7 +632,7 @@ public static MessageBuilder fromClonedMessage(Message message) ]]><co id="mb5" 
 		</para>
 		<programlisting language="java"><![CDATA[public static MessagePropertiesBuilder newInstance() ]]><co id="mb101" /><![CDATA[
 
-public static MessagePropertiesBuilder fromProperties ]]><co id="mb102" /><![CDATA[
+public static MessagePropertiesBuilder fromProperties(MessageProperties properties) ]]><co id="mb102" /><![CDATA[
 
 public static MessagePropertiesBuilder fromClonedProperties(MessageProperties properties) ]]><co id="mb103" /></programlisting>
 		<calloutlist>
