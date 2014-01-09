@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
+ * Copyright 2002-2014 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -20,6 +20,7 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.JavaType;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
@@ -149,7 +150,7 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
 		messageProperties.setContentEncoding(getDefaultCharset());
 		if (bytes != null) {
-			messageProperties.setContentLength(bytes.length);
+			messageProperties.setContentLength((long) bytes.length);
 		}
 
 		if (getClassMapper() == null) {

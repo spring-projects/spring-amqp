@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 package org.springframework.amqp.core;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,13 +38,15 @@ public class MessageProperties implements Serializable {
 
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
+	public static final String CONTENT_TYPE_JSON_ALT = "text/x-json";
+
 	public static final String CONTENT_TYPE_XML = "application/xml";
 
-	private static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
+	static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
-	private static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
+	static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
-	private static final Integer DEFAULT_PRIORITY = Integer.valueOf(0);
+	static final Integer DEFAULT_PRIORITY = Integer.valueOf(0);
 
 	private final Map<String, Object> headers = new HashMap<String, Object>();
 
@@ -67,7 +70,7 @@ public class MessageProperties implements Serializable {
 
 	private volatile String contentEncoding;
 
-	private volatile long contentLength;
+	private volatile Long contentLength;
 
 	private volatile MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
 
@@ -81,7 +84,7 @@ public class MessageProperties implements Serializable {
 
 	private volatile String receivedRoutingKey;
 
-	private volatile long deliveryTag;
+	private volatile Long deliveryTag;
 
 	private volatile Integer messageCount;
 
@@ -193,11 +196,11 @@ public class MessageProperties implements Serializable {
 		return this.contentEncoding;
 	}
 
-	public void setContentLength(long contentLength) {
+	public void setContentLength(Long contentLength) {
 		this.contentLength = contentLength;
 	}
 
-	public long getContentLength() {
+	public Long getContentLength() {
 		return this.contentLength;
 	}
 
@@ -252,11 +255,18 @@ public class MessageProperties implements Serializable {
 		return this.redelivered;
 	}
 
-	public void setDeliveryTag(long deliveryTag) {
+	/*
+	 * Additional accessor because is* is not standard for type Boolean
+	 */
+	public Boolean getRedelivered() {
+		return this.redelivered;
+	}
+
+	public void setDeliveryTag(Long deliveryTag) {
 		this.deliveryTag = deliveryTag;
 	}
 
-	public long getDeliveryTag() {
+	public Long getDeliveryTag() {
 		return this.deliveryTag;
 	}
 
@@ -266,6 +276,199 @@ public class MessageProperties implements Serializable {
 
 	public Integer getMessageCount() {
 		return this.messageCount;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((appId == null) ? 0 : appId.hashCode());
+		result = prime * result + ((clusterId == null) ? 0 : clusterId.hashCode());
+		result = prime * result + ((contentEncoding == null) ? 0 : contentEncoding.hashCode());
+		result = prime * result + (int) (contentLength ^ (contentLength >>> 32));
+		result = prime * result + ((contentType == null) ? 0 : contentType.hashCode());
+		result = prime * result + Arrays.hashCode(correlationId);
+		result = prime * result + ((deliveryMode == null) ? 0 : deliveryMode.hashCode());
+		result = prime * result + (int) (deliveryTag ^ (deliveryTag >>> 32));
+		result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
+		result = prime * result + ((headers == null) ? 0 : headers.hashCode());
+		result = prime * result + ((messageCount == null) ? 0 : messageCount.hashCode());
+		result = prime * result + ((messageId == null) ? 0 : messageId.hashCode());
+		result = prime * result + ((priority == null) ? 0 : priority.hashCode());
+		result = prime * result + ((receivedExchange == null) ? 0 : receivedExchange.hashCode());
+		result = prime * result + ((receivedRoutingKey == null) ? 0 : receivedRoutingKey.hashCode());
+		result = prime * result + ((redelivered == null) ? 0 : redelivered.hashCode());
+		result = prime * result + ((replyTo == null) ? 0 : replyTo.hashCode());
+		result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((userId == null) ? 0 : userId.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		MessageProperties other = (MessageProperties) obj;
+		if (appId == null) {
+			if (other.appId != null) {
+				return false;
+			}
+		}
+		else if (!appId.equals(other.appId)) {
+			return false;
+		}
+		if (clusterId == null) {
+			if (other.clusterId != null) {
+				return false;
+			}
+		}
+		else if (!clusterId.equals(other.clusterId)) {
+			return false;
+		}
+		if (contentEncoding == null) {
+			if (other.contentEncoding != null) {
+				return false;
+			}
+		}
+		else if (!contentEncoding.equals(other.contentEncoding)) {
+			return false;
+		}
+		if (contentLength != other.contentLength) {
+			return false;
+		}
+		if (contentType == null) {
+			if (other.contentType != null) {
+				return false;
+			}
+		}
+		else if (!contentType.equals(other.contentType)) {
+			return false;
+		}
+		if (!Arrays.equals(correlationId, other.correlationId)) {
+			return false;
+		}
+		if (deliveryMode != other.deliveryMode) {
+			return false;
+		}
+		if (deliveryTag != other.deliveryTag) {
+			return false;
+		}
+		if (expiration == null) {
+			if (other.expiration != null) {
+				return false;
+			}
+		}
+		else if (!expiration.equals(other.expiration)) {
+			return false;
+		}
+		if (headers == null) {
+			if (other.headers != null) {
+				return false;
+			}
+		}
+		else if (!headers.equals(other.headers)) {
+			return false;
+		}
+		if (messageCount == null) {
+			if (other.messageCount != null) {
+				return false;
+			}
+		}
+		else if (!messageCount.equals(other.messageCount)) {
+			return false;
+		}
+		if (messageId == null) {
+			if (other.messageId != null) {
+				return false;
+			}
+		}
+		else if (!messageId.equals(other.messageId)) {
+			return false;
+		}
+		if (priority == null) {
+			if (other.priority != null) {
+				return false;
+			}
+		}
+		else if (!priority.equals(other.priority)) {
+			return false;
+		}
+		if (receivedExchange == null) {
+			if (other.receivedExchange != null) {
+				return false;
+			}
+		}
+		else if (!receivedExchange.equals(other.receivedExchange)) {
+			return false;
+		}
+		if (receivedRoutingKey == null) {
+			if (other.receivedRoutingKey != null) {
+				return false;
+			}
+		}
+		else if (!receivedRoutingKey.equals(other.receivedRoutingKey)) {
+			return false;
+		}
+		if (redelivered == null) {
+			if (other.redelivered != null) {
+				return false;
+			}
+		}
+		else if (!redelivered.equals(other.redelivered)) {
+			return false;
+		}
+		if (replyTo == null) {
+			if (other.replyTo != null) {
+				return false;
+			}
+		}
+		else if (!replyTo.equals(other.replyTo)) {
+			return false;
+		}
+		if (timestamp == null) {
+			if (other.timestamp != null) {
+				return false;
+			}
+		}
+		else if (!timestamp.equals(other.timestamp)) {
+			return false;
+		}
+		if (type == null) {
+			if (other.type != null) {
+				return false;
+			}
+		}
+		else if (!type.equals(other.type)) {
+			return false;
+		}
+		if (userId == null) {
+			if (other.userId != null) {
+				return false;
+			}
+		}
+		else if (!userId.equals(other.userId)) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "MessageProperties [headers=" + headers + ", timestamp=" + timestamp + ", messageId=" + messageId
+				+ ", userId=" + userId + ", appId=" + appId + ", clusterId=" + clusterId + ", type=" + type
+				+ ", correlationId=" + Arrays.toString(correlationId) + ", replyTo=" + replyTo + ", contentType="
+				+ contentType + ", contentEncoding=" + contentEncoding + ", contentLength=" + contentLength
+				+ ", deliveryMode=" + deliveryMode + ", expiration=" + expiration + ", priority=" + priority
+				+ ", redelivered=" + redelivered + ", receivedExchange=" + receivedExchange + ", receivedRoutingKey="
+				+ receivedRoutingKey + ", deliveryTag=" + deliveryTag + ", messageCount=" + messageCount + "]";
 	}
 
 }
