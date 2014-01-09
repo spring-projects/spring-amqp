@@ -225,7 +225,7 @@ abstract class MessageBuilderSupport<T> {
 
 	public MessageBuilderSupport<T> setContentTypeIfAbsentOrDefault(String contentType) {
 		if (this.properties.getContentType() == null
-				|| this.properties.getContentType() == MessageProperties.DEFAULT_CONTENT_TYPE) {
+				|| this.properties.getContentType().equals(MessageProperties.DEFAULT_CONTENT_TYPE)) {
 			this.properties.setContentType(contentType);
 		}
 		return this;
@@ -247,7 +247,7 @@ abstract class MessageBuilderSupport<T> {
 
 	public MessageBuilderSupport<T> setDeliveryModeIfAbsentOrDefault(MessageDeliveryMode deliveryMode) {
 		if (this.properties.getDeliveryMode() == null
-				|| this.properties.getDeliveryMode() == MessageProperties.DEFAULT_DELIVERY_MODE) {
+				|| this.properties.getDeliveryMode().equals(MessageProperties.DEFAULT_DELIVERY_MODE)) {
 			this.properties.setDeliveryMode(deliveryMode);
 		}
 		return this;
