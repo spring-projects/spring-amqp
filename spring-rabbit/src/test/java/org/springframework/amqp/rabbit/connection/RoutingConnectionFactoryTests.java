@@ -13,8 +13,13 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +33,7 @@ import org.mockito.Mockito;
 public class RoutingConnectionFactoryTests {
 
 	@Test
-	public void testRoutingConnectionFactory() {
+	public void testAbstractRoutingConnectionFactory() {
 		ConnectionFactory connectionFactory1 = Mockito.mock(ConnectionFactory.class);
 		ConnectionFactory connectionFactory2 = Mockito.mock(ConnectionFactory.class);
 		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
@@ -57,6 +62,40 @@ public class RoutingConnectionFactoryTests {
 		Mockito.verify(connectionFactory1, Mockito.times(2)).createConnection();
 		Mockito.verify(connectionFactory2).createConnection();
 		Mockito.verify(defaultConnectionFactory, Mockito.times(2)).createConnection();
+	}
+
+	@Test
+	public void testSimpleRoutingConnectionFactory() throws InterruptedException {
+		ConnectionFactory connectionFactory1 = Mockito.mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory2 = Mockito.mock(ConnectionFactory.class);
+		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
+		factories.put("foo", connectionFactory1);
+		factories.put("bar", connectionFactory2);
+
+
+		final AbstractRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
+		connectionFactory.setTargetConnectionFactories(factories);
+
+		ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+
+		for (int i = 0; i < 3; i++) {
+			final AtomicInteger count = new AtomicInteger(i);
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					SimpleResourceHolder.bind(connectionFactory, count.get() % 2 == 0 ? "foo" : "bar");
+					connectionFactory.createConnection();
+				}
+			});
+		}
+
+		executorService.shutdown();
+		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
+
+		Mockito.verify(connectionFactory1, Mockito.times(2)).createConnection();
+		Mockito.verify(connectionFactory2).createConnection();
 	}
 
 }

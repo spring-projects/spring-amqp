@@ -353,13 +353,37 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
     </section>
     <section id="routing-connection-factory">
-      <title>Abstract Routing Connection Factory</title>
+      <title>Routing Connection Factory</title>
       <para>
 		  Starting with <emphasis>version 1.3</emphasis>, the <classname>AbstractRoutingConnectionFactory</classname>
 		  has been introduced, as convenient component to configure mapping for several
 		  <interfacename>ConnectionFactories</interfacename> and determine a target <interfacename>ConnectionFactory</interfacename>
-		  by some <code>lookup key</code> at runtime. Typically, the implementation checks a thread-bound context.
-		  For more information see the <classname>AbstractRoutingConnectionFactory</classname> JavaDocs.
+		  by some <code>lookupKey</code> at runtime. Typically, the implementation checks a thread-bound context.
+		  For convenience with thread-bound context Spring AMQP provides <classname>SimpleRoutingConnectionFactory</classname>,
+		  which gets current <code>lookupKey</code> from <classname>SimpleResourceHolder</classname> by its own instance:
+		  <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
+      class="org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory>
+	<property name="targetConnectionFactories">
+		<map>
+			<entry key="#{connectionFactory1.virtualHost}" ref="connectionFactory1"/>
+			<entry key="#{connectionFactory1.virtualHost}" ref="connectionFactory2"/>
+		</map>
+	</property>
+</bean>
+
+<rabbit:template id="template" connection-factory="connectionFactory" />]]></programlisting>
+		  <programlisting language="java"><![CDATA[public class MyService {
+
+	@Autowired
+	private RabbitTemplate rabbitTemplate;
+
+	public void service(String vHost, String payload) {
+		SimpleResourceHolder.bind(rabbitTemplate.getConnectionFactory(), vHost);
+		rabbitTemplate.convertAndSend(payload);
+	}
+
+}]]></programlisting>
+		  For more information see the JavaDocs of <classname>AbstractRoutingConnectionFactory</classname>.
       </para>
     </section>
     <section id="cf-pub-conf-ret">

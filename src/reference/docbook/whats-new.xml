@@ -63,7 +63,7 @@
 				The new <classname>AbstractRoutingConnectionFactory</classname> has been introduced,
 				to allow configure <classname>ConnectionFactories</classname> mapping and determine
 				target <classname>ConnectionFactory</classname> by some <code>lookup key</code>.
-				See <xref linkend="headers-exchange" />.
+				See <xref linkend="routing-connection-factory" />.
 			</para>
 		</section>
 	</section>
