@@ -15,7 +15,7 @@
 		<section>
 			<title>Rabbit Admin</title>
 			<para>
-				It is now possible to have the Broker to generate the queue name, regardless
+				It is now possible to have the Broker generate the queue name, regardless
 				of durable, autoDelete and exclusive settings.
 				See <xref linkend="broker-configuration" />.
 			</para>
@@ -42,16 +42,17 @@
 		<section>
 			<title>Caching Connection Factory</title>
 			<para>
-				The caching connection factory can now be configured to cache <code>Connection</code>s
-				instead of <code>Channel</code>s. See <xref linkend="connections"/>.
+				The caching connection factory can now be configured to cache <code>Connection</code>s,
+				with a <code>Channel</code> per <code>Connection</code> instead of using a single
+				connection and caching <code>Channel</code>s. See <xref linkend="connections"/>.
 			</para>
 		</section>
 		<section>
 			<title>Binding Arguments</title>
 			<para>
 				The <code>&lt;exchange&gt;</code>'s <code>&lt;binding&gt;</code> now supports parsing of
-				<code>&lt;binding-arguments&gt;</code> sub-element. The <code>&lt;headers-exchange&gt;</code>'s
-				<code>&lt;binding&gt;</code> now can be configured with <code>key/value</code> attributes pair
+				the <code>&lt;binding-arguments&gt;</code> sub-element. The <code>&lt;headers-exchange&gt;</code>'s
+				<code>&lt;binding&gt;</code> now can be configured with a <code>key/value</code> attribute pair
 				(to match on a single header)
 				or with a <code>&lt;binding-arguments&gt;</code> sub-element, allowing matching on multiple
 				headers; these options are mutually exclusive. See <xref linkend="headers-exchange" />.
