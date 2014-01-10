@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -84,6 +84,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 	/**
 	 * Converts from a AMQP Message to an Object.
 	 */
+	@Override
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
@@ -117,6 +118,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 	/**
 	 * Creates an AMQP Message from the provided Object.
 	 */
+	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;
 		if (object instanceof String) {
@@ -141,7 +143,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
 		if (bytes != null) {
-			messageProperties.setContentLength(bytes.length);
+			messageProperties.setContentLength((long) bytes.length);
 		}
 		return new Message(bytes, messageProperties);
 	}

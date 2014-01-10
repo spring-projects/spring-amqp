@@ -60,10 +60,17 @@
 		<section>
 			<title>Routing Connection Factory</title>
 			<para>
-				The new <classname>AbstractRoutingConnectionFactory</classname> has been introduced,
-				to allow configure <classname>ConnectionFactories</classname> mapping and determine
-				target <classname>ConnectionFactory</classname> by some <code>lookup key</code>.
+				A new <classname>SimpleRoutingConnectionFactory</classname> has been introduced,
+				to allow configuration of <classname>ConnectionFactories</classname> mapping to determine
+				the target <classname>ConnectionFactory</classname> to use at runtime.
 				See <xref linkend="routing-connection-factory" />.
+			</para>
+		</section>
+		<section>
+			<title>MessageBuilder and MessagePropertiesBuilder</title>
+			<para>
+				"Fluent APIs" for building messages and/or message properties is now provided.
+				See <xref linkend="message-builder"/>.
 			</para>
 		</section>
 	</section>

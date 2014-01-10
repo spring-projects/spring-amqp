@@ -549,7 +549,111 @@ template.send("queue.helloWorld", new Message("Hello World".getBytes(), someProp
     <programlisting language="java"><![CDATA[RabbitTemplate template = new RabbitTemplate(); // using default no-name Exchange
 template.setRoutingKey("queue.helloWorld"); // but we'll always send to this Queue
 template.send(new Message("Hello World".getBytes(), someProperties));]]></programlisting>
+	<section id="message-builder">
+		<title>Message Builder API</title>
+		<para>
+			Starting with <emphasis>version 1.3</emphasis>, a message builder API is
+			provided by the <classname>MessageBuilder</classname> and <classname>MessagePropertiesBuilder</classname>;
+			they provides a convenient "fluent" means of creating a message or message properties:
+		</para>
+		<programlisting language="java"><![CDATA[Message message = MessageBuilder.withBody("foo".getBytes())
+	.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
+	.setMessageId("123")
+	.setHeader("bar", "baz")
+	.build();]]></programlisting>
+		<para>
+			or
+		</para>
+		<programlisting language="java"><![CDATA[MessageProperties props = MessagePropertiesBuilder.newInstance()
+	.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
+	.setMessageId("123")
+	.setHeader("bar", "baz")
+	.build();
+Message message = MessageBuilder.withBody("foo".getBytes())
+	.andProperties(props)
+	.build();
+]]></programlisting>
+		<para>
+			Each of the properties defined on the
+			<ulink url="http://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/core/MessageProperties.html"
+			>MessageProperies</ulink> can be set. Other  methods include <code>setHeader(String key, String value)</code>,
+			<code>removeHeader(String key)</code>, <code>removeHeaders()</code>, and
+			<code>copyProperties(MessageProperties properties)</code>. Each property setting method has a
+			<code>set*IfAbsent()</code> variant. In the cases where a default initial value exists, the method is named
+			<code>set*IfAbsentOrDefault()</code>.
+		</para>
+		<para>
+			Five static methods are provided to create an initial message builder:
+		</para>
+		<programlisting language="java"><![CDATA[public static MessageBuilder withBody(byte[] body) ]]><co id="mb1" /><![CDATA[
 
+public static MessageBuilder withClonedBody(byte[] body) ]]><co id="mb2" /><![CDATA[
+
+public static MessageBuilder withBody(byte[] body, int from, int to) ]]><co id="mb3" /><![CDATA[
+
+public static MessageBuilder fromMessage(Message message) ]]><co id="mb4" /><![CDATA[
+
+public static MessageBuilder fromClonedMessage(Message message) ]]><co id="mb5" /></programlisting>
+		<calloutlist>
+			<callout arearefs="mb1">
+				<para>
+					The message created by the builder will have a body that is a direct reference to the argument.
+				</para>
+			</callout>
+			<callout arearefs="mb2">
+				<para>
+					The message created by the builder will have a body that is a new array containing a copy of 
+					bytes in the argument.
+				</para>
+			</callout>
+			<callout arearefs="mb3">
+				<para>
+					The message created by the builder will have a body that is a new array containing the range
+					of bytes from the argument. See <code>Arrays.copyOfRange()</code> for more details.
+				</para>
+			</callout>
+			<callout arearefs="mb4">
+				<para>
+					The message created by the builder will have a body that is a direct reference to the
+					body of the argument.
+					The argument's properties are copied to a new a <classname>MessageProperties</classname> object.
+				</para>
+			</callout>
+			<callout arearefs="mb5">
+				<para>
+					The message created by the builder will have a body that is a new array containing a copy of 
+					the argument's body.
+					The argument's properties are copied to a new a <classname>MessageProperties</classname> object.
+				</para>
+			</callout>
+		</calloutlist>
+		<para>
+			Three static methods are provided to create an initial message properties builder:
+		</para>
+		<programlisting language="java"><![CDATA[public static MessagePropertiesBuilder newInstance() ]]><co id="mb101" /><![CDATA[
+
+public static MessagePropertiesBuilder fromProperties(MessageProperties properties) ]]><co id="mb102" /><![CDATA[
+
+public static MessagePropertiesBuilder fromClonedProperties(MessageProperties properties) ]]><co id="mb103" /></programlisting>
+		<calloutlist>
+			<callout arearefs="mb101">
+				<para>
+					A new message properties object is initialized with default values.
+				</para>
+			</callout>
+			<callout arearefs="mb102">
+				<para>
+					The builder is initialized with, and <code>build()</code> will return, the provided properties
+					object.
+				</para>
+			</callout>
+			<callout arearefs="mb103">
+				<para>
+					The argument's properties are copied to a new a <classname>MessageProperties</classname> object.
+				</para>
+			</callout>
+		</calloutlist>
+	</section>
     <section>
       <title>Publisher Confirms</title>
       <para>
