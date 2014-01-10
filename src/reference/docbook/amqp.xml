@@ -2094,11 +2094,11 @@ public RabbitTransactionManager rabbitTransactionManager() {
       of consumers which will concurrently process messages.
     </para>
     <para>
-      Prior to <emphasis>version 1.2.1</emphasis>, this was the only setting available
+      Prior to <emphasis>version 1.3.0</emphasis>, this was the only setting available
       and the container had to be stopped and started again to change the setting.
     </para>
     <para>
-      Since <emphasis>version 1.2.1</emphasis>, you can now dynamically
+      Since <emphasis>version 1.3.0</emphasis>, you can now dynamically
       adjust the <code>concurrentConsumers</code> property. If it is
       changed while the container is running, consumers will be added or
       removed as necessary to adjust to the new setting.

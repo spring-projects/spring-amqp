@@ -6,6 +6,14 @@
 	<section>
 		<title>Changes in 1.3 Since 1.2</title>
 		<section>
+			<title>Listener Concurrency</title>
+			<para>
+				The listener container now supports dynamic scaling of the number of consumers
+				based on workload, or the concurrency can be programmatically changed without
+				stopping the container. See <xref linkend="listener-concurrency" />.
+			</para>
+		</section>
+		<section>
 			<title>Consumer Priority</title>
 			<para>
 				The listener container now supports consumer arguments, allowing the
