@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -49,6 +50,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  *
  */
 public class MessageListenerRecoveryRepeatIntegrationTests {
@@ -72,8 +74,8 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 	private SimpleMessageListenerContainer container;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, MessageListenerRecoveryRepeatIntegrationTests.class);
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue, sendQueue);
@@ -168,6 +170,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 			failed.set(false);
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			logger.info("Receiving: " + value);
