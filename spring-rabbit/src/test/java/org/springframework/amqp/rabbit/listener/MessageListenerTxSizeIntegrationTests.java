@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
@@ -42,6 +43,8 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
+ *
  * @since 1.0
  *
  */
@@ -64,7 +67,7 @@ public class MessageListenerTxSizeIntegrationTests {
 	private SimpleMessageListenerContainer container;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
@@ -151,6 +154,7 @@ public class MessageListenerTxSizeIntegrationTests {
 		public void handleMessage(String value) {
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			try {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -54,6 +54,7 @@ import org.springframework.test.annotation.Repeat;
  * @author Dave Syer
  * @author Gary Russell
  * @author Gunnar Hillert
+ *
  * @since 1.0
  *
  */
@@ -67,11 +68,11 @@ public class MessageListenerContainerRetryIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
-	public Log4jLevelAdjuster traceLevels = new Log4jLevelAdjuster(Level.TRACE, StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
+	public Log4jLevelAdjuster traceLevels = new Log4jLevelAdjuster(Level.ERROR, StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
@@ -173,6 +174,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 			factory = new StatelessRetryOperationsInterceptorFactoryBean();
 		}
 		factory.setMessageRecoverer(new MessageRecoverer() {
+			@Override
 			public void recover(Message message, Throwable cause) {
 				logger.info("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString()+"], message: " +message);
 				latch.countDown();
@@ -229,6 +231,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 			final int count = messageCount;
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
 			Executors.newSingleThreadExecutor().execute(new Runnable() {
+				@Override
 				public void run() {
 					while (container.getActiveConsumerCount() > 0) {
 						try {
