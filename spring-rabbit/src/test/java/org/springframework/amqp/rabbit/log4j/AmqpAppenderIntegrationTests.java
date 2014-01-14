@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.MDC;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +49,7 @@ import org.springframework.util.Log4jConfigurer;
  * @author Jon Brisbin <jbrisbin@vmware.com>
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Artem Bilan
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "org.springframework.amqp.rabbit.log4j" }, loader = AnnotationConfigContextLoader.class)
@@ -74,6 +76,11 @@ public class AmqpAppenderIntegrationTests {
 	@After
 	public void tearDown() {
 		listenerContainer.shutdown();
+	}
+
+	@AfterClass
+	public static void reset() throws Exception {
+		Log4jConfigurer.initLogging("classpath:log4j.properties");
 	}
 
 	@Test
