@@ -102,7 +102,7 @@ subprojects { subproject ->
 	test {
 		// suppress all console output during testing unless running `gradle -i`
 		logging.captureStandardOutput(LogLevel.INFO)
-		jvmArgs "-Dlog4j.debug=true -javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
+		jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
 	}
 
 	task testAll() {
