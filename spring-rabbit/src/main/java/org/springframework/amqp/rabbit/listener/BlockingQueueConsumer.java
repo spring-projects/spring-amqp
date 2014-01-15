@@ -103,6 +103,14 @@ public class BlockingQueueConsumer {
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started. RequeueRejected defaults to true.
+	 *
+	 * @param connectionFactory The connection factory.
+	 * @param messagePropertiesConverter The properties converter.
+	 * @param activeObjectCounter The active object counter; used during shutdown.
+	 * @param acknowledgeMode The acknowledgemode.
+	 * @param transactional Whether the channel is transactional.
+	 * @param prefetchCount The prefetch count.
+	 * @param queues The queues.
 	 */
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
 			MessagePropertiesConverter messagePropertiesConverter,
@@ -115,6 +123,15 @@ public class BlockingQueueConsumer {
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
+	 *
+	 * @param connectionFactory The connection factory.
+	 * @param messagePropertiesConverter The properties converter.
+	 * @param activeObjectCounter The active object counter; used during shutdown.
+	 * @param acknowledgeMode The acknowledge mode.
+	 * @param transactional Whether the channel is transactional.
+	 * @param prefetchCount The prefetch count.
+	 * @param defaultRequeueRejected true to reject requeued messages.
+	 * @param queues The queues.
 	 */
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
 			MessagePropertiesConverter messagePropertiesConverter,
@@ -127,6 +144,16 @@ public class BlockingQueueConsumer {
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started.
+	 *
+	 * @param connectionFactory The connection factory.
+	 * @param messagePropertiesConverter The properties converter.
+	 * @param activeObjectCounter The active object counter; used during shutdown.
+	 * @param acknowledgeMode The acknowledge mode.
+	 * @param transactional Whether the channel is transactional.
+	 * @param prefetchCount The prefetch count.
+	 * @param defaultRequeueRejected true to reject requeued messages.
+	 * @param consumerArgs The consumer arguments (e.g. x-priority).
+	 * @param queues The queues.
 	 */
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
 			MessagePropertiesConverter messagePropertiesConverter,
@@ -464,8 +491,10 @@ public class BlockingQueueConsumer {
 
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
-	 * @param locallyTransacted
-	 * @throws IOException
+	 *
+	 * @param locallyTransacted Whether the channel is locally transacted.
+	 * @throws IOException Any IOException.
+	 * @return true if at least one delivery tag exists.
 	 */
 	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
 

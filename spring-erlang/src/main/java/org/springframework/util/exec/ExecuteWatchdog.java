@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ package org.springframework.util.exec;
  * Destroys a process running for too long.
  * For example:
  * <pre class="code">
- * ExecuteWatchdog watchdog = new ExecuteWatchdog(30000);
- * Execute exec = new Execute(myloghandler, watchdog);
- * exec.setCommandLine(mycmdline);
- * int exitvalue = exec.execute();
- * if (exitvalue != SUCCESS && watchdog.killedProcess()){
+ * {@code
+ *     ExecuteWatchdog watchdog = new ExecuteWatchdog(30000);
+ *     Execute exec = new Execute(myloghandler, watchdog);
+ *     exec.setCommandLine(mycmdline);
+ *     int exitvalue = exec.execute();
+ *     if (exitvalue != SUCCESS && watchdog.killedProcess()){
  *              // it was killed on purpose by the watchdog
+ *     }
  * }
  * </pre>
 
@@ -74,6 +76,7 @@ public class ExecuteWatchdog implements Runnable {
      * Watches the given process and terminates it, if it runs for too long.
      * All information from the previous run are reset.
      * @param process the process to monitor. It cannot be <tt>null</tt>
+     * @param execThread The thread.
      * @throws IllegalStateException    thrown if a process is still being monitored.
      */
     public synchronized void start(Process process, Thread execThread) {

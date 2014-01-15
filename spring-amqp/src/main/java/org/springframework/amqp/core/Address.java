@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -82,9 +82,9 @@ public class Address {
 	 * Create an Address given the exchange type, exchange name and routing key. This will set the exchange type, name
 	 * and the routing key explicitly.
 	 *
-	 * @param exchangeType
-	 * @param exchangeName
-	 * @param routingKey
+	 * @param exchangeType The exchange type.
+	 * @param exchangeName The exchange name.
+	 * @param routingKey The routing key.
 	 */
 	public Address(String exchangeType, String exchangeName, String routingKey) {
 		this.exchangeType = exchangeType;

@@ -182,6 +182,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
 	 * seconds.
+	 *
+	 * @param recoveryInterval The recovery interval.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
 		this.recoveryInterval = recoveryInterval;
@@ -256,7 +258,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * the minimum time (milliseconds) between starting new consumers on demand. Default is 10000
 	 * (10 seconds).
 	 *
-	 * @param startConsumerMinInterval
+	 * @param startConsumerMinInterval The minimum interval between new consumer starts.
 	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStartConsumerMinInterval(long)
@@ -272,7 +274,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * minimum time (milliseconds) between stopping idle consumers. Default is 60000
 	 * (1 minute).
 	 *
-	 * @param stopConsumerMinInterval
+	 * @param stopConsumerMinInterval The minimum interval between consumer stops.
 	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStopConsumerMinInterval(long)
@@ -290,7 +292,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * This is impacted by the {@link #txSize}.
 	 * Default is 10 consecutive messages.
 	 *
-	 * @param consecutiveActiveTrigger
+	 * @param consecutiveActiveTrigger The number of consecutive receives to trigger a new consumer.
 	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStartConsumerMinInterval(long)
@@ -311,7 +313,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 *
 	 * Default is 10 consecutive idles.
 	 *
-	 * @param consecutiveIdleTrigger
+	 * @param consecutiveIdleTrigger The number of consecutive timeouts to trigger stopping a consumer.
 	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStopConsumerMinInterval(long)
@@ -387,6 +389,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Set the {@link MessagePropertiesConverter} for this listener container.
+	 *
+	 * @param messagePropertiesConverter The properties converter.
 	 */
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
@@ -400,7 +404,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
 	 * be requeued. When true, the default can be overridden by the listener throwing an
 	 * {@link AmqpRejectAndDontRequeueException}. Default true.
-	 * @param defaultRequeueRejected
+	 *
+	 * @param defaultRequeueRejected true to reject by default.
 	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
 		this.defaultRequeueRejected = defaultRequeueRejected;
@@ -458,6 +463,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Always use a shared Rabbit Connection.
+	 *
+	 * @return true
 	 */
 	protected final boolean sharedConnectionEnabled() {
 		return true;
@@ -467,7 +474,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Creates the specified number of concurrent consumers, in the form of a Rabbit Channel plus associated
 	 * MessageConsumer.
 	 *
-	 * @throws Exception
+	 * @throws Exception Any Exception.
 	 */
 	@Override
 	protected void doInitialize() throws Exception {
@@ -486,7 +493,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
 	 * to this container's task executor.
 	 *
-	 * @throws Exception
+	 * @throws Exception Any Exception.
 	 */
 	@Override
 	protected void doStart() throws Exception {

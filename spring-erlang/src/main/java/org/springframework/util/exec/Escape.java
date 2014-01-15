@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ public class Escape {
     /**
      * Escape a string by quoting the magical elements
      * (such as whitespace, quotes, slashes, etc.)
+     *
+     * @param in The string to escape.
+     * @return The escaped string.
      */
     public static String escape(String in){
         char[] inChars, outChars;
@@ -42,7 +45,7 @@ public class Escape {
             if(outChars.length - numOut < 5){
                 outChars = enlargeArray(outChars);
             }
-  
+
             if(Character.isWhitespace(inChars[i]) ||
                inChars[i] == '\\' ||
                inChars[i] == '\'' ||

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.remoting.client;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.remoting.RemoteProxyFailureException;
@@ -77,6 +78,8 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	 * sending messages as described <a href=
 	 * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >in the Spring-AMQP
 	 * documentation</a>.
+	 *
+	 * @param amqpTemplate The amqp template.
 	 */
 	public void setAmqpTemplate(AmqpTemplate amqpTemplate) {
 		this.amqpTemplate = amqpTemplate;
@@ -91,6 +94,8 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	 * broker. If not set, the {@link AmqpTemplate}'s default routing key will be used.
 	 * <p>
 	 * This property is useful if you want to use the same AmqpTemplate to talk to multiple services.
+	 *
+	 * @param routingKey The routing key.
 	 */
 	public void setRoutingKey(String routingKey) {
 		this.routingKey = routingKey;
@@ -104,6 +109,8 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	 * Set the RemoteInvocationFactory to use for this accessor. Default is a {@link DefaultRemoteInvocationFactory}.
 	 * <p>
 	 * A custom invocation factory can add further context information to the invocation, for example user credentials.
+	 *
+	 * @param remoteInvocationFactory The remote invocation factory.
 	 */
 	public void setRemoteInvocationFactory(RemoteInvocationFactory remoteInvocationFactory) {
 		this.remoteInvocationFactory = remoteInvocationFactory;

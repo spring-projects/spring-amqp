@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -55,6 +55,8 @@ public abstract class NamespaceUtils {
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to populate the property
 	 * @param propertyName the name of the property to be populated
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName, String propertyName) {
@@ -79,6 +81,8 @@ public abstract class NamespaceUtils {
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be set on the property
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
@@ -91,6 +95,8 @@ public abstract class NamespaceUtils {
 	 *
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean isAttributeDefined(Element element, String attributeName) {
 		String value = element.getAttribute(attributeName);
@@ -104,6 +110,8 @@ public abstract class NamespaceUtils {
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean addConstructorArgValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
@@ -141,6 +149,8 @@ public abstract class NamespaceUtils {
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to set the reference
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean addConstructorArgRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
@@ -159,6 +169,8 @@ public abstract class NamespaceUtils {
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used to set the reference
+	 *
+	 * @return true if defined.
 	 */
 	public static boolean addConstructorArgParentRefIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
@@ -208,6 +220,8 @@ public abstract class NamespaceUtils {
 	 * @param attributeName the name of the attribute whose value will be used as a bean reference to populate the
 	 * property
 	 *
+	 * @return true if defined.
+	 *
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
@@ -219,6 +233,9 @@ public abstract class NamespaceUtils {
 	/**
 	 * Provides a user friendly description of an element based on its node name and, if available, its "id" attribute
 	 * value. This is useful for creating error messages from within bean definition parsers.
+	 *
+	 * @param element The element.
+	 * @return The description.
 	 */
 	public static String createElementDescription(Element element) {
 		String elementId = "'" + element.getNodeName() + "'";
@@ -255,6 +272,9 @@ public abstract class NamespaceUtils {
 
 	/**
 	 * Parses 'auto-declare' and 'declared-by' attributes.
+	 *
+	 * @param element The element.
+	 * @param builder The builder.
 	 */
 	public static void parseDeclarationControls(Element element, BeanDefinitionBuilder builder) {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, "auto-declare", "shouldDeclare");

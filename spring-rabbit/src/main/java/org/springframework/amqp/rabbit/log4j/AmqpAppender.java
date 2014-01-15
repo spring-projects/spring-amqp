@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -54,9 +54,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  * A Log4J appender that publishes logging events to an AMQP Exchange.
  * <p>
  * A fully-configured AmqpAppender, with every option set to their defaults, would look like this:
- * </p>
- * <p/>
- *
  * <pre class="code">
  *   log4j.appender.amqp=org.springframework.amqp.log4j.AmqpAppender
  *   #-------------------------------
@@ -103,10 +100,10 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   ## Standard Log4J stuff
  *   #-------------------------------
  *   log4j.appender.amqp.layout=org.apache.log4j.PatternLayout
- *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - <%m>%n
+ *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - &lt;%m&gt;%n
  * </pre>
  *
- * @author Jon Brisbin <jbrisbin@vmware.com>
+ * @author Jon Brisbin
  * @author Gary Russell
  */
 public class AmqpAppender extends AppenderSkeleton {

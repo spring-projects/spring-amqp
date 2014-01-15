@@ -42,7 +42,7 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 
 /**
- * RabbitMQ implementation of portable AMQP administrative operations for AMQP >= 0.9.1
+ * RabbitMQ implementation of portable AMQP administrative operations for AMQP &gt;= 0.9.1
  *
  * @author Mark Pollack
  * @author Mark Fisher

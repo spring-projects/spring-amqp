@@ -40,6 +40,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * <p>The key can be of arbitrary type; this class implements the
 	 * generic lookup process only. The concrete key representation will
 	 * be handled by {@link #determineCurrentLookupKey()}.
+	 *
+	 * @param targetConnectionFactories The target connection factories and lookup keys.
 	 */
 	public void setTargetConnectionFactories(Map<Object, ConnectionFactory> targetConnectionFactories) {
 		Assert.notNull(targetConnectionFactories, "'targetConnectionFactories' must not be null.");
@@ -52,6 +54,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * <p>This {@link ConnectionFactory} will be used as target if none of the keyed
 	 * {@link #targetConnectionFactories} match the
 	 * {@link #determineCurrentLookupKey()} current lookup key.
+	 *
+	 * @param defaultTargetConnectionFactory The default target connection factory.
 	 */
 	public void setDefaultTargetConnectionFactory(ConnectionFactory defaultTargetConnectionFactory) {
 		this.defaultTargetConnectionFactory = defaultTargetConnectionFactory;
@@ -66,6 +70,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * <p>Switch this flag to "false" if you would prefer the fallback to only apply
 	 * if the lookup key was {@code null}. Lookup keys without a {@link ConnectionFactory}
 	 * entry will then lead to an {@link IllegalStateException}.
+	 *
+	 * @param lenientFallback true to fall back to the default, if specified.
 	 *
 	 * @see #setTargetConnectionFactories
 	 * @see #setDefaultTargetConnectionFactory
@@ -91,6 +97,9 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * a lookup in the {@link #targetConnectionFactories} map,
 	 * falls back to the specified
 	 * {@link #defaultTargetConnectionFactory} if necessary.
+	 *
+	 * @return The connection factory.
+	 *
 	 * @see #determineCurrentLookupKey()
 	 */
 	protected ConnectionFactory determineTargetConnectionFactory() {
@@ -133,6 +142,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	/**
 	 * Determine the current lookup key. This will typically be implemented to check a thread-bound context.
+	 *
+	 * @return The lookup key.
 	 */
 	protected abstract Object determineCurrentLookupKey();
 

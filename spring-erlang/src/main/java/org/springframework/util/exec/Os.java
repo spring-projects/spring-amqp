@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,15 @@ public class Os {
      * Determines if the OS on which Ant is executing matches the
      * given OS family.
      *
-     * @param family The OS family type desired<br />
-     *               Possible values:<br />
+     * @param family The OS family type desired<br>
+     *               Possible values:<br>
      *               <ul><li>dos</li>
      *               <li>mac</li>
      *               <li>netware</li>
      *               <li>os/2</li>
      *               <li>unix</li>
      *               <li>windows</li></ul>
+     * @return true if the OS is in the family.
      * @since 1.5
      */
     public static boolean isFamily(String family) {
@@ -55,6 +56,8 @@ public class Os {
      * Determines if the OS on which Ant is executing matches the
      * given OS name.
      *
+     * @param name The name.
+     * @return The result.
      * @since 1.7
      */
     public static boolean isName(String name) {
@@ -65,6 +68,8 @@ public class Os {
      * Determines if the OS on which Ant is executing matches the
      * given OS architecture.
      *
+     * @param arch The arch.
+     * @return The result.
      * @since 1.7
      */
     public static boolean isArch(String arch) {
@@ -75,6 +80,8 @@ public class Os {
      * Determines if the OS on which Ant is executing matches the
      * given OS version.
      *
+     * @param version The version.
+     * @return The result.
      * @since 1.7
      */
     public static boolean isVersion(String version) {
@@ -90,6 +97,7 @@ public class Os {
      * @param arch   The OS architecture
      * @param version   The OS version
      *
+     * @return The result.
      * @since 1.7
      */
     public static boolean isOs(String family, String name, String arch,

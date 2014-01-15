@@ -52,7 +52,7 @@ import com.rabbitmq.client.Channel;
  * channels, such as those used in listener container threads. In those cases, the channel must be closed
  * anyway in order to re-queue any un-acked messages.
  * <p>
- * <b>{@link CacheMode#CONNECTION} is not compatible with a Rabbit Admin that auto-declares queues etc.
+ * <b>{@link CacheMode#CONNECTION} is not compatible with a Rabbit Admin that auto-declares queues etc.</b>
  * <p>
  * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its shared Connection.</b>
  * This is the usual recommendation for native Rabbit access code anyway. However, with this ConnectionFactory, its use

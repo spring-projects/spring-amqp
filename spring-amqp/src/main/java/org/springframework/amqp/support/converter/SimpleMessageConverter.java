@@ -60,6 +60,8 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	 * <p>
 	 * Follows RMI's codebase conventions for dynamic class download.
 	 *
+	 * @param codebaseUrl The codebase URL.
+	 *
 	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 * @see java.rmi.server.RMIClassLoader
 	 */
@@ -70,6 +72,8 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	/**
 	 * Specify the default charset to use when converting to or from text-based
 	 * Message body content. If not specified, the charset will be "UTF-8".
+	 *
+	 * @param defaultCharset The default charset.
 	 */
 	public void setDefaultCharset(String defaultCharset) {
 		this.defaultCharset = (defaultCharset != null) ? defaultCharset : DEFAULT_CHARSET;

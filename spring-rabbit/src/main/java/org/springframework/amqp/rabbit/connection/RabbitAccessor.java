@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
@@ -52,18 +53,21 @@ public abstract class RabbitAccessor implements InitializingBean {
 
 	/**
 	 * Set the ConnectionFactory to use for obtaining RabbitMQ {@link Connection Connections}.
+	 *
+	 * @param connectionFactory The connection factory.
 	 */
 	public void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
 	}
 
 	/**
-	 * Return the ConnectionFactory that this accessor uses for obtaining RabbitMQ {@link Connection Connections}.
+	 * @return The ConnectionFactory that this accessor uses for obtaining RabbitMQ {@link Connection Connections}.
 	 */
 	public ConnectionFactory getConnectionFactory() {
 		return this.connectionFactory;
 	}
 
+	@Override
 	public void afterPropertiesSet() {
 		Assert.notNull(this.connectionFactory, "ConnectionFactory is required");
 	}
