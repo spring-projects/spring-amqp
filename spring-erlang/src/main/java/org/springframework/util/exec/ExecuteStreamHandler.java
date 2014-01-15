@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 
 package org.springframework.util.exec;
-
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+
 
 /**
  * Used by <code>Execute</code> to handle input and output stream of
@@ -33,6 +33,7 @@ public interface ExecuteStreamHandler {
      *
      * @param os output stream to write to the standard input stream of the
      *           subprocess
+     * @throws IOException Any.
      */
     void setProcessInputStream(OutputStream os) throws IOException;
 
@@ -40,6 +41,7 @@ public interface ExecuteStreamHandler {
      * Install a handler for the error stream of the subprocess.
      *
      * @param is input stream to read from the error stream from the subprocess
+     * @throws IOException Any.
      */
     void setProcessErrorStream(InputStream is) throws IOException;
 
@@ -47,11 +49,14 @@ public interface ExecuteStreamHandler {
      * Install a handler for the output stream of the subprocess.
      *
      * @param is input stream to read from the error stream from the subprocess
+     * @throws IOException Any.
      */
     void setProcessOutputStream(InputStream is) throws IOException;
 
     /**
      * Start handling of the streams.
+     *
+     * @throws IOException Any.
      */
     void start() throws IOException;
 

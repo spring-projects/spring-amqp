@@ -205,6 +205,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * <p>
 	 * If no explicit delegate object has been specified, listener methods are expected to present on this adapter
 	 * instance, that is, on a custom subclass of this adapter, defining listener methods.
+	 *
+	 * @param delegate The delegate listener or POJO.
 	 */
 	public void setDelegate(Object delegate) {
 		Assert.notNull(delegate, "Delegate must not be null");
@@ -212,7 +214,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Return the target object to delegate message listening to.
+	 * @return The target object to delegate message listening to.
 	 */
 	protected Object getDelegate() {
 		return this.delegate;
@@ -230,6 +232,9 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	/**
 	 * Specify the name of the default listener method to delegate to, for the case where no specific listener method
 	 * has been determined. Out-of-the-box value is {@link #ORIGINAL_DEFAULT_LISTENER_METHOD "handleMessage"}.
+	 *
+	 * @param defaultListenerMethod The name of the default listener method.
+	 *
 	 * @see #getListenerMethodName
 	 */
 	public void setDefaultListenerMethod(String defaultListenerMethod) {
@@ -237,7 +242,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Return the name of the default listener method to delegate to.
+	 * @return The name of the default listener method to delegate to.
 	 */
 	protected String getDefaultListenerMethod() {
 		return this.defaultListenerMethod;
@@ -249,6 +254,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * <p>
 	 * Response destinations are only relevant for listener methods that return result objects, which will be wrapped in
 	 * a response message and sent to a response destination.
+	 *
+	 * @param responseRoutingKey The routing key.
 	 */
 	public void setResponseRoutingKey(String responseRoutingKey) {
 		this.responseRoutingKey = responseRoutingKey;
@@ -260,7 +267,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * <p>
 	 * Response destinations are only relevant for listener methods that return result objects, which will be wrapped in
 	 * a response message and sent to a response destination.
-	 * @param responseExchange
+	 * @param responseExchange The exchange.
 	 */
 	public void setResponseExchange(String responseExchange) {
 		this.responseExchange = responseExchange;
@@ -271,6 +278,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * from listener methods back to Rabbit messages.
 	 * <p>
 	 * The default converter is a {@link SimpleMessageConverter}, which is able to handle "text" content-types.
+	 *
+	 * @param messageConverter The message converter.
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
@@ -279,6 +288,8 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	/**
 	 * Return the converter that will convert incoming Rabbit messages to listener method arguments, and objects
 	 * returned from listener methods back to Rabbit messages.
+	 *
+	 * @return The message converter.
 	 */
 	protected MessageConverter getMessageConverter() {
 		return this.messageConverter;
@@ -289,6 +300,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	}
 
 	/**
+	 * @param immediatePublish No longer supported.
 	 * @deprecated 'immediate' no longer support by RabbitMQ.
 	 */
 	@Deprecated
@@ -309,6 +321,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * @see #handleListenerException
 	 * @see #onMessage(Message, Channel)
 	 */
+	@Override
 	public void onMessage(Message message) {
 		try {
 			onMessage(message, null);
@@ -326,6 +339,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * @param channel the Rabbit channel to operate on
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
+	@Override
 	public void onMessage(Message message, Channel channel) throws Exception {
 		// Check whether the delegate is a MessageListener impl itself.
 		// In that case, the adapter will simply act as a pass-through.
@@ -595,9 +609,11 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	}
 
 	/**
-	 * Post-process the given message producer before using it to send the response.
+	 * Post-process the given message before sending the response.
 	 * <p>
 	 * The default implementation is empty.
+	 *
+	 * @param channel The channel.
 	 * @param response the outgoing Rabbit message about to be sent
 	 * @throws Exception if thrown by Rabbit API methods
 	 */

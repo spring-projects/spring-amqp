@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -170,6 +170,8 @@ public interface AmqpTemplate {
 	 *
 	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
 	 *                 and return a reply message.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received
 	 * @throws AmqpException if there is a problem
 	 */
@@ -185,6 +187,8 @@ public interface AmqpTemplate {
 	 * @param queueName the queue name to receive a message.
 	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
 	 *                 and return a reply message.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received.
 	 * @throws AmqpException if there is a problem.
 	 */
@@ -199,6 +203,8 @@ public interface AmqpTemplate {
 	 *                 and return a reply message.
 	 * @param replyExchange the exchange name to send reply message.
 	 * @param replyRoutingKey the routing key to send reply message.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received.
 	 * @throws AmqpException if there is a problem.
 	 */
@@ -216,6 +222,8 @@ public interface AmqpTemplate {
 	 *                 and return a reply message.
 	 * @param replyExchange the exchange name to send reply message.
 	 * @param replyRoutingKey the routing key to send reply message.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received
 	 * @throws AmqpException if there is a problem
 	 */
@@ -231,6 +239,8 @@ public interface AmqpTemplate {
 	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
 	 *                 and return a reply message.
 	 * @param replyToAddressCallback the callback to determine replyTo address at runtime.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received.
 	 * @throws AmqpException if there is a problem.
 	 */
@@ -247,6 +257,8 @@ public interface AmqpTemplate {
 	 * @param callback a user-provided {@link ReceiveAndReplyCallback} implementation to process received message
 	 *                 and return a reply message.
 	 * @param replyToAddressCallback the callback to determine replyTo address at runtime.
+	 * @param <R> The type of the request after conversion from the {@link Message}.
+	 * @param <S> The type of the response.
 	 * @return {@code true}, if message was received
 	 * @throws AmqpException if there is a problem
 	 */

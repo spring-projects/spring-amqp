@@ -249,6 +249,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * The default converter is a SimpleMessageConverter, which is able to handle byte arrays, Strings, and Serializable
 	 * Objects depending on the message content type header.
 	 *
+	 * @param messageConverter The message converter.
+	 *
 	 * @see #convertAndSend
 	 * @see #receiveAndConvert
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
@@ -262,6 +264,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	 * content in the message headers and plain Java objects. In particular there are limitations when dealing with very
 	 * long string headers, which hopefully are rare in practice, but if you need to use long headers you might need to
 	 * inject a special converter here.
+	 *
+	 * @param messagePropertiesConverter The message properties converter.
 	 */
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
@@ -271,6 +275,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	/**
 	 * Return the message converter for this template. Useful for clients that want to take advantage of the converter
 	 * in {@link ChannelCallback} implementations.
+	 *
+	 * @return The message converter.
 	 */
 	public MessageConverter getMessageConverter() {
 		return this.messageConverter;
@@ -333,14 +339,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		return unconfirmed.size() > 0 ? unconfirmed : null;
 	}
 
+	@Override
 	public void send(Message message) throws AmqpException {
 		send(this.exchange, this.routingKey, message);
 	}
 
+	@Override
 	public void send(String routingKey, Message message) throws AmqpException {
 		send(this.exchange, routingKey, message);
 	}
 
+	@Override
 	public void send(final String exchange, final String routingKey, final Message message) throws AmqpException {
 		this.send(exchange, routingKey, message, null);
 	}
@@ -350,6 +359,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			throws AmqpException {
 		execute(new ChannelCallback<Object>() {
 
+			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
 				doSend(channel, exchange, routingKey, message, correlationData);
 				return null;
@@ -357,6 +367,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		});
 	}
 
+	@Override
 	public void convertAndSend(Object object) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, (CorrelationData) null);
 	}
@@ -365,6 +376,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		convertAndSend(this.exchange, this.routingKey, object, correlationData);
 	}
 
+	@Override
 	public void convertAndSend(String routingKey, final Object object) throws AmqpException {
 		convertAndSend(this.exchange, routingKey, object, (CorrelationData) null);
 	}
@@ -373,6 +385,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		convertAndSend(this.exchange, routingKey, object, correlationData);
 	}
 
+	@Override
 	public void convertAndSend(String exchange, String routingKey, final Object object) throws AmqpException {
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
@@ -381,10 +394,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		send(exchange, routingKey, convertMessageIfNecessary(object), corrationData);
 	}
 
+	@Override
 	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor);
 	}
 
+	@Override
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, null);
@@ -396,6 +411,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
 
+	@Override
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 		convertAndSend(exchange, routingKey, message, messagePostProcessor, null);
@@ -408,14 +424,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
 
+	@Override
 	public Message receive() throws AmqpException {
 		String queue = this.getRequiredQueue();
 		return this.receive(queue);
 	}
 
+	@Override
 	public Message receive(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
 
+			@Override
 			public Message doInRabbit(Channel channel) throws IOException {
 				GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 				// Response can be null is the case that there is no message on the queue.
@@ -438,10 +457,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		});
 	}
 
+	@Override
 	public Object receiveAndConvert() throws AmqpException {
 		return receiveAndConvert(this.getRequiredQueue());
 	}
 
+	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
 		Message response = receive(queueName);
 		if (response != null) {
@@ -578,41 +599,50 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		});
 	}
 
+	@Override
 	public Message sendAndReceive(final Message message) throws AmqpException {
 		return this.doSendAndReceive(this.exchange, this.routingKey, message);
 	}
 
+	@Override
 	public Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
 		return this.doSendAndReceive(this.exchange, routingKey, message);
 	}
 
+	@Override
 	public Message sendAndReceive(final String exchange, final String routingKey, final Message message)
 			throws AmqpException {
 		return this.doSendAndReceive(exchange, routingKey, message);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
 		return this.convertSendAndReceive(this.exchange, this.routingKey, message, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
 		return this.convertSendAndReceive(this.exchange, routingKey, message, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
 			throws AmqpException {
 		return this.convertSendAndReceive(exchange, routingKey, message, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor) throws AmqpException {
 		return this.convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
 		return this.convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
 		Message requestMessage = convertMessageIfNecessary(message);
@@ -653,6 +683,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 
+			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				final ArrayBlockingQueue<Message> replyHandoff = new ArrayBlockingQueue<Message>(1);
 
@@ -699,6 +730,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
 		Message replyMessage = this.execute(new ChannelCallback<Message>() {
 
+			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
 				String messageTag = UUID.randomUUID().toString();
@@ -748,6 +780,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		return replyMessage;
 	}
 
+	@Override
 	public <T> T execute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
 		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
@@ -773,11 +806,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	/**
 	 * Send the given message to the specified exchange.
 	 *
-	 * @param channel the RabbitMQ Channel to operate within
-	 * @param exchange the name of the RabbitMQ exchange to send to
-	 * @param routingKey the routing key
-	 * @param message the Message to send
-	 * @throws IOException if thrown by RabbitMQ API methods
+	 * @param channel The RabbitMQ Channel to operate within.
+	 * @param exchange The name of the RabbitMQ exchange to send to.
+	 * @param routingKey The routing key.
+	 * @param message The Message to send.
+	 * @param correlationData The correlation data.
+	 * @throws IOException If thrown by RabbitMQ API methods
 	 */
 	protected void doSend(Channel channel, String exchange, String routingKey, Message message,
 			CorrelationData correlationData) throws Exception {
@@ -895,6 +929,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		}
 	}
 
+	@Override
 	public void handleConfirm(PendingConfirm pendingConfirm, boolean ack) {
 		if (this.confirmCallback != null) {
 			this.confirmCallback.confirm(pendingConfirm.getCorrelationData(), ack);
@@ -906,6 +941,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		}
 	}
 
+	@Override
 	public void handleReturn(int replyCode,
             String replyText,
             String exchange,
@@ -929,14 +965,17 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		}
 	}
 
+	@Override
 	public boolean isConfirmListener() {
 		return this.confirmCallback != null;
 	}
 
+	@Override
 	public boolean isReturnListener() {
 		return this.returnCallback != null;
 	}
 
+	@Override
 	public void removePendingConfirmsReference(Channel channel,
 			SortedMap<Long, PendingConfirm> unconfirmed) {
 		this.pendingConfirms.remove(channel);
@@ -945,10 +984,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		}
 	}
 
+	@Override
 	public String getUUID() {
 		return this.uuid;
 	}
 
+	@Override
 	public void onMessage(Message message) {
 		try {
 			String messageTag;

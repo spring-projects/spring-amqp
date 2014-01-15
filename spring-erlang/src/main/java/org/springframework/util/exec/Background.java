@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,10 @@ import java.util.ArrayList;
 public class Background {
     /**
      * Execute the command (and its args, ala Runtime.exec), sending the
-     * output && error streams to the void.
+     * output and error streams to the void.
+     *
+     * @param cmd The command and args.
+     * @throws IOException Any.
      */
     public static void exec(String[] cmd)
         throws IOException
@@ -48,12 +51,15 @@ public class Background {
     /**
      * Execute a command (and its args, ala Runtime.exec)
      *
+     * @param cmd        The command and args.
      * @param outFile    File to send standard out from the process to
      * @param appendOut  If true, append the file with standard out,
      *                   else truncate or create a new file
      * @param errFile    File to send standard err from the process to
      * @param appendErr  If true, append the file with standard error,
      *                   else truncate or create a new file
+     *
+     * @throws IOException Any.
      */
     public static void exec(String[] cmd,
                             File outFile, boolean appendOut,

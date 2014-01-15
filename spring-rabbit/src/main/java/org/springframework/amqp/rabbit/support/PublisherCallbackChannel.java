@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public interface PublisherCallbackChannel extends Channel {
 	 * The client must <b>NOT</b> modify the contents of
 	 * this array, and must synchronize on it when
 	 * iterating over its collections.
+	 *
 	 * @param listener The Listener.
 	 * @return A reference to pending confirms for the listener
 	 */
@@ -48,12 +49,16 @@ public interface PublisherCallbackChannel extends Channel {
 
 	/**
 	 * Gets a reference to the current listener, or null.
-	 * @return the Listener.
+	 *
+	 * @param listener the Listener.
+	 * @return true if the listener was present.
 	 */
 	boolean removeListener(Listener listener);
 
 	/**
 	 * Adds a pending confirmation to this channel's map.
+	 *
+	 * @param listener The listener.
 	 * @param seq The key to the map.
 	 * @param pendingConfirm The PendingConfirm object.
 	 */
@@ -86,6 +91,8 @@ public interface PublisherCallbackChannel extends Channel {
 		/**
 		 * When called, this listener must remove all references to the
 		 * pending confirm map.
+		 *
+		 * @param channel The channel.
 		 * @param unconfirmed The pending confirm map.
 		 */
 		void removePendingConfirmsReference(Channel channel, SortedMap<Long, PendingConfirm> unconfirmed);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -43,8 +43,8 @@ public class Execute {
 	private String[] cmdl = null;
 	private String[] env = null;
 	private int exitValue = INVALID;
-	private ExecuteStreamHandler streamHandler;
-	private ExecuteWatchdog watchdog;
+	private final ExecuteStreamHandler streamHandler;
+	private final ExecuteWatchdog watchdog;
 	private File workingDirectory = null;
 	private boolean newEnvironment = false;
 	private Process process;
@@ -53,6 +53,8 @@ public class Execute {
 
 	/**
 	 * Find the list of environment variables for this process.
+	 *
+	 * @return The environment.
 	 */
 	public static synchronized Vector<String> getProcEnvironment() {
 
@@ -360,6 +362,8 @@ public class Execute {
 	 * @param cmd a vector of the commands to execute
 	 * @param baseDir the base directory to run from (optional)
 	 * @param timeToWait milliseconds to wait for completion
+	 *
+	 * @return The result.
 	 */
 	public static int execute(Vector<String> envVars, Vector<String> cmd, File baseDir, int timeToWait) {
 		try {

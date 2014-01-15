@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public interface ChannelAwareMessageListener {
 	 * typically sending reply messages through the given Session.
 	 * @param message the received AMQP message (never <code>null</code>)
 	 * @param channel the underlying Rabbit Channel (never <code>null</code>)
-	 * @throws Exception
+	 * @throws Exception Any.
 	 */
 	void onMessage(Message message, Channel channel) throws Exception;
 

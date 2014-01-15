@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -65,22 +65,27 @@ public class ConnectionFactoryUtils {
 			final boolean synchedLocalTransactionAllowed) {
 
 		RabbitResourceHolder holder = doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
+			@Override
 			public Channel getChannel(RabbitResourceHolder holder) {
 				return holder.getChannel();
 			}
 
+			@Override
 			public Connection getConnection(RabbitResourceHolder holder) {
 				return holder.getConnection();
 			}
 
+			@Override
 			public Connection createConnection() throws IOException {
 				return connectionFactory.createConnection();
 			}
 
+			@Override
 			public Channel createChannel(Connection con) throws IOException {
 				return con.createChannel(synchedLocalTransactionAllowed);
 			}
 
+			@Override
 			public boolean isSynchedLocalTransactionAllowed() {
 				return synchedLocalTransactionAllowed;
 			}
@@ -166,9 +171,6 @@ public class ConnectionFactoryUtils {
 		}
 	}
 
-	/**
-	 *
-	 */
 	public static void registerDeliveryTag(ConnectionFactory connectionFactory, Channel channel, Long tag)
 			throws IOException {
 

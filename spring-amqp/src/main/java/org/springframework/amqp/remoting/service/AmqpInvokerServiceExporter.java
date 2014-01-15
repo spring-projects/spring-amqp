@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -92,6 +92,9 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 	 * of those the respective parameters from the original message's <code>returnAddress</code> are being used.
 	 * <p>
 	 * Also, the template's {@link MessageConverter} is not used for the reply.
+	 *
+	 * @param amqpTemplate The amqp template.
+	 *
 	 * @see #setMessageConverter(MessageConverter)
 	 */
 	public void setAmqpTemplate(AmqpTemplate amqpTemplate) {
@@ -110,6 +113,8 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 	 * Objects depending on the message content type header.
 	 * <p>
 	 * Note that this class never uses the message converter of the underlying {@link AmqpTemplate}!
+	 *
+	 * @param messageConverter The message converter.
 	 *
 	 * @see org.springframework.amqp.support.converter.SimpleMessageConverter
 	 */

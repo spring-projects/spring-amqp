@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.erlang.OtpIOException;
@@ -86,11 +87,11 @@ public class SingleConnectionFactory implements ConnectionFactory,
 
 	private boolean uniqueSelfNodeName = true;
 
-	private String selfNodeName;
+	private final String selfNodeName;
 
 	private String cookie;
 
-	private String peerNodeName;
+	private final String peerNodeName;
 
 	private OtpSelf otpSelf;
 
@@ -125,6 +126,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		this.uniqueSelfNodeName = uniqueSelfNodeName;
 	}
 
+	@Override
 	public Connection createConnection() throws UnknownHostException,
 			OtpAuthException {
 		synchronized (this.connectionMonitor) {
@@ -163,6 +165,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	 * <p>As this bean implements DisposableBean, a bean factory will
 	 * automatically invoke this on destruction of its cached singletons.
 	 */
+	@Override
 	public void destroy() {
 		resetConnection();
 	}
@@ -204,7 +207,8 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	 * Create a JInterface Connection via this class's ConnectionFactory.
 	 *
 	 * @return the new Otp Connection
-	 * @throws OtpAuthException
+	 * @throws OtpAuthException Any.
+	 * @throws IOException Any.
 	 */
 	protected Connection doCreateConnection() throws IOException,
 			OtpAuthException {
@@ -239,6 +243,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 	 * @see
 	 * org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
 	 */
+	@Override
 	public void afterPropertiesSet() {
 		Assert.isTrue(this.selfNodeName != null || this.peerNodeName != null,
 				"'selfNodeName' or 'peerNodeName' is required");
@@ -268,6 +273,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 			this.target = target;
 		}
 
+		@Override
 		public Object invoke(Object proxy, Method method, Object[] args)
 				throws Throwable {
 			if (method.getName().equals("equals")) {

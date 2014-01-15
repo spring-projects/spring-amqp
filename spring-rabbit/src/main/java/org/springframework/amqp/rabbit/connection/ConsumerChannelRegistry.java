@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ public class ConsumerChannelRegistry {
 	 * an external transaction manager because local transactions work the same in that
 	 * the channel is bound to the thread. This is for the case when a user happens
 	 * to wire in a RabbitTransactionManager.
-	 * @param channel
+	 *
+	 * @param channel The channel to register.
+	 * @param connectionFactory The connection factory.
 	 */
 	public static void registerConsumerChannel(Channel channel, ConnectionFactory connectionFactory) {
 		if (logger.isDebugEnabled()) {
@@ -68,6 +70,8 @@ public class ConsumerChannelRegistry {
 	/**
 	 * See registerConsumerChannel. This method is called to retrieve the
 	 * channel for this consumer.
+	 *
+	 * @return The channel.
 	 */
 	public static Channel getConsumerChannel() {
 		ChannelHolder channelHolder = consumerChannel.get();
@@ -81,7 +85,9 @@ public class ConsumerChannelRegistry {
 	/**
 	 * See registerConsumerChannel. This method is called to retrieve the
 	 * channel for this consumer if the connection factory matches.
+	 *
 	 * @param connectionFactory The connection factory.
+	 * @return The channel.
 	 */
 	public static Channel getConsumerChannel(ConnectionFactory connectionFactory) {
 		ChannelHolder channelHolder = consumerChannel.get();

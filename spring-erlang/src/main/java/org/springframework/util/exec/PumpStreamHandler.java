@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package org.springframework.util.exec;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -32,7 +32,7 @@ public class PumpStreamHandler implements ExecuteStreamHandler {
     private Thread inputThread;
     private Thread errorThread;
 
-    private OutputStream out, err;
+    private final OutputStream out, err;
     boolean running=false;
 
     public PumpStreamHandler(OutputStream out, OutputStream err) {
@@ -48,28 +48,33 @@ public class PumpStreamHandler implements ExecuteStreamHandler {
         this(System.out, System.err);
     }
 
-    public void setProcessOutputStream(InputStream is) {
+    @Override
+	public void setProcessOutputStream(InputStream is) {
         createProcessOutputPump(is, out);
     }
 
 
-    public void setProcessErrorStream(InputStream is) {
+    @Override
+	public void setProcessErrorStream(InputStream is) {
         createProcessErrorPump(is, err);
     }
 
 
-    public void setProcessInputStream(OutputStream os) {
+    @Override
+	public void setProcessInputStream(OutputStream os) {
     }
 
 
-    public void start() {
+    @Override
+	public void start() {
         inputThread.start();
         errorThread.start();
         running=true;
     }
 
 
-    public void stop() {
+    @Override
+	public void stop() {
         if( !running ) {
             return;
         }
@@ -107,6 +112,10 @@ public class PumpStreamHandler implements ExecuteStreamHandler {
 
     /**
      * Creates a stream pumper to copy the given input stream to the given output stream.
+     *
+     * @param is The input stream.
+     * @param os The output stream.
+     * @return The thread.
      */
     protected Thread createPump(InputStream is, OutputStream os) {
         final Thread result = new Thread(new StreamPumper(is, os));

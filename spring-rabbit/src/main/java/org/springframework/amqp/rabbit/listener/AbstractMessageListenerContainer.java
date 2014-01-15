@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -118,7 +118,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Return the name of the queue to receive messages from.
+	 * @return the name of the queues to receive messages from.
 	 */
 	public String[] getQueueNames() {
 		return this.queueNames;
@@ -131,7 +131,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Return whether to expose the listener {@link Channel} to a registered {@link ChannelAwareMessageListener}.
+	 * @return whether to expose the listener {@link Channel} to a registered {@link ChannelAwareMessageListener}.
 	 */
 	public boolean isExposeListenerChannel() {
 		return this.exposeListenerChannel;
@@ -147,6 +147,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Note that Channels managed by an external transaction manager will always get exposed to
 	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} calls. So in terms of RabbitTemplate exposure, this
 	 * setting only affects locally transacted Channels.
+	 *
+	 * @param exposeListenerChannel true to expose the channel.
+	 *
 	 * @see ChannelAwareMessageListener
 	 */
 	public void setExposeListenerChannel(boolean exposeListenerChannel) {
@@ -156,6 +159,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	/**
 	 * Set the message listener implementation to register. This can be either a Spring {@link MessageListener} object
 	 * or a Spring {@link ChannelAwareMessageListener} object.
+	 *
+	 * @param messageListener The listener.
 	 * @throws IllegalArgumentException if the supplied listener is not a {@link MessageListener} or a
 	 * {@link ChannelAwareMessageListener}
 	 * @see MessageListener
@@ -184,7 +189,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Return the message listener object to register.
+	 * @return The message listener object to register.
 	 */
 	public Object getMessageListener() {
 		return this.messageListener;
@@ -193,6 +198,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	/**
 	 * Set an ErrorHandler to be invoked in case of any uncaught exceptions thrown while processing a Message. By
 	 * default there will be <b>no</b> ErrorHandler so that error-level logging is the only result.
+	 *
+	 * @param errorHandler The error handler.
 	 */
 	public void setErrorHandler(ErrorHandler errorHandler) {
 		this.errorHandler = errorHandler;
@@ -202,11 +209,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Set whether to automatically start the container after initialization.
 	 * <p>
 	 * Default is "true"; set this to "false" to allow for manual startup through the {@link #start()} method.
+	 *
+	 * @param autoStartup true for auto startup.
 	 */
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
 	}
 
+	@Override
 	public boolean isAutoStartup() {
 		return this.autoStartup;
 	}
@@ -215,24 +225,28 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Specify the phase in which this container should be started and stopped. The startup order proceeds from lowest
 	 * to highest, and the shutdown order is the reverse of that. By default this value is Integer.MAX_VALUE meaning
 	 * that this container starts as late as possible and stops as soon as possible.
+	 *
+	 * @param phase The phase.
 	 */
 	public void setPhase(int phase) {
 		this.phase = phase;
 	}
 
 	/**
-	 * Return the phase in which this container will be started and stopped.
+	 * @return The phase in which this container will be started and stopped.
 	 */
+	@Override
 	public int getPhase() {
 		return this.phase;
 	}
 
+	@Override
 	public void setBeanName(String beanName) {
 		this.beanName = beanName;
 	}
 
 	/**
-	 * Return the bean name that this listener container has been assigned in its containing bean factory, if any.
+	 * @return The bean name that this listener container has been assigned in its containing bean factory, if any.
 	 */
 	protected final String getBeanName() {
 		return this.beanName;
@@ -268,6 +282,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Calls {@link #shutdown()} when the BeanFactory destroys the container instance.
 	 * @see #shutdown()
 	 */
+	@Override
 	public void destroy() {
 		shutdown();
 	}
@@ -319,8 +334,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Register any invokers within this container.
 	 * <p>
 	 * Subclasses need to implement this method for their specific invoker management process.
-	 * <p>
-	 * @throws Exception
+	 *
+	 * @throws Exception Any Exception.
 	 */
 	protected abstract void doInitialize() throws Exception;
 
@@ -335,7 +350,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	protected abstract void doShutdown();
 
 	/**
-	 * Return whether this container is currently active, that is, whether it has been set up but not shut down yet.
+	 * @return Whether this container is currently active, that is, whether it has been set up but not shut down yet.
 	 */
 	public final boolean isActive() {
 		synchronized (this.lifecycleMonitor) {
@@ -347,6 +362,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Start this container.
 	 * @see #doStart
 	 */
+	@Override
 	public void start() {
 		if (!initialized) {
 			synchronized (this.lifecycleMonitor) {
@@ -383,6 +399,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Stop this container.
 	 * @see #doStop
 	 */
+	@Override
 	public void stop() {
 		try {
 			doStop();
@@ -396,6 +413,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 		}
 	}
 
+	@Override
 	public void stop(Runnable callback) {
 		this.stop();
 		callback.run();
@@ -413,6 +431,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @see #start()
 	 * @see #stop()
 	 */
+	@Override
 	public final boolean isRunning() {
 		synchronized (this.lifecycleMonitor) {
 			return (this.running);
@@ -438,8 +457,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 
 	/**
 	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
+	 *
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
+	 * @throws Throwable Any Throwable.
+	 *
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
@@ -462,7 +484,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
-	 * @throws Exception
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setMessageListener
 	 */
@@ -502,7 +523,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
 	 * @throws Exception if thrown by Rabbit API methods or listener itself.
-	 * <p/>
+	 * <p>
 	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
@@ -573,10 +594,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * Invoke the specified listener as Spring Rabbit MessageListener.
 	 * <p>
 	 * Default implementation performs a plain invocation of the <code>onMessage</code> method.
-	 * <p/>
+	 * <p>
 	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
+	 *
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
+	 * @throws Exception Any Exception.
+	 *
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
 	protected void doInvokeListener(MessageListener listener, Message message) throws Exception {
@@ -637,7 +661,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * @param e
+	 * @param e The Exception.
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */

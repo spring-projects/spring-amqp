@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.core.support;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.BeanInitializationException;
@@ -50,7 +51,8 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * Will automatically create a RabbitTemplate for the given ConnectionFactory.
 	 * @see #createRabbitTemplate
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
-	 * @param connectionFactory
+	 *
+	 * @param connectionFactory The connection factory.
 	 */
 	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.rabbitTemplate = createRabbitTemplate(connectionFactory);
@@ -59,6 +61,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	/**
 	 * Create a RabbitTemplate for the given ConnectionFactory.
 	 * Only invoked if populating the gateway with a ConnectionFactory reference.
+	 *
 	 * @param connectionFactory the Rabbit ConnectionFactory to create a RabbitTemplate for
 	 * @return the new RabbitTemplate instance
 	 * @see #setConnectionFactory
@@ -68,7 +71,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	}
 
 	/**
-	 * Return the Rabbit ConnectionFactory used by the gateway.
+	 * @return The Rabbit ConnectionFactory used by the gateway.
 	 */
 	public final ConnectionFactory getConnectionFactory() {
 		return (this.rabbitTemplate != null ? this.rabbitTemplate.getConnectionFactory() : null);
@@ -76,7 +79,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 
 	/**
 	 * Set the RabbitTemplate for the gateway.
-	 * @param rabbitTemplate
+	 * @param rabbitTemplate The Rabbit template.
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
 	 */
 	public final void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
@@ -84,12 +87,13 @@ public class RabbitGatewaySupport implements InitializingBean {
 	}
 
 	/**
-	 * Return the RabbitTemplate for the gateway.
+	 * @return The RabbitTemplate for the gateway.
 	 */
 	public final RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
 
+	@Override
 	public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
 		if (this.rabbitTemplate == null) {
 			throw new IllegalArgumentException("'connectionFactory' or 'rabbitTemplate' is required");

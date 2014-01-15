@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -50,7 +51,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private static final Log logger = LogFactory.getLog(RabbitResourceHolder.class);
 
-	private boolean frozen = false;
+	private final boolean frozen = false;
 
 	private final List<Connection> connections = new LinkedList<Connection>();
 
@@ -72,6 +73,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	/**
 	 * @param channel a channel to add
+	 * @param releaseAfterCompletion true if the channel should be released after completion.
 	 */
 	public RabbitResourceHolder(Channel channel, boolean releaseAfterCompletion) {
 		this();
@@ -87,6 +89,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	 * Whether the resources should be released after transaction completion.
 	 * Default true. Listener containers set to false because the listener continues
 	 * to use the channel.
+	 *
+	 * @return true if the resources should be released.
 	 */
 	public boolean isReleaseAfterCompletion() {
 		return releaseAfterCompletion;

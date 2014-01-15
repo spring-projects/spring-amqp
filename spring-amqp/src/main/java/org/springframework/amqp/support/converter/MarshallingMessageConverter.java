@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,8 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 
 	/**
 	 * Set the contentType to be used by this message converter.
+	 *
+	 * @param contentType The content type.
 	 */
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
@@ -105,6 +107,8 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 
 	/**
 	 * Set the {@link Marshaller} to be used by this message converter.
+	 *
+	 * @param marshaller The marshaller.
 	 */
 	public void setMarshaller(Marshaller marshaller) {
 		Assert.notNull(marshaller, "marshaller must not be null");
@@ -113,12 +117,15 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 
 	/**
 	 * Set the {@link Unmarshaller} to be used by this message converter.
+	 *
+	 * @param unmarshaller The unmarshaller.
 	 */
 	public void setUnmarshaller(Unmarshaller unmarshaller) {
 		Assert.notNull(unmarshaller, "unmarshaller must not be null");
 		this.unmarshaller = unmarshaller;
 	}
 
+	@Override
 	public void afterPropertiesSet() {
 		Assert.notNull(this.marshaller, "Property 'marshaller' is required");
 		Assert.notNull(this.unmarshaller, "Property 'unmarshaller' is required");
