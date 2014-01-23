@@ -70,7 +70,9 @@ public class MessageProperties implements Serializable {
 
 	private volatile String contentEncoding;
 
-	private volatile Long contentLength;
+	private volatile long contentLength;
+
+	private volatile boolean contentLengthSet;
 
 	private volatile MessageDeliveryMode deliveryMode = DEFAULT_DELIVERY_MODE;
 
@@ -84,7 +86,9 @@ public class MessageProperties implements Serializable {
 
 	private volatile String receivedRoutingKey;
 
-	private volatile Long deliveryTag;
+	private volatile long deliveryTag;
+
+	private volatile boolean deliveryTagSet;
 
 	private volatile Integer messageCount;
 
@@ -196,12 +200,17 @@ public class MessageProperties implements Serializable {
 		return this.contentEncoding;
 	}
 
-	public void setContentLength(Long contentLength) {
+	public void setContentLength(long contentLength) {
 		this.contentLength = contentLength;
+		this.contentLengthSet = true;
 	}
 
-	public Long getContentLength() {
+	public long getContentLength() {
 		return this.contentLength;
+	}
+
+	protected final boolean isContentLengthSet() {
+		return contentLengthSet;
 	}
 
 	public void setDeliveryMode(MessageDeliveryMode deliveryMode) {
@@ -262,12 +271,17 @@ public class MessageProperties implements Serializable {
 		return this.redelivered;
 	}
 
-	public void setDeliveryTag(Long deliveryTag) {
+	public void setDeliveryTag(long deliveryTag) {
 		this.deliveryTag = deliveryTag;
+		this.deliveryTagSet = true;
 	}
 
-	public Long getDeliveryTag() {
+	public long getDeliveryTag() {
 		return this.deliveryTag;
+	}
+
+	protected final boolean isDeliveryTagSet() {
+		return deliveryTagSet;
 	}
 
 	public void setMessageCount(Integer messageCount) {

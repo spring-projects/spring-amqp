@@ -239,7 +239,7 @@ abstract class MessageBuilderSupport<T> {
 	}
 
 	public MessageBuilderSupport<T> setContentLengthIfAbsent(long contentLength) {
-		if (this.properties.getContentLength() == null) {
+		if (!this.properties.isContentLengthSet()) {
 			this.properties.setContentLength(contentLength);
 		}
 		return this;
@@ -290,7 +290,7 @@ abstract class MessageBuilderSupport<T> {
 	}
 
 	public MessageBuilderSupport<T> setDeliveryTagIfAbsent(Long deliveryTag) {
-		if (this.properties.getDeliveryTag() == null) {
+		if (!this.properties.isDeliveryTagSet()) {
 			this.properties.setDeliveryTag(deliveryTag);
 		}
 		return this;
