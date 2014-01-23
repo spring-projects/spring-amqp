@@ -146,7 +146,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
 		messageProperties.setContentEncoding(getDefaultCharset());
 		if (bytes != null) {
-			messageProperties.setContentLength((long) bytes.length);
+			messageProperties.setContentLength(bytes.length);
 		}
 
 		if (getClassMapper() == null) {

@@ -309,10 +309,10 @@ public class MessageBuilderTests {
 		assertEquals("clusterId", properties.getClusterId());
 		assertEquals("contentEncoding", properties.getContentEncoding());
 		assertEquals(MessageProperties.CONTENT_TYPE_TEXT_PLAIN, properties.getContentType());
-		assertEquals(Long.valueOf(1), properties.getContentLength());
+		assertEquals(1, properties.getContentLength());
 		assertEquals("correlationId", new String(properties.getCorrelationId()));
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT, properties.getDeliveryMode());
-		assertEquals(Long.valueOf(2), properties.getDeliveryTag());
+		assertEquals(2, properties.getDeliveryTag());
 		assertEquals("expiration", properties.getExpiration());
 		assertEquals("bar", properties.getHeaders().get("foo"));
 		assertEquals("fiz", properties.getHeaders().get("qux"));
@@ -333,10 +333,10 @@ public class MessageBuilderTests {
 		assertEquals("CLUSTERID", properties.getClusterId());
 		assertEquals("CONTENTENCODING", properties.getContentEncoding());
 		assertEquals(MessageProperties.CONTENT_TYPE_BYTES, properties.getContentType());
-		assertEquals(Long.valueOf(10), properties.getContentLength());
+		assertEquals(10, properties.getContentLength());
 		assertEquals("CORRELATIONID", new String(properties.getCorrelationId()));
 		assertEquals(MessageDeliveryMode.PERSISTENT, properties.getDeliveryMode());
-		assertEquals(Long.valueOf(20), properties.getDeliveryTag());
+		assertEquals(20, properties.getDeliveryTag());
 		assertEquals("EXPIRATION", properties.getExpiration());
 		assertEquals("BAR", properties.getHeaders().get("foo"));
 		assertEquals("FIZ", properties.getHeaders().get("qux"));

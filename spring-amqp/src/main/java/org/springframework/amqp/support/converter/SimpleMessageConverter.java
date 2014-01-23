@@ -151,7 +151,7 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
 		}
 		if (bytes != null) {
-			messageProperties.setContentLength((long) bytes.length);
+			messageProperties.setContentLength(bytes.length);
 		}
 		return new Message(bytes, messageProperties);
 	}
