@@ -529,12 +529,17 @@ public class AmqpAppender extends AppenderSkeleton {
 						msgBody = new StringBuilder(layout.format(logEvent));
 						routingKey = routingKeyLayout.format(logEvent);
 					}
-					if (null != logEvent.getThrowableInformation()) {
-						ThrowableInformation tinfo = logEvent.getThrowableInformation();
-						for (String line : tinfo.getThrowableStrRep()) {
-							msgBody.append(String.format("%s%n", line));
+					
+					if (layout.ignoresThrowable())
+					{
+						if (null != logEvent.getThrowableInformation()) {
+							ThrowableInformation tinfo = logEvent.getThrowableInformation();
+							for (String line : tinfo.getThrowableStrRep()) {
+								msgBody.append(String.format("%s%n", line));
+							}
 						}
 					}
+					
 
 					// Send a message
 					try {
