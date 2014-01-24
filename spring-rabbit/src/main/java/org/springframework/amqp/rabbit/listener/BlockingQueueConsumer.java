@@ -357,11 +357,17 @@ public class BlockingQueueConsumer {
 		@Override
 		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
+				if (RabbitUtils.isNormalShutdown(sig)) {
+					logger.debug("Received shutdown signal for consumer tag=" + consumerTag + ": " + sig.getMessage());
+				}
+				else {
+					logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
+				}
 			}
 			shutdown = sig;
 			// The delivery tags will be invalid if the channel shuts down
 			deliveryTags.clear();
+			activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 
 		@Override

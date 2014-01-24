@@ -24,6 +24,7 @@ import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Fisher
@@ -149,4 +150,12 @@ public abstract class RabbitUtils {
 		}
 		return mustClose;
 	}
+
+	public static boolean isNormalShutdown(ShutdownSignalException sig) {
+		Object shutdownReason = sig.getReason();
+		 return shutdownReason instanceof AMQP.Connection.Close &&
+				AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
+				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
+	}
+
 }
