@@ -18,9 +18,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -194,6 +197,23 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
 	}
+
+	@Test
+	public void testIgnoresThrowableWithCustomLayout() throws Exception {
+		Logger customLayoutLogger = Logger.getLogger("org.springframework.amqp.rabbit.logging.customLayout");
+
+		TestListener testListener = (TestListener) applicationContext.getBean("testListener", 1);
+		listenerContainer.setMessageListener(testListener);
+		listenerContainer.start();
+
+		customLayoutLogger.error("This is an ERROR message", new RuntimeException("Test exception"));
+		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
+		assertNotNull(testListener.getId());
+
+		//This code parses an XML and ends up with exception without the general fix for AMQP-363
+		DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(testListener.getMessage().getBody()));
+	}
+
 
 	/*
 	 * When running as main(); should shutdown cleanly.
