@@ -105,6 +105,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *
  * @author Jon Brisbin
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class AmqpAppender extends AppenderSkeleton {
 
@@ -529,7 +530,7 @@ public class AmqpAppender extends AppenderSkeleton {
 						msgBody = new StringBuilder(layout.format(logEvent));
 						routingKey = routingKeyLayout.format(logEvent);
 					}
-					if (null != logEvent.getThrowableInformation()) {
+					if (layout.ignoresThrowable() && null != logEvent.getThrowableInformation()) {
 						ThrowableInformation tinfo = logEvent.getThrowableInformation();
 						for (String line : tinfo.getThrowableStrRep()) {
 							msgBody.append(String.format("%s%n", line));
