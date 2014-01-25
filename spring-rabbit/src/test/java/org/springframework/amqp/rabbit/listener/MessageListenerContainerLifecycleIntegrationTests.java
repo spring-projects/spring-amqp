@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -46,8 +46,6 @@ import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
-
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -391,14 +389,17 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		connectionFactory.destroy();
+		try {
+			connectionFactory.destroy();
 
-		Thread.sleep(1000);
-		Mockito.verify(log).debug(
-				Mockito.eq("Consumer received Shutdown Signal, processing stopped."),
-				Mockito.any(ShutdownSignalException.class));
-		Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
-		container.stop();
+			Thread.sleep(1000);
+			Mockito.verify(log).debug(
+					Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
+			Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
+		}
+		finally {
+			container.stop();
+		}
 	}
 
 	public static class PojoListener {
