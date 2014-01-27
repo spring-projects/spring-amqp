@@ -39,6 +39,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
@@ -55,7 +56,6 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -857,11 +857,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				aborted = true;
 			}
 			catch (ShutdownSignalException e) {
-				Object shutdownReason = e.getReason();
-				if (shutdownReason instanceof AMQP.Connection.Close &&
-						AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
-						&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText())) {
-					logger.debug("Consumer received Shutdown Signal, processing stopped.", e);
+				if (RabbitUtils.isNormalShutdown(e)) {
+					logger.debug("Consumer received Shutdown Signal, processing stopped: " + e.getMessage());
 				}
 				else {
 					this.logConsumerException(e);

@@ -1,3 +1,16 @@
+/*
+ * Copyright 2002-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
@@ -5,6 +18,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +56,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
@@ -65,7 +82,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
+	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class, ManualAckListener.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule
@@ -348,10 +365,13 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		private final CountDownLatch latch;
 
+		private final Set<String> received = Collections.synchronizedSet(new HashSet<String>());
+
 		public ManualAckListener(CountDownLatch latch) {
 			this.latch = latch;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			try {
@@ -361,8 +381,15 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 					// intentional error (causes exception on connection thread):
 					channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
 				}
-			} finally {
-				latch.countDown();
+			}
+			finally {
+				if (this.received.add(value)) {
+					latch.countDown();
+				}
+				else {
+					logger.debug(value + " already received, redelivered="
+							+ message.getMessageProperties().isRedelivered());
+				}
 			}
 		}
 	}
@@ -381,6 +408,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			this.fail = fail;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			try {
@@ -407,6 +435,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			this.latch = latch;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			logger.debug("Receiving: " + value);
@@ -432,6 +461,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			this.latch = latch;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			logger.debug("Receiving: " + value);
