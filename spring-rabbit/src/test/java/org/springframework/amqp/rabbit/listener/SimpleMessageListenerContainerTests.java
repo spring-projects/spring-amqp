@@ -21,6 +21,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -53,6 +55,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -281,7 +284,7 @@ public class SimpleMessageListenerContainerTests {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				consumer.get().handleConsumeOk((String) invocation.getArguments()[2]);
+				consumer.get().handleConsumeOk("foo");
 				args.set((Map<?, ?>) invocation.getArguments()[5]);
 				return null;
 			}
@@ -350,6 +353,53 @@ public class SimpleMessageListenerContainerTests {
 		waitForConsumersToStop(consumers);
 		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
 		assertEquals(1, openConnections.size());
+	}
+
+	@Test
+	public void testConsumerCancel() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(false)).thenReturn(channel);
+		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.get().handleConsumeOk("foo");
+				return null;
+			}
+		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+			}
+		});
+		container.afterPropertiesSet();
+		container.start();
+		verify(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		final CountDownLatch latch = new CountDownLatch(1);
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				if (((String) invocation.getArguments()[0]).startsWith("Consumer raised exception")) {
+					latch.countDown();
+				}
+				return invocation.callRealMethod();
+			}
+		}).when(logger).warn(any());
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+		consumer.get().handleCancel("foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,
