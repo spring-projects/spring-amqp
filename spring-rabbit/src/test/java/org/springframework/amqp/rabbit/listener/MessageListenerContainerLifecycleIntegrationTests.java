@@ -392,7 +392,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		try {
 			connectionFactory.destroy();
 
-			Thread.sleep(1000);
+			Thread.sleep(5000);
 			Mockito.verify(log).debug(
 					Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 			Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));

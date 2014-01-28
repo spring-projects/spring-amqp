@@ -141,6 +141,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
@@ -210,6 +211,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
@@ -275,6 +277,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
@@ -360,6 +363,7 @@ public class SimpleMessageListenerContainerTests {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
