@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Dave Syer
@@ -24,7 +25,7 @@ import java.util.List;
  */
 public class CompositeConnectionListener implements ConnectionListener {
 
-	private List<ConnectionListener> delegates = new ArrayList<ConnectionListener>();
+	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<ConnectionListener>();
 
 	public void onCreate(Connection connection) {
 		for (ConnectionListener delegate : delegates) {
@@ -44,6 +45,14 @@ public class CompositeConnectionListener implements ConnectionListener {
 
 	public void addDelegate(ConnectionListener delegate) {
 		this.delegates.add(delegate);
+	}
+
+	public boolean removeDelegate(ConnectionListener delegate) {
+		return this.delegates.remove(delegate);
+	}
+
+	public void clearDelegates() {
+		this.delegates.clear();
 	}
 
 }
