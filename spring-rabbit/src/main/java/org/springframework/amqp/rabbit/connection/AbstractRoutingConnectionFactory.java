@@ -126,6 +126,36 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	@Override
+	public boolean removeConnectionListener(ConnectionListener listener) {
+		boolean removed = false;
+		for (ConnectionFactory connectionFactory : this.targetConnectionFactories.values()) {
+			boolean listenerRemoved = connectionFactory.removeConnectionListener(listener);
+			if (!removed) {
+				removed = listenerRemoved;
+			}
+		}
+
+		if (this.defaultTargetConnectionFactory != null) {
+			boolean listenerRemoved = this.defaultTargetConnectionFactory.removeConnectionListener(listener);
+			if (!removed) {
+				removed = listenerRemoved;
+			}
+		}
+		return removed;
+	}
+
+	@Override
+	public void clearConnectionListeners() {
+		for (ConnectionFactory connectionFactory : this.targetConnectionFactories.values()) {
+			connectionFactory.clearConnectionListeners();
+		}
+
+		if (this.defaultTargetConnectionFactory != null) {
+			this.defaultTargetConnectionFactory.clearConnectionListeners();
+		}
+	}
+
+	@Override
 	public String getHost() {
 		return this.determineTargetConnectionFactory().getHost();
 	}
