@@ -251,16 +251,25 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			}
 		}
 		Channel channel = null;
-		synchronized (channelList) {
-			if (!channelList.isEmpty()) {
-				channel = channelList.removeFirst();
+		if (connection.isOpen()) {
+			synchronized (channelList) {
+				while (!channelList.isEmpty()) {
+					channel = channelList.removeFirst();
+					if (channel.isOpen()) {
+						break;
+					}
+					else {
+						channel = null;
+					}
+				}
+			}
+			if (channel != null) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Found cached Rabbit Channel: " + channel.toString());
+				}
 			}
 		}
-		if (channel != null) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Found cached Rabbit Channel");
-			}
-		} else {
+		if (channel == null) {
 			channel = getCachedChannelProxy(connection, channelList, transactional);
 		}
 		return channel;
@@ -302,13 +311,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 		else if (this.cacheMode == CacheMode.CONNECTION) {
 			if (!connection.isOpen()) {
-				this.openConnections.remove(connection);
-				this.openConnectionNonTransactionalChannels.remove(connection);
-				this.openConnectionTransactionalChannels.remove(connection);
-				connection.notifyCloseIfNecessary();
-				ChannelCachingConnectionProxy newConnection = (ChannelCachingConnectionProxy) createConnection();
-				// Applications already have a reference to the proxy, so update it's target.
-				connection.target = newConnection.target;
+				synchronized(connectionMonitor) {
+					this.openConnectionNonTransactionalChannels.get(connection).clear();
+					this.openConnectionTransactionalChannels.get(connection).clear();
+					connection.notifyCloseIfNecessary();
+					ChannelCachingConnectionProxy newConnection = (ChannelCachingConnectionProxy) createConnection();
+					/*
+					 * Applications already have a reference to the proxy, so we steal the new (or idle) connection's
+					 * target and remove the connection from the open list.
+					 */
+					connection.target = newConnection.target;
+					connection.closeNotified.set(false);
+					this.openConnections.remove(newConnection);
+				}
 			}
 			return doCreateBareChannel(connection, transactional);
 		}

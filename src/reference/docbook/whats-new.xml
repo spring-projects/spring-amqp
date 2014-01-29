@@ -52,7 +52,7 @@
 			<para>
 				The caching connection factory can now be configured to cache <code>Connection</code>s
 				and their <code>Channel</code>s instead of using a single
-				connection and caching <code>Channel</code>s. See <xref linkend="connections"/>.
+				connection and caching just <code>Channel</code>s. See <xref linkend="connections"/>.
 			</para>
 		</section>
 		<section>

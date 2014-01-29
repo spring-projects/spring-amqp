@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -497,7 +499,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 						Channel channel = mock(Channel.class);
 						when(channel.isOpen()).thenReturn(true);
 						int channelNumnber = ++this.channelNumber;
-						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
+						when(channel.toString()).thenReturn("mockChannel" + connectionNumber + ":" + channelNumnber);
 						mockChannels.add(channel);
 						return channel;
 					}
@@ -653,23 +655,20 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(0, idleConnections.size());
 		when(mockConnections.get(2).isOpen()).thenReturn(false);
 		channel3 = con3.createChannel(false);
-		// The channel is from cache, so there is no check of connection state
-		assertNull(closedNotification.get());
-		closedNotification.set(null);
-		assertNull(createNotification.get());
+		assertNotNull(closedNotification.getAndSet(null));
+		assertNotNull(createNotification.getAndSet(null));
 
-		verifyChannelIs(mockChannels.get(2), channel3);
+		verifyChannelIs(mockChannels.get(3), channel3);
 		channel3.close();
 		con3.close();
-		assertNotNull(closedNotification.get());
-		assertEquals(0, openConnections.size());
-		assertEquals(0, idleConnections.size());
+		assertNull(closedNotification.get());
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
 
 		// destroy
 		ccf.destroy();
 		assertNotNull(closedNotification.get());
-		// physical wasn't invoked, because this mockConnection marked with 'false' for 'isOpen()'
-		verify(mockConnections.get(2), never()).close(30000);
+		verify(mockConnections.get(3)).close(30000);
 	}
 
 
@@ -692,7 +691,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 						Channel channel = mock(Channel.class);
 						when(channel.isOpen()).thenReturn(true);
 						int channelNumnber = ++this.channelNumber;
-						when(channel.toString()).thenReturn("mockChannel" + channelNumnber);
+						when(channel.toString()).thenReturn("mockChannel" + connectionNumber + ":" + channelNumnber);
 						mockChannels.add(channel);
 						return channel;
 					}
@@ -715,6 +714,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(0, openConnections.size());
 		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(ccf, "idleConnections", BlockingQueue.class);
 		assertEquals(0, idleConnections.size());
+		@SuppressWarnings("unchecked")
+		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(ccf, "openConnectionNonTransactionalChannels", Map.class);
 
 		final AtomicReference<Connection> createNotification = new AtomicReference<Connection>();
 		final AtomicReference<Connection> closedNotification = new AtomicReference<Connection>();
@@ -750,6 +751,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockConnections.get(0), never()).close();
 		assertEquals(1, openConnections.size());
 		assertEquals(1, idleConnections.size());
+		assertEquals(1, cachedChannels.get(con1).size());
 		assertNull(closedNotification.get());
 
 		/*
@@ -809,16 +811,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		con3.close();
 		assertEquals(2, openConnections.size());
 		assertEquals(2, idleConnections.size());
+		assertEquals(1, cachedChannels.get(con1).size());
+		assertEquals(1, cachedChannels.get(con2).size());
 		/*
-		 *  Cache size is 1; con3 (mock1) should have been a real close.
-		 *  con2 (mock2) should still be in the cache.
+		 *  Cache size is 2; neither should have been a real close.
+		 *  con2 (mock2) and con1 should still be in the cache.
 		 */
 		verify(mockConnections.get(0), never()).close(30000);
 		assertNull(closedNotification.get());
 		verify(mockChannels.get(1), never()).close();
 		verify(mockConnections.get(1), never()).close(30000);
 		verify(mockChannels.get(1), never()).close();
-		verifyConnectionIs(mockConnections.get(1), idleConnections.iterator().next());
+		assertEquals(2, idleConnections.size());
+		Iterator<?> iterator = idleConnections.iterator();
+		verifyConnectionIs(mockConnections.get(1), iterator.next());
+		verifyConnectionIs(mockConnections.get(0), iterator.next());
 		/*
 		 * Now a closed cached connection
 		 */
@@ -848,17 +855,28 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(0, idleConnections.size());
 		when(mockConnections.get(0).isOpen()).thenReturn(false);
 		channel3 = con3.createChannel(false);
-		// The channel is from cache, so there is no check of connection state
-		assertNull(closedNotification.get());
-		closedNotification.set(null);
-		assertNull(createNotification.get());
+		assertNotNull(closedNotification.getAndSet(null));
+		assertNotNull(createNotification.getAndSet(null));
 
-		verifyChannelIs(mockChannels.get(0), channel3);
+		verifyChannelIs(mockChannels.get(2), channel3);
 		channel3.close();
 		con3.close();
-		assertNotNull(closedNotification.get());
-		assertEquals(0, openConnections.size());
+		assertNull(closedNotification.get());
+		assertEquals(1, openConnections.size());
+		assertEquals(1, idleConnections.size());
+
+		Connection con4 = ccf.createConnection();
+		assertSame(con3, con4);
 		assertEquals(0, idleConnections.size());
+		Channel channelA = con4.createChannel(false);
+		Channel channelB = con4.createChannel(false);
+		Channel channelC = con4.createChannel(false);
+		channelA.close();
+		assertEquals(1, cachedChannels.get(con4).size());
+		channelB.close();
+		assertEquals(2, cachedChannels.get(con4).size());
+		channelC.close();
+		assertEquals(2, cachedChannels.get(con4).size());
 
 		// destroy
 		ccf.destroy();
@@ -866,6 +884,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		// physical wasn't invoked, because this mockConnection marked with 'false' for 'isOpen()'
 		verify(mockConnections.get(0), never()).close(30000);
 		verify(mockConnections.get(1), never()).close(30000);
+		verify(mockConnections.get(2)).close(30000);
 	}
 
 	@Test
