@@ -1023,7 +1023,7 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	When 'CHANNEL', channels are cached within a single connection (default); when 'CONNECTION',
-	connections are cached (and channels are not). CONNECTION might be suitable for a listener
+	connections and their channels are cached. CONNECTION might be suitable for a listener
 	container.
 					]]></xsd:documentation>
 				</xsd:annotation>

@@ -93,11 +93,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	private volatile int channelCacheSize = 1;
 
-	private volatile boolean channelCacheSizeSet;
-
 	private volatile int connectionCacheSize = 1;
-
-	private volatile boolean connectionCacheSizeSet;
 
 	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
 
@@ -171,7 +167,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
-		this.channelCacheSizeSet = true;
 	}
 
 	public int getChannelCacheSize() {
@@ -195,7 +190,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	public void setConnectionCacheSize(int connectionCacheSize) {
 		Assert.isTrue(connectionCacheSize >= 1, "Connection cache size must be 1 or higher.");
 		this.connectionCacheSize = connectionCacheSize;
-		this.connectionCacheSizeSet = true;
 	}
 
 	public boolean isPublisherConfirms() {
@@ -217,12 +211,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.initialized = true;
-		if (this.cacheMode == CacheMode.CHANNEL) {
-			Assert.isTrue(!this.connectionCacheSizeSet, "Cannot have a connection cache size when the mode is 'CHANNEL'");
-		}
-		else if (this.cacheMode == CacheMode.CONNECTION) {
-			Assert.isTrue(!this.channelCacheSizeSet, "Cannot have a channel cache size when the mode is 'CONNECTION'");
-		}
 	}
 
 	@Override
@@ -253,7 +241,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			channelList = transactional ? this.openConnectionTransactionalChannels.get(connection)
 					: this.openConnectionNonTransactionalChannels.get(connection);
 		}
-
+		if (channelList == null) {
+			channelList = new LinkedList<ChannelProxy>();
+			if (transactional) {
+				this.openConnectionTransactionalChannels.put(connection, channelList);
+			}
+			else {
+				this.openConnectionNonTransactionalChannels.put(connection, channelList);
+			}
+		}
 		Channel channel = null;
 		synchronized (channelList) {
 			if (!channelList.isEmpty()) {
