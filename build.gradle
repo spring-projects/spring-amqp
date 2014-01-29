@@ -27,6 +27,9 @@ allprojects {
 	group = 'org.springframework.amqp'
 
 	repositories {
+		if (version.endsWith('BUILD-SNAPSHOT')) {
+			maven { url 'http://repo.spring.io/libs-snapshot' }
+		}
 		maven { url 'http://repo.springsource.org/libs-release' }
 	}
 	apply plugin: 'javadocHotfix'
@@ -64,7 +67,7 @@ subprojects { subproject ->
 		mockitoVersion = '1.8.4'
 		rabbitmqVersion = '3.2.2'
 
-		springVersion = '3.1.4.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '3.2.7.RELEASE'
 	}
 
 	eclipse {
