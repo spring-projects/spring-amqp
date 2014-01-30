@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -41,6 +42,9 @@ public class SimpleMessageListenerContainerLongTests {
 
 	@Rule
 	public LongRunningIntegrationTest longTest = new LongRunningIntegrationTest();
+
+	@Rule
+	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	@Test
 	public void testChangeConsumerCount() throws Exception {
