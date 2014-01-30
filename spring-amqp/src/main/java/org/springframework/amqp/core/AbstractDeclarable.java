@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	private volatile boolean shouldDeclare = true;
 
-	private volatile Collection<AmqpAdmin> declaringAdmins = new ArrayList<AmqpAdmin>();
+	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
 
 	@Override
 	public boolean shouldDeclare() {
@@ -42,7 +42,7 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	/**
 	 * Whether or not this object should be automatically declared
-	 * by any {@link AmqpAdmin}. Default is {@code true}.
+	 * by any {@code AmqpAdmin}. Default is {@code true}.
 	 * @param shouldDeclare true or false.
 	 */
 	public void setShouldDeclare(boolean shouldDeclare) {
@@ -50,12 +50,12 @@ public abstract class AbstractDeclarable implements Declarable {
 	}
 
 	@Override
-	public Collection<AmqpAdmin> getDeclaringAdmins() {
+	public Collection<?> getDeclaringAdmins() {
 		return Collections.unmodifiableCollection(this.declaringAdmins);
 	}
 
 	/**
-	 * The {@link AmqpAdmin}s that should declare this object; default is
+	 * The {@code AmqpAdmin}s that should declare this object; default is
 	 * all admins.
 	 * <br><br>A null argument, or an array/varArg with a single null argument, clears the collection
 	 * ({@code setAdminsThatShouldDeclare((AmqpAdmin) null)} or
@@ -63,8 +63,8 @@ public abstract class AbstractDeclarable implements Declarable {
 	 * the behavior such that all admins will declare the object.
 	 * @param admins The admins.
 	 */
-	public void setAdminsThatShouldDeclare(AmqpAdmin... admins) {
-		Collection<AmqpAdmin> declaringAdmins = new ArrayList<AmqpAdmin>();
+	public void setAdminsThatShouldDeclare(Object... admins) {
+		Collection<Object> declaringAdmins = new ArrayList<Object>();
 		if (admins != null) {
 			if (admins.length > 1) {
 				Assert.noNullElements(admins, "'admins' cannot contain null elements");

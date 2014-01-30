@@ -291,7 +291,7 @@ public class RabbitAdminDeclarationTests {
 		assertEquals(2, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1);
 		assertEquals(1, queue.getDeclaringAdmins().size());
-		queue.setAdminsThatShouldDeclare(new AmqpAdmin[] {null});
+		queue.setAdminsThatShouldDeclare(new Object[] {null});
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
 		assertEquals(2, queue.getDeclaringAdmins().size());
@@ -303,7 +303,7 @@ public class RabbitAdminDeclarationTests {
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
 		assertEquals(2, queue.getDeclaringAdmins().size());
-		queue.setAdminsThatShouldDeclare((AmqpAdmin[]) null);
+		queue.setAdminsThatShouldDeclare((Object[]) null);
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		try {
 			queue.setAdminsThatShouldDeclare(null, admin1);

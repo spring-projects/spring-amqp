@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ import java.util.Collection;
 
 /**
  * Classes implementing this interface can be auto-declared
- * with the broker during context initialization by an {@link AmqpAdmin}.
- * Registration can be limited to specific {@link AmqpAdmin}s.
+ * with the broker during context initialization by an {@code AmqpAdmin}.
+ * Registration can be limited to specific {@code AmqpAdmin}s.
+ *
  * @author Gary Russell
  * @since 1.2
  *
@@ -29,15 +30,15 @@ public interface Declarable {
 
 	/**
 	 * Whether or not this object should be automatically declared
-	 * by any {@link AmqpAdmin}.
+	 * by any {@code AmqpAdmin}.
 	 * @return true if the object should be declared.
 	 */
 	boolean shouldDeclare();
 
 	/**
-	 * The collection of {@link AmqpAdmin}s that should declare this
+	 * The collection of {@code AmqpAdmin}s that should declare this
 	 * object; if empty, all admins should declare.
 	 * @return the collection.
 	 */
-	Collection<AmqpAdmin> getDeclaringAdmins();
+	Collection<?> getDeclaringAdmins();
 }
