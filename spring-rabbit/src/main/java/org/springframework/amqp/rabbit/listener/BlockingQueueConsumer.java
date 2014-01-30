@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -40,6 +41,12 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.BackOffPolicy;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -100,6 +107,8 @@ public class BlockingQueueConsumer {
 
 	private final CountDownLatch suspendClientThread = new CountDownLatch(1);
 
+	private final RetryTemplate retryTemplate = new RetryTemplate();
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
 	 * until it is started. RequeueRejected defaults to true.
@@ -138,7 +147,7 @@ public class BlockingQueueConsumer {
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected, String... queues) {
 		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
-				prefetchCount, defaultRequeueRejected, null, queues);
+				prefetchCount, defaultRequeueRejected, null, SimpleRetryPolicy.DEFAULT_MAX_ATTEMPTS, null, queues);
 	}
 
 	/**
@@ -159,7 +168,7 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-			Map<String, Object> consumerArgs, String... queues) {
+			Map<String, Object> consumerArgs, int reconnectCount, BackOffPolicy reconnectBackOffPolicy, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
@@ -172,6 +181,22 @@ public class BlockingQueueConsumer {
 		}
 		this.queues = queues;
 		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
+		this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(reconnectCount, Collections
+				.<Class<? extends Throwable>, Boolean> singletonMap(IOException.class, true)) {
+
+			@Override
+			public boolean canRetry(RetryContext context) {
+				return super.canRetry(context) && BlockingQueueConsumer.this.getChannel().isOpen();
+			}
+		});
+		if (reconnectBackOffPolicy != null) {
+			this.retryTemplate.setBackOffPolicy(reconnectBackOffPolicy);
+		}
+		else {
+			FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+			backOffPolicy.setBackOffPeriod(5000);
+			this.retryTemplate.setBackOffPolicy(backOffPolicy);
+		}
 	}
 
 	public Channel getChannel() {
@@ -275,38 +300,28 @@ public class BlockingQueueConsumer {
 		this.activeObjectCounter.add(this);
 
 		// mirrored queue might be being moved
-		int passiveDeclareTries = 3;
-		do {
-			try {
-				if (!acknowledgeMode.isAutoAck()) {
-					// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
-					// will send blocks of 100 messages)
-					channel.basicQos(prefetchCount);
-				}
-				for (int i = 0; i < queues.length; i++) {
-					channel.queueDeclarePassive(queues[i]);
-				}
-				passiveDeclareTries = 0;
-			}
-			catch (IOException e) {
-				if (passiveDeclareTries > 0 && channel.isOpen()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
-						try {
-							Thread.sleep(5000);
-						} catch (InterruptedException e1) {
-							Thread.currentThread().interrupt();
-						}
+		try {
+			this.retryTemplate.execute(new RetryCallback<Void>() {
+
+				@Override
+				public Void doWithRetry(RetryContext context) throws Exception {
+					if (!acknowledgeMode.isAutoAck()) {
+						// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
+						// will send blocks of 100 messages)
+						channel.basicQos(prefetchCount);
 					}
+					for (String queue : queues) {
+						channel.queueDeclarePassive(queue);
+					}
+					return null;
 				}
-				else {
-					this.activeObjectCounter.release(this);
-					throw new FatalListenerStartupException("Cannot prepare queue for listener. "
-							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
-				}
-			}
+			});
 		}
-		while (passiveDeclareTries-- > 0);
+		catch (Exception e) {
+			this.activeObjectCounter.release(this);
+			throw new FatalListenerStartupException("Cannot prepare queue for listener. "
+					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
+		}
 
 		try {
 			for (int i = 0; i < queues.length; i++) {

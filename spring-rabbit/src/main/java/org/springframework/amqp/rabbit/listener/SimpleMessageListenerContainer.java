@@ -48,6 +48,8 @@ import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
+import org.springframework.retry.backoff.BackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
@@ -133,6 +135,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean defaultRequeueRejected = true;
 
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+
+	private volatile int reconnectCount = SimpleRetryPolicy.DEFAULT_MAX_ATTEMPTS;
+
+	private volatile BackOffPolicy reconnectBackOffPolicy;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -418,6 +424,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	public void setReconnectCount(int reconnectCount) {
+		this.reconnectCount = reconnectCount;
+	}
+
+	public void setReconnectBackOffPolicy(BackOffPolicy reconnectBackOffPolicy) {
+		this.reconnectBackOffPolicy = reconnectBackOffPolicy;
+	}
+
 	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
@@ -664,7 +678,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
 				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
-				this.consumerArgs, queues);
+				this.consumerArgs, this.reconnectCount, this.reconnectBackOffPolicy, queues);
 		return consumer;
 	}
 
