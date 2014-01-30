@@ -79,7 +79,7 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 			binding.setShouldDeclare(this.shouldDeclare);
 		}
 		if (this.adminsThatShouldDeclare != null) {
-			binding.setAdminsThatShouldDeclare(this.adminsThatShouldDeclare);
+			binding.setAdminsThatShouldDeclare((Object[]) this.adminsThatShouldDeclare);
 		}
 		return binding;
 	}
