@@ -18,9 +18,11 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -62,6 +64,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class CachingConnectionFactory extends AbstractConnectionFactory implements InitializingBean {
 
@@ -80,15 +83,17 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	private final Set<ChannelCachingConnectionProxy> openConnections = new HashSet<ChannelCachingConnectionProxy>();
 
+	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
+			openConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+
+	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
+			openConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+
 	private final BlockingQueue<ChannelCachingConnectionProxy> idleConnections = new LinkedBlockingQueue<ChannelCachingConnectionProxy>();
 
 	private volatile int channelCacheSize = 1;
 
-	private volatile boolean channelCacheSizeSet;
-
 	private volatile int connectionCacheSize = 1;
-
-	private volatile boolean connectionCacheSizeSet;
 
 	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
 
@@ -162,7 +167,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
-		this.channelCacheSizeSet = true;
 	}
 
 	public int getChannelCacheSize() {
@@ -174,7 +178,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	}
 
 	public void setCacheMode(CacheMode cacheMode) {
-		Assert.isTrue(!initialized, "'cacheMode' cannot be changed after initialization");
+		Assert.isTrue(!initialized, "'cacheMode' cannot be changed after initialization.");
+		Assert.notNull(cacheMode, "'cacheMode' must not be null.");
 		this.cacheMode = cacheMode;
 	}
 
@@ -183,9 +188,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	}
 
 	public void setConnectionCacheSize(int connectionCacheSize) {
-		Assert.isTrue(connectionCacheSize >= 1, "Connection cache size must be 1 or higher");
+		Assert.isTrue(connectionCacheSize >= 1, "Connection cache size must be 1 or higher.");
 		this.connectionCacheSize = connectionCacheSize;
-		this.connectionCacheSizeSet = true;
 	}
 
 	public boolean isPublisherConfirms() {
@@ -208,10 +212,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	public void afterPropertiesSet() throws Exception {
 		this.initialized = true;
 		if (this.cacheMode == CacheMode.CHANNEL) {
-			Assert.isTrue(!this.connectionCacheSizeSet, "Cannot have a connection cache size when the mode is 'CHANNEL'");
-		}
-		else if (this.cacheMode == CacheMode.CONNECTION) {
-			Assert.isTrue(!this.channelCacheSizeSet, "Cannot have a channel cache size when the mode is 'CONNECTION'");
+			Assert.isTrue(this.connectionCacheSize == 1, "When the cache mode is 'CHANNEL', the connection cache size cannot be configured.");
 		}
 	}
 
@@ -234,39 +235,47 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	}
 
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
+		LinkedList<ChannelProxy> channelList;
 		if (this.cacheMode == CacheMode.CHANNEL) {
-			return getChannelFromSingleConnection(transactional);
-		}
-		else if (this.cacheMode == CacheMode.CONNECTION) {
-			return getChannelFromOpenConnection(connection, transactional);
+			channelList = transactional ? this.cachedChannelsTransactional
+					: this.cachedChannelsNonTransactional;
 		}
 		else {
-			return null;
+			channelList = transactional ? this.openConnectionTransactionalChannels.get(connection)
+					: this.openConnectionNonTransactionalChannels.get(connection);
 		}
-	}
-
-	private Channel getChannelFromSingleConnection(boolean transactional) {
-		LinkedList<ChannelProxy> channelList = transactional ? this.cachedChannelsTransactional
-				: this.cachedChannelsNonTransactional;
+		if (channelList == null) {
+			channelList = new LinkedList<ChannelProxy>();
+			if (transactional) {
+				this.openConnectionTransactionalChannels.put(connection, channelList);
+			}
+			else {
+				this.openConnectionNonTransactionalChannels.put(connection, channelList);
+			}
+		}
 		Channel channel = null;
-		synchronized (channelList) {
-			if (!channelList.isEmpty()) {
-				channel = channelList.removeFirst();
+		if (connection.isOpen()) {
+			synchronized (channelList) {
+				while (!channelList.isEmpty()) {
+					channel = channelList.removeFirst();
+					if (channel.isOpen()) {
+						break;
+					}
+					else {
+						channel = null;
+					}
+				}
+			}
+			if (channel != null) {
+				if (logger.isTraceEnabled()) {
+					logger.trace("Found cached Rabbit Channel: " + channel.toString());
+				}
 			}
 		}
-		if (channel != null) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Found cached Rabbit Channel");
-			}
-		} else {
-			channel = getCachedChannelProxy(this.connection, channelList, transactional);
+		if (channel == null) {
+			channel = getCachedChannelProxy(connection, channelList, transactional);
 		}
 		return channel;
-	}
-
-	private Channel getChannelFromOpenConnection(ChannelCachingConnectionProxy connection, boolean transactional) {
-		Assert.notNull(connection, "Connection cannot be null");
-		return getCachedChannelProxy(connection, null, transactional);
 	}
 
 	private ChannelProxy getCachedChannelProxy(ChannelCachingConnectionProxy connection,
@@ -305,11 +314,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 		else if (this.cacheMode == CacheMode.CONNECTION) {
 			if (!connection.isOpen()) {
-				this.openConnections.remove(connection);
-				connection.notifyCloseIfNecessary();
-				ChannelCachingConnectionProxy newConnection = (ChannelCachingConnectionProxy) createConnection();
-				// Applications already have a reference to the proxy, so update it's target.
-				connection.target = newConnection.target;
+				synchronized(connectionMonitor) {
+					this.openConnectionNonTransactionalChannels.get(connection).clear();
+					this.openConnectionTransactionalChannels.get(connection).clear();
+					connection.notifyCloseIfNecessary();
+					ChannelCachingConnectionProxy newConnection = (ChannelCachingConnectionProxy) createConnection();
+					/*
+					 * Applications already have a reference to the proxy, so we steal the new (or idle) connection's
+					 * target and remove the connection from the open list.
+					 */
+					connection.target = newConnection.target;
+					connection.closeNotified.set(false);
+					this.openConnections.remove(newConnection);
+				}
 			}
 			return doCreateBareChannel(connection, transactional);
 		}
@@ -356,6 +373,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 							}
 							connection.notifyCloseIfNecessary();
 							this.openConnections.remove(connection);
+							this.openConnectionNonTransactionalChannels.remove(connection);
+							this.openConnectionTransactionalChannels.remove(connection);
 							connection = null;
 						}
 					}
@@ -367,6 +386,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 						logger.debug("Adding new connection '" + connection + "'");
 					}
 					this.openConnections.add(connection);
+					this.openConnectionNonTransactionalChannels.put(connection, new LinkedList<ChannelProxy>());
+					this.openConnectionTransactionalChannels.put(connection, new LinkedList<ChannelProxy>());
 				}
 				else {
 					if (logger.isDebugEnabled()) {
@@ -397,6 +418,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			}
 			this.openConnections.clear();
 			this.idleConnections.clear();
+			this.openConnectionNonTransactionalChannels.clear();
+			this.openConnectionTransactionalChannels.clear();
 		}
 		reset();
 	}
@@ -481,17 +504,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			else if (methodName.equals("close")) {
 				// Handle close method: don't pass the call on.
 				if (active) {
-					if (cacheMode == CacheMode.CHANNEL) {
-						synchronized (this.channelList) {
-							if (!RabbitUtils.isPhysicalCloseRequired() && this.channelList.size() < getChannelCacheSize()) {
-								logicalClose((ChannelProxy) proxy);
-								// Remain open in the channel list.
-								return null;
-							}
+					synchronized (this.channelList) {
+						if (!RabbitUtils.isPhysicalCloseRequired() && this.channelList.size() < getChannelCacheSize()) {
+							logicalClose((ChannelProxy) proxy);
+							// Remain open in the channel list.
+							return null;
 						}
-					}
-					else if(cacheMode == CacheMode.CONNECTION) {
-						// Do nothing; we always want to close the channel
 					}
 				}
 
@@ -610,6 +628,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 						}
 						this.notifyCloseIfNecessary();
 						openConnections.remove(this);
+						openConnectionNonTransactionalChannels.remove(this);
+						openConnectionTransactionalChannels.remove(this);
 					}
 					else {
 						if (!idleConnections.contains(this)) {

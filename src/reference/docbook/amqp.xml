@@ -256,10 +256,10 @@
     call the <methodname>setChannelCacheSize()</methodname> method here as well.</para>
 	<para>
 		Starting with <emphasis>version 1.3</emphasis>, the <classname>CachingConnectionFactory</classname>
-		can be configured to cache connections instead of chanels. In this case, each call to
+		can be configured to cache connections as well as just channels. In this case, each call to
 		<code>createConnection()</code> creates a new connection (or retrieves an idle one from the cache).
 		Closing a connection returns it to the cache (if the cache size has not been reached).
-		Channels created on such connections are physically closed and are not cached. This might be
+		Channels created on such connections are cached too. The use of separate connections might be
 		useful in some environments, such as consuming from an HA cluster, in conjunction with a load balancer, to
 		connect to different cluster members.
 	</para>
@@ -602,7 +602,7 @@ public static MessageBuilder fromClonedMessage(Message message) ]]><co id="mb5" 
 			</callout>
 			<callout arearefs="mb2">
 				<para>
-					The message created by the builder will have a body that is a new array containing a copy of 
+					The message created by the builder will have a body that is a new array containing a copy of
 					bytes in the argument.
 				</para>
 			</callout>
@@ -621,7 +621,7 @@ public static MessageBuilder fromClonedMessage(Message message) ]]><co id="mb5" 
 			</callout>
 			<callout arearefs="mb5">
 				<para>
-					The message created by the builder will have a body that is a new array containing a copy of 
+					The message created by the builder will have a body that is a new array containing a copy of
 					the argument's body.
 					The argument's properties are copied to a new a <classname>MessageProperties</classname> object.
 				</para>
