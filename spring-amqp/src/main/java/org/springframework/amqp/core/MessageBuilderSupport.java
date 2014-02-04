@@ -29,7 +29,7 @@ import org.springframework.beans.BeanUtils;
  * @since 1.3
  *
  */
-abstract class MessageBuilderSupport<T> {
+public abstract class MessageBuilderSupport<T> {
 
 	private MessageProperties properties = new MessageProperties();
 
@@ -340,5 +340,5 @@ abstract class MessageBuilderSupport<T> {
 		return this.properties;
 	}
 
-	protected abstract T build();
+	public abstract T build();
 }
