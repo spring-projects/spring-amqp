@@ -264,8 +264,21 @@
 		connect to different cluster members.
 	</para>
 	<important>
+	  <para>
 		When the cache mode is <code>CONNECTION</code>, automatic declaration of queues etc.
 		(See <xref linkend="automatic-declaration" />) is NOT supported.
+	  </para>
+	  <para>
+	    Also, at the time of writing, the <code>rabbitmq-client</code> library creates a fixed thread pool
+	    for each connection (5 threads) by default. When using a large number of connections,
+	    you should consider setting a custom <code>executor</code> on the
+	    <classname>CachingConnectionFactory</classname>.
+	    Then, the same executor will be used by all connections and its threads can be shared.
+	    The executor's thread pool should be unbounded, or set appropriately for the expected utilization
+	    (usually, at least one thread per connection). If multiple channels are created on each connection then
+	    the pool size will affect the concurrency, so a variable (or simple cached) thread pool executor
+	    would be most suitable.
+	  </para>
 	</important>
 
     <programlisting language="java"><![CDATA[CachingConnectionFactory connectionFactory = new CachingConnectionFactory("somehost");
