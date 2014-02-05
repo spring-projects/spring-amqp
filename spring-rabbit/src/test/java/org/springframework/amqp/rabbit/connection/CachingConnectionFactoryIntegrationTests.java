@@ -90,6 +90,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	public void testCachedConnections() {
 		connectionFactory.setCacheMode(CacheMode.CONNECTION);
 		connectionFactory.setConnectionCacheSize(5);
+		connectionFactory.setExecutor(Executors.newCachedThreadPool());
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
