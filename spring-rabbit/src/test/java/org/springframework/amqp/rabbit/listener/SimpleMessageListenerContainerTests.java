@@ -26,15 +26,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
@@ -306,6 +309,78 @@ public class SimpleMessageListenerContainerTests {
 		assertEquals(10, args.get().get("x-priority"));
 		consumer.get().handleCancelOk("foo");
 		container.stop();
+	}
+
+	@Test
+	public void testChangeQueues() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel1 = mock(Channel.class);
+		Channel channel2 = mock(Channel.class);
+		when(channel1.isOpen()).thenReturn(true);
+		when(channel2.isOpen()).thenReturn(true);
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(false)).thenReturn(channel1, channel2);
+		List<Consumer> consumers = new ArrayList<Consumer>();
+		AtomicInteger consumerTag = new AtomicInteger();
+		CountDownLatch latch1 = new CountDownLatch(1);
+		CountDownLatch latch2 = new CountDownLatch(2);
+		setupMockConsume(channel1, consumers, consumerTag, latch1);
+		setUpMockCancel(channel1, consumers);
+		setupMockConsume(channel2, consumers, consumerTag, latch2);
+		setUpMockCancel(channel2, consumers);
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+			}
+		});
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		container.addQueueName("bar");
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		container.stop();
+		verify(channel1).basicCancel("0");
+		verify(channel2).basicCancel("1");
+		verify(channel2).basicCancel("2");
+	}
+
+	protected void setupMockConsume(Channel channel, final List<Consumer> consumers, final AtomicInteger consumerTag,
+			final CountDownLatch latch) throws IOException {
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				Consumer cons = (Consumer) invocation.getArguments()[2];
+				consumers.add(cons);
+				cons.handleConsumeOk(String.valueOf(consumerTag.getAndIncrement()));
+				latch.countDown();
+				return null;
+			}
+		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+	}
+
+	protected void setUpMockCancel(Channel channel, final List<Consumer> consumers) throws IOException {
+		final Executor exec = Executors.newCachedThreadPool();
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				final String consTag = (String) invocation.getArguments()[0];
+				exec.execute(new Runnable() {
+
+					@Override
+					public void run() {
+						consumers.get(Integer.parseInt(consTag)).handleCancelOk(consTag);
+					}
+				});
+				return null;
+			}
+		}).when(channel).basicCancel(anyString());
 	}
 
 	@Test

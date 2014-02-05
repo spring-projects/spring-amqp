@@ -211,6 +211,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.initialized = true;
+		if (this.cacheMode == CacheMode.CHANNEL) {
+			Assert.isTrue(this.connectionCacheSize == 1, "When the cache mode is 'CHANNEL', the connection cache size cannot be configured.");
+		}
 	}
 
 	@Override

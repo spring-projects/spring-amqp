@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,9 +64,16 @@ public abstract class RabbitUtils {
 		if (channel != null && channel.isOpen()) {
 			try {
 				channel.close();
-			} catch (IOException ex) {
+			}
+			catch (IOException ex) {
 				logger.debug("Could not close RabbitMQ Channel", ex);
-			} catch (Throwable ex) {
+			}
+			catch (ShutdownSignalException sig) {
+				if (!isNormalShutdown(sig)) {
+					logger.debug("Unexpected exception on closing RabbitMQ Channel", sig);
+				}
+			}
+			catch (Throwable ex) {
 				logger.debug("Unexpected exception on closing RabbitMQ Channel", ex);
 			}
 		}
@@ -93,12 +101,16 @@ public abstract class RabbitUtils {
 		}
 	}
 
-	public static void closeMessageConsumer(Channel channel, String consumerTag, boolean transactional) {
+	public static void closeMessageConsumer(Channel channel, Collection<String> consumerTags, boolean transactional) {
 		if (!channel.isOpen()) {
 			return;
 		}
 		try {
-			channel.basicCancel(consumerTag);
+			synchronized(consumerTags) {
+				for (String consumerTag : consumerTags) {
+					channel.basicCancel(consumerTag);
+				}
+			}
 			if (transactional) {
 				/*
 				 * Re-queue in-flight messages if any (after the consumer is cancelled to prevent the broker from simply

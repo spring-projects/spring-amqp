@@ -33,6 +33,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -418,6 +419,52 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	@Override
+	public void setQueueNames(String... queueName) {
+		super.setQueueNames(queueName);
+		this.queuesChanged();
+	}
+
+	@Override
+	public void setQueues(Queue... queues) {
+		super.setQueues(queues);
+		this.queuesChanged();
+	}
+
+	@Override
+	public void addQueueName(String queueName) {
+		super.addQueueName(queueName);
+		this.queuesChanged();
+	}
+
+	@Override
+	public void addQueue(Queue queue) {
+		super.addQueue(queue);
+		this.queuesChanged();
+	}
+
+	@Override
+	public boolean removeQueueName(String queueName) {
+		if (super.removeQueueName(queueName)) {
+			this.queuesChanged();
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean removeQueue(Queue queue) {
+		if (super.removeQueue(queue)) {
+			this.queuesChanged();
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
 	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
@@ -599,6 +646,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.put(consumer, true);
 					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Starting a new consumer: " + consumer);
+					}
 					this.taskExecutor.execute(processor);
 					try {
 						FatalListenerStartupException startupException = processor.getStartupException();
@@ -626,9 +676,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					&& this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStarted + startConsumerMinInterval < now) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Starting a new consumer");
-					}
 					this.addAndStartConsumers(1);
 					this.lastConsumerStarted = now;
 				}
@@ -643,9 +690,24 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
 					this.consumers.put(consumer, false);
 					if (logger.isDebugEnabled()) {
-						logger.debug("Idle consumer terminating");
+						logger.debug("Idle consumer terminating: " + consumer);
 					}
 					this.lastConsumerStopped = now;
+				}
+			}
+		}
+	}
+
+	private void queuesChanged() {
+		synchronized (consumersMonitor) {
+			if (this.consumers != null) {
+				for (Entry<BlockingQueueConsumer, Boolean> consumer : this.consumers.entrySet()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Queues changed; stopping consumer: " + consumer.getKey());
+					}
+					consumer.getKey().setQuiesce(this.shutdownTimeout);
+					consumer.setValue(false);
+					this.addAndStartConsumers(1);
 				}
 			}
 		}

@@ -13,6 +13,11 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -54,7 +59,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 
 	private final Object lifecycleMonitor = new Object();
 
-	private volatile String[] queueNames;
+	private volatile List<String> queueNames = new CopyOnWriteArrayList<String>();
 
 	private ErrorHandler errorHandler;
 
@@ -101,19 +106,24 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Set the name of the queue to receive messages from.
-	 * @param queueName the desired queue (can not be <code>null</code>)
+	 * Set the name of the queue(s) to receive messages from.
+	 * @param queueName the desired queueName(s) (can not be <code>null</code>)
 	 */
 	public void setQueueNames(String... queueName) {
-		this.queueNames = queueName;
+		this.queueNames = new CopyOnWriteArrayList<String>(Arrays.asList(queueName));
 	}
 
+	/**
+	 * Set the name of the queue(s) to receive messages from.
+	 * @param queue the desired queue(s) (can not be <code>null</code>)
+	 */
 	public void setQueues(Queue... queues) {
-		String[] queueNames = new String[queues.length];
+		List<String> queueNames = new ArrayList<String>(queues.length);
 		for (int i = 0; i < queues.length; i++) {
 			Assert.notNull(queues[i], "Queue must not be null.");
-			queueNames[i] = queues[i].getName();
+			queueNames.add(queues[i].getName());
 		}
+		queueNames = new CopyOnWriteArrayList<String>(queueNames);
 		this.queueNames = queueNames;
 	}
 
@@ -121,13 +131,55 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	 * @return the name of the queues to receive messages from.
 	 */
 	public String[] getQueueNames() {
-		return this.queueNames;
+		return this.queueNames.toArray(new String[this.queueNames.size()]);
 	}
 
 	protected String[] getRequiredQueueNames() {
-		Assert.notNull(this.queueNames, "Queue names must not be null.");
-		Assert.state(this.queueNames.length > 0, "Queue names must not be empty.");
-		return this.queueNames;
+		Assert.state(this.queueNames.size() > 0, "Queue names must not be empty.");
+		return this.getQueueNames();
+	}
+
+	/**
+	 * Add a queue to this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. The queue must exist to avoid problems when
+	 * restarting the consumers.
+	 * @param queueName The queue to add.
+	 */
+	public void addQueueName(String queueName) {
+		this.queueNames.add(queueName);
+	}
+
+	/**
+	 * Add a queue to this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. The queue must exist to avoid problems when
+	 * restarting the consumers.
+	 * @param queue The queue to add.
+	 */
+	public void addQueue(Queue queue) {
+		this.addQueueName(queue.getName());
+	}
+
+	/**
+	 * Remove a queue from this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. At least one queue must remain.
+	 * @param queueName The queue to remove.
+	 */
+	public boolean removeQueueName(String queueName) {
+		Assert.isTrue(this.queueNames.size() > 1, "Cannot remove the last queue");
+		return this.queueNames.remove(queueName);
+	}
+
+	/**
+	 * Remove a queue from this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. At least one queue must remain.
+	 * @param queue The queue to remove.
+	 */
+	public boolean removeQueue(Queue queue) {
+		return this.removeQueueName(queue.getName());
 	}
 
 	/**
