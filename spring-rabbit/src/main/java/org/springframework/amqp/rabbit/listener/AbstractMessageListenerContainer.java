@@ -115,7 +115,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 
 	/**
 	 * Set the name of the queue(s) to receive messages from.
-	 * @param queue the desired queue(s) (can not be <code>null</code>)
+	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
 	public void setQueues(Queue... queues) {
 		List<String> queueNames = new ArrayList<String>(queues.length);
@@ -140,10 +140,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Add a queue to this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. The queue must exist to avoid problems when
-	 * restarting the consumers.
+	 * Add a queue to this container's list of queues.
 	 * @param queueName The queue to add.
 	 */
 	public void addQueueName(String queueName) {
@@ -151,10 +148,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Add a queue to this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. The queue must exist to avoid problems when
-	 * restarting the consumers.
+	 * Add a queue to this container's list of queues.
 	 * @param queue The queue to add.
 	 */
 	public void addQueue(Queue queue) {
@@ -162,9 +156,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Remove a queue from this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. At least one queue must remain.
+	 * Remove a queue from this container's list of queues.
 	 * @param queueName The queue to remove.
 	 */
 	public boolean removeQueueName(String queueName) {
@@ -173,9 +165,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor im
 	}
 
 	/**
-	 * Remove a queue from this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. At least one queue must remain.
+	 * Remove a queue from this container's list of queues.
 	 * @param queue The queue to remove.
 	 */
 	public boolean removeQueue(Queue queue) {

@@ -431,18 +431,38 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.queuesChanged();
 	}
 
+	/**
+	 * Add a queue to this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. The queue must exist to avoid problems when
+	 * restarting the consumers.
+	 * @param queueName The queue to add.
+	 */
 	@Override
 	public void addQueueName(String queueName) {
 		super.addQueueName(queueName);
 		this.queuesChanged();
 	}
 
+	/**
+	 * Add a queue to this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. The queue must exist to avoid problems when
+	 * restarting the consumers.
+	 * @param queue The queue to add.
+	 */
 	@Override
 	public void addQueue(Queue queue) {
 		super.addQueue(queue);
 		this.queuesChanged();
 	}
 
+	/**
+	 * Remove a queue from this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. At least one queue must remain.
+	 * @param queueName The queue to remove.
+	 */
 	@Override
 	public boolean removeQueueName(String queueName) {
 		if (super.removeQueueName(queueName)) {
@@ -454,6 +474,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Remove a queue from this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. At least one queue must remain.
+	 * @param queue The queue to remove.
+	 */
 	@Override
 	public boolean removeQueue(Queue queue) {
 		if (super.removeQueue(queue)) {
@@ -956,7 +982,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					logger.info("Could not cancel message consumer", e);
 				}
 				if (aborted) {
-					logger.info("Stopping container from aborted consumer");
+					logger.error("Stopping container from aborted consumer");
 					stop();
 				}
 			}

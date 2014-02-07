@@ -110,9 +110,9 @@ public class BlockingQueueConsumer {
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
-	private volatile long retryDeclarationInterval = 60000;
+	private final long retryDeclarationInterval = 60000;
 
-	private volatile long lastRetryDeclaration;
+	private long lastRetryDeclaration;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
@@ -324,8 +324,8 @@ public class BlockingQueueConsumer {
 					}
 				}
 			}
+			this.lastRetryDeclaration = now;
 		}
-		this.lastRetryDeclaration = now;
 	}
 
 	public void start() throws AmqpException {
@@ -568,10 +568,10 @@ public class BlockingQueueConsumer {
 	}
 
 	@SuppressWarnings("serial")
-	private class DeclarationException extends AmqpException {
+	public class DeclarationException extends AmqpException {
 
 		public DeclarationException() {
-			super("Failed to declare queue(s)");
+			super("Failed to declare queue(s):");
 		}
 
 		private final List<String> failedQueues = new ArrayList<String>();
@@ -580,9 +580,15 @@ public class BlockingQueueConsumer {
 			this.failedQueues.add(queue);
 		}
 
-		List<String> getFailedQueues() {
+		public List<String> getFailedQueues() {
 			return this.failedQueues;
 		}
+
+		@Override
+		public String getMessage() {
+			return super.getMessage() + this.failedQueues.toString();
+		}
+
 	}
 
 	@Override

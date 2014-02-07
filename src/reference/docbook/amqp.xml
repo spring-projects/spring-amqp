@@ -2190,7 +2190,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
       If you wish to permanently remove a queue, you should update the container
       before or after deleting to queue, to avoid future attempts to consume
       from it.
-    </para>]
+    </para>
   </section>
 
   <section>
