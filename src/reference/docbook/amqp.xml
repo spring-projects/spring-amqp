@@ -879,6 +879,10 @@ container.setConsumerArguments(Collections. <String, Object> singletonMap("x-pri
     <programlisting language="xml"><![CDATA[<rabbit:listener-container connection-factory="rabbitConnectionFactory">
     <rabbit:listener queues="some.queue" ref="somePojo" method="handle" priority="10" />
 </rabbit:listener-container>]]></programlisting>
+	<para>
+		Starting with <emphasis>version 1.3</emphasis> the queue(s) on which the container is listening can
+		be modified at runtime; see <xref linkend="listener-queues" />.
+	</para>
     </section>
   </section>
 
@@ -2150,6 +2154,43 @@ public RabbitTransactionManager rabbitTransactionManager() {
       some time. This is because the broker will share its work across all the active
       consumers.
     </note>
+  </section>
+
+  <section id="listener-queues">
+    <title>Listener Container Queues</title>
+    <para>
+      <emphasis>Version 1.3</emphasis> introduced a number of improvements
+      for handling multiple queues in a listener container.
+    </para>
+    <para>
+      The container must be configured to listen on at least one queue; this
+      was the case previously too, but now
+      queues can be added and removed at runtime.
+      The container will recycle (cancel and re-create) the consumers when any
+      pre-fetched messages have been processed. See methods <code>addQueue</code>,
+      <code>addQueueName</code>, <code>removeQueue</code> and
+      <code>removeQueueName</code>. When removing queues,
+      at least one queue must remain.
+    </para>
+    <para>
+      A consumer will now start if any of its queues are available - previously the
+      container would stop if any queues were unavailable. Now, this is only the case
+      if none of the queues are available. If not all queues are available, the
+      container will attempt to passively declare (and consume from) the missing
+      queue(s) every 60 seconds.
+    </para>
+    <para>
+      Also, if a consumer receives a cancel from the broker (for example if a queue
+      is deleted) the consumer will attempt to recover and the recovered consumer
+      will continue to process messages from any other configured
+      queues. Previously a cancel on one queue cancelled the entire consumer and
+      eventually the container would stop due to the missing queue.
+    </para>
+    <para>
+      If you wish to permanently remove a queue, you should update the container
+      before or after deleting to queue, to avoid future attempts to consume
+      from it.
+    </para>
   </section>
 
   <section>

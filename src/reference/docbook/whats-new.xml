@@ -14,6 +14,15 @@
 			</para>
 		</section>
 		<section>
+			<title>Listener Queues</title>
+			<para>
+				The listener container now permits the queue(s) on which it is listening to
+				be modified at runtime. Also, the container will now start if at least one
+				of its configured queues is available for use.
+				See <xref linkend="listener-queues" />
+			</para>
+		</section>
+		<section>
 			<title>Consumer Priority</title>
 			<para>
 				The listener container now supports consumer arguments, allowing the

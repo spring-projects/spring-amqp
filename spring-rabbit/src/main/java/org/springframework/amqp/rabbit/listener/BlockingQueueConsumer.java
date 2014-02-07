@@ -15,8 +15,14 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -99,6 +105,14 @@ public class BlockingQueueConsumer {
 	private final boolean defaultRequeuRejected;
 
 	private final CountDownLatch suspendClientThread = new CountDownLatch(1);
+
+	private final Collection<String> consumerTags = new HashSet<String>();
+
+	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
+
+	private final long retryDeclarationInterval = 60000;
+
+	private long lastRetryDeclaration;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use the connection factory or communicate with the broker
@@ -189,6 +203,9 @@ public class BlockingQueueConsumer {
 	public final void setQuiesce(long shutdownTimeout) {
 		this.shutdownTimeout = shutdownTimeout;
 		this.cancelled.set(true);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Quiescing consumer: " + this);
+		}
 	}
 
 	/**
@@ -252,11 +269,63 @@ public class BlockingQueueConsumer {
 			logger.debug("Retrieving delivery for " + this);
 		}
 		checkShutdown();
+		if (this.missingQueues.size() > 0) {
+			checkMissingQueues();
+		}
 		Message message = handle(queue.poll(timeout, TimeUnit.MILLISECONDS));
 		if (message == null && cancelReceived.get()) {
 			throw new ConsumerCancelledException();
 		}
 		return message;
+	}
+
+	/*
+	 * Check to see if missing queues are now available; use a separate channel so the main
+	 * channel is not closed by the broker if the declaration fails.
+	 */
+	private void checkMissingQueues() {
+		long now = System.currentTimeMillis();
+		if (now - this.retryDeclarationInterval > this.lastRetryDeclaration) {
+			synchronized(this.missingQueues) {
+				Iterator<String> iterator = this.missingQueues.iterator();
+				while (iterator.hasNext()) {
+					boolean available = true;
+					String queue = iterator.next();
+					Channel channel = null;
+					try {
+						channel = this.connectionFactory.createConnection().createChannel(false);
+						channel.queueDeclarePassive(queue);
+						if (logger.isDebugEnabled()) {
+							logger.debug("Queue '" + queue + "' is now available");
+						}
+					}
+					catch (IOException e) {
+						available = false;
+						if (logger.isDebugEnabled()) {
+							logger.debug("Queue '" + queue + "' is still not available");
+						}
+					}
+					finally {
+						if (channel != null) {
+							try {
+								channel.close();
+							}
+							catch (IOException e) {}
+						}
+					}
+					if (available) {
+						try {
+							this.consumeFromQueue(queue);
+							iterator.remove();
+						}
+						catch (IOException e) {
+							throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+						}
+					}
+				}
+			}
+			this.lastRetryDeclaration = now;
+		}
 	}
 
 	public void start() throws AmqpException {
@@ -283,21 +352,28 @@ public class BlockingQueueConsumer {
 					// will send blocks of 100 messages)
 					channel.basicQos(prefetchCount);
 				}
-				for (int i = 0; i < queues.length; i++) {
-					channel.queueDeclarePassive(queues[i]);
-				}
+				attemptPassiveDeclarations();
 				passiveDeclareTries = 0;
 			}
-			catch (IOException e) {
+			catch (DeclarationException e) {
 				if (passiveDeclareTries > 0 && channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
-						logger.warn("Reconnect failed; retries left=" + (passiveDeclareTries-1), e);
+						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareTries-1), e);
 						try {
 							Thread.sleep(5000);
-						} catch (InterruptedException e1) {
+						}
+						catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
 						}
 					}
+				}
+				else if (e.getFailedQueues().size() < this.queues.length) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Not all queues are available; only listening on those that are - configured: "
+								+ Arrays.asList(this.queues) + "; not available: " + e.getFailedQueues());
+					}
+					this.missingQueues.addAll(e.getFailedQueues());
+					this.lastRetryDeclaration = System.currentTimeMillis();
 				}
 				else {
 					this.activeObjectCounter.release(this);
@@ -305,34 +381,66 @@ public class BlockingQueueConsumer {
 							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 				}
 			}
+			catch (IOException e) {
+				this.activeObjectCounter.release(this);
+				throw new FatalListenerStartupException("Cannot set basicQos.", e);
+			}
 		}
 		while (passiveDeclareTries-- > 0);
 
 		try {
 			for (int i = 0; i < queues.length; i++) {
-				if (this.consumerArgs.size() > 0) {
-					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), "", false,
-							false, this.consumerArgs, this.consumer);
-				}
-				else {
-					channel.basicConsume(this.queues[i], this.acknowledgeMode.isAutoAck(), consumer);
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Started on queue '" + queues[i] + "': " + this);
+				if (!this.missingQueues.contains(this.queues[i])) {
+					consumeFromQueue(this.queues[i]);
 				}
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	private void consumeFromQueue(String queue) throws IOException {
+		if (this.consumerArgs.size() > 0) {
+			this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(), "", false,
+					false, this.consumerArgs, this.consumer);
+		}
+		else {
+			this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(), this.consumer);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Started on queue '" + queue + "': " + this);
+		}
+	}
+
+	private void attemptPassiveDeclarations() {
+		DeclarationException failures = null;
+		for (int i = 0; i < this.queues.length; i++) {
+			try {
+				this.channel.queueDeclarePassive(this.queues[i]);
+			}
+			catch (IOException e) {
+				if (logger.isWarnEnabled()) {
+					logger.warn("Failed to declare queue:" + this.queues[i]);
+				}
+				if (failures == null) {
+					failures = new DeclarationException();
+				}
+				failures.addFailedQueue(this.queues[i]);
+			}
+		}
+		if (failures != null) {
+			throw failures;
 		}
 	}
 
 	public void stop() {
 		this.cancelled.set(true);
 		this.suspendClientThread.countDown();
-		if (consumer != null && consumer.getChannel() != null && consumer.getConsumerTag() != null
+		if (consumer != null && consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelReceived.get()) {
 			try {
-				RabbitUtils.closeMessageConsumer(consumer.getChannel(), consumer.getConsumerTag(), transactional);
+				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags, this.transactional);
 			} catch (Exception e) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Error closing consumer", e);
@@ -355,6 +463,14 @@ public class BlockingQueueConsumer {
 		}
 
 		@Override
+		public void handleConsumeOk(String consumerTag) {
+			super.handleConsumeOk(consumerTag);
+			synchronized(BlockingQueueConsumer.this.consumerTags) {
+				BlockingQueueConsumer.this.consumerTags.add(consumerTag);
+			}
+		}
+
+		@Override
 		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
 			if (logger.isDebugEnabled()) {
 				if (RabbitUtils.isNormalShutdown(sig)) {
@@ -373,18 +489,26 @@ public class BlockingQueueConsumer {
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Cancel received");
+				logger.warn("Cancel received for " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			cancelReceived.set(true);
+			synchronized (BlockingQueueConsumer.this.consumerTags) {
+				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
+			}
+			BlockingQueueConsumer.this.cancelReceived.set(true);
 		}
 
 		@Override
 		public void handleCancelOk(String consumerTag) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Received cancellation notice for " + BlockingQueueConsumer.this);
+				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			// Signal to the container that we have been cancelled
-			activeObjectCounter.release(BlockingQueueConsumer.this);
+			synchronized(BlockingQueueConsumer.this.consumerTags) {
+				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
+				if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
+					// Signal to the container that we have been cancelled
+					activeObjectCounter.release(BlockingQueueConsumer.this);
+				}
+			}
 		}
 
 		@Override
@@ -443,9 +567,33 @@ public class BlockingQueueConsumer {
 		}
 	}
 
+	@SuppressWarnings("serial")
+	public class DeclarationException extends AmqpException {
+
+		public DeclarationException() {
+			super("Failed to declare queue(s):");
+		}
+
+		private final List<String> failedQueues = new ArrayList<String>();
+
+		void addFailedQueue(String queue) {
+			this.failedQueues.add(queue);
+		}
+
+		public List<String> getFailedQueues() {
+			return this.failedQueues;
+		}
+
+		@Override
+		public String getMessage() {
+			return super.getMessage() + this.failedQueues.toString();
+		}
+
+	}
+
 	@Override
 	public String toString() {
-		return "Consumer: tag=[" + (consumer != null ? consumer.getConsumerTag() : null) + "], channel=" + channel
+		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + channel
 				+ ", acknowledgeMode=" + acknowledgeMode + " local queue size=" + queue.size();
 	}
 
