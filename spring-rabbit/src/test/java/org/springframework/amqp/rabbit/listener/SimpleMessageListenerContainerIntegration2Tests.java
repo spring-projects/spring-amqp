@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -39,6 +40,7 @@ import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
  * @author Dave Syer
@@ -162,6 +164,33 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		waited = latch.await(10, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
+	}
+
+	@Test
+	public void testListenFromAnonQueue() throws Exception {
+		AnonymousQueue queue = new AnonymousQueue();
+		CountDownLatch latch = new CountDownLatch(10);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
+		container.setQueueNames(queue.getName());
+		container.setConcurrentConsumers(2);
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerSingleton("foo", queue);
+		container.setBeanFactory(beanFactory);
+		container.afterPropertiesSet();
+		container.start();
+		for (int i = 0; i < 10; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
+		container.start();
+		latch = new CountDownLatch(10);
+		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
+		for (int i = 0; i < 10; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
 	}
 
 	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {

@@ -41,11 +41,14 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -134,6 +137,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean defaultRequeueRejected = true;
 
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+
+	private RabbitAdmin rabbitAdmin;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -555,6 +560,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
 		initializeProxy();
+		this.rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
 	}
 
 	@ManagedMetric(metricType = MetricType.GAUGE)
@@ -780,6 +786,32 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Redeclare any auto-delete queues if not present
+	 */
+	private synchronized void checkAutoDeleteQueues() {
+		BeanFactory beanFactory = this.getBeanFactory();
+		if (beanFactory != null && beanFactory instanceof ListableBeanFactory) {
+			Set<String> queueNames = this.getQueueNamesAsSet();
+			Map<String, Queue> queueBeans = ((ListableBeanFactory) beanFactory).getBeansOfType(Queue.class);
+			for (Entry<String, Queue> entry : queueBeans.entrySet()) {
+				Queue queue = entry.getValue();
+				if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
+						&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
+					try {
+						this.rabbitAdmin.declareQueue(queue);
+						if (logger.isDebugEnabled()) {
+							logger.debug("Redeclared auto-delete queue: " + queue.getName());
+						}
+					}
+					catch (Exception e) {
+						logger.error("Failed to declare auto-delete queue: " + queue.getName(), e);
+					}
+				}
+			}
+		}
+	}
+
 	private boolean receiveAndExecute(final BlockingQueueConsumer consumer) throws Throwable {
 
 		if (transactionManager != null) {
@@ -878,6 +910,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 
 				try {
+					SimpleMessageListenerContainer.this.checkAutoDeleteQueues();
 					this.consumer.start();
 					this.start.countDown();
 				}
