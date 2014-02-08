@@ -30,6 +30,14 @@
 			</para>
 		</section>
 		<section>
+			<title>Exclusive Consumer</title>
+			<para>
+				The <classname>SimpleMessageListenerContainer</classname> can now be configured
+				with a single <code>exclusive</code> consumer, preventing other consumers from
+				listening to the queue. See <xref linkend="exclusive-consumer" />.
+			</para>
+		</section>
+		<section>
 			<title>Rabbit Admin</title>
 			<para>
 				It is now possible to have the Broker generate the queue name, regardless

@@ -18,6 +18,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -139,6 +140,7 @@ public class SimpleMessageListenerContainerTests {
 	/*
 	 * txSize = 2; 4 messages; should get 2 acks (#2 and #4)
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testTxSizeAcks() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -151,11 +153,11 @@ public class SimpleMessageListenerContainerTests {
 
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("1");
 				return null;
 			}
-		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		final CountDownLatch latch = new CountDownLatch(2);
 		doAnswer(new Answer<Object>() {
 
@@ -208,6 +210,7 @@ public class SimpleMessageListenerContainerTests {
 	 * txSize = 2; 3 messages; should get 2 acks (#2 and #3)
 	 * after timeout.
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testTxSizeAcksWIthShortSet() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -220,11 +223,11 @@ public class SimpleMessageListenerContainerTests {
 
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("1");
 				return null;
 			}
-		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		final CountDownLatch latch = new CountDownLatch(2);
 		doAnswer(new Answer<Object>() {
 
@@ -349,19 +352,20 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel2).basicCancel("2");
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void setupMockConsume(Channel channel, final List<Consumer> consumers, final AtomicInteger consumerTag,
 			final CountDownLatch latch) throws IOException {
 		doAnswer(new Answer<Object>() {
 
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				Consumer cons = (Consumer) invocation.getArguments()[2];
+				Consumer cons = (Consumer) invocation.getArguments()[6];
 				consumers.add(cons);
 				cons.handleConsumeOk(String.valueOf(consumerTag.getAndIncrement()));
 				latch.countDown();
 				return null;
 			}
-		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 	}
 
 	protected void setUpMockCancel(Channel channel, final List<Consumer> consumers) throws IOException {
@@ -383,6 +387,7 @@ public class SimpleMessageListenerContainerTests {
 		}).when(channel).basicCancel(anyString());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testWithConnectionPerListenerThread() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
@@ -413,9 +418,9 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch1 = new CountDownLatch(2);
 		CountDownLatch latch2 = new CountDownLatch(2);
 		doAnswer(messageToConsumer(mockChannel1, container, false, latch1))
-		.when(mockChannel1).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel2, container, false, latch1))
-			.when(mockChannel2).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+			.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel1, container, true, latch2)).when(mockChannel1).basicCancel(anyString());
 		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
 
@@ -430,6 +435,7 @@ public class SimpleMessageListenerContainerTests {
 		assertEquals(1, openConnections.size());
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testConsumerCancel() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -442,11 +448,11 @@ public class SimpleMessageListenerContainerTests {
 
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("foo");
 				return null;
 			}
-		}).when(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
@@ -458,7 +464,7 @@ public class SimpleMessageListenerContainerTests {
 		});
 		container.afterPropertiesSet();
 		container.start();
-		verify(channel).basicConsume(anyString(), anyBoolean(), any(Consumer.class));
+		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		final CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(new Answer<Object>() {

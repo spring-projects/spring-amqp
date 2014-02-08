@@ -18,6 +18,10 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,6 +37,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -59,6 +64,7 @@ public class LocallyTransactedTests {
 	 * Verifies that an up-stack RabbitTemplate uses the listener's
 	 * channel (MessageListener).
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testMessageListener() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -94,11 +100,11 @@ public class LocallyTransactedTests {
 
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				return null;
 			}
 		}).when(onlyChannel)
-			.basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.any(Consumer.class));
+			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		doAnswer(new Answer<String>() {
@@ -113,6 +119,7 @@ public class LocallyTransactedTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
 		container.setMessageListener(new MessageListener() {
+			@Override
 			public void onMessage(Message message) {
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
 				rabbitTemplate.setChannelTransacted(true);
@@ -155,6 +162,7 @@ public class LocallyTransactedTests {
 	 * Verifies that an up-stack RabbitTemplate uses the listener's
 	 * channel (ChannelAwareMessageListener).
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testChannelAwareMessageListener() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -190,11 +198,11 @@ public class LocallyTransactedTests {
 
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				return null;
 			}
 		}).when(onlyChannel)
-			.basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.any(Consumer.class));
+			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		doAnswer(new Answer<String>() {
@@ -210,6 +218,7 @@ public class LocallyTransactedTests {
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new ChannelAwareMessageListener() {
+			@Override
 			public void onMessage(Message message, Channel channel) {
 				exposed.set(channel);
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
@@ -254,6 +263,7 @@ public class LocallyTransactedTests {
 	 * up-stack RabbitTemplate uses the additional channel.
 	 * created when exposeListenerChannel is false (ChannelAwareMessageListener).
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testChannelAwareMessageListenerDontExpose() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -288,11 +298,11 @@ public class LocallyTransactedTests {
 
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[2]);
+				consumer.set((Consumer) invocation.getArguments()[6]);
 				return null;
 			}
 		}).when(firstChannel)
-			.basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.any(Consumer.class));
+			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		doAnswer(new Answer<String>() {
@@ -308,6 +318,7 @@ public class LocallyTransactedTests {
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new ChannelAwareMessageListener() {
+			@Override
 			public void onMessage(Message message, Channel channel) {
 				exposed.set(channel);
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
