@@ -2092,6 +2092,27 @@ public RabbitTransactionManager rabbitTransactionManager() {
               rejected because the listener
               threw an exception should be requeued or not. Default 'true'.</entry>
             </row>
+
+            <row>
+              <entry><literallayout>recoveryInterval
+(recovery-interval)</literallayout></entry>
+
+              <entry>Determines the time in milliseconds between attempts to start a consumer
+              if it fails to start for non-fatal reasons. Default '5000'.</entry>
+            </row>
+
+            <row>
+              <entry><literallayout>exclusive
+(exclusive)</literallayout></entry>
+
+              <entry>Determines whether the single consumer in this container has
+              exclusive access to the queue(s). The concurrency of the container
+              must be 1 when this is true. If another consumer has exclusive access,
+              the container will attempt to recover the consumer, according to the
+              <code>recovery-interval</code>. When using the namespace, this attribute
+              appears on the &lt;rabbit:listener/&gt; element along with the queue names.
+              Default 'false'.</entry>
+            </row>
           </tbody>
         </tgroup>
       </table></para>
@@ -2154,6 +2175,21 @@ public RabbitTransactionManager rabbitTransactionManager() {
       some time. This is because the broker will share its work across all the active
       consumers.
     </note>
+  </section>
+
+  <section id="exclusive-consumer">
+    <title>Exclusive Consumer</title>
+    <para>
+       Also starting with <emphasis>version 1.3</emphasis>, the listener container can
+       be configured with a single exclusive consumer; this prevents other containers
+       from consuming from the queue(s) until the current consumer is cancelled. The
+       concurrency of such a container must be 1.
+    </para>
+    <para>
+       When using exclusive consumers, other containers will attempt to consume from
+       the queue(s) according to the <code>recoveryInterval</code> property, and log
+       a WARNing if the attempt fails.
+    </para>
   </section>
 
   <section id="listener-queues">

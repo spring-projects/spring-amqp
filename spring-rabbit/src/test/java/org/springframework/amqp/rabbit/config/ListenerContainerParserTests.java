@@ -89,6 +89,8 @@ public class ListenerContainerParserTests {
 		Object xPriority = consumerArgs.get("x-priority");
 		assertNotNull(xPriority);
 		assertEquals(10, xPriority);
+		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryInterval", Long.class));
+		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
 	}
 
 	@Test
@@ -104,6 +106,7 @@ public class ListenerContainerParserTests {
 		Object adviceChain = ReflectionTestUtils.getField(container, "adviceChain");
 		assertNotNull(adviceChain);
 		assertEquals(3, ((Advice[]) adviceChain).length);
+		assertTrue(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
 	}
 
 	@Test

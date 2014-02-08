@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,9 @@ public class RabbitNamespaceUtils {
 	private static final String ADVICE_CHAIN_ATTRIBUTE = "advice-chain";
 
 	private static final String REQUEUE_REJECTED_ATTRIBUTE = "requeue-rejected";
+
+	private static final String RECOVERY_INTERVAL = "recovery-interval";
+
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -188,6 +191,11 @@ public class RabbitNamespaceUtils {
 		String adviceChain = containerEle.getAttribute(ADVICE_CHAIN_ATTRIBUTE);
 		if (StringUtils.hasText(adviceChain)) {
 			containerDef.getPropertyValues().add("adviceChain", new RuntimeBeanReference(adviceChain));
+		}
+
+		String recoveryInterval = containerEle.getAttribute(RECOVERY_INTERVAL);
+		if (StringUtils.hasText(recoveryInterval)) {
+			containerDef.getPropertyValues().add("recoveryInterval", new TypedStringValue(recoveryInterval));
 		}
 
 		return containerDef;

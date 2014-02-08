@@ -625,6 +625,13 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="recovery-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time in milliseconds between attempts to start a consumer if it fails to start with a non-fatal error. Default 5000.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="listenerType">
@@ -646,6 +653,14 @@
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 	The queues (bean references) for this listener as a comma-separated list. Either this or queue-names is required.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exclusive" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When true, a single consumer in the container will have exlusive use of the queue(s), preventing other consumers from
+	receiving messages from the queue(s). When true, requires a concurrency of 1. Default false.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>

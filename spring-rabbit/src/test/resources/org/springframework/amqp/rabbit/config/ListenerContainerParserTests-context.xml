@@ -12,7 +12,7 @@
 	<rabbit:queue id="bar" />
 
 	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
-			max-concurrency="6" receive-timeout="9876"
+			max-concurrency="6" receive-timeout="9876" recovery-interval="5555"
 			min-start-interval="1234" min-stop-interval="2345" min-consecutive-active="12" min-consecutive-idle="34">
 		<rabbit:listener queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
 	</rabbit:listener-container>
@@ -22,7 +22,7 @@
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container3" connection-factory="connectionFactory" advice-chain="adviceChain">
-		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+		<rabbit:listener queues="foo" exclusive="true" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="container4" connection-factory="connectionFactory">

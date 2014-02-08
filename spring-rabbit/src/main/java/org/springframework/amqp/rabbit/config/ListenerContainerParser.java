@@ -60,6 +60,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String RESPONSE_ROUTING_KEY_ATTRIBUTE = "response-routing-key";
 
+	private static final String EXCLUSIVE = "exclusive";
+
 	private final Set<String> listenerIds = new HashSet<String>();
 
 	private static final AtomicInteger instance = new AtomicInteger();
@@ -132,6 +134,11 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		listenerDef.setBeanClass(MessageListenerAdapter.class);
 		containerDef.getPropertyValues().add("messageListener", listenerDef);
+
+		String exclusive = listenerEle.getAttribute(EXCLUSIVE);
+		if (StringUtils.hasText(exclusive)) {
+			containerDef.getPropertyValues().add("exclusive", exclusive);
+		}
 
 		String parentElementId = containerEle.getAttribute(ID_ATTRIBUTE);
 		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator

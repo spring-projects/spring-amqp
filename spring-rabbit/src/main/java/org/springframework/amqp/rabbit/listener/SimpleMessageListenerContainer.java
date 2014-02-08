@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import org.aopalliance.aop.Advice;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
@@ -108,6 +110,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile int concurrentConsumers = 1;
 
 	private volatile Integer maxConcurrentConsumers;
+
+	private volatile boolean exclusive;
 
 	private volatile long lastConsumerStarted;
 
@@ -208,6 +212,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setConcurrentConsumers(final int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
+		Assert.isTrue(!this.exclusive || concurrentConsumers == 1,
+				"When the consumer is exclusive, the concurrency must be 1");
 		if (this.maxConcurrentConsumers != null) {
 			Assert.isTrue(concurrentConsumers <= this.maxConcurrentConsumers,
 					"'concurrentConsumers' cannot be more than 'maxConcurrentConsumers'");
@@ -255,7 +261,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setMaxConcurrentConsumers(int maxConcurrentConsumers) {
 		Assert.isTrue(maxConcurrentConsumers >= this.concurrentConsumers,
 				"'maxConcurrentConsumers' value must be at least 'concurrentConsumers'");
+		Assert.isTrue(!this.exclusive || maxConcurrentConsumers == 1,
+				"When the consumer is exclusive, the concurrency must be 1");
 		this.maxConcurrentConsumers = maxConcurrentConsumers;
+	}
+
+	/**
+	 * Set to true for an exclusive consumer - if true, the concurrency must be 1.
+	 * @param exclusive true for an exclusive consumer.
+	 */
+	public final void setExclusive(boolean exclusive) {
+		Assert.isTrue(!exclusive || (this.concurrentConsumers == 1
+				&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
+				"When the consumer is exclusive, the concurrency must be 1");
+		this.exclusive = exclusive;
 	}
 
 	/**
@@ -758,7 +777,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		int actualPrefetchCount = prefetchCount > txSize ? prefetchCount : txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
 				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
-				this.consumerArgs, queues);
+				this.consumerArgs, this.exclusive, queues);
 		return consumer;
 	}
 
@@ -980,6 +999,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
 					logger.debug("Consumer received Shutdown Signal, processing stopped: " + e.getMessage());
+				}
+				else {
+					this.logConsumerException(e);
+				}
+			}
+			catch (AmqpIOException e) {
+				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
+						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
+					logger.warn(e.getCause().getCause().toString());
 				}
 				else {
 					this.logConsumerException(e);

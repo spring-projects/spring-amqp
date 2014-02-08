@@ -12,6 +12,7 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -191,6 +192,46 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testExclusive() throws Exception {
+		CountDownLatch latch1 = new CountDownLatch(1000);
+		SimpleMessageListenerContainer container1 = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container1.setMessageListener(new MessageListenerAdapter(new PojoListener(latch1)));
+		container1.setQueueNames(queue.getName());
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerSingleton("foo", queue);
+		container1.setBeanFactory(beanFactory);
+		container1.setExclusive(true);
+		container1.afterPropertiesSet();
+		container1.start();
+		int n = 0;
+		while (n++ < 100 && container1.getActiveConsumerCount() < 1) {
+			Thread.sleep(100);
+		}
+		assertTrue(n < 100);
+		CountDownLatch latch2 = new CountDownLatch(1000);
+		SimpleMessageListenerContainer container2 = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container2.setMessageListener(new MessageListenerAdapter(new PojoListener(latch2)));
+		container2.setQueueNames(queue.getName());
+		container2.setBeanFactory(beanFactory);
+		container2.setRecoveryInterval(500);
+		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exlusive.
+		container2.afterPropertiesSet();
+		container2.start();
+		for (int i = 0; i < 1000; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertEquals(1000, latch2.getCount());
+		container1.stop();
+		// container 2 should recover and process the next batch of messages
+		for (int i = 0; i < 1000; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		container2.stop();
 	}
 
 	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {
