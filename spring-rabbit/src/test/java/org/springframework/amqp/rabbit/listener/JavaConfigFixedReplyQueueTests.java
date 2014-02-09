@@ -40,6 +40,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
+ * <b>NOTE:</b> This class is referenced in the reference documentation; if it is changed/moved, be
+ * sure to update that documentation.
+ *
  * @author Gary Russell
  * @since 1.3
  */
