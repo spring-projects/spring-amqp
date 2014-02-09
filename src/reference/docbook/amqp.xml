@@ -1199,6 +1199,12 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     public Queue replyQueue() {
         return new Queue("my.reply.queue");
     }]]></programlisting>
+      <para>
+        A complete example of a <classname>RabbitTemplate</classname> wired with a fixed reply queue, together
+        with a "remote" listener container that handles the request and returns the reply is shown in
+        <ulink url="https://github.com/spring-projects/spring-amqp/tree/master/spring-rabbit/src/test/java/org/springframework/amqp/rabbit/listener/JavaConfigFixedReplyQueueTests.java"
+        >this test case</ulink>.
+      </para>
       </section>
     </section>
     <section id="remoting">
