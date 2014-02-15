@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.UUID;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -33,6 +34,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.JavaConfigFixedReplyQueueTests.FixedReplyQueueConfig;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,6 +55,9 @@ public class JavaConfigFixedReplyQueueTests {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
+
+	@Rule
+	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	/**
 	 * Sends a message to a service that upcases the String and returns as a reply
