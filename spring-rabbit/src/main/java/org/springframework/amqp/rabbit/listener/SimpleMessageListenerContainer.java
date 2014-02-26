@@ -752,14 +752,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private void queuesChanged() {
 		synchronized (consumersMonitor) {
 			if (this.consumers != null) {
+				int count = 0;
 				for (Entry<BlockingQueueConsumer, Boolean> consumer : this.consumers.entrySet()) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Queues changed; stopping consumer: " + consumer.getKey());
+					if (consumer.getValue()) {
+						if (logger.isDebugEnabled()) {
+							logger.debug("Queues changed; stopping consumer: " + consumer.getKey());
+						}
+						consumer.getKey().setQuiesce(this.shutdownTimeout);
+						consumer.setValue(false);
+						count++;
 					}
-					consumer.getKey().setQuiesce(this.shutdownTimeout);
-					consumer.setValue(false);
-					this.addAndStartConsumers(1);
 				}
+				this.addAndStartConsumers(count);
 			}
 		}
 	}

@@ -108,7 +108,7 @@ public class BlockingQueueConsumer {
 
 	private final CountDownLatch suspendClientThread = new CountDownLatch(1);
 
-	private final Collection<String> consumerTags = new HashSet<String>();
+	private final Collection<String> consumerTags = Collections.synchronizedSet(new HashSet<String>());
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
@@ -463,7 +463,8 @@ public class BlockingQueueConsumer {
 				&& !this.cancelReceived.get()) {
 			try {
 				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags, this.transactional);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Error closing consumer", e);
 				}
@@ -489,6 +490,9 @@ public class BlockingQueueConsumer {
 			super.handleConsumeOk(consumerTag);
 			synchronized(BlockingQueueConsumer.this.consumerTags) {
 				BlockingQueueConsumer.this.consumerTags.add(consumerTag);
+			}
+			if (logger.isDebugEnabled()) {
+				logger.debug("ConsumeOK : " + BlockingQueueConsumer.this);
 			}
 		}
 
@@ -529,6 +533,10 @@ public class BlockingQueueConsumer {
 				if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
 					// Signal to the container that we have been cancelled
 					activeObjectCounter.release(BlockingQueueConsumer.this);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Terminating; active consumers now : " + activeObjectCounter.getCount()
+								+ " consumer: " + BlockingQueueConsumer.this);
+					}
 				}
 			}
 		}
