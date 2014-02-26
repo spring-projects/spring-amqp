@@ -352,6 +352,33 @@ public class SimpleMessageListenerContainerTests {
 		verify(channel2).basicCancel("2");
 	}
 
+	@Test
+	public void testAddQueuesAndStartInCycle() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel1 = mock(Channel.class);
+		when(channel1.isOpen()).thenReturn(true);
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(false)).thenReturn(channel1);
+
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+			}
+		});
+		container.afterPropertiesSet();
+
+		for (int i = 0; i < 10; i++) {
+			System.out.println(i);
+			container.addQueueName("foo" + i);
+			if (!container.isRunning()) {
+				container.start();
+			}
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	protected void setupMockConsume(Channel channel, final List<Consumer> consumers, final AtomicInteger consumerTag,
 			final CountDownLatch latch) throws IOException {
