@@ -758,8 +758,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					consumer.getKey().setQuiesce(this.shutdownTimeout);
 					consumer.setValue(false);
-					this.addAndStartConsumers(1);
 				}
+				this.addAndStartConsumers(this.consumers.size());
 			}
 		}
 	}
