@@ -838,7 +838,7 @@ container.setMessageListener(new MessageListenerAdapter(somePojo));]]></programl
 public class ExampleAmqpConfiguration {
 
     @Bean
-    public MessageListenerContainer messageListenerContainer() {
+    public SimpleMessageListenerContainer messageListenerContainer() {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitConnectionFactory());
         container.setQueueName("some.queue");
@@ -1760,7 +1760,7 @@ public void doSomething() {
 public class ExampleExternalTransactionAmqpConfiguration {
 
     @Bean
-    public MessageListenerContainer messageListenerContainer() {
+    public SimpleMessageListenerContainer messageListenerContainer() {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitConnectionFactory());
         container.setTransactionManager(transactionManager());
