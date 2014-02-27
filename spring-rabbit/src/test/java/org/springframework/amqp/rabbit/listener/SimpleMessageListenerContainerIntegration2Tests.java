@@ -101,7 +101,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			template.convertAndSend(queue.getName(), i + "foo");
 			template.convertAndSend(queue1.getName(), i + "foo");
 		}
-		container.addQueueName(queue1.getName());
+		container.addQueueNames(queue1.getName());
 		Thread.sleep(1100); // allow current consumer to time out and terminate
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");

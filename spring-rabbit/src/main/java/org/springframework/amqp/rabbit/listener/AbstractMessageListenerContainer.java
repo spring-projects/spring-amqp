@@ -150,36 +150,52 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Add a queue to this container's list of queues.
-	 * @param queueName The queue to add.
+	 * Add queue(s) to this container's list of queues.
+	 * @param queueNames The queue(s) to add.
 	 */
-	public void addQueueName(String queueName) {
-		this.queueNames.add(queueName);
+	public void addQueueNames(String... queueNames) {
+		Assert.notNull(queueNames, "'queueNames' cannot be null");
+		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
+		this.queueNames.addAll(Arrays.asList(queueNames));
 	}
 
 	/**
-	 * Add a queue to this container's list of queues.
-	 * @param queue The queue to add.
+	 * Add queue(s) to this container's list of queues.
+	 * @param queues The queue(s) to add.
 	 */
-	public void addQueue(Queue queue) {
-		this.addQueueName(queue.getName());
+	public void addQueues(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		String[] queueNames = new String[queues.length];
+		for (int i = 0; i< queues.length; i++) {
+			queueNames[i] = queues[i].getName();
+		}
+		this.addQueueNames(queueNames);
 	}
 
 	/**
-	 * Remove a queue from this container's list of queues.
-	 * @param queueName The queue to remove.
+	 * Remove queue(s) from this container's list of queues.
+	 * @param queueNames The queue(s) to remove.
 	 */
-	public boolean removeQueueName(String queueName) {
-		Assert.isTrue(this.queueNames.size() > 1, "Cannot remove the last queue");
-		return this.queueNames.remove(queueName);
+	public boolean removeQueueNames(String... queueNames) {
+		Assert.notNull(queueNames, "'queueNames' cannot be null");
+		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
+		Assert.isTrue(this.queueNames.size() - queueNames.length > 0, "Cannot remove the last queue");
+		return this.queueNames.removeAll(Arrays.asList(queueNames));
 	}
 
 	/**
-	 * Remove a queue from this container's list of queues.
-	 * @param queue The queue to remove.
+	 * Remove queue(s) from this container's list of queues.
+	 * @param queues The queue(s) to remove.
 	 */
-	public boolean removeQueue(Queue queue) {
-		return this.removeQueueName(queue.getName());
+	public boolean removeQueues(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		String[] queueNames = new String[queues.length];
+		for (int i = 0; i< queues.length; i++) {
+			queueNames[i] = queues[i].getName();
+		}
+		return this.removeQueueNames(queueNames);
 	}
 
 	/**

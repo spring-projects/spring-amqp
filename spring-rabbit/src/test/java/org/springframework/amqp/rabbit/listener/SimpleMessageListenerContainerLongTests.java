@@ -95,7 +95,7 @@ public class SimpleMessageListenerContainerLongTests {
 		for (int i = 0; i < 20; i++) {
 			AnonymousQueue anonymousQueue = new AnonymousQueue();
 			admin.declareQueue(anonymousQueue);
-			container.addQueueName(anonymousQueue.getName());
+			container.addQueueNames(anonymousQueue.getName());
 			if (!container.isRunning()) {
 				container.start();
 			}
