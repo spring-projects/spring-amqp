@@ -2209,9 +2209,9 @@ public RabbitTransactionManager rabbitTransactionManager() {
       was the case previously too, but now
       queues can be added and removed at runtime.
       The container will recycle (cancel and re-create) the consumers when any
-      pre-fetched messages have been processed. See methods <code>addQueue</code>,
-      <code>addQueueName</code>, <code>removeQueue</code> and
-      <code>removeQueueName</code>. When removing queues,
+      pre-fetched messages have been processed. See methods <code>addQueues</code>,
+      <code>addQueueNames</code>, <code>removeQueues</code> and
+      <code>removeQueueNames</code>. When removing queues,
       at least one queue must remain.
     </para>
     <para>

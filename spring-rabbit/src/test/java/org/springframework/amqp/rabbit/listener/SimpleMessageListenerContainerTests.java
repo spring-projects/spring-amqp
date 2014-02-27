@@ -49,8 +49,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -344,12 +346,25 @@ public class SimpleMessageListenerContainerTests {
 		container.afterPropertiesSet();
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		container.addQueueName("bar");
+		container.addQueueNames("bar");
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container.stop();
 		verify(channel1).basicCancel("0");
 		verify(channel2).basicCancel("1");
 		verify(channel2).basicCancel("2");
+	}
+
+	@Test
+	public void testChangeQueuesSimple() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo");
+		List<?> queues = TestUtils.getPropertyValue(container, "queueNames", List.class);
+		assertEquals(1, queues.size());
+		container.addQueues(new AnonymousQueue(), new AnonymousQueue());
+		assertEquals(3, queues.size());
+		container.removeQueues(new Queue("foo"));
+		assertEquals(2, queues.size());
 	}
 
 	@Test
@@ -372,7 +387,7 @@ public class SimpleMessageListenerContainerTests {
 
 		for (int i = 0; i < 10; i++) {
 			System.out.println(i);
-			container.addQueueName("foo" + i);
+			container.addQueueNames("foo" + i);
 			if (!container.isRunning()) {
 				container.start();
 			}
