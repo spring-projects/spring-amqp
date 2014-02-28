@@ -99,6 +99,21 @@
 				See <xref linkend="message-builder"/>.
 			</para>
 		</section>
+		<section>
+			<title>RetryInterceptorBuilder</title>
+			<para>
+				A "Fluent API" for building listener container retry interceptors is now provided.
+				See <xref linkend="retry"/>.
+			</para>
+		</section>
+		<section>
+			<title>RepublishMessageRecoverer</title>
+			<para>
+				This new <interfacename>MessageRecoverer</interfacename> is provided to allow publishing
+				a failed message to another queue (including stack trace information in the header) when
+				retries are exhausted. See <xref linkend="async-listeners"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
