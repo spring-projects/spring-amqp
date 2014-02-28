@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,10 +13,10 @@
 package org.springframework.amqp.support.converter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.BDDMockito.given;
 
 import java.util.HashMap;
@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.JsonMessageConverterTests.Foo;
 
@@ -47,7 +48,8 @@ public class DefaultClassMapperTest {
 	public void shouldThrowAnExceptionWhenClassIdNotPresent() {
 		try {
 			classMapper.toClass(props);
-		} catch (MessageConversionException e) {
+		}
+		catch (MessageConversionException e) {
 			String classIdFieldName = classMapper.getClassIdFieldName();
 			assertThat(e.getMessage(), containsString("Could not resolve "
 					+ classIdFieldName + " in header"));

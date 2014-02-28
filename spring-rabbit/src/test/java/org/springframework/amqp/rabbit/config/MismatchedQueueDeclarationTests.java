@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -97,6 +98,7 @@ public class MismatchedQueueDeclarationTests {
 		}
 		assertNotNull(this.admin.getQueueProperties("mismatch.foo"));
 		assertNull(this.admin.getQueueProperties("mismatch.bar"));
+		context.close();
 	}
 
 	@Test
@@ -125,6 +127,7 @@ public class MismatchedQueueDeclarationTests {
 		context.getBean(CachingConnectionFactory.class).createConnection();
 		assertNotNull(this.admin.getQueueProperties("mismatch.foo"));
 		assertNotNull(this.admin.getQueueProperties("mismatch.bar"));
+		context.close();
 	}
 
 }

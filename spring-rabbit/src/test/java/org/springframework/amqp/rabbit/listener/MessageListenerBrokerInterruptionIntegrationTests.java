@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,6 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,6 +51,7 @@ import com.rabbitmq.client.Channel;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
@@ -72,13 +74,13 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 
 	private SimpleMessageListenerContainer container;
 
-	@Rule
+	@ClassRule
 	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
 
 	/*
 	 * Ensure broker dies if a test fails (otherwise the erl process might have to be killed manually)
 	 */
-	@Rule
+	@ClassRule
 	public static BrokerPanic panic = new BrokerPanic();
 
 	@Rule
@@ -192,6 +194,7 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 			this.latch = latch;
 		}
 
+		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
 			logger.debug("Receiving: " + value);

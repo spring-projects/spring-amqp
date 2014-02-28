@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.springframework.amqp.rabbit.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Assume;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
@@ -31,7 +31,7 @@ import org.junit.runners.model.Statement;
  * @since 1.2.1
  *
  */
-public class LongRunningIntegrationTest extends TestWatchman {
+public class LongRunningIntegrationTest extends TestWatcher {
 
 	private final static Log logger = LogFactory.getLog(LongRunningIntegrationTest.class);
 
@@ -49,12 +49,12 @@ public class LongRunningIntegrationTest extends TestWatchman {
 	}
 
 	@Override
-	public Statement apply(Statement base, FrameworkMethod method, Object target) {
+	public Statement apply(Statement base, Description description) {
 		if (!this.shouldRun) {
-			logger.info("Skipping long running test " + target.getClass().getSimpleName() + "#" + method.getName());
+			logger.info("Skipping long running test " + description.toString());
 		}
 		Assume.assumeTrue(this.shouldRun);
-		return super.apply(base, method, target);
+		return super.apply(base, description);
 	}
 
 }

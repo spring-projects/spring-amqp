@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Assume;
 import org.junit.internal.AssumptionViolatedException;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.springframework.amqp.core.Queue;
@@ -58,7 +58,7 @@ import org.springframework.util.StringUtils;
  * @author Dave Syer
  *
  */
-public class BrokerRunning extends TestWatchman {
+public class BrokerRunning extends TestWatcher {
 
 	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
 
@@ -154,12 +154,13 @@ public class BrokerRunning extends TestWatchman {
 	}
 
 	@Override
-	public Statement apply(Statement base, FrameworkMethod method, Object target) {
+	public Statement apply(Statement base, Description description) {
 
 		// Check at the beginning, so this can be used as a static field
 		if (assumeOnline) {
 			Assume.assumeTrue(brokerOnline.get(port));
-		} else {
+		}
+		else {
 			Assume.assumeTrue(brokerOffline.get(port));
 		}
 
@@ -185,7 +186,8 @@ public class BrokerRunning extends TestWatchman {
 				if (isDefaultQueue(queueName)) {
 					// Just for test probe.
 					admin.deleteQueue(queueName);
-				} else {
+				}
+				else {
 					admin.declareQueue(queue);
 				}
 			}
@@ -194,17 +196,19 @@ public class BrokerRunning extends TestWatchman {
 				Assume.assumeTrue(brokerOffline.get(port));
 			}
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);
 			brokerOnline.put(port, false);
 			if (assumeOnline) {
 				Assume.assumeNoException(e);
 			}
-		} finally {
+		}
+		finally {
 			connectionFactory.destroy();
 		}
 
-		return super.apply(base, method, target);
+		return super.apply(base, description);
 
 	}
 
