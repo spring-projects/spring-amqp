@@ -15,8 +15,8 @@
  */
 package org.springframework.amqp.rabbit.retry;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -27,16 +27,20 @@ import org.springframework.amqp.core.Message;
 import org.springframework.util.Assert;
 
 /**
- * MessageRecoverer implementation that republishes recovered messages
+ * {@link MessageRecoverer} implementation that republishes recovered messages
  * to a specified exchange with the exception stacktrace stored in the
  * message header x-exception.
- * <p/>
- * If no exchange is specified for the errorExchangeName then the message will
- * simply be published to the default exchange with "error." prepended
- * to the original routing key.
+ * <p>
+ * If no routing key is provided, the original routing key for the message,
+ * prefixed with {@link #setErrorRoutingKeyPrefix(String)} (default "error.")
+ * will be used to publish the message to the exchange provided in
+ *
+ * name, or the template's default exchange if none is set.
+ * <p>
  *
  * @author James Carr
  * @author Gary Russell
+ * @since 1.3
  */
 public class RepublishMessageRecoverer implements MessageRecoverer {
 
@@ -45,6 +49,8 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	private final AmqpTemplate errorTemplate;
 
 	private final String errorRoutingKey;
+
+	private volatile String errorRoutingKeyPrefix = "error.";
 
 	private final String errorExchangeName;
 
@@ -63,6 +69,19 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		this.errorRoutingKey = errorRoutingKey;
 	}
 
+	/**
+	 * Apply a prefix to the outbound routing key, which will be prefixed to the original message
+	 * routing key (if no explicit routing key was provided in the constructor; ignored otherwise.
+	 * Use an empty string ("") for no prefixing.
+	 * @param errorRoutingKeyPrefix The prefix (default "error.").
+	 * @return this.
+	 */
+	public RepublishMessageRecoverer errorRoutingKeyPrefix(String errorRoutingKeyPrefix) {
+		Assert.notNull(errorRoutingKeyPrefix, "'errorRoutingKeyPrefix' cannot be null");
+		this.errorRoutingKeyPrefix = errorRoutingKeyPrefix;
+		return this;
+	}
+
 	@Override
 	public void recover(Message message, Throwable cause) {
 		Map<String, Object> headers = message.getMessageProperties().getHeaders();
@@ -72,14 +91,14 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		headers.put("x-original-routingKey", message.getMessageProperties().getReceivedRoutingKey());
 
 		if (null != errorExchangeName) {
-			String routingKey = errorRoutingKey != null ? errorRoutingKey : message.getMessageProperties().getReceivedRoutingKey();
+			String routingKey = errorRoutingKey != null ? errorRoutingKey : this.prefixedOriginalRoutingKey(message);
 			this.errorTemplate.send(errorExchangeName, routingKey, message);
 			if (logger.isWarnEnabled()) {
 				logger.warn("Republishing failed message to exchange " + errorExchangeName);
 			}
 		}
 		else {
-			final String routingKey = "error." + message.getMessageProperties().getReceivedRoutingKey();
+			final String routingKey = this.prefixedOriginalRoutingKey(message);
 			this.errorTemplate.send(routingKey, message);
 			if (logger.isWarnEnabled()) {
 				logger.warn("Republishing failed message to the template's default exchange with routing key " + routingKey);
@@ -87,11 +106,15 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 		}
 	}
 
+	private String prefixedOriginalRoutingKey(Message message) {
+		return this.errorRoutingKeyPrefix + message.getMessageProperties().getReceivedRoutingKey();
+	}
+
 	private String getStackTraceAsString(Throwable cause) {
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		cause.printStackTrace(new PrintStream(byteArrayOutputStream));
-		String exceptionAsString = byteArrayOutputStream.toString();
-		return exceptionAsString;
+		StringWriter stringWriter = new StringWriter();
+		PrintWriter printWriter = new PrintWriter(stringWriter, true);
+		cause.printStackTrace(printWriter);
+		return stringWriter.getBuffer().toString();
 	}
 
 }

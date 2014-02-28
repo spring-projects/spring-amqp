@@ -15,6 +15,8 @@
  */
 package org.springframework.amqp.rabbit.config;
 
+import org.aopalliance.intercept.MethodInterceptor;
+
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
@@ -29,8 +31,9 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
- * <p>Simplified facade to make it easier and simpler to build a StatefulRetryOperationsInterceptor or
- * (stateless) RetryOperationsInterceptor
+ * <p>Simplified facade to make it easier and simpler to build a
+ * {@link StatefulRetryOperationsInterceptor} or
+ * (stateless) {@link RetryOperationsInterceptor}
  * by providing a fluent interface to defining the behavior on error.
  * <p>
  * Typical example:
@@ -39,8 +42,8 @@ import org.springframework.util.Assert;
  * <pre class="code">
  *	StatefulRetryOperationsInterceptor interceptor =
  *			RetryInterceptorBuilder.stateful()
- *				.withMaxAttempts(5)
- *				.withBackOffOptions(1, 2, 10) // initialInterval, multiplier, maxInterval
+ *				.maxAttempts(5)
+ *				.backOffOptions(1, 2, 10) // initialInterval, multiplier, maxInterval
  *				.build();
  * </pre>
  * <p>
@@ -50,15 +53,16 @@ import org.springframework.util.Assert;
  * identity using a custom generator:</p>
  * <pre class="code">
  * 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
- *				.setMessageKeyGenerator(new MyMessageKeyGenerator())
+ *				.messageKeyGenerator(new MyMessageKeyGenerator())
  *				.build();
  * </pre>
  * @author James Carr
  * @author Gary Russell
  * @since 1.3
  *
+ * @param <T> The type of {@link MethodInterceptor} returned by the builder's {@link #build()} method.
  */
-public abstract class RetryInterceptorBuilder<T> {
+public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 
 	private RetryOperations retryOperations;
 
@@ -93,24 +97,24 @@ public abstract class RetryInterceptorBuilder<T> {
 	}
 
 	/**
-	 * Set the retry operations - once this is set, other properties can no longer be set; can't
-	 * be set if other properties have been set.
+	 * Apply the retry operations - once this is set, other properties can no longer be set; can't
+	 * be set if other properties have been applied.
 	 * @param retryOperations The retry operations.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> setRetryOperations(RetryOperations retryOperations) {
+	public RetryInterceptorBuilder<T> retryOperations(RetryOperations retryOperations) {
 		Assert.isTrue(!this.templateAltered, "Cannot set retryOperations when the default has been modified");
 		this.retryOperations = retryOperations;
 		return this;
 	}
 
 	/**
-	 * Set the max attempts - a SimpleRetryPolicy will be used. Cannot be set if a custom retry operations
+	 * Apply the max attempts - a SimpleRetryPolicy will be used. Cannot be used if a custom retry operations
 	 * or retry policy has been set.
 	 * @param maxAttempts the max attempts.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> withMaxAttempts(int maxAttempts) {
+	public RetryInterceptorBuilder<T> maxAttempts(int maxAttempts) {
 		Assert.isNull(this.retryOperations, "cannot alter the retry policy when a custom retryOperations has been set");
 		Assert.isTrue(!this.retryPolicySet, "cannot alter the retry policy when a custom retryPolicy has been set");
 		this.simpleRetryPolicy.setMaxAttempts(maxAttempts);
@@ -120,13 +124,13 @@ public abstract class RetryInterceptorBuilder<T> {
 	}
 
 	/**
-	 * Set the backoff options. Cannot be set if a custom retry operations, or back off policy has been set.
+	 * Apply the backoff options. Cannot be used if a custom retry operations, or back off policy has been set.
 	 * @param initialInterval The initial interval.
 	 * @param multiplier The multiplier.
 	 * @param maxInterval The max interval.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> withBackOffOptions(long initialInterval, double multiplier , long maxInterval) {
+	public RetryInterceptorBuilder<T> backOffOptions(long initialInterval, double multiplier , long maxInterval) {
 		Assert.isNull(this.retryOperations, "cannot set the back off policy when a custom retryOperations has been set");
 		Assert.isTrue(!this.backOffPolicySet, "cannot set the back off options when a back off policy has been set");
 		ExponentialBackOffPolicy policy = new ExponentialBackOffPolicy();
@@ -140,12 +144,12 @@ public abstract class RetryInterceptorBuilder<T> {
 	}
 
 	/**
-	 * Set the retry policy - cannot be set if a custom retry template has been provided, or the max attempts or
-	 * back off options or policy have been set.
+	 * Apply the retry policy - cannot be used if a custom retry template has been provided, or the max attempts or
+	 * back off options or policy have been applied.
 	 * @param policy The policy.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> setRetryPolicy(RetryPolicy policy) {
+	public RetryInterceptorBuilder<T> retryPolicy(RetryPolicy policy) {
 		Assert.isNull(this.retryOperations, "cannot set the retry policy when a custom retryOperations has been set");
 		Assert.isTrue(!this.templateAltered, "cannot set the retry policy if max attempts or back off policy or options changed");
 		this.retryTemplate.setRetryPolicy(policy);
@@ -155,11 +159,11 @@ public abstract class RetryInterceptorBuilder<T> {
 	}
 
 	/**
-	 * Set the back off policy. Cannot be set if a custom retry operations, or back off policy has been set.
+	 * Apply the back off policy. Cannot be used if a custom retry operations, or back off policy has been applied.
 	 * @param policy The policy.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> setBackOffPolicy(BackOffPolicy policy) {
+	public RetryInterceptorBuilder<T> backOffPolicy(BackOffPolicy policy) {
 		Assert.isNull(this.retryOperations, "cannot set the back off policy when a custom retryOperations has been set");
 		Assert.isTrue(!this.backOffOptionsSet, "cannot set the back off policy when the back off policy options have been set");
 		this.retryTemplate.setBackOffPolicy(policy);
@@ -169,16 +173,16 @@ public abstract class RetryInterceptorBuilder<T> {
 	}
 
 	/**
-	 * Set a Message recoverer - default is to log and discard after retry is exhausted.
+	 * Apply a Message recoverer - default is to log and discard after retry is exhausted.
 	 * @param recoverer The recoverer.
 	 * @return this.
 	 */
-	public RetryInterceptorBuilder<T> setRecoverer(MessageRecoverer recoverer) {
+	public RetryInterceptorBuilder<T> recoverer(MessageRecoverer recoverer) {
 		this.messageRecoverer = recoverer;
 		return this;
 	}
 
-	protected void setCommon(AbstractRetryOperationsInterceptorFactoryBean factoryBean) {
+	protected void applyCommonSettings(AbstractRetryOperationsInterceptorFactoryBean factoryBean) {
 		if (this.messageRecoverer != null) {
 			factoryBean.setMessageRecoverer(this.messageRecoverer);
 		}
@@ -207,62 +211,62 @@ public abstract class RetryInterceptorBuilder<T> {
 		 * @param messageKeyGenerator The key generator.
 		 * @return this.
 		 */
-		public StatefulRetryInterceptorBuilder setMessageKeyGenerator(MessageKeyGenerator messageKeyGenerator) {
+		public StatefulRetryInterceptorBuilder messageKeyGenerator(MessageKeyGenerator messageKeyGenerator) {
 			this.messageKeyGenerator = messageKeyGenerator;
 			return this;
 		}
 
 		/**
-		 * Set a custom new message identifier. Default is to use the redelivered header.
+		 * Apply a custom new message identifier. Default is to use the redelivered header.
 		 * @param newMessageIdentifier The new message identifier.
 		 * @return this.
 		 */
-		public StatefulRetryInterceptorBuilder setNewMessageIdentifier(NewMessageIdentifier newMessageIdentifier) {
+		public StatefulRetryInterceptorBuilder newMessageIdentifier(NewMessageIdentifier newMessageIdentifier) {
 			this.newMessageIdentifier = newMessageIdentifier;
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder setRetryOperations(
+		public StatefulRetryInterceptorBuilder retryOperations(
 				RetryOperations retryOperations) {
-			super.setRetryOperations(retryOperations);
+			super.retryOperations(retryOperations);
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder withMaxAttempts(int maxAttempts) {
-			super.withMaxAttempts(maxAttempts);
+		public StatefulRetryInterceptorBuilder maxAttempts(int maxAttempts) {
+			super.maxAttempts(maxAttempts);
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder withBackOffOptions(long initialInterval,
+		public StatefulRetryInterceptorBuilder backOffOptions(long initialInterval,
 				double multiplier, long maxInterval) {
-			super.withBackOffOptions(initialInterval, multiplier, maxInterval);
+			super.backOffOptions(initialInterval, multiplier, maxInterval);
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder setRetryPolicy(RetryPolicy policy) {
-			super.setRetryPolicy(policy);
+		public StatefulRetryInterceptorBuilder retryPolicy(RetryPolicy policy) {
+			super.retryPolicy(policy);
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder setBackOffPolicy(BackOffPolicy policy) {
-			super.setBackOffPolicy(policy);
+		public StatefulRetryInterceptorBuilder backOffPolicy(BackOffPolicy policy) {
+			super.backOffPolicy(policy);
 			return this;
 		}
 
 		@Override
-		public StatefulRetryInterceptorBuilder setRecoverer(MessageRecoverer recoverer) {
-			super.setRecoverer(recoverer);
+		public StatefulRetryInterceptorBuilder recoverer(MessageRecoverer recoverer) {
+			super.recoverer(recoverer);
 			return this;
 		}
 
 		@Override
 		public StatefulRetryOperationsInterceptor build() {
-			this.setCommon(this.factoryBean);
+			this.applyCommonSettings(this.factoryBean);
 			if (this.messageKeyGenerator != null) {
 				this.factoryBean.setMessageKeyGenerator(this.messageKeyGenerator);
 			}
@@ -281,7 +285,7 @@ public abstract class RetryInterceptorBuilder<T> {
 
 		@Override
 		public RetryOperationsInterceptor build() {
-			this.setCommon(this.factoryBean);
+			this.applyCommonSettings(this.factoryBean);
 			return this.factoryBean.getObject();
 		}
 

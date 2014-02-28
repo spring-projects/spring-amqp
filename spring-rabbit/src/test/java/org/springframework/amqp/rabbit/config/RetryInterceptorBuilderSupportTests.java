@@ -16,6 +16,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.retry.RetryOperations;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor;
@@ -59,17 +61,19 @@ public class RetryInterceptorBuilderSupportTests {
 
 	@Test
 	public void testwithCustomRetryTemplate() {
+		RetryOperations retryOperations = new RetryTemplate();
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
-				.setRetryOperations(new RetryTemplate())
+				.retryOperations(retryOperations)
 				.build();
 		assertEquals(3, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
+		assertSame(retryOperations, TestUtils.getPropertyValue(interceptor, "retryOperations"));
 	}
 
 	@Test
 	public void testWithMoreAttempts() {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-					.withMaxAttempts(5)
+					.maxAttempts(5)
 					.build();
 		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
 	}
@@ -78,8 +82,8 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithCustomizedBackOffMoreAttempts() {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-					.withMaxAttempts(5)
-					.withBackOffOptions(1, 2, 10)
+					.maxAttempts(5)
+					.backOffOptions(1, 2, 10)
 					.build();
 
 		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
@@ -92,8 +96,8 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithCustomBackOffPolicy() {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-					.withMaxAttempts(5)
-					.setBackOffPolicy(new FixedBackOffPolicy())
+					.maxAttempts(5)
+					.backOffPolicy(new FixedBackOffPolicy())
 					.build();
 
 		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
@@ -105,8 +109,8 @@ public class RetryInterceptorBuilderSupportTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
-					.withMaxAttempts(5)
-					.setNewMessageIdentifier(new NewMessageIdentifier() {
+					.maxAttempts(5)
+					.newMessageIdentifier(new NewMessageIdentifier() {
 
 							@Override
 							public boolean isNew(Message message) {
@@ -114,7 +118,7 @@ public class RetryInterceptorBuilderSupportTests {
 								return false;
 							}
 						})
-					.setBackOffPolicy(new FixedBackOffPolicy())
+					.backOffPolicy(new FixedBackOffPolicy())
 					.build();
 
 		assertEquals(5, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
@@ -135,7 +139,7 @@ public class RetryInterceptorBuilderSupportTests {
 	@Test
 	public void testWitCustomRetryPolicyTraverseCause() {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
-				.setRetryPolicy(new SimpleRetryPolicy(15, Collections
+				.retryPolicy(new SimpleRetryPolicy(15, Collections
 						.<Class<? extends Throwable>, Boolean> singletonMap(Exception.class, true), true))
 				.build();
 		assertEquals(15, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
@@ -145,7 +149,7 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithCustomKeyGenerator() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
-				.setMessageKeyGenerator(new MessageKeyGenerator() {
+				.messageKeyGenerator(new MessageKeyGenerator() {
 
 						@Override
 						public Object getKey(Message message) {
@@ -170,11 +174,11 @@ public class RetryInterceptorBuilderSupportTests {
 	}
 
 	@Test
-	public void testWithRepublishRecoverer() throws Throwable {
+	public void testWithRepublishRecovererExplicitExchangeAndRouting() throws Throwable {
 		AmqpTemplate amqpTemplate = mock(AmqpTemplate.class);
 
 		RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
-				.setRecoverer(new RepublishMessageRecoverer(amqpTemplate, "bar", "baz"))
+				.recoverer(new RepublishMessageRecoverer(amqpTemplate, "bar", "baz"))
 				.build();
 
 		final AtomicInteger count = new AtomicInteger();
@@ -183,6 +187,54 @@ public class RetryInterceptorBuilderSupportTests {
 		delegate.onMessage("", message);
 		assertEquals(3, count.get());
 		verify(amqpTemplate).send("bar", "baz", message);
+	}
+
+	@Test
+	public void testWithRepublishRecovererDefaultExchangeAndRouting() throws Throwable {
+		AmqpTemplate amqpTemplate = mock(AmqpTemplate.class);
+
+		RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
+				.recoverer(new RepublishMessageRecoverer(amqpTemplate))
+				.build();
+
+		final AtomicInteger count = new AtomicInteger();
+		Foo delegate = createDelegate(interceptor, count);
+		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
+		delegate.onMessage("", message);
+		assertEquals(3, count.get());
+		verify(amqpTemplate).send("error.foo", message);
+	}
+
+	@Test
+	public void testWithRepublishRecovererDefaultExchangeAndRoutingCustomPrefix() throws Throwable {
+		AmqpTemplate amqpTemplate = mock(AmqpTemplate.class);
+
+		RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
+				.recoverer(new RepublishMessageRecoverer(amqpTemplate).errorRoutingKeyPrefix("bar."))
+				.build();
+
+		final AtomicInteger count = new AtomicInteger();
+		Foo delegate = createDelegate(interceptor, count);
+		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
+		delegate.onMessage("", message);
+		assertEquals(3, count.get());
+		verify(amqpTemplate).send("bar.foo", message);
+	}
+
+	@Test
+	public void testWithRepublishRecovererCustomExchangeAndDefaultRoutingCustomPrefix() throws Throwable {
+		AmqpTemplate amqpTemplate = mock(AmqpTemplate.class);
+
+		RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
+				.recoverer(new RepublishMessageRecoverer(amqpTemplate, "baz").errorRoutingKeyPrefix("bar."))
+				.build();
+
+		final AtomicInteger count = new AtomicInteger();
+		Foo delegate = createDelegate(interceptor, count);
+		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
+		delegate.onMessage("", message);
+		assertEquals(3, count.get());
+		verify(amqpTemplate).send("baz", "bar.foo", message);
 	}
 
 	private Foo createDelegate(MethodInterceptor interceptor, final AtomicInteger count) {
