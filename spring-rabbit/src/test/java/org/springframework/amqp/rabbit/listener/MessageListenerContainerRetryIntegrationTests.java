@@ -138,6 +138,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		this.retryTemplate = new RetryTemplate();
 		this.retryTemplate.setRetryContextCache(new MapRetryContextCache(1));
 		// The container should have shutdown, so there are now no active consumers
+		exception.handleAssertionErrors();
 		exception.expectMessage("expected:<1> but was:<0>");
 		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
 

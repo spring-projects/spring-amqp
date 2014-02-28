@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,11 +15,11 @@ package org.springframework.amqp.rabbit.test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Assume;
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class EnvironmentAvailable implements MethodRule {
+public class EnvironmentAvailable extends TestWatcher {
 
 	private static Log logger = LogFactory.getLog(EnvironmentAvailable.class);
 
@@ -35,15 +35,11 @@ public class EnvironmentAvailable implements MethodRule {
 		this(DEFAULT_ENVIRONMENT_KEY);
 	}
 
-	public Statement apply(final Statement base, final FrameworkMethod method, Object target) {
-		return new Statement() {
-			@Override
-			public void evaluate() throws Throwable {
-				logger.info("Evironment: " + key + " active=" + isActive());
-				Assume.assumeTrue(isActive());
-				base.evaluate();
-			}
-		};
+	@Override
+	public Statement apply(final Statement base, Description description) {
+		logger.info("Environment: " + key + " active=" + isActive());
+		Assume.assumeTrue(isActive());
+		return super.apply(base, description);
 	}
 
 	public boolean isActive() {

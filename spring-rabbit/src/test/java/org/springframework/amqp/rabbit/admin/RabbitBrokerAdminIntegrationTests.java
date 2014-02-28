@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,8 +22,10 @@ import java.util.Map;
 import org.apache.log4j.Level;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -44,13 +46,13 @@ public class RabbitBrokerAdminIntegrationTests {
 	@Rule
 	public Log4jLevelAdjuster logLevel = new Log4jLevelAdjuster(Level.INFO, RabbitBrokerAdmin.class);
 
-	@Rule
+	@ClassRule
 	public static EnvironmentAvailable environment = new EnvironmentAvailable("BROKER_INTEGRATION_TEST");
 
 	/*
 	 * Ensure broker dies if a test fails (otherwise the erl process might have to be killed manually)
 	 */
-	@Rule
+	@ClassRule
 	public static BrokerPanic panic = new BrokerPanic();
 
 	private static RabbitBrokerAdmin brokerAdmin;

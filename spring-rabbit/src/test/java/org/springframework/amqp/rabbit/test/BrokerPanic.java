@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,12 +12,13 @@
  */
 package org.springframework.amqp.rabbit.test;
 
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.springframework.amqp.rabbit.admin.RabbitBrokerAdmin;
 
-public class BrokerPanic implements MethodRule {
+public class BrokerPanic extends TestWatcher {
 
 	private RabbitBrokerAdmin brokerAdmin;
 
@@ -28,13 +29,15 @@ public class BrokerPanic implements MethodRule {
 		this.brokerAdmin = brokerAdmin;
 	}
 
-	public Statement apply(final Statement base, final FrameworkMethod method, Object target) {
+	@Override
+	public Statement apply(final Statement base, Description description) {
 		return new Statement() {
 			@Override
 			public void evaluate() throws Throwable {
 				try {
 					base.evaluate();
-				} catch (Throwable t) {
+				}
+				catch (Throwable t) {
 					if (brokerAdmin != null) {
 						try {
 							brokerAdmin.stopNode();

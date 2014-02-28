@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
+ * Copyright 2002-2014 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy of the License at
  * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
@@ -8,24 +8,28 @@
  */
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.given;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import org.springframework.amqp.core.MessageProperties;
+
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import org.junit.Test;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import org.junit.runner.RunWith;
-import static org.mockito.BDDMockito.given;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author James Carr
@@ -40,10 +44,10 @@ public class DefaultJackson2JavaTypeMapperTest {
    private final MessageProperties properties = new MessageProperties();
 
    @SuppressWarnings("rawtypes")
-   private Class<ArrayList> containerClass = ArrayList.class;
+   private final Class<ArrayList> containerClass = ArrayList.class;
 
    @SuppressWarnings("rawtypes")
-   private Class<HashMap> mapClass = HashMap.class;
+   private final Class<HashMap> mapClass = HashMap.class;
 
    @Test
    public void shouldThrowAnExceptionWhenClassIdNotPresent() {

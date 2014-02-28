@@ -8,26 +8,30 @@
  */
 package org.springframework.amqp.support.converter;
 
-import static org.codehaus.jackson.map.type.TypeFactory.collectionType;
-import static org.codehaus.jackson.map.type.TypeFactory.mapType;
-import static org.codehaus.jackson.map.type.TypeFactory.type;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.mockito.BDDMockito.given;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codehaus.jackson.map.type.CollectionType;
+import org.codehaus.jackson.map.type.MapType;
+import org.codehaus.jackson.map.type.TypeFactory;
 import org.codehaus.jackson.type.JavaType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+
 import org.springframework.amqp.core.MessageProperties;
+
+
+
 
 /**
  * @author James Carr
@@ -41,10 +45,10 @@ public class DefaultJavaTypeMapperTest {
    private final MessageProperties properties = new MessageProperties();
 
    @SuppressWarnings("rawtypes")
-   private Class<ArrayList> containerClass = ArrayList.class;
+   private final Class<ArrayList> containerClass = ArrayList.class;
 
    @SuppressWarnings("rawtypes")
-   private Class<HashMap> mapClass = HashMap.class;
+   private final Class<HashMap> mapClass = HashMap.class;
 
    @Test
    public void shouldThrowAnExceptionWhenClassIdNotPresent() {
@@ -66,7 +70,7 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertThat(javaType, equalTo(type(String.class)));
+      assertThat(javaType, equalTo(TypeFactory.defaultInstance().constructType(String.class)));
    }
 
    @Test
@@ -76,12 +80,12 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertEquals(javaType, type(SimpleTrade.class));
+      assertEquals(javaType, TypeFactory.defaultInstance().constructType(SimpleTrade.class));
    }
 
    @Test
    public void fromJavaTypeShouldPopulateWithJavaTypeNameByDefault() {
-      javaTypeMapper.fromJavaType(type(SimpleTrade.class), properties);
+      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
 
       String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
       assertThat(className, equalTo(SimpleTrade.class.getName()));
@@ -92,7 +96,7 @@ public class DefaultJavaTypeMapperTest {
       javaTypeMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
       javaTypeMapper.afterPropertiesSet();
 
-      javaTypeMapper.fromJavaType(type(SimpleTrade.class), properties);
+      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
 
       String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
       assertThat(className, equalTo("daytrade"));
@@ -121,7 +125,7 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertThat(javaType, equalTo(collectionType(ArrayList.class, String.class)));
+      assertThat((CollectionType) javaType, equalTo(TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, String.class)));
    }
 
    @Test
@@ -136,14 +140,14 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertThat(javaType, equalTo(collectionType(containerClass, type(SimpleTrade.class))));
+      assertThat((CollectionType)javaType, equalTo(TypeFactory.defaultInstance().constructCollectionType(containerClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class))));
    }
 
    @Test
    public void fromJavaTypeShouldPopulateWithContentTypeJavaTypeNameByDefault() {
 
-      javaTypeMapper.fromJavaType(collectionType(containerClass, type(SimpleTrade.class)),
-                                  properties);
+      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructCollectionType(containerClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class)),
+              properties);
 
       String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
       String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
@@ -177,7 +181,7 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertThat(javaType, equalTo(mapType(HashMap.class, Integer.class, String.class)));
+      assertThat((MapType)javaType, equalTo(TypeFactory.defaultInstance().constructMapType(HashMap.class, Integer.class, String.class)));
    }
 
    @Test
@@ -193,16 +197,16 @@ public class DefaultJavaTypeMapperTest {
 
       JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-      assertThat(javaType,
-                 equalTo(mapType(mapClass, type(SimpleTrade.class),
-                                             type(String.class))));
+      assertThat((MapType)javaType,
+              equalTo(TypeFactory.defaultInstance().constructMapType(mapClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class),
+                                                                     TypeFactory.defaultInstance().constructType(String.class))));
    }
 
    @Test
    public void fromJavaTypeShouldPopulateWithKeyTypeAndContentJavaTypeNameByDefault() {
 
-      javaTypeMapper.fromJavaType(mapType(mapClass, type(SimpleTrade.class),
-                                                      type(String.class)), properties);
+      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructMapType(mapClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class),
+              TypeFactory.defaultInstance().constructType(String.class)), properties);
 
       String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
       String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
