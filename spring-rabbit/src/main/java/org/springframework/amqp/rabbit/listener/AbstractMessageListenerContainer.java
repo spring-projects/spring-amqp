@@ -176,6 +176,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Remove queue(s) from this container's list of queues.
 	 * @param queueNames The queue(s) to remove.
+	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
@@ -187,6 +188,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Remove queue(s) from this container's list of queues.
 	 * @param queues The queue(s) to remove.
+	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
 	public boolean removeQueues(Queue... queues) {
 		Assert.notNull(queues, "'queues' cannot be null");
@@ -474,6 +476,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Stop this container.
+	 * @see #doStop
 	 * @see #doStop
 	 */
 	@Override
