@@ -7,7 +7,8 @@
 	<rabbit:template id="template" connection-factory="connectionFactory" />
 
 	<rabbit:template id="kitchenSink" connection-factory="connectionFactory" channel-transacted="true" correlation-key="foo"
-		encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter" reply-timeout="1000" />
+		encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter" reply-timeout="1000"
+		retry-template="retrier" />
 
 	<rabbit:connection-factory id="connectionFactory" />
 
@@ -33,4 +34,6 @@
 	<beans:bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
 		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback" />
 	</beans:bean>
+
+	<beans:bean id="retrier" class="org.springframework.retry.support.RetryTemplate" />
 </beans>

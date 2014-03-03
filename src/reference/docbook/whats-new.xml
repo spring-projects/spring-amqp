@@ -60,8 +60,15 @@
 			<title>AMQP Template</title>
 			<para>
 				The <interfacename>AmqpTemplate</interfacename> now
-				provides several synchronous <code>receiveAndReply</code> methods.
+				provides several synchronous <code>receiveAndReply</code> methods. These are implemented
+				by the <classname>RabbitTemplate</classname>.
 				For more information see <xref linkend="receiving-messages" />.
+			</para>
+			<para>
+				The <classname>RabbitTemplate</classname> now supports configuring a
+				<classname>RetryTemplate</classname> to attempt retries (with optional back off
+				policy) for when the broker is not available. For more information see
+				<xref linkend="template-retry" />.
 			</para>
 		</section>
 		<section>
