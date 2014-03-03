@@ -49,8 +49,12 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -140,6 +144,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	private final String uuid = UUID.randomUUID().toString();
 
 	private volatile String correlationKey = null;
+
+	private volatile RetryTemplate retryTemplate;
 
 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
@@ -308,6 +314,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		if (!correlationKey.trim().equals("correlationId")) {
 			this.correlationKey = correlationKey.trim();
 		}
+	}
+
+	/**
+	 * Add a {@link RetryTemplate} which will be used for all rabbit operations.
+	 *
+	 * @param retryTemplate The retry template.
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
 	}
 
 	/**
@@ -781,7 +796,31 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	@Override
-	public <T> T execute(ChannelCallback<T> action) {
+	public <T> T execute(final ChannelCallback<T> action) {
+		if (this.retryTemplate != null) {
+			try {
+				return this.retryTemplate.execute(new RetryCallback<T>() {
+
+					@Override
+					public T doWithRetry(RetryContext context) throws Exception {
+						return RabbitTemplate.this.doExecute(action);
+					}
+
+				});
+			}
+			catch (Exception e) {
+				if (e instanceof RuntimeException) {
+					throw (RuntimeException) e;
+				}
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+			}
+		}
+		else {
+			return this.doExecute(action);
+		}
+	}
+
+	private final <T> T doExecute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
 		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
 		Channel channel = resourceHolder.getChannel();
@@ -793,12 +832,14 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				logger.debug("Executing callback on RabbitMQ Channel: " + channel);
 			}
 			return action.doInRabbit(channel);
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			if (isChannelLocallyTransacted(channel)) {
 				resourceHolder.rollbackAll();
 			}
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
 	}

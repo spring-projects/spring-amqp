@@ -452,6 +452,47 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
     Messages. We will explore Message sending and reception, respectively, in
     the two sections that follow.</para>
 
+	<section id="template-retry">
+		<title>Adding Retry Capabilities</title>
+		<para>
+			Starting with <emphasis>version 1.3</emphasis> you can now configure the
+			<classname>RabbitTemplate</classname> to use a <classname>RetryTemplate</classname>
+			to help with handling problems with broker connectivity. Refer to the
+			<ulink url="https://github.com/spring-projects/spring-retry">spring-retry</ulink>
+			project for complete information; the following is just one example that uses
+			an exponential back off policy and the default <classname>SimpleRetryPolicy</classname>
+			which will make three attempts before throwing the exception to the caller.
+		</para>
+		<para>
+			Using the XML namespace:
+		</para>
+		<programlisting language="xml"><![CDATA[<rabbit:template id="template" connection-factory="connectionFactory" retry-template="retryTemplate"/>
+
+<bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
+	<property name="backOffPolicy">
+		<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+			<property name="initialInterval" value="500" />
+			<property name="multiplier" value="10.0" />
+			<property name="maxInterval" value="10000" />
+		</bean>
+	</property>
+</bean>]]></programlisting>
+		<para>
+			Using <classname>@Configuration</classname>:
+		</para>
+		<programlisting language="java"><![CDATA[@Bean
+public AmqpTemplate rabbitTemplate();
+		RabbitTemplate template = new RabbitTemplate(connectionFactory());
+		RetryTemplate retryTemplate = new RetryTemplate();
+		ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+		backOffPolicy.setInitialInterval(500);
+		backOffPolicy.setMultiplier(10.0);
+		backOffPolicy.setMaxInterval(10000);
+		retryTemplate.setBackOffPolicy(backOffPolicy);
+		template.setRetryTemplate(retryTemplate);
+		return template;
+}]]></programlisting>
+	</section>
     <section>
       <title>Publisher Confirms and Returns</title>
       <para>

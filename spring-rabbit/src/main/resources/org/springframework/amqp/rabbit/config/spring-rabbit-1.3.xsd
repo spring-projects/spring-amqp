@@ -920,6 +920,19 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="retry-template" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a RetryTemplate - used to invoke retries on Rabbit operations (such as when a connection fails).
+	By default, retries are not attempted.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.retry.support.RetryTemplate" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
