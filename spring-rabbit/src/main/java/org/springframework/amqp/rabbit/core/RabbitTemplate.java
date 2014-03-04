@@ -49,8 +49,12 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -140,6 +144,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	private final String uuid = UUID.randomUUID().toString();
 
 	private volatile String correlationKey = null;
+
+	private volatile RetryTemplate retryTemplate;
 
 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
@@ -311,6 +317,15 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	/**
+	 * Add a {@link RetryTemplate} which will be used for all rabbit operations.
+	 *
+	 * @param retryTemplate The retry template.
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
+	}
+
+	/**
 	 * Gets unconfirmed correlatiom data older than age and removes them.
 	 * @param age in millseconds
 	 * @return the collection of correlation data for which confirms have
@@ -372,7 +387,13 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		convertAndSend(this.exchange, this.routingKey, object, (CorrelationData) null);
 	}
 
+	@Deprecated
 	public void correlationconvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
+		this.correlationConvertAndSend(object, correlationData);
+	}
+
+
+	public void correlationConvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, correlationData);
 	}
 
@@ -390,8 +411,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
 
-	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData corrationData) throws AmqpException {
-		send(exchange, routingKey, convertMessageIfNecessary(object), corrationData);
+	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData correlationData) throws AmqpException {
+		send(exchange, routingKey, convertMessageIfNecessary(object), correlationData);
 	}
 
 	@Override
@@ -544,7 +565,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
 					}
 
-					S reply = null;
+					S reply;
 					try {
 						reply = callback.handle((R) receive);
 					}
@@ -681,7 +702,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
-		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+		return this.execute(new ChannelCallback<Message>() {
 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
@@ -693,10 +714,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				String replyTo = queueDeclaration.getQueue();
 				message.getMessageProperties().setReplyTo(replyTo);
 
-				boolean noAck = true;
 				String consumerTag = UUID.randomUUID().toString();
-				boolean noLocal = true;
-				boolean exclusive = true;
 				DefaultConsumer consumer = new DefaultConsumer(channel) {
 
 					@Override
@@ -716,7 +734,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 						}
 					}
 				};
-				channel.basicConsume(replyTo, noAck, consumerTag, noLocal, exclusive, null, consumer);
+				channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
 				doSend(channel, exchange, routingKey, message, null);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
@@ -724,11 +742,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				return reply;
 			}
 		});
-		return replyMessage;
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
-		Message replyMessage = this.execute(new ChannelCallback<Message>() {
+		return this.execute(new ChannelCallback<Message>() {
 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
@@ -777,11 +794,34 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				return reply;
 			}
 		});
-		return replyMessage;
 	}
 
 	@Override
-	public <T> T execute(ChannelCallback<T> action) {
+	public <T> T execute(final ChannelCallback<T> action) {
+		if (this.retryTemplate != null) {
+			try {
+				return this.retryTemplate.execute(new RetryCallback<T>() {
+
+					@Override
+					public T doWithRetry(RetryContext context) throws Exception {
+						return RabbitTemplate.this.doExecute(action);
+					}
+
+				});
+			}
+			catch (Exception e) {
+				if (e instanceof RuntimeException) {
+					throw (RuntimeException) e;
+				}
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+			}
+		}
+		else {
+			return this.doExecute(action);
+		}
+	}
+
+	private <T> T doExecute(ChannelCallback<T> action) {
 		Assert.notNull(action, "Callback object must not be null");
 		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
 		Channel channel = resourceHolder.getChannel();
@@ -793,12 +833,14 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				logger.debug("Executing callback on RabbitMQ Channel: " + channel);
 			}
 			return action.doInRabbit(channel);
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			if (isChannelLocallyTransacted(channel)) {
 				resourceHolder.rollbackAll();
 			}
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			ConnectionFactoryUtils.releaseResources(resourceHolder);
 		}
 	}
@@ -833,7 +875,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
 		}
-		boolean mandatory = this.returnCallback == null ? false : this.mandatory;
+		boolean mandatory = this.returnCallback != null && this.mandatory;
 		MessageProperties messageProperties = message.getMessageProperties();
 		if (mandatory) {
 			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_CORRELATION, this.uuid);
@@ -1004,12 +1046,12 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				logger.error("No correlation header in reply");
 				return;
 			}
+
 			PendingReply pendingReply = this.replyHolder.get(messageTag);
 			if (pendingReply == null) {
 				if (logger.isWarnEnabled()) {
 					logger.warn("Reply received after timeout for " + messageTag);
 				}
-				return;
 			}
 			else {
 				// Restore the inbound correlation data

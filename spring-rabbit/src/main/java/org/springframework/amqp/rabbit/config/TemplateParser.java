@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,8 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.List;
 
+import org.w3c.dom.Element;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
@@ -23,7 +25,6 @@ import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Element;
 
 /**
  * @author Dave Syer
@@ -60,6 +61,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 	private static final String CONFIRM_CALLBACK_ATTRIBUTE = "confirm-callback";
 
 	private static final String CORRELATION_KEY = "correlation-key";
+
+	private static final String RETRY_TEMPLATE = "retry-template";
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
@@ -103,6 +106,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETRY_TEMPLATE);
 
 		BeanDefinition replyContainer = null;
 		Element childElement = null;
