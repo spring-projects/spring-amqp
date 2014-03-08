@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<rabbit:connection-factory id="rabbitConnectionFactory" />
+
+	<rabbit:queue id="anon" />
+
+	<rabbit:direct-exchange name="testContainerWithAutoDeleteQueues" auto-delete="true">
+		<rabbit:bindings>
+			<rabbit:binding queue="anon" key="anon" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+
+	<rabbit:listener-container concurrency="2">
+		<rabbit:listener ref="foo" queues="anon" />
+	</rabbit:listener-container>
+
+	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+
+	<bean id="foo" class="org.springframework.amqp.rabbit.listener.ListenFromAutoDeleteQueueTests$Listener" />
+
+	<rabbit:template id="template" connection-factory="rabbitConnectionFactory"/>
+
+</beans>

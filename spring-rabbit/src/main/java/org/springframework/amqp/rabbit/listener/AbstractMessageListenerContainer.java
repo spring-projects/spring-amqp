@@ -30,10 +30,10 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
@@ -49,7 +49,7 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
-		implements BeanFactoryAware, BeanNameAware, DisposableBean, SmartLifecycle {
+		implements ApplicationContextAware, BeanNameAware, DisposableBean, SmartLifecycle {
 
 	private volatile String beanName;
 
@@ -75,7 +75,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private boolean initialized;
 
-	private volatile BeanFactory beanFactory;
+	private volatile ApplicationContext applicationContext;
 
 	/**
 	 * <p>
@@ -322,13 +322,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.beanName;
 	}
 
-	protected final BeanFactory getBeanFactory() {
-		return beanFactory;
+	protected final ApplicationContext getApplicationContext() {
+		return applicationContext;
 	}
 
 	@Override
-	public final void setBeanFactory(BeanFactory beanFactory) {
-		this.beanFactory = beanFactory;
+	public final void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
 	}
 
 	/**

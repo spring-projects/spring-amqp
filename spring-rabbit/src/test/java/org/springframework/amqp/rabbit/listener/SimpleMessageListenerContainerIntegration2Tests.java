@@ -41,7 +41,7 @@ import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.support.GenericApplicationContext;
 
 /**
  * @author Dave Syer
@@ -175,9 +175,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
 		container.setQueueNames(queue.getName());
 		container.setConcurrentConsumers(2);
-		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-		beanFactory.registerSingleton("foo", queue);
-		container.setBeanFactory(beanFactory);
+		GenericApplicationContext context = new GenericApplicationContext();
+		context.getBeanFactory().registerSingleton("foo", queue);
+		context.refresh();
+		container.setApplicationContext(context);
 		container.afterPropertiesSet();
 		container.start();
 		for (int i = 0; i < 10; i++) {
@@ -200,9 +201,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		SimpleMessageListenerContainer container1 = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container1.setMessageListener(new MessageListenerAdapter(new PojoListener(latch1)));
 		container1.setQueueNames(queue.getName());
-		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-		beanFactory.registerSingleton("foo", queue);
-		container1.setBeanFactory(beanFactory);
+		GenericApplicationContext context = new GenericApplicationContext();
+		context.getBeanFactory().registerSingleton("foo", queue);
+		context.refresh();
+		container1.setApplicationContext(context);
 		container1.setExclusive(true);
 		container1.afterPropertiesSet();
 		container1.start();
@@ -215,7 +217,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		SimpleMessageListenerContainer container2 = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container2.setMessageListener(new MessageListenerAdapter(new PojoListener(latch2)));
 		container2.setQueueNames(queue.getName());
-		container2.setBeanFactory(beanFactory);
+		container2.setApplicationContext(context);
 		container2.setRecoveryInterval(500);
 		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exlusive.
 		container2.afterPropertiesSet();

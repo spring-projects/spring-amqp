@@ -49,8 +49,8 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -580,6 +580,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		initializeProxy();
 		this.rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
+		this.rabbitAdmin.setApplicationContext(this.getApplicationContext());
 	}
 
 	@ManagedMetric(metricType = MetricType.GAUGE)
@@ -810,28 +811,34 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Redeclare any auto-delete queues if not present
+	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if any of our queues are
+	 * auto-delete and missing. Auto deletion of a queue can cause upstream elements (bindings, exchanges)
+	 * to be deleted too, so everything needs to be redeclared. Declaration is idempotent so, aside
+	 * from some network chatter, there is no issue, and we only will do it if we detect our
+	 * queue is gone.
 	 */
-	private synchronized void checkAutoDeleteQueues() {
-		BeanFactory beanFactory = this.getBeanFactory();
-		if (beanFactory != null && beanFactory instanceof ListableBeanFactory) {
-			Set<String> queueNames = this.getQueueNamesAsSet();
-			Map<String, Queue> queueBeans = ((ListableBeanFactory) beanFactory).getBeansOfType(Queue.class);
-			for (Entry<String, Queue> entry : queueBeans.entrySet()) {
-				Queue queue = entry.getValue();
-				if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
-						&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
-					try {
-						this.rabbitAdmin.declareQueue(queue);
+	private synchronized void redeclareElementsIfNecessary() {
+		try {
+			ApplicationContext applicationContext = this.getApplicationContext();
+			if (applicationContext != null && applicationContext instanceof ListableBeanFactory) {
+				Set<String> queueNames = this.getQueueNamesAsSet();
+				Map<String, Queue> queueBeans = ((ListableBeanFactory) applicationContext).getBeansOfType(Queue.class);
+				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
+					Queue queue = entry.getValue();
+					if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
+							&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
 						if (logger.isDebugEnabled()) {
-							logger.debug("Redeclared auto-delete queue: " + queue.getName());
+							logger.debug("At least one auto-delete queue is missing: " + queue.getName()
+									+ "; redeclaring context exchanges, queues, bindings.");
 						}
-					}
-					catch (Exception e) {
-						logger.error("Failed to declare auto-delete queue: " + queue.getName(), e);
+						this.rabbitAdmin.initialize();
+						break;
 					}
 				}
 			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
 	}
 
@@ -933,7 +940,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 
 				try {
-					SimpleMessageListenerContainer.this.checkAutoDeleteQueues();
+					SimpleMessageListenerContainer.this.redeclareElementsIfNecessary();
 					this.consumer.start();
 					this.start.countDown();
 				}
