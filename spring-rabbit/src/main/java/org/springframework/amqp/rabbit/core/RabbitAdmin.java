@@ -16,7 +16,11 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -343,6 +347,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	 * (but unnecessary) to call this method more than once.
 	 */
 	public void initialize() {
+		initialize(null);
+	}
+
+	public void initialize(Map<String, Queue> startingAutoDeleteQueues) {
 
 		if (this.applicationContext == null) {
 			if (this.logger.isDebugEnabled()) {
@@ -356,6 +364,13 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		final Collection<Exchange> exchanges = filterDeclarables(applicationContext.getBeansOfType(Exchange.class).values());
 		final Collection<Queue> queues = filterDeclarables(applicationContext.getBeansOfType(Queue.class).values());
 		final Collection<Binding> bindings = filterDeclarables(applicationContext.getBeansOfType(Binding.class).values());
+
+		// Get the real (random) queue names.
+		final Collection<Queue> autoDeleteQueues =
+				startingAutoDeleteQueues == null ? null : startingAutoDeleteQueues.values();
+
+		final Collection<Queue> excludedQueues = excludeQueues(queues, getQueueNames(autoDeleteQueues));
+		excludeBindings(bindings, getQueueNames(excludedQueues));
 
 		for (Exchange exchange : exchanges) {
 			if (!exchange.isDurable()) {
@@ -399,6 +414,50 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		});
 		logger.debug("Declarations finished");
 
+	}
+
+	private Set<String> getQueueNames(Collection<Queue> queues) {
+		final Set<String> queueNames = new HashSet<String>();
+
+		if (queues != null) {
+			for (Queue queue : queues) {
+				queueNames.add(queue.getName());
+			}
+		}
+
+		return queueNames;
+	}
+
+	private Collection<Queue> excludeQueues(Collection<Queue> queues, Set<String> startingQueueNames) {
+		final Collection<Queue> excluded = new ArrayList<Queue>();
+
+		final Iterator<Queue> iterator = queues.iterator();
+		while (iterator.hasNext()) {
+			final Queue queue = iterator.next();
+			final String name = queue.getName();
+
+			if (queue.isAutoDelete() && !startingQueueNames.contains(name)) {
+				excluded.add(queue);
+				iterator.remove();
+			}
+		}
+
+		return excluded;
+	}
+
+	private Collection<Binding> excludeBindings(Collection<Binding> bindings, Set<String> excludedQueueNames) {
+		final Collection<Binding> excluded = new ArrayList<Binding>();
+
+		final Iterator<Binding> iterator = bindings.iterator();
+		while (iterator.hasNext()) {
+			final Binding binding = iterator.next();
+			if (binding.isDestinationQueue() && excludedQueueNames.contains(binding.getDestination())) {
+				excluded.add(binding);
+				iterator.remove();
+			}
+		}
+
+		return excluded;
 	}
 
 	/**
