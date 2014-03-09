@@ -21,6 +21,10 @@
 				of its configured queues is available for use.
 				See <xref linkend="listener-queues" />
 			</para>
+			<para>
+				This listener container will now redeclare any auto-delete queues during
+				startup. See <xref linkend="lc-auto-delete"/>.
+			</para>
 		</section>
 		<section>
 			<title>Consumer Priority</title>

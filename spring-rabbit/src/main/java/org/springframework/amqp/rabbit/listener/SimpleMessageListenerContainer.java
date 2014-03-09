@@ -142,7 +142,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
 
-	private RabbitAdmin rabbitAdmin;
+	private volatile RabbitAdmin rabbitAdmin;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -443,6 +443,22 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	protected RabbitAdmin getRabbitAdmin() {
+		return rabbitAdmin;
+	}
+
+	/**
+	 * Set the {@link RabbitAdmin}, used to declare any auto-delete queues, bindings
+	 * etc when the container is started. Only needed if those queues use conditional
+	 * declaration (have a 'declared-by' attribute). If not specified, an internal
+	 * admin will be used which will attempt to declare all elements not having a
+	 * 'declared-by' attribute.
+	 * @param rabbitAdmin The admin.
+	 */
+	public void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
+		this.rabbitAdmin = rabbitAdmin;
+	}
+
 	@Override
 	public void setQueueNames(String... queueName) {
 		super.setQueueNames(queueName);
@@ -579,8 +595,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
 		initializeProxy();
-		this.rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
-		this.rabbitAdmin.setApplicationContext(this.getApplicationContext());
+		if (this.rabbitAdmin == null) {
+			RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
+			rabbitAdmin.setApplicationContext(this.getApplicationContext());
+			this.rabbitAdmin = rabbitAdmin;
+		}
 	}
 
 	@ManagedMetric(metricType = MetricType.GAUGE)

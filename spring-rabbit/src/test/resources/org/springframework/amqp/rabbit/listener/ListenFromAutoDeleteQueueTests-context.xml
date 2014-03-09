@@ -15,11 +15,27 @@
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 
-	<rabbit:listener-container concurrency="2">
-		<rabbit:listener ref="foo" queues="anon" />
+	<rabbit:listener-container id="container1" concurrency="2">
+		<rabbit:listener id="listener1" ref="foo" queues="anon" />
+	</rabbit:listener-container>
+
+	<!-- With Conditional Declarations -->
+
+	<rabbit:queue id="otherAnon" declared-by="containerAdmin" />
+
+	<rabbit:direct-exchange name="otherExchange" auto-delete="true" declared-by="containerAdmin">
+		<rabbit:bindings>
+			<rabbit:binding queue="otherAnon" key="otherAnon" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
+
+	<rabbit:listener-container id="container2" auto-startup="false">
+		<rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
 	</rabbit:listener-container>
 
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
+
+	<rabbit:admin id="containerAdmin" connection-factory="rabbitConnectionFactory" auto-startup="false" />
 
 	<bean id="foo" class="org.springframework.amqp.rabbit.listener.ListenFromAutoDeleteQueueTests$Listener" />
 
