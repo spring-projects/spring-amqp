@@ -199,6 +199,11 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			containerDef.getPropertyValues().add("consumerArguments", args);
 		}
 
+		String admin = listenerEle.getAttribute("admin");
+		if (StringUtils.hasText(admin)) {
+			containerDef.getPropertyValues().add("rabbitAdmin", new RuntimeBeanReference(admin));
+		}
+
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
 	}

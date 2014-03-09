@@ -714,6 +714,21 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="admin" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Reference to a 'RabbitAdmin'. Required if the listener is using auto-delete
+	queues and those queues are configured for conditional declaration. This
+	is the admin that will (re)declare those queues when the container is
+	(re)started. See the reference documentation for more information.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.rabbit.core.RabbitAdmin" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:element name="admin">
