@@ -811,7 +811,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if any of our queues are
+	 * Use {@link RabbitAdmin#initialize} to redeclare everything if any of our queues are
 	 * auto-delete and missing. Auto deletion of a queue can cause upstream elements (bindings, exchanges)
 	 * to be deleted too, so everything needs to be redeclared. Declaration is idempotent so, aside
 	 * from some network chatter, there is no issue, and we only will do it if we detect our
@@ -821,25 +821,40 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		try {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			if (applicationContext != null && applicationContext instanceof ListableBeanFactory) {
-				Set<String> queueNames = this.getQueueNamesAsSet();
-				Map<String, Queue> queueBeans = ((ListableBeanFactory) applicationContext).getBeansOfType(Queue.class);
-				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
-					Queue queue = entry.getValue();
-					if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
-							&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("At least one auto-delete queue is missing: " + queue.getName()
-									+ "; redeclaring context exchanges, queues, bindings.");
-						}
-						this.rabbitAdmin.initialize();
-						break;
+
+				final Map<String, Queue> autoDeleteQueues = getAutoDeleteQueues(applicationContext);
+
+				if (!autoDeleteQueues.isEmpty()) {
+					if (logger.isDebugEnabled()) {
+						final String firstQueue = autoDeleteQueues.keySet().iterator().next();
+
+						logger.debug("At least one auto-delete queue is missing: " + firstQueue
+								+ "; redeclaring context exchanges, queues, bindings.");
 					}
+					this.rabbitAdmin.initialize(autoDeleteQueues);
 				}
 			}
 		}
 		catch (Exception e) {
 			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
+	}
+
+	private Map<String, Queue> getAutoDeleteQueues(ApplicationContext applicationContext) {
+		final Map<String, Queue> autoDeleteQueues = new HashMap<String, Queue>();
+
+		final Set<String> queueNames = this.getQueueNamesAsSet();
+		final Map<String, Queue> queueBeans = ((ListableBeanFactory) applicationContext).getBeansOfType(Queue.class);
+		for (Entry<String, Queue> entry : queueBeans.entrySet()) {
+			Queue queue = entry.getValue();
+			if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
+					&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
+
+				autoDeleteQueues.put(entry.getKey(), queue);
+			}
+		}
+
+		return autoDeleteQueues;
 	}
 
 	private boolean receiveAndExecute(final BlockingQueueConsumer consumer) throws Throwable {
