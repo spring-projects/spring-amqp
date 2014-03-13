@@ -534,7 +534,7 @@ public class SimpleMessageListenerContainerTests {
 				Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
 				for (Object consumer : consumers) {
 					ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
-					if (channel.getTargetChannel() == mockChannel) {
+					if (channel != null && channel.getTargetChannel() == mockChannel) {
 						Consumer rabbitConsumer = TestUtils.getPropertyValue(consumer, "consumer", Consumer.class);
 						if (cancel) {
 							rabbitConsumer.handleCancelOk((String) invocation.getArguments()[0]);

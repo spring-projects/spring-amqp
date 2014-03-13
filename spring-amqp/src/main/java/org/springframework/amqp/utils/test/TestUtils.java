@@ -57,7 +57,9 @@ public class TestUtils {
 	@SuppressWarnings("unchecked")
 	public static <T> T getPropertyValue(Object root, String propertyPath, Class<T> type) {
 		Object value = getPropertyValue(root, propertyPath);
-		Assert.isAssignable(type, value.getClass());
+		if (value != null) {
+			Assert.isAssignable(type, value.getClass());
+		}
 		return (T) value;
 	}
 
