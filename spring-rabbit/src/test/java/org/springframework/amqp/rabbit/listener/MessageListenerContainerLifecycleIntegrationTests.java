@@ -17,6 +17,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -29,6 +31,8 @@ import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -381,7 +385,18 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		Log log = Mockito.spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		Log log = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		final CountDownLatch latch = new CountDownLatch(1);
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				latch.countDown();
+				invocation.callRealMethod();
+				return null;
+			}
+		}).when(log).debug(
+				Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
 		dfa.setPropertyValue("logger", log);
 		container.setQueues(queue);
@@ -392,7 +407,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		try {
 			connectionFactory.destroy();
 
-			Thread.sleep(1000);
+			assertTrue(latch.await(10, TimeUnit.SECONDS));
 			Mockito.verify(log).debug(
 					Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 			Mockito.verify(log, Mockito.never()).warn(Mockito.anyString(), Mockito.any(Throwable.class));
