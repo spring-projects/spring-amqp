@@ -15,9 +15,15 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +36,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -41,6 +48,8 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.ErrorHandler;
 
@@ -82,6 +91,54 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				return null;
 			}
 		}).when(errorHandler).handleError(any(Throwable.class));
+	}
+
+	@Test // AMQP-385
+	public void testErrorHandlerThrowsARADRE() throws Exception {
+		RabbitTemplate template = this.createTemplate(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		container.setQueues(queue);
+		final CountDownLatch messageReceived = new CountDownLatch(1);
+		final CountDownLatch spiedQLogger = new CountDownLatch(1);
+		final CountDownLatch errorHandled = new CountDownLatch(1);
+		container.setErrorHandler(new ErrorHandler() {
+
+			@Override
+			public void handleError(Throwable t) {
+				errorHandled.countDown();
+				throw new AmqpRejectAndDontRequeueException("foo", t);
+			}
+		});
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				try {
+					messageReceived.countDown();
+					spiedQLogger.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				throw new RuntimeException("bar");
+			}
+		});
+		container.start();
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+		when(logger.isWarnEnabled()).thenReturn(true);
+		template.convertAndSend(queue.getName(), "baz");
+		assertTrue(messageReceived.await(10, TimeUnit.SECONDS));
+		Object consumer = TestUtils.getPropertyValue(container, "consumers", Map.class)
+				.keySet().iterator().next();
+		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
+		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
+		when(qLogger.isDebugEnabled()).thenReturn(true);
+		spiedQLogger.countDown();
+		assertTrue(errorHandled.await(10, TimeUnit.SECONDS));
+		container.stop();
+		verify(logger, never()).warn(contains("Consumer raised exception"), any(Throwable.class));
+		verify(qLogger).debug(contains("Rejecting messages (requeue=false)"));
 	}
 
 	@Test
