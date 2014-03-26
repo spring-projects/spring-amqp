@@ -1396,9 +1396,11 @@ public Binding binding() {
     <classname>SimpleMessageListenerContainer</classname> you will also be
     able to inject a Spring <classname>ErrorHandler</classname> instance that
     can be used to react to an exception in the listener. The
-    <classname>ErrorHandler</classname> cannot prevent the exception from
-    eventually propagating, but it can be used to log or alert another
-    component that there is a problem.</para>
+    <classname>ErrorHandler</classname> can influence whether or not
+    the errant message is requeued by throwing a
+    <classname>AmqpRejectAndDontRequeueException</classname>. See
+    <xref linkend="async-listeners" /> for more information about this
+    exception.</para>
   </section>
 
   <section>
@@ -1866,7 +1868,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
 
       <para>Or, you can throw a <classname>AmqpRejectAndDontRequeueException</classname>;
       this prevents message requeuing, regardless of the setting of the
-      rejectRequeued property.</para>
+      <code>defaultRequeueRejected</code> property.</para>
 
       <para>Often, a combination of both techniques will be used. Use a
       <classname>StatefulRetryOperationsInterceptor</classname> in the
