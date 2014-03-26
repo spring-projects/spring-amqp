@@ -1007,6 +1007,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
 					}
+					catch (AmqpRejectAndDontRequeueException rejectEx) {
+						/*
+						 *  These will normally be wrapped by an LEFE if thrown by the
+						 *  listener, but we will also honor it if thrown by an
+						 *  error handler.
+						 */
+					}
 				}
 
 			}
