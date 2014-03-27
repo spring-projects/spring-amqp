@@ -1,4 +1,4 @@
-Spring AMQP
+Spring AMQP <img src="https://build.spring.io/plugins/servlet/buildStatusImage/AMQP-MASTER">
 ===========
 
 This project provides support for using Spring and Java with [AMQP](http://www.amqp.org/), and in particular [RabbitMQ](http://www.rabbitmq.com/).
