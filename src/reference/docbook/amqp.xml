@@ -2431,10 +2431,18 @@ public RabbitTransactionManager rabbitTransactionManager() {
 		<programlisting language="java"><![CDATA[@Bean
 public StatefulRetryOperationsInterceptor interceptor() {
 	return RetryInterceptorBuilder.stateful()
-			.withMaxAttempts(5)
-			.withBackOffOptions(1, 2, 10) // initialInterval, multiplier, maxInterval
+			.maxAttempts(5)
+			.backOffOptions(1000, 2.0, 10000) // initialInterval, multiplier, maxInterval
 			.build();
 }]]></programlisting>
+	<para>
+		Only subset of retry capabilities can be configured this way; more advanced
+		features would need the configuration of a <classname>RetryTemplate</classname>
+		as a Spring bean.
+		See the <ulink url="http://static.springsource.org/spring-retry/docs/api/current/"
+		>Spring Retry Javadocs</ulink> for complete information about available policies
+		and their configuration.
+	</para>
     </section>
 
     <section id="async-listeners">
