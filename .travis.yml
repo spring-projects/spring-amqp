@@ -1,4 +1,6 @@
 language: java
 services:
   - rabbitmq
+env:
+  - TERM=dumb
 
