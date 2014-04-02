@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Properties;
@@ -21,6 +22,7 @@ import java.util.Properties;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -39,13 +41,14 @@ public class RabbitAdminTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Test
-	public void testSettingOfNullRabbitTemplate() {
+	public void testSettingOfNullConectionFactory() {
 		ConnectionFactory connectionFactory = null;
 		try {
 			new RabbitAdmin(connectionFactory);
-			fail("should have thrown IllegalStateException when RabbitTemplate is not set.");
-		} catch (IllegalArgumentException e) {
-
+			fail("should have thrown IllegalArgumentException when ConnectionFactory is null.");
+		}
+		catch (IllegalArgumentException e) {
+			assertEquals("ConnectionFactory must not be null", e.getMessage());
 		}
 	}
 
@@ -85,17 +88,20 @@ public class RabbitAdminTests {
 		try {
 			rabbitAdmin.declareQueue(new Queue(queueName));
 			new RabbitTemplate(connectionFactory).convertAndSend(queueName, "foo");
-			Properties props = rabbitAdmin.getQueueProperties(queueName);
-			assertNotNull(props);
-			assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
-			assertEquals(1, props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			int n = 0;
+			while (n++ < 100 && messageCount(rabbitAdmin, queueName) == 0) {
+				Thread.sleep(100);
+			}
+			assertTrue("Message count = 0", n < 100);
 			Channel channel = connectionFactory.createConnection().createChannel(false);
 			DefaultConsumer consumer = new DefaultConsumer(channel);
 			channel.basicConsume(queueName, true, consumer);
-			props = rabbitAdmin.getQueueProperties(queueName);
-			assertNotNull(props);
-			assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
-			assertEquals(0, props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+			n = 0;
+			while (n++ < 100 && messageCount(rabbitAdmin, queueName) > 0) {
+				Thread.sleep(100);
+			}
+			assertTrue("Message count > 0", n < 100);
+			Properties props = rabbitAdmin.getQueueProperties(queueName);
 			assertNotNull(props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
 			assertEquals(1, props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
 			channel.close();
@@ -106,4 +112,10 @@ public class RabbitAdminTests {
 		}
 	}
 
+	private int messageCount(RabbitAdmin rabbitAdmin, String queueName) {
+		Properties props = rabbitAdmin.getQueueProperties(queueName);
+		assertNotNull(props);
+		assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+		return Integer.valueOf((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+	}
 }
