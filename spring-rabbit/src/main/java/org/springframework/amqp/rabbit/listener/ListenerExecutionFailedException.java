@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2006 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 
 
@@ -24,11 +25,14 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
  * Exception to be thrown when the execution of a listener method failed.
  *
  * @author Juergen Hoeller
+ * @author Gary Russell
  * @since 2.0
  * @see MessageListenerAdapter
  */
 @SuppressWarnings("serial")
 public class ListenerExecutionFailedException extends AmqpException {
+
+	private final Message failedMessage;
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.
@@ -36,7 +40,23 @@ public class ListenerExecutionFailedException extends AmqpException {
 	 * @param cause the exception thrown by the listener method
 	 */
 	public ListenerExecutionFailedException(String msg, Throwable cause) {
+		this(msg, cause, null);
+	}
+
+	/**
+	 * Constructor for ListenerExecutionFailedException.
+	 * @param msg the detail message
+	 * @param cause the exception thrown by the listener method
+	 * @param failedMessage the message that failed
+	 *
+	 */
+	public ListenerExecutionFailedException(String msg, Throwable cause, Message failedMessage) {
 		super(msg, cause);
+		this.failedMessage = failedMessage;
+	}
+
+	protected Message getFailedMessage() {
+		return failedMessage;
 	}
 
 }

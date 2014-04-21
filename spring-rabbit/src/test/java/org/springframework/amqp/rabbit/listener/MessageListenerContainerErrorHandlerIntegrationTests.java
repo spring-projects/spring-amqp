@@ -12,8 +12,12 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.doAnswer;
@@ -23,13 +27,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,16 +43,21 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
@@ -75,11 +85,6 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
-
-	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
-			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-			MessageListenerContainerErrorHandlerIntegrationTests.class);
 
 	@Before
 	public void setUp() {
@@ -187,6 +192,88 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 		doTest(messageCount, errorHandler, latch, new ThrowingExceptionChannelAwareListener(latch,
 				new RuntimeException("Channel aware listener runtime exception")));
+	}
+
+	@Test
+	public void testRejectingErrorHandler() throws Exception {
+		RabbitTemplate template = createTemplate(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		MessageListenerAdapter messageListener = new MessageListenerAdapter();
+		messageListener.setDelegate(new Object());
+		container.setMessageListener(messageListener);
+
+		RabbitAdmin admin = new RabbitAdmin(template.getConnectionFactory());
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put("x-dead-letter-exchange", "test.DLE");
+		Queue queue = new Queue("", false, false, true, args);
+		String testQueueName = admin.declareQueue(queue);
+		// Create a DeadLetterExchange and bind a queue to it with the original routing key
+		DirectExchange dle = new DirectExchange("test.DLE", false, true);
+		admin.declareExchange(dle);
+		Queue dlq = new AnonymousQueue();
+		admin.declareQueue(dlq);
+		admin.declareBinding(BindingBuilder.bind(dlq).to(dle).with(testQueueName));
+
+		container.setQueueNames(testQueueName);
+		container.afterPropertiesSet();
+		container.start();
+
+		Message message = MessageBuilder.withBody("foo".getBytes())
+				.setContentType("text/plain")
+				.setContentEncoding("junk")
+				.build();
+		template.send("", testQueueName, message);
+
+		Message rejected = template.receive(dlq.getName());
+		int n = 0;
+		while (n++ < 100 && rejected == null) {
+			Thread.sleep(100);
+			rejected = template.receive(dlq.getName());
+		}
+		assertTrue("Message did not arrive in DLQ", n < 100);
+		assertEquals("foo", new String(rejected.getBody()));
+
+
+		// Verify that the exception strategy has access to the message
+		final AtomicReference<Message> failed = new AtomicReference<Message>();
+		ConditionalRejectingErrorHandler eh = new ConditionalRejectingErrorHandler(new FatalExceptionStrategy() {
+
+			@Override
+			public boolean isFatal(Throwable t) {
+				if (t instanceof ListenerExecutionFailedException) {
+					failed.set(((ListenerExecutionFailedException) t).getFailedMessage());
+				}
+				return t instanceof ListenerExecutionFailedException
+						&& t.getCause() instanceof MessageConversionException;
+			}
+		});
+		container.setErrorHandler(eh);
+
+		template.send("", testQueueName, message);
+
+		rejected = template.receive(dlq.getName());
+		n = 0;
+		while (n++ < 100 && rejected == null) {
+			Thread.sleep(100);
+			rejected = template.receive(dlq.getName());
+		}
+		assertTrue("Message did not arrive in DLQ", n < 100);
+		assertEquals("foo", new String(rejected.getBody()));
+		assertNotNull(failed.get());
+
+		container.stop();
+
+		Exception e = new ListenerExecutionFailedException("foo", new MessageConversionException("bar"));
+		try {
+			eh.handleError(e);
+			fail("expected exception");
+		}
+		catch (AmqpRejectAndDontRequeueException aradre) {
+			assertSame(e, aradre.getCause());
+		}
+		e = new ListenerExecutionFailedException("foo", new MessageConversionException("bar",
+				new AmqpRejectAndDontRequeueException("baz")));
+		eh.handleError(e);
 	}
 
 	public void doTest(int messageCount, ErrorHandler errorHandler, CountDownLatch latch, Object listener)

@@ -87,15 +87,15 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   ## Message properties
  *   #-------------------------------
  *   log4j.appender.amqp.contentType=text/plain
- *   log4j.appender.amqp.contentEncoding=null
+ *   #log4j.appender.amqp.contentEncoding=null
  *   log4j.appender.amqp.generateId=false
- *   log4j.appender.amqp.charset=null
+ *   #log4j.appender.amqp.charset=null
  *   #-------------------------------
  *   ## Sender configuration
  *   #-------------------------------
  *   log4j.appender.amqp.senderPoolSize=2
  *   log4j.appender.amqp.maxSenderRetries=30
- *   log4j.appender.amqp.applicationId=null
+ *   #log4j.appender.amqp.applicationId=null
  *   #-------------------------------
  *   ## Standard Log4J stuff
  *   #-------------------------------

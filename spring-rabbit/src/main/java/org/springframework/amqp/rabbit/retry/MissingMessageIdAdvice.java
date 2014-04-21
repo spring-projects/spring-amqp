@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -51,11 +52,13 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 		this.retryContextCache = retryContextCache;
 	}
 
+	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		String id = null;
+		Message message = null;
 		boolean redelivered = false;
 		try {
-			Message message = (Message) invocation.getArguments()[1];
+			message = (Message) invocation.getArguments()[1];
 			MessageProperties messageProperties = message.getMessageProperties();
 			if (messageProperties.getMessageId() == null) {
 				id = UUID.randomUUID().toString();
@@ -70,7 +73,7 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 					logger.debug("Canceling delivery of retried message that has no ID");
 				}
 				throw new ListenerExecutionFailedException("Cannot retry message without an ID",
-						new AmqpRejectAndDontRequeueException(t));
+						new AmqpRejectAndDontRequeueException(t), message);
 			}
 			else {
 				throw t;
