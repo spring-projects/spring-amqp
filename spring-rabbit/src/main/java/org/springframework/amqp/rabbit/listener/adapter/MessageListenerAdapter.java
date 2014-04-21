@@ -371,7 +371,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 
 		// Invoke the handler method with appropriate arguments.
 		Object[] listenerArguments = buildListenerArguments(convertedMessage);
-		Object result = invokeListenerMethod(methodName, listenerArguments);
+		Object result = invokeListenerMethod(methodName, listenerArguments, message);
 		if (result != null) {
 			handleResult(result, message, channel);
 		} else {
@@ -458,6 +458,20 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * @see #buildListenerArguments
 	 */
 	protected Object invokeListenerMethod(String methodName, Object[] arguments) throws Exception {
+		return this.invokeListenerMethod(methodName, arguments, null);
+	}
+		/**
+		 * Invoke the specified listener method.
+		 * @param methodName the name of the listener method
+		 * @param arguments the message arguments to be passed in
+		 * @param originalMessage the original message
+		 * @return the result returned from the listener method
+		 * @throws Exception if thrown by Rabbit API methods
+		 * @see #getListenerMethodName
+		 * @see #buildListenerArguments
+		 */
+	protected Object invokeListenerMethod(String methodName, Object[] arguments, Message originalMessage)
+			throws Exception {
 		try {
 			MethodInvoker methodInvoker = new MethodInvoker();
 			methodInvoker.setTargetObject(getDelegate());
@@ -465,15 +479,18 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 			methodInvoker.setArguments(arguments);
 			methodInvoker.prepare();
 			return methodInvoker.invoke();
-		} catch (InvocationTargetException ex) {
+		}
+		catch (InvocationTargetException ex) {
 			Throwable targetEx = ex.getTargetException();
 			if (targetEx instanceof IOException) {
 				throw new AmqpIOException((IOException) targetEx);
-			} else {
+			}
+			else {
 				throw new ListenerExecutionFailedException("Listener method '" + methodName + "' threw exception",
 						targetEx);
 			}
-		} catch (Throwable ex) {
+		}
+		catch (Throwable ex) {
 			ArrayList<String> arrayClass = new ArrayList<String>();
 			if (arguments != null) {
 				for (int i = 0; i < arguments.length; i++) {
