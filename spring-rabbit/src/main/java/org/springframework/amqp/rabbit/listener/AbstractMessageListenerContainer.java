@@ -65,7 +65,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile List<String> queueNames = new CopyOnWriteArrayList<String>();
 
-	private ErrorHandler errorHandler;
+	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
 	private boolean exposeListenerChannel = true;
 
@@ -520,13 +520,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Invoke the registered ErrorHandler, if any. Log at error level otherwise.
+	 * The default error handler is a {@link ConditionalRejectingErrorHandler} with
+	 * the default {@link FatalExceptionStrategy} implementation.
 	 * @param ex the uncaught error that arose during Rabbit processing.
 	 * @see #setErrorHandler
 	 */
 	protected void invokeErrorHandler(Throwable ex) {
 		if (this.errorHandler != null) {
 			this.errorHandler.handleError(ex);
-		} else if (logger.isWarnEnabled()) {
+		}
+		else if (logger.isWarnEnabled()) {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
 		}
 	}
@@ -645,10 +648,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			// Actually invoke the message listener...
 			try {
 				listener.onMessage(message, channelToUse);
-			} catch (Exception e) {
-				throw wrapToListenerExecutionFailedExceptionIfNeeded(e);
 			}
-		} finally {
+			catch (Exception e) {
+				throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
+			}
+		}
+		finally {
 			if (resourceHolder != null && boundHere) {
 				// so the channel exposed (because exposeListenerChannel is false) will be closed
 				resourceHolder.setSynchronizedWithTransaction(false);
@@ -686,8 +691,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void doInvokeListener(MessageListener listener, Message message) throws Exception {
 		try {
 			listener.onMessage(message);
-		} catch (Exception e) {
-			throw wrapToListenerExecutionFailedExceptionIfNeeded(e);
+		}
+		catch (Exception e) {
+			throw wrapToListenerExecutionFailedExceptionIfNeeded(e, message);
 		}
 	}
 
@@ -742,13 +748,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * @param e The Exception.
+	 * @param message The failed message.
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */
-	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e) {
+	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
 		if (!(e instanceof ListenerExecutionFailedException)) {
 			// Wrap exception to ListenerExecutionFailedException.
-			return new ListenerExecutionFailedException("Listener threw exception", e);
+			return new ListenerExecutionFailedException("Listener threw exception", e, message);
 		}
 		return e;
 	}

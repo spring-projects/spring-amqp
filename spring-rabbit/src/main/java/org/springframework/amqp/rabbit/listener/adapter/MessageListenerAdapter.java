@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
+import com.rabbitmq.client.Channel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -39,8 +40,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.MethodInvoker;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-
-import com.rabbitmq.client.Channel;
 
 /**
  * Message listener adapter that delegates the handling of messages to target listener methods via reflection, with
@@ -371,7 +370,7 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 
 		// Invoke the handler method with appropriate arguments.
 		Object[] listenerArguments = buildListenerArguments(convertedMessage);
-		Object result = invokeListenerMethod(methodName, listenerArguments);
+		Object result = invokeListenerMethod(methodName, listenerArguments, message);
 		if (result != null) {
 			handleResult(result, message, channel);
 		} else {
@@ -456,8 +455,24 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #getListenerMethodName
 	 * @see #buildListenerArguments
+	 * @deprecated in favor of {@link #invokeListenerMethod(String, Object[], Message)}
 	 */
+	@Deprecated
 	protected Object invokeListenerMethod(String methodName, Object[] arguments) throws Exception {
+		return this.invokeListenerMethod(methodName, arguments, null);
+	}
+		/**
+		 * Invoke the specified listener method.
+		 * @param methodName the name of the listener method
+		 * @param arguments the message arguments to be passed in
+		 * @param originalMessage the original message
+		 * @return the result returned from the listener method
+		 * @throws Exception if thrown by Rabbit API methods
+		 * @see #getListenerMethodName
+		 * @see #buildListenerArguments
+		 */
+	protected Object invokeListenerMethod(String methodName, Object[] arguments, Message originalMessage)
+			throws Exception {
 		try {
 			MethodInvoker methodInvoker = new MethodInvoker();
 			methodInvoker.setTargetObject(getDelegate());
@@ -465,24 +480,27 @@ public class MessageListenerAdapter implements MessageListener, ChannelAwareMess
 			methodInvoker.setArguments(arguments);
 			methodInvoker.prepare();
 			return methodInvoker.invoke();
-		} catch (InvocationTargetException ex) {
+		}
+		catch (InvocationTargetException ex) {
 			Throwable targetEx = ex.getTargetException();
 			if (targetEx instanceof IOException) {
 				throw new AmqpIOException((IOException) targetEx);
-			} else {
-				throw new ListenerExecutionFailedException("Listener method '" + methodName + "' threw exception",
-						targetEx);
 			}
-		} catch (Throwable ex) {
+			else {
+				throw new ListenerExecutionFailedException("Listener method '" + methodName + "' threw exception",
+						targetEx, originalMessage);
+			}
+		}
+		catch (Throwable ex) {
 			ArrayList<String> arrayClass = new ArrayList<String>();
 			if (arguments != null) {
-				for (int i = 0; i < arguments.length; i++) {
-					arrayClass.add(arguments[i].getClass().toString());
+				for (Object argument : arguments) {
+					arrayClass.add(argument.getClass().toString());
 				}
 			}
 			throw new ListenerExecutionFailedException("Failed to invoke target method '" + methodName
 					+ "' with argument type = [" + StringUtils.collectionToCommaDelimitedString(arrayClass)
-					+ "], value = [" + ObjectUtils.nullSafeToString(arguments) + "]", ex);
+					+ "], value = [" + ObjectUtils.nullSafeToString(arguments) + "]", ex, originalMessage);
 		}
 	}
 
