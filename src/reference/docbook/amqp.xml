@@ -375,7 +375,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
 		  For convenience, Spring AMQP provides the <classname>SimpleRoutingConnectionFactory</classname>,
 		  which gets the current thread-bound <code>lookupKey</code> from the <classname>SimpleResourceHolder</classname>:
 		  <programlisting language="xml"><![CDATA[<bean id="connectionFactory"
-      class="org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory>
+      class="org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory">
 	<property name="targetConnectionFactories">
 		<map>
 			<entry key="#{connectionFactory1.virtualHost}" ref="connectionFactory1"/>
