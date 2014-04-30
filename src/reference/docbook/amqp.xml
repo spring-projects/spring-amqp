@@ -379,7 +379,7 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
 	<property name="targetConnectionFactories">
 		<map>
 			<entry key="#{connectionFactory1.virtualHost}" ref="connectionFactory1"/>
-			<entry key="#{connectionFactory1.virtualHost}" ref="connectionFactory2"/>
+			<entry key="#{connectionFactory2.virtualHost}" ref="connectionFactory2"/>
 		</map>
 	</property>
 </bean>
