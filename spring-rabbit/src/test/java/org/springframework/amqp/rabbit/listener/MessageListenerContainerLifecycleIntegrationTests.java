@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -387,6 +388,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		Log log = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		final CountDownLatch latch = new CountDownLatch(1);
+		when(log.isDebugEnabled()).thenReturn(true);
 		doAnswer(new Answer<Void>() {
 
 			@Override

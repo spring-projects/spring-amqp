@@ -1035,7 +1035,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
-					logger.debug("Consumer received Shutdown Signal, processing stopped: " + e.getMessage());
+					if (logger.isDebugEnabled()) {
+						logger.debug("Consumer received Shutdown Signal, processing stopped: " + e.getMessage());
+					}
 				}
 				else {
 					this.logConsumerException(e);
