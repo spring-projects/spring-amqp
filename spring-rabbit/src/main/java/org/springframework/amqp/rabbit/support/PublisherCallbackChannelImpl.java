@@ -33,8 +33,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Basic.RecoverOk;
@@ -69,6 +71,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  *
  */
 public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener {
+
+	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
@@ -131,6 +135,11 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				}
 			}
 
+		}, new MethodFilter() {
+			@Override
+			public boolean matches(java.lang.reflect.Method method) {
+				return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
+			}
 		});
 		this.getFlowMethod = getFlowMethod.get();
 		this.flowMethod = flowMethod.get();
@@ -175,6 +184,12 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.delegate.close(closeCode, closeMessage);
 	}
 
+	/**
+	 * @deprecated - removed in the 3.3.x client
+	 * @param active active.
+	 * @return FlowOk.
+	 * @throws IOException IOException.
+	 */
 	@Deprecated
 	public FlowOk flow(boolean active) throws IOException {
 		if (this.flowMethod != null) {
@@ -183,6 +198,10 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		throw new UnsupportedOperationException("'flow(boolean)' is not supported by the client library");
 	}
 
+	/**
+	 * @deprecated - removed in the 3.3.x client
+	 * @return FlowOk.
+	 */
 	@Deprecated
 	public FlowOk getFlow() {
 		if (this.getFlowMethod != null) {
@@ -191,6 +210,10 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		throw new UnsupportedOperationException("'getFlow()' is not supported by the client library");
 	}
 
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
 	public boolean flowBlocked() {
 		if (this.flowBlockedMethod != null) {
 			return (Boolean) ReflectionUtils.invokeMethod(this.flowBlockedMethod, this.delegate);
@@ -231,6 +254,10 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.delegate.basicQos(prefetchSize, prefetchCount, global);
 	}
 
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
 	public void basicQos(int prefetchCount, boolean global) throws IOException {
 		if (this.basicQosTwoArgsMethod != null) {
 			ReflectionUtils.invokeMethod(this.basicQosTwoArgsMethod, this.delegate, prefetchCount,
@@ -409,6 +436,10 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		return this.delegate.basicConsume(queue, autoAck, consumerTag, callback);
 	}
 
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
 	public String basicConsume(String queue, boolean autoAck, Map<String, Object> arguments, Consumer callback)
 			throws IOException {
 		if (this.basicConsumeFourArgsMethod != null) {
