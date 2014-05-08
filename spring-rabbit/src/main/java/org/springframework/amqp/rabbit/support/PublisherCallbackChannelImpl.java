@@ -74,6 +74,13 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
+	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
+		@Override
+		public boolean matches(java.lang.reflect.Method method) {
+			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
+		}
+	};
+
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -135,12 +142,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				}
 			}
 
-		}, new MethodFilter() {
-			@Override
-			public boolean matches(java.lang.reflect.Method method) {
-				return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
-			}
-		});
+		}, METHOD_FILTER);
 		this.getFlowMethod = getFlowMethod.get();
 		this.flowMethod = flowMethod.get();
 		this.flowBlockedMethod = flowBlockedMethod.get();
