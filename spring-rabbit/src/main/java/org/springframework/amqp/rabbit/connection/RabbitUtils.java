@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.apache.commons.logging.Log;
@@ -22,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -39,6 +41,18 @@ public abstract class RabbitUtils {
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
 	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
+
+	private static final Method shutDownSignalReasonMethod;
+
+	static {
+		Method method = null;
+		try {
+			method = ReflectionUtils.findMethod(ShutdownSignalException.class, "getReason");
+		}
+		finally {
+			shutDownSignalReasonMethod = method;
+		}
+	}
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
@@ -164,8 +178,17 @@ public abstract class RabbitUtils {
 	}
 
 	public static boolean isNormalShutdown(ShutdownSignalException sig) {
-		Object shutdownReason = sig.getReason();
-		 return shutdownReason instanceof AMQP.Connection.Close &&
+		if (shutDownSignalReasonMethod == null) {
+			return false;
+		}
+		Object shutdownReason;
+		try {
+			shutdownReason = ReflectionUtils.invokeMethod(shutDownSignalReasonMethod, sig);
+		}
+		catch (Exception e) {
+			return false;
+		}
+		return shutdownReason instanceof AMQP.Connection.Close &&
 				AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
 				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
 	}

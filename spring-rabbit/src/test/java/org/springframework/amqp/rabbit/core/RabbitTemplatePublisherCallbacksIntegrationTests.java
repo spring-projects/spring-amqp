@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,8 +17,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -42,6 +45,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -58,6 +62,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Consumer;
 
 /**
  * @author Gary Russell
@@ -455,6 +460,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	 * time as adding a new pending ack to the map. Test verifies we don't
 	 * get a {@link ConcurrentModificationException}.
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
 	@Test
 	public void testConcurrentConfirms() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -520,5 +526,56 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		channel.handleAck(3, false);
 		assertTrue(waitForAll3AcksLatch.await(10, TimeUnit.SECONDS));
 		assertEquals(3, acks.get());
+
+
+		// 3.3.1 client
+		channel.basicConsume("foo", false, (Map) null, (Consumer) null);
+		verify(mockChannel).basicConsume("foo", false, (Map) null, (Consumer) null);
+
+		channel.basicQos(3, false);
+		verify(mockChannel).basicQos(3, false);
+
+		doReturn(true).when(mockChannel).flowBlocked();
+		assertTrue(channel.flowBlocked());
+
+		try {
+			channel.flow(true);
+			fail("Expected exception");
+		}
+		catch (UnsupportedOperationException e) {}
+
+		try {
+			channel.getFlow();
+			fail("Expected exception");
+		}
+		catch (UnsupportedOperationException e) {}
+
+		// 3.2.4 client
+/*
+		try {
+			channel.basicConsume("foo", false, (Map) null, (Consumer) null);
+			fail("Expected exception");
+		}
+		catch (UnsupportedOperationException e) {}
+
+		try {
+			channel.basicQos(3, false);
+			fail("Expected exception");
+		}
+		catch (UnsupportedOperationException e) {}
+
+		try {
+			channel.flowBlocked();
+			fail("Expected exception");
+		}
+		catch (UnsupportedOperationException e) {}
+
+		channel.flow(true);
+		verify(mockChannel).flow(true);
+
+		channel.getFlow();
+		verify(mockChannel).getFlow();
+*/
 	}
+
 }

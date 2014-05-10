@@ -27,10 +27,16 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Basic.RecoverOk;
@@ -66,6 +72,15 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener {
 
+	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
+
+	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
+		@Override
+		public boolean matches(java.lang.reflect.Method method) {
+			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
+		}
+	};
+
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -77,8 +92,62 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 
+	private final java.lang.reflect.Method getFlowMethod;
+
+	private final java.lang.reflect.Method flowMethod;
+
+	private final java.lang.reflect.Method flowBlockedMethod;
+
+	private final java.lang.reflect.Method basicConsumeFourArgsMethod;
+
+	private final java.lang.reflect.Method basicQosTwoArgsMethod;
+
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this.delegate = delegate;
+		final AtomicReference<java.lang.reflect.Method> getFlowMethod = new AtomicReference<java.lang.reflect.Method>();
+		final AtomicReference<java.lang.reflect.Method> flowMethod = new AtomicReference<java.lang.reflect.Method>();
+		final AtomicReference<java.lang.reflect.Method> flowBlockedMethod = new AtomicReference<java.lang.reflect.Method>();
+		final AtomicReference<java.lang.reflect.Method> basicConsumeFourArgsMethod = new AtomicReference<java.lang.reflect.Method>();
+		final AtomicReference<java.lang.reflect.Method> basicQosTwoArgsMethod = new AtomicReference<java.lang.reflect.Method>();
+		ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback(){
+
+			@Override
+			public void doWith(java.lang.reflect.Method method) throws IllegalArgumentException, IllegalAccessException {
+				if ("getFlow".equals(method.getName()) && method.getParameterTypes().length == 0
+						&& FlowOk.class.equals(method.getReturnType())) {
+					getFlowMethod.set(method);
+				}
+				else if ("flow".equals(method.getName()) && method.getParameterTypes().length == 1
+						&& boolean.class.equals(method.getParameterTypes()[0])
+						&& FlowOk.class.equals(method.getReturnType())) {
+					flowMethod.set(method);
+				}
+				else if ("flowBlocked".equals(method.getName()) && method.getParameterTypes().length == 0
+						&& boolean.class.equals(method.getReturnType())) {
+					flowBlockedMethod.set(method);
+				}
+				else if ("basicConsume".equals(method.getName()) && method.getParameterTypes().length == 4
+						&& String.class.equals(method.getParameterTypes()[0])
+						&& boolean.class.equals(method.getParameterTypes()[1])
+						&& Map.class.equals(method.getParameterTypes()[2])
+						&& Consumer.class.equals(method.getParameterTypes()[3])
+						&& String.class.equals(method.getReturnType())) {
+					basicConsumeFourArgsMethod.set(method);
+				}
+				else if ("basicQos".equals(method.getName()) && method.getParameterTypes().length == 2
+						&& int.class.equals(method.getParameterTypes()[0])
+						&& boolean.class.equals(method.getParameterTypes()[1])
+						&& void.class.equals(method.getReturnType())) {
+					basicQosTwoArgsMethod.set(method);
+				}
+			}
+
+		}, METHOD_FILTER);
+		this.getFlowMethod = getFlowMethod.get();
+		this.flowMethod = flowMethod.get();
+		this.flowBlockedMethod = flowBlockedMethod.get();
+		this.basicConsumeFourArgsMethod = basicConsumeFourArgsMethod.get();
+		this.basicQosTwoArgsMethod = basicQosTwoArgsMethod.get();
 	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,12 +186,41 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.delegate.close(closeCode, closeMessage);
 	}
 
+	/**
+	 * @deprecated - removed in the 3.3.x client
+	 * @param active active.
+	 * @return FlowOk.
+	 * @throws IOException IOException.
+	 */
+	@Deprecated
 	public FlowOk flow(boolean active) throws IOException {
-		return this.delegate.flow(active);
+		if (this.flowMethod != null) {
+			return (FlowOk) ReflectionUtils.invokeMethod(this.flowMethod, this.delegate, active);
+		}
+		throw new UnsupportedOperationException("'flow(boolean)' is not supported by the client library");
 	}
 
+	/**
+	 * @deprecated - removed in the 3.3.x client
+	 * @return FlowOk.
+	 */
+	@Deprecated
 	public FlowOk getFlow() {
-		return this.delegate.getFlow();
+		if (this.getFlowMethod != null) {
+			return (FlowOk) ReflectionUtils.invokeMethod(this.getFlowMethod, this.delegate);
+		}
+		throw new UnsupportedOperationException("'getFlow()' is not supported by the client library");
+	}
+
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
+	public boolean flowBlocked() {
+		if (this.flowBlockedMethod != null) {
+			return (Boolean) ReflectionUtils.invokeMethod(this.flowBlockedMethod, this.delegate);
+		}
+		throw new UnsupportedOperationException("'flowBlocked()' is not supported by the client library");
 	}
 
 	public void abort() throws IOException {
@@ -156,6 +254,19 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void basicQos(int prefetchSize, int prefetchCount, boolean global)
 			throws IOException {
 		this.delegate.basicQos(prefetchSize, prefetchCount, global);
+	}
+
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
+	public void basicQos(int prefetchCount, boolean global) throws IOException {
+		if (this.basicQosTwoArgsMethod != null) {
+			ReflectionUtils.invokeMethod(this.basicQosTwoArgsMethod, this.delegate, prefetchCount,
+					global);
+			return;
+		}
+		throw new UnsupportedOperationException("'basicQos(int, boolean)' is not supported by the client library");
 	}
 
 	public void basicQos(int prefetchCount) throws IOException {
@@ -325,6 +436,19 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public String basicConsume(String queue, boolean autoAck,
 			String consumerTag, Consumer callback) throws IOException {
 		return this.delegate.basicConsume(queue, autoAck, consumerTag, callback);
+	}
+
+	/**
+	 * Added to the 3.3.x client
+	 * @since 1.3.3
+	 */
+	public String basicConsume(String queue, boolean autoAck, Map<String, Object> arguments, Consumer callback)
+			throws IOException {
+		if (this.basicConsumeFourArgsMethod != null) {
+			return (String) ReflectionUtils.invokeMethod(this.basicConsumeFourArgsMethod, this.delegate, queue,
+					autoAck, arguments, callback);
+		}
+		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' is not supported by the client library");
 	}
 
 	public String basicConsume(String queue, boolean autoAck,
