@@ -800,7 +800,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	public <T> T execute(final ChannelCallback<T> action) {
 		if (this.retryTemplate != null) {
 			try {
-				return this.retryTemplate.execute(new RetryCallback<T>() {
+				return this.retryTemplate.execute(new RetryCallback<T, Exception>() {
 
 					@Override
 					public T doWithRetry(RetryContext context) throws Exception {
