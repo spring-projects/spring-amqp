@@ -11,6 +11,7 @@ buildscript {
 	dependencies {
 		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.6'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
+		classpath 'org.springframework.build.gradle:spring-io-plugin:0.0.3.RELEASE'
 	}
 }
 
@@ -51,6 +52,18 @@ subprojects { subproject ->
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
+
+	if (project.hasProperty('platformVersion')) {
+		apply plugin: 'spring-io'
+
+		repositories {
+			maven { url 'http://repo.spring.io/libs-snapshot' }
+		}
+
+		dependencies {
+			springIoVersions "io.spring.platform:platform-versions:$platformVersion@properties"
+		}
+	}
 
 	// ensure JDK 6 compatibility
 	sourceCompatibility=1.6
@@ -105,29 +118,6 @@ subprojects { subproject ->
 	ext.xLintArg = '-Xlint:all,-options'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
-	test {
-		// suppress all console output during testing unless running `gradle -i`
-		logging.captureStandardOutput(LogLevel.INFO)
-		jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
-	}
-
-	task testAll() {
-		doFirst {
-			tasks.test.systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
-		}
-		finalizedBy test
-	}
-
-	task sourcesJar(type: Jar) {
-		classifier = 'sources'
-		from sourceSets.main.allJava
-	}
-
-	task javadocJar(type: Jar) {
-		classifier = 'javadoc'
-		from javadoc
-	}
-
 	task checkTestConfigs << {
 		def configFiles = []
 		sourceSets.test.allSource.srcDirs.each {
@@ -146,7 +136,31 @@ subprojects { subproject ->
 		}
 	}
 
-	test.dependsOn checkTestConfigs
+	test {
+		jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
+	}
+
+	task testAll(type: Test)
+
+	tasks.withType(Test).all {
+		// suppress all console output during testing unless running `gradle -i`
+		logging.captureStandardOutput(LogLevel.INFO)
+		dependsOn checkTestConfigs
+
+		if (name ==~ /(springIo.*)|(testAll)/) {
+			systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
+		}
+	}
+
+	task sourcesJar(type: Jar) {
+		classifier = 'sources'
+		from sourceSets.main.allJava
+	}
+
+	task javadocJar(type: Jar) {
+		classifier = 'javadoc'
+		from javadoc
+	}
 
 	artifacts {
 		archives sourcesJar
