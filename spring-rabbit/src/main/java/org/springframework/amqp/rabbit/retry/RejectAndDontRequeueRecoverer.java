@@ -15,6 +15,9 @@
  */
 package org.springframework.amqp.rabbit.retry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
@@ -31,8 +34,13 @@ import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException
  */
 public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 
+	protected Log logger = LogFactory.getLog(RejectAndDontRequeueRecoverer.class);
+
 	@Override
 	public void recover(Message message, Throwable cause) {
+		if (logger.isWarnEnabled()) {
+			logger.warn("Retries exhausted for message " + message, cause);
+		}
 		throw new ListenerExecutionFailedException("Retry Policy Exhausted",
 					new AmqpRejectAndDontRequeueException(cause), message);
 	}
