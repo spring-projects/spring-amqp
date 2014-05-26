@@ -374,11 +374,6 @@ public class BlockingQueueConsumer {
 		int passiveDeclareTries = 3;
 		do {
 			try {
-				if (!acknowledgeMode.isAutoAck()) {
-					// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
-					// will send blocks of 100 messages)
-					channel.basicQos(prefetchCount);
-				}
 				attemptPassiveDeclarations();
 				passiveDeclareTries = 0;
 			}
@@ -408,12 +403,20 @@ public class BlockingQueueConsumer {
 							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 				}
 			}
-			catch (IOException e) {
-				this.activeObjectCounter.release(this);
-				throw new FatalListenerStartupException("Cannot set basicQos.", e);
-			}
 		}
 		while (passiveDeclareTries-- > 0);
+		
+		try {
+			if (!acknowledgeMode.isAutoAck()) {
+				// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
+				// will send blocks of 100 messages)
+				channel.basicQos(prefetchCount);
+			}
+		}
+		catch (IOException e) {
+			this.activeObjectCounter.release(this);
+			throw new FatalListenerStartupException("Cannot set basicQos.", e);
+		}
 
 		try {
 			for (int i = 0; i < queues.length; i++) {
