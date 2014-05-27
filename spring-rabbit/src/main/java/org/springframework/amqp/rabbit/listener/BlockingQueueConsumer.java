@@ -61,6 +61,7 @@ import com.rabbitmq.utility.Utility;
  * @author Mark Pollack
  * @author Dave Syer
  * @author Gary Russell
+ * @author Casper Mout
  *
  */
 public class BlockingQueueConsumer {
