@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.beans.DirectFieldAccessor;
 
-import com.rabbitmq.client.Channel;
-
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0.1
  *
  */
@@ -46,47 +52,38 @@ public class BlockingQueueConsumerTests {
 
 	@Test
 	public void testRequeueNullException() throws Exception {
-		Exception ex = null;
-		testRequeueOrNotDefaultYes(ex, true);
+		testRequeueOrNotDefaultYes(null, true);
 	}
 
 	@Test
 	public void testDontRequeue() throws Exception {
-		Exception ex = new AmqpRejectAndDontRequeueException("fail");
-		testRequeueOrNotDefaultYes(ex, false);
+		testRequeueOrNotDefaultYes(new AmqpRejectAndDontRequeueException("fail"), false);
 	}
 
 	@Test
 	public void testDontRequeueNested() throws Exception {
-		Exception ex = new RuntimeException(
-				new RuntimeException(new AmqpRejectAndDontRequeueException(
-						"fail")));
+		Exception ex = new RuntimeException(new RuntimeException(new AmqpRejectAndDontRequeueException("fail")));
 		testRequeueOrNotDefaultYes(ex, false);
 	}
 
 	@Test
 	public void testRequeueDefaultNot() throws Exception {
-		Exception ex = new RuntimeException();
-		testRequeueOrNotDefaultNo(ex, false);
+		testRequeueOrNotDefaultNo(new RuntimeException(), false);
 	}
 
 	@Test
 	public void testRequeueNullExceptionDefaultNot() throws Exception {
-		Exception ex = null;
-		testRequeueOrNotDefaultNo(ex, false);
+		testRequeueOrNotDefaultNo(null, false);
 	}
 
 	@Test
 	public void testDontRequeueDefaultNot() throws Exception {
-		Exception ex = new AmqpRejectAndDontRequeueException("fail");
-		testRequeueOrNotDefaultNo(ex, false);
+		testRequeueOrNotDefaultNo(new AmqpRejectAndDontRequeueException("fail"), false);
 	}
 
 	@Test
 	public void testDontRequeueNestedDefaultNot() throws Exception {
-		Exception ex = new RuntimeException(
-				new RuntimeException(new AmqpRejectAndDontRequeueException(
-						"fail")));
+		Exception ex = new RuntimeException(new RuntimeException(new AmqpRejectAndDontRequeueException("fail")));
 		testRequeueOrNotDefaultNo(ex, false);
 	}
 
@@ -96,12 +93,42 @@ public class BlockingQueueConsumerTests {
 	 */
 	@Test
 	public void testDoRequeueStoppingDefaultNot() throws Exception {
-		Exception ex = new MessageRejectedWhileStoppingException();
-		testRequeueOrNotDefaultNo(ex, true);
+		testRequeueOrNotDefaultNo(new MessageRejectedWhileStoppingException(), true);
 	}
 
-	private void testRequeueOrNotDefaultYes(Exception ex, boolean expectedRequeue)
-			throws Exception, IOException {
+	@Test
+	public void testPrefetchIsSetOnFailedPassiveDeclaration() throws IOException {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
+		when(channel.queueDeclarePassive(Mockito.anyString()))
+				.then(new Answer<Object>() {
+
+					@Override
+					public Object answer(InvocationOnMock invocation) throws Throwable {
+						Object arg = invocation.getArguments()[0];
+						if ("good".equals(arg)) {
+							return Mockito.any(AMQP.Queue.DeclareOk.class);
+						}
+						else {
+							throw new IOException();
+						}
+					}
+				});
+
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 20, "good", "bad");
+
+		blockingQueueConsumer.start();
+
+		verify(channel).basicQos(20);
+	}
+
+	private void testRequeueOrNotDefaultYes(Exception ex, boolean expectedRequeue) throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Channel channel = mock(Channel.class);
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
@@ -110,20 +137,17 @@ public class BlockingQueueConsumerTests {
 		testRequeueOrNotGuts(ex, expectedRequeue, channel, blockingQueueConsumer);
 	}
 
-	private void testRequeueOrNotDefaultNo(Exception ex, boolean expectedRequeue)
-			throws Exception, IOException {
+	private void testRequeueOrNotDefaultNo(Exception ex, boolean expectedRequeue) throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Channel channel = mock(Channel.class);
-		boolean defaultRequeueRejected = false;
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
-				AcknowledgeMode.AUTO, true, 1, defaultRequeueRejected, "testQ");
+				AcknowledgeMode.AUTO, true, 1, false, "testQ");
 		testRequeueOrNotGuts(ex, expectedRequeue, channel, blockingQueueConsumer);
 	}
 
 	private void testRequeueOrNotGuts(Exception ex, boolean expectedRequeue,
-			Channel channel, BlockingQueueConsumer blockingQueueConsumer)
-			throws Exception, IOException {
+			Channel channel, BlockingQueueConsumer blockingQueueConsumer) throws Exception {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(blockingQueueConsumer);
 		dfa.setPropertyValue("channel", channel);
 		Set<Long> deliveryTags = new HashSet<Long>();
