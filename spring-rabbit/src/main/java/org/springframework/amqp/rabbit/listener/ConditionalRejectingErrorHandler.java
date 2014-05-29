@@ -62,6 +62,9 @@ public final class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 	@Override
 	public void handleError(Throwable t) {
+		if (logger.isWarnEnabled()) {
+			logger.warn("Execution of Rabbit message listener failed.", t);
+		}
 		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", t);
 		}
