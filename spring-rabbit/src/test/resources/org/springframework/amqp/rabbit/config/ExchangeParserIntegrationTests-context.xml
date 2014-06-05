@@ -9,6 +9,7 @@
 		<bindings>
 			<binding queue="bucket" />
 			<binding queue="bucket2" key="" />
+			<binding queue="bucket.test" />
 		</bindings>
 	</direct-exchange>
 
@@ -44,6 +45,7 @@
 
 	<queue id="bucket" />
 	<queue id="bucket2" />
+	<queue id="bucket.test" />
 
 	<admin id="admin-test" connection-factory="connectionFactory" auto-startup="true"/>
 
