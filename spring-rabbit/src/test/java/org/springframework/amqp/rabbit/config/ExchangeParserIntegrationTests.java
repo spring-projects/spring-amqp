@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -61,6 +61,10 @@ public final class ExchangeParserIntegrationTests {
 	@Qualifier("bucket2")
 	private Queue queue2;
 
+	@Autowired
+	@Qualifier("bucket.test")
+	private Queue queue3;
+
 	@Test
 	public void testBindingsDeclared() throws Exception {
 
@@ -99,6 +103,12 @@ public final class ExchangeParserIntegrationTests {
 		Thread.sleep(200);
 
 		assertNull(template.receiveAndConvert(queue2.getName()));
+
+		template.convertAndSend(directTest.getName(), queue3.getName(), "message2");
+		Thread.sleep(200);
+
+		result = (String) template.receiveAndConvert(queue3.getName());
+		assertEquals("message2", result);
 	}
 
 }

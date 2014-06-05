@@ -45,7 +45,7 @@ public class DirectExchangeParser extends AbstractExchangeParser {
 		String exchangeId = binding.getAttribute(BINDING_EXCHANGE_ATTR);
 
 		String bindingKey = binding.hasAttribute(BINDING_KEY_ATTR) ? binding.getAttribute(BINDING_KEY_ATTR) :
-				"#{@" + (StringUtils.hasText(queueId) ? queueId : exchangeId)  + ".name}";
+				"#{@'" + (StringUtils.hasText(queueId) ? queueId : exchangeId)  + "'.name}";
 
 		builder.addPropertyValue("routingKey", new TypedStringValue(bindingKey));
 		return builder;
