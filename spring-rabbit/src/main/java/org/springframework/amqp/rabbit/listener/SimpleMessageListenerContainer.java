@@ -147,7 +147,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile RabbitAdmin rabbitAdmin;
 
-	private volatile Boolean missingQueuesFatal;
+	private volatile boolean missingQueuesFatal = true;
+
+	private volatile boolean missingQueuesFatalSet;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -467,11 +469,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * If all of the configured queue(s) are not available on the broker, this setting
 	 * determines whether the condition is fatal (default true). When true, and
-	 * the queues are missing during startup, the context start() will fail. If
+	 * the queues are missing during startup, the context refresh() will fail. If
 	 * the queues are removed while the container is running, the container is
 	 * stopped.
-	 * <p>
-	 * When false, the condition is not considered fatal and the container will
+	 * <p> When false, the condition is not considered fatal and the container will
 	 * continue to attempt to start the consumers according to the {@link #setRecoveryInterval(long)}.
 	 * Note that each consumer will make 3 attempts (at 5 second intervals) on each
 	 * recovery attempt.
@@ -480,6 +481,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setMissingQueuesFatal(boolean missingQueuesFatal) {
 		this.missingQueuesFatal = missingQueuesFatal;
+		this.missingQueuesFatalSet = true;
 	}
 
 	@Override
@@ -614,6 +616,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	@Override
 	protected void doInitialize() throws Exception {
+		checkMisssingQueuesFatal();
 		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
@@ -718,7 +721,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	protected int initializeConsumers() {
-		checkMisssingQueuesFatal();
 		int count = 0;
 		synchronized (this.consumersMonitor) {
 			if (this.consumers == null) {
@@ -735,7 +737,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void checkMisssingQueuesFatal() {
-		if (this.missingQueuesFatal == null) {
+		if (!this.missingQueuesFatalSet) {
 			try {
 				ApplicationContext applicationContext = getApplicationContext();
 				if (applicationContext != null) {
@@ -751,9 +753,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					logger.debug("No global properties bean");
 				}
 			}
-		}
-		if (this.missingQueuesFatal == null) {
-			this.missingQueuesFatal = Boolean.TRUE;
 		}
 	}
 

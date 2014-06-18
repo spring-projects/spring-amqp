@@ -2264,7 +2264,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
               down. The container will attempt to recover according to the <code>recoveryInterval</code>
               property. During each recovery attempt, each consumer will again try 3 times
               to passively declare the queues at 5 second intervals. This process will
-              continue indefinitely</para>
+              continue indefinitely.</para>
               <para>This attribute is currently not available when using the <code>&lt;rabbit&gt;</code>
               namespace to configure the container; you can use normal <code>&lt;bean&gt;</code> syntax
               to declare the container, or use a properties object to set the property
