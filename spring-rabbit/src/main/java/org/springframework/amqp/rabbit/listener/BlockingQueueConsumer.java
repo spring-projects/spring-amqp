@@ -31,13 +31,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.ShutdownSignalException;
-import com.rabbitmq.utility.Utility;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -53,6 +46,14 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.utility.Utility;
 
 /**
  * Specialized consumer encapsulating knowledge of the broker
@@ -321,14 +322,14 @@ public class BlockingQueueConsumer {
 					try {
 						channel = this.connectionFactory.createConnection().createChannel(false);
 						channel.queueDeclarePassive(queue);
-						if (logger.isDebugEnabled()) {
-							logger.debug("Queue '" + queue + "' is now available");
+						if (logger.isInfoEnabled()) {
+							logger.info("Queue '" + queue + "' is now available");
 						}
 					}
 					catch (IOException e) {
 						available = false;
-						if (logger.isDebugEnabled()) {
-							logger.debug("Queue '" + queue + "' is still not available");
+						if (logger.isWarnEnabled()) {
+							logger.warn("Queue '" + queue + "' is still not available");
 						}
 					}
 					finally {
@@ -376,6 +377,9 @@ public class BlockingQueueConsumer {
 		do {
 			try {
 				attemptPassiveDeclarations();
+				if (passiveDeclareTries < 3 && logger.isInfoEnabled()) {
+					logger.info("Queue declaration succeeded after retrying");
+				}
 				passiveDeclareTries = 0;
 			}
 			catch (DeclarationException e) {
@@ -400,7 +404,7 @@ public class BlockingQueueConsumer {
 				}
 				else {
 					this.activeObjectCounter.release(this);
-					throw new FatalListenerStartupException("Cannot prepare queue for listener. "
+					throw new QueuesNotAvailableException("Cannot prepare queue for listener. "
 							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 				}
 			}

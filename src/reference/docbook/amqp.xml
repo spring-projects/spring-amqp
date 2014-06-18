@@ -2245,6 +2245,37 @@ public RabbitTransactionManager rabbitTransactionManager() {
               Defaults to a <classname>RabbitAdmin</classname> that
               will declare all non-conditional elements.</entry>
             </row>
+            <row>
+              <entry><literallayout>missingQueuesFatal
+(N/A)</literallayout></entry>
+
+              <entry><para>Starting with <emphasis>version 1.3.5</emphasis>,
+              <classname>SimpleMessageListenerContainer</classname> has this new
+              property.</para>
+              <para>When set to <code>true</code> (default), if none of the configured
+              queues are available on the broker, it is considered fatal. This causes
+              the application context to fail to initialize during startup; also, when the queues
+              are deleted while the container is running, the consumers make 3 attempts
+              to connect to the queues (at 5 second intervals) and stop the container
+              if these attempts fail.</para>
+              <para>This was not configurable in previous versions.</para>
+              <para>When set to <code>false</code>, after making the 3 attempts, the container
+              will go into recovery mode, as with other problems, such as the broker being
+              down. The container will attempt to recover according to the <code>recoveryInterval</code>
+              property. During each recovery attempt, each consumer will again try 3 times
+              to passively declare the queues at 5 second intervals. This process will
+              continue indefinitely</para>
+              <para>This attribute is currently not available when using the <code>&lt;rabbit&gt;</code>
+              namespace to configure the container; you can use normal <code>&lt;bean&gt;</code> syntax
+              to declare the container, or use a properties object to set the property
+              globally for all containers, as follows:</para>
+              <programlisting language="xml"><![CDATA[<util:properties id="spring.amqp.global.properties">
+    <prop name="smlc.missing.queues.fatal">false</prop>
+</util:properties>]]></programlisting>
+              <para>This global property will not be applied to any containers that have an explicit
+              <code>missingQueuesFatal</code> property set.</para>
+              </entry>
+            </row>
           </tbody>
         </tgroup>
       </table></para>

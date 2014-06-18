@@ -135,6 +135,15 @@
 				See <xref linkend="exception-handling"/>.
 			</para>
 		</section>
+		<section>
+			<title>Listener Container 'missingQueuesFatal` Property (Since 1.3.5)</title>
+			<para>
+				The <classname>SimpleMessageListenerContainer</classname> now has a property
+				<code>missingQueuesFatal</code> (default <code>true</code>). Previously,
+				missing queues were always fatal.
+				See <xref linkend="containerAttributes"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
