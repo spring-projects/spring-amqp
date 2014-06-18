@@ -734,19 +734,20 @@ public static MessagePropertiesBuilder fromClonedProperties(MessageProperties pr
     <para>Message reception is always a bit more complicated than sending. The
     reason is that there are two ways to receive a
     <classname>Message</classname>. The simpler option is to poll for a single
-    <classname>Message</classname> at a time with a synchronous, blocking
+    <classname>Message</classname> at a time with a polling
     method call. The more complicated yet more common approach is to register
     a listener that will receive <classname>Messages</classname> on-demand,
     asynchronously. We will look at an example of each approach in the next
     two sub-sections.</para>
 
     <section>
-      <title>Synchronous Consumer</title>
+      <title>Polling Consumer</title>
 
       <para>The <interfacename>AmqpTemplate</interfacename> itself can be used
-      for synchronous Message reception. There are two 'receive' methods
+      for polled Message reception. If no message is available, <code>null</code> is returned
+      immediately; there is no blocking. There are two simple 'receive' methods
       available. As with the Exchange on the sending side, there is a method
-      that requires a queue property having been set directly on the template
+      that requires a default queue property having been set directly on the template
       itself, and there is a method that accepts a queue parameter at
       runtime.</para>
 
