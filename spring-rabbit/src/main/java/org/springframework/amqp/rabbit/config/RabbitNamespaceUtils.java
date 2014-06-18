@@ -79,6 +79,8 @@ public class RabbitNamespaceUtils {
 
 	private static final String RECOVERY_INTERVAL = "recovery-interval";
 
+	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
+
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -196,6 +198,11 @@ public class RabbitNamespaceUtils {
 		String recoveryInterval = containerEle.getAttribute(RECOVERY_INTERVAL);
 		if (StringUtils.hasText(recoveryInterval)) {
 			containerDef.getPropertyValues().add("recoveryInterval", new TypedStringValue(recoveryInterval));
+		}
+
+		String missingQueuesFatal = containerEle.getAttribute(MISSING_QUEUES_FATAL);
+		if (StringUtils.hasText(missingQueuesFatal)) {
+			containerDef.getPropertyValues().add("missingQueuesFatal", new TypedStringValue(missingQueuesFatal));
 		}
 
 		return containerDef;

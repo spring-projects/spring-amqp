@@ -91,6 +91,7 @@ public class ListenerContainerParserTests {
 		assertEquals(10, xPriority);
 		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryInterval", Long.class));
 		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
+		assertFalse(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
 	}
 
 	@Test
@@ -98,6 +99,7 @@ public class ListenerContainerParserTests {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container2", SimpleMessageListenerContainer.class);
 		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
+		assertTrue(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
 	}
 
 	@Test

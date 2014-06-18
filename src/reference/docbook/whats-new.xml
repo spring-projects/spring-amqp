@@ -4,6 +4,19 @@
 	<title>What's New</title>
 
 	<section>
+		<title>Changes in 1.4 Since 1.3</title>
+		<section>
+			<title>Listener Concurrency</title>
+			<para>
+				1.3.5 introduced the <code>missingQueuesFatal</code> property on the
+				<classname>SimpleMessageListenerContainer</classname>. This is now
+				available on the listener container namespace element.
+				See <xref linkend="containerAttributes"/>.
+			</para>
+		</section>
+	</section>
+
+	<section>
 		<title>Changes in 1.3 Since 1.2</title>
 		<section>
 			<title>Listener Concurrency</title>
