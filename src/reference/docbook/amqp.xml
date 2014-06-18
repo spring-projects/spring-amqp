@@ -2270,7 +2270,7 @@ public RabbitTransactionManager rabbitTransactionManager() {
               to declare the container, or use a properties object to set the property
               globally for all containers, as follows:</para>
               <programlisting language="xml"><![CDATA[<util:properties id="spring.amqp.global.properties">
-    <prop name="smlc.missing.queues.fatal">false</prop>
+    <prop key="smlc.missing.queues.fatal">false</prop>
 </util:properties>]]></programlisting>
               <para>This global property will not be applied to any containers that have an explicit
               <code>missingQueuesFatal</code> property set.</para>
