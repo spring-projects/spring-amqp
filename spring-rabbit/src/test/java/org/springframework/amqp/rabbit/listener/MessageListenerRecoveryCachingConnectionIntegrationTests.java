@@ -15,11 +15,14 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,13 +46,14 @@ import org.springframework.amqp.rabbit.connection.ConnectionProxy;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.MessageListenerBrokerInterruptionIntegrationTests.VanillaListener;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.Channel;
 
@@ -316,6 +320,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 
 		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		admin.deleteQueue("nonexistent");
 
 		try {
 			container = createContainer("nonexistent", new VanillaListener(latch), connectionFactory);
@@ -335,6 +341,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		CountDownLatch latch = new CountDownLatch(messageCount);
 
 		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		admin.deleteQueue("nonexistent");
 		try {
 			container = createContainer("nonexistent", new VanillaListener(latch), connectionFactory);
 		}
@@ -343,11 +351,100 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		}
 	}
 
+	@Test
+	public void testSingleListenerDoesRecoverFromMissingQueueWhenNotFatal() throws Exception {
+		concurrentConsumers = 1;
+		CountDownLatch latch = new CountDownLatch(messageCount);
+
+		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		admin.deleteQueue("nonexistent");
+		try {
+			container = doCreateContainer("nonexistent", new VanillaListener(latch), connectionFactory);
+			container.setMissingQueuesFatal(false);
+			container.start();
+			testRecoverMissingQueues(latch, connectionFactory);
+		}
+		finally {
+			if (container != null) {
+				container.stop();
+			}
+			admin.deleteQueue("nonexistent");
+			((DisposableBean) connectionFactory).destroy();
+		}
+	}
+
+	@Test
+	public void testSingleListenerDoesRecoverFromMissingQueueWhenNotFatalGlobalProps() throws Exception {
+		concurrentConsumers = 1;
+		CountDownLatch latch = new CountDownLatch(messageCount);
+
+		ConnectionFactory connectionFactory = createConnectionFactory();
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		admin.deleteQueue("nonexistent");
+		try {
+			container = doCreateContainer("nonexistent", new VanillaListener(latch), connectionFactory);
+			Properties properties = new Properties();
+			properties.setProperty("smlc.missing.queues.fatal", "false");
+			GenericApplicationContext context = new GenericApplicationContext();
+			context.getBeanFactory().registerSingleton("spring.amqp.global.properties", properties);
+			context.refresh();
+			container.setApplicationContext(context);
+			container.start();
+			testRecoverMissingQueues(latch, connectionFactory);
+		}
+		finally {
+			if (container != null) {
+				container.stop();
+			}
+			admin.deleteQueue("nonexistent");
+			((DisposableBean) connectionFactory).destroy();
+		}
+	}
+
+	private void testRecoverMissingQueues(CountDownLatch latch, ConnectionFactory connectionFactory)
+			throws InterruptedException {
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		// queue doesn't exist during startup - verify we started, create queue and verify recovery
+		Thread.sleep(5000);
+		assertEquals(messageCount, latch.getCount());
+		admin.declareQueue(new Queue("nonexistent"));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend("nonexistent", "foo" + i);
+		}
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		Map<?,?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
+		assertEquals(1, consumers.size());
+		Object consumer = consumers.keySet().iterator().next();
+
+		// delete the queue and verify we recover again when it is recreated.
+		admin.deleteQueue("nonexistent");
+		Thread.sleep(3000);
+		latch = new CountDownLatch(messageCount);
+		container.setMessageListener(new MessageListenerAdapter(new VanillaListener(latch)));
+		assertEquals(messageCount, latch.getCount());
+		admin.declareQueue(new Queue("nonexistent"));
+		for (int i = 0; i < messageCount; i++) {
+			template.convertAndSend("nonexistent", "foo" + i);
+		}
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertEquals(1, consumers.size());
+		assertNotSame(consumer, consumers.keySet().iterator().next());
+	}
+
 	private int getTimeout() {
 		return Math.min(1 + messageCount / (concurrentConsumers), 30);
 	}
 
 	private SimpleMessageListenerContainer createContainer(String queueName, Object listener,
+			ConnectionFactory connectionFactory) {
+		SimpleMessageListenerContainer container = doCreateContainer(queueName, listener, connectionFactory);
+		container.start();
+		return container;
+	}
+
+	protected SimpleMessageListenerContainer doCreateContainer(String queueName, Object listener,
 			ConnectionFactory connectionFactory) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
@@ -356,7 +453,6 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
 		container.afterPropertiesSet();
-		container.start();
 		return container;
 	}
 
@@ -474,4 +570,21 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			}
 		}
 	}
+
+	public static class VanillaListener implements ChannelAwareMessageListener {
+
+		private final CountDownLatch latch;
+
+		public VanillaListener(CountDownLatch latch) {
+			this.latch = latch;
+		}
+
+		@Override
+		public void onMessage(Message message, Channel channel) throws Exception {
+			String value = new String(message.getBody());
+			logger.debug("Receiving: " + value);
+			latch.countDown();
+		}
+	}
+
 }

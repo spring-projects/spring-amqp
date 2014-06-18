@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -49,6 +50,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -61,6 +63,7 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -143,6 +146,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
 
 	private volatile RabbitAdmin rabbitAdmin;
+
+	private volatile boolean missingQueuesFatal = true;
+
+	private volatile boolean missingQueuesFatalSet;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -459,6 +466,24 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.rabbitAdmin = rabbitAdmin;
 	}
 
+	/**
+	 * If all of the configured queue(s) are not available on the broker, this setting
+	 * determines whether the condition is fatal (default true). When true, and
+	 * the queues are missing during startup, the context refresh() will fail. If
+	 * the queues are removed while the container is running, the container is
+	 * stopped.
+	 * <p> When false, the condition is not considered fatal and the container will
+	 * continue to attempt to start the consumers according to the {@link #setRecoveryInterval(long)}.
+	 * Note that each consumer will make 3 attempts (at 5 second intervals) on each
+	 * recovery attempt.
+	 * @param missingQueuesFatal the missingQueuesFatal to set.
+	 * @since 1.3.5
+	 */
+	public void setMissingQueuesFatal(boolean missingQueuesFatal) {
+		this.missingQueuesFatal = missingQueuesFatal;
+		this.missingQueuesFatalSet = true;
+	}
+
 	@Override
 	public void setQueueNames(String... queueName) {
 		super.setQueueNames(queueName);
@@ -591,6 +616,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	@Override
 	protected void doInitialize() throws Exception {
+		checkMisssingQueuesFatal();
 		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
@@ -708,6 +734,26 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		return count;
+	}
+
+	private void checkMisssingQueuesFatal() {
+		if (!this.missingQueuesFatalSet) {
+			try {
+				ApplicationContext applicationContext = getApplicationContext();
+				if (applicationContext != null) {
+					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
+					String missingQueuesFatal = properties.getProperty("smlc.missing.queues.fatal");
+					if (StringUtils.hasText(missingQueuesFatal)) {
+						this.missingQueuesFatal = Boolean.parseBoolean(missingQueuesFatal);
+					}
+				}
+			}
+			catch (BeansException be) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("No global properties bean");
+				}
+			}
+		}
 	}
 
 	protected void addAndStartConsumers(int delta) {
@@ -944,7 +990,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 */
 		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
 			start.await(60000L, TimeUnit.MILLISECONDS);
-			return startupException;
+			return this.startupException;
 		}
 
 		@Override
@@ -962,6 +1008,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					SimpleMessageListenerContainer.this.redeclareElementsIfNecessary();
 					this.consumer.start();
 					this.start.countDown();
+				}
+				catch (QueuesNotAvailableException e) {
+					if (SimpleMessageListenerContainer.this.missingQueuesFatal) {
+						throw e;
+					}
+					else {
+						this.start.countDown();
+						handleStartupFailure(e);
+						throw e;
+					}
 				}
 				catch (FatalListenerStartupException ex) {
 					throw ex;
@@ -1021,6 +1077,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 				aborted = true;
+			}
+			catch (QueuesNotAvailableException ex) {
+				if (SimpleMessageListenerContainer.this.missingQueuesFatal) {
+					logger.error("Consumer received fatal exception on startup", ex);
+					this.startupException = ex;
+					// Fatal, but no point re-throwing, so just abort.
+					aborted = true;
+				}
 			}
 			catch (FatalListenerStartupException ex) {
 				logger.error("Consumer received fatal exception on startup", ex);
@@ -1122,11 +1186,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	protected void handleStartupFailure(Throwable t) throws Exception {
 		try {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Recovering consumer in " + this.recoveryInterval + " ms.");
+			}
 			long timeout = System.currentTimeMillis() + recoveryInterval;
 			while (isActive() && System.currentTimeMillis() < timeout) {
 				Thread.sleep(200);
 			}
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
 		}
