@@ -137,6 +137,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 
 	private ConnectionFactory createConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		// connectionFactory.setPort(BrokerTestUtils.getTracerPort());
 		connectionFactory.setPort(BrokerTestUtils.getPort());

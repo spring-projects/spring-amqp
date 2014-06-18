@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -63,6 +63,7 @@ public class RabbitAdminIntegrationTests {
 
 	@Before
 	public void init() {
+		connectionFactory.setHost("localhost");
 		context = new GenericApplicationContext();
 		context.refresh();
 		rabbitAdmin = new RabbitAdmin(connectionFactory);
@@ -96,8 +97,10 @@ public class RabbitAdminIntegrationTests {
 	public void testDoubleDeclarationOfExclusiveQueue() throws Exception {
 		// Expect exception because the queue is locked when it is declared a second time.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
+		connectionFactory1.setHost("localhost");
 		connectionFactory1.setPort(BrokerTestUtils.getPort());
 		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
+		connectionFactory2.setHost("localhost");
 		connectionFactory2.setPort(BrokerTestUtils.getPort());
 		Queue queue = new Queue("test.queue", false, true, true);
 		rabbitAdmin.deleteQueue(queue.getName());
@@ -116,8 +119,10 @@ public class RabbitAdminIntegrationTests {
 		// No error expected here: the queue is autodeleted when the last consumer is cancelled, but this one never has
 		// any consumers.
 		CachingConnectionFactory connectionFactory1 = new CachingConnectionFactory();
+		connectionFactory1.setHost("localhost");
 		connectionFactory1.setPort(BrokerTestUtils.getPort());
 		CachingConnectionFactory connectionFactory2 = new CachingConnectionFactory();
+		connectionFactory2.setHost("localhost");
 		connectionFactory2.setPort(BrokerTestUtils.getPort());
 		Queue queue = new Queue("test.queue", false, false, true);
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
@@ -328,6 +333,7 @@ public class RabbitAdminIntegrationTests {
 	 */
 	private boolean queueExists(final Queue queue) throws Exception {
 		ConnectionFactory connectionFactory = new ConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		Connection connection = connectionFactory.newConnection();
 		Channel channel = connection.createChannel();

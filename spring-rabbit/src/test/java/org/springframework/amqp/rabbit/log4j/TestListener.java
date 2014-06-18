@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.amqp.rabbit.log4j;
 
 import java.util.concurrent.CountDownLatch;
@@ -28,41 +27,42 @@ import org.springframework.amqp.core.MessageProperties;
  */
 public class TestListener implements MessageListener {
 
-  private final CountDownLatch latch;
+	private final CountDownLatch latch;
 
-  private volatile Message message;
+	private volatile Message message;
 
-  public TestListener(int count) {
-    latch = new CountDownLatch(count);
-  }
-
-  public CountDownLatch getLatch() {
-    return latch;
-  }
-
-  public Message getMessage() {
-	return message;
-  }
-
-  public Object getId() {
-	if (this.message == null || this.getMessageProperties() == null) {
-		throw new IllegalStateException("No MessageProperties received");
+	public TestListener(int count) {
+		latch = new CountDownLatch(count);
 	}
-	return this.message.getMessageProperties().getMessageId();
-  }
 
-  public MessageProperties getMessageProperties() {
-    if (this.message == null) {
-      throw new IllegalStateException("No Message received");
-    }
-    return this.message.getMessageProperties();
-  }
+	public CountDownLatch getLatch() {
+		return latch;
+	}
 
-  public void onMessage(Message message) {
-    System.out.println("MESSAGE: " + message);
-    System.out.println("BODY: " + new String(message.getBody()));
-    this.message = message;
-    latch.countDown();
-  }
+	public Message getMessage() {
+		return message;
+	}
+
+	public Object getId() {
+		if (this.message == null || this.getMessageProperties() == null) {
+			throw new IllegalStateException("No MessageProperties received");
+		}
+		return this.message.getMessageProperties().getMessageId();
+	}
+
+	public MessageProperties getMessageProperties() {
+		if (this.message == null) {
+			throw new IllegalStateException("No Message received");
+		}
+		return this.message.getMessageProperties();
+	}
+
+	@Override
+	public void onMessage(Message message) {
+		System.out.println("MESSAGE: " + message);
+		System.out.println("BODY: " + new String(message.getBody()));
+		this.message = message;
+		latch.countDown();
+	}
 
 }

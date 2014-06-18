@@ -83,6 +83,7 @@ public class RabbitAdminTests {
 	@Test
 	public void testProperties() throws Exception {
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		connectionFactory.setHost("localhost");
 		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
 		String queueName = "test.properties." + System.currentTimeMillis();
 		try {

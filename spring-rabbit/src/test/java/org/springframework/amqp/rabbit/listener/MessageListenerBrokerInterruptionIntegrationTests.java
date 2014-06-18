@@ -105,6 +105,7 @@ public class MessageListenerBrokerInterruptionIntegrationTests {
 	public void createConnectionFactory() {
 		if (environment.isActive()) {
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setHost("localhost");
 			connectionFactory.setChannelCacheSize(concurrentConsumers);
 			connectionFactory.setPort(BrokerTestUtils.getAdminPort());
 			this.connectionFactory = connectionFactory;

@@ -321,6 +321,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate();
 		// SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);

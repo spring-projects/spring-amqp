@@ -125,6 +125,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	private RabbitTemplate createTemplate(int concurrentConsumers) {
 		RabbitTemplate template = new RabbitTemplate();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
@@ -383,6 +384,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	@Test
 	public void testSimpleMessageListenerContainerStoppedWithoutWarn() throws Exception {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);

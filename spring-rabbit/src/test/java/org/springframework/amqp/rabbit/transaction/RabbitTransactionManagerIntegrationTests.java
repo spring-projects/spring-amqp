@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -47,6 +48,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	@Before
 	public void init() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		template = new RabbitTemplate(connectionFactory);
 		template.setChannelTransacted(true);
 		RabbitTransactionManager transactionManager = new RabbitTransactionManager(connectionFactory);
@@ -61,6 +63,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	@Test
 	public void testSendAndReceiveInTransaction() throws Exception {
 		String result = transactionTemplate.execute(new TransactionCallback<String>() {
+			@Override
 			public String doInTransaction(TransactionStatus status) {
 				template.convertAndSend(ROUTE, "message");
 				return (String) template.receiveAndConvert(ROUTE);
@@ -75,6 +78,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	public void testReceiveInTransaction() throws Exception {
 		template.convertAndSend(ROUTE, "message");
 		String result = transactionTemplate.execute(new TransactionCallback<String>() {
+			@Override
 			public String doInTransaction(TransactionStatus status) {
 				return (String) template.receiveAndConvert(ROUTE);
 			}
@@ -91,6 +95,7 @@ public class RabbitTransactionManagerIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		try {
 			transactionTemplate.execute(new TransactionCallback<String>() {
+				@Override
 				public String doInTransaction(TransactionStatus status) {
 					template.receiveAndConvert(ROUTE);
 					throw new PlannedException();
@@ -110,6 +115,7 @@ public class RabbitTransactionManagerIntegrationTests {
 	public void testSendInTransaction() throws Exception {
 		template.setChannelTransacted(true);
 		transactionTemplate.execute(new TransactionCallback<Void>() {
+			@Override
 			public Void doInTransaction(TransactionStatus status) {
 				template.convertAndSend(ROUTE, "message");
 				return null;
@@ -126,6 +132,7 @@ public class RabbitTransactionManagerIntegrationTests {
 		template.setChannelTransacted(true);
 		try {
 			transactionTemplate.execute(new TransactionCallback<Void>() {
+				@Override
 				public Void doInTransaction(TransactionStatus status) {
 					template.convertAndSend(ROUTE, "message");
 					throw new PlannedException();

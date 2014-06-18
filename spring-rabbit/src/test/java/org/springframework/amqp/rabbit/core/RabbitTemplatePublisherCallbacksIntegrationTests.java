@@ -87,9 +87,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Before
 	public void create() {
 		connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(1);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
+		connectionFactoryWithConfirmsEnabled.setHost("localhost");
 		// When using publisher confirms, the cache size needs to be large enough
 		// otherwise channels can be closed before confirms are received.
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(10);
@@ -97,6 +99,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithConfirmsEnabled.setPublisherConfirms(true);
 		templateWithConfirmsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 		connectionFactoryWithReturnsEnabled = new CachingConnectionFactory();
+		connectionFactoryWithReturnsEnabled.setHost("localhost");
 		connectionFactoryWithReturnsEnabled.setChannelCacheSize(1);
 		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
@@ -126,6 +129,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch.countDown();
 			}
@@ -140,6 +144,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(2);
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch.countDown();
 			}
@@ -150,8 +155,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		//Thread 1
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
 
+			@Override
 			public void run() {
 				templateWithConfirmsEnabled.execute(new ChannelCallback<Object>() {
+					@Override
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
 							threadLatch.await(10, TimeUnit.SECONDS);
@@ -180,6 +187,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch1.countDown();
 			}
@@ -188,6 +196,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		RabbitTemplate secondTemplate = new RabbitTemplate(connectionFactoryWithConfirmsEnabled);
 		secondTemplate.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				latch2.countDown();
 			}
@@ -204,6 +213,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
 		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
+			@Override
 			public void returnedMessage(Message message, int replyCode,
 					String replyText, String exchange, String routingKey) {
 				returns.add(message);
@@ -233,6 +243,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		template.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				confirmed.set(true);
 			}
@@ -262,6 +273,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		template.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				confirmed.set(true);
 			}
@@ -273,8 +285,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		//Thread 1
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
 
+			@Override
 			public void run() {
 				template.execute(new ChannelCallback<Object>() {
+					@Override
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
 							threadLatch.await(10, TimeUnit.SECONDS);
@@ -326,6 +340,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>(){
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
 			}}).when(mockChannel).getNextPublishSeqNo();
@@ -335,6 +350,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		template.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				confirmed.set(true);
 			}
@@ -366,6 +382,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>(){
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
 			}}).when(mockChannel).getNextPublishSeqNo();
@@ -376,6 +393,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(2);
 		template.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				if (ack) {
 					confirms.add(correlationData.getId());
@@ -409,6 +427,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>(){
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
 			}}).when(mockChannel).getNextPublishSeqNo();
@@ -419,6 +438,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		template1.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				if (ack) {
 					confirms.add(correlationData.getId() + "1");
@@ -431,6 +451,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		template2.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				if (ack) {
 					confirms.add(correlationData.getId() + "2");
@@ -483,6 +504,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicInteger acks = new AtomicInteger();
 		template.setConfirmCallback(new ConfirmCallback() {
 
+			@Override
 			public void confirm(CorrelationData correlationData, boolean ack) {
 				try {
 					startedProcessingMultiAcksLatch.countDown();

@@ -73,6 +73,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Before
 	public void declareQueues() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
 		admin = new RabbitAdmin(connectionFactory);

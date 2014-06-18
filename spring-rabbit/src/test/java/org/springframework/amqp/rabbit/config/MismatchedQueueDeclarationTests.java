@@ -54,6 +54,7 @@ public class MismatchedQueueDeclarationTests {
 	@Before
 	public void setup() throws Exception {
 		connectionFactory = new SingleConnectionFactory();
+		connectionFactory.setHost("localhost");
 		this.admin = new RabbitAdmin(this.connectionFactory);
 		deleteQueues();
 	}

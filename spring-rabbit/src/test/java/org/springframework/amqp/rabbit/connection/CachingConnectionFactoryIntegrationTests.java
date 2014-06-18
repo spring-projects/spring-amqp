@@ -60,6 +60,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
@@ -78,6 +79,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	@Before
 	public void open() {
 		connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 	}
 

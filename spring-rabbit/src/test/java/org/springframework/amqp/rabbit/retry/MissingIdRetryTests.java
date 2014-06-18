@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.aopalliance.aop.Advice;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
@@ -34,7 +35,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.policy.RetryContextCache;
@@ -57,7 +58,7 @@ public class MissingIdRetryTests {
 	public void testWithNoId() throws Exception {
 		// 2 messsages; each retried once by missing id interceptor
 		this.latch = new CountDownLatch(4);
-		ApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
+		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
@@ -86,6 +87,7 @@ public class MissingIdRetryTests {
 		Thread.sleep(2000);
 		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
 		container.stop();
+		ctx.close();
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -93,7 +95,7 @@ public class MissingIdRetryTests {
 	public void testWithId() throws Exception {
 		// 2 messsages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
-		ApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
+		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
@@ -127,11 +129,11 @@ public class MissingIdRetryTests {
 		Thread.sleep(2000);
 		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
 		container.stop();
+		ctx.close();
 	}
 
 	public class POJO {
 		public void handleMessage(String foo) {
-//			System.out.println(foo);
 			latch.countDown();
 			throw new RuntimeException("fail");
 		}

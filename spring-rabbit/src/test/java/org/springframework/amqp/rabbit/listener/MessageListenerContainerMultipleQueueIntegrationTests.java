@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -42,6 +41,7 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 /**
  * @author Mark Fisher
  * @author Gunnar Hillert
+ * @author Gary Russell
  */
 public class MessageListenerContainerMultipleQueueIntegrationTests {
 
@@ -68,6 +68,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Test
 	public void testMultipleQueues() {
 		doTest(1, new ContainerConfigurer() {
+			@Override
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueues(queue1, queue2);
 			}
@@ -77,6 +78,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Test
 	public void testMultipleQueueNames() {
 		doTest(1, new ContainerConfigurer() {
+			@Override
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueueNames(queue1.getName(), queue2.getName());
 			}
@@ -86,6 +88,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Test
 	public void testMultipleQueuesWithConcurrentConsumers() {
 		doTest(3, new ContainerConfigurer() {
+			@Override
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueues(queue1, queue2);
 			}
@@ -95,6 +98,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Test
 	public void testMultipleQueueNamesWithConcurrentConsumers() {
 		doTest(3, new ContainerConfigurer() {
+			@Override
 			public void configure(SimpleMessageListenerContainer container) {
 				container.setQueueNames(queue1.getName(), queue2.getName());
 			}
@@ -106,6 +110,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		int messageCount = 10;
 		RabbitTemplate template = new RabbitTemplate();
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template.setConnectionFactory(connectionFactory);
@@ -156,7 +161,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@SuppressWarnings("unused")
 	private static class PojoListener {
 
-		private AtomicInteger count = new AtomicInteger();
+		private final AtomicInteger count = new AtomicInteger();
 
 		private final CountDownLatch latch;
 

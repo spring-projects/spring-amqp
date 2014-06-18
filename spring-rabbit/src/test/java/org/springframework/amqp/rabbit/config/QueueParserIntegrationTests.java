@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -56,6 +57,7 @@ public final class QueueParserIntegrationTests {
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
 		assertNotNull(queue);
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
+		connectionFactory.setHost("localhost");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin rabbitAdmin = new RabbitAdmin(template.getConnectionFactory());
 		rabbitAdmin.deleteQueue(queue.getName());

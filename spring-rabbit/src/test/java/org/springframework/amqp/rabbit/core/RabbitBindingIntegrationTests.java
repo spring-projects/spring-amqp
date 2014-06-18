@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -56,6 +56,7 @@ public class RabbitBindingIntegrationTests {
 	@Before
 	public void setup() {
 		connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
+		connectionFactory.setHost("localhost");
 		template = new RabbitTemplate(connectionFactory);
 	}
 
@@ -77,6 +78,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);
@@ -116,6 +118,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);
@@ -156,10 +159,12 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setExchange(exchange.getName());
 
 		BlockingQueueConsumer consumer = template.execute(new ChannelCallback<BlockingQueueConsumer>() {
+			@Override
 			public BlockingQueueConsumer doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);
@@ -195,6 +200,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange).with("*.end"));
 
 		template.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);
@@ -215,6 +221,7 @@ public class RabbitBindingIntegrationTests {
 		});
 
 		template.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);
@@ -247,6 +254,7 @@ public class RabbitBindingIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(exchange));
 
 		template.execute(new ChannelCallback<Void>() {
+			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
 
 				BlockingQueueConsumer consumer = createConsumer(template);

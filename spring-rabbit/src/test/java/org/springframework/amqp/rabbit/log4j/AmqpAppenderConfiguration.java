@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,60 +35,62 @@ import org.springframework.context.annotation.Scope;
 @Configuration
 public class AmqpAppenderConfiguration {
 
-  static {
-    //DOMConfigurator.configure(AmqpAppenderTests.class.getResource("/log4j.xml"));
-  }
+	static {
+		// DOMConfigurator.configure(AmqpAppenderTests.class.getResource("/log4j.xml"));
+	}
 
-  static final String QUEUE = "amqp.appender.test";
-  static final String EXCHANGE = "logs";
-  static final String ROUTING_KEY = "AmqpAppenderTest.#";
+	static final String QUEUE = "amqp.appender.test";
 
-  @Bean
-  public SingleConnectionFactory connectionFactory() {
-    return new SingleConnectionFactory();
-  }
+	static final String EXCHANGE = "logs";
 
-  @Bean
-  public TopicExchange testExchange() {
-    return new TopicExchange(EXCHANGE, true, false);
-  }
+	static final String ROUTING_KEY = "AmqpAppenderTest.#";
 
-  @Bean
-  public Queue testQueue() {
-    return new Queue(QUEUE);
-  }
+	@Bean
+	public SingleConnectionFactory connectionFactory() {
+		return new SingleConnectionFactory("localhost");
+	}
 
-  @Bean
-  public Binding testBinding() {
-    return BindingBuilder.bind(testQueue()).to(testExchange()).with(ROUTING_KEY);
-  }
+	@Bean
+	public TopicExchange testExchange() {
+		return new TopicExchange(EXCHANGE, true, false);
+	}
 
-  @Bean
-  public RabbitAdmin rabbitAdmin() {
-    return new RabbitAdmin(connectionFactory());
-  }
+	@Bean
+	public Queue testQueue() {
+		return new Queue(QUEUE);
+	}
 
-  @Bean
-  @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-  public SimpleMessageListenerContainer listenerContainer() {
-    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-    Queue q = testQueue();
+	@Bean
+	public Binding testBinding() {
+		return BindingBuilder.bind(testQueue()).to(testExchange()).with(ROUTING_KEY);
+	}
 
-    RabbitAdmin admin = rabbitAdmin();
-    admin.declareQueue(q);
-    admin.declareBinding(testBinding());
+	@Bean
+	public RabbitAdmin rabbitAdmin() {
+		return new RabbitAdmin(connectionFactory());
+	}
 
-    container.setQueues(q);
-    //container.setMessageListener(testListener(4));
-    container.setAutoStartup(false);
-    container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+	@Bean
+	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
+	public SimpleMessageListenerContainer listenerContainer() {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+		Queue q = testQueue();
 
-    return container;
-  }
+		RabbitAdmin admin = rabbitAdmin();
+		admin.declareQueue(q);
+		admin.declareBinding(testBinding());
 
-  @Bean
-  @Scope(BeanDefinition.SCOPE_PROTOTYPE)
-  public TestListener testListener(int count) {
-    return new TestListener(count);
-  }
+		container.setQueues(q);
+		// container.setMessageListener(testListener(4));
+		container.setAutoStartup(false);
+		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
+
+		return container;
+	}
+
+	@Bean
+	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
+	public TestListener testListener(int count) {
+		return new TestListener(count);
+	}
 }

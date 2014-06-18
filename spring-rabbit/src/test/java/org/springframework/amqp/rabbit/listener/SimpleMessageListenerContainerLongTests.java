@@ -52,7 +52,7 @@ public class SimpleMessageListenerContainerLongTests {
 
 	@Test
 	public void testChangeConsumerCount() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
@@ -80,7 +80,7 @@ public class SimpleMessageListenerContainerLongTests {
 
 	@Test
 	public void testAddQueuesAndStartInCycle() throws Exception {
-		final SingleConnectionFactory connectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListener() {
 

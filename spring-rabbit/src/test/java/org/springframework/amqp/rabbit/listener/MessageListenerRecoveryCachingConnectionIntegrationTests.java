@@ -90,6 +90,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 	protected ConnectionFactory createConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		return connectionFactory;

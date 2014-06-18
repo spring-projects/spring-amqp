@@ -87,7 +87,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testInconsistentTransactionConfiguration() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
@@ -101,7 +101,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testInconsistentAcknowledgeConfiguration() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
@@ -114,7 +114,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testDefaultConsumerCount() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
@@ -126,7 +126,7 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testLazyConsumerCount() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory) {
 			@Override
 			protected void doStart() throws Exception {

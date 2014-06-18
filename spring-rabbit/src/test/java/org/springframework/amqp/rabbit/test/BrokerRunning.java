@@ -56,6 +56,7 @@ import org.springframework.util.StringUtils;
  * @see AssumptionViolatedException
  *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class BrokerRunning extends TestWatcher {
@@ -165,6 +166,7 @@ public class BrokerRunning extends TestWatcher {
 		}
 
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 
 		try {
 

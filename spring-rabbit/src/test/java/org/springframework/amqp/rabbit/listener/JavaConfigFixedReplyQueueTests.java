@@ -74,7 +74,9 @@ public class JavaConfigFixedReplyQueueTests {
 
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
-			return new CachingConnectionFactory();
+			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setHost("localhost");
+			return connectionFactory;
 		}
 
 		/**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 by the original author(s).
+ * Copyright (c) 2011-2014 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,13 @@ import org.springframework.test.context.ContextLoader;
  * @author Jon Brisbin <jbrisbin@vmware.com>
  */
 public class AnnotationConfigContextLoader implements ContextLoader {
-  public String[] processLocations(Class<?> clazz, String... locations) {
-    return locations;
-  }
+	@Override
+	public String[] processLocations(Class<?> clazz, String... locations) {
+		return locations;
+	}
 
-  public ApplicationContext loadContext(String... locations) throws Exception {
-    return new AnnotationConfigApplicationContext(locations);
-  }
+	@Override
+	public ApplicationContext loadContext(String... locations) throws Exception {
+		return new AnnotationConfigApplicationContext(locations);
+	}
 }

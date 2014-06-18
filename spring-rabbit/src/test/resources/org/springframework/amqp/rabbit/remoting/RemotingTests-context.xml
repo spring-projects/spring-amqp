@@ -18,7 +18,7 @@
 
 	<bean id="service" class="org.springframework.amqp.rabbit.remoting.RemotingTests$ServiceImpl" />
 
-	<rabbit:connection-factory id="connectionFactory" />
+	<rabbit:connection-factory id="connectionFactory" host="localhost" />
 
 	<rabbit:template id="template" connection-factory="connectionFactory" reply-timeout="2000"
 		routing-key="remoting.test.binding" exchange="remoting.test.exchange" />

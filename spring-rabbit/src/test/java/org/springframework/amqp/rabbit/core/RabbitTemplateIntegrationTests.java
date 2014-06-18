@@ -99,6 +99,7 @@ public class RabbitTemplateIntegrationTests {
 	@Before
 	public void create() {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template = new RabbitTemplate(connectionFactory);
 	}
@@ -166,7 +167,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveTransactedWithUncachedConnection() throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory();
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		RabbitTemplate template = new RabbitTemplate(singleConnectionFactory);
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
@@ -345,6 +346,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceive() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
@@ -382,6 +384,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceiveExternalExecutor() throws Exception {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
 		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
 		final String execName = "make-sure-exec-passed-in";
 		exec.setBeanName(execName);
@@ -457,6 +460,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceiveWithRoutingKey() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
@@ -492,6 +496,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceiveWithExchangeAndRoutingKey() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
@@ -527,6 +532,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceiveWithConversion() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
@@ -622,6 +628,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testAtomicSendAndReceiveWithConversionAndMessagePostProcessor() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);

@@ -47,6 +47,6 @@
 
 	<admin id="admin-test" connection-factory="connectionFactory" auto-startup="true"/>
 
-	<connection-factory id="connectionFactory"/>
+	<connection-factory id="connectionFactory" host="localhost" />
 
 </beans:beans>
