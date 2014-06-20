@@ -36,6 +36,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * A {@link ConnectionFactory} implementation that (when the cache mode is {@link CacheMode#CHANNEL} (default)
@@ -66,7 +68,7 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class CachingConnectionFactory extends AbstractConnectionFactory implements InitializingBean {
+public class CachingConnectionFactory extends AbstractConnectionFactory implements InitializingBean, ShutdownListener {
 
 	public enum CacheMode {
 		/**
@@ -234,6 +236,13 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 	}
 
+	@Override
+	public void shutdownCompleted(ShutdownSignalException cause) {
+		if (!RabbitUtils.isNormalShutdown(cause)) {
+			logger.error("Channel shutdown: " + cause.getMessage());
+		}
+	}
+
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		LinkedList<ChannelProxy> channelList;
 		if (this.cacheMode == CacheMode.CHANNEL) {
@@ -347,6 +356,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
 				channel = new PublisherCallbackChannelImpl(channel);
 			}
+		}
+		if (channel != null) {
+			channel.addShutdownListener(this);
 		}
 		return channel;
 	}

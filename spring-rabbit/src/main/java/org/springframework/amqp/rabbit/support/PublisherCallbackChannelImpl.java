@@ -70,7 +70,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0.1
  *
  */
-public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener {
+public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
 	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
@@ -103,7 +103,10 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	private final java.lang.reflect.Method basicQosTwoArgsMethod;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
+		delegate.addShutdownListener(this);
 		this.delegate = delegate;
+
+		// The following reflection is required to maintain comatibility with pre 3.3.x clients.
 		final AtomicReference<java.lang.reflect.Method> getFlowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowBlockedMethod = new AtomicReference<java.lang.reflect.Method>();
@@ -552,13 +555,29 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public void close() throws IOException {
-		this.delegate.close();
-		for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
-			Listener listener = entry.getKey();
-			listener.removePendingConfirmsReference(this, entry.getValue());
+		if (this.delegate.isOpen()) {
+			this.delegate.close();
 		}
-		this.pendingConfirms.clear();
-		this.listenerForSeq.clear();
+		generateNacksForPendingAcks();
+	}
+
+	private void generateNacksForPendingAcks() {
+		synchronized (this.pendingConfirms) {
+			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
+				Listener listener = entry.getKey();
+				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+					try {
+						handleNack(confirmEntry.getKey(), false);
+					}
+					catch (IOException e) {
+						logger.error("Error delivering Nack afterShutdown", e);
+					}
+				}
+				listener.removePendingConfirmsReference(this, entry.getValue());
+			}
+			this.pendingConfirms.clear();
+			this.listenerForSeq.clear();
+		}
 	}
 
 	public synchronized SortedMap<Long, PendingConfirm> addListener(Listener listener) {
@@ -695,6 +714,13 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		else {
 			listener.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
 		}
+	}
+
+// ShutdownListener
+
+	@Override
+	public void shutdownCompleted(ShutdownSignalException cause) {
+		generateNacksForPendingAcks();
 	}
 
 // Object
