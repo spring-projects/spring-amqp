@@ -13,14 +13,18 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,13 +36,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +64,7 @@ import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.Channel;
@@ -236,7 +244,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		when(mockConnection.createChannel()).thenReturn(new PublisherCallbackChannelImpl(mockChannel));
+		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 
@@ -336,7 +344,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		when(mockConnection.createChannel()).thenReturn(new PublisherCallbackChannelImpl(mockChannel));
+		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>(){
@@ -598,6 +606,43 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		channel.getFlow();
 		verify(mockChannel).getFlow();
 */
+	}
+
+	@Test
+	public void testNackForBadExchange() throws Exception {
+		final AtomicBoolean nack = new AtomicBoolean(true);
+		final AtomicReference<CorrelationData> correlation = new AtomicReference<CorrelationData>();
+		final CountDownLatch latch = new CountDownLatch(2);
+		this.templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack) {
+				nack.set(ack);
+				correlation.set(correlationData);
+				latch.countDown();
+			}
+		});
+		Log logger = spy(TestUtils.getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger", Log.class));
+		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
+		final AtomicReference<String> log = new AtomicReference<String>();
+		doAnswer(new Answer<Object>() {
+
+			@Override
+			public Object answer(InvocationOnMock invocation) throws Throwable {
+				log.set((String) invocation.getArguments()[0]);
+				invocation.callRealMethod();
+				latch.countDown();
+				return null;
+			}
+		}).when(logger).error(any());
+
+		CorrelationData correlationData = new CorrelationData("bar");
+		String exchange = UUID.randomUUID().toString();
+		this.templateWithConfirmsEnabled.convertAndSend(exchange, "key", "foo", correlationData);
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertFalse(nack.get());
+		assertEquals(correlationData.toString(), correlation.get().toString());
+		assertThat(log.get(), containsString("NOT_FOUND - no exchange '" + exchange));
 	}
 
 }
