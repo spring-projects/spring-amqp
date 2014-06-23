@@ -140,7 +140,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				latch.countDown();
 			}
 		});
@@ -171,7 +171,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				latch.countDown();
 			}
 		});
@@ -214,7 +214,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				latch1.countDown();
 			}
 		});
@@ -223,13 +223,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		secondTemplate.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				latch2.countDown();
 			}
 		});
 		secondTemplate.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
-		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
-		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 		assertNull(secondTemplate.getUnconfirmed(0));
 	}
@@ -270,7 +270,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				confirmed.set(true);
 			}
 		});
@@ -300,7 +300,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				confirmed.set(true);
 			}
 		});
@@ -377,7 +377,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				confirmed.set(true);
 			}
 		});
@@ -420,7 +420,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				if (ack) {
 					confirms.add(correlationData.getId());
 					latch.countDown();
@@ -465,7 +465,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template1.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				if (ack) {
 					confirms.add(correlationData.getId() + "1");
 					latch1.countDown();
@@ -478,7 +478,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template2.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				if (ack) {
 					confirms.add(correlationData.getId() + "2");
 					latch2.countDown();
@@ -531,7 +531,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				try {
 					startedProcessingMultiAcksLatch.countDown();
 					// delay processing here; ensures thread 2 put would be concurrent
@@ -630,13 +630,15 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testNackForBadExchange() throws Exception {
 		final AtomicBoolean nack = new AtomicBoolean(true);
 		final AtomicReference<CorrelationData> correlation = new AtomicReference<CorrelationData>();
+		final AtomicReference<String> reason = new AtomicReference<String>();
 		final CountDownLatch latch = new CountDownLatch(2);
 		this.templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
-			public void confirm(CorrelationData correlationData, boolean ack) {
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				nack.set(ack);
 				correlation.set(correlationData);
+				reason.set(cause);
 				latch.countDown();
 			}
 		});
@@ -660,6 +662,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertFalse(nack.get());
 		assertEquals(correlationData.toString(), correlation.get().toString());
+		assertThat(reason.get(), containsString("NOT_FOUND - no exchange '" + exchange));
 		assertThat(log.get(), containsString("NOT_FOUND - no exchange '" + exchange));
 	}
 

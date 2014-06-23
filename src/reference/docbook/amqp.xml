@@ -493,7 +493,7 @@ public AmqpTemplate rabbitTemplate();
 		return template;
 }]]></programlisting>
 	</section>
-    <section>
+    <section id="template-confirms">
       <title>Publisher Confirms and Returns</title>
       <para>
         The <classname>RabbitTemplate</classname> implementation of <interfacename>AmqpTemplate</interfacename>
@@ -524,10 +524,15 @@ public AmqpTemplate rabbitTemplate();
         by calling <code>setConfirmCallback(ConfirmCallback callback)</code>. The callback
         must implement this method:
       </para>
-      <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack);]]></programlisting>
+      <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack, String cause);]]></programlisting>
       <para>
         The <classname>CorrelationData</classname> is an object supplied by the client when sending the
-        original message. This is described further in the next section.
+        original message. This is described further in the next section. The <code>ack</code> is true for
+        an <code>ack</code> and false for a <code>nack</code>. For <code>nack</code>s, the cause may
+        contain a reason for the nack, if it is available when the <code>nack</code> is generated. An example
+        is when sending a message to a non-existent exchange. In that case the broker closes the channel; the
+        reason for the closure is included in the <code>cause</code>. <code>cause</code> was added in
+        <emphasis>version 1.4</emphasis>.
       </para>
       <para>
         Only one <interfacename>ConfirmCallback</interfacename> is supported by a

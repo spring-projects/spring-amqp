@@ -30,6 +30,8 @@ public class PendingConfirm {
 
 	private final long timestamp;
 
+	private String cause;
+
 	/**
 	 * @param correlationData The correlation data.
 	 * @param timestamp The timestamp.
@@ -39,17 +41,42 @@ public class PendingConfirm {
 		this.timestamp = timestamp;
 	}
 
+	/**
+	 * The correlation data supplied by the client when sending the message
+	 * corresponding to this confirmation.
+	 * @return The correlation data.
+	 */
 	public CorrelationData getCorrelationData() {
 		return correlationData;
 	}
 
+	/**
+	 * @return The time the message was sent.
+	 */
 	public long getTimestamp() {
 		return timestamp;
 	}
 
+	/**
+	 * When the confirmation is nacked, set the cause when available.
+	 * @param cause The cause.
+	 * @since 1.4
+	 */
+	public void setCause(String cause) {
+		this.cause = cause;
+	}
+
+	/**
+	 * @return the cause.
+	 * @since 1.4
+	 */
+	public String getCause() {
+		return cause;
+	}
+
 	@Override
 	public String toString() {
-		return "PendingConfirm [correlationData=" + correlationData + "]";
+		return "PendingConfirm [correlationData=" + correlationData + (this.cause == null ? "" : " cause=" + cause) + "]";
 	}
 
 }

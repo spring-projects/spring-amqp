@@ -6,12 +6,21 @@
 	<section>
 		<title>Changes in 1.4 Since 1.3</title>
 		<section>
-			<title>Listener Concurrency</title>
+			<title>Listener Container 'Missing Queues Fatal' Attribute</title>
 			<para>
 				1.3.5 introduced the <code>missingQueuesFatal</code> property on the
 				<classname>SimpleMessageListenerContainer</classname>. This is now
 				available on the listener container namespace element.
 				See <xref linkend="containerAttributes"/>.
+			</para>
+		</section>
+		<section>
+			<title>RabbitTemplate 'ConfirmCallback' Interface</title>
+			<para>
+				The <code>confirm</code> method on this interface has an additional
+				parameter <code>cause</code>. When available, this parameter will
+				contain the reason for a negative acknowledgement (nack).
+				See <xref linkend="template-confirms"/>.
 			</para>
 		</section>
 	</section>

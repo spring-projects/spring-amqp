@@ -560,15 +560,16 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		if (this.delegate.isOpen()) {
 			this.delegate.close();
 		}
-		generateNacksForPendingAcks();
+		generateNacksForPendingAcks("Channel closed by application");
 	}
 
-	private void generateNacksForPendingAcks() {
+	private void generateNacksForPendingAcks(String cause) {
 		synchronized (this.pendingConfirms) {
 			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
 				Listener listener = entry.getKey();
 				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
 					try {
+						confirmEntry.getValue().setCause(cause);
 						handleNack(confirmEntry.getKey(), false);
 					}
 					catch (IOException e) {
@@ -727,7 +728,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		generateNacksForPendingAcks();
+		generateNacksForPendingAcks(cause.getMessage());
 	}
 
 // Object
