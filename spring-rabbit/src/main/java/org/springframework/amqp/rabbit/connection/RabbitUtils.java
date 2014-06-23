@@ -178,19 +178,29 @@ public abstract class RabbitUtils {
 	}
 
 	public static boolean isNormalShutdown(ShutdownSignalException sig) {
+		Object shutdownReason = determineShutdownReason(sig);
+		return shutdownReason instanceof AMQP.Connection.Close
+				&& AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
+				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
+	}
+
+	public static boolean isNormalChannelClose(ShutdownSignalException sig) {
+		Object shutdownReason = determineShutdownReason(sig);
+		return shutdownReason instanceof AMQP.Channel.Close
+				&& AMQP.REPLY_SUCCESS == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
+				&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText());
+	}
+
+	protected static Object determineShutdownReason(ShutdownSignalException sig) {
 		if (shutDownSignalReasonMethod == null) {
 			return false;
 		}
-		Object shutdownReason;
 		try {
-			shutdownReason = ReflectionUtils.invokeMethod(shutDownSignalReasonMethod, sig);
+			return ReflectionUtils.invokeMethod(shutDownSignalReasonMethod, sig);
 		}
 		catch (Exception e) {
 			return false;
 		}
-		return shutdownReason instanceof AMQP.Connection.Close &&
-				AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
-				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
 	}
 
 }

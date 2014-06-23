@@ -16,9 +16,11 @@
 package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -638,6 +640,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			/*
 			 * Piggy-backed ack - extract all Listeners for this and earlier
 			 * sequences. Then, for each Listener, handle each of it's acks.
+			 * Finally, remove the sequences from listenerForSeq.
 			 */
 			synchronized(this.pendingConfirms) {
 				Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
@@ -656,10 +659,14 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 						}
 					}
 				}
+				List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
+				for (Long key : seqs) {
+					this.listenerForSeq.remove(key);
+				}
 			}
 		}
 		else {
-			Listener listener = this.listenerForSeq.get(seq);
+			Listener listener = this.listenerForSeq.remove(seq);
 			if (listener != null) {
 				PendingConfirm pendingConfirm = this.pendingConfirms.get(listener).remove(seq);
 				if (pendingConfirm != null) {
