@@ -24,6 +24,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +57,7 @@ import org.mockito.stubbing.Answer;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
@@ -134,7 +136,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	@Test
 	public void testPublisherConfirmReceived() throws Exception {
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch latch = new CountDownLatch(10);
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
@@ -142,9 +144,25 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				latch.countDown();
 			}
 		});
-		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
-		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+		for (int i = 0; i < 10; i++) {
+			templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		}
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
+		this.templateWithConfirmsEnabled.execute(new ChannelCallback<Void>() {
+
+			@Override
+			public Void doInRabbit(Channel channel) throws Exception {
+				assertEquals(0, TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
+																Map.class).size());
+				return null;
+			}
+		});
+
+		Log logger = spy(TestUtils.getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger", Log.class));
+		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
+		cleanUp();
+		verify(logger, never()).error(any());
 	}
 
 	@Test
