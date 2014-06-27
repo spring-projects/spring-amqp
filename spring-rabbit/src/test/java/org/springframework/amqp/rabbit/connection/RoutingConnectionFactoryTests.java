@@ -13,6 +13,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import org.mockito.Mockito;
 
 /**
  * @author Artem Bilan
+ * @author Josh Chappelle
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -99,4 +102,46 @@ public class RoutingConnectionFactoryTests {
 		Mockito.verify(connectionFactory2).createConnection();
 	}
 
+	@Test
+	public void testGetAddAndRemoveOperationsForTargetConnectionFactories() {
+		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
+
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+			@Override
+			protected Object determineCurrentLookupKey() {
+				return null;
+			}
+		};
+
+		//Make sure map is initialized and doesn't contain lookup key "1"
+		assertNull(routingFactory.getTargetConnectionFactory("1"));
+
+		//Add one and make sure it's there
+		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
+		assertEquals(targetConnectionFactory, routingFactory.getTargetConnectionFactory("1"));
+		assertNull(routingFactory.getTargetConnectionFactory("2"));
+
+		//Remove it and make sure it's gone
+		ConnectionFactory removedConnectionFactory = routingFactory.removeTargetConnectionFactory("1");
+		assertEquals(targetConnectionFactory, removedConnectionFactory);
+		assertNull(routingFactory.getTargetConnectionFactory("1"));
+	}
+
+	@Test
+	public void testAddTargetConnectionFactoryAddsExistingConnectionListenersToConnectionFactory() {
+
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+			@Override
+			protected Object determineCurrentLookupKey() {
+				return null;
+			}
+		};
+		routingFactory.addConnectionListener(Mockito.mock(ConnectionListener.class));
+		routingFactory.addConnectionListener(Mockito.mock(ConnectionListener.class));
+
+		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
+		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
+		Mockito.verify(targetConnectionFactory,
+				Mockito.times(2)).addConnectionListener(Mockito.any(ConnectionListener.class));
+	}
 }
