@@ -13,7 +13,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.amqp.AmqpException;
@@ -33,6 +35,8 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	private Map<Object, ConnectionFactory> targetConnectionFactories = new HashMap<Object, ConnectionFactory>();
 
+	private List<ConnectionListener> connectionListeners = new ArrayList<ConnectionListener>();
+	
 	private ConnectionFactory defaultTargetConnectionFactory;
 
 	private boolean lenientFallback = true;
@@ -48,36 +52,9 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	public void setTargetConnectionFactories(Map<Object, ConnectionFactory> targetConnectionFactories) {
 		Assert.notNull(targetConnectionFactories, "'targetConnectionFactories' must not be null.");
 		Assert.noNullElements(targetConnectionFactories.values().toArray(), "'targetConnectionFactories' cannot have null values.");
-		this.targetConnectionFactories = targetConnectionFactories;
+		this.targetConnectionFactories.putAll(targetConnectionFactories);
 	}
 
-	/**
-	 * Returns the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
-	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
-	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
-	 */
-	protected ConnectionFactory getTargetConnectionFactory(Object key) {
-		return targetConnectionFactories.get(key);
-	}
-	
-	/**
-	 * Adds the given {@link ConnectionFactory} and associates it with the given lookup key
-	 * @param key the lookup key
-	 * @param connectionFactory the {@link ConnectionFactory}
-	 */
-	protected synchronized void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
-		targetConnectionFactories.put(key, connectionFactory);
-	}
-
-	/**
-	 * Removes the {@link ConnectionFactory} associated with the given lookup key and returns it.
-	 * @param key the lookup key
-	 * @return the {@link ConnectionFactory} that was removed
-	 */
-	protected synchronized ConnectionFactory removeTargetConnectionFactory(Object key) {
-		return targetConnectionFactories.remove(key);
-	}
-	
 	/**
 	 * Specify the default target {@link ConnectionFactory}, if any.
 	 * <p>This {@link ConnectionFactory} will be used as target if none of the keyed
@@ -152,6 +129,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		if (this.defaultTargetConnectionFactory != null) {
 			this.defaultTargetConnectionFactory.addConnectionListener(listener);
 		}
+		this.connectionListeners.add(listener);
 	}
 
 	@Override
@@ -170,6 +148,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 				removed = listenerRemoved;
 			}
 		}
+		this.connectionListeners.remove(listener);
 		return removed;
 	}
 
@@ -182,6 +161,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		if (this.defaultTargetConnectionFactory != null) {
 			this.defaultTargetConnectionFactory.clearConnectionListeners();
 		}
+		this.connectionListeners.clear();
 	}
 
 	@Override
@@ -200,10 +180,39 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	/**
+	 * Returns the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
+	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 */
+	protected ConnectionFactory getTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.get(key);
+	}
+	
+	/**
+	 * Adds the given {@link ConnectionFactory} and associates it with the given lookup key
+	 * @param key the lookup key
+	 * @param connectionFactory the {@link ConnectionFactory}
+	 */
+	protected void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
+		targetConnectionFactories.put(key, connectionFactory);
+		for(ConnectionListener listener : this.connectionListeners) {
+			connectionFactory.addConnectionListener(listener);
+		}
+	}
+
+	/**
+	 * Removes the {@link ConnectionFactory} associated with the given lookup key and returns it.
+	 * @param key the lookup key
+	 * @return the {@link ConnectionFactory} that was removed
+	 */
+	protected ConnectionFactory removeTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.remove(key);
+	}
+	
+	/**
 	 * Determine the current lookup key. This will typically be implemented to check a thread-bound context.
 	 *
 	 * @return The lookup key.
 	 */
 	protected abstract Object determineCurrentLookupKey();
-
 }

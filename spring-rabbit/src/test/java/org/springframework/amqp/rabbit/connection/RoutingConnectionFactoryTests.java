@@ -13,7 +13,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +105,13 @@ public class RoutingConnectionFactoryTests {
 	@Test
 	public void testGetAddAndRemoveOperationsForTargetConnectionFactories() {
 		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
-		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactoryStub();
+
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+			@Override
+			protected Object determineCurrentLookupKey() {
+				return null;
+			}
+		};
 
 		//Make sure map is initialized and doesn't contain lookup key "1"
 		assertNull(routingFactory.getTargetConnectionFactory("1"));
@@ -118,12 +126,21 @@ public class RoutingConnectionFactoryTests {
 		assertEquals(targetConnectionFactory, removedConnectionFactory);
 		assertNull(routingFactory.getTargetConnectionFactory("1"));
 	}
-	
-	private static class AbstractRoutingConnectionFactoryStub extends AbstractRoutingConnectionFactory {
-		@Override
-		protected Object determineCurrentLookupKey() {
-			return null;
-		}
-	}
 
+	@Test
+	public void testAddTargetConnectionFactoryAddsExistingConnectionListenersToConnectionFactory() {
+		
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+			@Override
+			protected Object determineCurrentLookupKey() {
+				return null;
+			}
+		};
+		routingFactory.addConnectionListener(Mockito.mock(ConnectionListener.class));
+		routingFactory.addConnectionListener(Mockito.mock(ConnectionListener.class));
+		
+		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
+		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
+		Mockito.verify(targetConnectionFactory, Mockito.times(2)).addConnectionListener(Mockito.any(ConnectionListener.class));
+	}
 }
