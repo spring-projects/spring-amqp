@@ -13,7 +13,10 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.InitializingBean;
@@ -25,12 +28,15 @@ import org.springframework.util.Assert;
  * (but not necessarily) determined through some thread-bound context.
  *
  * @author Artem Bilan
+ * @author Josh Chappelle
  * @since 1.3
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, InitializingBean {
 
-	private Map<Object, ConnectionFactory> targetConnectionFactories;
+	private final Map<Object, ConnectionFactory> targetConnectionFactories = new ConcurrentHashMap<Object, ConnectionFactory>();
 
+	private final List<ConnectionListener> connectionListeners = new ArrayList<ConnectionListener>();
+	
 	private ConnectionFactory defaultTargetConnectionFactory;
 
 	private boolean lenientFallback = true;
@@ -46,7 +52,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	public void setTargetConnectionFactories(Map<Object, ConnectionFactory> targetConnectionFactories) {
 		Assert.notNull(targetConnectionFactories, "'targetConnectionFactories' must not be null.");
 		Assert.noNullElements(targetConnectionFactories.values().toArray(), "'targetConnectionFactories' cannot have null values.");
-		this.targetConnectionFactories = targetConnectionFactories;
+		this.targetConnectionFactories.putAll(targetConnectionFactories);
 	}
 
 	/**
@@ -123,6 +129,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		if (this.defaultTargetConnectionFactory != null) {
 			this.defaultTargetConnectionFactory.addConnectionListener(listener);
 		}
+		this.connectionListeners.add(listener);
 	}
 
 	@Override
@@ -141,6 +148,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 				removed = listenerRemoved;
 			}
 		}
+		this.connectionListeners.remove(listener);
 		return removed;
 	}
 
@@ -153,6 +161,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		if (this.defaultTargetConnectionFactory != null) {
 			this.defaultTargetConnectionFactory.clearConnectionListeners();
 		}
+		this.connectionListeners.clear();
 	}
 
 	@Override
@@ -171,10 +180,40 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	/**
+	 * Returns the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
+	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 */
+	protected ConnectionFactory getTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.get(key);
+	}
+	
+	/**
+	 * Adds the given {@link ConnectionFactory} and associates it with the given lookup key
+	 * @param key the lookup key
+	 * @param connectionFactory the {@link ConnectionFactory}
+	 */
+	protected void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
+		targetConnectionFactories.put(key, connectionFactory);
+		for(ConnectionListener listener : this.connectionListeners) {
+			connectionFactory.addConnectionListener(listener);
+		}
+	}
+
+	/**
+	 * Removes the {@link ConnectionFactory} associated with the given lookup key and returns it.
+	 * @param key the lookup key
+	 * @return the {@link ConnectionFactory} that was removed
+	 */
+	protected ConnectionFactory removeTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.remove(key);
+	}
+	
+	/**
 	 * Determine the current lookup key. This will typically be implemented to check a thread-bound context.
 	 *
 	 * @return The lookup key.
 	 */
 	protected abstract Object determineCurrentLookupKey();
-
+	
 }
