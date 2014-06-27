@@ -78,6 +78,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.OFF, RabbitTemplate.class,
+			ConditionalRejectingErrorHandler.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule

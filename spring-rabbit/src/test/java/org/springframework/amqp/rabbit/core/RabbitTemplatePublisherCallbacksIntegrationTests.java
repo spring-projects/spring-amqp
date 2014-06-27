@@ -153,8 +153,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
-				assertEquals(0, TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
-																Map.class).size());
+				Map<?,?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
+																Map.class);
+				int n = 0;
+				while (n++ < 100 && listenerMap.size() > 0) {
+					Thread.sleep(100);
+				}
+				assertEquals(0, listenerMap.size());
 				return null;
 			}
 		});
