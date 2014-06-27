@@ -13,7 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 
 /**
  * @author Artem Bilan
+ * @author Josh Chappelle
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -97,6 +98,32 @@ public class RoutingConnectionFactoryTests {
 
 		Mockito.verify(connectionFactory1, Mockito.times(2)).createConnection();
 		Mockito.verify(connectionFactory2).createConnection();
+	}
+
+	@Test
+	public void testGetAddAndRemoveOperationsForTargetConnectionFactories() {
+		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
+		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactoryStub();
+
+		//Make sure map is initialized and doesn't contain lookup key "1"
+		assertNull(routingFactory.getTargetConnectionFactory("1"));
+		
+		//Add one and make sure it's there
+		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
+		assertEquals(targetConnectionFactory, routingFactory.getTargetConnectionFactory("1"));
+		assertNull(routingFactory.getTargetConnectionFactory("2"));
+		
+		//Remove it and make sure it's gone
+		ConnectionFactory removedConnectionFactory = routingFactory.removeTargetConnectionFactory("1");
+		assertEquals(targetConnectionFactory, removedConnectionFactory);
+		assertNull(routingFactory.getTargetConnectionFactory("1"));
+	}
+	
+	private static class AbstractRoutingConnectionFactoryStub extends AbstractRoutingConnectionFactory {
+		@Override
+		protected Object determineCurrentLookupKey() {
+			return null;
+		}
 	}
 
 }

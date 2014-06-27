@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.AmqpException;
@@ -25,11 +26,12 @@ import org.springframework.util.Assert;
  * (but not necessarily) determined through some thread-bound context.
  *
  * @author Artem Bilan
+ * @author Josh Chappelle
  * @since 1.3
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, InitializingBean {
 
-	private Map<Object, ConnectionFactory> targetConnectionFactories;
+	private Map<Object, ConnectionFactory> targetConnectionFactories = new HashMap<Object, ConnectionFactory>();
 
 	private ConnectionFactory defaultTargetConnectionFactory;
 
@@ -49,6 +51,33 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		this.targetConnectionFactories = targetConnectionFactories;
 	}
 
+	/**
+	 * Returns the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
+	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
+	 */
+	protected ConnectionFactory getTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.get(key);
+	}
+	
+	/**
+	 * Adds the given {@link ConnectionFactory} and associates it with the given lookup key
+	 * @param key the lookup key
+	 * @param connectionFactory the {@link ConnectionFactory}
+	 */
+	protected synchronized void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
+		targetConnectionFactories.put(key, connectionFactory);
+	}
+
+	/**
+	 * Removes the {@link ConnectionFactory} associated with the given lookup key and returns it.
+	 * @param key the lookup key
+	 * @return the {@link ConnectionFactory} that was removed
+	 */
+	protected synchronized ConnectionFactory removeTargetConnectionFactory(Object key) {
+		return targetConnectionFactories.remove(key);
+	}
+	
 	/**
 	 * Specify the default target {@link ConnectionFactory}, if any.
 	 * <p>This {@link ConnectionFactory} will be used as target if none of the keyed
