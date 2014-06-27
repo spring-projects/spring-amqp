@@ -14,9 +14,9 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.InitializingBean;
@@ -33,9 +33,9 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, InitializingBean {
 
-	private Map<Object, ConnectionFactory> targetConnectionFactories = new HashMap<Object, ConnectionFactory>();
+	private final Map<Object, ConnectionFactory> targetConnectionFactories = new ConcurrentHashMap<Object, ConnectionFactory>();
 
-	private List<ConnectionListener> connectionListeners = new ArrayList<ConnectionListener>();
+	private final List<ConnectionListener> connectionListeners = new ArrayList<ConnectionListener>();
 	
 	private ConnectionFactory defaultTargetConnectionFactory;
 
@@ -215,4 +215,5 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * @return The lookup key.
 	 */
 	protected abstract Object determineCurrentLookupKey();
+	
 }
