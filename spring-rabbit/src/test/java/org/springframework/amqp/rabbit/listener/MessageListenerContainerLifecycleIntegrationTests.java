@@ -21,6 +21,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -318,6 +320,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		final CountDownLatch prefetched = new CountDownLatch(1);
 		final CountDownLatch awaitStart1 = new CountDownLatch(1);
 		final CountDownLatch awaitStart2 = new CountDownLatch(6);
 		final CountDownLatch awaitStop = new CountDownLatch(1);
@@ -330,8 +333,9 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			public void onMessage(Message message) {
 				try {
 					awaitStart1.countDown();
+					prefetched.await(10, TimeUnit.SECONDS);
 					awaitStart2.countDown();
-					awaitStop.await();
+					awaitStop.await(10, TimeUnit.SECONDS);
 					received.incrementAndGet();
 					awaitConsumeFirst.countDown();
 					awaitConsumeSecond.countDown();
@@ -348,7 +352,24 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		container.setQueueNames(queue.getName());
 		container.afterPropertiesSet();
 		container.start();
+
+		// wait until the listener has the first message...
 		assertTrue(awaitStart1.await(10, TimeUnit.SECONDS));
+		// ... and the remaining 4 are queued...
+		@SuppressWarnings("unchecked")
+		Map<BlockingQueueConsumer, Boolean> consumers = (Map<BlockingQueueConsumer, Boolean>) TestUtils
+				.getPropertyValue(container, "consumers");
+		int n = 0;
+		while (n++ < 100) {
+			if (consumers.size() > 0) {
+				if (TestUtils.getPropertyValue(consumers.keySet().iterator().next(), "queue", BlockingQueue.class)
+						.size() > 3) {
+					prefetched.countDown();
+					break;
+				}
+			}
+			Thread.sleep(100);
+		}
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
 
 			@Override
@@ -356,7 +377,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 				container.stop();
 			}
 		});
-		int n = 0;
+		n = 0;
 		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
 		}
@@ -364,7 +385,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		awaitStop.countDown();
 
-		assertTrue(awaitConsumeFirst.await(10, TimeUnit.SECONDS));
+		assertTrue("awaitConsumeFirst.count=" + awaitConsumeFirst.getCount(),
+				awaitConsumeFirst.await(10, TimeUnit.SECONDS));
 		n = 0;
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
 		while (dfa.getPropertyValue("consumers") != null && n++ < 100) {
@@ -377,7 +399,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		container.start();
 		assertTrue(awaitStart2.await(10, TimeUnit.SECONDS));
-		assertTrue(awaitConsumeSecond.await(10, TimeUnit.SECONDS));
+		assertTrue("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount(),
+				awaitConsumeSecond.await(10, TimeUnit.SECONDS));
 		container.stop();
 	}
 
