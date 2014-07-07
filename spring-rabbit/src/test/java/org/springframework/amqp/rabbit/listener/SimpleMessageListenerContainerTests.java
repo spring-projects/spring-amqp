@@ -12,20 +12,13 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +34,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Envelope;
 import org.apache.commons.logging.Log;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,11 +65,6 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.Envelope;
-
 
 /**
  * @author David Syer
@@ -86,16 +78,15 @@ public class SimpleMessageListenerContainerTests {
 	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test
-	public void testInconsistentTransactionConfiguration() throws Exception {
+	public void testChannelTransactedOverriddenWhenTxManager() throws Exception {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(this));
 		container.setQueueNames("foo");
 		container.setChannelTransacted(false);
-		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		container.setTransactionManager(new TestTransactionManager());
-		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		singleConnectionFactory.destroy();
 	}
 
