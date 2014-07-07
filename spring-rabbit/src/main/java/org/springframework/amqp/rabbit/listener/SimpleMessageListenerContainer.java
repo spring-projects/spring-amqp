@@ -51,7 +51,6 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
@@ -73,6 +72,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
@@ -180,16 +180,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * <p>
 	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
 	 * multiple listener executions will all be wrapped in the same advice up to that limit.
-	 * </p>
 	 * <p>
 	 * If a {@link #setTransactionManager(PlatformTransactionManager) transactionManager} is provided as well, then
 	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
 	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
-	 * </p>
-	 *
 	 * @param adviceChain the advice chain to set
 	 */
 	public void setAdviceChain(Advice[] adviceChain) {
@@ -199,7 +195,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
 	 * seconds.
-	 *
 	 * @param recoveryInterval The recovery interval.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
@@ -212,10 +207,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
 	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
 	 * general, stick with 1 consumer for low-volume queues. Cannot be less than {@link #maxConcurrentConsumers} (if set).
-	 *
-	 * @see #setMaxConcurrentConsumers(int)
-	 *
 	 * @param concurrentConsumers the minimum number of consumers to create.
+	 * @see #setMaxConcurrentConsumers(int)
 	 */
 	public void setConcurrentConsumers(final int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
@@ -256,9 +249,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Sets an upper limit to the number of consumers; defaults to 'concurrentConsumers'. Consumers
 	 * will be added on demand. Cannot be less than {@link #concurrentConsumers}.
-	 *
 	 * @param maxConcurrentConsumers the maximum number of consumers.
-	 *
 	 * @see #setConcurrentConsumers(int)
 	 * @see #setStartConsumerMinInterval(long)
 	 * @see #setStopConsumerMinInterval(long)
@@ -289,9 +280,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * {@link #maxConcurrentConsumers} has not been reached, specifies
 	 * the minimum time (milliseconds) between starting new consumers on demand. Default is 10000
 	 * (10 seconds).
-	 *
 	 * @param startConsumerMinInterval The minimum interval between new consumer starts.
-	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStartConsumerMinInterval(long)
 	 */
@@ -305,9 +294,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * the number of consumers exceeds {@link #concurrentConsumers}, specifies the
 	 * minimum time (milliseconds) between stopping idle consumers. Default is 60000
 	 * (1 minute).
-	 *
 	 * @param stopConsumerMinInterval The minimum interval between consumer stops.
-	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStopConsumerMinInterval(long)
 	 */
@@ -323,9 +310,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * starting a new consumer. If the consumer goes idle for one cycle, the counter is reset.
 	 * This is impacted by the {@link #txSize}.
 	 * Default is 10 consecutive messages.
-	 *
 	 * @param consecutiveActiveTrigger The number of consecutive receives to trigger a new consumer.
-	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStartConsumerMinInterval(long)
 	 * @see #setTxSize(int)
@@ -342,11 +327,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * stopping a consumer. The idle time is effectively
 	 * {@link #receiveTimeout} * {@link #txSize} * this value because the consumer thread waits for
 	 * a message for up to {@link #receiveTimeout} up to {@link #txSize} times.
-	 *
 	 * Default is 10 consecutive idles.
-	 *
 	 * @param consecutiveIdleTrigger The number of consecutive timeouts to trigger stopping a consumer.
-	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 * @see #setStopConsumerMinInterval(long)
 	 * @see #setReceiveTimeout(long)
@@ -360,9 +342,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * The time (in milliseconds) that a consumer should wait for data. Default
 	 * 1000 (1 second).
-	 *
 	 * @param receiveTimeout the timeout.
-	 *
 	 * @see #setConsecutiveIdleTrigger(int)
 	 */
 	public void setReceiveTimeout(long receiveTimeout) {
@@ -374,7 +354,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * closed. If any workers are active when the shutdown signal comes they will be allowed to finish processing as
 	 * long as they can finish within this timeout. Otherwise the connection is closed and messages remain unacked (if
 	 * the channel is transactional). Defaults to 5 seconds.
-	 *
 	 * @param shutdownTimeout the shutdown timeout to set
 	 */
 	public void setShutdownTimeout(long shutdownTimeout) {
@@ -389,7 +368,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
 	 * to improve throughput. It should be greater than or equal to {@link #setTxSize(int) the transaction size}.
-	 *
 	 * @param prefetchCount the prefetch count
 	 */
 	public void setPrefetchCount(int prefetchCount) {
@@ -400,7 +378,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
 	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
 	 * how often acks are sent when using {@link AcknowledgeMode#AUTO} - one ack per txSize. Default is 1.
-	 *
 	 * @param txSize the transaction size
 	 */
 	public void setTxSize(int txSize) {
@@ -421,7 +398,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Set the {@link MessagePropertiesConverter} for this listener container.
-	 *
 	 * @param messagePropertiesConverter The properties converter.
 	 */
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
@@ -436,7 +412,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
 	 * be requeued. When true, the default can be overridden by the listener throwing an
 	 * {@link AmqpRejectAndDontRequeueException}. Default true.
-	 *
 	 * @param defaultRequeueRejected true to reject by default.
 	 */
 	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
@@ -568,14 +543,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.state(
 				!(getAcknowledgeMode().isAutoAck() && transactionManager != null),
 				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having an "
-						+ "external transaction manager. Either use a different AcknowledgeMode or make sure the transactionManager is null.");
+						+ "external transaction manager. Either use a different AcknowledgeMode or make sure " +
+						"the transactionManager is null.");
 
 		if (this.getConnectionFactory() instanceof CachingConnectionFactory) {
 			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
 			if (cf.getCacheMode() == CacheMode.CHANNEL && cf.getChannelCacheSize() < this.concurrentConsumers) {
 				cf.setChannelCacheSize(this.concurrentConsumers);
-				logger.warn("CachingConnectionFactory's channelCacheSize can not be less than the number of concurrentConsumers so it was reset to match: "
-						+ this.concurrentConsumers);
+				logger.warn("CachingConnectionFactory's channelCacheSize can not be less than the number " +
+						"of concurrentConsumers so it was reset to match: "	+ this.concurrentConsumers);
 			}
 		}
 
@@ -601,7 +577,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Always use a shared Rabbit Connection.
-	 *
 	 * @return true
 	 */
 	protected final boolean sharedConnectionEnabled() {
@@ -611,12 +586,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Creates the specified number of concurrent consumers, in the form of a Rabbit Channel plus associated
 	 * MessageConsumer.
-	 *
 	 * @throws Exception Any Exception.
 	 */
 	@Override
 	protected void doInitialize() throws Exception {
-		checkMisssingQueuesFatal();
+		checkMissingQueuesFatal();
 		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
@@ -625,6 +599,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
 			rabbitAdmin.setApplicationContext(this.getApplicationContext());
 			this.rabbitAdmin = rabbitAdmin;
+		}
+		if (this.transactionManager != null) {
+			if (!isChannelTransacted()) {
+				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
+				setChannelTransacted(true);
+			}
+
 		}
 	}
 
@@ -636,7 +617,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
 	 * to this container's task executor.
-	 *
 	 * @throws Exception Any Exception.
 	 */
 	@Override
@@ -646,7 +626,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int newConsumers = initializeConsumers();
 			if (this.consumers == null) {
 				if (logger.isInfoEnabled()) {
-					logger.info("Consumers were initialized and then cleared (presumably the container was stopped concurrently)");
+					logger.info("Consumers were initialized and then cleared " +
+							"(presumably the container was stopped concurrently)");
 				}
 				return;
 			}
@@ -736,7 +717,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return count;
 	}
 
-	private void checkMisssingQueuesFatal() {
+	private void checkMissingQueuesFatal() {
 		if (!this.missingQueuesFatalSet) {
 			try {
 				ApplicationContext applicationContext = getApplicationContext();
@@ -885,9 +866,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private synchronized void redeclareElementsIfNecessary() {
 		try {
 			ApplicationContext applicationContext = this.getApplicationContext();
-			if (applicationContext != null && applicationContext instanceof ListableBeanFactory) {
+			if (applicationContext != null) {
 				Set<String> queueNames = this.getQueueNamesAsSet();
-				Map<String, Queue> queueBeans = ((ListableBeanFactory) applicationContext).getBeansOfType(Queue.class);
+				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
 				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 					Queue queue = entry.getValue();
 					if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
@@ -916,7 +897,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
 								ConnectionFactoryUtils.bindResourceToTransaction(
-										new RabbitResourceHolder(consumer.getChannel(), false), getConnectionFactory(), true);
+										new RabbitResourceHolder(consumer.getChannel(), false),
+										getConnectionFactory(), true);
 								try {
 									return doReceiveAndExecute(consumer);
 								} catch (RuntimeException e) {
@@ -983,7 +965,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * needed. Blocks up to 60 seconds waiting for an exception to occur
 		 * (but should always return promptly in normal circumstances).
 		 * No longer fatal if the processor does not start up in 60 seconds.
-		 *
 		 * @return a startup exception if there was one
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
@@ -1180,7 +1161,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval} to give the container a
 	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 *
 	 * @param t the exception that stopped the startup
 	 * @throws Exception if the shared connection still can't be established
 	 */

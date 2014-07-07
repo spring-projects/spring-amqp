@@ -86,6 +86,19 @@ public class SimpleMessageListenerContainerTests {
 	public ExpectedException expectedException = ExpectedException.none();
 
 	@Test
+	public void testChannelTransactedOverriddenWhenTxManager() throws Exception {
+		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
+		container.setMessageListener(new MessageListenerAdapter(this));
+		container.setQueueNames("foo");
+		container.setChannelTransacted(false);
+		container.setTransactionManager(new TestTransactionManager());
+		container.afterPropertiesSet();
+		assertTrue(TestUtils.getPropertyValue(container, "transactional", Boolean.class));
+		singleConnectionFactory.destroy();
+	}
+
+	@Test
 	public void testInconsistentTransactionConfiguration() throws Exception {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
