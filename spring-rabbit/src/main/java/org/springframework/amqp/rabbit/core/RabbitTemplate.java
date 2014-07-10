@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -1052,6 +1053,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 				if (logger.isWarnEnabled()) {
 					logger.warn("Reply received after timeout for " + messageTag);
 				}
+				throw new AmqpRejectAndDontRequeueException("Reply received after timeout");
 			}
 			else {
 				// Restore the inbound correlation data
