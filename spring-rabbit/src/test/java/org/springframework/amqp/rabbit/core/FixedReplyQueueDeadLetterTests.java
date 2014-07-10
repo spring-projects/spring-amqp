@@ -13,26 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.listener.JavaConfigFixedReplyQueueTests.FixedReplyQueueConfig;
+import org.springframework.amqp.rabbit.core.FixedReplyQueueDeadLetterTests.FixedReplyQueueDeadLetterConfig;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,20 +45,21 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 /**
- * <b>NOTE:</b> This class is referenced in the reference documentation; if it is changed/moved, be
- * sure to update that documentation.
  *
  * @author Gary Russell
- * @since 1.3
+ * @since 1.3.6
  */
 
-@ContextConfiguration(classes=FixedReplyQueueConfig.class)
+@ContextConfiguration(classes=FixedReplyQueueDeadLetterConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
-public class JavaConfigFixedReplyQueueTests {
+public class FixedReplyQueueDeadLetterTests {
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
+
+	@Autowired
+	private DeadListener deadListener;
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
@@ -64,15 +67,18 @@ public class JavaConfigFixedReplyQueueTests {
 	/**
 	 * Sends a message to a service that upcases the String and returns as a reply
 	 * using a {@link RabbitTemplate} configured with a fixed reply queue and
-	 * reply listener, configured with JavaConfig.
+	 * reply listener, configured with JavaConfig. We expect the reply to time
+	 * out and be sent to the DLQ.
+	 * @throws Exception the exception.
 	 */
 	@Test
-	public void test() {
-		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("foo"));
+	public void test() throws Exception {
+		assertNull(this.rabbitTemplate.convertSendAndReceive("foo"));
+		assertTrue(this.deadListener.latch.await(10, TimeUnit.SECONDS));
 	}
 
 	@Configuration
-	public static class FixedReplyQueueConfig {
+	public static class FixedReplyQueueDeadLetterConfig {
 
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
@@ -82,14 +88,15 @@ public class JavaConfigFixedReplyQueueTests {
 		}
 
 		/**
-		 * @return Rabbit template with fixed reply queue.
+		 * @return Rabbit template with fixed reply queue and small timeout.
 		 */
 		@Bean
 		public RabbitTemplate fixedReplyQRabbitTemplate() {
 			RabbitTemplate template = new RabbitTemplate(rabbitConnectionFactory());
 			template.setExchange(ex().getName());
-			template.setRoutingKey("test");
+			template.setRoutingKey("dlx.reply.test");
 			template.setReplyQueue(replyQueue());
+			template.setReplyTimeout(1);
 			return template;
 		}
 
@@ -118,32 +125,76 @@ public class JavaConfigFixedReplyQueueTests {
 		}
 
 		/**
+		 * @return The listener container that handles the dead letter.
+		 */
+		@Bean
+		public SimpleMessageListenerContainer dlListenerContainer() {
+			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+			container.setConnectionFactory(rabbitConnectionFactory());
+			container.setQueues(dlq());
+			container.setMessageListener(new MessageListenerAdapter(deadListener()));
+			return container;
+		}
+
+		/**
 		 * @return a non-durable auto-delete exchange.
 		 */
 		@Bean
 		public DirectExchange ex() {
-			return new DirectExchange(UUID.randomUUID().toString(), false, true);
+			return new DirectExchange("dlx.test.requestEx", false, true);
 		}
 
 		@Bean
 		public Binding binding() {
-			return BindingBuilder.bind(requestQueue()).to(ex()).with("test");
+			return BindingBuilder.bind(requestQueue()).to(ex()).with("dlx.reply.test");
 		}
 
 		/**
-		 * @return an anonymous (auto-delete) queue.
+		 * @return a non-durable auto-delete exchange.
+		 */
+		@Bean
+		public DirectExchange dlx() {
+			return new DirectExchange("reply.dlx", false, true);
+		}
+
+		/**
+		 * @return an (auto-delete) queue.
 		 */
 		@Bean
 		public Queue requestQueue() {
-			return new AnonymousQueue();
+			return new Queue("dlx.test.requestQ", false, false, true);
 		}
 
 		/**
-		 * @return an anonymous (auto-delete) queue.
+		 * @return an (auto-delete) queue configured to go to the dlx.
 		 */
 		@Bean
 		public Queue replyQueue() {
-			return new AnonymousQueue();
+			Map<String, Object> args = new HashMap<String, Object>();
+			args.put("x-dead-letter-exchange", "reply.dlx");
+			return new Queue("dlx.test.replyQ", false, false, true, args);
+		}
+
+		/**
+		 * @return an (auto-delete) queue.
+		 */
+		@Bean
+		public Queue dlq() {
+			return new Queue("dlx.test.DLQ", false, false, true);
+		}
+
+		@Bean
+		public DeadListener deadListener() {
+			return new DeadListener();
+		}
+
+		/**
+		 * Bind the dlq to the dlx with the reply queue name.
+		 * @return The binding.
+		 */
+		@Bean
+		public Binding dlBinding() {
+			return BindingBuilder.bind(dlq()).to(dlx()).with(replyQueue().getName());
 		}
 
 		/**
@@ -155,14 +206,25 @@ public class JavaConfigFixedReplyQueueTests {
 		}
 
 		/**
-		 * Listener that upcases the request.
+		 * Listener that upcases the request, but takes too long.
 		 */
 		public static class PojoListener {
 
-			public String handleMessage(String foo) {
+			public String handleMessage(String foo) throws Exception {
+				Thread.sleep(500);
 				return foo.toUpperCase();
 			}
 		}
+
+	}
+
+	public static class DeadListener {
+		private final CountDownLatch latch = new CountDownLatch(1);
+
+		public void handleMessage(String foo) {
+			latch.countDown();
+		}
+
 	}
 
 }
