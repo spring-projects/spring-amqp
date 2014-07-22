@@ -365,6 +365,44 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
       <programlisting language="xml"><![CDATA[<rabbit:connection-factory
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
     </section>
+    <section>
+      <title>Configuring SSL</title>
+      <para>
+        Starting with <emphasis>version 1.4</emphasis>, a convenient <classname
+        >RabbitConnectionFactoryBean</classname> is provided to enable convenient configuration
+        of SSL properties on the underlying client connection factory, using dependency injection.
+        Other setters simply delegate to the underlying
+        factory. Previously you had to configure the SSL options programmatically.
+      </para>
+      <programlisting language="xml"><![CDATA[<rabbit:connection-factory id="rabbitConnectionFactory"
+    connection-factory="clientConnectionFactory"
+    host="${host}"
+    port="${port}"
+    virtual-host="${vhost}"
+    username="${username}" password="${password}" />
+
+<bean id="clientConnectionFactory"
+        class="org.springframework.xd.dirt.integration.rabbit.RabbitConnectionFactoryBean">
+    <property name="useSSL" value="true" />
+    <property name="sslPropertiesLocation" value="file:/secrets/rabbitSSL.properties"/>
+</bean>]]></programlisting>
+      <para>
+        Refer to the <ulink url="https://www.rabbitmq.com/ssl.html">RabbitMQ Documentation</ulink>
+        for information about configuring SSL. Omit the <code>sslPropertiesLocation</code> property
+        to connect over SSL without certificate validation. When using certificate validation, the property
+        is a Spring <classname>Resource</classname> pointing to a properties file containing the following
+        keys:
+      </para>
+      <programlisting>keyStore=file:/secret/keycert.p12
+trustStore=file:/secret/trustStore
+keyStore.passPhrase=secret
+trustStore.passPhrase=secret</programlisting>
+      <para>
+        The <code>keyStore</code> and <code>truststore</code> are Spring <classname>Resources</classname>
+        pointing to the stores. Typically this properties file will be secured by the operating system
+        with the application having read access.
+      </para>
+	</section>
     <section id="routing-connection-factory">
       <title>Routing Connection Factory</title>
       <para>

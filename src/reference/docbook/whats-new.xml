@@ -23,6 +23,17 @@
 				See <xref linkend="template-confirms"/>.
 			</para>
 		</section>
+		<section>
+			<title>Rabbit ConnectionFactory Bean</title>
+			<para>
+				A factory bean is now provided to create the underlying RabbitMQ
+				<classname>ConnectionFactory</classname> used by the
+				<classname>CachingConnectionFactory</classname>. This enables
+				configuration of SSL options using Spring's dependency
+				injection.
+				See <xref linkend="connection-factory"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
