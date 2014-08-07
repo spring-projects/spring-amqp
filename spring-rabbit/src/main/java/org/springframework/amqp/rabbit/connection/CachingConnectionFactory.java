@@ -35,6 +35,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -262,15 +263,31 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				this.openConnectionNonTransactionalChannels.put(connection, channelList);
 			}
 		}
-		Channel channel = null;
+		ChannelProxy channel = null;
 		if (connection.isOpen()) {
 			synchronized (channelList) {
 				while (!channelList.isEmpty()) {
 					channel = channelList.removeFirst();
+					if (logger.isTraceEnabled()) {
+						logger.trace(channel + " retrieved from cache");
+					}
 					if (channel.isOpen()) {
 						break;
 					}
 					else {
+						try {
+							channel.getTargetChannel().close(); // to remove it from auto-recovery if so configured
+						}
+						catch (AlreadyClosedException e) {
+							if (logger.isTraceEnabled()) {
+								logger.trace(channel + " is already closed");
+							}
+						}
+						catch (IOException e) {
+							if (logger.isDebugEnabled()) {
+								logger.debug("Unexpected Exception closing channel " + e.getMessage());
+							}
+						}
 						channel = null;
 					}
 				}
@@ -595,12 +612,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			if (this.target == null) {
 				return;
 			}
-			if (this.target.isOpen()) {
-				synchronized (targetMonitor) {
-					if (this.target.isOpen()) {
-						this.target.close();
-					}
-					this.target = null;
+			try {
+				this.target.close();
+			}
+			catch (AlreadyClosedException e) {
+				if (logger.isTraceEnabled()) {
+					logger.trace(this.target + " is already closed");
 				}
 			}
 		}
