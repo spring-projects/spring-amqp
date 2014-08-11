@@ -291,15 +291,24 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherConfirmNotReceivedMultiThreads() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
-		Channel mockChannel = mock(Channel.class);
+		Channel mockChannel1 = mock(Channel.class);
+		Channel mockChannel2 = mock(Channel.class);
+		Channel mockChannel3 = mock(Channel.class);
+		when(mockChannel1.isOpen()).thenReturn(true);
+		when(mockChannel2.isOpen()).thenReturn(true);
+		when(mockChannel3.isOpen()).thenReturn(true);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel);
-		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel);
-		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2);
+		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
+		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
+		PublisherCallbackChannelImpl channel3 = new PublisherCallbackChannelImpl(mockChannel3);
+		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2).thenReturn(channel3);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setPublisherConfirms(true);
+		ccf.setChannelCacheSize(3);
+		final RabbitTemplate template = new RabbitTemplate(ccf);
 
 		final AtomicBoolean confirmed = new AtomicBoolean();
 		template.setConfirmCallback(new ConfirmCallback() {
@@ -318,7 +327,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 			@Override
 			public void run() {
-				template.execute(new ChannelCallback<Object>() {
+				template.execute(new ChannelCallback<Object>() { // channel x
 					@Override
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
@@ -326,7 +335,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 						} catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
-						template.doSend(channel, "", ROUTE,
+						template.doSend(channel, "", ROUTE, // channel y
 							new SimpleMessageConverter().toMessage("message", new MessageProperties()),
 							new CorrelationData("def"));
 						threadSentLatch.countDown();
@@ -337,7 +346,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 
 		// Thread 2
-		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc")); // channel z
 		threadLatch.countDown();
 		assertTrue(threadSentLatch.await(5, TimeUnit.SECONDS));
 		Thread.sleep(5);
@@ -353,9 +362,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		Map<?, ?> pendingConfirms = (Map<?, ?>) dfa.getPropertyValue("pendingConfirms");
 		assertEquals(2, pendingConfirms.size());
-		channel1.close();
-		assertEquals(1, pendingConfirms.size());
-		channel2.close();
+		ccf.destroy();
 		assertEquals(0, pendingConfirms.size());
 	}
 
