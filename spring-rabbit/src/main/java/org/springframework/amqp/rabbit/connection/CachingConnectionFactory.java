@@ -450,35 +450,34 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			this.openConnectionNonTransactionalChannels.clear();
 			this.openConnectionTransactionalChannels.clear();
 		}
-		reset();
 	}
 
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
-	protected void reset() {
+	protected void reset(List<ChannelProxy> channels, List<ChannelProxy> txChannels) {
 		this.active = false;
 		if (this.cacheMode == CacheMode.CHANNEL) {
-			synchronized (this.cachedChannelsNonTransactional) {
-				for (ChannelProxy channel : cachedChannelsNonTransactional) {
+			synchronized (channels) {
+				for (ChannelProxy channel : channels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					}
 					catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
-				this.cachedChannelsNonTransactional.clear();
+				channels.clear();
 			}
-			synchronized (this.cachedChannelsTransactional) {
-				for (ChannelProxy channel : cachedChannelsTransactional) {
+			synchronized (txChannels) {
+				for (ChannelProxy channel : txChannels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					} catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
-				this.cachedChannelsTransactional.clear();
+				txChannels.clear();
 			}
 		}
 		this.active = true;
@@ -620,6 +619,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					logger.trace(this.target + " is already closed");
 				}
 			}
+			finally {
+				this.target = null;
+			}
 		}
 
 	}
@@ -674,7 +676,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 		public void destroy() {
 			if (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL) {
-				reset();
+				reset(cachedChannelsNonTransactional, cachedChannelsTransactional);
+			}
+			else {
+				reset(openConnectionNonTransactionalChannels.get(this), openConnectionTransactionalChannels.get(this));
 			}
 			if (this.target != null) {
 				RabbitUtils.closeConnection(this.target);
