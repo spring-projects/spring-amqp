@@ -40,6 +40,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
@@ -958,8 +959,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		if (channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			SortedMap<Long, PendingConfirm> pendingConfirms = publisherCallbackChannel.addListener(this);
-			if (!this.pendingConfirms.containsKey(channel)) {
-				this.pendingConfirms.put(channel, pendingConfirms);
+			Channel key = channel instanceof ChannelProxy ? ((ChannelProxy) channel).getTargetChannel() : channel;
+			if (!this.pendingConfirms.containsKey(key)) {
+				this.pendingConfirms.put(key, pendingConfirms);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Added pending confirms for " + channel + " to map, size now " + this.pendingConfirms.size());
 				}

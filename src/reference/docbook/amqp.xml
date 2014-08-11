@@ -562,6 +562,13 @@ public AmqpTemplate rabbitTemplate();
         by calling <code>setConfirmCallback(ConfirmCallback callback)</code>. The callback
         must implement this method:
       </para>
+      <important>
+        Publisher Confirms only work when the channel is cached. Otherwise, the channel is closed after the
+        publish operation so, by definition, cannot receive the confirmation. Be sure to set the
+        connection factory's
+        <code>channelCacheSize</code> to a large enough value so that the channel on which a message is
+        published is returned to the cache instead of being closed.
+      </important>
       <programlisting language="java"><![CDATA[void confirm(CorrelationData correlationData, boolean ack, String cause);]]></programlisting>
       <para>
         The <classname>CorrelationData</classname> is an object supplied by the client when sending the
