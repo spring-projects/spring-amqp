@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   http://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.springframework.org/schema/rabbit
+	   http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+
+	<rabbit:annotation-driven registry="customRegistry"/>
+
+	<bean class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$CustomBean"/>
+
+	<bean id="customRegistry" class="org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry"/>
+
+	<bean id="rabbitListenerContainerFactory"
+		  class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
+	<bean id="customFactory" class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
+
+	<bean id="simpleMessageListener" class="org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter"/>
+
+	<bean class="org.springframework.amqp.rabbit.annotation.AnnotationDrivenNamespaceTests$CustomRabbitListenerConfigurer">
+		<property name="messageListener" ref="simpleMessageListener"/>
+	</bean>
+
+
+</beans>

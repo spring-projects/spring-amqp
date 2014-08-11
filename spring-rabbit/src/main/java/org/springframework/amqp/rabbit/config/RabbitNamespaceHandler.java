@@ -39,6 +39,7 @@ public class RabbitNamespaceHandler extends NamespaceHandlerSupport {
 		registerBeanDefinitionParser("connection-factory", new ConnectionFactoryParser());
 		registerBeanDefinitionParser("template", new TemplateParser());
 		registerBeanDefinitionParser("queue-arguments", new QueueArgumentsParser());
+		registerBeanDefinitionParser("annotation-driven", new AnnotationDrivenParser());
 	}
 
 }

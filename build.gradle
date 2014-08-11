@@ -41,7 +41,7 @@ ext {
 	javadocLinks = [
 		"http://docs.oracle.com/javase/6/docs/api",
 		"http://docs.oracle.com/javaee/6/api",
-		"http://docs.spring.io/spring/docs/3.1.x/javadoc-api"
+		"http://docs.spring.io/spring/docs/4.1.x/javadoc-api/"
 	] as String[]
 }
 
@@ -81,7 +81,7 @@ subprojects { subproject ->
 		mockitoVersion = '1.9.5'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.3.4'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.0.5.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.0.BUILD-SNAPSHOT'
 
 		springRetryVersion = '1.1.0.RELEASE'
 	}
@@ -174,6 +174,7 @@ project('spring-amqp') {
 	dependencies {
 
 		compile "org.springframework:spring-core:$springVersion"
+		compile ("org.springframework:spring-messaging:$springVersion", optional)
 		compile ("org.springframework:spring-oxm:$springVersion", optional)
 		compile ("org.springframework:spring-context:$springVersion", optional)
 		compile ("org.codehaus.jackson:jackson-core-asl:$jacksonVersion", optional)
@@ -209,6 +210,7 @@ project('spring-rabbit') {
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
+		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
@@ -397,6 +399,6 @@ task dist(dependsOn: assemble) {
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
-	gradleVersion = '1.10'
+	gradleVersion = '1.12'
 	distributionUrl = "http://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
