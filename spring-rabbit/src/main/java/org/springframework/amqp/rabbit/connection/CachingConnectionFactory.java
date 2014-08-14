@@ -35,6 +35,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -262,15 +263,31 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				this.openConnectionNonTransactionalChannels.put(connection, channelList);
 			}
 		}
-		Channel channel = null;
+		ChannelProxy channel = null;
 		if (connection.isOpen()) {
 			synchronized (channelList) {
 				while (!channelList.isEmpty()) {
 					channel = channelList.removeFirst();
+					if (logger.isTraceEnabled()) {
+						logger.trace(channel + " retrieved from cache");
+					}
 					if (channel.isOpen()) {
 						break;
 					}
 					else {
+						try {
+							channel.getTargetChannel().close(); // to remove it from auto-recovery if so configured
+						}
+						catch (AlreadyClosedException e) {
+							if (logger.isTraceEnabled()) {
+								logger.trace(channel + " is already closed");
+							}
+						}
+						catch (IOException e) {
+							if (logger.isDebugEnabled()) {
+								logger.debug("Unexpected Exception closing channel " + e.getMessage());
+							}
+						}
 						channel = null;
 					}
 				}
@@ -433,35 +450,34 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			this.openConnectionNonTransactionalChannels.clear();
 			this.openConnectionTransactionalChannels.clear();
 		}
-		reset();
 	}
 
 	/**
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
-	protected void reset() {
+	protected void reset(List<ChannelProxy> channels, List<ChannelProxy> txChannels) {
 		this.active = false;
 		if (this.cacheMode == CacheMode.CHANNEL) {
-			synchronized (this.cachedChannelsNonTransactional) {
-				for (ChannelProxy channel : cachedChannelsNonTransactional) {
+			synchronized (channels) {
+				for (ChannelProxy channel : channels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					}
 					catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
-				this.cachedChannelsNonTransactional.clear();
+				channels.clear();
 			}
-			synchronized (this.cachedChannelsTransactional) {
-				for (ChannelProxy channel : cachedChannelsTransactional) {
+			synchronized (txChannels) {
+				for (ChannelProxy channel : txChannels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					} catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
-				this.cachedChannelsTransactional.clear();
+				txChannels.clear();
 			}
 		}
 		this.active = true;
@@ -595,13 +611,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			if (this.target == null) {
 				return;
 			}
-			if (this.target.isOpen()) {
-				synchronized (targetMonitor) {
-					if (this.target.isOpen()) {
-						this.target.close();
-					}
-					this.target = null;
+			try {
+				this.target.close();
+			}
+			catch (AlreadyClosedException e) {
+				if (logger.isTraceEnabled()) {
+					logger.trace(this.target + " is already closed");
 				}
+			}
+			finally {
+				this.target = null;
 			}
 		}
 
@@ -657,7 +676,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 		public void destroy() {
 			if (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL) {
-				reset();
+				reset(cachedChannelsNonTransactional, cachedChannelsTransactional);
+			}
+			else {
+				reset(openConnectionNonTransactionalChannels.get(this), openConnectionTransactionalChannels.get(this));
 			}
 			if (this.target != null) {
 				RabbitUtils.closeConnection(this.target);

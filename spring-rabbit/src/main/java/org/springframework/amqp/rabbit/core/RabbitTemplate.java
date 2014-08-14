@@ -139,7 +139,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private volatile ReturnCallback returnCallback;
 
-	private final Map<Object, SortedMap<Long, PendingConfirm>> pendingConfirms = new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
+	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms = new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
 
 	private volatile boolean mandatory;
 
@@ -960,11 +960,9 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			SortedMap<Long, PendingConfirm> pendingConfirms = publisherCallbackChannel.addListener(this);
 			Channel key = channel instanceof ChannelProxy ? ((ChannelProxy) channel).getTargetChannel() : channel;
-			if (!this.pendingConfirms.containsKey(key)) {
-				this.pendingConfirms.put(key, pendingConfirms);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Added pending confirms for " + channel + " to map, size now " + this.pendingConfirms.size());
-				}
+			if (this.pendingConfirms.putIfAbsent(key, pendingConfirms) == null
+					&& logger.isDebugEnabled()) {
+				logger.debug("Added pending confirms for " + channel + " to map, size now " + this.pendingConfirms.size());
 			}
 		}
 		else {

@@ -52,6 +52,7 @@ import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
@@ -557,8 +558,13 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public void close() throws IOException {
-		if (this.delegate.isOpen()) {
+		try {
 			this.delegate.close();
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(this.delegate + " is already closed");
+			}
 		}
 		generateNacksForPendingAcks("Channel closed by application");
 	}
@@ -580,6 +586,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			}
 			this.pendingConfirms.clear();
 			this.listenerForSeq.clear();
+			this.listeners.clear();
 		}
 	}
 
