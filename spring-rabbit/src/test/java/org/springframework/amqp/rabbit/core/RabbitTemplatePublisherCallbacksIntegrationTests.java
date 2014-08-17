@@ -324,7 +324,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch threadLatch = new CountDownLatch(1);
 		final CountDownLatch threadSentLatch = new CountDownLatch(1);
 		//Thread 1
-		Executors.newSingleThreadExecutor().execute(new Runnable() {
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		exec.execute(new Runnable() {
 
 			@Override
 			public void run() {
@@ -363,6 +364,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		Map<?, ?> pendingConfirms = (Map<?, ?>) dfa.getPropertyValue("pendingConfirms");
 		assertThat(pendingConfirms.size(), greaterThan(0)); // might use 2 or only 1 channel
+		exec.shutdown();
+		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
 		ccf.destroy();
 		assertEquals(0, pendingConfirms.size());
 	}
