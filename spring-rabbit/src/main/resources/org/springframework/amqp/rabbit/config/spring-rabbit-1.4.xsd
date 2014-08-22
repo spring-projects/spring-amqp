@@ -394,6 +394,69 @@
 		</xsd:complexContent>
 	</xsd:complexType>
 
+	<xsd:element name="annotation-driven">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Enables the detection of @RabbitListener annotation on any Spring-managed object. If
+	present, a message listener container will be created to receive the relevant
+	messages and invoke the annotated method accordingly.
+
+	See Javadoc for the org.springframework.amqp.rabbit.annotation.EnableRabbit annotation
+	for	information	on code-based alternatives to this XML element.
+			]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="registry" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies the org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry
+	instance to	use to register annotated listener endpoints. If not provided, a default
+	instance will be used by default.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="container-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies the org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory instance
+	to use to create the container for a listener endpoint that does not define a specific
+	factory. This permits in practice to omit the "containerFactory" attribute of the RabbitListener
+	annotation. This attribute is not required as each endpoint may define the factory to use and,
+	as a convenience, the RabbitListenerContainerFactory with name 'rabbitListenerContainerFactory'
+	is looked up by default.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="handler-method-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies a custom org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory
+	instance to	use to configure the message listener responsible to serve an endpoint detected by this
+	processor. By default, DefaultMessageHandlerMethodFactory is used and it can be configured
+	further to support additional method arguments or to customize conversion and validation
+	support. See org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory
+	Javadoc for more details.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
 	<xsd:element name="listener-container">
 		<xsd:annotation>
 			<xsd:documentation><![CDATA[
