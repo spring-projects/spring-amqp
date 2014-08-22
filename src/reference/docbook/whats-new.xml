@@ -12,6 +12,14 @@
 			More documentation to follow.
 		</section>
 		<section>
+			<title>RabbitMessagingTemplate</title>
+			A new <classname>RabbitMessagingTemplate</classname> is provided to allow users
+			to interact with RabbitMQ using <code>spring-messaging</code> <classname>Message</classname>s.
+			It uses the <classname>RabbitTemplate</classname> internally which can be configured
+			as normal.
+			More documentation to follow.
+		</section>
+		<section>
 			<title>Listener Container 'Missing Queues Fatal' Attribute</title>
 			<para>
 				1.3.5 introduced the <code>missingQueuesFatal</code> property on the
