@@ -31,7 +31,7 @@ import org.springframework.util.MimeType;
  * implementation giving access to AMQP-specific headers.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 

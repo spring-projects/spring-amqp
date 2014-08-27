@@ -36,6 +36,7 @@ import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
+
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.test.annotation.Repeat;
 
@@ -45,7 +46,6 @@ import org.springframework.test.annotation.Repeat;
  * method to protect the &#64;Before and &#64;After methods.
  *
  * @author Dave Syer
- * @since 2.0
  *
  */
 public class RepeatProcessor implements MethodRule {
@@ -138,6 +138,7 @@ public class RepeatProcessor implements MethodRule {
 				logger.debug("Running @After methods");
 				try {
 					new RunAfters(new Statement() {
+						@Override
 						public void evaluate() {
 						}
 					}, afters, target).evaluate();
@@ -157,6 +158,7 @@ public class RepeatProcessor implements MethodRule {
 			logger.debug("Running @Before methods");
 			try {
 				new RunBefores(new Statement() {
+					@Override
 					public void evaluate() {
 					}
 				}, befores, target).evaluate();

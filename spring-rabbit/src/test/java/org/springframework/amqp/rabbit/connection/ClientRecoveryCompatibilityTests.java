@@ -34,7 +34,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Gary Russell
- * @since 2.0
+ * @since 1.4
  *
  */
 public class ClientRecoveryCompatibilityTests {

@@ -31,7 +31,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * for those that are used to build such container definition manually.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class SimpleRabbitListenerContainerFactory
 		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer> {

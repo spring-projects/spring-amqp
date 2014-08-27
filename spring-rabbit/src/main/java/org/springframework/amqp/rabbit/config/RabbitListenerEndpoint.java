@@ -24,7 +24,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
  * RabbitListenerConfigurer} to register endpoints programmatically.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public interface RabbitListenerEndpoint {
 

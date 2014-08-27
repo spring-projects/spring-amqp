@@ -27,7 +27,7 @@ import org.springframework.messaging.support.HeaderMapper;
  * @author Mark Fisher
  * @author Oleg Zhurakousky
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public interface AmqpHeaderMapper extends HeaderMapper<MessageProperties> {
 }

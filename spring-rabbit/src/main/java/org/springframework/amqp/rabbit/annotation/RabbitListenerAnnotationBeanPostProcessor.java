@@ -63,7 +63,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
- * @since 2.0
+ * @since 1.4
  * @see RabbitListener
  * @see EnableRabbit
  * @see RabbitListenerConfigurer

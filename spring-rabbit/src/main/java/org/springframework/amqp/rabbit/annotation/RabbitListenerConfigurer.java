@@ -31,7 +31,7 @@ import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
  * <p>See @{@link EnableRabbit} for detailed usage examples.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see EnableRabbit
  * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar
  */

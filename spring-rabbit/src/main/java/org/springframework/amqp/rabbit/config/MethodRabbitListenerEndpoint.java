@@ -34,7 +34,7 @@ import org.springframework.util.StringUtils;
  * an incoming message for this endpoint.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint {
 

@@ -24,7 +24,7 @@ import org.springframework.context.SmartLifecycle;
  * listener container. Not meant to be implemented externally.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public interface MessageListenerContainer extends SmartLifecycle {
 

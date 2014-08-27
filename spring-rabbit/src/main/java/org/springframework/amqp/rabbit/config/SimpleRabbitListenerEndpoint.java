@@ -25,7 +25,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
  * invoke to process an incoming message for this endpoint.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class SimpleRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint {
 

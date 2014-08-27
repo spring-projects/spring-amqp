@@ -38,7 +38,7 @@ import org.springframework.util.Assert;
  * is considered to be a request).
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class MessagingMessageConverter implements MessageConverter, InitializingBean {
 

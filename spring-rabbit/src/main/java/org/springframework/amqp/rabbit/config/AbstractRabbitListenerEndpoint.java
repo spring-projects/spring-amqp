@@ -34,7 +34,7 @@ import org.springframework.util.Assert;
  * Base model for a Rabbit listener endpoint
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see MethodRabbitListenerEndpoint
  * @see SimpleRabbitListenerEndpoint
  */

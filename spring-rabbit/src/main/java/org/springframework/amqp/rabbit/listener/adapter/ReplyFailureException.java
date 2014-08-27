@@ -22,7 +22,7 @@ import org.springframework.amqp.AmqpException;
  * Exception to be thrown when the reply of a message failed to be sent.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 @SuppressWarnings("serial")
 public class ReplyFailureException extends AmqpException {

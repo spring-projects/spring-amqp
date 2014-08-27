@@ -32,7 +32,7 @@ import org.springframework.util.ErrorHandler;
  * Base {@link RabbitListenerContainerFactory} for Spring's base container implementation.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see AbstractMessageListenerContainer
  */
 public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractMessageListenerContainer>

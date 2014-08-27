@@ -42,7 +42,7 @@ import com.rabbitmq.client.Channel;
  * to extract the payload of a {@link Message}
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see MessageListener
  * @see ChannelAwareMessageListener
  */

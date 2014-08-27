@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
  * Parser for the 'annotation-driven' element of the 'rabbit' namespace.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 class AnnotationDrivenParser implements BeanDefinitionParser {
 

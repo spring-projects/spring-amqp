@@ -252,7 +252,7 @@ import org.springframework.context.annotation.Import;
  * definition registered in the context in case you use the XML configuration.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see RabbitListener
  * @see RabbitListenerAnnotationBeanPostProcessor
  * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar

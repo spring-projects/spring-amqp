@@ -68,7 +68,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  * declaration.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see EnableRabbit
  * @see RabbitListenerAnnotationBeanPostProcessor
  */

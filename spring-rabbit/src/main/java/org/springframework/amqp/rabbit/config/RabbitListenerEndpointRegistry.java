@@ -47,7 +47,7 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
- * @since 2.0
+ * @since 1.4
  * @see RabbitListenerEndpoint
  * @see MessageListenerContainer
  * @see RabbitListenerContainerFactory

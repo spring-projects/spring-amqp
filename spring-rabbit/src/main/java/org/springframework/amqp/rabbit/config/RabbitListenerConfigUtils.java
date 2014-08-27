@@ -20,7 +20,7 @@ package org.springframework.amqp.rabbit.config;
  * Configuration constants for internal sharing across subpackages.
  *
  * @author Juergen Hoeller
- * @since 2.0
+ * @since 1.4
  */
 public abstract class RabbitListenerConfigUtils {
 

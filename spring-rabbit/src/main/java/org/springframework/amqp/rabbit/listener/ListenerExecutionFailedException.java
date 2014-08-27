@@ -26,7 +26,6 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
  *
  * @author Juergen Hoeller
  * @author Gary Russell
- * @since 2.0
  * @see MessageListenerAdapter
  */
 @SuppressWarnings("serial")

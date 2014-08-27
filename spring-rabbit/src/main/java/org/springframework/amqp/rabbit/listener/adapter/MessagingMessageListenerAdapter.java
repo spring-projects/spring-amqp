@@ -37,7 +37,7 @@ import com.rabbitmq.client.Channel;
  * be injected as method arguments if necessary.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
 

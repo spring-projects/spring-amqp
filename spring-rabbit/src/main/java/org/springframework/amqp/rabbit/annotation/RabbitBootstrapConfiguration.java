@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Role;
  * annotation.  See {@link EnableRabbit} Javadoc for complete usage.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see RabbitListenerAnnotationBeanPostProcessor
  * @see RabbitListenerEndpointRegistry
  * @see EnableRabbit

@@ -24,7 +24,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
  * {@link RabbitListenerEndpoint} definition.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  * @see RabbitListenerEndpoint
  */
 public interface RabbitListenerContainerFactory<C extends MessageListenerContainer> {

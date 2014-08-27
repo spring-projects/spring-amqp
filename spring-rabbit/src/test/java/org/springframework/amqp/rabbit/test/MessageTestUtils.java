@@ -26,7 +26,7 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
  * {@link org.springframework.amqp.core.Message} related utilities.
  *
  * @author Stephane Nicoll
- * @since 2.0
+ * @since 1.4
  */
 public abstract class MessageTestUtils {
 
