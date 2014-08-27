@@ -24,7 +24,7 @@ import org.springframework.messaging.MessageHeaders;
  * Message} Headers.
  *
  * @author Mark Fisher
- * @since 2.0
+ * @since 1.4
  */
 public abstract class AmqpHeaders {
 
@@ -79,6 +79,8 @@ public abstract class AmqpHeaders {
 	public static final String SPRING_REPLY_TO_STACK = PREFIX + "springReplyToStack";
 
 	public static final String PUBLISH_CONFIRM = PREFIX + "publishConfirm";
+
+	public static final String PUBLISH_CONFIRM_NACK_CAUSE = PREFIX + "publishConfirmNackCause";
 
 	public static final String RETURN_REPLY_CODE = PREFIX + "returnReplyCode";
 
