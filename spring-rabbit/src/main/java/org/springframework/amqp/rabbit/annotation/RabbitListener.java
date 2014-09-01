@@ -111,10 +111,12 @@ public @interface RabbitListener {
 	boolean exclusive() default false;
 
 	/**
-	 * The priority of this endpoint. Requires RabbitMQ 3.2 or higher.
-	 * @return the priority for the endpoint. Default is {@code -1}.
+	 * The priority of this endpoint. Requires RabbitMQ 3.2 or higher. Does not change
+	 * the container priority by default. Larger numbers indicate higher priority, and
+	 * both positive and negative numbers can be used.
+	 * @return the priority for the endpoint.
 	 */
-	int priority() default -1;
+	String priority() default "";
 
 	/**
 	 * The routing key to send along with a response message.

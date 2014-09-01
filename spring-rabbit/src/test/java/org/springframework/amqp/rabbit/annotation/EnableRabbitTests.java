@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.annotation;
 
 
+import static org.mockito.Mockito.mock;
+
 import org.hamcrest.core.Is;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,11 +37,12 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
-
-import static org.mockito.Mockito.*;
+import org.springframework.stereotype.Component;
 
 /**
  *
@@ -67,10 +70,18 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	}
 
 	@Override
+	@Test
+	public void fullConfigurableConfiguration() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				EnableRabbitFullConfigurableConfig.class, FullConfigurableBean.class);
+		testFullConfiguration(context);
+	}
+
+	@Override
 	public void noRabbitAdminConfiguration() {
 		thrown.expect(BeanCreationException.class);
 		thrown.expectMessage("'rabbitAdmin'");
-		new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, FullBean.class);
+		new AnnotationConfigApplicationContext(EnableRabbitSampleConfig.class, FullBean.class).close();
 	}
 
 	@Override
@@ -113,7 +124,15 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		thrown.expect(BeanCreationException.class);
 		thrown.expectMessage("customFactory"); // Not found
 		new AnnotationConfigApplicationContext(
-				EnableRabbitSampleConfig.class, CustomBean.class);
+				EnableRabbitSampleConfig.class, CustomBean.class).close();
+	}
+
+	@Test
+	public void invalidPriorityConfiguration() {
+		thrown.expect(BeanCreationException.class);
+		thrown.expectMessage("NotANumber"); // Invalid number
+		new AnnotationConfigApplicationContext(
+				EnableRabbitSampleConfig.class, InvalidPriorityBean.class).close();
 	}
 
 	@EnableRabbit
@@ -143,6 +162,27 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		@Bean
 		public RabbitAdmin rabbitAdmin() {
 			return mock(RabbitAdmin.class);
+		}
+	}
+
+	@EnableRabbit
+	@Configuration
+	@PropertySource("classpath:/org/springframework/amqp/rabbit/annotation/rabbit-listener.properties")
+	static class EnableRabbitFullConfigurableConfig {
+
+		@Bean
+		public RabbitListenerContainerTestFactory simpleFactory() {
+			return new RabbitListenerContainerTestFactory();
+		}
+
+		@Bean
+		public RabbitAdmin rabbitAdmin() {
+			return mock(RabbitAdmin.class);
+		}
+
+		@Bean
+		public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+			return new PropertySourcesPlaceholderConfigurer();
 		}
 	}
 
@@ -227,6 +267,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		@Bean
 		public RabbitListenerContainerTestFactory defaultFactory() {
 			return new RabbitListenerContainerTestFactory();
+		}
+	}
+
+	@Component
+	static class InvalidPriorityBean {
+
+		@RabbitListener(queues = "myQueue", priority = "NotANumber")
+		public void customHandle(String msg) {
 		}
 	}
 

@@ -16,6 +16,10 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -35,8 +39,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
@@ -77,6 +79,8 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		assertEquals("metaTestQueue", ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator().next());
+
+		context.close();
 	}
 
 
