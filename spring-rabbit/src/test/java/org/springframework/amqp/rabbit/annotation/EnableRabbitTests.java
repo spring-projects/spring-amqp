@@ -35,6 +35,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
@@ -63,6 +65,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	public void fullConfiguration() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				EnableRabbitFullConfig.class, FullBean.class);
+		testFullConfiguration(context);
+	}
+
+	@Override
+	@Test
+	public void fullConfigurableConfiguration() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				EnableRabbitFullConfigurableConfig.class, FullConfigurableBean.class);
 		testFullConfiguration(context);
 	}
 
@@ -143,6 +153,27 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		@Bean
 		public RabbitAdmin rabbitAdmin() {
 			return mock(RabbitAdmin.class);
+		}
+	}
+
+	@EnableRabbit
+	@Configuration
+	@PropertySource("classpath:/org/springframework/amqp/rabbit/annotation/rabbit-listener.properties")
+	static class EnableRabbitFullConfigurableConfig {
+
+		@Bean
+		public RabbitListenerContainerTestFactory simpleFactory() {
+			return new RabbitListenerContainerTestFactory();
+		}
+
+		@Bean
+		public RabbitAdmin rabbitAdmin() {
+			return mock(RabbitAdmin.class);
+		}
+
+		@Bean
+		public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+			return new PropertySourcesPlaceholderConfigurer();
 		}
 	}
 

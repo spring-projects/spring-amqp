@@ -51,6 +51,14 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 	}
 
 	@Override
+	@Test
+	public void fullConfigurableConfiguration() {
+		ApplicationContext context = new ClassPathXmlApplicationContext(
+				"annotation-driven-full-configurable-config.xml", getClass());
+		testFullConfiguration(context);
+	}
+
+	@Override
 	public void noRabbitAdminConfiguration() {
 		thrown.expect(BeanCreationException.class);
 		thrown.expectMessage("'rabbitAdmin'");
