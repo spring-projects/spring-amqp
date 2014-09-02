@@ -40,6 +40,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.stereotype.Component;
 
 import static org.mockito.Mockito.*;
 
@@ -124,6 +125,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		thrown.expectMessage("customFactory"); // Not found
 		new AnnotationConfigApplicationContext(
 				EnableRabbitSampleConfig.class, CustomBean.class);
+	}
+
+	@Test
+	public void invalidPriorityConfiguration() {
+		thrown.expect(BeanCreationException.class);
+		thrown.expectMessage("NotANumber"); // Invalid number
+		new AnnotationConfigApplicationContext(
+				EnableRabbitSampleConfig.class, InvalidPriorityBean.class);
 	}
 
 	@EnableRabbit
@@ -258,6 +267,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		@Bean
 		public RabbitListenerContainerTestFactory defaultFactory() {
 			return new RabbitListenerContainerTestFactory();
+		}
+	}
+
+	@Component
+	static class InvalidPriorityBean {
+
+		@RabbitListener(queues = "myQueue", priority = "NotANumber")
+		public void customHandle(String msg) {
 		}
 	}
 

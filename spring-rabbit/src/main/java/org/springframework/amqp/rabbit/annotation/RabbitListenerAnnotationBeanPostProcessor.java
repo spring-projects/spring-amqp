@@ -227,8 +227,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
 
 		endpoint.setExclusive(rabbitListener.exclusive());
-		if (rabbitListener.priority() >= 0) {
-			endpoint.setPriority(rabbitListener.priority());
+		String priority = resolve(rabbitListener.priority());
+		if (StringUtils.hasText(priority)) {
+			try {
+				endpoint.setPriority(Integer.valueOf(priority));
+			}
+			catch (NumberFormatException ex) {
+				throw new BeanInitializationException("Invalid priority value for " +
+						rabbitListener + " (must be an integer)", ex);
+			}
 		}
 		if (StringUtils.hasText(rabbitListener.responseRoutingKey())) {
 			endpoint.setResponseRoutingKey(resolve(rabbitListener.responseRoutingKey()));
