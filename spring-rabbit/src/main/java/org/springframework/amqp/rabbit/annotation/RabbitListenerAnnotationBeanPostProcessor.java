@@ -35,6 +35,7 @@ import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
@@ -223,30 +224,38 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-		endpoint.setQueueNames(rabbitListener.queues());
+		endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
 
 		endpoint.setExclusive(rabbitListener.exclusive());
-		if (rabbitListener.priority() >= 0) {
-			endpoint.setPriority(rabbitListener.priority());
+		String priority = resolve(rabbitListener.priority());
+		if (StringUtils.hasText(priority)) {
+			try {
+				endpoint.setPriority(Integer.valueOf(priority));
+			}
+			catch (NumberFormatException ex) {
+				throw new BeanInitializationException("Invalid priority value for " +
+						rabbitListener + " (must be an integer)", ex);
+			}
 		}
 		if (StringUtils.hasText(rabbitListener.responseRoutingKey())) {
-			endpoint.setResponseRoutingKey(rabbitListener.responseRoutingKey());
+			endpoint.setResponseRoutingKey(resolve(rabbitListener.responseRoutingKey()));
 		}
-		if (StringUtils.hasText(rabbitListener.admin())) {
+		String rabbitAdmin = resolve(rabbitListener.admin());
+		if (StringUtils.hasText(rabbitAdmin)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve RabbitAdmin by bean name");
 			try {
-				endpoint.setAdmin(this.beanFactory.getBean(rabbitListener.admin(), RabbitAdmin.class));
+				endpoint.setAdmin(this.beanFactory.getBean(rabbitAdmin, RabbitAdmin.class));
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on [" +
 						method + "], no " + RabbitAdmin.class.getSimpleName() + " with id '" +
-						rabbitListener.admin() + "' was found in the application context", ex);
+						rabbitAdmin + "' was found in the application context", ex);
 			}
 		}
 
 
 		RabbitListenerContainerFactory<?> factory = null;
-		String containerFactoryBeanName = rabbitListener.containerFactory();
+		String containerFactoryBeanName = resolve(rabbitListener.containerFactory());
 		if (StringUtils.hasText(containerFactoryBeanName)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to obtain container factory by bean name");
 			try {
@@ -264,13 +273,32 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private String getEndpointId(RabbitListener rabbitListener) {
 		if (StringUtils.hasText(rabbitListener.id())) {
-			return rabbitListener.id();
+			return resolve(rabbitListener.id());
 		}
 		else {
 			return "org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#" + counter.getAndIncrement();
 		}
 	}
 
+	private String[] resolveQueues(String... queues) {
+		String[] result = new String[queues.length];
+		for (int i = 0; i < queues.length; i++) {
+			result[i] = resolve(queues[i]);
+		}
+		return result;
+	}
+
+	/**
+	 * Resolve the specified value if possible.
+	 *
+	 * @see ConfigurableBeanFactory#resolveEmbeddedValue
+	 */
+	private String resolve(String value) {
+		if (this.beanFactory != null && this.beanFactory instanceof ConfigurableBeanFactory) {
+			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
+		}
+		return value;
+	}
 
 	/**
 	 * An {@link MessageHandlerMethodFactory} adapter that offers a configurable underlying

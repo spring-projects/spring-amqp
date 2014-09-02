@@ -59,6 +59,9 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	public abstract void fullConfiguration();
 
 	@Test
+	public abstract void fullConfigurableConfiguration();
+
+	@Test
 	public abstract void noRabbitAdminConfiguration();
 
 	@Test
@@ -139,7 +142,19 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	static class FullBean {
 
 		@RabbitListener(id = "listener1", containerFactory = "simpleFactory", queues = {"queue1", "queue2"},
-				exclusive = true, priority = 34, responseRoutingKey = "routing-123", admin = "rabbitAdmin")
+				exclusive = true, priority = "34", responseRoutingKey = "routing-123", admin = "rabbitAdmin")
+		public void fullHandle(String msg) {
+
+		}
+	}
+
+	@Component
+	static class FullConfigurableBean {
+
+		@RabbitListener(id = "${rabbit.listener.id}", containerFactory = "${rabbit.listener.containerFactory}",
+				queues = {"${rabbit.listener.queue}", "queue2"}, exclusive = true,
+				priority = "${rabbit.listener.priority}", responseRoutingKey = "${rabbit.listener.responseRoutingKey}",
+				admin = "${rabbit.listener.admin}")
 		public void fullHandle(String msg) {
 
 		}
