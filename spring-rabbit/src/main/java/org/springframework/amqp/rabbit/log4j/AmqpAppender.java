@@ -43,6 +43,7 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
@@ -90,6 +91,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  *   #log4j.appender.amqp.contentEncoding=null
  *   log4j.appender.amqp.generateId=false
  *   #log4j.appender.amqp.charset=null
+ *   log4j.appender.amqp.deliveryMode=PERSISTENT
  *   #-------------------------------
  *   ## Sender configuration
  *   #-------------------------------
@@ -238,6 +240,8 @@ public class AmqpAppender extends AppenderSkeleton {
 
 	private boolean durable = true;
 
+	private MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
+
 	private boolean autoDelete = false;
 
 	/**
@@ -371,6 +375,14 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.durable = durable;
 	}
 
+	public String getDeliveryMode() {
+		return this.deliveryMode.toString();
+	}
+
+	public void setDeliveryMode(String deliveryMode) {
+		this.deliveryMode = MessageDeliveryMode.valueOf(deliveryMode);
+	}
+
 	public boolean isAutoDelete() {
 		return autoDelete;
 	}
@@ -472,6 +484,16 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	/**
+	 * Subclasses may modify the final message before sending.
+	 * @param message The message.
+	 * @param event The event.
+	 * @since 1.4
+	 */
+	public Message postProcessMessageBeforeSend(Message message, Event event) {
+		return message;
+	}
+
+	/**
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
@@ -487,6 +509,7 @@ public class AmqpAppender extends AppenderSkeleton {
 					Level level = logEvent.getLevel();
 
 					MessageProperties amqpProps = new MessageProperties();
+					amqpProps.setDeliveryMode(deliveryMode);
 					amqpProps.setContentType(contentType);
 					if (null != contentEncoding) {
 						amqpProps.setContentEncoding(contentEncoding);
@@ -549,6 +572,7 @@ public class AmqpAppender extends AppenderSkeleton {
 						if (message == null) {
 							message = new Message(msgBody.toString().getBytes(), amqpProps);
 						}
+						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(exchangeName, routingKey, message);
 					}
 					catch (AmqpException e) {
@@ -585,11 +609,12 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	@SuppressWarnings("rawtypes")
 	protected class Event {
+
 		final LoggingEvent event;
 
 		final Map properties;
 
-		AtomicInteger retries = new AtomicInteger(0);
+		final AtomicInteger retries = new AtomicInteger(0);
 
 		public Event(LoggingEvent event, Map properties) {
 			this.event = event;
@@ -607,6 +632,7 @@ public class AmqpAppender extends AppenderSkeleton {
 		public int incrementRetries() {
 			return retries.incrementAndGet();
 		}
+
 	}
 
 }

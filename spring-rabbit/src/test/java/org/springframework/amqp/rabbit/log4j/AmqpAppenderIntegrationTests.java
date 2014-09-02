@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.log4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -38,6 +39,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -145,6 +148,10 @@ public class AmqpAppenderIntegrationTests {
 		listenerContainer.setMessageListener(testListener);
 		listenerContainer.start();
 
+		AmqpAppender appender = (AmqpAppender) log.getParent().getAllAppenders().nextElement();
+		assertFalse(appender.isDurable());
+		assertEquals(MessageDeliveryMode.NON_PERSISTENT.toString(), appender.getDeliveryMode());
+
 		Logger log = Logger.getLogger(getClass());
 
 		log.debug("This is a DEBUG message");
@@ -176,6 +183,7 @@ public class AmqpAppenderIntegrationTests {
 		assertNotNull(messageProperties);
 		assertNotNull(messageProperties.getHeaders().get(propertyName));
 		assertEquals(propertyValue, messageProperties.getHeaders().get(propertyName));
+		assertEquals("bar", messageProperties.getHeaders().get("foo"));
 	}
 
 	@Test
@@ -226,4 +234,25 @@ public class AmqpAppenderIntegrationTests {
 		Thread.sleep(1000);
 		Log4jConfigurer.shutdownLogging();
 	}
+
+	public static class EnhancedAppender extends AmqpAppender {
+
+		private String foo;
+
+		@Override
+		public Message postProcessMessageBeforeSend(Message message, Event event) {
+			message.getMessageProperties().setHeader("foo", this.foo);
+			return message;
+		}
+
+		public String getFoo() {
+			return this.foo;
+		}
+
+		public void setFoo(String foo) {
+			this.foo = foo;
+		}
+
+	}
+
 }

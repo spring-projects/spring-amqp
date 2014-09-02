@@ -6,6 +6,12 @@
 	<section>
 		<title>Changes in 1.4 Since 1.3</title>
 		<section>
+			<title>@RabbitListener Annotation</title>
+			POJO listeners can be annotated with <code>@RabbitListener</code>, enabled
+			by <code>@EnableRabbit</code> or <code>&lt;rabbit:annotation-driven /&gt;</code>.
+			More documentation to follow.
+		</section>
+		<section>
 			<title>Listener Container 'Missing Queues Fatal' Attribute</title>
 			<para>
 				1.3.5 introduced the <code>missingQueuesFatal</code> property on the
@@ -32,6 +38,21 @@
 				configuration of SSL options using Spring's dependency
 				injection.
 				See <xref linkend="connection-factory"/>.
+			</para>
+		</section>
+		<section>
+			<title>Log Appender</title>
+			<para>
+				The Log4j <classname>AmqpAppender</classname> now supports the
+				<code>deliveryMode</code> property (<code>PERSISTENT</code> or
+				<code>NON_PERSISTENT</code>, default: <code>PERSISTENT</code>).
+				Previously, all log4j messages were PERSISTENT.
+			</para>
+			<para>
+				The appender also supports modification of the <classname>Message</classname>
+				before sending - allowing, for example, the addition of custom
+				headers. Subclasses should override the
+				<code>postProcessMessageBeforeSend()</code>.
 			</para>
 		</section>
 	</section>
