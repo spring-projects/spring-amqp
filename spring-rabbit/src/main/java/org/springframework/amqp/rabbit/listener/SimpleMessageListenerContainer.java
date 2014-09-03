@@ -1043,6 +1043,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
+						if (ex.getCause() instanceof NoSuchMethodException) {
+							throw new FatalListenerExecutionException("Invalid listener", ex);
+						}
 					}
 					catch (AmqpRejectAndDontRequeueException rejectEx) {
 						/*

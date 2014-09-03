@@ -598,7 +598,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
-		} else if (listener instanceof MessageListener) {
+		}
+		else if (listener instanceof MessageListener) {
 			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted(channel);
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
@@ -615,11 +616,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 					TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
 				}
 			}
-		} else if (listener != null) {
-			throw new IllegalArgumentException("Only MessageListener and SessionAwareMessageListener supported: "
+		}
+		else if (listener != null) {
+			throw new FatalListenerExecutionException("Only MessageListener and SessionAwareMessageListener supported: "
 					+ listener);
-		} else {
-			throw new IllegalStateException("No message listener specified - see property 'messageListener'");
+		}
+		else {
+			throw new FatalListenerExecutionException("No message listener specified - see property 'messageListener'");
 		}
 	}
 

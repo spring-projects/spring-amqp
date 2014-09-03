@@ -12,9 +12,13 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -237,9 +242,40 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.stop();
 	}
 
+	@Test
+	public void testInvalidListener() throws Exception {
+		PojoListener delegate = new PojoListener(null);
+		MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(delegate);
+		messageListenerAdapter.setDefaultListenerMethod("foo");
+		this.container = createContainer(messageListenerAdapter, queue.getName());
+		assertTrue(containerStoppedForAbortWithBadListener());
+	}
+
+	@Test
+	public void testMissingListener() throws Exception {
+		this.container = createContainer(null, queue.getName());
+		assertTrue(containerStoppedForAbortWithBadListener());
+	}
+
+	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+		this.template.convertAndSend(queue.getName(), "foo");
+		int n = 0;
+		while (n++ < 100 && this.container.isRunning()) {
+			Thread.sleep(100);
+		}
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).error(captor.capture());
+		assertThat(captor.getValue(), containsString("Stopping container from aborted consumer"));
+		return !this.container.isRunning();
+	}
+
 	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
-		container.setMessageListener(listener);
+		if (listener != null) {
+			container.setMessageListener(listener);
+		}
 		container.setQueueNames(queueNames);
 		container.afterPropertiesSet();
 		container.start();
