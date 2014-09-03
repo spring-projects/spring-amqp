@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,7 +62,7 @@ import com.rabbitmq.utility.Utility;
  * @author Dave Syer
  * @author Gary Russell
  * @author Casper Mout
- *
+ * @author Artem Bilan
  */
 public class BlockingQueueConsumer {
 
@@ -88,8 +87,6 @@ public class BlockingQueueConsumer {
 
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
-	private volatile long shutdownTimeout;
-
 	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
 
 	private final AcknowledgeMode acknowledgeMode;
@@ -107,8 +104,6 @@ public class BlockingQueueConsumer {
 	private final Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
 	private final boolean defaultRequeuRejected;
-
-	private final CountDownLatch suspendClientThread = new CountDownLatch(1);
 
 	private final Collection<String> consumerTags = Collections.synchronizedSet(new HashSet<String>());
 
@@ -228,13 +223,30 @@ public class BlockingQueueConsumer {
 	/**
 	 * Stop receiving new messages; drain the queue of any prefetched messages.
 	 * @param shutdownTimeout how long (ms) to suspend the client thread.
+	 * @deprecated as redundant option in favor of {@link #basicCancel}.
 	 */
+	@Deprecated
 	public final void setQuiesce(long shutdownTimeout) {
-		this.shutdownTimeout = shutdownTimeout;
-		this.cancelled.set(true);
-		if (logger.isDebugEnabled()) {
-			logger.debug("Quiescing consumer: " + this);
+	}
+
+	protected void basicCancel() {
+		try {
+			synchronized (this.consumerTags) {
+				for (String consumerTag : this.consumerTags) {
+					this.channel.basicCancel(consumerTag);
+				}
+			}
 		}
+		catch (IOException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error performing 'basicCancel'", e);
+			}
+		}
+		this.cancelled.set(true);
+	}
+
+	protected boolean hasDelivery() {
+		return !this.queue.isEmpty();
 	}
 
 	/**
@@ -467,7 +479,6 @@ public class BlockingQueueConsumer {
 
 	public void stop() {
 		this.cancelled.set(true);
-		this.suspendClientThread.countDown();
 		if (consumer != null && consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelReceived.get()) {
 			try {
@@ -539,32 +550,12 @@ public class BlockingQueueConsumer {
 			}
 			synchronized(BlockingQueueConsumer.this.consumerTags) {
 				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-				if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
-					// Signal to the container that we have been cancelled
-					activeObjectCounter.release(BlockingQueueConsumer.this);
-					if (logger.isDebugEnabled()) {
-						logger.debug("Terminating; active consumers now : " + activeObjectCounter.getCount()
-								+ " consumer: " + BlockingQueueConsumer.this);
-					}
-				}
 			}
 		}
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
-			if (cancelled.get()) {
-				try {
-					BlockingQueueConsumer.this.suspendClientThread.await(
-							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS);
-					// AcknowlwdgeMode.NONE message will be lost
-					return;
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					throw new IOException(e);
-				}
-			}
 			if (logger.isDebugEnabled()) {
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}

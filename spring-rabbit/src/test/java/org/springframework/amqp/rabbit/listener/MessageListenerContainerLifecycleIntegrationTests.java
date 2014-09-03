@@ -10,6 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
@@ -225,6 +226,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			container.setTxSize(transactionMode.getTxSize());
 		}
 		container.setQueueNames(queue.getName());
+		container.setShutdownTimeout(30000);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -246,12 +248,16 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			if (!transactional) {
 
 				int messagesReceivedAfterStop = listener.getCount();
-				waited = latch.await(500, TimeUnit.MILLISECONDS);
+				waited = latch.await(1000, TimeUnit.MILLISECONDS);
 				// AMQP-338
 				logger.info("All messages received after stop: " + waited + " (" + messagesReceivedAfterStop + ")");
 
-				assertFalse("Didn't expect to receive all messages after stop", waited);
-
+				if (transactionMode == TransactionMode.PREFETCH_NO_TX) {
+					assertFalse("Didn't expect to receive all messages after stop", waited);
+				}
+				else {
+					assertTrue("Expect to receive all messages after stop", waited);
+				}
 				assertEquals("Unexpected additional messages received after stop", messagesReceivedAfterStop,
 						listener.getCount());
 
