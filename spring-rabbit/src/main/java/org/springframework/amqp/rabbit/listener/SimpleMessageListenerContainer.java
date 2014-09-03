@@ -232,7 +232,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						Entry<BlockingQueueConsumer, Boolean> entry = entryIterator.next();
 						if (entry.getValue()) {
 							BlockingQueueConsumer consumer = entry.getKey();
-							consumer.setQuiesce(this.shutdownTimeout);
+							consumer.basicCancel();
 							this.consumers.put(consumer, false);
 							delta--;
 						}
@@ -669,7 +669,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			synchronized (consumersMonitor) {
 				if (this.consumers != null) {
 					for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
-						consumer.setQuiesce(this.shutdownTimeout);
+						consumer.basicCancel();
 					}
 				}
 			}
@@ -698,7 +698,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		synchronized(consumersMonitor) {
 			consumerActive = this.consumers != null && this.consumers.get(consumer);
 		}
-		return consumerActive != null && consumerActive && this.isActive();
+		return consumerActive && this.isActive();
 	}
 
 	protected int initializeConsumers() {
@@ -761,7 +761,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					catch (Exception e) {
 						consumer.stop();
 						logger.error("Error starting new consumer", e);
-						consumers.remove(consumer);
+						this.cancellationLock.release(consumer);
+						this.consumers.remove(consumer);
 					}
 				}
 			}
@@ -786,6 +787,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.consumers != null && this.consumers.size() > concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
+					consumer.basicCancel();
 					this.consumers.put(consumer, false);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Idle consumer terminating: " + consumer);
@@ -805,7 +807,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						if (logger.isDebugEnabled()) {
 							logger.debug("Queues changed; stopping consumer: " + consumer.getKey());
 						}
-						consumer.getKey().setQuiesce(this.shutdownTimeout);
+						consumer.getKey().basicCancel();
 						consumer.setValue(false);
 						count++;
 					}
@@ -1020,7 +1022,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Always better to stop receiving as soon as possible if
 				// transactional
 				boolean continuable = false;
-				while (isActive(this.consumer) || continuable) {
+				while (isActive(this.consumer) || this.consumer.hasDelivery() || continuable) {
 					try {
 						// Will come back false when the queue is drained
 						continuable = receiveAndExecute(this.consumer) && !isChannelTransacted();
@@ -1120,6 +1122,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Cancelling " + this.consumer);
 				try {
 					this.consumer.stop();
+					SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
 					synchronized (consumersMonitor) {
 						if (SimpleMessageListenerContainer.this.consumers != null) {
 							SimpleMessageListenerContainer.this.consumers.remove(this.consumer);

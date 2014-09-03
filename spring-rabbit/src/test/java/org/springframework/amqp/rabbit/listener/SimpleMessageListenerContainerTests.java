@@ -10,6 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
@@ -20,6 +21,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -78,7 +80,7 @@ import com.rabbitmq.client.Envelope;
  * @author David Syer
  * @author Gunnar Hillert
  * @author Gary Russell
- *
+ * @author Artem Bilan
  */
 public class SimpleMessageListenerContainerTests {
 
@@ -350,6 +352,7 @@ public class SimpleMessageListenerContainerTests {
 
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueueNames("foo");
+		container.setReceiveTimeout(1);
 		container.setMessageListener(new MessageListener() {
 
 			@Override
@@ -363,8 +366,8 @@ public class SimpleMessageListenerContainerTests {
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container.stop();
 		verify(channel1).basicCancel("0");
-		verify(channel2).basicCancel("1");
-		verify(channel2).basicCancel("2");
+		verify(channel2, atLeastOnce()).basicCancel("1");
+		verify(channel2, atLeastOnce()).basicCancel("2");
 	}
 
 	@Test
@@ -517,10 +520,12 @@ public class SimpleMessageListenerContainerTests {
 			public void onMessage(Message message) {
 			}
 		});
+		container.setReceiveTimeout(1);
 		container.afterPropertiesSet();
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		when(logger.isDebugEnabled()).thenReturn(false);
 		final CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(new Answer<Object>() {
 
