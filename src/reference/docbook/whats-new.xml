@@ -7,17 +7,23 @@
 		<title>Changes in 1.4 Since 1.3</title>
 		<section>
 			<title>@RabbitListener Annotation</title>
-			POJO listeners can be annotated with <code>@RabbitListener</code>, enabled
-			by <code>@EnableRabbit</code> or <code>&lt;rabbit:annotation-driven /&gt;</code>.
-			More documentation to follow.
+			<para>
+				POJO listeners can be annotated with <code>@RabbitListener</code>, enabled
+				by <code>@EnableRabbit</code> or <code>&lt;rabbit:annotation-driven /&gt;</code>.
+				Spring Framework 4.1 is required for this feature.
+				More documentation to follow.
+			</para>
 		</section>
 		<section>
 			<title>RabbitMessagingTemplate</title>
-			A new <classname>RabbitMessagingTemplate</classname> is provided to allow users
-			to interact with RabbitMQ using <code>spring-messaging</code> <classname>Message</classname>s.
-			It uses the <classname>RabbitTemplate</classname> internally which can be configured
-			as normal.
-			More documentation to follow.
+			<para>
+				A new <classname>RabbitMessagingTemplate</classname> is provided to allow users
+				to interact with RabbitMQ using <code>spring-messaging</code> <classname>Message</classname>s.
+				It uses the <classname>RabbitTemplate</classname> internally which can be configured
+				as normal.
+				Spring Framework 4.1 is required for this feature.
+				More documentation to follow.
+			</para>
 		</section>
 		<section>
 			<title>Listener Container 'Missing Queues Fatal' Attribute</title>

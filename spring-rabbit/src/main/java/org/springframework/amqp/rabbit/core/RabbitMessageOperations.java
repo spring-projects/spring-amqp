@@ -118,6 +118,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param routingKey the routing key
 	 * @param request payload for the request message to send
 	 * @param targetClass the target type to convert the payload of the reply to
+	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
 	 */
@@ -135,6 +136,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param request payload for the request message to send
 	 * @param headers headers for the request message to send
 	 * @param targetClass the target type to convert the payload of the reply to
+	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
 	 */
@@ -152,6 +154,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param request payload for the request message to send
 	 * @param targetClass the target type to convert the payload of the reply to
 	 * @param requestPostProcessor post process to apply to the request message
+	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
 	 */
@@ -168,8 +171,10 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param request payload for the request message to send
+	 * @param headers headers for the message to send
 	 * @param targetClass the target type to convert the payload of the reply to
 	 * @param requestPostProcessor post process to apply to the request message
+	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
 	 */

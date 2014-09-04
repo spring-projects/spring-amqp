@@ -52,6 +52,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	/**
 	 * Create an instance with the {@link RabbitTemplate} to use.
+	 * @param rabbitTemplate the template.
 	 */
 	public RabbitMessagingTemplate(RabbitTemplate rabbitTemplate) {
 		Assert.notNull("RabbitTemplate must not be null");
@@ -61,13 +62,14 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	/**
 	 * Set the {@link RabbitTemplate} to use.
+	 * @param rabbitTemplate the template.
 	 */
 	public void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
 		this.rabbitTemplate = rabbitTemplate;
 	}
 
 	/**
-	 * Return the configured {@link RabbitTemplate}.
+	 * @return the configured {@link RabbitTemplate}.
 	 */
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
@@ -82,6 +84,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	 * <p>Consider configuring a {@link MessagingMessageConverter} with a different
 	 * {@link MessagingMessageConverter#setPayloadConverter(MessageConverter) payload converter}
 	 * for more advanced scenario.
+	 * @param amqpMessageConverter the message converter.
 	 * @see MessagingMessageConverter
 	 */
 	public void setAmqpMessageConverter(MessageConverter amqpMessageConverter) {
@@ -89,7 +92,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	/**
-	 * Return the {@link MessageConverter} to use to convert a {@link org.springframework.messaging.Message}
+	 * @return the {@link MessageConverter} to use to convert a {@link org.springframework.messaging.Message}
 	 * from the messaging to and from a {@link org.springframework.amqp.core.Message}.
 	 */
 	public MessageConverter getAmqpMessageConverter() {

@@ -487,6 +487,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Subclasses may modify the final message before sending.
 	 * @param message The message.
 	 * @param event The event.
+	 * @return The modified message.
 	 * @since 1.4
 	 */
 	public Message postProcessMessageBeforeSend(Message message, Event event) {

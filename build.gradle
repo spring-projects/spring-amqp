@@ -39,8 +39,8 @@ allprojects {
 ext {
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
-		"http://docs.oracle.com/javase/6/docs/api",
-		"http://docs.oracle.com/javaee/6/api",
+		"http://docs.oracle.com/javase/6/docs/api/",
+		"http://docs.oracle.com/javaee/6/api/",
 		"http://docs.spring.io/spring/docs/4.1.x/javadoc-api/"
 	] as String[]
 }
@@ -81,7 +81,7 @@ subprojects { subproject ->
 		mockitoVersion = '1.9.5'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.3.4'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.0.BUILD-SNAPSHOT'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.0.RELEASE'
 
 		springRetryVersion = '1.1.0.RELEASE'
 	}

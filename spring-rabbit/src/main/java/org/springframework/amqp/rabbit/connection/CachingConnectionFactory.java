@@ -452,7 +452,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 	}
 
-	/**
+	/*
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
 	protected void reset(List<ChannelProxy> channels, List<ChannelProxy> txChannels) {
