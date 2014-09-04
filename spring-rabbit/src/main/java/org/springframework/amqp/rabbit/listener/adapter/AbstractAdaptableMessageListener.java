@@ -28,12 +28,9 @@ import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
-import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
-import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 
@@ -42,6 +39,7 @@ import com.rabbitmq.client.Channel;
  * to extract the payload of a {@link Message}
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  * @see MessageListener
  * @see ChannelAwareMessageListener
@@ -65,8 +63,6 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	private MessageConverter messageConverter = new SimpleMessageConverter();
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
-
-	private final MessagingMessageConverterAdapter messagingMessageConverter = new MessagingMessageConverterAdapter();
 
 	private String encoding = DEFAULT_ENCODING;
 
@@ -126,27 +122,6 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	protected MessageConverter getMessageConverter() {
 		return this.messageConverter;
 	}
-
-	/**
-	 * Set the {@link AmqpHeaderMapper} implementation to use to map the standard
-	 * AMQP headers. By default, a {@link org.springframework.amqp.support.SimpleAmqpHeaderMapper
-	 * SimpleAmqpHeaderMapper} is used.
-	 * @param headerMapper the {@link AmqpHeaderMapper} instance.
-	 * @see org.springframework.amqp.support.SimpleAmqpHeaderMapper
-	 */
-	public void setHeaderMapper(AmqpHeaderMapper headerMapper) {
-		Assert.notNull(headerMapper, "HeaderMapper must not be null");
-		this.messagingMessageConverter.setHeaderMapper(headerMapper);
-	}
-
-	/**
-	 * @return the {@link MessagingMessageConverter} for this listener,
-	 * being able to convert {@link org.springframework.messaging.Message}.
-	 */
-	protected final MessagingMessageConverter getMessagingMessageConverter() {
-		return this.messagingMessageConverter;
-	}
-
 
 	/**
 	 * Rabbit {@link MessageListener} entry point.
@@ -244,13 +219,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	protected Message buildMessage(Channel channel, Object result) throws Exception {
 		MessageConverter converter = getMessageConverter();
-		if (converter != null) {
-			if (result instanceof org.springframework.messaging.Message) {
-				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
-			}
-			else {
-				return converter.toMessage(result, new MessageProperties());
-			}
+		if (converter != null && !(result instanceof Message)) {
+			return converter.toMessage(result, new MessageProperties());
 		}
 		else {
 			if (!(result instanceof Message)) {
@@ -343,18 +313,6 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	protected void postProcessChannel(Channel channel, Message response) throws Exception {
-	}
-
-	/**
-	 * Delegates payload extraction to {@link #extractMessage(Message)} to
-	 * enforce backward compatibility.
-	 */
-	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
-
-		@Override
-		protected Object extractPayload(Message message) {
-			return extractMessage(message);
-		}
 	}
 
 }
