@@ -170,4 +170,44 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	}
 
+	/**
+	 * Build a Rabbit message to be sent as response based on the given result object.
+	 * @param channel the Rabbit Channel to operate on
+	 * @param result the content of the message, as returned from the listener method
+	 * @return the Rabbit <code>Message</code> (never <code>null</code>)
+	 * @throws Exception if thrown by Rabbit API methods
+	 * @see #setMessageConverter
+	 */
+	@Override
+	protected org.springframework.amqp.core.Message buildMessage(Channel channel, Object result) throws Exception {
+		MessageConverter converter = getMessageConverter();
+		if (converter != null && !(result instanceof org.springframework.amqp.core.Message)) {
+			if (result instanceof org.springframework.messaging.Message) {
+				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
+			}
+			else {
+				return converter.toMessage(result, new MessageProperties());
+			}
+		}
+		else {
+			if (!(result instanceof org.springframework.amqp.core.Message)) {
+				throw new MessageConversionException("No MessageConverter specified - cannot handle message [" + result
+						+ "]");
+			}
+			return (org.springframework.amqp.core.Message) result;
+		}
+	}
+
+	/**
+	 * Delegates payload extraction to {@link #extractMessage(Message)} to
+	 * enforce backward compatibility.
+	 */
+	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
+
+		@Override
+		protected Object extractPayload(org.springframework.amqp.core.Message message) {
+			return extractMessage(message);
+		}
+	}
+
 }
