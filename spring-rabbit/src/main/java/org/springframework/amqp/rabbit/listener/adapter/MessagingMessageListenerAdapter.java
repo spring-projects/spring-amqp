@@ -16,10 +16,16 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.support.AmqpHeaderMapper;
+import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
+import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 
@@ -37,11 +43,14 @@ import com.rabbitmq.client.Channel;
  * be injected as method arguments if necessary.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
 
 	private InvocableHandlerMethod handlerMethod;
+
+	private final MessagingMessageConverterAdapter messagingMessageConverter = new MessagingMessageConverterAdapter();
 
 
 	/**
@@ -51,6 +60,26 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 */
 	public void setHandlerMethod(InvocableHandlerMethod handlerMethod) {
 		this.handlerMethod = handlerMethod;
+	}
+
+	/**
+	 * Set the {@link AmqpHeaderMapper} implementation to use to map the standard
+	 * AMQP headers. By default, a {@link org.springframework.amqp.support.SimpleAmqpHeaderMapper
+	 * SimpleAmqpHeaderMapper} is used.
+	 * @param headerMapper the {@link AmqpHeaderMapper} instance.
+	 * @see org.springframework.amqp.support.SimpleAmqpHeaderMapper
+	 */
+	public void setHeaderMapper(AmqpHeaderMapper headerMapper) {
+		Assert.notNull(headerMapper, "HeaderMapper must not be null");
+		this.messagingMessageConverter.setHeaderMapper(headerMapper);
+	}
+
+	/**
+	 * @return the {@link MessagingMessageConverter} for this listener,
+	 * being able to convert {@link org.springframework.messaging.Message}.
+	 */
+	protected final MessagingMessageConverter getMessagingMessageConverter() {
+		return this.messagingMessageConverter;
 	}
 
 
@@ -69,7 +98,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	protected Message<?> toMessagingMessage(org.springframework.amqp.core.Message amqpMessage) {
 		return (Message<?>) getMessagingMessageConverter().fromMessage(amqpMessage);
 	}
@@ -78,7 +106,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * Invoke the handler, wrapping any exception to a {@link ListenerExecutionFailedException}
 	 * with a dedicated error message.
 	 */
-	private Object invokeHandler(org.springframework.amqp.core.Message amqpMessage, Channel channel, Message<?> message) {
+	private Object invokeHandler(org.springframework.amqp.core.Message amqpMessage, Channel channel,
+			Message<?> message) {
 		try {
 			return this.handlerMethod.invoke(message, amqpMessage, channel);
 		}
@@ -93,11 +122,52 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	private String createMessagingErrorMessage(String description) {
-		StringBuilder sb = new StringBuilder(description).append("\n")
-				.append("Endpoint handler details:\n")
-				.append("Method [").append(this.handlerMethod.getMethod()).append("]\n")
-				.append("Bean [").append(this.handlerMethod.getBean()).append("]\n");
-		return sb.toString();
+		return description + "\n"
+				+ "Endpoint handler details:\n"
+				+ "Method [" + this.handlerMethod.getMethod() + "]\n"
+				+ "Bean [" + this.handlerMethod.getBean() + "]";
+	}
+
+	/**
+	 * Build a Rabbit message to be sent as response based on the given result object.
+	 * @param channel the Rabbit Channel to operate on
+	 * @param result the content of the message, as returned from the listener method
+	 * @return the Rabbit <code>Message</code> (never <code>null</code>)
+	 * @throws Exception if thrown by Rabbit API methods
+	 * @see #setMessageConverter
+	 */
+	@Override
+	protected org.springframework.amqp.core.Message buildMessage(Channel channel, Object result) throws Exception {
+		MessageConverter converter = getMessageConverter();
+		if (converter != null && !(result instanceof org.springframework.amqp.core.Message)) {
+			if (result instanceof org.springframework.messaging.Message) {
+				return this.messagingMessageConverter.toMessage(result, new MessageProperties());
+			}
+			else {
+				return converter.toMessage(result, new MessageProperties());
+			}
+		}
+		else {
+			if (!(result instanceof org.springframework.amqp.core.Message)) {
+				throw new MessageConversionException("No MessageConverter specified - cannot handle message ["
+						+ result + "]");
+			}
+			return (org.springframework.amqp.core.Message) result;
+		}
+	}
+
+	/**
+	 * Delegates payload extraction to
+	 * {@link #extractMessage(org.springframework.amqp.core.Message message)}
+	 * to enforce backward compatibility.
+	 */
+	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
+
+		@Override
+		protected Object extractPayload(org.springframework.amqp.core.Message message) {
+			return extractMessage(message);
+		}
+
 	}
 
 }
