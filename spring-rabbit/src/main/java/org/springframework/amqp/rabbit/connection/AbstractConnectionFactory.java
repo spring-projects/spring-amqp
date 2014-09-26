@@ -93,6 +93,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.rabbitConnectionFactory.setRequestedHeartbeat(requestedHeartBeat);
 	}
 
+	public void setConnectionTimeout(int connectionTimeout) {
+		this.rabbitConnectionFactory.setConnectionTimeout(connectionTimeout);
+	}
+
 	public int getPort() {
 		return this.rabbitConnectionFactory.getPort();
 	}

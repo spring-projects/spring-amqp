@@ -354,7 +354,8 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
       <para>
         The <classname>CachingConnectionFactory</classname> uses an instance of the Rabbit
         client <classname>ConnectionFactory</classname>; a number of configuration properties
-        are passed through (<code>host, port, userName, password, requestedHeartBeat</code> for
+        are passed through (<code>host, port, userName, password, requestedHeartBeat,
+        connectionTimeout</code> for
         example) when setting the equivalent property on the <classname>CachingConnectionFactory
         </classname>. To set other properties (<code>clientProperties</code> for example),
         define an instance of the rabbit factory and provide a reference to it using

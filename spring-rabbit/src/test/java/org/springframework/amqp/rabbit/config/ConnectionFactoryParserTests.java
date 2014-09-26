@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -58,9 +59,8 @@ public final class ConnectionFactoryParserTests {
 		assertNull(dfa.getPropertyValue("executorService"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.TRUE, dfa.getPropertyValue("publisherReturns"));
-		assertEquals(123,
-				((com.rabbitmq.client.ConnectionFactory) dfa.getPropertyValue("rabbitConnectionFactory"))
-						.getRequestedHeartbeat());
+		assertEquals(123, TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.requestedHeartbeat"));
+		assertEquals(789,  TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
 		assertEquals(CachingConnectionFactory.CacheMode.CHANNEL, connectionFactory.getCacheMode());
 	}
 
@@ -83,6 +83,7 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherReturns"));
 		assertEquals(CachingConnectionFactory.CacheMode.CONNECTION, connectionFactory.getCacheMode());
+		assertEquals(0,  TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
 		assertEquals(10, connectionFactory.getConnectionCachesize());
 	}
 

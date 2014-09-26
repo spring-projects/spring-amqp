@@ -1136,6 +1136,14 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="connection-timeout" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Sets the connection timeout (milliseconds) on the underlying Rabbit connection factory.
+	Default: 0 (infinite timeout).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="cache-mode" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[

@@ -11,7 +11,7 @@
 
 	<rabbit:connection-factory id="kitchenSink" host="foo" virtual-host="/bar"
 		channel-cache-size="10" port="6888" username="user" password="password"
-		publisher-confirms="true" publisher-returns="true"
+		publisher-confirms="true" publisher-returns="true" connection-timeout="789"
 		requested-heartbeat="123"/>
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
