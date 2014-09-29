@@ -17,7 +17,8 @@
 		<rabbit:listener queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5">
+	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
+			auto-declare="false">
 		<rabbit:listener queues="foo, bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 

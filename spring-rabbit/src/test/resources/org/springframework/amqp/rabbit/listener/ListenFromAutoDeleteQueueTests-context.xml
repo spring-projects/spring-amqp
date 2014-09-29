@@ -9,9 +9,12 @@
 
 	<rabbit:queue id="anon" />
 
+	<rabbit:queue id="anon2" />
+
 	<rabbit:direct-exchange name="testContainerWithAutoDeleteQueues" auto-delete="true">
 		<rabbit:bindings>
 			<rabbit:binding queue="anon" key="anon" />
+			<rabbit:binding queue="anon2" key="anon2" />
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 
@@ -34,8 +37,8 @@
 	</rabbit:listener-container>
 
 	<rabbit:queue id="xExpires" name="xExpires">
-		<rabbit:queue-arguments value-type="long">
-			<entry key="x-expires" value="100"/>
+		<rabbit:queue-arguments>
+			<entry key="x-expires" value="#{100}"/>
 		</rabbit:queue-arguments>
 	</rabbit:queue>
 
@@ -43,6 +46,9 @@
 		<rabbit:listener ref="foo" queues="xExpires"/>
 	</rabbit:listener-container>
 
+	<rabbit:listener-container id="container4" auto-declare="false">
+		<rabbit:listener ref="foo" queues="anon2"/>
+	</rabbit:listener-container>
 
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
 

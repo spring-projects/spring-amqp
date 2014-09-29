@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.config;
 
 import org.w3c.dom.Element;
@@ -28,6 +29,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0.1
  *
  */
@@ -80,6 +82,8 @@ public class RabbitNamespaceUtils {
 	private static final String RECOVERY_INTERVAL = "recovery-interval";
 
 	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
+
+	private static final String AUTO_DECLARE = "auto-declare";
 
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
@@ -203,6 +207,11 @@ public class RabbitNamespaceUtils {
 		String missingQueuesFatal = containerEle.getAttribute(MISSING_QUEUES_FATAL);
 		if (StringUtils.hasText(missingQueuesFatal)) {
 			containerDef.getPropertyValues().add("missingQueuesFatal", new TypedStringValue(missingQueuesFatal));
+		}
+
+		String autoDeclare = containerEle.getAttribute(AUTO_DECLARE);
+		if (StringUtils.hasText(autoDeclare)) {
+			containerDef.getPropertyValues().add("autoDeclare", new TypedStringValue(autoDeclare));
 		}
 
 		return containerDef;

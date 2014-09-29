@@ -18,9 +18,12 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -86,7 +89,6 @@ public class ListenFromAutoDeleteQueueTests {
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 		verify(admin, times(1)).initialize(); // should only be called by one of the consumers
-		this.listenerContainer1.stop();
 	}
 
 	@Test
@@ -99,7 +101,6 @@ public class ListenFromAutoDeleteQueueTests {
 		this.listenerContainer2.start();
 		template.convertAndSend("otherExchange", "otherAnon", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
-		this.listenerContainer2.stop();
 	}
 
 	@Test
@@ -110,19 +111,37 @@ public class ListenFromAutoDeleteQueueTests {
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container3",
 				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();
-		RabbitAdmin admin = spy(TestUtils.getPropertyValue(this.listenerContainer1, "rabbitAdmin", RabbitAdmin.class));
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "rabbitAdmin", RabbitAdmin.class));
 		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
 		int n = 0;
-		while (admin.getQueueProperties("xExpires") != null && n < 10) {
+		while (admin.getQueueProperties("xExpires") != null && n < 100) {
 			Thread.sleep(100);
 			n++;
 		}
-		assertTrue(n < 10);
+		assertTrue(n < 100);
 		listenerContainer.start();
 		template.convertAndSend("xExpires", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 		verify(admin, times(1)).initialize(); // should only be called by one of the consumers
+	}
+
+	@Test
+	public void testAutoDeclareFalse() throws Exception {
+		RabbitTemplate template = context.getBean(RabbitTemplate.class);
+		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon2", "foo");
+		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		SimpleMessageListenerContainer listenerContainer = context.getBean("container4",
+				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "rabbitAdmin", RabbitAdmin.class));
+		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
+		listenerContainer = spy(listenerContainer);
+
+		//Prevent a long 'passiveDeclare' process
+		when(listenerContainer.createBlockingQueueConsumer()).thenReturn(mock(BlockingQueueConsumer.class));
+
+		listenerContainer.start();
+		verify(admin, never()).initialize(); // should not be called since 'autoDeclare = false'
 	}
 
 	public static class Listener implements MessageListener {

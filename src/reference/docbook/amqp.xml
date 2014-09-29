@@ -2346,6 +2346,18 @@ public RabbitTransactionManager rabbitTransactionManager() {
               <code>missingQueuesFatal</code> property set.</para>
               </entry>
             </row>
+			  <row>
+				  <entry><literallayout>autoDeclare (auto-declare)</literallayout></entry>
+
+				  <entry><para>Starting with <emphasis>version 1.4</emphasis>,
+					  <classname>SimpleMessageListenerContainer</classname> has this new
+					  property.</para>
+					  <para>When set to <code>true</code> (default), a new Consumer will redeclare AMQP objects
+						  (Queues, Exchanges, Bindings), since they might be removed according to their
+						  <code>auto-delete</code> option or <code>TTL</code> policy since the last Consumer
+						  stop.</para>
+				  </entry>
+			  </row>
           </tbody>
         </tgroup>
       </table></para>

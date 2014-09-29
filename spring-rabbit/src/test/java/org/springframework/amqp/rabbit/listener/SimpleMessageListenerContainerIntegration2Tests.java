@@ -199,6 +199,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
 	}
 
 	@Test

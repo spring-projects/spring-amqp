@@ -451,6 +451,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	}
 
 	public static class PojoListener {
+
 		private final AtomicInteger count = new AtomicInteger();
 
 		private CountDownLatch latch;
@@ -466,7 +467,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		public void handleMessage(String value) throws Exception {
 			try {
 				logger.debug(value + count.getAndIncrement());
-				Thread.sleep(100L);
+				Thread.sleep(10);
 			} finally {
 				latch.countDown();
 			}
@@ -475,6 +476,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		public int getCount() {
 			return count.get();
 		}
+
 	}
 
 }

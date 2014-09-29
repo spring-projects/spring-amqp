@@ -106,6 +106,8 @@ public class SimpleMessageListenerContainerLongTests {
 			Thread.sleep(100);
 		}
 		assertEquals(2, container.getActiveConsumerCount());
+		container.stop();
+		connectionFactory.destroy();
 	}
 
 

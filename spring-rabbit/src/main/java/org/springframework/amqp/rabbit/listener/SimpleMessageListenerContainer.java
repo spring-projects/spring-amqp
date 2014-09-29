@@ -151,6 +151,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean missingQueuesFatalSet;
 
+	private volatile boolean autoDeclare = true;
+
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
 	}
@@ -472,6 +474,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * @param autoDeclare the boolean flag to indicate an redeclaration operation.
+	 * @since 1.4
+	 * @see #redeclareElementsIfNecessary
+	 */
+	public void setAutoDeclare(boolean autoDeclare) {
+		this.autoDeclare = autoDeclare;
+	}
+
+	/**
 	 * Add queue(s) to this container's list of queues. The existing consumers
 	 * will be cancelled after they have processed any pre-fetched messages and
 	 * new consumers will be created. The queue must exist to avoid problems when
@@ -595,10 +606,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
 		initializeProxy();
-		if (this.rabbitAdmin == null) {
-			RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
-			rabbitAdmin.setApplicationContext(this.getApplicationContext());
-			this.rabbitAdmin = rabbitAdmin;
+		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
+			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
+			if (!admins.isEmpty()) {
+				this.rabbitAdmin = admins.values().iterator().next();
+			}
+			else if (this.autoDeclare) {
+				RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
+				rabbitAdmin.setApplicationContext(this.getApplicationContext());
+				this.rabbitAdmin = rabbitAdmin;
+			}
 		}
 		if (this.transactionManager != null) {
 			if (!isChannelTransacted()) {
@@ -884,7 +901,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 									+ "; redeclaring context exchanges, queues, bindings.");
 						}
 						this.rabbitAdmin.initialize();
-						break;
+						return;
 					}
 				}
 			}
@@ -914,7 +931,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								}
 							}
 						});
-			} catch (WrappedTransactionException e) {
+			}
+			catch (WrappedTransactionException e) {
 				throw e.getCause();
 			}
 		}
@@ -936,9 +954,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			try {
 				executeListener(channel, message);
-			} catch (ImmediateAcknowledgeAmqpException e) {
+			}
+			catch (ImmediateAcknowledgeAmqpException e) {
 				break;
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				consumer.rollbackOnExceptionIfNecessary(ex);
 				throw ex;
 			}
@@ -992,7 +1012,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 
 				try {
-					SimpleMessageListenerContainer.this.redeclareElementsIfNecessary();
+					if (SimpleMessageListenerContainer.this.autoDeclare) {
+						SimpleMessageListenerContainer.this.redeclareElementsIfNecessary();
+					}
 					this.consumer.start();
 					this.start.countDown();
 				}
@@ -1031,7 +1053,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						// Will come back false when the queue is drained
 						continuable = receiveAndExecute(this.consumer) && !isChannelTransacted();
 						if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
-							if (continuable) {
+							if (continuable && isActive(this.consumer)) {
 								consecutiveIdles = 0;
 								if (consecutiveMessages++ > SimpleMessageListenerContainer.this.consecutiveActiveTrigger) {
 									considerAddingAConsumer();

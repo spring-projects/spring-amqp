@@ -97,6 +97,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setTransactionManager(new TestTransactionManager());
 		container.afterPropertiesSet();
 		assertTrue(TestUtils.getPropertyValue(container, "transactional", Boolean.class));
+		container.stop();
 		singleConnectionFactory.destroy();
 	}
 
@@ -111,6 +112,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setTransactionManager(new TestTransactionManager());
 		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+		container.stop();
 		singleConnectionFactory.destroy();
 	}
 
@@ -124,6 +126,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAcknowledgeMode(AcknowledgeMode.NONE);
 		expectedException.expect(IllegalStateException.class);
 		container.afterPropertiesSet();
+		container.stop();
 		singleConnectionFactory.destroy();
 	}
 
@@ -136,6 +139,7 @@ public class SimpleMessageListenerContainerTests {
 		container.setAutoStartup(false);
 		container.afterPropertiesSet();
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
+		container.stop();
 		singleConnectionFactory.destroy();
 	}
 
@@ -381,6 +385,7 @@ public class SimpleMessageListenerContainerTests {
 		assertEquals(3, queues.size());
 		container.removeQueues(new Queue("foo"));
 		assertEquals(2, queues.size());
+		container.stop();
 	}
 
 	@Test
@@ -408,6 +413,7 @@ public class SimpleMessageListenerContainerTests {
 				container.start();
 			}
 		}
+		container.stop();
 	}
 
 	@SuppressWarnings("unchecked")
