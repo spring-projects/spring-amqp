@@ -859,11 +859,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if any of our queues are
-	 * auto-delete and missing. Auto deletion of a queue can cause upstream elements (bindings, exchanges)
-	 * to be deleted too, so everything needs to be redeclared. Declaration is idempotent so, aside
-	 * from some network chatter, there is no issue, and we only will do it if we detect our
-	 * queue is gone.
+	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if any of our
+	 * queues are missing. Also auto deletion of a queue can cause upstream elements
+	 * (bindings, exchanges) to be deleted too, so everything needs to be redeclared.
+	 * Declaration is idempotent so, aside from some network chatter, there is no issue,
+	 * and we only will do it if we detect our queue is gone.
+	 * <p>
+	 * In general it makes sense only for the 'auto-delete' or 'expired' queues,
+	 * but with the server TTL policy we don't have ability to determine 'expiration'
+	 * option for the queue.
 	 */
 	private synchronized void redeclareElementsIfNecessary() {
 		try {
@@ -873,10 +877,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
 				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 					Queue queue = entry.getValue();
-					if (queueNames.contains(queue.getName()) && queue.isAutoDelete()
-							&& this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
+					if (queueNames.contains(queue.getName()) &&
+							this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
 						if (logger.isDebugEnabled()) {
-							logger.debug("At least one auto-delete queue is missing: " + queue.getName()
+							logger.debug("At least one queue is missing: " + queue.getName()
 									+ "; redeclaring context exchanges, queues, bindings.");
 						}
 						this.rabbitAdmin.initialize();

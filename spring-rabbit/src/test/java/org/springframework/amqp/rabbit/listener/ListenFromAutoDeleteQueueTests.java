@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,8 +43,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.3
- *
  */
 public class ListenFromAutoDeleteQueueTests {
 
@@ -98,6 +100,29 @@ public class ListenFromAutoDeleteQueueTests {
 		template.convertAndSend("otherExchange", "otherAnon", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 		this.listenerContainer2.stop();
+	}
+
+	@Test
+	public void testRedeclareXExpiresQueue() throws Exception {
+		RabbitTemplate template = context.getBean(RabbitTemplate.class);
+		template.convertAndSend("xExpires", "foo");
+		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		SimpleMessageListenerContainer listenerContainer = context.getBean("container3",
+				SimpleMessageListenerContainer.class);
+		listenerContainer.stop();
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(this.listenerContainer1, "rabbitAdmin", RabbitAdmin.class));
+		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
+		int n = 0;
+		while (admin.getQueueProperties("xExpires") != null && n < 10) {
+			Thread.sleep(100);
+			n++;
+		}
+		assertTrue(n < 10);
+		listenerContainer.start();
+		template.convertAndSend("xExpires", "foo");
+		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
+		verify(admin, times(1)).initialize(); // should only be called by one of the consumers
+		listenerContainer.stop();
 	}
 
 	public static class Listener implements MessageListener {

@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
@@ -240,6 +241,11 @@ public class BlockingQueueConsumer {
 		catch (IOException e) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Error performing 'basicCancel'", e);
+			}
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(this.channel + " is already closed");
 			}
 		}
 		this.cancelled.set(true);

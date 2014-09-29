@@ -33,6 +33,17 @@
 		<rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
 	</rabbit:listener-container>
 
+	<rabbit:queue id="xExpires" name="xExpires">
+		<rabbit:queue-arguments value-type="long">
+			<entry key="x-expires" value="100"/>
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+
+	<rabbit:listener-container id="container3" concurrency="2">
+		<rabbit:listener ref="foo" queues="xExpires"/>
+	</rabbit:listener-container>
+
+
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
 
 	<rabbit:admin id="containerAdmin" connection-factory="rabbitConnectionFactory" auto-startup="false" />

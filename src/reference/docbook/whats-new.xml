@@ -79,6 +79,13 @@
 				<code>postProcessMessageBeforeSend()</code>.
 			</para>
 		</section>
+		<section>
+			<title>Listener Queues</title>
+			<para>
+				The listener container now redeclares any removed (<code>auto-delete</code>, <code>x-expires</code>
+				or TTL policy) queues during startup. See <xref linkend="lc-auto-delete"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
