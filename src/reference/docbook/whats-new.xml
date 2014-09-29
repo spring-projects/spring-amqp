@@ -79,6 +79,15 @@
 				<code>postProcessMessageBeforeSend()</code>.
 			</para>
 		</section>
+		<section>
+			<title>Listener Queues</title>
+			<para>
+				The listener container now, by default, redeclares any missing queues during startup.
+				A new <code>auto-declare</code> attribute has been added to the
+				<code>&lt;rabbit:listener-container&gt;</code> to prevent these redeclarations.
+				See <xref linkend="lc-auto-delete"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>

@@ -92,6 +92,7 @@ public class ListenerContainerParserTests {
 		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryInterval", Long.class));
 		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
 		assertFalse(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
+		assertTrue(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
 	}
 
 	@Test
@@ -100,6 +101,7 @@ public class ListenerContainerParserTests {
 		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
 		assertTrue(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
+		assertFalse(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
 	}
 
 	@Test
