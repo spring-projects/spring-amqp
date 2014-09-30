@@ -294,9 +294,6 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 
 		}
 		finally {
-			// Wait for broker communication to finish before trying to stop
-			// container
-			Thread.sleep(500L);
 			container.shutdown();
 		}
 

@@ -606,17 +606,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
 		}
 		initializeProxy();
-		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
-			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
-			if (!admins.isEmpty()) {
-				this.rabbitAdmin = admins.values().iterator().next();
-			}
-			else if (this.autoDeclare) {
-				RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
-				rabbitAdmin.setApplicationContext(this.getApplicationContext());
-				this.rabbitAdmin = rabbitAdmin;
-			}
-		}
 		if (this.transactionManager != null) {
 			if (!isChannelTransacted()) {
 				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
@@ -639,6 +628,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
+		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
+			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
+			if (!admins.isEmpty()) {
+				this.rabbitAdmin = admins.values().iterator().next();
+			}
+		}
+		if (this.rabbitAdmin == null && this.autoDeclare) {
+			RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
+			rabbitAdmin.setApplicationContext(this.getApplicationContext());
+			this.rabbitAdmin = rabbitAdmin;
+		}
 		synchronized (this.consumersMonitor) {
 			int newConsumers = initializeConsumers();
 			if (this.consumers == null) {
@@ -1053,11 +1053,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						// Will come back false when the queue is drained
 						continuable = receiveAndExecute(this.consumer) && !isChannelTransacted();
 						if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
-							if (continuable && isActive(this.consumer)) {
-								consecutiveIdles = 0;
-								if (consecutiveMessages++ > SimpleMessageListenerContainer.this.consecutiveActiveTrigger) {
-									considerAddingAConsumer();
-									consecutiveMessages = 0;
+							if (continuable) {
+								if (isActive(this.consumer)) {
+									consecutiveIdles = 0;
+									if (consecutiveMessages++ > SimpleMessageListenerContainer.this.consecutiveActiveTrigger) {
+										considerAddingAConsumer();
+										consecutiveMessages = 0;
+									}
 								}
 							}
 							else {

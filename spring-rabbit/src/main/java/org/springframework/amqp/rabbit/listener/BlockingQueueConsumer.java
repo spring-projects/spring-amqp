@@ -236,6 +236,7 @@ public class BlockingQueueConsumer {
 				for (String consumerTag : this.consumerTags) {
 					this.channel.basicCancel(consumerTag);
 				}
+				this.consumerTags.clear();
 			}
 		}
 		catch (IOException e) {

@@ -17,7 +17,6 @@ import static org.junit.Assert.assertEquals;
 import org.apache.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -43,7 +42,6 @@ import org.springframework.transaction.support.TransactionTemplate;
  * @since 1.0
  *
  */
-@Ignore
 public class RabbitTemplatePerformanceIntegrationTests {
 
 	private static final String ROUTE = "test.queue";

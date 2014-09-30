@@ -142,6 +142,7 @@ public class ListenFromAutoDeleteQueueTests {
 
 		listenerContainer.start();
 		verify(admin, never()).initialize(); // should not be called since 'autoDeclare = false'
+		listenerContainer.stop();
 	}
 
 	public static class Listener implements MessageListener {
