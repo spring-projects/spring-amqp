@@ -185,6 +185,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.closeTimeout = closeTimeout;
 	}
 
+	public int getCloseTimeout() {
+		return closeTimeout;
+	}
+
 	protected final Connection createBareConnection() {
 		try {
 			if (this.addresses != null) {

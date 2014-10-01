@@ -371,7 +371,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 		if (this.publisherConfirms || this.publisherReturns) {
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
-				channel = new PublisherCallbackChannelImpl(channel);
+				channel = new PublisherCallbackChannelImpl(channel).setCloseTimeout(getCloseTimeout());
 			}
 		}
 		if (channel != null) {

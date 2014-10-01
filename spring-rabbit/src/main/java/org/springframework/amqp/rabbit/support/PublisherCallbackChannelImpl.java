@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
@@ -28,6 +29,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,6 +73,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * confirms from multiple channels.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0.1
  *
  */
@@ -105,11 +109,17 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	private final java.lang.reflect.Method basicQosTwoArgsMethod;
 
+	private final Semaphore stopSemaphore = new Semaphore(0);
+
+	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
+
+	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
+
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 
-		// The following reflection is required to maintain comatibility with pre 3.3.x clients.
+		// The following reflection is required to maintain compatibility with pre 3.3.x clients.
 		final AtomicReference<java.lang.reflect.Method> getFlowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowBlockedMethod = new AtomicReference<java.lang.reflect.Method>();
@@ -156,7 +166,12 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.basicQosTwoArgsMethod = basicQosTwoArgsMethod.get();
 	}
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	public PublisherCallbackChannelImpl setCloseTimeout(int closeTimeout) {
+		this.closeTimeout = closeTimeout;
+		return this;
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -189,7 +204,19 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	}
 
 	public void close(int closeCode, String closeMessage) throws IOException {
+		acquireStopPermit();
 		this.delegate.close(closeCode, closeMessage);
+	}
+
+	private void acquireStopPermit() {
+		if (!this.listenerForSeq.isEmpty()) {
+			try {
+				this.stopSemaphore.tryAcquire(this.closeTimeout, TimeUnit.MILLISECONDS);
+			}
+			catch (InterruptedException e) {
+				//Ignore and just close
+			}
+		}
 	}
 
 	/**
@@ -558,6 +585,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public void close() throws IOException {
+		acquireStopPermit();
 		try {
 			this.delegate.close();
 		}
@@ -587,6 +615,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			this.pendingConfirms.clear();
 			this.listenerForSeq.clear();
 			this.listeners.clear();
+			this.stopSemaphore.release();
 		}
 	}
 
@@ -619,6 +648,9 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			if (entry.getValue() == listener) {
 				iterator.remove();
 			}
+		}
+		if (this.listenerForSeq.isEmpty()) {
+			this.stopSemaphore.release();
 		}
 		this.pendingConfirms.remove(listener);
 		return result;
@@ -684,6 +716,9 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			else {
 				logger.error("No listener for seq:" + seq);
 			}
+		}
+		if (this.listenerForSeq.isEmpty()) {
+			this.stopSemaphore.release();
 		}
 	}
 

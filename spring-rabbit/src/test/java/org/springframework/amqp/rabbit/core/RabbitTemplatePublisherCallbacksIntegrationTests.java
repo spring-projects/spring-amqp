@@ -79,6 +79,7 @@ import com.rabbitmq.client.Consumer;
 /**
  * @author Gary Russell
  * @author Gunar Hillert
+ * @author Artem Bilan
  * @since 1.1
  *
  */
@@ -328,7 +329,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
+		channel1.setCloseTimeout(10);
 		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
+		channel2.setCloseTimeout(10);
 		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -715,6 +718,24 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertEquals(correlationData.toString(), correlation.get().toString());
 		assertThat(reason.get(), containsString("NOT_FOUND - no exchange '" + exchange));
 		assertThat(log.get(), containsString("NOT_FOUND - no exchange '" + exchange));
+	}
+
+	@Test
+	public void testPublisherConfirmReceivedAfterConnectionFactoryDestroy() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(10);
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				latch.countDown();
+			}
+		});
+		for (int i = 0; i < 10; i++) {
+			templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+		}
+		cleanUp();
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 	}
 
 }
