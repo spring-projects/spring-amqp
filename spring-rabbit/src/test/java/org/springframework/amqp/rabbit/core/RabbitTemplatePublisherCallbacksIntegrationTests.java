@@ -74,11 +74,11 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Consumer;
 
 /**
  * @author Gary Russell
  * @author Gunar Hillert
+ * @author Artem Bilan
  * @since 1.1
  *
  */
@@ -460,14 +460,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
-		final List<String> confirms = new ArrayList<String>();
 		final CountDownLatch latch = new CountDownLatch(2);
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
 			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				if (ack) {
-					confirms.add(correlationData.getId());
 					latch.countDown();
 				}
 			}
@@ -628,8 +626,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 
 		// 3.3.1 client
-		channel.basicConsume("foo", false, (Map) null, (Consumer) null);
-		verify(mockChannel).basicConsume("foo", false, (Map) null, (Consumer) null);
+		channel.basicConsume("foo", false, (Map) null, null);
+		verify(mockChannel).basicConsume("foo", false, (Map) null, null);
 
 		channel.basicQos(3, false);
 		verify(mockChannel).basicQos(3, false);
@@ -715,6 +713,65 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertEquals(correlationData.toString(), correlation.get().toString());
 		assertThat(reason.get(), containsString("NOT_FOUND - no exchange '" + exchange));
 		assertThat(log.get(), containsString("NOT_FOUND - no exchange '" + exchange));
+	}
+
+	@Test
+	public void testConfirmReceivedAfterPublisherCallbackChannelScheduleClose() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(40);
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				latch.countDown();
+			}
+		});
+
+		ExecutorService executorService = Executors.newCachedThreadPool();
+		for (int i = 0; i < 20; i++) {
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+					templateWithConfirmsEnabled.convertAndSend("BAD_ROUTE", (Object) "bad", new CorrelationData("cba"));
+				}
+
+			});
+		}
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
+	}
+
+	@Test
+	public void testReturnNotReceivedAfterPublisherCallbackChannelClose() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(20);
+		templateWithReturnsEnabled.setMandatory(true);
+		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
+
+			@Override
+			public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
+				latch.countDown();
+			}
+
+		});
+
+		ExecutorService executorService = Executors.newCachedThreadPool();
+		for (int i = 0; i < 20; i++) {
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					templateWithReturnsEnabled.convertAndSend("BAD_ROUTE", (Object) "bad", new CorrelationData("cba"));
+				}
+
+			});
+		}
+
+		executorService.shutdown();
+		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
+		Thread.sleep(100);
+		assertFalse(latch.getCount() == 0);
 	}
 
 }

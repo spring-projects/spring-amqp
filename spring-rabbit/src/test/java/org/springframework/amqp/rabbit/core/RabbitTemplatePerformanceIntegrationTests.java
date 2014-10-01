@@ -88,7 +88,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	}
 
 	@Test
-	@Repeat(2000)
+	@Repeat(200)
 	public void testSendAndReceive() throws Exception {
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -104,7 +104,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	}
 
 	@Test
-	@Repeat(2000)
+	@Repeat(200)
 	public void testSendAndReceiveTransacted() throws Exception {
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
@@ -113,7 +113,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	}
 
 	@Test
-	@Repeat(2000)
+	@Repeat(200)
 	public void testSendAndReceiveExternalTransacted() throws Exception {
 		template.setChannelTransacted(true);
 		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
