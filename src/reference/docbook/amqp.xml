@@ -584,6 +584,15 @@ public AmqpTemplate rabbitTemplate();
         <classname>RabbitTemplate</classname>.
       </para>
     </section>
+    <section id="template-messaging">
+        <title>Messaging integration</title>
+        <para>
+          Starting with <emphasis>version 1.4</emphasis> <literal>RabbitMessagingTemplate</literal>, built on top of
+          <literal>RabbitTemplate</literal>, provides an integration with the messaging abstraction, i.e.
+          <literal>org.springframework.messaging.Message</literal>. This allows you to create the message to send
+          in generic manner.
+        </para>
+    </section>
   </section>
 
   <section>
