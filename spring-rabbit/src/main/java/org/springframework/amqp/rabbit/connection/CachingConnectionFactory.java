@@ -371,7 +371,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 		if (this.publisherConfirms || this.publisherReturns) {
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
-				channel = new PublisherCallbackChannelImpl(channel).setCloseTimeout(getCloseTimeout());
+				channel = new PublisherCallbackChannelImpl(channel);
 			}
 		}
 		if (channel != null) {
@@ -461,7 +461,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			synchronized (channels) {
 				for (ChannelProxy channel : channels) {
 					try {
-						channel.close();
+						channel.getTargetChannel().close();
 					}
 					catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
@@ -472,7 +472,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			synchronized (txChannels) {
 				for (ChannelProxy channel : txChannels) {
 					try {
-						channel.close();
+						channel.getTargetChannel().close();
 					} catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
@@ -612,7 +612,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return;
 			}
 			try {
-				this.target.close();
+				if (this.target instanceof PublisherCallbackChannelImpl) {
+					System.out.println("scheduleClose");
+					((PublisherCallbackChannelImpl) this.target).scheduleClose();
+				}
+				else {
+					System.out.println("close");
+					this.target.close();
+				}
 			}
 			catch (AlreadyClosedException e) {
 				if (logger.isTraceEnabled()) {
@@ -642,8 +649,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 		@Override
 		public Channel createChannel(boolean transactional) {
-			Channel channel = getChannel(this, transactional);
-			return channel;
+			return getChannel(this, transactional);
 		}
 
 		@Override

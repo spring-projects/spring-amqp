@@ -29,7 +29,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
@@ -55,7 +58,6 @@ import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
-import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
@@ -109,11 +111,15 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	private final java.lang.reflect.Method basicQosTwoArgsMethod;
 
-	private final Semaphore stopSemaphore = new Semaphore(0);
+	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
+	public static final int DEFAULT_CLOSE_TIMEOUT = 10000;
 
 	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
+
+	private volatile long lastSend;
+
+	private volatile ScheduledFuture<?> scheduledStop;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
@@ -166,11 +172,6 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.basicQosTwoArgsMethod = basicQosTwoArgsMethod.get();
 	}
 
-	public PublisherCallbackChannelImpl setCloseTimeout(int closeTimeout) {
-		this.closeTimeout = closeTimeout;
-		return this;
-	}
-
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,19 +204,53 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		return this.delegate.getConnection();
 	}
 
-	public void close(int closeCode, String closeMessage) throws IOException {
-		acquireStopPermit();
-		this.delegate.close(closeCode, closeMessage);
+	public void close() throws IOException {
+		close(AMQP.REPLY_SUCCESS, "OK");
 	}
 
-	private void acquireStopPermit() {
-		if (!this.listenerForSeq.isEmpty()) {
-			try {
-				this.stopSemaphore.tryAcquire(this.closeTimeout, TimeUnit.MILLISECONDS);
+	public void close(final int closeCode, final String closeMessage) throws IOException {
+		if (this.delegate.isOpen()) {
+			this.delegate.close(closeCode, closeMessage);
+		}
+		generateNacksForPendingAcks("Channel closed by application");
+	}
+
+	public void scheduleClose() {
+		this.scheduledStop =
+				this.scheduler.schedule(new Runnable() {
+											@Override
+											public void run() {
+												try {
+													System.out.println("Close from schedule...");
+													close();
+													System.out.println("Closed from schedule");
+												}
+												catch (IOException e) {
+													throw new AmqpIOException(e);
+												}
+											}
+										},
+						this.lastSend + this.closeTimeout - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+	}
+
+	private void generateNacksForPendingAcks(String cause) {
+		synchronized (this.pendingConfirms) {
+			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
+				Listener listener = entry.getKey();
+				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+					try {
+						confirmEntry.getValue().setCause(cause);
+						handleNack(confirmEntry.getKey(), false);
+					}
+					catch (IOException e) {
+						logger.error("Error delivering Nack afterShutdown", e);
+					}
+				}
+				listener.removePendingConfirmsReference(this, entry.getValue());
 			}
-			catch (InterruptedException e) {
-				//Ignore and just close
-			}
+			this.pendingConfirms.clear();
+			this.listenerForSeq.clear();
+			this.listeners.clear();
 		}
 	}
 
@@ -309,18 +344,21 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void basicPublish(String exchange, String routingKey,
 			BasicProperties props, byte[] body) throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, props, body);
+		this.lastSend = System.currentTimeMillis();
 	}
 
 	public void basicPublish(String exchange, String routingKey,
 			boolean mandatory, boolean immediate, BasicProperties props,
 			byte[] body) throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
+		this.lastSend = System.currentTimeMillis();
 	}
 
 	public void basicPublish(String exchange, String routingKey,
 			boolean mandatory, BasicProperties props, byte[] body)
 			throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
+		this.lastSend = System.currentTimeMillis();
 	}
 
 	public DeclareOk exchangeDeclare(String exchange, String type)
@@ -584,41 +622,6 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 // END PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public void close() throws IOException {
-		acquireStopPermit();
-		try {
-			this.delegate.close();
-		}
-		catch (AlreadyClosedException e) {
-			if (logger.isTraceEnabled()) {
-				logger.trace(this.delegate + " is already closed");
-			}
-		}
-		generateNacksForPendingAcks("Channel closed by application");
-	}
-
-	private void generateNacksForPendingAcks(String cause) {
-		synchronized (this.pendingConfirms) {
-			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
-				Listener listener = entry.getKey();
-				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-					try {
-						confirmEntry.getValue().setCause(cause);
-						handleNack(confirmEntry.getKey(), false);
-					}
-					catch (IOException e) {
-						logger.error("Error delivering Nack afterShutdown", e);
-					}
-				}
-				listener.removePendingConfirmsReference(this, entry.getValue());
-			}
-			this.pendingConfirms.clear();
-			this.listenerForSeq.clear();
-			this.listeners.clear();
-			this.stopSemaphore.release();
-		}
-	}
-
 	public synchronized SortedMap<Long, PendingConfirm> addListener(Listener listener) {
 		Assert.notNull(listener, "Listener cannot be null");
 		if (this.listeners.size() == 0) {
@@ -649,11 +652,22 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				iterator.remove();
 			}
 		}
-		if (this.listenerForSeq.isEmpty()) {
-			this.stopSemaphore.release();
-		}
 		this.pendingConfirms.remove(listener);
+		stopIfNecessary();
 		return result;
+	}
+
+	private void stopIfNecessary() {
+		System.out.println("stopIfNecessary");
+		if (this.listenerForSeq.isEmpty() && this.scheduledStop != null) {
+			this.scheduledStop.cancel(true);
+			try {
+				this.close();
+			}
+			catch (IOException e) {
+				throw new AmqpIOException(e);
+			}
+		}
 	}
 
 
@@ -717,9 +731,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				logger.error("No listener for seq:" + seq);
 			}
 		}
-		if (this.listenerForSeq.isEmpty()) {
-			this.stopSemaphore.release();
-		}
+		stopIfNecessary();
 	}
 
 	private void doHandleConfirm(boolean ack, Listener listener, PendingConfirm pendingConfirm) {

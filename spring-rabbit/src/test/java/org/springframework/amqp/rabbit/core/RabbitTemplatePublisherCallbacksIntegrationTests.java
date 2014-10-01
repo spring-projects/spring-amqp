@@ -74,7 +74,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Consumer;
 
 /**
  * @author Gary Russell
@@ -329,9 +328,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
-		channel1.setCloseTimeout(10);
 		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
-		channel2.setCloseTimeout(10);
 		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -395,6 +392,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
 		ccf.destroy();
+		int n = 0;
+		while (pendingConfirms.size() > 0 && n++ < 10) {
+			Thread.sleep(100);
+		}
 		assertEquals(0, pendingConfirms.size());
 	}
 
@@ -463,14 +464,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
-		final List<String> confirms = new ArrayList<String>();
 		final CountDownLatch latch = new CountDownLatch(2);
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
 			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 				if (ack) {
-					confirms.add(correlationData.getId());
 					latch.countDown();
 				}
 			}
@@ -631,8 +630,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 
 		// 3.3.1 client
-		channel.basicConsume("foo", false, (Map) null, (Consumer) null);
-		verify(mockChannel).basicConsume("foo", false, (Map) null, (Consumer) null);
+		channel.basicConsume("foo", false, (Map) null, null);
+		verify(mockChannel).basicConsume("foo", false, (Map) null, null);
 
 		channel.basicQos(3, false);
 		verify(mockChannel).basicQos(3, false);
@@ -722,18 +721,27 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	@Test
 	public void testPublisherConfirmReceivedAfterConnectionFactoryDestroy() throws Exception {
-		final CountDownLatch latch = new CountDownLatch(10);
+		final CountDownLatch latch = new CountDownLatch(20);
 		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
 			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				System.out.println("confirm: " + correlationData);
 				latch.countDown();
 			}
 		});
-		for (int i = 0; i < 10; i++) {
-			templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+
+		ExecutorService executorService = Executors.newCachedThreadPool();
+		for (int i = 0; i < 20; i++) {
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+				}
+
+			});
 		}
-		cleanUp();
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 	}
