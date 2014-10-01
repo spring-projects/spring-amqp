@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -138,11 +139,13 @@ public class ListenFromAutoDeleteQueueTests {
 		listenerContainer = spy(listenerContainer);
 
 		//Prevent a long 'passiveDeclare' process
-		when(listenerContainer.createBlockingQueueConsumer()).thenReturn(mock(BlockingQueueConsumer.class));
+		BlockingQueueConsumer consumer = mock(BlockingQueueConsumer.class);
+		doThrow(RuntimeException.class).when(consumer).start();
+		when(listenerContainer.createBlockingQueueConsumer()).thenReturn(consumer);
 
 		listenerContainer.start();
-		verify(admin, never()).initialize(); // should not be called since 'autoDeclare = false'
 		listenerContainer.stop();
+		verify(admin, never()).initialize(); // should not be called since 'autoDeclare = false'
 	}
 
 	public static class Listener implements MessageListener {
