@@ -43,6 +43,10 @@
                 <firstname>Gunnar</firstname>
                 <surname>Hillert</surname>
             </author>
+			<author>
+				<firstname>Stephane</firstname>
+				<surname>Nicoll</surname>
+			</author>
         </authorgroup>
         <copyright>
             <year>2010-2014</year>
