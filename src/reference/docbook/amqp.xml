@@ -774,6 +774,12 @@ public static MessagePropertiesBuilder fromClonedProperties(MessageProperties pr
       <para>
         When the template's <code>mandatory</code> property is 'true' returned messages are provided
         by the callback described in <xref linkend="amqp-template"/>.
+	  </para>
+	  <para>
+		Starting with <emphasis>version 1.4</emphasis> the <classname>RabbitTemplate</classname> supports
+		the SpEL <code>mandatoryExpression</code> property, which is evaluated against each request message, as the root
+		evaluation object, resolving to a <code>boolean</code> value. Bean references, such as
+		<code>"@myBean.isMandatory(#root)"</code> can be used in the expression.
       </para>
     </section>
   </section>

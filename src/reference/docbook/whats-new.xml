@@ -88,6 +88,15 @@
 				See <xref linkend="lc-auto-delete"/>.
 			</para>
 		</section>
+		<section>
+			<title>RabbitTemplate: mandatoryExpression</title>
+			<para>
+				The <code>mandatoryExpression</code> SpEL <interfacename>Expression</interfacename> property
+				has been added to the <classname>RabbitTemplate</classname> to evaluate a <code>mandatory</code>
+				boolean value against each request message, when a <classname>ReturnCallback</classname> is in use.
+				See <xref linkend="template-confirms"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>
