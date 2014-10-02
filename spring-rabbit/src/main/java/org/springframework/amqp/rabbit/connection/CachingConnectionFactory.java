@@ -463,7 +463,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			synchronized (channels) {
 				for (ChannelProxy channel : channels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					}
 					catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
@@ -474,7 +474,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			synchronized (txChannels) {
 				for (ChannelProxy channel : txChannels) {
 					try {
-						channel.getTargetChannel().close();
+						channel.close();
 					} catch (Throwable ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
@@ -614,7 +614,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return;
 			}
 			try {
-				if (CachingConnectionFactory.this.publisherConfirms) {
+				if (CachingConnectionFactory.this.active && CachingConnectionFactory.this.publisherConfirms) {
 					ExecutorService executorService = (getExecutorService() != null
 							? getExecutorService()
 							: Executors.newSingleThreadExecutor());

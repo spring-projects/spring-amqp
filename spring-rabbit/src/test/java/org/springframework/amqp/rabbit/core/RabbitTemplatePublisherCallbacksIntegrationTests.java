@@ -392,10 +392,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
 		ccf.destroy();
-		int n = 0;
-		while (pendingConfirms.size() > 0 && n++ < 10) {
-			Thread.sleep(100);
-		}
 		assertEquals(0, pendingConfirms.size());
 	}
 
