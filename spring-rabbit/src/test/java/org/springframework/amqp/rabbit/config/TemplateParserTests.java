@@ -29,6 +29,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.converter.SerializerMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -39,7 +40,7 @@ import org.springframework.retry.support.RetryTemplate;
  *
  * @author Dave Syer
  * @author Gary Russell
- *
+ * @author Artem Bilan
  */
 public final class TemplateParserTests {
 
@@ -56,20 +57,25 @@ public final class TemplateParserTests {
 	public void testTemplate() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("template", AmqpTemplate.class);
 		assertNotNull(template);
-		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
-		assertEquals(Boolean.FALSE, dfa.getPropertyValue("mandatory"));
-		assertNull(dfa.getPropertyValue("returnCallback"));
-		assertNull(dfa.getPropertyValue("confirmCallback"));
+		assertEquals(Boolean.FALSE, TestUtils.getPropertyValue(template, "mandatoryExpression.value"));
+		assertNull(TestUtils.getPropertyValue(template, "returnCallback"));
+		assertNull(TestUtils.getPropertyValue(template, "confirmCallback"));
 	}
 
 	@Test
 	public void testTemplateWithCallbacks() throws Exception {
 		AmqpTemplate template = beanFactory.getBean("withCallbacks", AmqpTemplate.class);
 		assertNotNull(template);
-		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
-		assertEquals(Boolean.TRUE, dfa.getPropertyValue("mandatory"));
-		assertNotNull(dfa.getPropertyValue("returnCallback"));
-		assertNotNull(dfa.getPropertyValue("confirmCallback"));
+		assertEquals("true", TestUtils.getPropertyValue(template, "mandatoryExpression.literalValue"));
+		assertNotNull(TestUtils.getPropertyValue(template, "returnCallback"));
+		assertNotNull(TestUtils.getPropertyValue(template, "confirmCallback"));
+	}
+
+	@Test
+	public void testTemplateWithMandatoryExpression() throws Exception {
+		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
+		assertNotNull(template);
+		assertEquals("'true'", TestUtils.getPropertyValue(template, "mandatoryExpression.expression"));
 	}
 
 	@Test

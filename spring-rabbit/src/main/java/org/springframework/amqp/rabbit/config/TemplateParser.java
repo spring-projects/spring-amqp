@@ -29,6 +29,7 @@ import org.springframework.util.xml.DomUtils;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  */
 class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
@@ -101,12 +102,18 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ATTRIBUTE);
-		NamespaceUtils.setValueIfAttributeDefined(builder, element, MANDATORY_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, IMMEDIATE_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETRY_TEMPLATE);
+
+		BeanDefinition expressionDef =
+				NamespaceUtils.createExpressionDefinitionFromValueOrExpression(MANDATORY_ATTRIBUTE,
+						"mandatory-expression", parserContext, element, false);
+		if (expressionDef != null) {
+			builder.addPropertyValue("mandatoryExpression", expressionDef);
+		}
 
 		BeanDefinition replyContainer = null;
 		Element childElement = null;

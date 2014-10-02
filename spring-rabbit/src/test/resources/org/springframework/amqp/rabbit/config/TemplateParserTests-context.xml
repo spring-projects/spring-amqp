@@ -27,6 +27,9 @@
 	<rabbit:template id="withCallbacks" connection-factory="connectionFactory"
 		mandatory="true" return-callback="rcb" confirm-callback="ccb" />
 
+	<rabbit:template id="withMandatoryExpression" connection-factory="connectionFactory"
+		mandatory-expression="'true'"/>
+
 	<beans:bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
 		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnCallback" />
 	</beans:bean>
