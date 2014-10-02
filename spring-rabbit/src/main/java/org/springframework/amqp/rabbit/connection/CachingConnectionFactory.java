@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -612,12 +614,26 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return;
 			}
 			try {
-				if (this.target instanceof PublisherCallbackChannelImpl) {
-					System.out.println("scheduleClose");
-					((PublisherCallbackChannelImpl) this.target).scheduleClose();
+				if (CachingConnectionFactory.this.publisherConfirms) {
+					ExecutorService executorService = (getExecutorService() != null
+							? getExecutorService()
+							: Executors.newSingleThreadExecutor());
+					executorService.execute(new Runnable() {
+
+						@Override
+						public void run() {
+							try {
+								CachedChannelInvocationHandler.this.target.waitForConfirmsOrDie(getCloseTimeout());
+								CachedChannelInvocationHandler.this.target.close();
+							}
+							catch (Exception e) {
+								Thread.currentThread().interrupt();
+							}
+						}
+
+					});
 				}
 				else {
-					System.out.println("close");
 					this.target.close();
 				}
 			}

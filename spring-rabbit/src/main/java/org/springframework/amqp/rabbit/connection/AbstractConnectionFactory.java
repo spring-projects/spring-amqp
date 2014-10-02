@@ -175,6 +175,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
+	protected ExecutorService getExecutorService() {
+		return executorService;
+	}
+
 	/**
 	 * How long to wait (milliseconds) for a response to a connection close
 	 * operation from the broker; default 30000 (30 seconds).

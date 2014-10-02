@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
@@ -29,17 +28,12 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.AmqpIOException;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
@@ -58,6 +52,7 @@ import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
@@ -75,19 +70,22 @@ import com.rabbitmq.client.ShutdownSignalException;
  * confirms from multiple channels.
  *
  * @author Gary Russell
- * @author Artem Bilan
  * @since 1.0.1
  *
  */
-public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
+public class PublisherCallbackChannelImpl
+		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
+	private static final String[] METHODS_OF_INTEREST =
+			new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
 	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
+
 		@Override
 		public boolean matches(java.lang.reflect.Method method) {
 			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
 		}
+
 	};
 
 	private final Log logger = LogFactory.getLog(this.getClass());
@@ -110,16 +108,6 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	private final java.lang.reflect.Method basicConsumeFourArgsMethod;
 
 	private final java.lang.reflect.Method basicQosTwoArgsMethod;
-
-	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-	public static final int DEFAULT_CLOSE_TIMEOUT = 10000;
-
-	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
-
-	private volatile long lastSend;
-
-	private volatile ScheduledFuture<?> scheduledStop;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
@@ -172,7 +160,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		this.basicQosTwoArgsMethod = basicQosTwoArgsMethod.get();
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -204,54 +192,8 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		return this.delegate.getConnection();
 	}
 
-	public void close() throws IOException {
-		close(AMQP.REPLY_SUCCESS, "OK");
-	}
-
-	public void close(final int closeCode, final String closeMessage) throws IOException {
-		if (this.delegate.isOpen()) {
-			this.delegate.close(closeCode, closeMessage);
-		}
-		generateNacksForPendingAcks("Channel closed by application");
-	}
-
-	public void scheduleClose() {
-		this.scheduledStop =
-				this.scheduler.schedule(new Runnable() {
-											@Override
-											public void run() {
-												try {
-													System.out.println("Close from schedule...");
-													close();
-													System.out.println("Closed from schedule");
-												}
-												catch (IOException e) {
-													throw new AmqpIOException(e);
-												}
-											}
-										},
-						this.lastSend + this.closeTimeout - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-	}
-
-	private void generateNacksForPendingAcks(String cause) {
-		synchronized (this.pendingConfirms) {
-			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
-				Listener listener = entry.getKey();
-				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-					try {
-						confirmEntry.getValue().setCause(cause);
-						handleNack(confirmEntry.getKey(), false);
-					}
-					catch (IOException e) {
-						logger.error("Error delivering Nack afterShutdown", e);
-					}
-				}
-				listener.removePendingConfirmsReference(this, entry.getValue());
-			}
-			this.pendingConfirms.clear();
-			this.listenerForSeq.clear();
-			this.listeners.clear();
-		}
+	public void close(int closeCode, String closeMessage) throws IOException {
+		this.delegate.close(closeCode, closeMessage);
 	}
 
 	/**
@@ -344,21 +286,18 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void basicPublish(String exchange, String routingKey,
 			BasicProperties props, byte[] body) throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, props, body);
-		this.lastSend = System.currentTimeMillis();
 	}
 
 	public void basicPublish(String exchange, String routingKey,
 			boolean mandatory, boolean immediate, BasicProperties props,
 			byte[] body) throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
-		this.lastSend = System.currentTimeMillis();
 	}
 
 	public void basicPublish(String exchange, String routingKey,
 			boolean mandatory, BasicProperties props, byte[] body)
 			throws IOException {
 		this.delegate.basicPublish(exchange, routingKey, mandatory, props, body);
-		this.lastSend = System.currentTimeMillis();
 	}
 
 	public DeclareOk exchangeDeclare(String exchange, String type)
@@ -519,7 +458,8 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			return (String) ReflectionUtils.invokeMethod(this.basicConsumeFourArgsMethod, this.delegate, queue,
 					autoAck, arguments, callback);
 		}
-		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' is not supported by the client library");
+		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' " +
+				"is not supported by the client library");
 	}
 
 	public String basicConsume(String queue, boolean autoAck,
@@ -622,6 +562,39 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 // END PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	public void close() throws IOException {
+		try {
+			this.delegate.close();
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(this.delegate + " is already closed");
+			}
+		}
+		generateNacksForPendingAcks("Channel closed by application");
+	}
+
+	private void generateNacksForPendingAcks(String cause) {
+		synchronized (this.pendingConfirms) {
+			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
+				Listener listener = entry.getKey();
+				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+					try {
+						confirmEntry.getValue().setCause(cause);
+						handleNack(confirmEntry.getKey(), false);
+					}
+					catch (IOException e) {
+						logger.error("Error delivering Nack afterShutdown", e);
+					}
+				}
+				listener.removePendingConfirmsReference(this, entry.getValue());
+			}
+			this.pendingConfirms.clear();
+			this.listenerForSeq.clear();
+			this.listeners.clear();
+		}
+	}
+
 	public synchronized SortedMap<Long, PendingConfirm> addListener(Listener listener) {
 		Assert.notNull(listener, "Listener cannot be null");
 		if (this.listeners.size() == 0) {
@@ -653,21 +626,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			}
 		}
 		this.pendingConfirms.remove(listener);
-		stopIfNecessary();
 		return result;
-	}
-
-	private void stopIfNecessary() {
-		System.out.println("stopIfNecessary");
-		if (this.listenerForSeq.isEmpty() && this.scheduledStop != null) {
-			this.scheduledStop.cancel(true);
-			try {
-				this.close();
-			}
-			catch (IOException e) {
-				throw new AmqpIOException(e);
-			}
-		}
 	}
 
 
@@ -731,7 +690,6 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 				logger.error("No listener for seq:" + seq);
 			}
 		}
-		stopIfNecessary();
 	}
 
 	private void doHandleConfirm(boolean ack, Listener listener, PendingConfirm pendingConfirm) {
@@ -766,7 +724,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException
 	{
-		Object uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
+		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (logger.isWarnEnabled()) {
@@ -795,10 +753,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this) {
-			return true;
-		}
-		return this.delegate.equals(obj);
+		return obj == this || this.delegate.equals(obj);
 	}
 
 	@Override
