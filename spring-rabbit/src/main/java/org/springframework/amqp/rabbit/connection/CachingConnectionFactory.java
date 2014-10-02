@@ -618,16 +618,26 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					ExecutorService executorService = (getExecutorService() != null
 							? getExecutorService()
 							: Executors.newSingleThreadExecutor());
+					final Channel channel = CachedChannelInvocationHandler.this.target;
 					executorService.execute(new Runnable() {
 
 						@Override
 						public void run() {
 							try {
-								CachedChannelInvocationHandler.this.target.waitForConfirmsOrDie(getCloseTimeout());
-								CachedChannelInvocationHandler.this.target.close();
+								channel.waitForConfirmsOrDie(getCloseTimeout());
 							}
-							catch (Exception e) {
+							catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
+							}
+							catch (Exception e) {}
+							finally {
+								try {
+									if (channel.isOpen()) {
+										channel.close();
+									}
+								}
+								catch (IOException e) {}
+								catch (AlreadyClosedException e) {}
 							}
 						}
 
