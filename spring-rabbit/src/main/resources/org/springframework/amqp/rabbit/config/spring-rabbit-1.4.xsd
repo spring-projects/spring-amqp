@@ -976,11 +976,24 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="mandatory" type="xsd:string" use="optional">
+			<xsd:attribute name="mandatory" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	When 'true' sets the mandatory flag on basic.publish; only applies if
-	a 'return-callback' is provided.
+	a 'return-callback' is provided. Mutually exclusive with 'mandatory-expression'.
+	Defaults to 'false'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
+			</xsd:attribute>
+			<xsd:attribute name="mandatory-expression" use="optional" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The SpEL expression to be evaluated against each request message to determine a 'mandatory' boolean value.
+	The BeanFactoryResolver is available too, if RabbitTemplate is used from Spring Context.
+	Only applies if a 'return-callback' is provided. Mutually exclusive with 'mandatory'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>

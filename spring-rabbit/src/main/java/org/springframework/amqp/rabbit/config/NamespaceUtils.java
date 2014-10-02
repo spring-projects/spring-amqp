@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.w3c.dom.Element;
 
+import org.springframework.amqp.rabbit.support.ExpressionFactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.BeanReference;
@@ -26,9 +27,11 @@ import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.Conventions;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
@@ -287,6 +290,53 @@ public abstract class NamespaceUtils {
 			}
 			builder.addPropertyValue("adminsThatShouldDeclare", adminBeanRefs);
 		}
+	}
+
+	public static BeanDefinition createExpressionDefinitionFromValueOrExpression(String valueElementName,
+			String expressionElementName, ParserContext parserContext, Element element, boolean oneRequired) {
+
+		Assert.hasText(valueElementName, "'valueElementName' must not be empty");
+		Assert.hasText(expressionElementName, "'expressionElementName' must not be empty");
+
+		String valueElementValue = element.getAttribute(valueElementName);
+		String expressionElementValue = element.getAttribute(expressionElementName);
+
+		boolean hasAttributeValue = StringUtils.hasText(valueElementValue);
+		boolean hasAttributeExpression = StringUtils.hasText(expressionElementValue);
+
+		if (hasAttributeValue && hasAttributeExpression){
+			parserContext.getReaderContext().error("Only one of '" + valueElementName + "' or '"
+					+ expressionElementName + "' is allowed", element);
+		}
+
+		if (oneRequired && (!hasAttributeValue && !hasAttributeExpression)){
+			parserContext.getReaderContext().error("One of '" + valueElementName + "' or '"
+					+ expressionElementName + "' is required", element);
+		}
+		BeanDefinition expressionDef = null;
+		if (hasAttributeValue) {
+			expressionDef = new RootBeanDefinition(LiteralExpression.class);
+			expressionDef.getConstructorArgumentValues().addGenericArgumentValue(valueElementValue);
+		}
+		else {
+			expressionDef = createExpressionDefIfAttributeDefined(expressionElementName, element);
+		}
+		return expressionDef;
+	}
+
+	public static BeanDefinition createExpressionDefIfAttributeDefined(String expressionElementName, Element element) {
+
+		Assert.hasText(expressionElementName, "'expressionElementName' must no be empty");
+
+		String expressionElementValue = element.getAttribute(expressionElementName);
+
+		if (StringUtils.hasText(expressionElementValue)){
+			BeanDefinitionBuilder expressionDefBuilder =
+					BeanDefinitionBuilder.genericBeanDefinition(ExpressionFactoryBean.class);
+			expressionDefBuilder.addConstructorArgValue(expressionElementValue);
+			return expressionDefBuilder.getRawBeanDefinition();
+		}
+		return null;
 	}
 
 }

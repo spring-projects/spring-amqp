@@ -68,6 +68,8 @@ import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -153,8 +155,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 			@Override
 			public Void doInRabbit(Channel channel) throws Exception {
-				Map<?,?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
-																Map.class);
+				Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
+						Map.class);
 				int n = 0;
 				while (n++ < 100 && listenerMap.size() > 0) {
 					Thread.sleep(100);
@@ -193,12 +195,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
 							threadLatch.await(10, TimeUnit.SECONDS);
-						} catch (InterruptedException e) {
+						}
+						catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
 						templateWithConfirmsEnabled.doSend(channel, "", ROUTE,
-							new SimpleMessageConverter().toMessage("message", new MessageProperties()),
-							new CorrelationData("def"));
+								new SimpleMessageConverter().toMessage("message", new MessageProperties()),
+								new CorrelationData("def"));
 						return null;
 					}
 				});
@@ -253,6 +256,28 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		templateWithReturnsEnabled.setMandatory(true);
 		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
+		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+		assertEquals(1, returns.size());
+		Message message = returns.get(0);
+		assertEquals("message", new String(message.getBody(), "utf-8"));
+	}
+
+	@Test
+	public void testPublisherReturnsWithMandatoryExpression() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(1);
+		final List<Message> returns = new ArrayList<Message>();
+		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
+			@Override
+			public void returnedMessage(Message message, int replyCode,
+					String replyText, String exchange, String routingKey) {
+				returns.add(message);
+				latch.countDown();
+			}
+		});
+		Expression mandatoryExpression = new SpelExpressionParser().parseExpression("'message'.bytes == body");
+		templateWithReturnsEnabled.setMandatoryExpression(mandatoryExpression);
+		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "message", new CorrelationData("abc"));
+		templateWithReturnsEnabled.convertAndSend(ROUTE + "junk", (Object) "foo", new CorrelationData("abc"));
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 		assertEquals(1, returns.size());
 		Message message = returns.get(0);

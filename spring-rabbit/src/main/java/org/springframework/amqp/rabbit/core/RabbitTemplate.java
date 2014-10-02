@@ -52,8 +52,17 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.rabbit.support.ValueExpression;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.context.expression.BeanFactoryResolver;
+import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetryTemplate;
@@ -104,7 +113,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Artem Bilan
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, MessageListener,
+public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
 	PublisherCallbackChannel.Listener {
 
 	/** Alias for amq.direct default exchange */
@@ -139,9 +148,10 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private volatile ReturnCallback returnCallback;
 
-	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms = new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
+	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms =
+			new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
 
-	private volatile boolean mandatory;
+	private volatile Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
 	private final String uuid = UUID.randomUUID().toString();
 
@@ -149,6 +159,7 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	private volatile RetryTemplate retryTemplate;
 
+	private volatile EvaluationContext evaluationContext = new StandardEvaluationContext();
 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
 
@@ -158,7 +169,6 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 		}
 
 	};
-
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -303,7 +313,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 	}
 
 	public void setMandatory(boolean mandatory) {
-		this.mandatory = mandatory;
+		this.mandatoryExpression = new ValueExpression<Boolean>(mandatory);
+	}
+
+	/**
+	 * @param mandatoryExpression the SpEL {@link Expression} to evaluated against each request
+	 * message if {@link #returnCallback} is in use. The result of expression must be evaluated
+	 * to {@code boolean}
+	 * @since 1.4
+	 */
+	public void setMandatoryExpression(Expression mandatoryExpression) {
+		Assert.notNull(mandatoryExpression);
+		this.mandatoryExpression = mandatoryExpression;
 	}
 
 	/**
@@ -320,11 +341,18 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 
 	/**
 	 * Add a {@link RetryTemplate} which will be used for all rabbit operations.
-	 *
 	 * @param retryTemplate The retry template.
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
+	}
+
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+		evaluationContext.setBeanResolver(new BeanFactoryResolver(beanFactory));
+		evaluationContext.addPropertyAccessor(new MapAccessor());
+		this.evaluationContext = evaluationContext;
 	}
 
 	/**
@@ -877,7 +905,8 @@ public class RabbitTemplate extends RabbitAccessor implements RabbitOperations, 
 			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
 		}
-		boolean mandatory = this.returnCallback != null && this.mandatory;
+		boolean mandatory = this.returnCallback != null &&
+				this.mandatoryExpression.getValue(this.evaluationContext, message, Boolean.class);
 		MessageProperties messageProperties = message.getMessageProperties();
 		if (mandatory) {
 			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_CORRELATION, this.uuid);
