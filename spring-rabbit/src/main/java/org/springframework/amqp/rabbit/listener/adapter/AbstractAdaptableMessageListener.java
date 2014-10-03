@@ -280,7 +280,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 								"Request message does not contain reply-to property, " +
 								"and no default response Exchange was set.");
 			}
-			replyTo = new Address(null, this.responseExchange, this.responseRoutingKey);
+			replyTo = new Address(this.responseExchange, this.responseRoutingKey);
 		}
 		return replyTo;
 	}

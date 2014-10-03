@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -61,7 +61,7 @@ public class RemotingTest {
 			public Object convertSendAndReceive(Object payload) throws AmqpException {
 				MessageConverter messageConverter = serviceExporter.getMessageConverter();
 
-				Address replyTo = new Address("fakeExchange", "fakeExchangeName", "fakeRoutingKey");
+				Address replyTo = new Address("fakeExchangeName", "fakeRoutingKey");
 				MessageProperties messageProperties = new MessageProperties();
 				messageProperties.setReplyToAddress(replyTo);
 				Message message = messageConverter.toMessage(payload, messageProperties);
@@ -89,6 +89,7 @@ public class RemotingTest {
 	}
 
 	@Test(expected = GeneralException.class)
+	@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 	public void testExceptionReturningMethod() {
 		riggedProxy.notReallyExceptionReturningMethod();
 	}
@@ -96,8 +97,6 @@ public class RemotingTest {
 	@Test
 	public void testActuallyExceptionReturningMethod() {
 		SpecialException returnedException = riggedProxy.actuallyExceptionReturningMethod();
-
 		Assert.assertNotNull(returnedException);
-		Assert.assertTrue(returnedException instanceof SpecialException);
 	}
 }

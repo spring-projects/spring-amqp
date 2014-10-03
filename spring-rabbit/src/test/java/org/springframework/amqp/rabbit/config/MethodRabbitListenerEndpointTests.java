@@ -16,14 +16,22 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.springframework.amqp.rabbit.test.MessageTestUtils.createTextMessage;
+
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,7 +40,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.mockito.ArgumentCaptor;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
@@ -59,11 +66,8 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
-import static org.junit.Assert.*;
-import static org.mockito.AdditionalMatchers.*;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.*;
-import static org.springframework.amqp.rabbit.test.MessageTestUtils.*;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
 
 
 /**
@@ -275,7 +279,7 @@ public class MethodRabbitListenerEndpointTests {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class);
 		listener.setMandatoryPublish(true);
 		String body = "echo text";
-		Address replyTo = new Address(null, "replyToQueue", "myRouting");
+		Address replyTo = new Address("replyToQueue", "myRouting");
 
 		MessageProperties properties = new MessageProperties();
 		properties.setReplyToAddress(replyTo);
@@ -319,11 +323,13 @@ public class MethodRabbitListenerEndpointTests {
 	public void emptySendTo() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class);
 
-		Channel channel = mock(Channel.class);
+		processAndReply(listener, createTextMessage("content"), "", "", false, null);
+		assertDefaultListenerMethodInvocation();
+	}
 
-		thrown.expect(ReplyFailureException.class);
-		thrown.expectCause(Matchers.isA(AmqpException.class));
-		listener.onMessage(createTextMessage("content"), channel);
+	@Test
+	public void noSendToValue() throws Exception {
+		emptySendTo();
 	}
 
 	@Test
@@ -392,8 +398,7 @@ public class MethodRabbitListenerEndpointTests {
 		endpoint.setBean(sample);
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(factory);
-		MessagingMessageListenerAdapter messageListener = endpoint.createMessageListener(container);
-		return messageListener;
+		return endpoint.createMessageListener(container);
 	}
 
 	private MessagingMessageListenerAdapter createInstance(
@@ -533,7 +538,7 @@ public class MethodRabbitListenerEndpointTests {
 			return content;
 		}
 
-		@SendTo("replyDestination")
+		@SendTo("replyDestination/")
 		public String processAndReplyWithSendTo(String content) {
 			invocations.put("processAndReplyWithSendTo", true);
 			return content;
@@ -542,6 +547,12 @@ public class MethodRabbitListenerEndpointTests {
 		@SendTo("")
 		public String emptySendTo(String content) {
 			invocations.put("emptySendTo", true);
+			return content;
+		}
+
+		@SendTo
+		public String noSendToValue(String content) {
+			invocations.put("noSendToValue", true);
 			return content;
 		}
 

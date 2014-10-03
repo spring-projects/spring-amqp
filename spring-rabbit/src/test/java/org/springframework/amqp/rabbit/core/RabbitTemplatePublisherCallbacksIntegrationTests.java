@@ -743,35 +743,4 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
 	}
 
-	@Test
-	public void testReturnNotReceivedAfterPublisherCallbackChannelClose() throws Exception {
-		final CountDownLatch latch = new CountDownLatch(20);
-		templateWithReturnsEnabled.setMandatory(true);
-		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
-
-			@Override
-			public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-				latch.countDown();
-			}
-
-		});
-
-		ExecutorService executorService = Executors.newCachedThreadPool();
-		for (int i = 0; i < 20; i++) {
-			executorService.execute(new Runnable() {
-
-				@Override
-				public void run() {
-					templateWithReturnsEnabled.convertAndSend("BAD_ROUTE", (Object) "bad", new CorrelationData("cba"));
-				}
-
-			});
-		}
-
-		executorService.shutdown();
-		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
-		Thread.sleep(100);
-		assertFalse(latch.getCount() == 0);
-	}
-
 }

@@ -1250,6 +1250,28 @@ public Message<OrderStatus> processOrder(Order order) {
         .setHeader("code", 1234)
         .build();
 }]]></programlisting>
+	<para>
+		The <literal>@SendTo</literal> value is assumed as a reply <literal>exchange</literal> and
+		<literal>routingKey</literal> pair following the pattern <code>exchange/routingKey</code>, where one of those
+		parts can be omitted. The valid values are:
+		<itemizedlist>
+			<listitem>
+				<code>foo/bar</code> - the replyTo exchange and routingKey.
+			</listitem>
+			<listitem>
+				<code>foo/</code> - the replyTo exchange and default (empty) routingKey.
+			</listitem>
+			<listitem>
+				<code>bar</code> or <code>/bar</code> - the replyTo routingKey and default (empty) exchange.
+			</listitem>
+			<listitem>
+				<code>/</code> or empty - the replyTo default exchange and default routingKey.
+			</listitem>
+		</itemizedlist>
+		Also <literal>@SendTo</literal> can be used without a <code>value</code> attribute. This case is equal to an empty
+		sendTo pattern. <literal>@SendTo</literal> is only used if the inbound message does not have a
+		<literal>replyToAddress</literal> property.
+	</para>
         </section>
     </section>
   </section>
