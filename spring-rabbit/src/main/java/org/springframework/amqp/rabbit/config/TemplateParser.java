@@ -112,6 +112,21 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 			builder.addPropertyValue("mandatoryExpression", expressionDef);
 		}
 
+		BeanDefinition sendConnectionFactorySelectorExpression =
+				NamespaceUtils.createExpressionDefIfAttributeDefined("send-connection-factory-selector-expression",
+						element);
+		if (sendConnectionFactorySelectorExpression != null) {
+			builder.addPropertyValue("sendConnectionFactorySelectorExpression", sendConnectionFactorySelectorExpression);
+		}
+
+		BeanDefinition receiveConnectionFactorySelectorExpression =
+				NamespaceUtils.createExpressionDefIfAttributeDefined("receive-connection-factory-selector-expression",
+						element);
+		if (receiveConnectionFactorySelectorExpression != null) {
+			builder.addPropertyValue("receiveConnectionFactorySelectorExpression",
+					receiveConnectionFactorySelectorExpression);
+		}
+
 		BeanDefinition replyContainer = null;
 		Element childElement = null;
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
