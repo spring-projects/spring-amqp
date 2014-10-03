@@ -237,9 +237,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						rabbitListener + " (must be an integer)", ex);
 			}
 		}
-		if (StringUtils.hasText(rabbitListener.responseRoutingKey())) {
-			endpoint.setResponseRoutingKey(resolve(rabbitListener.responseRoutingKey()));
-		}
+
 		String rabbitAdmin = resolve(rabbitListener.admin());
 		if (StringUtils.hasText(rabbitAdmin)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve RabbitAdmin by bean name");

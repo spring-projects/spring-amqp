@@ -27,7 +27,6 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.util.Assert;
 
 /**
@@ -49,8 +48,6 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private boolean exclusive;
 
 	private Integer priority;
-
-	private String responseRoutingKey;
 
 	private RabbitAdmin admin;
 
@@ -136,21 +133,6 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	/**
-	 * Set the routing key to send along with a response message.
-	 * @param responseRoutingKey the response routing key value.
-	 */
-	public void setResponseRoutingKey(String responseRoutingKey) {
-		this.responseRoutingKey = responseRoutingKey;
-	}
-
-	/**
-	 * @return the routing key to send along with a response message.
-	 */
-	public String getResponseRoutingKey() {
-		return responseRoutingKey;
-	}
-
-	/**
 	 * Set the {@link RabbitAdmin} instance to use.
 	 * @param admin the {@link RabbitAdmin} instance.
 	 */
@@ -207,9 +189,6 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private void setupMessageListener(MessageListenerContainer container) {
 		MessageListener messageListener = createMessageListener(container);
-		if (getResponseRoutingKey() != null && messageListener instanceof AbstractAdaptableMessageListener) {
-			((AbstractAdaptableMessageListener) messageListener).setResponseRoutingKey(getResponseRoutingKey());
-		}
 		Assert.state(messageListener != null, "Endpoint [" + this + "] must provide a non null message listener");
 		container.setupMessageListener(messageListener);
 	}
@@ -225,7 +204,6 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 				append("' | queueNames='").append(this.queueNames).
 				append("' | exclusive='").append(this.exclusive).
 				append("' | priority='").append(this.priority).
-				append("' | responseRoutingKey='").append(this.responseRoutingKey).
 				append("' | admin='").append(this.admin).append("'");
 	}
 

@@ -119,16 +119,6 @@ public @interface RabbitListener {
 	String priority() default "";
 
 	/**
-	 * The routing key to send along with a response message.
-	 * <p>This will be applied in case of a request message that does not carry
-	 * a "replyTo" property. Note: This only applies to a listener method with
-	 * a return value, for which each result object will be converted into a
-	 * response message.
-	 * @return the response routing key.
-	 */
-	String responseRoutingKey() default "";
-
-	/**
 	 * Reference to a {@link org.springframework.amqp.rabbit.core.RabbitAdmin
 	 * RabbitAdmin}. Required if the listener is using auto-delete
 	 * queues and those queues are configured for conditional declaration. This

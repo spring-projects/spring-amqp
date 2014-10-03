@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.config;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -27,13 +28,13 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * A {@link RabbitListenerEndpoint} providing the method to invoke to process
  * an incoming message for this endpoint.
  *
  * @author Stephane Nicoll
+ * @author Artem Bilan
  * @since 1.4
  */
 public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint {
@@ -88,10 +89,8 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		InvocableHandlerMethod invocableHandlerMethod =
 				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), getMethod());
 		messageListener.setHandlerMethod(invocableHandlerMethod);
-		String responseExchange = getDefaultResponseExchange();
-		if (StringUtils.hasText(responseExchange)) {
-			messageListener.setResponseExchange(responseExchange);
-		}
+		Address replyToAddress = getDefaultReplyToAddress();
+		messageListener.setReplyToAddress(replyToAddress);
 		MessageConverter messageConverter = container.getMessageConverter();
 		if (messageConverter != null) {
 			messageListener.setMessageConverter(messageConverter);
@@ -107,15 +106,15 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return new MessagingMessageListenerAdapter();
 	}
 
-	private String getDefaultResponseExchange() {
+	private Address getDefaultReplyToAddress() {
 		SendTo ann = AnnotationUtils.getAnnotation(getMethod(), SendTo.class);
 		if (ann != null) {
-			Object[] destinations = ann.value();
+			String[] destinations = ann.value();
 			if (destinations.length != 1) {
 				throw new IllegalStateException("Invalid @" + SendTo.class.getSimpleName() + " annotation on '"
 						+ getMethod() + "' one destination must be set (got " + Arrays.toString(destinations) + ")");
 			}
-			return (String) destinations[0];
+			return new Address(destinations[0]);
 		}
 		return null;
 	}

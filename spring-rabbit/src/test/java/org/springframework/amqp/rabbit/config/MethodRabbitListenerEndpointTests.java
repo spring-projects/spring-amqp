@@ -16,14 +16,22 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.springframework.amqp.rabbit.test.MessageTestUtils.createTextMessage;
+
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,6 +42,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -59,11 +68,8 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
-import static org.junit.Assert.*;
-import static org.mockito.AdditionalMatchers.*;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.*;
-import static org.springframework.amqp.rabbit.test.MessageTestUtils.*;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
 
 
 /**
@@ -224,8 +230,7 @@ public class MethodRabbitListenerEndpointTests {
 		String responseExchange = "fooQueue";
 		String responseRoutingKey = "abc-1234";
 
-		listener.setResponseExchange(responseExchange);
-		listener.setResponseRoutingKey(responseRoutingKey);
+		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, responseExchange, responseRoutingKey));
 		MessageProperties properties = new MessageProperties();
 		properties.setCorrelationId(correlationId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET));
 		org.springframework.amqp.core.Message message = createTextMessage(body, properties);
@@ -238,7 +243,7 @@ public class MethodRabbitListenerEndpointTests {
 	public void processAndReplyWithMessage() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(org.springframework.amqp.core.Message.class);
 		listener.setMessageConverter(null);
-		listener.setResponseExchange("fooQueue");
+		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, "fooQueue", ""));
 		String body = "echo text";
 
 		org.springframework.amqp.core.Message message = createTextMessage(body, new MessageProperties());
@@ -252,7 +257,7 @@ public class MethodRabbitListenerEndpointTests {
 	public void processAndReplyWithMessageAndStringReply() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(org.springframework.amqp.core.Message.class);
 		listener.setMessageConverter(null);
-		listener.setResponseExchange("fooQueue");
+		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, "fooQueue", ""));
 		String body = "echo text";
 
 		org.springframework.amqp.core.Message message = createTextMessage(body, new MessageProperties());
@@ -392,8 +397,7 @@ public class MethodRabbitListenerEndpointTests {
 		endpoint.setBean(sample);
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(factory);
-		MessagingMessageListenerAdapter messageListener = endpoint.createMessageListener(container);
-		return messageListener;
+		return endpoint.createMessageListener(container);
 	}
 
 	private MessagingMessageListenerAdapter createInstance(
