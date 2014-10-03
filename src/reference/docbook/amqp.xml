@@ -584,6 +584,15 @@ public AmqpTemplate rabbitTemplate();
         <classname>RabbitTemplate</classname>.
       </para>
     </section>
+    <section id="template-messaging">
+        <title>Messaging integration</title>
+        <para>
+          Starting with <emphasis>version 1.4</emphasis> <literal>RabbitMessagingTemplate</literal>, built on top of
+          <literal>RabbitTemplate</literal>, provides an integration with the messaging abstraction, i.e.
+          <literal>org.springframework.messaging.Message</literal>. This allows you to create the message to send
+          in generic manner.
+        </para>
+    </section>
   </section>
 
   <section>
@@ -876,14 +885,23 @@ if (received) {
 }]]></programlisting>
     </section>
 
-    <section id="async-consumer"><title>Asynchronous Consumer</title><para>For asynchronous Message
+    <section id="async-consumer"><title>Asynchronous Consumer</title>
+
+    <important>
+        <para>Spring AMQP also supports annotated-listener endpoints through the use of the
+        <literal>@RabbitListener</literal> annotation and provides an open infrastructure to register endpoints
+        programmatically. This is by far the most convenient way to setup an asynchronous consumer, see
+        <xref linkend="async-annotation-driven"/> for more details.</para>
+    </important>
+
+    <para>For asynchronous Message
     reception, a dedicated component (not the
     <interfacename>AmqpTemplate</interfacename>) is involved. That component
     is a container for a Message consuming callback. We will look at the
     container and its properties in just a moment, but first we should look at
     the callback since that is where your application code will be integrated
     with the messaging system. There are a few options for the callback. The
-    simplest of these is to implement the
+    lowest level of these is to implement the
     <interfacename>MessageListener</interfacename> interface:</para>
     <programlisting language="java"><![CDATA[public interface MessageListener {
     void onMessage(Message message);
@@ -1023,7 +1041,204 @@ container.setConsumerArguments(Collections. <String, Object> singletonMap("x-pri
 			same reason. When the container is later started, it uses it's reference to
 			<code>containerAdmin</code> to declare the elements.
 		</para>
-	</section>
+    </section>
+    </section>
+    <section id="async-annotation-driven">
+        <title>Annotation-driven listener endpoints</title>
+
+        <para>The easiest way to receive a message asynchronously is to use the annotated listener
+        endpoint infrastructure. In a nutshell, it allows you to expose a method of a managed bean
+        as a Rabbit listener endpoint.
+        </para><programlisting language="java"><![CDATA[
+@Component
+public class MyService {
+
+    @RabbitListener(queues = "myQueue")
+    public void processOrder(String data) { ... }
+
+}]]></programlisting>
+        <para>The idea of the example above is that whenever a message is available on the
+        <literal>org.springframework.amqp.core.Queue</literal> "myQueue", the <literal>processOrder</literal>
+        method is invoked accordingly (in this case, with the payload of the message).</para>
+
+        <para>The annotated endpoint infrastructure creates a message listener container behind the scenes
+        for each annotated method, using a <literal>RabbitListenerContainerFactory</literal>.</para>
+
+        <section id="async-annotation-driven-enable">
+            <title>Enable listener endpoint annotations</title>
+
+            <para>To enable support for <literal>@RabbitListener</literal> annotations add
+            <literal>@EnableRabbit</literal> to one of your <literal>@Configuration</literal> classes.
+            </para><programlisting language="java"><![CDATA[
+
+@Configuration
+@EnableRabbit
+public class AppConfig {
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory());
+        factory.setConcurrentConsumers(3);
+        factory.setMaxConcurrentConsumers(10);
+        return factory;
+    }
+}]]></programlisting>
+        <para>By default, the infrastructure looks for a bean named <literal>rabbitListenerContainerFactory</literal>
+         as the source for the factory to use to create message listener containers. In this case, and ignoring the
+         RabbitMQ infrastructure setup, the <methodname>processOrder</methodname> method can be invoked with a core
+         poll size of 3 threads and a maximum pool size of 10 threads.</para>
+
+         <para>It is possible to customize the listener container factory to use per annotation or an explicit
+         default can be configured by implementing the <interfacename>RabbitListenerConfigurer</interfacename>
+         interface. The default is only required if at least one endpoint is registered without a specific container
+         factory. See the javadoc for full details and examples.</para>
+
+         <para>If you prefer XML configuration use the <literal>&lt;rabbit:annotation-driven&gt;</literal> element.
+         </para><programlisting language="xml"><![CDATA[
+<rabbit:annotation-driven/>
+
+<bean id="rabbitListenerContainerFactory"
+      class="org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory">
+    <property name="connectionFactory" ref="connectionFactory"/>
+    <property name="concurrentConsumers" value="3"/>
+    <property name="maxConcurrentConsumers" value="10"/>
+</bean>
+]]></programlisting>
+        </section>
+        <section id="async-annotation-driven-registration">
+            <title>Programmatic endpoints registration</title>
+
+            <para><literal>RabbitListenerEndpoint</literal> provides a model of a Rabbit endpoint and is
+            responsible for configuring the container for that model. The infrastructure allows you to
+            configure endpoints programmatically in addition to the ones that are detected by the
+            <literal>RabbitListener</literal> annotation.</para><programlisting language="java"><![CDATA[
+
+@Configuration
+@EnableRabbit
+public class AppConfig implements RabbitListenerConfigurer {
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+        endpoint.setQueueNames("anotherQueue");
+        endpoint.setMessageListener(message -> {
+            // processing
+        });
+        registrar.registerEndpoint(endpoint);
+    }
+}]]></programlisting>
+            <para>In the example above, we used <literal>SimpleRabbitListenerEndpoint</literal> which provides
+            the actual <literal>MessageListener</literal> to invoke but you could just as well build your own
+            endpoint variant describing a custom invocation mechanism.</para>
+
+            <para>It should be noted that you could just as well skip the use of <literal>@RabbitListener</literal>
+            altogether and only register your endpoints programmatically through RabbitListenerConfigurer.</para>
+        </section>
+        <section id="async-annotation-driven-enable-signature">
+            <title> Annotated endpoint method signature</title>
+
+            <para>So far, we have been injecting a simple String in our endpoint but it can actually have a very
+            flexible method signature. Let’s rewrite it to inject the <literal>Order</literal> with a custom header:
+            </para><programlisting language="java"><![CDATA[
+
+@Component
+public class MyService {
+
+    @RabbitListener(queues = "myQueue")
+    public void processOrder(Order order, @Header("order_type") String orderType) {
+        ...
+    }
+}]]></programlisting>
+            <para>These are the main elements you can inject in listener endpoints:</para>
+            <itemizedlist>
+                <listitem>
+                    The raw <literal>org.springframework.amqp.core.Message</literal>.
+                </listitem>
+                <listitem>
+                    The <literal>com.rabbitmq.client.Channel</literal> on which the message was received
+                </listitem>
+                <listitem>
+                    The <literal>org.springframework.messaging.Message</literal> representing the incoming AMQP
+                    message. Note that this message holds both the custom and the standard headers (as defined
+                    by <literal>AmqpHeaders</literal>).
+                </listitem>
+                <listitem>
+                    <literal>@Header</literal>-annotated method arguments to extract a specific header value,
+                    including standard AMQP headers.
+                </listitem>
+                <listitem>
+                    <literal>@Headers</literal>-annotated argument that must also be assignable to
+                    <literal>java.util.Map</literal> for getting access to all headers.
+                </listitem>
+                <listitem>
+                    A non-annotated element that is not one of the supported types (i.e. <literal>Message</literal>
+                    and <literal>Channel</literal>) is considered to be the payload. You can make that explicit by
+                    annotating the parameter with <literal>@Payload</literal>. You can also turn on validation by
+                    adding an extra <literal>@Valid</literal>.
+                </listitem>
+            </itemizedlist>
+
+            <para>The ability to inject Spring’s Message abstraction is particularly useful to benefit from all
+            the information stored in the transport-specific message without relying on transport-specific API.
+            </para><programlisting language="java"><![CDATA[
+@RabbitListener(queues = "myQueue")
+public void processOrder(Message<Order> order) { ... }
+]]></programlisting>
+
+            <para>Handling of method arguments is provided by <literal>DefaultMessageHandlerMethodFactory</literal>
+            which can be further customized to support additional method arguments. The conversion and validation
+            support can be customized there as well.</para>
+
+            <para>For instance, if we want to make sure our Order is valid before processing it, we can annotate
+            the payload with <literal>@Valid</literal> and configure the necessary validator as follows:
+            </para><programlisting language="java"><![CDATA[
+@Configuration
+@EnableRabbit
+public class AppConfig implements RabbitListenerConfigurer {
+
+    @Override
+    public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+        registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+    }
+
+    @Bean
+    public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+        DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+        factory.setValidator(myValidator());
+        return factory;
+    }
+}]]></programlisting>
+        </section>
+        <section id="async-annotation-driven-reply">
+            <title>Reply management</title>
+            <para>The existing support in <literal>MessageListenerAdapter</literal> already allows your method to
+            have a non-void return type. When that’s the case, the result of the invocation is encapsulated in a
+            message sent either in the address specified in the <literal>ReplyToAddress</literal> header of
+            the original message or in the default address configured on the listener. That default address can
+            now be set using the <literal>@SendTo</literal> annotation of the messaging abstraction.</para>
+
+            <para>Assuming our <methodname>processOrder</methodname> method should now return an
+            <literal>OrderStatus</literal>, it is possible to write it as follow to automatically send a reply:
+            </para><programlisting language="java"><![CDATA[
+@RabbitListener(destination = "myQueue")
+@SendTo("status")
+public OrderStatus processOrder(Order order) {
+    // order processing
+    return status;
+}]]></programlisting>
+            <para>If you need to set additional headers in a transport-independent manner, you could return a
+            <literal>Message</literal> instead, something like:</para><programlisting language="java"><![CDATA[
+@RabbitListener(destination = "myQueue")
+@SendTo("status")
+public Message<OrderStatus> processOrder(Order order) {
+    // order processing
+    return MessageBuilder
+        .withPayload(status)
+        .setHeader("code", 1234)
+        .build();
+}]]></programlisting>
+        </section>
     </section>
   </section>
 
