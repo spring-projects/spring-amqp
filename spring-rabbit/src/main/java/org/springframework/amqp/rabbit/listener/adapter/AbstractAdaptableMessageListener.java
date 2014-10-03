@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
@@ -40,19 +41,23 @@ import com.rabbitmq.client.Channel;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
- * @author Artem Bilan
  * @since 1.4
  * @see MessageListener
  * @see ChannelAwareMessageListener
  */
 public abstract class AbstractAdaptableMessageListener implements MessageListener, ChannelAwareMessageListener {
 
+	private static final String DEFAULT_RESPONSE_ROUTING_KEY = "";
+
 	private static final String DEFAULT_ENCODING = "UTF-8";
+
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private Address replyToAddress;
+	private String responseRoutingKey = DEFAULT_RESPONSE_ROUTING_KEY;
+
+	private String responseExchange = null;
 
 	private volatile boolean mandatoryPublish;
 
@@ -61,6 +66,21 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	private String encoding = DEFAULT_ENCODING;
+
+
+	/**
+	 * Set the routing key to use when sending response messages.
+	 * This will be applied in case of a request message that
+	 * does not carry a "ReplyTo" property
+	 * <p>
+	 * Response destinations are only relevant for listener methods
+	 * that return result objects, which will be wrapped in
+	 * a response message and sent to a response destination.
+	 * @param responseRoutingKey The routing key.
+	 */
+	public void setResponseRoutingKey(String responseRoutingKey) {
+		this.responseRoutingKey = responseRoutingKey;
+	}
 
 	/**
 	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
@@ -71,16 +91,16 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	}
 
 	/**
-	 * Set the {@link Address} to use when sending response messages.
-	 * This is only used if the {@code replyToAddress} from the received message is null.
+	 * Set the exchange to use when sending response messages.
+	 * This is only used if the exchange from the received message is null.
 	 * <p>
-	 * Response addresses are only relevant for listener methods
+	 * Response destinations are only relevant for listener methods
 	 * that return result objects, which will be wrapped in
 	 * a response message and sent to a response destination.
-	 * @param replyToAddress The address.
+	 * @param responseExchange The exchange.
 	 */
-	public void setReplyToAddress(Address replyToAddress) {
-		this.replyToAddress = replyToAddress;
+	public void setResponseExchange(String responseExchange) {
+		this.responseExchange = responseExchange;
 	}
 
 	public void setMandatoryPublish(boolean mandatoryPublish) {
@@ -242,25 +262,26 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * The default implementation first checks the Rabbit Reply-To Address of the supplied request; if that is not
 	 * <code>null</code> it is returned; if it is <code>null</code>, then the configured default response Exchange and
 	 * routing key are used to construct a reply-to Address. If the responseExchange property is also <code>null</code>,
-	 * then an {@link AmqpException} is thrown.
+	 * then an {@link org.springframework.amqp.AmqpException} is thrown.
 	 * @param request the original incoming Rabbit message
 	 * @return the reply-to Address (never <code>null</code>)
 	 * @throws Exception if thrown by Rabbit API methods
-	 * @throws AmqpException if no {@link Address} can be determined
-	 * @see #setReplyToAddress(Address)
+	 * @throws org.springframework.amqp.AmqpException if no {@link Address} can be determined
+	 * @see #setResponseExchange(String)
+	 * @see #setResponseRoutingKey(String)
 	 * @see org.springframework.amqp.core.Message#getMessageProperties()
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	protected Address getReplyToAddress(Message request) throws Exception {
 		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
-			if (this.replyToAddress == null) {
+			if (this.responseExchange == null) {
 				throw new AmqpException(
 						"Cannot determine ReplyTo message property value: " +
 								"Request message does not contain reply-to property, " +
 								"and no default response Exchange was set.");
 			}
-			replyTo = this.replyToAddress;
+			replyTo = new Address(ExchangeTypes.DIRECT, this.responseExchange, this.responseRoutingKey);
 		}
 		return replyTo;
 	}

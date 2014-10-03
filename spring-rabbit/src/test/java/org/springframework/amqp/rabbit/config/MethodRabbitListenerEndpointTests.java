@@ -40,9 +40,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.mockito.ArgumentCaptor;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -230,7 +228,8 @@ public class MethodRabbitListenerEndpointTests {
 		String responseExchange = "fooQueue";
 		String responseRoutingKey = "abc-1234";
 
-		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, responseExchange, responseRoutingKey));
+		listener.setResponseExchange(responseExchange);
+		listener.setResponseRoutingKey(responseRoutingKey);
 		MessageProperties properties = new MessageProperties();
 		properties.setCorrelationId(correlationId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET));
 		org.springframework.amqp.core.Message message = createTextMessage(body, properties);
@@ -243,7 +242,7 @@ public class MethodRabbitListenerEndpointTests {
 	public void processAndReplyWithMessage() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(org.springframework.amqp.core.Message.class);
 		listener.setMessageConverter(null);
-		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, "fooQueue", ""));
+		listener.setResponseExchange("fooQueue");
 		String body = "echo text";
 
 		org.springframework.amqp.core.Message message = createTextMessage(body, new MessageProperties());
@@ -257,7 +256,7 @@ public class MethodRabbitListenerEndpointTests {
 	public void processAndReplyWithMessageAndStringReply() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(org.springframework.amqp.core.Message.class);
 		listener.setMessageConverter(null);
-		listener.setReplyToAddress(new Address(ExchangeTypes.DIRECT, "fooQueue", ""));
+		listener.setResponseExchange("fooQueue");
 		String body = "echo text";
 
 		org.springframework.amqp.core.Message message = createTextMessage(body, new MessageProperties());
@@ -324,11 +323,8 @@ public class MethodRabbitListenerEndpointTests {
 	public void emptySendTo() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class);
 
-		Channel channel = mock(Channel.class);
-
-		thrown.expect(ReplyFailureException.class);
-		thrown.expectCause(Matchers.isA(AmqpException.class));
-		listener.onMessage(createTextMessage("content"), channel);
+		processAndReply(listener, createTextMessage("content"), "", "", false, null);
+		assertDefaultListenerMethodInvocation();
 	}
 
 	@Test
@@ -537,7 +533,7 @@ public class MethodRabbitListenerEndpointTests {
 			return content;
 		}
 
-		@SendTo("replyDestination")
+		@SendTo("fanout://replyDestination")
 		public String processAndReplyWithSendTo(String content) {
 			invocations.put("processAndReplyWithSendTo", true);
 			return content;

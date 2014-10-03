@@ -59,18 +59,20 @@ public class Address {
 	 * @param address a structured string.
 	 */
 	public Address(String address) {
-		if (address == null) {
+		if (!StringUtils.hasText(address)) {
 			this.exchangeType = ExchangeTypes.DIRECT;
 			this.exchangeName = "";
 			this.routingKey = "";
-		} else {
+		}
+		else {
 			Matcher matcher = pattern.matcher(address);
 			boolean matchFound = matcher.find();
 			if (matchFound) {
 				this.exchangeType = matcher.group(1);
 				this.exchangeName = matcher.group(2);
 				this.routingKey = matcher.group(3);
-			} else {
+			}
+			else {
 				this.exchangeType = ExchangeTypes.DIRECT;
 				this.exchangeName = "";
 				this.routingKey = address;

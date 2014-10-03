@@ -90,7 +90,10 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), getMethod());
 		messageListener.setHandlerMethod(invocableHandlerMethod);
 		Address replyToAddress = getDefaultReplyToAddress();
-		messageListener.setReplyToAddress(replyToAddress);
+		if (replyToAddress != null) {
+			messageListener.setResponseExchange(replyToAddress.getExchangeName());
+			messageListener.setResponseRoutingKey(replyToAddress.getRoutingKey());
+		}
 		MessageConverter messageConverter = container.getMessageConverter();
 		if (messageConverter != null) {
 			messageListener.setMessageConverter(messageConverter);
