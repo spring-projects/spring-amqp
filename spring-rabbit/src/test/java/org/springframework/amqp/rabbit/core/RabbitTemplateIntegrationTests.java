@@ -64,6 +64,7 @@ import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -102,6 +103,7 @@ public class RabbitTemplateIntegrationTests {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template = new RabbitTemplate(connectionFactory);
+		template.setConnectionFactorySelectorExpression(new LiteralExpression("foo"));
 	}
 
 	@After

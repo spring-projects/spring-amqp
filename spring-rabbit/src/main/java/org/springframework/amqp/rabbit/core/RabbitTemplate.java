@@ -40,6 +40,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
+import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -157,6 +158,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private volatile String correlationKey = null;
 
 	private volatile RetryTemplate retryTemplate;
+
+	private volatile Expression connectionFactorySelectorExpression;
 
 	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
 
@@ -327,6 +330,29 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * A SpEL {@link Expression} to evaluate
+	 * against each request message, if provided {@link #getConnectionFactory()}
+	 * is an instance of {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory}.
+	 * <p>
+	 * The result of this expression is used as {@code lookupKey} to get the target
+	 * {@link ConnectionFactory} from {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory}
+	 * directly.
+	 * <p>
+	 * If this expression is evaluated to {@code null}, we do fallback to the normal
+	 * {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory} logic.
+	 * <p>
+	 * If there is no target {@link ConnectionFactory} with evaluated {@code lookupKey},
+	 * we do fallback to the normal
+	 * {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory} logic
+	 * only if its {@code lenientFallback == true}.
+	 * @param connectionFactorySelectorExpression a SpEL {@link Expression} to evaluate
+	 * @since 1.4
+	 */
+	public void setConnectionFactorySelectorExpression(Expression connectionFactorySelectorExpression) {
+		this.connectionFactorySelectorExpression = connectionFactorySelectorExpression;
+	}
+
+	/**
 	 * If set to 'correlationId' (default) the correlationId property
 	 * will be used; otherwise the supplied key will be used.
 	 * @param correlationKey the correlationKey to set
@@ -399,6 +425,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void send(final String exchange, final String routingKey,
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
+		obtainTargetConnectionFactoryIfNecessary(message);
 		execute(new ChannelCallback<Object>() {
 
 			@Override
@@ -407,6 +434,31 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return null;
 			}
 		});
+	}
+
+	private void obtainTargetConnectionFactoryIfNecessary(Object rootObject) {
+		if (this.connectionFactorySelectorExpression != null &&
+				getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+			AbstractRoutingConnectionFactory routingConnectionFactory =
+					(AbstractRoutingConnectionFactory) getConnectionFactory();
+			Object lookupKey = null;
+			if (rootObject != null) {
+				lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
+			}
+			else {
+				lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext);
+			}
+			if (lookupKey != null) {
+				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
+				if (connectionFactory != null) {
+					ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, isChannelTransacted());
+				}
+				else if (!routingConnectionFactory.isLenientFallback()) {
+					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
+							+ lookupKey + "]");
+				}
+			}
+		}
 	}
 
 	@Override
@@ -480,6 +532,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Message receive(final String queueName) {
+		obtainTargetConnectionFactoryIfNecessary(null);
 		return execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -565,6 +618,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@SuppressWarnings("unchecked")
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+		obtainTargetConnectionFactoryIfNecessary(null);
 		return this.execute(new ChannelCallback<Boolean>() {
 
 			@Override
@@ -720,6 +774,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
+		obtainTargetConnectionFactoryIfNecessary(message);
 		if (this.replyQueue == null) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
 		}

@@ -76,6 +76,7 @@ public final class TemplateParserTests {
 		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
 		assertNotNull(template);
 		assertEquals("'true'", TestUtils.getPropertyValue(template, "mandatoryExpression.expression"));
+		assertEquals("'foo'", TestUtils.getPropertyValue(template, "connectionFactorySelectorExpression.expression"));
 	}
 
 	@Test

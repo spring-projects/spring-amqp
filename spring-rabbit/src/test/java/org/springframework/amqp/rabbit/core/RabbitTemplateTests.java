@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,10 +39,15 @@ import org.mockito.stubbing.Answer;
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.ReceiveAndReplyCallback;
+import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -60,6 +68,7 @@ import com.rabbitmq.client.impl.AMQImpl;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0.1
  *
  */
@@ -120,7 +129,7 @@ public class RabbitTemplateTests {
 	}
 
 	@Test
-	public void testConvertbytes() {
+	public void testConvertBytes() {
 		RabbitTemplate template = new RabbitTemplate();
 		byte[] payload = "Hello, world!".getBytes();
 		Message message = template.convertMessageIfNecessary(payload);
@@ -204,6 +213,55 @@ public class RabbitTemplateTests {
 			assertThat(e.getMessage(), containsString("foo"));
 		}
 		assertEquals(3, count.get());
+	}
+
+	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testRoutingConnectionFactory() throws Exception {
+		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory1 =
+				Mockito.mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory2 =
+				Mockito.mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		Map<Object, org.springframework.amqp.rabbit.connection.ConnectionFactory> factories =
+				new HashMap<Object, org.springframework.amqp.rabbit.connection.ConnectionFactory>(2);
+		factories.put("foo", connectionFactory1);
+		factories.put("bar", connectionFactory2);
+
+
+		AbstractRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
+		connectionFactory.setTargetConnectionFactories(factories);
+
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		Expression expression = new SpelExpressionParser()
+				.parseExpression("T(org.springframework.amqp.rabbit.core.RabbitTemplateTests)" +
+						".LOOKUP_KEY_COUNT.getAndIncrement() % 2 == 0 ? 'foo' : 'bar'");
+		template.setConnectionFactorySelectorExpression(expression);
+
+		for (int i = 0; i < 3; i++) {
+			try {
+				template.convertAndSend("foo", "bar", "baz");
+			}
+			catch (Exception e) {
+				//Ignore it. Doesn't matter for this test.
+			}
+			try {
+				template.receive("foo");
+			}
+			catch (Exception e) {
+				//Ignore it. Doesn't matter for this test.
+			}
+			try {
+				template.receiveAndReply("foo", mock(ReceiveAndReplyCallback.class));
+			}
+			catch (Exception e) {
+				//Ignore it. Doesn't matter for this test.
+			}
+		}
+
+		Mockito.verify(connectionFactory1, Mockito.times(5)).createConnection();
+		Mockito.verify(connectionFactory2, Mockito.times(4)).createConnection();
 	}
 
 }

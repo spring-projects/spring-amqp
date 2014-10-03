@@ -1048,6 +1048,17 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="connection-factory-selector-expression" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to evaluate the 'lookupKey' for each request message,
+	when 'AbstractRoutingConnectionFactory' is in used for this 'template'.
+	Request message is used as root object of expression evaluation.
+	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@vhostFor.select(messageProperties.headers.customerId)'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
