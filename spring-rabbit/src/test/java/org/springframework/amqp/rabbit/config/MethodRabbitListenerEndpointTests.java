@@ -328,6 +328,11 @@ public class MethodRabbitListenerEndpointTests {
 	}
 
 	@Test
+	public void noSendToValue() throws Exception {
+		emptySendTo();
+	}
+
+	@Test
 	public void invalidSendTo() {
 		thrown.expect(IllegalStateException.class);
 		thrown.expectMessage("firstDestination");
@@ -542,6 +547,12 @@ public class MethodRabbitListenerEndpointTests {
 		@SendTo("")
 		public String emptySendTo(String content) {
 			invocations.put("emptySendTo", true);
+			return content;
+		}
+
+		@SendTo
+		public String noSendToValue(String content) {
+			invocations.put("noSendToValue", true);
 			return content;
 		}
 

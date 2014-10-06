@@ -113,11 +113,11 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		SendTo ann = AnnotationUtils.getAnnotation(getMethod(), SendTo.class);
 		if (ann != null) {
 			String[] destinations = ann.value();
-			if (destinations.length != 1) {
+			if (destinations.length > 1) {
 				throw new IllegalStateException("Invalid @" + SendTo.class.getSimpleName() + " annotation on '"
 						+ getMethod() + "' one destination must be set (got " + Arrays.toString(destinations) + ")");
 			}
-			return new Address(destinations[0]);
+			return destinations.length == 1 ? new Address(destinations[0]) : new Address(null);
 		}
 		return null;
 	}
