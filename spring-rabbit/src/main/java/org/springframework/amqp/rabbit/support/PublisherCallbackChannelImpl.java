@@ -73,15 +73,19 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0.1
  *
  */
-public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
+public class PublisherCallbackChannelImpl
+		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
+	private static final String[] METHODS_OF_INTEREST =
+			new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
 	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
+
 		@Override
 		public boolean matches(java.lang.reflect.Method method) {
 			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
 		}
+
 	};
 
 	private final Log logger = LogFactory.getLog(this.getClass());
@@ -109,7 +113,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 
-		// The following reflection is required to maintain comatibility with pre 3.3.x clients.
+		// The following reflection is required to maintain compatibility with pre 3.3.x clients.
 		final AtomicReference<java.lang.reflect.Method> getFlowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowBlockedMethod = new AtomicReference<java.lang.reflect.Method>();
@@ -454,7 +458,8 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			return (String) ReflectionUtils.invokeMethod(this.basicConsumeFourArgsMethod, this.delegate, queue,
 					autoAck, arguments, callback);
 		}
-		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' is not supported by the client library");
+		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' " +
+				"is not supported by the client library");
 	}
 
 	public String basicConsume(String queue, boolean autoAck,
@@ -719,7 +724,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException
 	{
-		Object uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
+		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (logger.isWarnEnabled()) {
@@ -748,10 +753,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this) {
-			return true;
-		}
-		return this.delegate.equals(obj);
+		return obj == this || this.delegate.equals(obj);
 	}
 
 	@Override

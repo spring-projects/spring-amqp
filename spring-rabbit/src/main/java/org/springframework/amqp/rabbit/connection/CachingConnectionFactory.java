@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -612,7 +614,45 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return;
 			}
 			try {
-				this.target.close();
+				if (CachingConnectionFactory.this.active &&
+						(CachingConnectionFactory.this.publisherConfirms ||
+								CachingConnectionFactory.this.publisherReturns)) {
+					ExecutorService executorService = (getExecutorService() != null
+							? getExecutorService()
+							: Executors.newSingleThreadExecutor());
+					final Channel channel = CachedChannelInvocationHandler.this.target;
+					executorService.execute(new Runnable() {
+
+						@Override
+						public void run() {
+							try {
+								if (CachingConnectionFactory.this.publisherConfirms) {
+									channel.waitForConfirmsOrDie(5000);
+								}
+								else {
+									Thread.sleep(5000);
+								}
+							}
+							catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+							}
+							catch (Exception e) {}
+							finally {
+								try {
+									if (channel.isOpen()) {
+										channel.close();
+									}
+								}
+								catch (IOException e) {}
+								catch (AlreadyClosedException e) {}
+							}
+						}
+
+					});
+				}
+				else {
+					this.target.close();
+				}
 			}
 			catch (AlreadyClosedException e) {
 				if (logger.isTraceEnabled()) {
@@ -642,8 +682,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 		@Override
 		public Channel createChannel(boolean transactional) {
-			Channel channel = getChannel(this, transactional);
-			return channel;
+			return getChannel(this, transactional);
 		}
 
 		@Override
