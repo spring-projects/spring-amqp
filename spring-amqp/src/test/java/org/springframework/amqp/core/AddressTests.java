@@ -16,7 +16,10 @@
 
 package org.springframework.amqp.core;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,21 +27,21 @@ import org.junit.Test;
 /**
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Artem Bilan
  */
 public class AddressTests {
 
 	@Test
 	public void toStringCheck() {
-		Address address = new Address(ExchangeTypes.DIRECT, "my-exchange", "routing-key");
-		String replyToUri = "direct://my-exchange/routing-key";
+		Address address = new Address("my-exchange", "routing-key");
+		String replyToUri = "my-exchange/routing-key";
 		Assert.assertEquals(replyToUri, address.toString());
 	}
 
 	@Test
 	public void parse() {
-		String replyToUri = "direct://my-exchange/routing-key";
+		String replyToUri = "my-exchange/routing-key";
 		Address address = new Address(replyToUri);
-		assertEquals(address.getExchangeType(), ExchangeTypes.DIRECT);
 		assertEquals(address.getExchangeName(), "my-exchange");
 		assertEquals(address.getRoutingKey(), "routing-key");
 	}
@@ -47,25 +50,42 @@ public class AddressTests {
 	public void parseUnstructuredWithRoutingKeyOnly() {
 		Address address = new Address("my-routing-key");
 		assertEquals("my-routing-key", address.getRoutingKey());
-		assertEquals("direct:///my-routing-key", address.toString());
+		assertEquals("/my-routing-key", address.toString());
 	}
 
 	@Test
 	public void parseWithoutRoutingKey() {
-		Address address = new Address("fanout://my-exchange");
-		assertEquals(ExchangeTypes.FANOUT, address.getExchangeType());
+		Address address = new Address("my-exchange/");
 		assertEquals("my-exchange", address.getExchangeName());
 		assertEquals("", address.getRoutingKey());
-		assertEquals("fanout://my-exchange/", address.toString());
+		assertEquals("my-exchange/", address.toString());
 	}
 
 	@Test
 	public void parseWithDefaultExchangeAndRoutingKey() {
-		Address address = new Address("direct:///routing-key");
-		assertEquals(ExchangeTypes.DIRECT, address.getExchangeType());
+		Address address = new Address("/routing-key");
 		assertEquals("", address.getExchangeName());
 		assertEquals("routing-key", address.getRoutingKey());
-		assertEquals("direct:///routing-key", address.toString());
+		assertEquals("/routing-key", address.toString());
+	}
+
+	@Test
+	public void testEmpty() {
+		Address address = new Address("/");
+		assertEquals("", address.getExchangeName());
+		assertEquals("", address.getRoutingKey());
+		assertEquals("/", address.toString());
+	}
+
+	@Test
+	public void invalidPattern() {
+		try {
+			Address address = new Address("foo/bar/baz");
+			fail("IndexOutOfBoundsException expected");
+		}
+		catch (Exception e) {
+			assertThat(e, instanceOf(IndexOutOfBoundsException.class));
+		}
 	}
 
 }

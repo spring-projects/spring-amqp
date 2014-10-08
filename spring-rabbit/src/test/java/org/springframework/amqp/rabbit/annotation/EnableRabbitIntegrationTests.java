@@ -132,7 +132,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queues = "test.sendTo")
-		@SendTo("direct:///test.sendTo.reply")
+		@SendTo("test.sendTo.reply")
 		public String capitalizeAndSendTo(String foo) {
 			return foo.toUpperCase();
 		}

@@ -279,7 +279,7 @@ public class MethodRabbitListenerEndpointTests {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class);
 		listener.setMandatoryPublish(true);
 		String body = "echo text";
-		Address replyTo = new Address(null, "replyToQueue", "myRouting");
+		Address replyTo = new Address("replyToQueue", "myRouting");
 
 		MessageProperties properties = new MessageProperties();
 		properties.setReplyToAddress(replyTo);
@@ -538,7 +538,7 @@ public class MethodRabbitListenerEndpointTests {
 			return content;
 		}
 
-		@SendTo("fanout://replyDestination")
+		@SendTo("replyDestination/")
 		public String processAndReplyWithSendTo(String content) {
 			invocations.put("processAndReplyWithSendTo", true);
 			return content;

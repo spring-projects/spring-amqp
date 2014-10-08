@@ -21,7 +21,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
@@ -281,7 +280,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 								"Request message does not contain reply-to property, " +
 								"and no default response Exchange was set.");
 			}
-			replyTo = new Address(ExchangeTypes.DIRECT, this.responseExchange, this.responseRoutingKey);
+			replyTo = new Address(this.responseExchange, this.responseRoutingKey);
 		}
 		return replyTo;
 	}

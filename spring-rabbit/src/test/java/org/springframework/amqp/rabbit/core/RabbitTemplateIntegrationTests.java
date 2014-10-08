@@ -856,7 +856,7 @@ public class RabbitTemplateIntegrationTests {
 			public Message handle(Message message) {
 				MessageProperties messageProperties = new MessageProperties();
 				messageProperties.setContentType(message.getMessageProperties().getContentType());
-				messageProperties.setHeader("testReplyTo", new Address("", "", ROUTE));
+				messageProperties.setHeader("testReplyTo", new Address("", ROUTE));
 				return new Message(message.getBody(), messageProperties);
 			}
 
