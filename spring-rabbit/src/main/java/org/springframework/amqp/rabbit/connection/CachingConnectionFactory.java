@@ -614,7 +614,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				return;
 			}
 			try {
-				if (CachingConnectionFactory.this.active && CachingConnectionFactory.this.publisherConfirms) {
+				if (CachingConnectionFactory.this.active &&
+						(CachingConnectionFactory.this.publisherConfirms ||
+								CachingConnectionFactory.this.publisherReturns)) {
 					ExecutorService executorService = (getExecutorService() != null
 							? getExecutorService()
 							: Executors.newSingleThreadExecutor());
@@ -624,7 +626,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 						@Override
 						public void run() {
 							try {
-								channel.waitForConfirmsOrDie(getCloseTimeout());
+								channel.waitForConfirmsOrDie(5000);
 							}
 							catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
