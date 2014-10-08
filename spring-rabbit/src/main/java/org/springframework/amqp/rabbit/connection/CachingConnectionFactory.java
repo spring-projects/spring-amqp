@@ -626,7 +626,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 						@Override
 						public void run() {
 							try {
-								channel.waitForConfirmsOrDie(5000);
+								if (CachingConnectionFactory.this.publisherConfirms) {
+									channel.waitForConfirmsOrDie(5000);
+								}
+								else {
+									Thread.sleep(5000);
+								}
 							}
 							catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
