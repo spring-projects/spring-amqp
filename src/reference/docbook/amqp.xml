@@ -562,6 +562,42 @@ public AmqpTemplate rabbitTemplate();
 		template.setRetryTemplate(retryTemplate);
 		return template;
 }]]></programlisting>
+	<para>
+		Starting with <emphasis>version 1.4</emphasis>, in addition to the <code>retryTemplate</code> property,
+		the <code>recoveryCallback</code> option is supported on the <classname>RabbitTemplate</classname>.
+		It is used as a second argument for the
+		<code>RetryTemplate.execute(RetryCallback&lt;T, E&gt; retryCallback,
+			RecoveryCallback&lt;T&gt;recoveryCallback)</code>.
+	</para>
+	<note>
+		The <interfacename>RecoveryCallback</interfacename> is somewhat limited in that the retry context
+		only contains the <code>lastThrowable</code> field. For more sophisticated use cases, you should
+		use an external <classname>RetryTemplate</classname> so that you can convey additional information
+		to the <interfacename>RecoveryCallback</interfacename> via the context's attributes:
+	</note>
+	<programlisting language="java"><![CDATA[retryTemplate.execute(
+    new RetryCallback<Object, Exception>() {
+
+        @Override
+        public Object doWithRetry(RetryContext context) throws Exception {
+            context.setAttribute("message", message);
+            return rabbitTemplate.convertAndSend(exchange, routingKey, message);
+        }
+    }, new RecoveryCallback<Object>() {
+
+        @Override
+        public Object recover(RetryContext context) throws Exception {
+            Object message = context.getAttribute("message");
+            Throwable t = context.getLastThrowable();
+            // Do something with message
+            return null;
+        }
+    });
+}]]></programlisting>
+	<para>
+		In this case, you would <emphasis role="bold">not</emphasis> inject a <classname>RetryTemplate</classname>
+		into the <classname>RabbitTemplate</classname>.
+	</para>
 	</section>
     <section id="template-confirms">
       <title>Publisher Confirms and Returns</title>

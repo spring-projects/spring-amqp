@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,6 +50,8 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.retry.RecoveryCallback;
+import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -213,6 +217,38 @@ public class RabbitTemplateTests {
 			assertThat(e.getMessage(), containsString("foo"));
 		}
 		assertEquals(3, count.get());
+	}
+
+	@Test
+	public void testRecovery() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		final AtomicInteger count = new AtomicInteger();
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				count.incrementAndGet();
+				throw new AuthenticationFailureException("foo");
+			}
+		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+
+		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		template.setRetryTemplate(new RetryTemplate());
+
+		final AtomicBoolean recoverInvoked = new AtomicBoolean();
+
+		template.setRecoveryCallback(new RecoveryCallback<Object>() {
+
+			@Override
+			public Object recover(RetryContext context) throws Exception {
+				recoverInvoked.set(true);
+				return null;
+			}
+
+		});
+		template.convertAndSend("foo", "bar", "baz");
+		assertEquals(3, count.get());
+		assertTrue(recoverInvoked.get());
 	}
 
 	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();
