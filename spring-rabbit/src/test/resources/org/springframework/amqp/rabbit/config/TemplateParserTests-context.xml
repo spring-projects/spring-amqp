@@ -1,44 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:beans="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
-	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	   xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<rabbit:template id="template" connection-factory="connectionFactory" />
+	<rabbit:template id="template" connection-factory="connectionFactory"/>
 
-	<rabbit:template id="kitchenSink" connection-factory="connectionFactory" channel-transacted="true" correlation-key="foo"
-		encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter" reply-timeout="1000"
-		retry-template="retrier" />
+	<rabbit:template id="kitchenSink" connection-factory="connectionFactory" channel-transacted="true"
+					 correlation-key="foo"
+					 encoding="UTF-8" exchange="foo" queue="bar" routing-key="spam" message-converter="converter"
+					 reply-timeout="1000"
+					 retry-template="retrier"
+					 recovery-callback="recoverer"/>
 
-	<rabbit:connection-factory id="connectionFactory" />
+	<rabbit:connection-factory id="connectionFactory"/>
 
 	<bean id="converter" class="org.springframework.amqp.support.converter.SerializerMessageConverter"/>
 
-	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="replyQId" correlation-key="correlationId">
-		<rabbit:reply-listener />
+	<rabbit:template id="withReplyQ" connection-factory="connectionFactory" reply-queue="replyQId"
+					 correlation-key="correlationId">
+		<rabbit:reply-listener/>
 	</rabbit:template>
 
-	<rabbit:queue id="replyQId" name="reply.queue" queue-arguments="args" />
+	<rabbit:queue id="replyQId" name="reply.queue" queue-arguments="args"/>
 
 	<rabbit:queue-arguments id="args">
-		<entry key="foo" value="bar" />
+		<entry key="foo" value="bar"/>
 	</rabbit:queue-arguments>
 
 	<rabbit:template id="withCallbacks" connection-factory="connectionFactory"
-		mandatory="true" return-callback="rcb" confirm-callback="ccb" />
+					 mandatory="true" return-callback="rcb" confirm-callback="ccb"/>
 
 	<rabbit:template id="withMandatoryExpression" connection-factory="connectionFactory"
 					 mandatory-expression="'true'"
 					 send-connection-factory-selector-expression="'foo'"
 					 receive-connection-factory-selector-expression="'foo'"/>
 
-	<beans:bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
-		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnCallback" />
-	</beans:bean>
+	<bean id="rcb" class="org.mockito.Mockito" factory-method="mock">
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ReturnCallback"/>
+	</bean>
 
-	<beans:bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
-		<beans:constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback" />
-	</beans:bean>
+	<bean id="ccb" class="org.mockito.Mockito" factory-method="mock">
+		<constructor-arg value="org.springframework.amqp.rabbit.core.RabbitTemplate$ConfirmCallback"/>
+	</bean>
 
-	<beans:bean id="retrier" class="org.springframework.retry.support.RetryTemplate" />
+	<bean id="retrier" class="org.springframework.retry.support.RetryTemplate"/>
+
+	<bean id="recoverer" class="org.mockito.Mockito" factory-method="mock">
+		<constructor-arg value="org.springframework.retry.RecoveryCallback"/>
+	</bean>
+
 </beans>

@@ -34,6 +34,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
@@ -90,6 +91,7 @@ public final class TemplateParserTests {
 		DirectFieldAccessor accessor = new DirectFieldAccessor(template);
 		assertEquals("foo", accessor.getPropertyValue("correlationKey"));
 		assertSame(beanFactory.getBean(RetryTemplate.class), accessor.getPropertyValue("retryTemplate"));
+		assertSame(beanFactory.getBean(RecoveryCallback.class), accessor.getPropertyValue("recoveryCallback"));
 	}
 
 	@Test

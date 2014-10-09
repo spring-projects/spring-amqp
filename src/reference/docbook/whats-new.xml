@@ -112,6 +112,14 @@
 				See <xref linkend="routing-connection-factory"/>.
 			</para>
 		</section>
+		<section>
+			<title>RabbitTemplate: RecoveryCallback option</title>
+			<para>
+				The <code>recoveryCallback</code> property has been added to be used in the
+				<code>retryTemplate.execute()</code>.
+				See <xref linkend="template-retry"/>.
+			</para>
+		</section>
 	</section>
 
 	<section>

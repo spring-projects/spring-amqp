@@ -63,6 +63,7 @@ import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetryTemplate;
@@ -113,8 +114,8 @@ import com.rabbitmq.client.GetResponse;
  * @author Artem Bilan
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
-	PublisherCallbackChannel.Listener {
+public class RabbitTemplate extends RabbitAccessor
+		implements BeanFactoryAware, RabbitOperations, MessageListener, PublisherCallbackChannel.Listener {
 
 	/** Alias for amq.direct default exchange */
 	private static final String DEFAULT_EXCHANGE = "";
@@ -124,6 +125,24 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private static final long DEFAULT_REPLY_TIMEOUT = 5000;
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
+
+	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms =
+			new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
+
+	private final Map<String, PendingReply> replyHolder = new ConcurrentHashMap<String, PendingReply>();
+
+	private final String uuid = UUID.randomUUID().toString();
+
+	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+
+	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
+
+		@Override
+		public Address getReplyToAddress(Message request, Object reply) {
+			return RabbitTemplate.this.getReplyToAddress(request);
+		}
+
+	};
 
 	private volatile String exchange = DEFAULT_EXCHANGE;
 
@@ -142,37 +161,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private volatile Queue replyQueue;
 
-	private final Map<String, PendingReply> replyHolder = new ConcurrentHashMap<String, PendingReply>();
-
 	private volatile ConfirmCallback confirmCallback;
 
 	private volatile ReturnCallback returnCallback;
 
-	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms =
-			new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
-
 	private volatile Expression mandatoryExpression = new ValueExpression<Boolean>(false);
-
-	private final String uuid = UUID.randomUUID().toString();
 
 	private volatile String correlationKey = null;
 
 	private volatile RetryTemplate retryTemplate;
 
+	private volatile RecoveryCallback<?> recoveryCallback;
+
 	private volatile Expression sendConnectionFactorySelectorExpression;
 
 	private volatile Expression receiveConnectionFactorySelectorExpression;
-
-	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
-
-	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback = new ReplyToAddressCallback<Object>() {
-
-		@Override
-		public Address getReplyToAddress(Message request, Object reply) {
-			return RabbitTemplate.this.getReplyToAddress(request);
-		}
-
-	};
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -399,6 +402,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		this.retryTemplate = retryTemplate;
 	}
 
+	/**
+	 * Add a {@link RecoveryCallback} which is used for the {@code retryTemplate.execute}.
+	 * If {@link #retryTemplate} isn't provided {@link #recoveryCallback} is ignored.
+	 * {@link RecoveryCallback} should produce result compatible with
+	 * {@link #execute(ChannelCallback, ConnectionFactory)} return type.
+	 * @param recoveryCallback The retry recoveryCallback.
+	 * @since 1.4
+	 */
+	public void setRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+		this.recoveryCallback = recoveryCallback;
+	}
+
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		this.evaluationContext.setBeanResolver(new BeanFactoryResolver(beanFactory));
@@ -406,8 +421,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
-	 * Gets unconfirmed correlatiom data older than age and removes them.
-	 * @param age in millseconds
+	 * Gets unconfirmed correlation data older than age and removes them.
+	 * @param age in milliseconds
 	 * @return the collection of correlation data for which confirms have
 	 * not been received.
 	 */
@@ -906,6 +921,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return execute(action, null);
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
@@ -916,7 +932,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						return RabbitTemplate.this.doExecute(action, connectionFactory);
 					}
 
-				});
+				}, (RecoveryCallback<T>) this.recoveryCallback);
 			}
 			catch (Exception e) {
 				if (e instanceof RuntimeException) {

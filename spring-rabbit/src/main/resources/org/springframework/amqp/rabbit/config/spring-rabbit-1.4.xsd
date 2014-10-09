@@ -1048,6 +1048,18 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="recovery-callback" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a RecoveryCallback - used in the 'retryTemplate.execute()'. Ignored if 'retry-template' isn't provided.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.retry.RecoveryCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="send-connection-factory-selector-expression" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[

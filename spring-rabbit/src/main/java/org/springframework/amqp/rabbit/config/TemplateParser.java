@@ -63,6 +63,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String RETRY_TEMPLATE = "retry-template";
 
+	private static final String RECOVERY_CALLBACK = "recovery-callback";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return RabbitTemplate.class;
@@ -104,6 +106,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETRY_TEMPLATE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RECOVERY_CALLBACK);
 
 		BeanDefinition expressionDef =
 				NamespaceUtils.createExpressionDefinitionFromValueOrExpression(MANDATORY_ATTRIBUTE,
