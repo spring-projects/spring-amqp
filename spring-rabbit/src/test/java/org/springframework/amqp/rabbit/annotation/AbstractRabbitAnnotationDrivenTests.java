@@ -16,9 +16,15 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import java.util.Collection;
 
-import com.rabbitmq.client.Channel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -40,8 +46,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import com.rabbitmq.client.Channel;
 
 /**
  *
@@ -117,7 +122,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		assertTrue("No queue instances should be set", endpoint.getQueues().isEmpty());
 		assertEquals(true, endpoint.isExclusive());
 		assertEquals(new Integer(34), endpoint.getPriority());
-		assertEquals("routing-123", endpoint.getResponseRoutingKey());
 		assertSame(context.getBean("rabbitAdmin"), endpoint.getAdmin());
 
 		// Resolve the container and invoke a message on it
@@ -142,7 +146,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	static class FullBean {
 
 		@RabbitListener(id = "listener1", containerFactory = "simpleFactory", queues = {"queue1", "queue2"},
-				exclusive = true, priority = "34", responseRoutingKey = "routing-123", admin = "rabbitAdmin")
+				exclusive = true, priority = "34", admin = "rabbitAdmin")
 		public void fullHandle(String msg) {
 
 		}
@@ -153,8 +157,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 
 		@RabbitListener(id = "${rabbit.listener.id}", containerFactory = "${rabbit.listener.containerFactory}",
 				queues = {"${rabbit.listener.queue}", "queue2"}, exclusive = true,
-				priority = "${rabbit.listener.priority}", responseRoutingKey = "${rabbit.listener.responseRoutingKey}",
-				admin = "${rabbit.listener.admin}")
+				priority = "${rabbit.listener.priority}", admin = "${rabbit.listener.admin}")
 		public void fullHandle(String msg) {
 
 		}

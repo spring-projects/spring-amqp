@@ -24,13 +24,14 @@ import org.junit.Test;
 /**
  * @author Mark Pollack
  * @author Mark Fisher
+ * @author Artem Bilan
  */
 public class AddressTests {
 
 	@Test
 	public void toStringCheck() {
-		Address address = new Address(ExchangeTypes.DIRECT, "my-exchange", "routing-key");
-		String replyToUri = "direct://my-exchange/routing-key";
+		Address address = new Address("my-exchange", "routing-key");
+		String replyToUri = "null://my-exchange/routing-key";
 		Assert.assertEquals(replyToUri, address.toString());
 	}
 
@@ -38,34 +39,48 @@ public class AddressTests {
 	public void parse() {
 		String replyToUri = "direct://my-exchange/routing-key";
 		Address address = new Address(replyToUri);
-		assertEquals(address.getExchangeType(), ExchangeTypes.DIRECT);
-		assertEquals(address.getExchangeName(), "my-exchange");
-		assertEquals(address.getRoutingKey(), "routing-key");
+		assertEquals("my-exchange", address.getExchangeName());
+		assertEquals("routing-key", address.getRoutingKey());
 	}
 
 	@Test
 	public void parseUnstructuredWithRoutingKeyOnly() {
 		Address address = new Address("my-routing-key");
 		assertEquals("my-routing-key", address.getRoutingKey());
-		assertEquals("direct:///my-routing-key", address.toString());
+		assertEquals("null:///my-routing-key", address.toString());
+
+		address = new Address("/foo");
+		assertEquals("foo", address.getRoutingKey());
+		assertEquals("null:///foo", address.toString());
+
+		address = new Address("bar/baz");
+		assertEquals("bar", address.getExchangeName());
+		assertEquals("baz", address.getRoutingKey());
+		assertEquals("null://bar/baz", address.toString());
 	}
 
 	@Test
 	public void parseWithoutRoutingKey() {
 		Address address = new Address("fanout://my-exchange");
-		assertEquals(ExchangeTypes.FANOUT, address.getExchangeType());
 		assertEquals("my-exchange", address.getExchangeName());
 		assertEquals("", address.getRoutingKey());
-		assertEquals("fanout://my-exchange/", address.toString());
+		assertEquals("null://my-exchange/", address.toString());
 	}
 
 	@Test
 	public void parseWithDefaultExchangeAndRoutingKey() {
 		Address address = new Address("direct:///routing-key");
-		assertEquals(ExchangeTypes.DIRECT, address.getExchangeType());
 		assertEquals("", address.getExchangeName());
 		assertEquals("routing-key", address.getRoutingKey());
-		assertEquals("direct:///routing-key", address.toString());
+		assertEquals("null:///routing-key", address.toString());
+	}
+
+	@Test
+	public void testEmpty() {
+		Address address = new Address("/");
+		assertEquals("", address.getExchangeName());
+		assertEquals("", address.getRoutingKey());
+		assertEquals("null:///", address.toString());
 	}
 
 }

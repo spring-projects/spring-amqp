@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 
 package org.springframework.amqp.rabbit.annotation;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -33,16 +37,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.junit.Assert.*;
-
 /**
  *
  * @author Stephane Nicoll
+ * @author Artem Bilan
+ * @since 1.4
  */
 @ContextConfiguration(classes = EnableRabbitIntegrationTests.EnableRabbitConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -51,7 +56,7 @@ public class EnableRabbitIntegrationTests {
 
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
-			"test.simple", "test.header", "test.message", "test.reply");
+			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -90,6 +95,19 @@ public class EnableRabbitIntegrationTests {
 		assertEquals("Wrong bar header", "barValue", reply.getMessageProperties().getHeaders().get("bar"));
 	}
 
+	@Test
+	public void simpleEndpointWithSendTo() throws InterruptedException {
+		rabbitTemplate.convertAndSend("test.sendTo", "bar");
+		int n = 0;
+		Object result = null;
+		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply")) == null && n++ < 10) {
+			Thread.sleep(100);
+		}
+		assertTrue(n < 10);
+		assertNotNull(result);
+		assertEquals("BAR", result);
+	}
+
 	public static class MyService {
 
 		@RabbitListener(queues = "test.simple")
@@ -111,6 +129,12 @@ public class EnableRabbitIntegrationTests {
 		public org.springframework.messaging.Message<?> reply(String payload, @Header String foo) {
 			return MessageBuilder.withPayload(payload)
 					.setHeader("foo", foo).setHeader("bar", "barValue").build();
+		}
+
+		@RabbitListener(queues = "test.sendTo")
+		@SendTo("test.sendTo.reply")
+		public String capitalizeAndSendTo(String foo) {
+			return foo.toUpperCase();
 		}
 	}
 

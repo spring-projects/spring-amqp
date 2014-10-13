@@ -29,7 +29,7 @@ public class MessagePropertiesTests {
 	@Test
 	public void testReplyTo() throws Exception {
 		MessageProperties properties = new MessageProperties();
-		properties.setReplyTo("fanout://foo/bar");
+		properties.setReplyTo("foo/bar");
 		assertEquals("bar", properties.getReplyToAddress().getRoutingKey());
 	}
 

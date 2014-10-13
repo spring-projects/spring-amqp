@@ -19,28 +19,26 @@ import java.util.regex.Pattern;
 import org.springframework.util.StringUtils;
 
 /**
- * Represents an address for publication of an AMQP message. The AMQP 0-8 and 0-9 specifications have an unstructured
- * string that is used as a "reply to" address. There are however conventions in use and this class makes it easier to
+ * Represents an address for publication of an AMQP message. The AMQP 0-8 and 0-9
+ * specifications have an unstructured string that is used as a "reply to" address.
+ * There are however conventions in use and this class makes it easier to
  * follow these conventions, which can be easily summarised as:
  *
  * <pre class="code">
- * (exchangeType)://(exchange)/(routingKey)
+ * (exchange)/(routingKey)
  * </pre>
  *
- * Here we also allow the exchange type to default to direct, and the exchange name to default to empty (so just a
- * routing key will work if you know the queue name).
- *
- * @see ExchangeTypes
+ * Here we also the exchange name to default to empty
+ * (so just a routing key will work if you know the queue name).
  *
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Artem Bilan
  */
 public class Address {
 
-	private static final Pattern pattern = Pattern.compile("^([^:]+)://([^/]*)/?(.*)$");
-
-	private final String exchangeType;
+	private static final Pattern pattern = Pattern.compile("^(?:.*://)?([^/]*)/?(.*)$");
 
 	private final String exchangeName;
 
@@ -50,28 +48,28 @@ public class Address {
 	 * Create an Address instance from a structured String in the form
 	 *
 	 * <pre class="code">
-	 * (exchangeType)://(exchange)/(routingKey)
+	 * (exchange)/(routingKey)
 	 * </pre>
-	 *
-	 * where examples of valid <code>exchangeType</code> values can be found in the {@link ExchangeTypes} static
-	 * constants.
 	 *
 	 * @param address a structured string.
 	 */
 	public Address(String address) {
-		if (address == null) {
-			this.exchangeType = ExchangeTypes.DIRECT;
+		if (!StringUtils.hasText(address)) {
 			this.exchangeName = "";
 			this.routingKey = "";
-		} else {
+		}
+		else if (address.lastIndexOf('/') <= 0) {
+			this.routingKey = address.replaceFirst("/", "");
+			this.exchangeName = "";
+		}
+		else {
 			Matcher matcher = pattern.matcher(address);
 			boolean matchFound = matcher.find();
 			if (matchFound) {
-				this.exchangeType = matcher.group(1);
-				this.exchangeName = matcher.group(2);
-				this.routingKey = matcher.group(3);
-			} else {
-				this.exchangeType = ExchangeTypes.DIRECT;
+				this.exchangeName = matcher.group(1);
+				this.routingKey = matcher.group(2);
+			}
+			else {
 				this.exchangeName = "";
 				this.routingKey = address;
 			}
@@ -79,21 +77,32 @@ public class Address {
 	}
 
 	/***
-	 * Create an Address given the exchange type, exchange name and routing key. This will set the exchange type, name
-	 * and the routing key explicitly.
-	 *
+	 * Create an Address given the exchange type, exchange name and routing key.
+	 * This will set the exchange type, name and the routing key explicitly.
 	 * @param exchangeType The exchange type.
 	 * @param exchangeName The exchange name.
 	 * @param routingKey The routing key.
 	 */
+	@Deprecated
 	public Address(String exchangeType, String exchangeName, String routingKey) {
-		this.exchangeType = exchangeType;
 		this.exchangeName = exchangeName;
 		this.routingKey = routingKey;
 	}
 
+	/***
+	 * Create an Address given the exchange name and routing key.
+	 * This will set the exchange type, name and the routing key explicitly.
+	 * @param exchangeName The exchange name.
+	 * @param routingKey The routing key.
+	 */
+	public Address(String exchangeName, String routingKey) {
+		this.exchangeName = exchangeName;
+		this.routingKey = routingKey;
+	}
+
+	@Deprecated
 	public String getExchangeType() {
-		return this.exchangeType;
+		return null;
 	}
 
 	public String getExchangeName() {
@@ -106,7 +115,7 @@ public class Address {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder(this.exchangeType + "://" + this.exchangeName + "/");
+		StringBuilder sb = new StringBuilder("null://" + this.exchangeName + "/");
 		if (StringUtils.hasText(this.routingKey)) {
 			sb.append(this.routingKey);
 		}

@@ -544,7 +544,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 			@Override
 			public Address getReplyToAddress(Message request, S reply) {
-				return new Address(null, replyExchange, replyRoutingKey);
+				return new Address(replyExchange, replyRoutingKey);
 			}
 
 		});
@@ -976,7 +976,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						"Cannot determine ReplyTo message property value: "
 								+ "Request message does not contain reply-to property, and no default Exchange was set.");
 			}
-			replyTo = new Address(null, this.exchange, this.routingKey);
+			replyTo = new Address(this.exchange, this.routingKey);
 		}
 		return replyTo;
 	}
