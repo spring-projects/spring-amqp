@@ -425,7 +425,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void send(final String exchange, final String routingKey,
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
-		obtainTargetConnectionFactoryIfNecessary(message);
 		execute(new ChannelCallback<Object>() {
 
 			@Override
@@ -433,10 +432,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				doSend(channel, exchange, routingKey, message, correlationData);
 				return null;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(message));
 	}
 
-	private void obtainTargetConnectionFactoryIfNecessary(Object rootObject) {
+	private ConnectionFactory obtainTargetConnectionFactoryIfNecessary(Object rootObject) {
 		if (this.connectionFactorySelectorExpression != null &&
 				getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
 			AbstractRoutingConnectionFactory routingConnectionFactory =
@@ -451,7 +450,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			if (lookupKey != null) {
 				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
 				if (connectionFactory != null) {
-					ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, isChannelTransacted());
+					return connectionFactory;
 				}
 				else if (!routingConnectionFactory.isLenientFallback()) {
 					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
@@ -459,6 +458,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 		}
+		return null;
 	}
 
 	@Override
@@ -532,7 +532,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Message receive(final String queueName) {
-		obtainTargetConnectionFactoryIfNecessary(null);
 		return execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -555,7 +554,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				return null;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(null));
 	}
 
 	@Override
@@ -618,7 +617,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@SuppressWarnings("unchecked")
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
-		obtainTargetConnectionFactoryIfNecessary(null);
 		return this.execute(new ChannelCallback<Boolean>() {
 
 			@Override
@@ -698,7 +696,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				return false;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(null));
 	}
 
 	@Override
@@ -774,7 +772,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
-		obtainTargetConnectionFactoryIfNecessary(message);
 		if (this.replyQueue == null) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
 		}
@@ -823,7 +820,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				channel.basicCancel(consumerTag);
 				return reply;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(message));
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
@@ -875,18 +872,22 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				RabbitTemplate.this.replyHolder.remove(messageTag);
 				return reply;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(message));
 	}
 
 	@Override
-	public <T> T execute(final ChannelCallback<T> action) {
+	public <T> T execute(ChannelCallback<T> action) {
+		return execute(action, null);
+	}
+
+	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(new RetryCallback<T, Exception>() {
 
 					@Override
 					public T doWithRetry(RetryContext context) throws Exception {
-						return RabbitTemplate.this.doExecute(action);
+						return RabbitTemplate.this.doExecute(action, connectionFactory);
 					}
 
 				});
@@ -899,13 +900,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		else {
-			return this.doExecute(action);
+			return this.doExecute(action, connectionFactory);
 		}
 	}
 
-	private <T> T doExecute(ChannelCallback<T> action) {
+
+	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) {
 		Assert.notNull(action, "Callback object must not be null");
-		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
+		RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(
+				(connectionFactory != null ? connectionFactory : getConnectionFactory()), isChannelTransacted());
 		Channel channel = resourceHolder.getChannel();
 		if (this.confirmCallback != null || this.returnCallback != null) {
 			addListener(channel);
