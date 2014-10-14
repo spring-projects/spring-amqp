@@ -1052,8 +1052,8 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	A SpEL expression to evaluate the 'lookupKey' for each request message,
-	when 'AbstractRoutingConnectionFactory' is in used for this 'template'.
-	Request message is used as root object of expression evaluation.
+	when an 'AbstractRoutingConnectionFactory' is in used for this 'template'.
+	On send operations, the request message is used as the root object of expression evaluation.
 	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
 	allowing for expressions such as '@vhostFor.select(messageProperties.headers.customerId)'.
 					]]></xsd:documentation>

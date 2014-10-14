@@ -338,13 +338,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * {@link ConnectionFactory} from {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory}
 	 * directly.
 	 * <p>
-	 * If this expression is evaluated to {@code null}, we do fallback to the normal
+	 * If this expression is evaluated to {@code null}, we fallback to the normal
 	 * {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory} logic.
 	 * <p>
-	 * If there is no target {@link ConnectionFactory} with evaluated {@code lookupKey},
-	 * we do fallback to the normal
+	 * If there is no target {@link ConnectionFactory} with the evaluated {@code lookupKey},
+	 * we fallback to the normal
 	 * {@link org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory} logic
-	 * only if its {@code lenientFallback == true}.
+	 * only if its property {@code lenientFallback == true}.
 	 * @param connectionFactorySelectorExpression a SpEL {@link Expression} to evaluate
 	 * @since 1.4
 	 */
@@ -436,25 +436,26 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private ConnectionFactory obtainTargetConnectionFactoryIfNecessary(Object rootObject) {
-		if (this.connectionFactorySelectorExpression != null &&
-				getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
-			AbstractRoutingConnectionFactory routingConnectionFactory =
-					(AbstractRoutingConnectionFactory) getConnectionFactory();
-			Object lookupKey = null;
-			if (rootObject != null) {
-				lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
-			}
-			else {
-				lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext);
-			}
-			if (lookupKey != null) {
-				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
-				if (connectionFactory != null) {
-					return connectionFactory;
+		if (this.connectionFactorySelectorExpression != null) {
+			if (getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+				AbstractRoutingConnectionFactory routingConnectionFactory =
+						(AbstractRoutingConnectionFactory) getConnectionFactory();
+				Object lookupKey = null;
+				if (rootObject != null) {
+					lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
 				}
-				else if (!routingConnectionFactory.isLenientFallback()) {
-					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
-							+ lookupKey + "]");
+				else {
+					lookupKey = this.connectionFactorySelectorExpression.getValue(this.evaluationContext);
+				}
+				if (lookupKey != null) {
+					ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
+					if (connectionFactory != null) {
+						return connectionFactory;
+					}
+					else if (!routingConnectionFactory.isLenientFallback()) {
+						throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
+								+ lookupKey + "]");
+					}
 				}
 			}
 		}

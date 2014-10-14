@@ -450,17 +450,17 @@ trustStore.passPhrase=secret</programlisting>
 		root object.
 	  </para>
 	  <para>
-		 The <emphasis>routing</emphasis> algorithm work like: If <code>connectionFactorySelectorExpression</code>
-		 is <code>null</code>, or it is evaluated to <code>null</code> or provided
+		 The <emphasis>routing</emphasis> algorithm is: If <code>connectionFactorySelectorExpression</code>
+		 is <code>null</code>, or it is evaluated to <code>null</code> or the provided
 		 <interfacename>ConnectionFactory</interfacename> isn't an instance of
-		 <classname>AbstractRoutingConnectionFactory</classname>, everything works as before relying on the provided
-		 <interfacename>ConnectionFactory</interfacename> implementation. The same is happened, if the
+		 <classname>AbstractRoutingConnectionFactory</classname>, everything works as before, relying on the provided
+		 <interfacename>ConnectionFactory</interfacename> implementation. The same occurs, if the
 		 evaluation result isn't <code>null</code>, but there is no target
 		 <interfacename>ConnectionFactory</interfacename> for that <code>lookupKey</code> and the
 		 <classname>AbstractRoutingConnectionFactory</classname> is configured with
-		 <code>lenientFallback = true</code>. Of course, in case of
+		 <code>lenientFallback = true</code>. Of course, in the case of an
 		  <classname>AbstractRoutingConnectionFactory</classname> it does fallback to its <code>routing</code>
-		  implementation based on <code>determineCurrentLookupKey()</code>. But if
+		  implementation based on <code>determineCurrentLookupKey()</code>. But, if
 		  <code>lenientFallback = false</code>, an <classname>IllegalStateException</classname> is thrown.
 	  </para>
 	  <para>

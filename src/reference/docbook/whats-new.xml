@@ -93,11 +93,11 @@
 			<para>
 				The <code>mandatoryExpression</code> and <code>connectionFactorySelectorExpressions</code> SpEL
 				<interfacename>Expression</interfacename>s properties
-				has been added to the <classname>RabbitTemplate</classname>.
+				have been added to the <classname>RabbitTemplate</classname>.
 				The <code>mandatoryExpression</code> is used to evaluate a <code>mandatory</code>
 				boolean value against each request message, when a <classname>ReturnCallback</classname> is in use.
 				See <xref linkend="template-confirms"/>.
-				The <code>connectionFactorySelectorExpressions</code> is used when
+				The <code>connectionFactorySelectorExpressions</code> is used when an
 				<classname>AbstractRoutingConnectionFactory</classname> is provided, to determine the
 				<code>lookupKey</code> for the target <interfacename>ConnectionFactory</interfacename> at runtime on
 				each AMQP protocol interaction operation.
