@@ -196,7 +196,7 @@ public class AmqpAppenderIntegrationTests {
 		listenerContainer.setMessageListener(testListener);
 		listenerContainer.start();
 
-		String foo = new String("\u0fff"); // UTF-8 -> 0xe0bfbf
+		String foo = "\u0fff"; // UTF-8 -> 0xe0bfbf
 		log.info(foo);
 		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
 		byte[] body = testListener.getMessage().getBody();

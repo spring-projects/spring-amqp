@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+		<layout>
+			<pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
+		</layout>
+		<abbreviation>36</abbreviation>
+		<applicationId>AmqpAppenderTest</applicationId>
+		<routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
+		<generateId>true</generateId>
+		<charset>UTF-8</charset>
+		<durable>false</durable>
+		<deliveryMode>NON_PERSISTENT</deliveryMode>
+	</appender>
+
+	<logger name="org.springframework.amqp.rabbit.logback" level="DEBUG" additivity="false">
+		<appender-ref ref="AMQP"/>
+	</logger>
+
+	<root level="INFO">
+		<appender-ref ref="CONSOLE"/>
+	</root>
+
+</configuration>

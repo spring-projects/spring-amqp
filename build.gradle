@@ -78,12 +78,13 @@ subprojects { subproject ->
 		jackson2Version = '2.3.2'
 		junitVersion = '4.11'
 		log4jVersion = '1.2.17'
+		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.3.4'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.0.RELEASE'
 
-		springRetryVersion = '1.1.1.RELEASE'
+		springRetryVersion = '1.1.2.RELEASE'
 	}
 
 	eclipse {
@@ -224,6 +225,7 @@ project('spring-rabbit') {
 			exclude group: 'com.sun.jmx', module: 'jmxri'
 		}
 
+		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 	}
 
 	// suppress deprecation warnings (@SuppressWarnings("deprecation") is not enough for javac)

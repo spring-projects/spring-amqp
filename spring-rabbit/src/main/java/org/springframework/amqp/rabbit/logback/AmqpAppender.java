@@ -1,17 +1,20 @@
 /*
- * Copyright (c) 2011-2014 by the original author(s).
+ * Copyright 2014 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.log4j;
+package org.springframework.amqp.rabbit.logback;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
@@ -24,18 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.log4j.AppenderSkeleton;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.MDC;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.spi.ErrorCode;
-import org.apache.log4j.spi.LocationInfo;
-import org.apache.log4j.spi.LoggingEvent;
-import org.apache.log4j.spi.ThrowableInformation;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
@@ -51,65 +43,39 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.PatternLayout;
+import ch.qos.logback.classic.pattern.TargetLengthBasedClassNameAbbreviator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.AppenderBase;
+import ch.qos.logback.core.Layout;
+
 /**
- * A Log4J appender that publishes logging events to an AMQP Exchange.
+ * A Lockback appender that publishes logging events to an AMQP Exchange.
  * <p>
  * A fully-configured AmqpAppender, with every option set to their defaults, would look like this:
  * <pre class="code">
- *   log4j.appender.amqp=org.springframework.amqp.rabbit.log4j.AmqpAppender
- *   #-------------------------------
- *   ## Connection settings
- *   #-------------------------------
- *   log4j.appender.amqp.host=localhost
- *   log4j.appender.amqp.port=5672
- *   log4j.appender.amqp.username=guest
- *   log4j.appender.amqp.password=guest
- *   log4j.appender.amqp.virtualHost=/
- *   #-------------------------------
- *   ## Exchange name and type
- *   #-------------------------------
- *   log4j.appender.amqp.exchangeName=logs
- *   log4j.appender.amqp.exchangeType=topic
- *   #-------------------------------
- *   ## Log4J-format pattern to use to create a routing key.
- *   ## The application id is available as %X{applicationId}.
- *   #-------------------------------
- *   log4j.appender.amqp.routingKeyPattern=%c.%p
- *   #-------------------------------
- *   ## Whether or not to declare this configured exchange
- *   #-------------------------------
- *   log4j.appender.amqp.declareExchange=false
- *   #-------------------------------
- *   ## Flags to use when declaring the exchange
- *   #-------------------------------
- *   log4j.appender.amqp.durable=true
- *   log4j.appender.amqp.autoDelete=false
- *   #-------------------------------
- *   ## Message properties
- *   #-------------------------------
- *   log4j.appender.amqp.contentType=text/plain
- *   #log4j.appender.amqp.contentEncoding=null
- *   log4j.appender.amqp.generateId=false
- *   #log4j.appender.amqp.charset=null
- *   log4j.appender.amqp.deliveryMode=PERSISTENT
- *   #-------------------------------
- *   ## Sender configuration
- *   #-------------------------------
- *   log4j.appender.amqp.senderPoolSize=2
- *   log4j.appender.amqp.maxSenderRetries=30
- *   #log4j.appender.amqp.applicationId=null
- *   #-------------------------------
- *   ## Standard Log4J stuff
- *   #-------------------------------
- *   log4j.appender.amqp.layout=org.apache.log4j.PatternLayout
- *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - &lt;%m&gt;%n
+ * {@code
+ * <appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+ *     <layout>
+ *        <pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
+ *     </layout>
+ *     <!-- <abbreviation>36</abbreviation --> <!-- no category abbreviation by default -->
+ *     <applicationId>AmqpAppenderTest</applicationId>
+ *     <routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
+ *     <generateId>true</generateId>
+ *     <charset>UTF-8</charset>
+ *     <durable>false</durable>
+ *     <deliveryMode>NON_PERSISTENT</deliveryMode>
+ * </appender>
+ * }
  * </pre>
  *
- * @author Jon Brisbin
- * @author Gary Russell
  * @author Artem Bilan
+ * @since 1.4
  */
-public class AmqpAppender extends AppenderSkeleton {
+public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * Key name for the application id (if there is one set via the appender config) in the message properties.
@@ -136,25 +102,20 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	private String exchangeType = "topic";
 
-	/**
-	 * Log4J pattern format to use to generate a routing key.
-	 */
-	private String routingKeyPattern = "%c.%p";
+	private final PatternLayout locationLayout = new PatternLayout();
+
+	{
+		this.locationLayout.setPattern("%nopex%class|%method|%line");
+	}
 
 	/**
-	 * Log4J Layout to use to generate routing key.
+	 * Logback Layout to use to generate routing key.
 	 */
-	private Layout routingKeyLayout = new PatternLayout(routingKeyPattern);
+	private final PatternLayout routingKeyLayout = new PatternLayout();
 
-	/**
-	 * Used to synchronize access to pattern layouts.
-	 */
-	private final Object layoutMutex = new Object();
-
-	/**
-	 * Whether or not we've tried to declare this exchange yet.
-	 */
-	private final AtomicBoolean exchangeDeclared = new AtomicBoolean(false);
+	{
+		this.routingKeyLayout.setPattern("%nopex%c.%p");
+	}
 
 	/**
 	 * Configuration arbitrary application ID.
@@ -249,7 +210,13 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	private boolean generateId = false;
 
-	private final AtomicBoolean initializing = new AtomicBoolean();
+	private Layout<ILoggingEvent> layout;
+
+	private TargetLengthBasedClassNameAbbreviator abbreviator;
+
+	public void setRoutingKeyPattern(String routingKeyPattern) {
+		this.routingKeyLayout.setPattern("%nopex" + routingKeyPattern);
+	}
 
 	public String getHost() {
 		return host;
@@ -308,12 +275,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getRoutingKeyPattern() {
-		return routingKeyPattern;
-	}
-
-	public void setRoutingKeyPattern(String routingKeyPattern) {
-		this.routingKeyPattern = routingKeyPattern;
-		this.routingKeyLayout = new PatternLayout(routingKeyPattern);
+		return this.routingKeyLayout.getPattern();
 	}
 
 	public boolean isDeclareExchange() {
@@ -404,80 +366,77 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.charset = charset;
 	}
 
-	/**
-	 * Submit the required number of senders into the pool.
-	 */
-	protected void startSenders() {
-		senderPool = Executors.newCachedThreadPool();
-		for (int i = 0; i < senderPoolSize; i++) {
-			senderPool.submit(new EventSender());
+	public void setLayout(Layout<ILoggingEvent> layout) {
+		this.layout = layout;
+	}
+
+	public void setAbbreviation(int len) {
+		this.abbreviator = new TargetLengthBasedClassNameAbbreviator(len);
+	}
+
+	@Override
+	public void start() {
+		super.start();
+		this.routingKeyLayout.setContext(getContext());
+		this.routingKeyLayout.start();
+		this.locationLayout.setContext(getContext());
+		this.locationLayout.start();
+		this.connectionFactory = new CachingConnectionFactory();
+		this.connectionFactory.setHost(this.host);
+		this.connectionFactory.setPort(this.port);
+		this.connectionFactory.setUsername(this.username);
+		this.connectionFactory.setPassword(this.password);
+		this.connectionFactory.setVirtualHost(this.virtualHost);
+		maybeDeclareExchange();
+		this.senderPool = Executors.newCachedThreadPool();
+		for (int i = 0; i < this.senderPoolSize; i++) {
+			this.senderPool.submit(new EventSender());
 		}
+	}
+
+	@Override
+	public void stop() {
+		super.stop();
+		if (null != this.senderPool) {
+			this.senderPool.shutdownNow();
+			this.senderPool = null;
+		}
+		if (null != this.connectionFactory) {
+			this.connectionFactory.destroy();
+		}
+		this.retryTimer.cancel();
+		this.routingKeyLayout.stop();
+	}
+
+	@Override
+	protected void append(ILoggingEvent event) {
+		this.events.add(new Event(event));
 	}
 
 	/**
 	 * Maybe declare the exchange.
 	 */
 	protected void maybeDeclareExchange() {
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		if (declareExchange) {
+		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
+		if (this.declareExchange) {
 			Exchange x;
-			if ("topic".equals(exchangeType)) {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
+			if ("topic".equals(this.exchangeType)) {
+				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("direct".equals(exchangeType)) {
-				x = new DirectExchange(exchangeName, durable, autoDelete);
+			else if ("direct".equals(this.exchangeType)) {
+				x = new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("fanout".equals(exchangeType)) {
-				x = new FanoutExchange(exchangeName, durable, autoDelete);
+			else if ("fanout".equals(this.exchangeType)) {
+				x = new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("headers".equals(exchangeType)) {
-				x = new HeadersExchange(exchangeType, durable, autoDelete);
+			else if ("headers".equals(this.exchangeType)) {
+				x = new HeadersExchange(this.exchangeType, this.durable, this.autoDelete);
 			}
 			else {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
+				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			// admin.deleteExchange(exchangeName);
 			admin.declareExchange(x);
 		}
-	}
-
-	@Override
-	public void append(LoggingEvent event) {
-		if (null == senderPool && this.initializing.compareAndSet(false, true)) {
-			try {
-				connectionFactory = new CachingConnectionFactory();
-				connectionFactory.setHost(host);
-				connectionFactory.setPort(port);
-				connectionFactory.setUsername(username);
-				connectionFactory.setPassword(password);
-				connectionFactory.setVirtualHost(virtualHost);
-				maybeDeclareExchange();
-				exchangeDeclared.set(true);
-
-				startSenders();
-			}
-			finally {
-				this.initializing.set(false);
-			}
-		}
-		events.add(new Event(event, event.getProperties()));
-	}
-
-	@Override
-	public void close() {
-		if (null != senderPool) {
-			senderPool.shutdownNow();
-			senderPool = null;
-		}
-		if (null != connectionFactory) {
-			connectionFactory.destroy();
-		}
-		retryTimer.cancel();
-	}
-
-	@Override
-	public boolean requiresLayout() {
-		return true;
 	}
 
 	/**
@@ -501,9 +460,9 @@ public class AmqpAppender extends AppenderSkeleton {
 				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 				while (true) {
 					final Event event = events.take();
-					LoggingEvent logEvent = event.getEvent();
+					ILoggingEvent logEvent = event.getEvent();
 
-					String name = logEvent.getLogger().getName();
+					String name = logEvent.getLoggerName();
 					Level level = logEvent.getLevel();
 
 					MessageProperties amqpProps = new MessageProperties();
@@ -518,44 +477,40 @@ public class AmqpAppender extends AppenderSkeleton {
 						amqpProps.setMessageId(UUID.randomUUID().toString());
 					}
 
-					// Set applicationId, if we're using one
-					if (null != applicationId) {
-						amqpProps.setAppId(applicationId);
-						MDC.put(APPLICATION_ID, applicationId);
-					}
-
 					// Set timestamp
 					Calendar tstamp = Calendar.getInstance();
 					tstamp.setTimeInMillis(logEvent.getTimeStamp());
 					amqpProps.setTimestamp(tstamp.getTime());
 
 					// Copy properties in from MDC
-					@SuppressWarnings("rawtypes")
-					Map props = event.getProperties();
-					@SuppressWarnings("unchecked")
-					Set<Entry<?,?>> entrySet = props.entrySet();
-					for (Entry<?, ?> entry : entrySet) {
-						amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
+					Map<String, String> props = event.getProperties();
+					Set<Entry<String, String>> entrySet = props.entrySet();
+					for (Entry<String, String> entry : entrySet) {
+						amqpProps.setHeader(entry.getKey(), entry.getValue());
 					}
-					LocationInfo locInfo = logEvent.getLocationInformation();
-					if (!"?".equals(locInfo.getClassName())) {
+					String[] location = locationLayout.doLayout(logEvent).split("\\|");
+					if (!"?".equals(location[0])) {
 						amqpProps.setHeader(
 								"location",
-								String.format("%s.%s()[%s]", locInfo.getClassName(), locInfo.getMethodName(),
-										locInfo.getLineNumber()));
+								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
+					}
+					String msgBody;
+					String routingKey;
+					// Set applicationId, if we're using one
+					if (null != applicationId) {
+						amqpProps.setAppId(applicationId);
+						logEvent.getLoggerContextVO().getPropertyMap().put(APPLICATION_ID, applicationId);
 					}
 
-					StringBuilder msgBody;
-					String routingKey;
-					synchronized (layoutMutex) {
-						msgBody = new StringBuilder(layout.format(logEvent));
-						routingKey = routingKeyLayout.format(logEvent);
+					routingKey = routingKeyLayout.doLayout(logEvent);
+
+					if (abbreviator != null && logEvent instanceof LoggingEvent) {
+						((LoggingEvent) logEvent).setLoggerName(abbreviator.abbreviate(name));
+						msgBody = layout.doLayout(logEvent);
+						((LoggingEvent) logEvent).setLoggerName(name);
 					}
-					if (layout.ignoresThrowable() && null != logEvent.getThrowableInformation()) {
-						ThrowableInformation tinfo = logEvent.getThrowableInformation();
-						for (String line : tinfo.getThrowableStrRep()) {
-							msgBody.append(String.format("%s%n", line));
-						}
+					else {
+						msgBody = layout.doLayout(logEvent);
 					}
 
 					// Send a message
@@ -563,13 +518,13 @@ public class AmqpAppender extends AppenderSkeleton {
 						Message message = null;
 						if (AmqpAppender.this.charset != null) {
 							try {
-								message = new Message(msgBody.toString().getBytes(AmqpAppender.this.charset), amqpProps);
+								message = new Message(msgBody.getBytes(AmqpAppender.this.charset), amqpProps);
 							}
-							catch (UnsupportedEncodingException e) {/* fall back to default */}
+							catch (UnsupportedEncodingException e) {
+								message = new Message(msgBody.getBytes(), amqpProps);
+							}
 						}
-						if (message == null) {
-							message = new Message(msgBody.toString().getBytes(), amqpProps);
-						}
+
 						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(exchangeName, routingKey, message);
 					}
@@ -585,13 +540,8 @@ public class AmqpAppender extends AppenderSkeleton {
 							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
 						}
 						else {
-							errorHandler.error("Could not send log message " + logEvent.getRenderedMessage()
-									+ " after " + maxSenderRetries + " retries", e, ErrorCode.WRITE_FAILURE, logEvent);
-						}
-					}
-					finally {
-						if (null != applicationId) {
-							MDC.remove(APPLICATION_ID);
+							addError("Could not send log message " + logEvent.getMessage()
+									+ " after " + maxSenderRetries + " retries", e);
 						}
 					}
 				}
@@ -605,25 +555,25 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * Small helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
 	 */
-	@SuppressWarnings("rawtypes")
 	protected class Event {
 
-		final LoggingEvent event;
+		final ILoggingEvent event;
 
-		final Map properties;
+		final Map<String, String> properties;
 
 		final AtomicInteger retries = new AtomicInteger(0);
 
-		public Event(LoggingEvent event, Map properties) {
+		public Event(ILoggingEvent event) {
 			this.event = event;
-			this.properties = properties;
+			this.properties = this.event.getMDCPropertyMap();
+			this.event.getCallerData();
 		}
 
-		public LoggingEvent getEvent() {
+		public ILoggingEvent getEvent() {
 			return event;
 		}
 
-		public Map getProperties() {
+		public Map<String, String> getProperties() {
 			return properties;
 		}
 
