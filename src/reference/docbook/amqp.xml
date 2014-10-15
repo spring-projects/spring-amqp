@@ -439,7 +439,37 @@ trustStore.passPhrase=secret</programlisting>
 		  It is important to unbind the resource after use.
 		  For more information see the JavaDocs of <classname>AbstractRoutingConnectionFactory</classname>.
       </para>
+	  <para>
+		Starting with <emphasis>version 1.4</emphasis> the <classname>RabbitTemplate</classname> supports
+		the SpEL <code>sendConnectionFactorySelectorExpression</code> and
+		<code>receiveConnectionFactorySelectorExpression</code> properties, which are evaluated on each AMQP
+		protocol interaction operation (<code>send</code>, <code>receive</code> or
+		<code>receiveAndReply</code>), resolving to a <code>lookupKey</code> value for the provided
+		<classname>AbstractRoutingConnectionFactory</classname>. Bean references, such as
+		<code>"@vHostResolver.getVHost(#root)"</code> can be used in the expression. In case of <code>send</code>
+		operation the request Message is used as root evaluation object, for <code>receive</code> operation the
+		<emphasis>queueName</emphasis> is used as root evaluation object.
+	  </para>
+	  <para>
+		 The <emphasis>routing</emphasis> algorithm is: If <code>sendConnectionFactorySelectorExpression</code>
+		 is <code>null</code>, or it is evaluated to <code>null</code> or the provided
+		 <interfacename>ConnectionFactory</interfacename> isn't an instance of
+		 <classname>AbstractRoutingConnectionFactory</classname>, everything works as before, relying on the provided
+		 <interfacename>ConnectionFactory</interfacename> implementation. The same occurs, if the
+		 evaluation result isn't <code>null</code>, but there is no target
+		 <interfacename>ConnectionFactory</interfacename> for that <code>lookupKey</code> and the
+		 <classname>AbstractRoutingConnectionFactory</classname> is configured with
+		 <code>lenientFallback = true</code>. Of course, in the case of an
+		  <classname>AbstractRoutingConnectionFactory</classname> it does fallback to its <code>routing</code>
+		  implementation based on <code>determineCurrentLookupKey()</code>. But, if
+		  <code>lenientFallback = false</code>, an <classname>IllegalStateException</classname> is thrown.
+	  </para>
+	  <para>
+		  The Namespace support also provides the <code>connection-factory-selector-expression</code> attribute
+		  on the <code>&lt;rabbit:template&gt;</code> component.
+	  </para>
     </section>
+
     <section id="cf-pub-conf-ret">
       <title>Publisher Confirms and Returns</title>
       <para>

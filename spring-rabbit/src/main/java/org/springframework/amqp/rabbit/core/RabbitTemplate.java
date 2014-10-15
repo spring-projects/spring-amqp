@@ -40,6 +40,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
+import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -157,6 +158,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private volatile String correlationKey = null;
 
 	private volatile RetryTemplate retryTemplate;
+
+	private volatile Expression sendConnectionFactorySelectorExpression;
+
+	private volatile Expression receiveConnectionFactorySelectorExpression;
 
 	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
 
@@ -327,6 +332,54 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * A SpEL {@link Expression} to evaluate
+	 * against each request message, if provided {@link #getConnectionFactory()}
+	 * is an instance of {@link AbstractRoutingConnectionFactory}.
+	 * <p>
+	 * The result of this expression is used as {@code lookupKey} to get the target
+	 * {@link ConnectionFactory} from {@link AbstractRoutingConnectionFactory}
+	 * directly.
+	 * <p>
+	 * If this expression is evaluated to {@code null}, we fallback to the normal
+	 * {@link AbstractRoutingConnectionFactory} logic.
+	 * <p>
+	 * If there is no target {@link ConnectionFactory} with the evaluated {@code lookupKey},
+	 * we fallback to the normal {@link AbstractRoutingConnectionFactory} logic
+	 * only if its property {@code lenientFallback == true}.
+	 * <p>
+	 *  This expression is used for {@code send} operations.
+	 * @param sendConnectionFactorySelectorExpression a SpEL {@link Expression} to evaluate
+	 * @since 1.4
+	 */
+	public void setSendConnectionFactorySelectorExpression(Expression sendConnectionFactorySelectorExpression) {
+		this.sendConnectionFactorySelectorExpression = sendConnectionFactorySelectorExpression;
+	}
+
+	/**
+	 * A SpEL {@link Expression} to evaluate
+	 * against each {@code receive} {@code queueName}, if provided {@link #getConnectionFactory()}
+	 * is an instance of {@link AbstractRoutingConnectionFactory}.
+	 * <p>
+	 * The result of this expression is used as {@code lookupKey} to get the target
+	 * {@link ConnectionFactory} from {@link AbstractRoutingConnectionFactory}
+	 * directly.
+	 * <p>
+	 * If this expression is evaluated to {@code null}, we fallback to the normal
+	 * {@link AbstractRoutingConnectionFactory} logic.
+	 * <p>
+	 * If there is no target {@link ConnectionFactory} with the evaluated {@code lookupKey},
+	 * we fallback to the normal {@link AbstractRoutingConnectionFactory} logic
+	 * only if its property {@code lenientFallback == true}.
+	 * <p>
+	 *  This expression is used for {@code receive} operations.
+	 * @param receiveConnectionFactorySelectorExpression a SpEL {@link Expression} to evaluate
+	 * @since 1.4
+	 */
+	public void setReceiveConnectionFactorySelectorExpression(Expression receiveConnectionFactorySelectorExpression) {
+		this.receiveConnectionFactorySelectorExpression = receiveConnectionFactorySelectorExpression;
+	}
+
+	/**
 	 * If set to 'correlationId' (default) the correlationId property
 	 * will be used; otherwise the supplied key will be used.
 	 * @param correlationKey the correlationKey to set
@@ -406,7 +459,32 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				doSend(channel, exchange, routingKey, message, correlationData);
 				return null;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(this.sendConnectionFactorySelectorExpression, message));
+	}
+
+	private ConnectionFactory obtainTargetConnectionFactoryIfNecessary(Expression expression, Object rootObject) {
+		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
+			AbstractRoutingConnectionFactory routingConnectionFactory =
+					(AbstractRoutingConnectionFactory) getConnectionFactory();
+			Object lookupKey = null;
+			if (rootObject != null) {
+				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
+			}
+			else {
+				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext);
+			}
+			if (lookupKey != null) {
+				ConnectionFactory connectionFactory = routingConnectionFactory.getTargetConnectionFactory(lookupKey);
+				if (connectionFactory != null) {
+					return connectionFactory;
+				}
+				else if (!routingConnectionFactory.isLenientFallback()) {
+					throw new IllegalStateException("Cannot determine target ConnectionFactory for lookup key ["
+							+ lookupKey + "]");
+				}
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -502,7 +580,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				return null;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
 	@Override
@@ -644,7 +722,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				return false;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
 	@Override
@@ -768,7 +846,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				channel.basicCancel(consumerTag);
 				return reply;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(this.sendConnectionFactorySelectorExpression, message));
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
@@ -820,18 +898,22 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				RabbitTemplate.this.replyHolder.remove(messageTag);
 				return reply;
 			}
-		});
+		}, obtainTargetConnectionFactoryIfNecessary(this.sendConnectionFactorySelectorExpression, message));
 	}
 
 	@Override
-	public <T> T execute(final ChannelCallback<T> action) {
+	public <T> T execute(ChannelCallback<T> action) {
+		return execute(action, null);
+	}
+
+	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(new RetryCallback<T, Exception>() {
 
 					@Override
 					public T doWithRetry(RetryContext context) throws Exception {
-						return RabbitTemplate.this.doExecute(action);
+						return RabbitTemplate.this.doExecute(action, connectionFactory);
 					}
 
 				});
@@ -844,13 +926,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		else {
-			return this.doExecute(action);
+			return this.doExecute(action, connectionFactory);
 		}
 	}
 
-	private <T> T doExecute(ChannelCallback<T> action) {
+
+	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) {
 		Assert.notNull(action, "Callback object must not be null");
-		RabbitResourceHolder resourceHolder = getTransactionalResourceHolder();
+		RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(
+				(connectionFactory != null ? connectionFactory : getConnectionFactory()), isChannelTransacted());
 		Channel channel = resourceHolder.getChannel();
 		if (this.confirmCallback != null || this.returnCallback != null) {
 			addListener(channel);

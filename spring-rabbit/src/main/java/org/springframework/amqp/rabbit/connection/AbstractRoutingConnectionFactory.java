@@ -84,6 +84,10 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		this.lenientFallback = lenientFallback;
 	}
 
+	public boolean isLenientFallback() {
+		return lenientFallback;
+	}
+
 	@Override
 	public Connection createConnection() throws AmqpException {
 		return this.determineTargetConnectionFactory().createConnection();
@@ -178,7 +182,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
 	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
 	 */
-	protected ConnectionFactory getTargetConnectionFactory(Object key) {
+	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		return targetConnectionFactories.get(key);
 	}
 

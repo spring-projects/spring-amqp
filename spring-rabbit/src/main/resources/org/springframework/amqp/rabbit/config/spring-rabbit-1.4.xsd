@@ -1048,6 +1048,26 @@
 					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="send-connection-factory-selector-expression" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to evaluate the 'lookupKey' for each request message,
+	when an 'AbstractRoutingConnectionFactory' is in used for this 'template'.
+	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@vhostFor.select(messageProperties.headers.customerId)'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="receive-connection-factory-selector-expression" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to evaluate the 'lookupKey' for each 'receive' operation,
+	when an 'AbstractRoutingConnectionFactory' is in used for this 'template'.
+	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@vhostFor.select(#root)'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 		</xsd:complexType>
 	</xsd:element>
 
