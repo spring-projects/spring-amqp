@@ -237,7 +237,8 @@ public class RabbitTemplateTests {
 		Expression expression = new SpelExpressionParser()
 				.parseExpression("T(org.springframework.amqp.rabbit.core.RabbitTemplateTests)" +
 						".LOOKUP_KEY_COUNT.getAndIncrement() % 2 == 0 ? 'foo' : 'bar'");
-		template.setConnectionFactorySelectorExpression(expression);
+		template.setSendConnectionFactorySelectorExpression(expression);
+		template.setReceiveConnectionFactorySelectorExpression(expression);
 
 		for (int i = 0; i < 3; i++) {
 			try {

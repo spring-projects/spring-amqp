@@ -103,7 +103,7 @@ public class RabbitTemplateIntegrationTests {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		template = new RabbitTemplate(connectionFactory);
-		template.setConnectionFactorySelectorExpression(new LiteralExpression("foo"));
+		template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
 	}
 
 	@After

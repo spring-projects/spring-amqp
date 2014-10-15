@@ -76,7 +76,10 @@ public final class TemplateParserTests {
 		AmqpTemplate template = beanFactory.getBean("withMandatoryExpression", AmqpTemplate.class);
 		assertNotNull(template);
 		assertEquals("'true'", TestUtils.getPropertyValue(template, "mandatoryExpression.expression"));
-		assertEquals("'foo'", TestUtils.getPropertyValue(template, "connectionFactorySelectorExpression.expression"));
+		assertEquals("'foo'",
+				TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"));
+		assertEquals("'foo'",
+				TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"));
 	}
 
 	@Test
@@ -99,11 +102,13 @@ public final class TemplateParserTests {
 		assertNotNull(queue);
 		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);
 		assertSame(queueBean, queue);
-		SimpleMessageListenerContainer container = beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
+		SimpleMessageListenerContainer container =
+				beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
 		assertNotNull(container);
 		dfa = new DirectFieldAccessor(container);
 		assertSame(template, dfa.getPropertyValue("messageListener"));
-		SimpleMessageListenerContainer messageListenerContainer = beanFactory.getBean(SimpleMessageListenerContainer.class);
+		SimpleMessageListenerContainer messageListenerContainer =
+				beanFactory.getBean(SimpleMessageListenerContainer.class);
 		dfa = new DirectFieldAccessor(messageListenerContainer);
 		Collection<?> queueNames = (Collection<?>) dfa.getPropertyValue("queueNames");
 		assertEquals(1, queueNames.size());

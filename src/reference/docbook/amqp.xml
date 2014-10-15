@@ -441,16 +441,17 @@ trustStore.passPhrase=secret</programlisting>
       </para>
 	  <para>
 		Starting with <emphasis>version 1.4</emphasis> the <classname>RabbitTemplate</classname> supports
-		the SpEL <code>connectionFactorySelectorExpression</code> property, which is evaluated on each AMQP
+		the SpEL <code>sendConnectionFactorySelectorExpression</code> and
+		<code>receiveConnectionFactorySelectorExpression</code> properties, which are evaluated on each AMQP
 		protocol interaction operation (<code>send</code>, <code>receive</code> or
 		<code>receiveAndReply</code>), resolving to a <code>lookupKey</code> value for the provided
 		<classname>AbstractRoutingConnectionFactory</classname>. Bean references, such as
 		<code>"@vHostResolver.getVHost(#root)"</code> can be used in the expression. In case of <code>send</code>
-		operation the request Message is used as root evaluation object, otherwise this expression is evaluated without
-		root object.
+		operation the request Message is used as root evaluation object, for <code>receive</code> operation the
+		<emphasis>queueName</emphasis> is used as root evaluation object.
 	  </para>
 	  <para>
-		 The <emphasis>routing</emphasis> algorithm is: If <code>connectionFactorySelectorExpression</code>
+		 The <emphasis>routing</emphasis> algorithm is: If <code>sendConnectionFactorySelectorExpression</code>
 		 is <code>null</code>, or it is evaluated to <code>null</code> or the provided
 		 <interfacename>ConnectionFactory</interfacename> isn't an instance of
 		 <classname>AbstractRoutingConnectionFactory</classname>, everything works as before, relying on the provided
