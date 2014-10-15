@@ -67,6 +67,12 @@
 		<section>
 			<title>Log Appender</title>
 			<para>
+				The Logback <classname>org.springframework.amqp.rabbit.logback.AmqpAppender</classname>
+				has been introduced. It provides similar options like
+				<classname>org.springframework.amqp.rabbit.log4j.AmqpAppender</classname>.
+				For more info see JavaDocs of these classes.
+			</para>
+			<para>
 				The Log4j <classname>AmqpAppender</classname> now supports the
 				<code>deliveryMode</code> property (<code>PERSISTENT</code> or
 				<code>NON_PERSISTENT</code>, default: <code>PERSISTENT</code>).
