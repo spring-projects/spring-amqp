@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ import com.rabbitmq.client.LongString;
  *
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -48,6 +50,16 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				Object value = entry.getValue();
 				if (value instanceof LongString) {
 					value = this.convertLongString((LongString) value, charset);
+				}
+				else if (value instanceof List) {
+					List<Object> listValue = new LinkedList<Object>();
+					for (Object v : (List) value) {
+						if (v instanceof LongString) {
+							v = this.convertLongString((LongString) v, charset);
+						}
+						listValue.add(v);
+					}
+					value = listValue;
 				}
 				target.setHeader(entry.getKey(), value);
 			}
