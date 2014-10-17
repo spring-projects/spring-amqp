@@ -17,13 +17,13 @@
 package org.springframework.amqp.rabbit.annotation;
 
 
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 
 /**
  * Optional interface to be implemented by Spring managed bean willing
  * to customize how Rabbit listener endpoints are configured. Typically
  * used to defined the default
- * {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory
+ * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory
  * RabbitListenerContainerFactory} to use or for registering Rabbit endpoints
  * in a <em>programmatic</em> fashion as opposed to the <em>declarative</em>
  * approach of using the @{@link RabbitListener} annotation.
@@ -33,16 +33,16 @@ import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
  * @author Stephane Nicoll
  * @since 1.4
  * @see EnableRabbit
- * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar
+ * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar
  */
 public interface RabbitListenerConfigurer {
 
 	/**
-	 * Callback allowing a {@link org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry
-	 * RabbitListenerEndpointRegistry} and specific {@link org.springframework.amqp.rabbit.config.RabbitListenerEndpoint
+	 * Callback allowing a {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
+	 * RabbitListenerEndpointRegistry} and specific {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint
 	 * RabbitListenerEndpoint} instances to be registered against the given
 	 * {@link RabbitListenerEndpointRegistrar}. The default
-	 * {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory RabbitListenerContainerFactory}
+	 * {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory RabbitListenerContainerFactory}
 	 * can also be customized.
 	 * @param registrar the registrar to be configured
 	 */

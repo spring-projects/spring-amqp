@@ -21,9 +21,9 @@ import org.hamcrest.core.Is;
 import org.junit.Test;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

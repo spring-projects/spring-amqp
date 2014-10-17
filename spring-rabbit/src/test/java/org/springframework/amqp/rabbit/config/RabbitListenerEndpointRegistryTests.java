@@ -20,6 +20,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+
 /**
  *
  * @author Stephane Nicoll

@@ -12,7 +12,7 @@
 
 	<bean class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$CustomBean"/>
 
-	<bean id="customRegistry" class="org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry"/>
+	<bean id="customRegistry" class="org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry"/>
 
 	<bean id="rabbitListenerContainerFactory"
 		  class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>

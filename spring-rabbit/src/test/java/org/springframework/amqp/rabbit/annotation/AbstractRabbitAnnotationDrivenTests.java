@@ -32,12 +32,12 @@ import org.junit.rules.ExpectedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.config.AbstractRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.config.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.context.ApplicationContext;
@@ -230,7 +230,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	 * Test for {@link ValidationBean} with a validator ({@link TestValidator}) specified
 	 * in a custom {@link org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory}.
 	 *
-	 * The test should throw a {@link org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException}
+	 * The test should throw a {@link org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException}
 	 */
 	public void testRabbitHandlerMethodFactoryConfiguration(ApplicationContext context) throws Exception {
 		RabbitListenerContainerTestFactory simpleFactory =
