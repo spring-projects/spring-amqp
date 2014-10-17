@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import com.rabbitmq.client.LongString;
  *
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Soeren Unruh
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
@@ -45,11 +47,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		Map<String, Object> headers = source.getHeaders();
 		if (!CollectionUtils.isEmpty(headers)) {
 			for (Map.Entry<String, Object> entry : headers.entrySet()) {
-				Object value = entry.getValue();
-				if (value instanceof LongString) {
-					value = this.convertLongString((LongString) value, charset);
-				}
-				target.setHeader(entry.getKey(), value);
+				target.setHeader(entry.getKey(), convertLongStringIfNecessary(entry.getValue(), charset));
 			}
 		}
 		target.setTimestamp(source.getTimestamp());
@@ -130,6 +128,11 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		return writableHeaders;
 	}
 
+	/**
+	 * Converts a header value to a String if the value type is unsupported by AMQP, also handling values
+	 * nested inside Lists or Maps.
+	 * <p>null values are passed through, although Rabbit client will throw an IllegalArgumentException.
+	 */
 	private Object convertHeaderValueIfNecessary(Object value) {
 		boolean valid = (value instanceof String) || (value instanceof byte[]) || (value instanceof Boolean)
 				|| (value instanceof LongString) || (value instanceof Integer) || (value instanceof Long)
@@ -138,6 +141,22 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				|| (value instanceof List) || (value instanceof Map);
 		if (!valid && value != null) {
 			value = value.toString();
+		}
+		else if (value instanceof List<?>) {
+			List<Object> writableList = new ArrayList<Object>(((List<?>) value).size());
+			for (Object listValue : (List<?>) value) {
+				writableList.add(convertHeaderValueIfNecessary(listValue));
+			}
+			value = writableList;
+		}
+		else if (value instanceof Map<?, ?>) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> originalMap = (Map<String, Object>) value;
+			Map<String, Object> writableMap = new HashMap<String, Object>(originalMap.size());
+			for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
+				writableMap.put(entry.getKey(), this.convertHeaderValueIfNecessary(entry.getValue()));
+			}
+			value = writableMap;
 		}
 		return value;
 	}
@@ -156,6 +175,33 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		} catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
+	}
+	
+	/**
+	 * Converts a LongString value using {@link #convertLongString(LongString, String)}, also handling values
+	 * nested in Lists or Maps.
+	 */
+	private Object convertLongStringIfNecessary(Object value, String charset) {
+		if (value instanceof LongString) {
+			value = convertLongString((LongString) value, charset);
+		}
+		else if (value instanceof List<?>) {
+			List<Object> convertedList = new ArrayList<Object>(((List<?>) value).size());
+			for (Object listValue : (List<?>) value) {
+				convertedList.add(this.convertLongStringIfNecessary(listValue, charset));
+			}
+			value = convertedList;
+		}
+		else if (value instanceof Map<?, ?>) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> originalMap = (Map<String, Object>) value;
+			Map<String, Object> convertedMap = new HashMap<String, Object>();
+			for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
+				convertedMap.put(entry.getKey(), this.convertLongStringIfNecessary(entry.getValue(), charset));
+			}
+			value = convertedMap;
+		}
+		return value;
 	}
 
 }
