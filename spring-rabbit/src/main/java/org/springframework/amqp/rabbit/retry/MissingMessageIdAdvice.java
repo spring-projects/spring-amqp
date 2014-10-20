@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.retry.policy.RetryContextCache;
 import org.springframework.util.Assert;
 

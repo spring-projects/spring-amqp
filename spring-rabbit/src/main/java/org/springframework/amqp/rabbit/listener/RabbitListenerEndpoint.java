@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 /**
  * Model for a Rabbit listener endpoint. Can be used against a

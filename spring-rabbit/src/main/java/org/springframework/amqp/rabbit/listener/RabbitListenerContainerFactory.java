@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
 
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 
 /**
  * Factory of {@link MessageListenerContainer} based on a

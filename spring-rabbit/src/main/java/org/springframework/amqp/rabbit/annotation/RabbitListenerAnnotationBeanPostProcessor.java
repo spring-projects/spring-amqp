@@ -20,12 +20,12 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.amqp.rabbit.config.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
-import org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -48,7 +48,7 @@ import org.springframework.util.StringUtils;
 /**
  * Bean post-processor that registers methods annotated with {@link RabbitListener}
  * to be invoked by a AMQP message listener container created under the cover
- * by a {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory}
+ * by a {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
  * according to the parameters of the annotation.
  *
  * <p>Annotated methods can use flexible arguments as defined by {@link RabbitListener}.
@@ -70,14 +70,14 @@ import org.springframework.util.StringUtils;
  * @see RabbitListenerConfigurer
  * @see RabbitListenerEndpointRegistrar
  * @see RabbitListenerEndpointRegistry
- * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpoint
+ * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint
  * @see MethodRabbitListenerEndpoint
  */
 public class RabbitListenerAnnotationBeanPostProcessor
 		implements BeanPostProcessor, Ordered, BeanFactoryAware, SmartInitializingSingleton {
 
 	/**
-	 * The bean name of the default {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory}.
+	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
 	 */
 	static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
 

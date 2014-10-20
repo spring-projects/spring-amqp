@@ -11,35 +11,27 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.listener.exception;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 
 /**
- * Exception to be thrown when the execution of a listener method failed unrecoverably.
+ * Exception to be thrown when the execution of a listener method failed on startup.
  *
  * @author Dave Syer
  * @see MessageListenerAdapter
  */
 @SuppressWarnings("serial")
-public class FatalListenerExecutionException extends AmqpException {
+public class FatalListenerStartupException extends AmqpException {
 
 	/**
 	 * Constructor for ListenerExecutionFailedException.
 	 * @param msg the detail message
 	 * @param cause the exception thrown by the listener method
 	 */
-	public FatalListenerExecutionException(String msg, Throwable cause) {
+	public FatalListenerStartupException(String msg, Throwable cause) {
 		super(msg, cause);
-	}
-
-	/**
-	 * Constructor for ListenerExecutionFailedException.
-	 * @param msg the detail message
-	 */
-	public FatalListenerExecutionException(String msg) {
-		super(msg);
 	}
 
 }

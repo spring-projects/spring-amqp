@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.config;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;

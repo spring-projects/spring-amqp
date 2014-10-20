@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -42,11 +42,12 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyFailureException;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.AmqpMessageHeaderAccessor;
 import org.springframework.amqp.support.converter.MessageConversionException;

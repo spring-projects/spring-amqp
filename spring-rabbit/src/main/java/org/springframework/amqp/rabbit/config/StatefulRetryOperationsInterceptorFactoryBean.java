@@ -14,9 +14,10 @@ package org.springframework.amqp.rabbit.config;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.listener.FatalListenerExecutionException;
+import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;

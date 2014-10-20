@@ -409,13 +409,13 @@
 			<xsd:attribute name="registry" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Specifies the org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry
+	Specifies the org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
 	instance to	use to register annotated listener endpoints. If not provided, a default
 	instance will be used by default.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry"/>
+							<tool:expected-type type="org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry"/>
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
@@ -423,7 +423,7 @@
 			<xsd:attribute name="container-factory" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Specifies the org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory instance
+	Specifies the org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory instance
 	to use to create the container for a listener endpoint that does not define a specific
 	factory. This permits in practice to omit the "containerFactory" attribute of the RabbitListener
 	annotation. This attribute is not required as each endpoint may define the factory to use and,
@@ -432,7 +432,7 @@
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory"/>
+							<tool:expected-type type="org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory"/>
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>

@@ -25,7 +25,7 @@ import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.util.Assert;

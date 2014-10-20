@@ -27,12 +27,12 @@ import java.lang.annotation.Target;
 
 import org.junit.Test;
 
-import org.springframework.amqp.rabbit.config.AbstractRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
-import org.springframework.amqp.rabbit.config.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;

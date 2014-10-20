@@ -26,12 +26,12 @@ import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar;
-import org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;

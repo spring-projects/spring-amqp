@@ -27,7 +27,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 /**
  * Annotation that marks a method to be the target of a Rabbit message
  * listener on the specified {@link #queues()}. The {@link #containerFactory()}
- * identifies the {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory
+ * identifies the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory
  * RabbitListenerContainerFactory} to use to build the rabbit listener container. If not
  * set, a <em>default</em> container factory is assumed to be available with a bean
  * name of {@code rabbitListenerContainerFactory} unless an explicit default has been
@@ -82,15 +82,15 @@ public @interface RabbitListener {
 	 * The unique identifier of the container managing for this endpoint.
 	 * <p>If none is specified an auto-generated one is provided.
 	 * @return the {@code id} for the container managing for this endpoint.
-	 * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry#getListenerContainer(String)
+	 * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry#getListenerContainer(String)
 	 */
 	String id() default "";
 
 	/**
-	 * The bean name of the {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory}
+	 * The bean name of the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
 	 * to use to create the message listener container responsible to serve this endpoint.
 	 * <p>If not specified, the default container factory is used, if any.
-	 * @return the {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory}
+	 * @return the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}
 	 * bean name.
 	 */
 	String containerFactory() default "";

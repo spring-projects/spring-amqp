@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Import;
 
 /**
  * Enable Rabbit listener annotated endpoints that are created under the cover
- * by a {@link org.springframework.amqp.rabbit.config.RabbitListenerContainerFactory
+ * by a {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory
  * RabbitListenerContainerFactory}. To be used on
  * {@link org.springframework.context.annotation.Configuration Configuration}
  * classes as follows:
@@ -98,7 +98,7 @@ import org.springframework.context.annotation.Import;
  *
  * Note that the created containers are not registered against the application context
  * but can be easily located for management purposes using the
- * {@link org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry RabbitListenerEndpointRegistry}.
+ * {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry RabbitListenerEndpointRegistry}.
  *
  * <p>Annotated methods can use flexible signature; in particular, it is possible to use
  * the {@link org.springframework.messaging.Message Message} abstraction and related annotations,
@@ -118,7 +118,7 @@ import org.springframework.context.annotation.Import;
  *
  * <p>When more control is desired, a {@code @Configuration} class may implement
  * {@link RabbitListenerConfigurer}. This allows access to the underlying
- * {@link org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar RabbitListenerEndpointRegistrar}
+ * {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar RabbitListenerEndpointRegistrar}
  * instance. The following example demonstrates how to specify an explicit default
  * {@code RabbitListenerContainerFactory}
  *
@@ -159,7 +159,7 @@ import org.springframework.context.annotation.Import;
  * </beans>
  * }</pre>
  *
- * It is also possible to specify a custom {@link org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry
+ * It is also possible to specify a custom {@link org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
  * RabbitListenerEndpointRegistry} in case you need more control on the way the containers
  * are created and managed. The example below also demonstrates how to customize the
  * {@code RabbitHandlerMethodFactory} to use with a custom {@link org.springframework.validation.Validator
@@ -255,8 +255,8 @@ import org.springframework.context.annotation.Import;
  * @since 1.4
  * @see RabbitListener
  * @see RabbitListenerAnnotationBeanPostProcessor
- * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistrar
- * @see org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry
+ * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar
+ * @see org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

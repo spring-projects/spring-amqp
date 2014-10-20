@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;

@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
+
 /**
  *
  * @author Stephane Nicoll

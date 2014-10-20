@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 
 /**
  *

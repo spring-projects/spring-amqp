@@ -18,7 +18,9 @@ package org.springframework.amqp.rabbit.config;
 
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 
 /**
  * A {@link RabbitListenerEndpoint} simply providing the {@link MessageListener} to

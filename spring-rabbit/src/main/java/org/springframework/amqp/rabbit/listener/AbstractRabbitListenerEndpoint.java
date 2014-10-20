@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,9 +24,8 @@ import java.util.Map;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.util.Assert;
 
 /**

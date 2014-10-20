@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.config;
+package org.springframework.amqp.rabbit.listener;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.annotation.AnnotationUtils;
