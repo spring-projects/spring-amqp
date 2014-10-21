@@ -562,6 +562,13 @@ public AmqpTemplate rabbitTemplate();
 		template.setRetryTemplate(retryTemplate);
 		return template;
 }]]></programlisting>
+	<para>
+		Starting with <emphasis>version 1.4</emphasis>, in addition to the <code>retryTemplate</code> property,
+		the <code>recoveryCallback</code> option is supported on the <classname>RabbitTemplate</classname>.
+		It is used as a second argument for the
+		<code>RetryTemplate.execute(RetryCallback&lt;T, E&gt; retryCallback,
+			RecoveryCallback&lt;T&gt;recoveryCallback)</code>.
+	</para>
 	</section>
     <section id="template-confirms">
       <title>Publisher Confirms and Returns</title>
