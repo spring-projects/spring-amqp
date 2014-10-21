@@ -220,7 +220,7 @@ public class RabbitTemplateTests {
 	}
 
 	@Test
-	public void testReCovery() throws Exception {
+	public void testRecovery() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Void>() {
@@ -246,12 +246,7 @@ public class RabbitTemplateTests {
 			}
 
 		});
-		try {
-			template.convertAndSend("foo", "bar", "baz");
-		}
-		catch (AmqpAuthenticationException e) {
-			assertThat(e.getMessage(), containsString("foo"));
-		}
+		template.convertAndSend("foo", "bar", "baz");
 		assertEquals(3, count.get());
 		assertTrue(recoverInvoked.get());
 	}
