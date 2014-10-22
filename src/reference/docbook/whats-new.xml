@@ -120,6 +120,26 @@
 				See <xref linkend="template-retry"/>.
 			</para>
 		</section>
+		<section>
+			<title>MessageConversionException</title>
+			<para>
+				This exception is now a subclass of <classname>AmqpException</classname>; if you have code like
+				the following:
+			</para>
+				<programlisting language="java"><![CDATA[try {
+    template.convertAndSend("foo", "bar", "baz");
+}
+catch (AmqpException e) {
+	...
+}
+catch (MessageConversionException e) {
+	...
+}]]></programlisting>
+			<para>
+				The second catch block will no longer be reachable and needs to be moved above the catch-all
+				<classname>AmqpException</classname> catch block.
+			</para>
+		</section>
 	</section>
 
 	<section>

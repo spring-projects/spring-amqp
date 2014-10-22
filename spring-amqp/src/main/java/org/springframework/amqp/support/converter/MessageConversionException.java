@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,9 +26,10 @@ import org.springframework.amqp.AmqpException;
  *
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 @SuppressWarnings("serial")
-public class MessageConversionException extends RuntimeException {
+public class MessageConversionException extends AmqpException {
 
 	public MessageConversionException(String message, Throwable cause) {
 		super(message, cause);
