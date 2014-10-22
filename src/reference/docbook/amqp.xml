@@ -469,6 +469,12 @@ trustStore.passPhrase=secret</programlisting>
 		  and <code>receive-connection-factory-selector-expression</code> attributes
 		  on the <code>&lt;rabbit:template&gt;</code> component.
 	  </para>
+	  <para>
+	    Also starting with <emphasis>version 1.4</emphasis>, you can configure a routing connection factory
+	    in a <classname>SimpleMessageListenerContainer</classname>. In that case, the list of queue names
+	    is used as the lookup key. For example, if you configure the container with
+	    <code>setQueueNames("foo, bar")</code>, the lookup key will be <code>"[foo,bar]"</code> (no spaces).
+	  </para>
     </section>
 
     <section id="cf-pub-conf-ret">
