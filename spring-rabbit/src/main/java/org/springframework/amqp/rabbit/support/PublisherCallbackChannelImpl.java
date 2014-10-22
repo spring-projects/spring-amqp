@@ -558,6 +558,58 @@ public class PublisherCallbackChannelImpl
 		this.delegate.clearReturnListeners();
 	}
 
+//	@Override
+	public void exchangeBindNoWait(String destination, String source,
+			String routingKey, Map<String, Object> arguments) throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		exchangeBind(destination, source, routingKey, arguments);
+	}
+
+//	@Override
+	public void exchangeDeclareNoWait(String exchange, String type,
+			boolean durable, boolean autoDelete, boolean internal,
+			Map<String, Object> arguments) throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		exchangeDeclare(exchange, type, durable, autoDelete, internal, arguments);
+	}
+
+//	@Override
+	public void exchangeDeleteNoWait(String exchange, boolean ifUnused) throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		exchangeDelete(exchange, ifUnused);
+	}
+
+//	@Override
+	public void exchangeUnbindNoWait(String destination, String source,
+			String routingKey, Map<String, Object> arguments)
+			throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		exchangeUnbind(destination, source, routingKey, arguments);
+	}
+
+//	@Override
+	public void queueBindNoWait(String queue,
+			String exchange, String routingKey, Map<String, Object> arguments) throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		queueBind(queue, exchange, routingKey, arguments);
+	}
+
+//	@Override
+	public void queueDeclareNoWait(String queue,
+			boolean durable, boolean exclusive, boolean autoDelete,
+			Map<String, Object> arguments)
+			throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		queueDeclare(queue, durable, exclusive, autoDelete, arguments);
+	}
+
+//	@Override
+	public void queueDeleteNoWait(String queue,
+			boolean ifUnused, boolean ifEmpty) throws IOException {
+		//TODO: change to ...NoWait when min client is 3.4.0
+		queueDelete(queue, ifUnused, ifEmpty);
+	}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // END PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
