@@ -113,6 +113,13 @@
 			</para>
 		</section>
 		<section>
+			<para>
+				A <classname>SimpleMessageListenerContainer</classname> can be configured with a routing
+				connection factory to enable connection selection based on the queue names.
+				See <xref linkend="routing-connection-factory"/>.
+			</para>
+		</section>
+		<section>
 			<title>RabbitTemplate: RecoveryCallback option</title>
 			<para>
 				The <code>recoveryCallback</code> property has been added to be used in the

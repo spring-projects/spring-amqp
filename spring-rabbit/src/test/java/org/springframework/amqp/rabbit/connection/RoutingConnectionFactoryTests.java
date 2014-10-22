@@ -16,6 +16,8 @@ package org.springframework.amqp.rabbit.connection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
 /**
  * @author Artem Bilan
@@ -144,4 +148,44 @@ public class RoutingConnectionFactoryTests {
 		Mockito.verify(targetConnectionFactory,
 				Mockito.times(2)).addConnectionListener(Mockito.any(ConnectionListener.class));
 	}
+
+	@Test
+	public void testAbstractRoutingConnectionFactoryWithListenerContainer() {
+		ConnectionFactory connectionFactory1 = mock(ConnectionFactory.class);
+		ConnectionFactory connectionFactory2 = mock(ConnectionFactory.class);
+		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
+		factories.put("[baz]", connectionFactory1);
+		factories.put("[foo,bar]", connectionFactory2);
+		ConnectionFactory defaultConnectionFactory = mock(ConnectionFactory.class);
+
+		SimpleRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
+
+		connectionFactory.setDefaultTargetConnectionFactory(defaultConnectionFactory);
+		connectionFactory.setTargetConnectionFactories(factories);
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setQueueNames("foo, bar");
+		container.afterPropertiesSet();
+		container.start();
+
+		Mockito.verify(connectionFactory1, never()).createConnection();
+		Mockito.verify(connectionFactory2).createConnection();
+		Mockito.verify(defaultConnectionFactory, never()).createConnection();
+
+		Mockito.reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
+		container.setQueueNames("baz");
+		Mockito.verify(connectionFactory1).createConnection();
+		Mockito.verify(connectionFactory2, never()).createConnection();
+		Mockito.verify(defaultConnectionFactory, never()).createConnection();
+
+		Mockito.reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
+		container.setQueueNames("qux");
+		Mockito.verify(connectionFactory1, never()).createConnection();
+		Mockito.verify(connectionFactory2, never()).createConnection();
+		Mockito.verify(defaultConnectionFactory).createConnection();
+
+		container.stop();
+	}
+
+
 }
