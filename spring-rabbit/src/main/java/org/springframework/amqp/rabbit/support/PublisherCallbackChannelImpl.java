@@ -561,37 +561,37 @@ public class PublisherCallbackChannelImpl
 //	@Override
 	public void exchangeBindNoWait(String destination, String source,
 			String routingKey, Map<String, Object> arguments) throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		exchangeBind(destination, source, routingKey, arguments);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
 	public void exchangeDeclareNoWait(String exchange, String type,
 			boolean durable, boolean autoDelete, boolean internal,
 			Map<String, Object> arguments) throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		exchangeDeclare(exchange, type, durable, autoDelete, internal, arguments);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
 	public void exchangeDeleteNoWait(String exchange, boolean ifUnused) throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		exchangeDelete(exchange, ifUnused);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
 	public void exchangeUnbindNoWait(String destination, String source,
 			String routingKey, Map<String, Object> arguments)
 			throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		exchangeUnbind(destination, source, routingKey, arguments);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
 	public void queueBindNoWait(String queue,
 			String exchange, String routingKey, Map<String, Object> arguments) throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		queueBind(queue, exchange, routingKey, arguments);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
@@ -599,15 +599,19 @@ public class PublisherCallbackChannelImpl
 			boolean durable, boolean exclusive, boolean autoDelete,
 			Map<String, Object> arguments)
 			throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		queueDeclare(queue, durable, exclusive, autoDelete, arguments);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
 //	@Override
 	public void queueDeleteNoWait(String queue,
 			boolean ifUnused, boolean ifEmpty) throws IOException {
-		//TODO: change to ...NoWait when min client is 3.4.0
-		queueDelete(queue, ifUnused, ifEmpty);
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+	public Channel getDelegate() {
+		return delegate;
 	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

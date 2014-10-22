@@ -65,6 +65,14 @@ public interface PublisherCallbackChannel extends Channel {
 	void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm);
 
 	/**
+	 * Use this to invoke methods on the underlying rabbit client {@link Channel} that
+	 * are not supported by this implementation.
+	 * @return The underlying rabbit client {@link Channel}.
+	 * @since 1.4.
+	 */
+	Channel getDelegate();
+
+	/**
 	 * Listeners implementing this interface can participate
 	 * in publisher confirms received from multiple channels,
 	 * by invoking addListener on each channel. Standard
