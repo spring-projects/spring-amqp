@@ -361,7 +361,9 @@ Connection connection = connectionFactory.createConnection();]]></programlisting
         define an instance of the rabbit factory and provide a reference to it using
         the appropriate constructor of the <classname>CachingConnectionFactory</classname>.
         When using the namespace as described above, provide a reference to the configured
-        factory in the <code>connection-factory</code> attribute.
+        factory in the <code>connection-factory</code> attribute. For convenience, a
+        factory bean is provided to assist in configuring the connection factory in a
+        Spring application context, as discussed in the next section.
       </para>
       <programlisting language="xml"><![CDATA[<rabbit:connection-factory
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>]]></programlisting>
@@ -1346,6 +1348,31 @@ public Message<OrderStatus> processOrder(Order order) {
 		<literal>replyToAddress</literal> property.
 	</para>
         </section>
+    </section>
+    <section>
+		<title>Threading and Asynchronous Consumers</title>
+		<para>
+			A number of different threads are involved with asynchronous consumers.
+		</para>
+		<para>
+			Threads from the
+			<classname>TaskExecutor</classname> configured in the <classname>SimpleMessageListener</classname>
+			are used to invoke the <interfacename>MessageListener</interfacename> when a new message is
+			delivered by <code>RabbitMQ Client</code>. If not configured, a <classname>SimpleAsyncTaskExecutor</classname>
+			is used. If a pooled executor is used, ensure the pool size is sufficient to handle the
+			configured concurrency.
+		</para>
+		<para>
+			The <classname>Executor</classname> configured in the <classname>CachingConnectionFactory</classname>
+			is passed into the <code>RabbitMQ Client</code> when creating the connection, and its threads are used to
+			deliver new messages to the listener container. At the time of writing, if this is not configured,
+			the client uses an internal thread pool executor with a pool size of 5.
+		</para>
+		<para>
+			The <code>RabbitMQ client</code> uses a <classname>ThreadFactory</classname> to create threads
+			for low-level I/O (socket) operations. To modify this factory, you need to configure the underlying
+			RabbitMQ <classname>ConnectionFactory</classname>, as discussed in <xref linkend="connection-factory" />.
+		</para>
     </section>
   </section>
 
