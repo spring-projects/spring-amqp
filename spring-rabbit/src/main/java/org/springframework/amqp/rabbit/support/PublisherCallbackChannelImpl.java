@@ -558,6 +558,62 @@ public class PublisherCallbackChannelImpl
 		this.delegate.clearReturnListeners();
 	}
 
+//	@Override
+	public void exchangeBindNoWait(String destination, String source,
+			String routingKey, Map<String, Object> arguments) throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void exchangeDeclareNoWait(String exchange, String type,
+			boolean durable, boolean autoDelete, boolean internal,
+			Map<String, Object> arguments) throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void exchangeDeleteNoWait(String exchange, boolean ifUnused) throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void exchangeUnbindNoWait(String destination, String source,
+			String routingKey, Map<String, Object> arguments)
+			throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void queueBindNoWait(String queue,
+			String exchange, String routingKey, Map<String, Object> arguments) throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void queueDeclareNoWait(String queue,
+			boolean durable, boolean exclusive, boolean autoDelete,
+			Map<String, Object> arguments)
+			throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+//	@Override
+	public void queueDeleteNoWait(String queue,
+			boolean ifUnused, boolean ifEmpty) throws IOException {
+		//TODO: invoke delegate's  ...NoWait when min client is 3.4.0
+		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
+	}
+
+	public Channel getDelegate() {
+		return delegate;
+	}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // END PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -147,6 +147,14 @@ catch (MessageConversionException e) {
 				<classname>AmqpException</classname> catch block.
 			</para>
 		</section>
+		<section>
+			<title>RabbitMQ 3.4 Compatibility</title>
+			<para>
+				Now the Spring AMQP is compatible with the <emphasis>RabbitMQ 3.4</emphasis>.
+				However Spring AMQP still keeps the minimal RabbitMQ Client library in version
+				<emphasis>3.3.x</emphasis> to provide backward compatibility with legacy applications.
+			</para>
+		</section>
 	</section>
 
 	<section>
