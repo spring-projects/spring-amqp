@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyFailureException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -73,6 +70,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Stephane Nicoll
+ * @author Artem Bilan
  */
 public class MethodRabbitListenerEndpointTests {
 
@@ -378,7 +376,7 @@ public class MethodRabbitListenerEndpointTests {
 		Channel channel = mock(Channel.class);
 
 		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Matchers.isA(org.springframework.messaging.converter.MessageConversionException.class));
+		thrown.expectCause(Matchers.isA(MessageConversionException.class));
 		thrown.expectMessage(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
 		listener.onMessage(createTextMessage("test"), channel); // test is not a valid integer
 	}

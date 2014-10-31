@@ -44,6 +44,7 @@ import com.rabbitmq.client.Channel;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.4
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
@@ -110,6 +111,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			Message<?> message) {
 		try {
 			return this.handlerMethod.invoke(message, amqpMessage, channel);
+		}
+		catch (org.springframework.messaging.converter.MessageConversionException ex) {
+			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
+					"be invoked with the incoming message"),
+					new MessageConversionException("Cannot handle message", ex));
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +

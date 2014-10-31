@@ -16,20 +16,34 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Date;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +56,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.util.ErrorHandler;
 
 /**
  *
@@ -56,10 +71,17 @@ public class EnableRabbitIntegrationTests {
 
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
-			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply");
+			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
+			"test.invalidPojo");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
+
+	@Autowired
+	private CountDownLatch errorHandlerLatch;
+
+	@Autowired
+	private AtomicReference<Throwable> errorHandlerError;
 
 	@Test
 	public void simpleEndpoint() {
@@ -108,6 +130,23 @@ public class EnableRabbitIntegrationTests {
 		assertEquals("BAR", result);
 	}
 
+	@Test
+	public void testInvalidPojoConversion() throws InterruptedException {
+		this.rabbitTemplate.convertAndSend("test.invalidPojo", "bar");
+
+		assertTrue(this.errorHandlerLatch.await(10, TimeUnit.SECONDS));
+		Throwable throwable = this.errorHandlerError.get();
+		assertNotNull(throwable);
+		assertThat(throwable, instanceOf(AmqpRejectAndDontRequeueException.class));
+		assertThat(throwable.getCause(), instanceOf(ListenerExecutionFailedException.class));
+		assertThat(throwable.getCause().getCause(),
+				instanceOf(org.springframework.amqp.support.converter.MessageConversionException.class));
+		assertThat(throwable.getCause().getCause().getCause(),
+				instanceOf(org.springframework.messaging.converter.MessageConversionException.class));
+		assertThat(throwable.getCause().getCause().getCause().getMessage(),
+				containsString("Failed to convert message payload 'bar' to 'java.util.Date'"));
+	}
+
 	public static class MyService {
 
 		@RabbitListener(queues = "test.simple")
@@ -136,6 +175,12 @@ public class EnableRabbitIntegrationTests {
 		public String capitalizeAndSendTo(String foo) {
 			return foo.toUpperCase();
 		}
+
+		@RabbitListener(queues = "test.invalidPojo")
+		public void handleIt(Date body) {
+
+		}
+
 	}
 
 	@Configuration
@@ -146,7 +191,37 @@ public class EnableRabbitIntegrationTests {
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
 			return factory;
+		}
+
+		@Bean
+		public CountDownLatch errorHandlerLatch() {
+			return new CountDownLatch(1);
+		}
+
+		@Bean
+		public AtomicReference<Throwable> errorHandlerError() {
+			return new AtomicReference<Throwable>();
+		}
+
+		@Bean
+		public ErrorHandler errorHandler() {
+			ErrorHandler handler = Mockito.spy(new ConditionalRejectingErrorHandler());
+			Mockito.doAnswer(new Answer<Object>() {
+				@Override
+				public Object answer(InvocationOnMock invocation) throws Throwable {
+					try {
+						return invocation.callRealMethod();
+					}
+					catch (Throwable e) {
+						errorHandlerError().set(e);
+						errorHandlerLatch().countDown();
+						throw e;
+					}
+				}
+			}).when(handler).handleError(Mockito.any(Throwable.class));
+			return handler;
 		}
 
 		@Bean

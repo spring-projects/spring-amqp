@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.converter.MessageConversionException;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.ReflectionUtils;
@@ -40,6 +39,7 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Stephane Nicoll
+ * @author Artem Bilan
  */
 public class MessagingMessageListenerAdapterTests {
 
@@ -102,7 +102,10 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(MessageConversionException.class, ex.getCause().getClass());
+			assertEquals(org.springframework.amqp.support.converter.MessageConversionException.class,
+					ex.getCause().getClass());
+			assertEquals(org.springframework.messaging.converter.MessageConversionException.class,
+					ex.getCause().getCause().getClass());
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown another exception");
