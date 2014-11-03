@@ -19,6 +19,10 @@
   <artifactId>spring-rabbit</artifactId>
   <version>${version}</version>
 </dependency>]]></programlisting>
+	<para>
+		And for gradle:
+	</para>
+	<programlisting>compile 'org.springframework.amqp:spring-rabbit:${version}'</programlisting>
 
 	<section>
 		<title>Compatibility</title>
