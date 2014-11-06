@@ -327,7 +327,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private Object resolveExpression(String value) {
-		if (!value.startsWith("#{") && !value.endsWith("}")) {
+		if (!(value.startsWith("#{") && value.endsWith("}"))) {
 			return resolve(value);
 		}
 
