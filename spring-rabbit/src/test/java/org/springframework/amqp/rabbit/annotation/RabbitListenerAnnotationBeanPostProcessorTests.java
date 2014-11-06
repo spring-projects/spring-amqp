@@ -24,9 +24,11 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Iterator;
 
 import org.junit.Test;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
@@ -83,6 +85,51 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		context.close();
 	}
 
+	@Test
+	public void multipleQueueNamesTestBeanIsDiscovered() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, MultipleQueueNamesTestBean.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+		assertEquals("metaTestQueue", iterator.next());
+		assertEquals("testQueue", iterator.next());
+
+		context.close();
+	}
+
+	@Test
+	public void multipleQueuesTestBeanIsDiscovered() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, MultipleQueuesTestBean.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		final Iterator<Queue> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator();
+		assertEquals("testQueue", iterator.next().getName());
+		assertEquals("secondQueue", iterator.next().getName());
+
+		context.close();
+	}
+
+	@Test
+	public void mixedQueuesAndQueueNamesTestBeanIsDiscovered() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, MixedQueuesAndQueueNamesTestBean.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+		assertEquals("metaTestQueue", iterator.next());
+		assertEquals("secondQueue", iterator.next());
+		assertEquals("testQueue", ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator().next().getName());
+
+		context.close();
+	}
 
 	@Component
 	static class SimpleMessageListenerTestBean {
@@ -95,7 +142,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 
 	@Component
-	static class MetaAnnotationTestBean {
+	 static class MetaAnnotationTestBean {
 
 		@FooListener
 		public void handleIt(String body) {
@@ -109,6 +156,29 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	static @interface FooListener {
 	}
 
+	@Component
+	static class MultipleQueueNamesTestBean {
+
+		@RabbitListener(queues = {"metaTestQueue, #{@myTestQueue.name}"})
+		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class MultipleQueuesTestBean {
+
+		@RabbitListener(queues = {"#{@myTestQueue}, #{@mySecondQueue}"})
+		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class MixedQueuesAndQueueNamesTestBean {
+
+		@RabbitListener(queues = {"metaTestQueue, #{@myTestQueue}", "#{@mySecondQueue.name}"})
+		public void handleIt(String body) {
+		}
+	}
 
 	@Configuration
 	static class Config {
@@ -130,6 +200,16 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		public RabbitListenerContainerTestFactory testFactory() {
 			return new RabbitListenerContainerTestFactory();
 		}
+
+		@Bean
+		public Queue myTestQueue() {
+			return new Queue("testQueue");
+		}
+
+        @Bean
+        public Queue mySecondQueue() {
+            return new Queue("secondQueue");
+        }
 	}
 
 }

@@ -17,9 +17,12 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -36,8 +39,14 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -94,6 +103,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
+	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+
+	private final ExpressionParser expressionParser = new SpelExpressionParser();
 
 	@Override
 	public int getOrder() {
@@ -140,6 +152,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
+        this.evaluationContext.setBeanResolver(new BeanFactoryResolver(this.beanFactory));
 	}
 
 
@@ -224,9 +237,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-		endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
-
 		endpoint.setExclusive(rabbitListener.exclusive());
+
+		configureQueuesOnEndpoint(endpoint, splitQueues(rabbitListener.queues()));
+
 		String priority = resolve(rabbitListener.priority());
 		if (StringUtils.hasText(priority)) {
 			try {
@@ -278,14 +292,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] resolveQueues(String... queues) {
-		String[] result = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			result[i] = resolve(queues[i]);
-		}
-		return result;
-	}
-
 	/**
 	 * Resolve the specified value if possible.
 	 *
@@ -296,6 +302,52 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
 		}
 		return value;
+	}
+
+	private String[] splitQueues(String[] queues) {
+		List<String> queueList = new ArrayList<String>();
+		for (String queue : queues) {
+			if (queue.contains(",")) {
+				final String[] split = StringUtils.commaDelimitedListToStringArray(queue);
+				for (String s : split) {
+					queueList.add(s.trim());
+				}
+			} else {
+				queueList.add(queue.trim());
+			}
+		}
+
+		return queueList.toArray(new String[queueList.size()]);
+	}
+
+	private void configureQueuesOnEndpoint(MethodRabbitListenerEndpoint endpoint, String[] queues) {
+		List<String> queueNames = new ArrayList<String>();
+		List<Queue> queueList = new ArrayList<Queue>();
+		for (String queue : queues) {
+			Object resolvedValue = resolveExpression(queue);
+			if (resolvedValue instanceof Queue) {
+				queueList.add((Queue) resolvedValue);
+			} else {
+				queueNames.add((String) resolvedValue);
+			}
+		}
+
+		if (!queueNames.isEmpty()) {
+			endpoint.setQueueNames(queueNames.toArray(new String[queueNames.size()]));
+		}
+
+		if (!queueList.isEmpty()) {
+			endpoint.setQueues(queueList.toArray(new Queue[queueList.size()]));
+		}
+	}
+
+	private Object resolveExpression(String value) {
+		if (!value.startsWith("#{") && !value.endsWith("}")) {
+			return resolve(value);
+		}
+
+		Expression expression = this.expressionParser.parseExpression(value, ParserContext.TEMPLATE_EXPRESSION);
+		return expression.getValue(this.evaluationContext, Object.class);
 	}
 
 	/**
