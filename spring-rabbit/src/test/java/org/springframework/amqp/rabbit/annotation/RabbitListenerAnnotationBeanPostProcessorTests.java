@@ -159,7 +159,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MultipleQueueNamesTestBean {
 
-		@RabbitListener(queues = {"metaTestQueue, #{@myTestQueue.name}"})
+		@RabbitListener(queues = {"metaTestQueue", "#{@myTestQueue.name}"})
 		public void handleIt(String body) {
 		}
 	}
@@ -167,7 +167,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MultipleQueuesTestBean {
 
-		@RabbitListener(queues = {"#{@myTestQueue}, #{@mySecondQueue}"})
+		@RabbitListener(queues = {"#{@myTestQueue}", "#{@mySecondQueue}"})
 		public void handleIt(String body) {
 		}
 	}
@@ -175,7 +175,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MixedQueuesAndQueueNamesTestBean {
 
-		@RabbitListener(queues = {"metaTestQueue, #{@myTestQueue}", "#{@mySecondQueue.name}"})
+		@RabbitListener(queues = {"metaTestQueue", "#{@myTestQueue}", "#{@mySecondQueue.name}"})
 		public void handleIt(String body) {
 		}
 	}

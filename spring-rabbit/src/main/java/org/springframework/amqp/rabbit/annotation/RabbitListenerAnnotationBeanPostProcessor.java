@@ -37,16 +37,14 @@ import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.expression.BeanFactoryResolver;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.ParserContext;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -103,9 +101,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
-	private final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+    private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
-	private final ExpressionParser expressionParser = new SpelExpressionParser();
+    private BeanExpressionContext expressionContext;
 
 	@Override
 	public int getOrder() {
@@ -152,7 +150,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
-        this.evaluationContext.setBeanResolver(new BeanFactoryResolver(this.beanFactory));
+        if (beanFactory instanceof ConfigurableListableBeanFactory) {
+            this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
+            this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+        }
 	}
 
 
@@ -239,7 +240,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setId(getEndpointId(rabbitListener));
 		endpoint.setExclusive(rabbitListener.exclusive());
 
-		configureQueuesOnEndpoint(endpoint, splitQueues(rabbitListener.queues()));
+		configureQueuesOnEndpoint(endpoint, rabbitListener.queues());
 
 		String priority = resolve(rabbitListener.priority());
 		if (StringUtils.hasText(priority)) {
@@ -304,22 +305,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return value;
 	}
 
-	private String[] splitQueues(String[] queues) {
-		List<String> queueList = new ArrayList<String>();
-		for (String queue : queues) {
-			if (queue.contains(",")) {
-				final String[] split = StringUtils.commaDelimitedListToStringArray(queue);
-				for (String s : split) {
-					queueList.add(s.trim());
-				}
-			} else {
-				queueList.add(queue.trim());
-			}
-		}
-
-		return queueList.toArray(new String[queueList.size()]);
-	}
-
 	private void configureQueuesOnEndpoint(MethodRabbitListenerEndpoint endpoint, String[] queues) {
 		List<String> queueNames = new ArrayList<String>();
 		List<Queue> queueList = new ArrayList<Queue>();
@@ -346,8 +331,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return resolve(value);
 		}
 
-		Expression expression = this.expressionParser.parseExpression(value, ParserContext.TEMPLATE_EXPRESSION);
-		return expression.getValue(this.evaluationContext, Object.class);
+        return this.resolver.evaluate(value, this.expressionContext);
 	}
 
 	/**
