@@ -17,8 +17,6 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -238,10 +236,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
+        endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
+
 		endpoint.setExclusive(rabbitListener.exclusive());
-
-		configureQueuesOnEndpoint(endpoint, rabbitListener.queues());
-
 		String priority = resolve(rabbitListener.priority());
 		if (StringUtils.hasText(priority)) {
 			try {
@@ -293,6 +290,27 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
+    private String[] resolveQueues(String... queues) {
+        String[] result = new String[queues.length];
+        for (int i = 0; i < queues.length; i++) {
+            Object resolvedValue = resolveExpression(queues[i]);
+            if (resolvedValue instanceof Queue) {
+                result[i] = ((Queue) resolvedValue).getName();
+            } else {
+                result[i] = (String) resolvedValue;
+            }
+        }
+        return result;
+    }
+
+    private Object resolveExpression(String value) {
+        if (!(value.startsWith("#{") && value.endsWith("}"))) {
+            return resolve(value);
+        }
+
+        return this.resolver.evaluate(value, this.expressionContext);
+    }
+
 	/**
 	 * Resolve the specified value if possible.
 	 *
@@ -303,35 +321,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
 		}
 		return value;
-	}
-
-	private void configureQueuesOnEndpoint(MethodRabbitListenerEndpoint endpoint, String[] queues) {
-		List<String> queueNames = new ArrayList<String>();
-		List<Queue> queueList = new ArrayList<Queue>();
-		for (String queue : queues) {
-			Object resolvedValue = resolveExpression(queue);
-			if (resolvedValue instanceof Queue) {
-				queueList.add((Queue) resolvedValue);
-			} else {
-				queueNames.add((String) resolvedValue);
-			}
-		}
-
-		if (!queueNames.isEmpty()) {
-			endpoint.setQueueNames(queueNames.toArray(new String[queueNames.size()]));
-		}
-
-		if (!queueList.isEmpty()) {
-			endpoint.setQueues(queueList.toArray(new Queue[queueList.size()]));
-		}
-	}
-
-	private Object resolveExpression(String value) {
-		if (!(value.startsWith("#{") && value.endsWith("}"))) {
-			return resolve(value);
-		}
-
-        return this.resolver.evaluate(value, this.expressionContext);
 	}
 
 	/**

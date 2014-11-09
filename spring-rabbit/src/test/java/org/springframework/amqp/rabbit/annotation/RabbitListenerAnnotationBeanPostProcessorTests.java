@@ -72,6 +72,34 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertTrue("Should have been stopped " + container, container.isStopped());
 	}
 
+    @Test
+    public void simpleMessageListenerWithMixedAnnotations() {
+        ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+                Config.class, SimpleMessageListenerWithMixedAnnotationsTestBean.class);
+
+        RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+        assertEquals("One container should have been registered", 1, factory.getListenerContainers().size());
+        MessageListenerTestContainer container = factory.getListenerContainers().get(0);
+
+        RabbitListenerEndpoint endpoint = container.getEndpoint();
+        assertEquals("Wrong endpoint type", MethodRabbitListenerEndpoint.class, endpoint.getClass());
+        MethodRabbitListenerEndpoint methodEndpoint = (MethodRabbitListenerEndpoint) endpoint;
+        assertNotNull(methodEndpoint.getBean());
+        assertNotNull(methodEndpoint.getMethod());
+
+        Iterator<String> iterator = ((MethodRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+        assertEquals("testQueue", iterator.next());
+        assertEquals("secondQueue", iterator.next());
+
+        SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer();
+        methodEndpoint.setupListenerContainer(listenerContainer);
+        assertNotNull(listenerContainer.getMessageListener());
+
+        assertTrue("Should have been started " + container, container.isStarted());
+        context.close(); // Close and stop the listeners
+        assertTrue("Should have been stopped " + container, container.isStopped());
+    }
+
 	@Test
 	public void metaAnnotationIsDiscovered() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
@@ -86,7 +114,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	}
 
 	@Test
-	public void multipleQueueNamesTestBeanIsDiscovered() {
+	public void multipleQueueNamesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				Config.class, MultipleQueueNamesTestBean.class);
 
@@ -101,22 +129,22 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	}
 
 	@Test
-	public void multipleQueuesTestBeanIsDiscovered() {
+	public void multipleQueuesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				Config.class, MultipleQueuesTestBean.class);
 
 		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
 		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
-		final Iterator<Queue> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator();
-		assertEquals("testQueue", iterator.next().getName());
-		assertEquals("secondQueue", iterator.next().getName());
+		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+		assertEquals("testQueue", iterator.next());
+		assertEquals("secondQueue", iterator.next());
 
 		context.close();
 	}
 
 	@Test
-	public void mixedQueuesAndQueueNamesTestBeanIsDiscovered() {
+	public void mixedQueuesAndQueueNamesTestBean() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				Config.class, MixedQueuesAndQueueNamesTestBean.class);
 
@@ -125,8 +153,8 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
 		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
 		assertEquals("metaTestQueue", iterator.next());
+		assertEquals("testQueue", iterator.next());
 		assertEquals("secondQueue", iterator.next());
-		assertEquals("testQueue", ((AbstractRabbitListenerEndpoint) endpoint).getQueues().iterator().next().getName());
 
 		context.close();
 	}
@@ -139,6 +167,15 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 
 	}
+
+    @Component
+    static class SimpleMessageListenerWithMixedAnnotationsTestBean {
+
+        @RabbitListener(queues = {"testQueue", "#{mySecondQueue}"})
+        public void handleIt(String body) {
+        }
+
+    }
 
 
 	@Component
