@@ -97,7 +97,9 @@ public @interface RabbitListener {
 
 	/**
 	 * The queues for this listener.
-	 * @return the queue names to listen to from target
+	 * The entries can be 'queue name', 'property-placeholder keys' or 'expressions'.
+	 * Expression must be resolved to the queue name or {@code Queue} object.
+	 * @return the queue names or expressions (SpEL) to listen to from target
 	 * {@link org.springframework.amqp.rabbit.listener.MessageListenerContainer}.
 	 */
 	String[] queues();

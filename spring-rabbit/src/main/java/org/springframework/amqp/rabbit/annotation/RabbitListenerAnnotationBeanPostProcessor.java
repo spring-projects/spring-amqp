@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -34,8 +35,12 @@ import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
@@ -88,12 +93,16 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private BeanFactory beanFactory;
 
-	private final RabbitHandlerMethodFactoryAdapter messageHandlerMethodFactory = new RabbitHandlerMethodFactoryAdapter();
+	private final RabbitHandlerMethodFactoryAdapter messageHandlerMethodFactory =
+			new RabbitHandlerMethodFactoryAdapter();
 
 	private final RabbitListenerEndpointRegistrar registrar = new RabbitListenerEndpointRegistrar();
 
 	private final AtomicInteger counter = new AtomicInteger();
 
+	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
+
+	private BeanExpressionContext expressionContext;
 
 	@Override
 	public int getOrder() {
@@ -140,6 +149,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
+		if (beanFactory instanceof ConfigurableListableBeanFactory) {
+			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
+			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+		}
 	}
 
 
@@ -157,9 +170,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		if (this.registrar.getEndpointRegistry() == null) {
 			if (this.endpointRegistry == null) {
-				Assert.state(this.beanFactory != null, "BeanFactory must be set to find endpoint registry by bean name");
+				Assert.state(this.beanFactory != null,
+						"BeanFactory must be set to find endpoint registry by bean name");
 				this.endpointRegistry = this.beanFactory.getBean(
-						RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME, RabbitListenerEndpointRegistry.class);
+						RabbitListenerConfigUtils.RABBIT_LISTENER_ENDPOINT_REGISTRY_BEAN_NAME,
+						RabbitListenerEndpointRegistry.class);
 			}
 			this.registrar.setEndpointRegistry(this.endpointRegistry);
 		}
@@ -281,9 +296,30 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private String[] resolveQueues(String... queues) {
 		String[] result = new String[queues.length];
 		for (int i = 0; i < queues.length; i++) {
-			result[i] = resolve(queues[i]);
+			Object resolvedValue = resolveExpression(queues[i]);
+			if (resolvedValue instanceof Queue) {
+				result[i] = ((Queue) resolvedValue).getName();
+			}
+			else if (resolvedValue instanceof String) {
+				result[i] = (String) resolvedValue;
+			}
+			else {
+				throw new IllegalArgumentException(String.format(
+						"@RabbitListener can't resolve '%s' as either a String or a Queue",
+						resolvedValue));
+			}
 		}
 		return result;
+	}
+
+	private Object resolveExpression(String value) {
+		String resolvedValue = resolve(value);
+
+		if (!(resolvedValue.startsWith("#{") && value.endsWith("}"))) {
+			return resolvedValue;
+		}
+
+		return this.resolver.evaluate(resolvedValue, this.expressionContext);
 	}
 
 	/**
