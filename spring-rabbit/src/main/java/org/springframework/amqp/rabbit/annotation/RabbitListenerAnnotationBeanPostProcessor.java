@@ -236,7 +236,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-        endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
+		endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
 
 		endpoint.setExclusive(rabbitListener.exclusive());
 		String priority = resolve(rabbitListener.priority());
