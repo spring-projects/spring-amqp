@@ -99,9 +99,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
-    private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
+	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
-    private BeanExpressionContext expressionContext;
+	private BeanExpressionContext expressionContext;
 
 	@Override
 	public int getOrder() {
@@ -148,10 +148,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
-        if (beanFactory instanceof ConfigurableListableBeanFactory) {
-            this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
-            this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
-        }
+		if (beanFactory instanceof ConfigurableListableBeanFactory) {
+			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
+			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+		}
 	}
 
 
@@ -290,26 +290,33 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-    private String[] resolveQueues(String... queues) {
-        String[] result = new String[queues.length];
-        for (int i = 0; i < queues.length; i++) {
-            Object resolvedValue = resolveExpression(queues[i]);
-            if (resolvedValue instanceof Queue) {
-                result[i] = ((Queue) resolvedValue).getName();
-            } else {
-                result[i] = (String) resolvedValue;
-            }
-        }
-        return result;
-    }
+	private String[] resolveQueues(String... queues) {
+		String[] result = new String[queues.length];
+		for (int i = 0; i < queues.length; i++) {
+			Object resolvedValue = resolveExpression(queues[i]);
+			if (resolvedValue instanceof Queue) {
+				result[i] = ((Queue) resolvedValue).getName();
+			}
+			else if (resolvedValue instanceof String) {
+				result[i] = (String) resolvedValue;
+			}
+			else {
+				throw new IllegalArgumentException(String.format(
+						"@RabbitListener can't resolve '%s' as either a String or a Queue",
+						resolvedValue));
+			}
+		}
+		return result;
+	}
 
-    private Object resolveExpression(String value) {
-        if (!(value.startsWith("#{") && value.endsWith("}"))) {
-            return resolve(value);
-        }
+	private Object resolveExpression(String value) {
+		String resolvedValue = resolve(value);
+		if (!(resolvedValue.startsWith("#{") && value.endsWith("}"))) {
+			return resolvedValue;
+		}
 
-        return this.resolver.evaluate(value, this.expressionContext);
-    }
+		return this.resolver.evaluate(resolvedValue, this.expressionContext);
+	}
 
 	/**
 	 * Resolve the specified value if possible.

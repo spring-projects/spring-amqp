@@ -36,10 +36,13 @@ import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.stereotype.Component;
 
 /**
@@ -72,33 +75,33 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertTrue("Should have been stopped " + container, container.isStopped());
 	}
 
-    @Test
-    public void simpleMessageListenerWithMixedAnnotations() {
-        ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-                Config.class, SimpleMessageListenerWithMixedAnnotationsTestBean.class);
+	@Test
+	public void simpleMessageListenerWithMixedAnnotations() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, SimpleMessageListenerWithMixedAnnotationsTestBean.class);
 
-        RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
-        assertEquals("One container should have been registered", 1, factory.getListenerContainers().size());
-        MessageListenerTestContainer container = factory.getListenerContainers().get(0);
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertEquals("One container should have been registered", 1, factory.getListenerContainers().size());
+		MessageListenerTestContainer container = factory.getListenerContainers().get(0);
 
-        RabbitListenerEndpoint endpoint = container.getEndpoint();
-        assertEquals("Wrong endpoint type", MethodRabbitListenerEndpoint.class, endpoint.getClass());
-        MethodRabbitListenerEndpoint methodEndpoint = (MethodRabbitListenerEndpoint) endpoint;
-        assertNotNull(methodEndpoint.getBean());
-        assertNotNull(methodEndpoint.getMethod());
+		RabbitListenerEndpoint endpoint = container.getEndpoint();
+		assertEquals("Wrong endpoint type", MethodRabbitListenerEndpoint.class, endpoint.getClass());
+		MethodRabbitListenerEndpoint methodEndpoint = (MethodRabbitListenerEndpoint) endpoint;
+		assertNotNull(methodEndpoint.getBean());
+		assertNotNull(methodEndpoint.getMethod());
 
-        Iterator<String> iterator = ((MethodRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
-        assertEquals("testQueue", iterator.next());
-        assertEquals("secondQueue", iterator.next());
+		Iterator<String> iterator = ((MethodRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+		assertEquals("testQueue", iterator.next());
+		assertEquals("secondQueue", iterator.next());
 
-        SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer();
-        methodEndpoint.setupListenerContainer(listenerContainer);
-        assertNotNull(listenerContainer.getMessageListener());
+		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer();
+		methodEndpoint.setupListenerContainer(listenerContainer);
+		assertNotNull(listenerContainer.getMessageListener());
 
-        assertTrue("Should have been started " + container, container.isStarted());
-        context.close(); // Close and stop the listeners
-        assertTrue("Should have been stopped " + container, container.isStopped());
-    }
+		assertTrue("Should have been started " + container, container.isStarted());
+		context.close(); // Close and stop the listeners
+		assertTrue("Should have been stopped " + container, container.isStopped());
+	}
 
 	@Test
 	public void metaAnnotationIsDiscovered() {
@@ -159,6 +162,30 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		context.close();
 	}
 
+	@Test
+	public void propertyResolvingToExpressionTestBean() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				Config.class, PropertyResolvingToExpressionTestBean.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertEquals("one container should have been registered", 1, factory.getListenerContainers().size());
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		final Iterator<String> iterator = ((AbstractRabbitListenerEndpoint) endpoint).getQueueNames().iterator();
+		assertEquals("testQueue", iterator.next());
+		assertEquals("secondQueue", iterator.next());
+
+		context.close();
+	}
+
+	@Test
+	public void invalidValueInAnnotationTestBean() {
+		try {
+			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class);
+		} catch (BeanCreationException e) {
+			assertTrue(e.getCause() instanceof IllegalArgumentException);
+		}
+	}
+
 	@Component
 	static class SimpleMessageListenerTestBean {
 
@@ -168,18 +195,18 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 
 	}
 
-    @Component
-    static class SimpleMessageListenerWithMixedAnnotationsTestBean {
+	@Component
+	static class SimpleMessageListenerWithMixedAnnotationsTestBean {
 
-        @RabbitListener(queues = {"testQueue", "#{mySecondQueue}"})
-        public void handleIt(String body) {
-        }
+		@RabbitListener(queues = {"testQueue", "#{mySecondQueue}"})
+		public void handleIt(String body) {
+		}
 
-    }
+	}
 
 
 	@Component
-	 static class MetaAnnotationTestBean {
+	static class MetaAnnotationTestBean {
 
 		@FooListener
 		public void handleIt(String body) {
@@ -217,7 +244,24 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 	}
 
+	@Component
+	static class PropertyResolvingToExpressionTestBean {
+
+		@RabbitListener(queues = {"${myQueueExpression}", "#{@mySecondQueue}"})
+		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class InvalidValueInAnnotationTestBean {
+
+		@RabbitListener(queues = "#{@testFactory}")
+		public void handleIt(String body) {
+		}
+	}
+
 	@Configuration
+	@PropertySource("classpath:/org/springframework/amqp/rabbit/annotation/queue-annotation.properties")
 	static class Config {
 
 		@Bean
@@ -239,14 +283,19 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 
 		@Bean
+		public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+			return new PropertySourcesPlaceholderConfigurer();
+		}
+
+		@Bean
 		public Queue myTestQueue() {
 			return new Queue("testQueue");
 		}
 
-        @Bean
-        public Queue mySecondQueue() {
-            return new Queue("secondQueue");
-        }
+		@Bean
+		public Queue mySecondQueue() {
+			return new Queue("secondQueue");
+		}
 	}
 
 }
