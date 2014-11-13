@@ -148,7 +148,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 		this.templateWithConfirmsEnabled.execute(new ChannelCallback<Void>() {
 
 			@Override
@@ -209,7 +209,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		threadLatch.countDown();
 		assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 	}
 
 	@Test
@@ -235,8 +235,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		secondTemplate.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
 		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
 		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
-		assertNull(templateWithConfirmsEnabled.getUnconfirmed(0));
-		assertNull(secondTemplate.getUnconfirmed(0));
+		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
+		assertNull(secondTemplate.getUnconfirmed(-1));
 	}
 
 	@Test
@@ -281,7 +281,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		Thread.sleep(5);
-		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(0);
+		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertEquals(1, unconfirmed.size());
 		assertEquals("abc", unconfirmed.iterator().next().getId());
 		assertFalse(confirmed.get());
@@ -350,7 +350,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		threadLatch.countDown();
 		assertTrue(threadSentLatch.await(5, TimeUnit.SECONDS));
 		Thread.sleep(5);
-		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(0);
+		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertEquals(2, unconfirmed.size());
 		Set<String> ids = new HashSet<String>();
 		Iterator<CorrelationData> iterator = unconfirmed.iterator();
@@ -443,7 +443,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
 		callbackChannel.handleAck(2, true);
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(0);
+		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertNull(unconfirmed);
 	}
 
@@ -503,9 +503,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		callbackChannel.handleAck(3, true);
 		assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
 		assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
-		Collection<CorrelationData> unconfirmed1 = template1.getUnconfirmed(0);
+		Collection<CorrelationData> unconfirmed1 = template1.getUnconfirmed(-1);
 		assertNull(unconfirmed1);
-		Collection<CorrelationData> unconfirmed2 = template2.getUnconfirmed(0);
+		Collection<CorrelationData> unconfirmed2 = template2.getUnconfirmed(-1);
 		assertNull(unconfirmed2);
 		assertTrue(confirms.contains("abc1"));
 		assertTrue(confirms.contains("def2"));
