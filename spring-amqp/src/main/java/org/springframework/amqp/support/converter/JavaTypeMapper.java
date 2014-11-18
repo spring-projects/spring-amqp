@@ -9,7 +9,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import org.codehaus.jackson.type.JavaType;
+import com.fasterxml.jackson.databind.JavaType;
 import org.springframework.amqp.core.MessageProperties;
 
 /**
