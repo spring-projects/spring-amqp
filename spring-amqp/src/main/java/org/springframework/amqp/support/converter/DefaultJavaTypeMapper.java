@@ -8,10 +8,10 @@
  */
 package org.springframework.amqp.support.converter;
 
-import org.codehaus.jackson.map.type.CollectionType;
-import org.codehaus.jackson.map.type.MapType;
-import org.codehaus.jackson.map.type.TypeFactory;
-import org.codehaus.jackson.type.JavaType;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.ClassUtils;
