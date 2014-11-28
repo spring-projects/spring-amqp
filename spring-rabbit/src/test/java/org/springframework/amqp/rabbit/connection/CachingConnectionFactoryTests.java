@@ -19,13 +19,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -52,6 +55,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.Cache
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
@@ -1075,4 +1079,36 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertSame(mockChannel, proxy.getTargetChannel());
 	}
 
+	@Test
+	public void setAddressesEmpty() throws IOException {
+		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
+		ccf.setHost("abc");
+		ccf.setAddresses("");
+		ccf.createConnection();
+		verify(mock).setHost("abc");
+		verify(mock).newConnection((ExecutorService) null);
+		verifyNoMoreInteractions(mock);
+	}
+
+	@Test
+	public void setAddressesOneHost() throws IOException {
+		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
+		ccf.setAddresses("mq1");
+		ccf.createConnection();
+		verify(mock).newConnection(isNull(ExecutorService.class), aryEq(new Address[] { new Address("mq1") }));
+		verifyNoMoreInteractions(mock);
+	}
+
+	@Test
+	public void setAddressesTwoHosts() throws IOException {
+		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
+		ccf.setAddresses("mq1,mq2");
+		ccf.createConnection();
+		verify(mock).newConnection(isNull(ExecutorService.class),
+				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }));
+		verifyNoMoreInteractions(mock);
+	}
 }

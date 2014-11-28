@@ -26,6 +26,7 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
 
@@ -103,13 +104,19 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * Set addresses for clustering.
+	 * This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
 	public void setAddresses(String addresses) {
-		Address[] addressArray = Address.parseAddresses(addresses);
-		if (addressArray.length > 0) {
-			this.addresses = addressArray;
+		if (StringUtils.hasText(addresses)) {
+			Address[] addressArray = Address.parseAddresses(addresses);
+			if (addressArray.length > 0) {
+				this.addresses = addressArray;
+				return;
+			}
 		}
+		logger.info("setAddresses() called with an empty value, will be using the host+port properties for connections");
+		this.addresses = null;
 	}
 
 	/**

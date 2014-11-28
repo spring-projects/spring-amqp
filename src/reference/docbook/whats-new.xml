@@ -4,6 +4,18 @@
 	<title>What's New</title>
 
 	<section>
+		<title>Changes in 1.5 Since 1.4</title>
+		<section>
+			<title>Empty Addresses Property in CachingConnectionFactory</title>
+			<para>
+				Previously, if the connection factory was configured with a host/port,
+				but also an empty String was supplied for <code>addresses</code>, the host
+				and port were ignored. Now, an empty <code>addresses</code> String is
+				treated the same a null, and the host/port will be used.
+			</para>
+		</section>
+	</section>
+	<section>
 		<title>Changes in 1.4 Since 1.3</title>
 		<section>
 			<title>@RabbitListener Annotation</title>
