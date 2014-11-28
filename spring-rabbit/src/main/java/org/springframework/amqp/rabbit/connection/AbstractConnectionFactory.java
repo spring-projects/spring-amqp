@@ -26,6 +26,7 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
 
@@ -106,9 +107,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
 	public void setAddresses(String addresses) {
-		Address[] addressArray = Address.parseAddresses(addresses);
-		if (addressArray.length > 0) {
-			this.addresses = addressArray;
+		if (StringUtils.hasText(addresses)) {
+			Address[] addressArray = Address.parseAddresses(addresses);
+			if (addressArray.length > 0) {
+				if (addressArray.length == 1) {
+					logger.warn("Cluster should have more than 1 host");
+				}
+				this.addresses = addressArray;
+			}
 		}
 	}
 

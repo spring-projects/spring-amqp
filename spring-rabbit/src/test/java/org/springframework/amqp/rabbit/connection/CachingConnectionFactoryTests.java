@@ -12,11 +12,13 @@
  */
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -47,6 +49,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.Cache
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
@@ -969,4 +972,32 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertSame(mockChannel, proxy.getTargetChannel());
 	}
 
+	private static Address[] parseAddresses(String stringAddresses) {
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mock(com.rabbitmq.client.ConnectionFactory.class));
+		ccf.setAddresses(stringAddresses);
+		return (Address[]) ReflectionTestUtils.getField(ccf, "addresses");
+	}
+
+	@Test
+	public void testParsingAddresses0() {
+		final Address[] addresses = parseAddresses("");
+		assertNull(addresses);
+	}
+
+	@Test
+	public void testParsingAddresses1() {
+		final Address[] addresses = parseAddresses("host1");
+		assertNotNull(addresses);
+		assertThat(addresses, arrayWithSize(1));
+		assertEquals("host1", addresses[0].getHost());
+	}
+
+	@Test
+	public void testParsingAddresses2() {
+		final Address[] addresses = parseAddresses("host1,host2");
+		assertNotNull(addresses);
+		assertThat(addresses, arrayWithSize(2));
+		assertEquals("host1", addresses[0].getHost());
+		assertEquals("host2", addresses[1].getHost());
+	}
 }
