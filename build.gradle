@@ -16,12 +16,12 @@ buildscript {
 }
 
 ext {
-	linkHomepage = 'http://www.springsource.org/spring-amqp'
-	linkCi       = 'https://build.springsource.org/browse/AMQP'
-	linkIssue    = 'https://jira.springsource.org/browse/AMQP'
-	linkScmUrl           = 'https://github.com/SpringSource/spring-amqp'
-	linkScmConnection    = 'git://github.com/SpringSource/spring-amqp.git'
-	linkScmDevConnection = 'git@github.com:SpringSource/spring-amqp.git'
+	linkHomepage = 'http://www.spring.io/spring-amqp'
+	linkCi       = 'https://build.spring.io/browse/AMQP'
+	linkIssue    = 'https://jira.spring.io/browse/AMQP'
+	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
+	linkScmConnection    = 'git://github.com/spring-projects/spring-amqp.git'
+	linkScmDevConnection = 'git@github.com:spring-projects/spring-amqp.git'
 }
 
 allprojects {
@@ -31,7 +31,7 @@ allprojects {
 		if (version.endsWith('BUILD-SNAPSHOT')) {
 			maven { url 'http://repo.spring.io/libs-snapshot' }
 		}
-		maven { url 'http://repo.springsource.org/libs-release' }
+		maven { url 'http://repo.spring.io/libs-release' }
 	}
 	apply plugin: 'javadocHotfix'
 }
