@@ -5,9 +5,9 @@ This project provides support for using Spring and Java with [AMQP](http://www.a
 
 # Checking out and Building
 
-To check out the project from [GitHub](https://github.com/SpringSource/spring-amqp) and build from source using [Gradle](http://gradle.org/), do the following:
+To check out the project from [GitHub](https://github.com/spring-projects/spring-amqp) and build from source using [Gradle](http://gradle.org/), do the following:
 
-	git clone git://github.com/SpringSource/spring-amqp.git
+	git clone git://github.com/spring-projects/spring-amqp.git
 	cd spring-amqp
 	./gradlew build
 
@@ -89,18 +89,17 @@ Lists of issues addressed per release can be found in [JIRA](https://jira.spring
 
 ## Additional Resources
 
-* [Spring AMQP Homepage](http://www.springsource.org/spring-amqp)
-* [Spring AMQP Source](http://github.com/SpringSource/spring-amqp)
-* [Spring AMQP Samples](http://github.com/SpringSource/spring-amqp-samples)
-* [Spring AMQP Forum](http://forum.springsource.org/forumdisplay.php?f=74)
+* [Spring AMQP Homepage](http://www.spring.io/spring-amqp)
+* [Spring AMQP Source](http://github.com/spring-projects/spring-amqp)
+* [Spring AMQP Samples](http://github.com/spring-projects/spring-amqp-samples)
 * [StackOverflow](http://stackoverflow.com/questions/tagged/spring-amqp)
 
 # Contributing to Spring AMQP
 
 Here are some ways for you to get involved in the community:
 
-* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [forum](http://forum.springsource.org/forumdisplay.php?f=74) by responding to questions and joining the debate.
-* Create [JIRA](https://jira.springsource.org/browse/AMQP) tickets for bugs and new features and comment and vote on the ones that you are interested in.  
+* Get involved with the Spring community on the Spring Community Forums.  Please help out on the [StackOverflow](http://stackoverflow.com/questions/tagged/spring-amqp) by responding to questions and joining the debate.
+* Create [JIRA](https://jira.spring.io/browse/AMQP) tickets for bugs and new features and comment and vote on the ones that you are interested in.  
 * Github is for social coding: if you want to write code, we encourage contributions through pull requests from [forks of this repository](http://help.github.com/forking/).  If you want to contribute code this way, please reference a JIRA ticket as well covering the specific issue you are addressing.
 * Watch for upcoming articles on Spring by [subscribing](http://www.springsource.org/node/feed) to springframework.org
 
