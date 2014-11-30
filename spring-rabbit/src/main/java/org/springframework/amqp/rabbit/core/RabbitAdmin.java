@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Exchange;
@@ -74,6 +75,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	private volatile boolean ignoreDeclarationExceptions;
 
+	/**
+	 * If warnings describing special exchange/queue features should be reported.
+	 */
+	private volatile boolean reportHints = true;
+
 	private final Object lifecycleMonitor = new Object();
 
 	private final ConnectionFactory connectionFactory;
@@ -95,6 +101,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
+	}
+
+	public void setReportHints(boolean reportHints) {
+		this.reportHints = reportHints;
 	}
 
 	public RabbitTemplate getRabbitTemplate() {
@@ -357,6 +367,24 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		final Collection<Queue> queues = filterDeclarables(applicationContext.getBeansOfType(Queue.class).values());
 		final Collection<Binding> bindings = filterDeclarables(applicationContext.getBeansOfType(Binding.class).values());
 
+		if (reportHints) {
+			reportHints(exchanges, queues);
+		}
+
+		rabbitTemplate.execute(new ChannelCallback<Object>() {
+			@Override
+			public Object doInRabbit(Channel channel) throws Exception {
+				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
+				declareQueues(channel, queues.toArray(new Queue[queues.size()]));
+				declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
+				return null;
+			}
+		});
+		logger.debug("Declarations finished");
+
+	}
+
+	private void reportHints(final Collection<Exchange> exchanges, final Collection<Queue> queues) {
 		for (Exchange exchange : exchanges) {
 			if (!exchange.isDurable()) {
 				logger.warn("Auto-declaring a non-durable Exchange ("
@@ -371,6 +399,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		}
 
 		for (Queue queue : queues) {
+			if (!queue.isDurable() && queue.isAutoDelete() && queue.isExclusive()) {
+				logger.warn("Auto-declaring a non-durable, auto-delete, exclusive "
+						+ (queue instanceof AnonymousQueue ? "anonymous " : "") + "Queue (" + queue.getName() + ").");
+				continue;
+			}
 			if (!queue.isDurable()) {
 				logger.warn("Auto-declaring a non-durable Queue ("
 						+ queue.getName()
@@ -387,18 +420,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						+ "). It cannot be accessed by consumers on another connection, and will be redeclared if the connection is reopened.");
 			}
 		}
-
-		rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
-				declareQueues(channel, queues.toArray(new Queue[queues.size()]));
-				declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
-				return null;
-			}
-		});
-		logger.debug("Declarations finished");
-
 	}
 
 	/**
