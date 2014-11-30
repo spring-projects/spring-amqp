@@ -104,18 +104,19 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * Set addresses for clustering.
+	 * This property overrides the host+port properties if not empty.
 	 * @param addresses list of addresses with form "host[:port],..."
 	 */
 	public void setAddresses(String addresses) {
 		if (StringUtils.hasText(addresses)) {
 			Address[] addressArray = Address.parseAddresses(addresses);
 			if (addressArray.length > 0) {
-				if (addressArray.length == 1) {
-					logger.warn("Cluster should have more than 1 host");
-				}
 				this.addresses = addressArray;
+				return;
 			}
 		}
+		logger.info("setAddresses() called with an empty value, will be using the host+port properties for connections");
+		this.addresses = null;
 	}
 
 	/**
