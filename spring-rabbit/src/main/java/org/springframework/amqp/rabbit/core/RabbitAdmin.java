@@ -75,11 +75,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	private volatile boolean ignoreDeclarationExceptions;
 
-	/**
-	 * If warnings describing special exchange/queue features should be reported.
-	 */
-	private volatile boolean reportHints = true;
-
 	private final Object lifecycleMonitor = new Object();
 
 	private final ConnectionFactory connectionFactory;
@@ -101,10 +96,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
-	}
-
-	public void setReportHints(boolean reportHints) {
-		this.reportHints = reportHints;
 	}
 
 	public RabbitTemplate getRabbitTemplate() {
@@ -367,8 +358,40 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		final Collection<Queue> queues = filterDeclarables(applicationContext.getBeansOfType(Queue.class).values());
 		final Collection<Binding> bindings = filterDeclarables(applicationContext.getBeansOfType(Binding.class).values());
 
-		if (reportHints) {
-			reportHints(exchanges, queues);
+		for (Exchange exchange : exchanges) {
+			if (!exchange.isDurable()) {
+				logger.info("Auto-declaring a non-durable Exchange ("
+						+ exchange.getName()
+						+ "). It will be deleted by the broker if it shuts down, and can be redeclared by closing and reopening the connection.");
+			}
+			if (exchange.isAutoDelete()) {
+				logger.info("Auto-declaring an auto-delete Exchange ("
+						+ exchange.getName()
+						+ "). It will be deleted by the broker if not in use (if all bindings are deleted), but will only be redeclared if the connection is closed and reopened.");
+			}
+		}
+
+		for (Queue queue : queues) {
+			if (!queue.isDurable() && queue.isAutoDelete() && queue.isExclusive()) {
+				logger.info("Auto-declaring a non-durable, auto-delete, exclusive "
+						+ (queue instanceof AnonymousQueue ? "anonymous " : "") + "Queue (" + queue.getName() + ").");
+				continue;
+			}
+			if (!queue.isDurable()) {
+				logger.info("Auto-declaring a non-durable Queue ("
+						+ queue.getName()
+						+ "). It will be redeclared if the broker stops and is restarted while the connection factory is alive, but all messages will be lost.");
+			}
+			if (queue.isAutoDelete()) {
+				logger.info("Auto-declaring an auto-delete Queue ("
+						+ queue.getName()
+						+ "). It will be deleted by the broker if not in use, and all messages will be lost.  Redeclared when the connection is closed and reopened.");
+			}
+			if (queue.isExclusive()) {
+				logger.info("Auto-declaring an exclusive Queue ("
+						+ queue.getName()
+						+ "). It cannot be accessed by consumers on another connection, and will be redeclared if the connection is reopened.");
+			}
 		}
 
 		rabbitTemplate.execute(new ChannelCallback<Object>() {
@@ -382,44 +405,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		});
 		logger.debug("Declarations finished");
 
-	}
-
-	private void reportHints(final Collection<Exchange> exchanges, final Collection<Queue> queues) {
-		for (Exchange exchange : exchanges) {
-			if (!exchange.isDurable()) {
-				logger.warn("Auto-declaring a non-durable Exchange ("
-						+ exchange.getName()
-						+ "). It will be deleted by the broker if it shuts down, and can be redeclared by closing and reopening the connection.");
-			}
-			if (exchange.isAutoDelete()) {
-				logger.warn("Auto-declaring an auto-delete Exchange ("
-						+ exchange.getName()
-						+ "). It will be deleted by the broker if not in use (if all bindings are deleted), but will only be redeclared if the connection is closed and reopened.");
-			}
-		}
-
-		for (Queue queue : queues) {
-			if (!queue.isDurable() && queue.isAutoDelete() && queue.isExclusive()) {
-				logger.warn("Auto-declaring a non-durable, auto-delete, exclusive "
-						+ (queue instanceof AnonymousQueue ? "anonymous " : "") + "Queue (" + queue.getName() + ").");
-				continue;
-			}
-			if (!queue.isDurable()) {
-				logger.warn("Auto-declaring a non-durable Queue ("
-						+ queue.getName()
-						+ "). It will be redeclared if the broker stops and is restarted while the connection factory is alive, but all messages will be lost.");
-			}
-			if (queue.isAutoDelete()) {
-				logger.warn("Auto-declaring an auto-delete Queue ("
-						+ queue.getName()
-						+ "). It will be deleted by the broker if not in use, and all messages will be lost.  Redeclared when the connection is closed and reopened.");
-			}
-			if (queue.isExclusive()) {
-				logger.warn("Auto-declaring an exclusive Queue ("
-						+ queue.getName()
-						+ "). It cannot be accessed by consumers on another connection, and will be redeclared if the connection is reopened.");
-			}
-		}
 	}
 
 	/**
