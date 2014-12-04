@@ -117,6 +117,8 @@ import com.rabbitmq.client.GetResponse;
 public class RabbitTemplate extends RabbitAccessor
 		implements BeanFactoryAware, RabbitOperations, MessageListener, PublisherCallbackChannel.Listener {
 
+	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
+
 	/** Alias for amq.direct default exchange */
 	private static final String DEFAULT_EXCHANGE = "";
 
@@ -176,6 +178,10 @@ public class RabbitTemplate extends RabbitAccessor
 	private volatile Expression sendConnectionFactorySelectorExpression;
 
 	private volatile Expression receiveConnectionFactorySelectorExpression;
+
+	private volatile boolean usingFastReplyTo;
+
+	private volatile boolean evaluatedFastReplyTo;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -244,12 +250,14 @@ public class RabbitTemplate extends RabbitAccessor
 
 	/**
 	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
-	 * be used for each reply.
+	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
+	 * http://www.rabbitmq.com/direct-reply-to.html
 	 *
 	 * @param replyQueue the replyQueue to set
 	 */
 	public void setReplyQueue(Queue replyQueue) {
 		this.replyQueue = replyQueue;
+		this.evaluatedFastReplyTo = false;
 	}
 
 	/**
@@ -447,6 +455,37 @@ public class RabbitTemplate extends RabbitAccessor
 			}
 		}
 		return unconfirmed.size() > 0 ? unconfirmed : null;
+	}
+
+	public void evaluateFastReplyTo() {
+		this.usingFastReplyTo = false;
+		if (this.replyQueue == null || AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
+			try {
+				execute(new ChannelCallback<Void>() {
+
+					@Override
+					public Void doInRabbit(Channel channel) throws Exception {
+						channel.queueDeclarePassive(AMQ_RABBITMQ_REPLY_TO);
+						return null;
+					}
+				});
+				this.usingFastReplyTo = true;
+			}
+			catch (Exception e) {
+				if (replyQueue != null) {
+					logger.error("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+							+ "queues will be used:" + e.getMessage() + ".");
+				}
+				else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+								+ "queues will be used:" + e.getMessage() + ".");
+					}
+				}
+				RabbitTemplate.this.replyQueue = null;
+			}
+		}
+		this.evaluatedFastReplyTo = true;
 	}
 
 	@Override
@@ -813,7 +852,10 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
-		if (this.replyQueue == null) {
+		if (!this.evaluatedFastReplyTo) {
+			evaluateFastReplyTo();
+		}
+		if (this.replyQueue == null || this.usingFastReplyTo) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
 		}
 		else {
@@ -830,8 +872,14 @@ public class RabbitTemplate extends RabbitAccessor
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
-				DeclareOk queueDeclaration = channel.queueDeclare();
-				String replyTo = queueDeclaration.getQueue();
+				String replyTo;
+				if (RabbitTemplate.this.usingFastReplyTo) {
+					replyTo = AMQ_RABBITMQ_REPLY_TO;
+				}
+				else {
+					DeclareOk queueDeclaration = channel.queueDeclare();
+					replyTo = queueDeclaration.getQueue();
+				}
 				message.getMessageProperties().setReplyTo(replyTo);
 
 				String consumerTag = UUID.randomUUID().toString();

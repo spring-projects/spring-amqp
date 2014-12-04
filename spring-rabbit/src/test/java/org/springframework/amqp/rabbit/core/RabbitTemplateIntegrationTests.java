@@ -13,10 +13,13 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -37,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +61,7 @@ import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -90,6 +95,8 @@ import com.rabbitmq.client.GetResponse;
  * @author Artem Bilan
  */
 public class RabbitTemplateIntegrationTests {
+
+	private static final Log logger = LogFactory.getLog(RabbitTemplateIntegrationTests.class);
 
 	private static final String ROUTE = "test.queue";
 
@@ -1044,6 +1051,56 @@ public class RabbitTemplateIntegrationTests {
 		Message result = this.template.receive(REPLY_QUEUE.getName());
 		assertEquals("TEST", new String(result.getBody()));
 		assertEquals(messageId, new String(result.getMessageProperties().getCorrelationId()));
+	}
+
+	@Test
+	public void testSendAndReceiveFastImplicit() {
+		sendAndReceiveFastGuts();
+	}
+
+	@Test
+	public void testSendAndReceiveFastExplicit() {
+		this.template.setReplyQueue(new Queue(RabbitTemplate.AMQ_RABBITMQ_REPLY_TO));
+		sendAndReceiveFastGuts();
+	}
+
+	private void sendAndReceiveFastGuts() {
+		try {
+			this.template.execute(new ChannelCallback<Void>() {
+
+				@Override
+				public Void doInRabbit(Channel channel) throws Exception {
+					channel.queueDeclarePassive(RabbitTemplate.AMQ_RABBITMQ_REPLY_TO);
+					return null;
+				}
+			});
+			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+			container.setConnectionFactory(this.template.getConnectionFactory());
+			container.setQueueNames(ROUTE);
+			final AtomicReference<String> replyToWas = new AtomicReference<String>();
+			MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(new Object() {
+
+				@SuppressWarnings("unused")
+				public Message handleMessage(Message message) {
+					replyToWas.set(message.getMessageProperties().getReplyTo());
+					return new Message(new String(message.getBody()).toUpperCase().getBytes(),
+							message.getMessageProperties());
+				}
+			});
+			messageListenerAdapter.setMessageConverter(null);
+			container.setMessageListener(messageListenerAdapter);
+			container.start();
+			this.template.setQueue(ROUTE);
+			this.template.setRoutingKey(ROUTE);
+			Object result = this.template.convertSendAndReceive("foo");
+			container.stop();
+			assertEquals("FOO", result);
+			assertThat(replyToWas.get(), startsWith(RabbitTemplate.AMQ_RABBITMQ_REPLY_TO));
+		}
+		catch (Exception e) {
+			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
+			logger.info("Broker does not support fast replies; test skipped " + e.getMessage());
+		}
 	}
 
 	@SuppressWarnings("serial")

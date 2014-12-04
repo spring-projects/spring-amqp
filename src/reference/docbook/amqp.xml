@@ -1591,7 +1591,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     is applied to both the request and reply. Those methods are named <methodname>convertSendAndReceive</methodname>.
     See the Javadoc of <classname>AmqpTemplate</classname> for more detail.</para>
     <para>
-    By default, a new temporary queue is used for each reply. However, a single reply queue can be configured on the template,
+    By default, a new temporary queue is used for each reply (but see <xref linkend="direct-reply-to" />).
+    However, a single reply queue can be configured on the template,
     which can be more efficient, and also allows you to set arguments on that queue. In this case, however,
     you must also provide a &lt;reply-listener/&gt; sub element. This element provides a listener container for the
     reply queue, with the template being the listener. All of the <xref linkend="containerAttributes" /> attributes
@@ -1607,10 +1608,29 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     While the container and template share a connection factory, they do not share a channel and therefore requests
     and replies are not performed within the same transaction (if transactional).
     </para>
+    <section id="direct-reply-to">
+        <title>RabbitMQ Direct reply-to</title>
+        <important>
+        Starting the <emphasis>version 3.4.0</emphasis>, the RabbitMQ server now supports
+        <ulink url="http://www.rabbitmq.com/direct-reply-to.html">Direct reply-to</ulink>; this eliminates the main reason
+        for a fixed reply queue (to avoid the need to create a temporary queue for each request).
+        Starting with <emphasis>Spring AMQP version 1.4.1</emphasis> Direct reply-to will be used by default
+        (if supported by the server) instead of creating temporary reply queues.
+        When no <code>replyQueue</code> is provided (or it is set with the name <code>amqp.rabbitmq.reply-to</code>),
+        the <classname>RabbitTemplate</classname> will automatically
+        detect whether Direct reply-to is supported and either use it or fall back to using a temporary reply queue.
+        When using Direct reply-to, a <code>reply-listener</code> is not required and should not be configured.
+        </important>
+        <para>
+        Reply listeners are still supported with named queues (other than <code>amq.rabbitmq.reply-to</code>),
+        allowing control of reply concurrency etc.
+        </para>
+    </section>
     <section>
       <title>Message Correlation With A Reply Queue</title>
       <para>
-      When using a fixed reply queue, it is necessary to provide correlation data so that replies can be correlated
+      When using a fixed reply queue (other than <code>amqp.rabbitmq.reply-to</code>),
+      it is necessary to provide correlation data so that replies can be correlated
       to requests. See <ulink url="http://www.rabbitmq.com/tutorials/tutorial-six-java.html">
       RabbitMQ Remote Procedure Call (RPC)</ulink>. By default, the standard <code>correlationId</code> property will
       be used to hold the correlation data. However, if you wish to use a custom propertry to hold correlation
@@ -1632,7 +1652,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         the parser defines the container and wires in the template as the listener.
         </para>
         <note>
-        When the template does not use a fixed <code>replyQueue</code>, a listener container is not needed.
+        When the template does not use a fixed <code>replyQueue</code> (or is using Direct reply-to - see
+        <xref linkend="direct-reply-to" />) a listener container is not needed.
         </note>
         <para>
         If you define your <classname>RabbitTemplate</classname> as a <code>&lt;bean/&gt;</code>, or using an
