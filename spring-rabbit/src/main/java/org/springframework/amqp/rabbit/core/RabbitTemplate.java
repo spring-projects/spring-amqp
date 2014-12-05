@@ -32,6 +32,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -116,8 +117,6 @@ import com.rabbitmq.client.GetResponse;
  */
 public class RabbitTemplate extends RabbitAccessor
 		implements BeanFactoryAware, RabbitOperations, MessageListener, PublisherCallbackChannel.Listener {
-
-	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
 
 	/** Alias for amq.direct default exchange */
 	private static final String DEFAULT_EXCHANGE = "";
@@ -459,13 +458,13 @@ public class RabbitTemplate extends RabbitAccessor
 
 	public void evaluateFastReplyTo() {
 		this.usingFastReplyTo = false;
-		if (this.replyQueue == null || AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
+		if (this.replyQueue == null || AddressUtils.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
 			try {
 				execute(new ChannelCallback<Void>() {
 
 					@Override
 					public Void doInRabbit(Channel channel) throws Exception {
-						channel.queueDeclarePassive(AMQ_RABBITMQ_REPLY_TO);
+						channel.queueDeclarePassive(AddressUtils.AMQ_RABBITMQ_REPLY_TO);
 						return null;
 					}
 				});
@@ -874,7 +873,7 @@ public class RabbitTemplate extends RabbitAccessor
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
 				String replyTo;
 				if (RabbitTemplate.this.usingFastReplyTo) {
-					replyTo = AMQ_RABBITMQ_REPLY_TO;
+					replyTo = AddressUtils.AMQ_RABBITMQ_REPLY_TO;
 				}
 				else {
 					DeclareOk queueDeclaration = channel.queueDeclare();
@@ -1117,7 +1116,7 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	private Address getReplyToAddress(Message request) throws AmqpException {
-		Address replyTo = request.getMessageProperties().getReplyToAddress();
+		Address replyTo = AddressUtils.decodeReplyToAddress(request);
 		if (replyTo == null) {
 			if (this.exchange == null) {
 				throw new AmqpException(

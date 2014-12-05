@@ -15,6 +15,7 @@ package org.springframework.amqp.remoting.service;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -58,7 +59,7 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 
 	@Override
 	public void onMessage(Message message) {
-		Address replyToAddress = message.getMessageProperties().getReplyToAddress();
+		Address replyToAddress = AddressUtils.decodeReplyToAddress(message);
 		if (replyToAddress == null) {
 			throw new AmqpRejectAndDontRequeueException("No replyToAddress in inbound AMQP Message");
 		}

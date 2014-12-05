@@ -21,11 +21,11 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -274,16 +274,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	protected Address getReplyToAddress(Message request) throws Exception {
 		Address replyTo;
-		String replyToString = request.getMessageProperties().getReplyTo();
-		if (replyToString == null) {
-			replyTo = null;
-		}
-		else if (replyToString.startsWith(RabbitTemplate.AMQ_RABBITMQ_REPLY_TO)) {
-			replyTo = new Address("", replyToString);
-		}
-		else {
-			replyTo = new Address(replyToString);
-		}
+		replyTo = AddressUtils.decodeReplyToAddress(request);
 		if (replyTo == null) {
 			if (this.responseExchange == null) {
 				throw new AmqpException(
