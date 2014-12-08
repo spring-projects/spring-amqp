@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
@@ -272,7 +273,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	protected Address getReplyToAddress(Message request) throws Exception {
-		Address replyTo = request.getMessageProperties().getReplyToAddress();
+		Address replyTo = AddressUtils.decodeReplyToAddress(request);
 		if (replyTo == null) {
 			if (this.responseExchange == null) {
 				throw new AmqpException(

@@ -32,6 +32,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -177,6 +178,10 @@ public class RabbitTemplate extends RabbitAccessor
 
 	private volatile Expression receiveConnectionFactorySelectorExpression;
 
+	private volatile boolean usingFastReplyTo;
+
+	private volatile boolean evaluatedFastReplyTo;
+
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
 	 */
@@ -244,12 +249,14 @@ public class RabbitTemplate extends RabbitAccessor
 
 	/**
 	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
-	 * be used for each reply.
+	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
+	 * http://www.rabbitmq.com/direct-reply-to.html
 	 *
 	 * @param replyQueue the replyQueue to set
 	 */
 	public void setReplyQueue(Queue replyQueue) {
 		this.replyQueue = replyQueue;
+		this.evaluatedFastReplyTo = false;
 	}
 
 	/**
@@ -447,6 +454,37 @@ public class RabbitTemplate extends RabbitAccessor
 			}
 		}
 		return unconfirmed.size() > 0 ? unconfirmed : null;
+	}
+
+	private void evaluateFastReplyTo() {
+		this.usingFastReplyTo = false;
+		if (this.replyQueue == null || AddressUtils.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
+			try {
+				execute(new ChannelCallback<Void>() {
+
+					@Override
+					public Void doInRabbit(Channel channel) throws Exception {
+						channel.queueDeclarePassive(AddressUtils.AMQ_RABBITMQ_REPLY_TO);
+						return null;
+					}
+				});
+				this.usingFastReplyTo = true;
+			}
+			catch (Exception e) {
+				if (replyQueue != null) {
+					logger.error("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+							+ "queues will be used:" + e.getMessage() + ".");
+				}
+				else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+								+ "queues will be used:" + e.getMessage() + ".");
+					}
+				}
+				RabbitTemplate.this.replyQueue = null;
+			}
+		}
+		this.evaluatedFastReplyTo = true;
 	}
 
 	@Override
@@ -813,7 +851,14 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
-		if (this.replyQueue == null) {
+		if (!this.evaluatedFastReplyTo) {
+			synchronized(this) {
+				if (!this.evaluatedFastReplyTo) {
+					evaluateFastReplyTo();
+				}
+			}
+		}
+		if (this.replyQueue == null || this.usingFastReplyTo) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
 		}
 		else {
@@ -830,8 +875,14 @@ public class RabbitTemplate extends RabbitAccessor
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
-				DeclareOk queueDeclaration = channel.queueDeclare();
-				String replyTo = queueDeclaration.getQueue();
+				String replyTo;
+				if (RabbitTemplate.this.usingFastReplyTo) {
+					replyTo = AddressUtils.AMQ_RABBITMQ_REPLY_TO;
+				}
+				else {
+					DeclareOk queueDeclaration = channel.queueDeclare();
+					replyTo = queueDeclaration.getQueue();
+				}
 				message.getMessageProperties().setReplyTo(replyTo);
 
 				String consumerTag = UUID.randomUUID().toString();
@@ -1069,7 +1120,7 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	private Address getReplyToAddress(Message request) throws AmqpException {
-		Address replyTo = request.getMessageProperties().getReplyToAddress();
+		Address replyTo = AddressUtils.decodeReplyToAddress(request);
 		if (replyTo == null) {
 			if (this.exchange == null) {
 				throw new AmqpException(
