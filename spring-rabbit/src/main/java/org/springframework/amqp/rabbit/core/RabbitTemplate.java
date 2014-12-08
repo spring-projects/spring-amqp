@@ -456,7 +456,7 @@ public class RabbitTemplate extends RabbitAccessor
 		return unconfirmed.size() > 0 ? unconfirmed : null;
 	}
 
-	public void evaluateFastReplyTo() {
+	private void evaluateFastReplyTo() {
 		this.usingFastReplyTo = false;
 		if (this.replyQueue == null || AddressUtils.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
 			try {
@@ -852,7 +852,11 @@ public class RabbitTemplate extends RabbitAccessor
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
 		if (!this.evaluatedFastReplyTo) {
-			evaluateFastReplyTo();
+			synchronized(this) {
+				if (!this.evaluatedFastReplyTo) {
+					evaluateFastReplyTo();
+				}
+			}
 		}
 		if (this.replyQueue == null || this.usingFastReplyTo) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);

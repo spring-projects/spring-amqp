@@ -49,6 +49,7 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  * "http://static.springsource.org/spring-amqp/reference/html/amqp.html#request-reply" >here</a>.
  *
  * @author David Bilge
+ * @author Gary Russell
  * @since 1.2
  */
 public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter implements MessageListener {

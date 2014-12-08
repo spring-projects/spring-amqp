@@ -273,8 +273,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	protected Address getReplyToAddress(Message request) throws Exception {
-		Address replyTo;
-		replyTo = AddressUtils.decodeReplyToAddress(request);
+		Address replyTo = AddressUtils.decodeReplyToAddress(request);
 		if (replyTo == null) {
 			if (this.responseExchange == null) {
 				throw new AmqpException(
