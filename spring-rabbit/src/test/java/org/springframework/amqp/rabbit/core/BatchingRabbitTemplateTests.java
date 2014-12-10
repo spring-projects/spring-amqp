@@ -38,6 +38,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.util.StopWatch;
 
 /**
  * @author Gary Russell
@@ -241,6 +242,48 @@ public class BatchingRabbitTemplateTests {
 			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
 			assertEquals("bar", new String(received.get(1).getBody()));
 			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
+	public void testDebatchByContainerPerformance() throws Exception {
+		final List<Message> received = new ArrayList<Message>();
+		int count = 100000;
+		final CountDownLatch latch = new CountDownLatch(count);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
+		container.setQueueNames(ROUTE);
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				received.add(message);
+				latch.countDown();
+			}
+		});
+		container.setReceiveTimeout(100);
+		container.setPrefetchCount(1000);
+		container.setTxSize(1000);
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(1000, Integer.MAX_VALUE, 30000);
+			BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+//			RabbitTemplate template = new RabbitTemplate();
+			template.setConnectionFactory(this.connectionFactory);
+			MessageProperties props = new MessageProperties();
+			Message message = new Message(new byte[256], props);
+			StopWatch watch = new StopWatch();
+			watch.start();
+			for (int i = 0; i < count; i++) {
+				template.send("", ROUTE, message);
+			}
+			assertTrue(latch.await(60,  TimeUnit.SECONDS));
+			watch.stop();
+			System.out.println(watch.getTotalTimeMillis());
+			assertEquals(count, received.size());
 		}
 		finally {
 			container.stop();
