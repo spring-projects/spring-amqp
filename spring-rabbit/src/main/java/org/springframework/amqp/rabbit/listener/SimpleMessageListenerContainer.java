@@ -14,7 +14,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,7 +36,6 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -102,8 +100,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
-	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
-
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
@@ -133,8 +129,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
-
-	private boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
 
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
@@ -490,15 +484,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setAutoDeclare(boolean autoDeclare) {
 		this.autoDeclare = autoDeclare;
-	}
-
-	/**
-	 * Determine whether or not the container should de-batch batched
-	 * messages (true) or call the listener with the batch (false). Default: true.
-	 * @param deBatchingEnabled the deBatchingEnabled to set.
-	 */
-	protected void setDeBatchingEnabled(boolean deBatchingEnabled) {
-		this.deBatchingEnabled = deBatchingEnabled;
 	}
 
 	/**
@@ -972,28 +957,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				break;
 			}
 			try {
-				Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
-				if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
-					ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
-					MessageProperties messageProperties = message.getMessageProperties();
-					messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
-					while (byteBuffer.hasRemaining()) {
-						int length = byteBuffer.getInt();
-						if (length < 0 || length > byteBuffer.remaining()) {
-							throw new ListenerExecutionFailedException("Insufficient batch data at offset " + byteBuffer.position(),
-									new ArrayIndexOutOfBoundsException(byteBuffer.position()), message);
-						}
-						byte[] body = new byte[length];
-						byteBuffer.get(body);
-						messageProperties.setContentLength(length);
-						// Caveat - shared MessageProperties.
-						Message fragment = new Message(body, messageProperties);
-						executeListener(channel, fragment);
-					}
-				}
-				else {
-					executeListener(channel, message);
-				}
+				executeListener(channel, message);
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
 				break;

@@ -42,7 +42,7 @@ import org.springframework.util.ErrorHandler;
  */
 public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
-	protected static final Log logger = LogFactory.getLog(ConditionalRejectingErrorHandler.class);
+	protected final Log logger = LogFactory.getLog(this.getClass());
 
 	private final FatalExceptionStrategy exceptionStrategy;
 

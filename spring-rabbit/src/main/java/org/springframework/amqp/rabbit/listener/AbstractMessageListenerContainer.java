@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -37,6 +39,7 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
@@ -58,6 +61,8 @@ import com.rabbitmq.client.Channel;
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean, SmartLifecycle {
+
+	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
 	private volatile String beanName;
 
@@ -82,6 +87,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile Object messageListener;
 
 	private volatile AcknowledgeMode acknowledgeMode = AcknowledgeMode.AUTO;
+
+	private volatile boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
 
 	private boolean initialized;
 
@@ -296,6 +303,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Override
 	public MessageConverter getMessageConverter() {
 		return messageConverter;
+	}
+
+	/**
+	 * Determine whether or not the container should de-batch batched
+	 * messages (true) or call the listener with the batch (false). Default: true.
+	 * @param deBatchingEnabled the deBatchingEnabled to set.
+	 */
+	protected void setDeBatchingEnabled(boolean deBatchingEnabled) {
+		this.deBatchingEnabled = deBatchingEnabled;
 	}
 
 	/**
@@ -597,8 +613,31 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			throw new MessageRejectedWhileStoppingException();
 		}
 		try {
-			invokeListener(channel, message);
-		} catch (Throwable ex) {
+			Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
+			if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
+				ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
+				MessageProperties messageProperties = message.getMessageProperties();
+				messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
+				while (byteBuffer.hasRemaining()) {
+					int length = byteBuffer.getInt();
+					if (length < 0 || length > byteBuffer.remaining()) {
+						throw new ListenerExecutionFailedException("Bad batched message received",
+								new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
+										message);
+					}
+					byte[] body = new byte[length];
+					byteBuffer.get(body);
+					messageProperties.setContentLength(length);
+					// Caveat - shared MessageProperties.
+					Message fragment = new Message(body, messageProperties);
+					invokeListener(channel, fragment);
+				}
+			}
+			else {
+				invokeListener(channel, message);
+			}
+		}
+		catch (Throwable ex) {
 			handleListenerException(ex);
 			throw ex;
 		}
