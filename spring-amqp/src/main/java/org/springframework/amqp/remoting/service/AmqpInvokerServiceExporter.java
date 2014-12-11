@@ -50,6 +50,7 @@ import org.springframework.remoting.support.RemoteInvocationResult;
  *
  * @author David Bilge
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.2
  */
 public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter implements MessageListener {
@@ -66,13 +67,16 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 		}
 
 		Object invocationRaw = messageConverter.fromMessage(message);
-		if (invocationRaw == null || !(invocationRaw instanceof RemoteInvocation)) {
-			send(new RuntimeException("The message does not contain a RemoteInvocation payload"), replyToAddress);
-			return;
-		}
-		RemoteInvocation invocation = (RemoteInvocation) invocationRaw;
 
-		RemoteInvocationResult remoteInvocationResult = invokeAndCreateResult(invocation, getService());
+		RemoteInvocationResult remoteInvocationResult;
+		if (invocationRaw == null || !(invocationRaw instanceof RemoteInvocation)) {
+			remoteInvocationResult =  new RemoteInvocationResult(
+					new IllegalArgumentException("The message does not contain a RemoteInvocation payload"));
+		}
+		else {
+			RemoteInvocation invocation = (RemoteInvocation) invocationRaw;
+			remoteInvocationResult = invokeAndCreateResult(invocation, getService());
+		}
 		send(remoteInvocationResult, replyToAddress);
 	}
 
