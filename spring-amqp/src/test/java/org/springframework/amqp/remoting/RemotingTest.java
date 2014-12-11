@@ -13,6 +13,12 @@
 
 package org.springframework.amqp.remoting;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertThat;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,15 +35,20 @@ import org.springframework.amqp.remoting.testservice.GeneralException;
 import org.springframework.amqp.remoting.testservice.SpecialException;
 import org.springframework.amqp.remoting.testservice.TestServiceImpl;
 import org.springframework.amqp.remoting.testservice.TestServiceInterface;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
 /**
  * @author David Bilge
+ * @author Artem Bilan
  * @since 1.2
  */
 public class RemotingTest {
 
 	private TestServiceInterface riggedProxy;
+
+	private AmqpInvokerServiceExporter serviceExporter;
 
 	/**
 	 * Set up a rig of directly wired-up proxy and service listener so that both can be tested together without needing
@@ -47,11 +58,11 @@ public class RemotingTest {
 	public void initializeTestRig() throws Exception {
 		// Set up the service
 		TestServiceInterface testService = new TestServiceImpl();
-		final AmqpInvokerServiceExporter serviceExporter = new AmqpInvokerServiceExporter();
+		this.serviceExporter = new AmqpInvokerServiceExporter();
 		final SentSavingTemplate sentSavingTemplate = new SentSavingTemplate();
-		serviceExporter.setAmqpTemplate(sentSavingTemplate);
-		serviceExporter.setService(testService);
-		serviceExporter.setServiceInterface(TestServiceInterface.class);
+		this.serviceExporter.setAmqpTemplate(sentSavingTemplate);
+		this.serviceExporter.setService(testService);
+		this.serviceExporter.setServiceInterface(TestServiceInterface.class);
 
 		// Set up the client
 		AmqpProxyFactoryBean amqpProxyFactoryBean = new AmqpProxyFactoryBean();
@@ -100,4 +111,35 @@ public class RemotingTest {
 		Assert.assertNotNull(returnedException);
 		Assert.assertTrue(returnedException instanceof SpecialException);
 	}
+
+	@Test
+	public void testWrongRemoteInvocationArgument() {
+		MessageConverter messageConverter = this.serviceExporter.getMessageConverter();
+		this.serviceExporter.setMessageConverter(new SimpleMessageConverter() {
+
+			private AtomicBoolean invoked = new AtomicBoolean();
+
+			@Override
+			protected Message createMessage(Object object, MessageProperties messageProperties)
+					throws MessageConversionException {
+				Message message = super.createMessage(object, messageProperties);
+				if (!invoked.getAndSet(true)) {
+					messageProperties.setContentType(null);
+				}
+				return message;
+			}
+
+		});
+
+		try {
+			riggedProxy.simpleStringReturningTestMethod("Test");
+		}
+		catch (Exception e) {
+			assertThat(e, instanceOf(IllegalArgumentException.class));
+			assertThat(e.getMessage(), containsString("The message does not contain a RemoteInvocation payload"));
+		}
+
+		this.serviceExporter.setMessageConverter(messageConverter);
+	}
+
 }
