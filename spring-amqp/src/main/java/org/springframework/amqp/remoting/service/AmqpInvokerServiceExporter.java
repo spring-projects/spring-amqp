@@ -67,7 +67,7 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 
 		Object invocationRaw = messageConverter.fromMessage(message);
 		if (invocationRaw == null || !(invocationRaw instanceof RemoteInvocation)) {
-			send(new RuntimeException("The message does not contain a RemoteInvocation payload"), replyToAddress);
+			sendException(new RuntimeException("The message does not contain a RemoteInvocation payload"), replyToAddress);
 			return;
 		}
 		RemoteInvocation invocation = (RemoteInvocation) invocationRaw;
@@ -75,10 +75,14 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 		RemoteInvocationResult remoteInvocationResult = invokeAndCreateResult(invocation, getService());
 		send(remoteInvocationResult, replyToAddress);
 	}
-
+    	
+    	private void sendException(Throwable ex, Address replyToAddress) {
+        	RemoteInvocationResult remoteInvocationResult = new RemoteInvocationResult(ex);
+        	send(remoteInvocationResult, replyToAddress);
+	}
+	
 	private void send(Object object, Address replyToAddress) {
 		Message message = messageConverter.toMessage(object, new MessageProperties());
-
 		getAmqpTemplate().send(replyToAddress.getExchangeName(), replyToAddress.getRoutingKey(), message);
 	}
 
