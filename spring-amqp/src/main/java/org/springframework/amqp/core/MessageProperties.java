@@ -42,6 +42,11 @@ public class MessageProperties implements Serializable {
 
 	public static final String CONTENT_TYPE_XML = "application/xml";
 
+	public static final String SPRING_BATCH_FORMAT = "springBatchFormat";
+
+	public static final String BATCH_FORMAT_LENGTH_HEADER4 = "lengthHeader4";
+
+
 	static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
 	static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
