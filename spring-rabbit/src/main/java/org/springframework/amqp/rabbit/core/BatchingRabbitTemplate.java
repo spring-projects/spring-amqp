@@ -22,6 +22,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.core.support.MessageBatch;
+import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -55,29 +56,39 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 	}
 
 	@Override
-	public synchronized void send(String exchange, String routingKey, Message message) throws AmqpException {
-		if (this.scheduledTask != null) {
-			this.scheduledTask.cancel(false);
+	public synchronized void send(String exchange, String routingKey, Message message, CorrelationData correlationData)
+			throws AmqpException {
+		if (correlationData != null) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Cannot use batching with correlation data");
+			}
+			super.send(exchange, routingKey, message, correlationData);
 		}
-		MessageBatch batch = this.batchingStrategy.addToBatch(exchange, routingKey, message);
-		if (batch != null) {
-			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage());
-		}
-		Date next = this.batchingStrategy.nextRelease();
-		if (next != null) {
-			this.scheduledTask = this.scheduler.schedule(new Runnable() {
+		else {
+			if (this.scheduledTask != null) {
+				this.scheduledTask.cancel(false);
+			}
+			MessageBatch batch = this.batchingStrategy.addToBatch(exchange, routingKey, message);
+			if (batch != null) {
+				super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
+			}
+			Date next = this.batchingStrategy.nextRelease();
+			if (next != null) {
+				this.scheduledTask = this.scheduler.schedule(new Runnable() {
 
-				@Override
-				public void run() {
-					releaseBatches();
-				}}, next);
+					@Override
+					public void run() {
+						releaseBatches();
+					}
+				}, next);
+			}
 		}
 	}
 
 	private synchronized void releaseBatches() {
 		MessageBatch batch;
 		while ((batch = this.batchingStrategy.releaseBatch()) != null) {
-			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage());
+			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
 		}
 	}
 
