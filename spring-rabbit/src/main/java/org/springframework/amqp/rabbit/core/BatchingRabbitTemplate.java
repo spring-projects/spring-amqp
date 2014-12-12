@@ -23,6 +23,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.core.support.MessageBatch;
 import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.context.Lifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -38,7 +39,7 @@ import org.springframework.scheduling.TaskScheduler;
  * @since 1.4.1
  *
  */
-public class BatchingRabbitTemplate extends RabbitTemplate {
+public class BatchingRabbitTemplate extends RabbitTemplate implements Lifecycle {
 
 	private final BatchingStrategy batchingStrategy;
 
@@ -85,11 +86,32 @@ public class BatchingRabbitTemplate extends RabbitTemplate {
 		}
 	}
 
+	/**
+	 * Flush any partial in-progress batches.
+	 */
+	public void flush() {
+		releaseBatches();
+	}
+
 	private synchronized void releaseBatches() {
 		MessageBatch batch;
 		while ((batch = this.batchingStrategy.releaseBatch()) != null) {
 			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
 		}
+	}
+
+	@Override
+	public void start() {
+	}
+
+	@Override
+	public void stop() {
+		flush();
+	}
+
+	@Override
+	public boolean isRunning() {
+		return true;
 	}
 
 }
