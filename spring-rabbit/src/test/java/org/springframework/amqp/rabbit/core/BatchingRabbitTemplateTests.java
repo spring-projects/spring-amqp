@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -51,6 +52,11 @@ import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.support.postprocessor.DelegatingInflatingPostProcessor;
+import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
+import org.springframework.amqp.support.postprocessor.UnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.ZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -338,6 +344,166 @@ public class BatchingRabbitTemplateTests {
 			ArgumentCaptor<Throwable> arg2 = ArgumentCaptor.forClass(Throwable.class);
 			verify(logger, times(2)).warn(arg1.capture(), arg2.capture()); // CRE logs 2 WARNs ensure the message was rejected
 			assertThat(arg2.getValue().getMessage(), containsString("Bad batched message received"));
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	@Test
+	public void testSimpleBatchGZipped() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("gzip", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedConfiguredUnzipper() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		template.setAfterReceivePostProcessor(new GUnzipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertNull(message.getMessageProperties().getContentEncoding());
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedWithEncoding() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("gzip:foo", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedWithEncodingInflated() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		template.setAfterReceivePostProcessor(new DelegatingInflatingPostProcessor());
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		byte[] out = (byte[]) template.receiveAndConvert(ROUTE);
+		assertNotNull(out);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(out));
+	}
+
+	@Test
+	public void testSimpleBatchZipped() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new ZipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("zip", message.getMessageProperties().getContentEncoding());
+		UnzipPostProcessor unzipper = new UnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchZippedWithEncoding() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new ZipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("zip:foo", message.getMessageProperties().getContentEncoding());
+		UnzipPostProcessor unzipper = new UnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testCompressionWithContainer() throws Exception {
+		final List<Message> received = new ArrayList<Message>();
+		final CountDownLatch latch = new CountDownLatch(2);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
+		container.setQueueNames(ROUTE);
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				received.add(message);
+				latch.countDown();
+			}
+		});
+		container.setReceiveTimeout(100);
+		container.setAfterReceivePostProcessors(new DelegatingInflatingPostProcessor());
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+			BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+			template.setConnectionFactory(this.connectionFactory);
+			template.setBeforePublishPostProcessors(new GZipPostProcessor());
+			MessageProperties props = new MessageProperties();
+			Message message = new Message("foo".getBytes(), props);
+			template.send("", ROUTE, message);
+			message = new Message("bar".getBytes(), props);
+			template.send("", ROUTE, message);
+			assertTrue(latch.await(10,  TimeUnit.SECONDS));
+			assertEquals(2, received.size());
+			assertEquals("foo", new String(received.get(0).getBody()));
+			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
+			assertEquals("bar", new String(received.get(1).getBody()));
+			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
 		}
 		finally {
 			container.stop();
