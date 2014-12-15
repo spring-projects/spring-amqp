@@ -24,6 +24,7 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -67,6 +68,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	private String encoding = DEFAULT_ENCODING;
 
+	private MessagePostProcessor replyPostProcessor;
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -116,6 +118,15 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	public void setMessageConverter(MessageConverter messageConverter) {
 		this.messageConverter = messageConverter;
+	}
+
+	/**
+	 * Set a post processor to process the reply immediately before {@code Channel#basicPublish()}.
+	 * Often used to compress the data.
+	 * @param replyPostProcessor the reply post processor.
+	 */
+	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
+		this.replyPostProcessor = replyPostProcessor;
 	}
 
 	/**
@@ -290,11 +301,18 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * Send the given response message to the given destination.
 	 * @param channel the Rabbit channel to operate on
 	 * @param replyTo the Rabbit ReplyTo string to use when sending. Currently interpreted to be the routing key.
-	 * @param message the Rabbit message to send
+	 * @param messageIn the Rabbit message to send
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #postProcessResponse(Message, Message)
 	 */
-	protected void sendResponse(Channel channel, Address replyTo, Message message) throws Exception {
+	protected void sendResponse(Channel channel, Address replyTo, Message messageIn) throws Exception {
+		Message message;
+		if (this.replyPostProcessor == null) {
+			message = messageIn;
+		}
+		else {
+			message = this.replyPostProcessor.postProcessMessage(messageIn);
+		}
 		postProcessChannel(channel, message);
 
 		try {

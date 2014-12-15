@@ -18,20 +18,26 @@ package org.springframework.amqp.rabbit.core;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.Deflater;
 
 import org.apache.commons.logging.Log;
 import org.junit.Before;
@@ -51,9 +57,18 @@ import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.support.postprocessor.AbstractCompressingPostProcessor;
+import org.springframework.amqp.support.postprocessor.DelegatingDecompressingPostProcessor;
+import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
+import org.springframework.amqp.support.postprocessor.UnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.ZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StopWatch;
 
 /**
@@ -342,6 +357,196 @@ public class BatchingRabbitTemplateTests {
 		finally {
 			container.stop();
 		}
+	}
+
+	@Test
+	public void testSimpleBatchGZipped() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
+		template.setBeforePublishPostProcessors(gZipPostProcessor);
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("gzip", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedConfiguredUnzipper() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		gZipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
+		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
+		template.setBeforePublishPostProcessors(gZipPostProcessor);
+		template.setAfterReceivePostProcessor(new GUnzipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertNull(message.getMessageProperties().getContentEncoding());
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedWithEncoding() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("gzip:foo", message.getMessageProperties().getContentEncoding());
+		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchGZippedWithEncodingInflated() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		template.setAfterReceivePostProcessor(new DelegatingDecompressingPostProcessor());
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		byte[] out = (byte[]) template.receiveAndConvert(ROUTE);
+		assertNotNull(out);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(out));
+	}
+
+	@Test
+	public void testSimpleBatchZippedBestCompression() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		ZipPostProcessor zipPostProcessor = new ZipPostProcessor();
+		zipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
+		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(zipPostProcessor));
+		template.setBeforePublishPostProcessors(zipPostProcessor);
+		MessageProperties props = new MessageProperties();
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("zip", message.getMessageProperties().getContentEncoding());
+		UnzipPostProcessor unzipper = new UnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testSimpleBatchZippedWithEncoding() throws Exception {
+		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+		template.setConnectionFactory(this.connectionFactory);
+		ZipPostProcessor zipPostProcessor = new ZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(zipPostProcessor));
+		template.setBeforePublishPostProcessors(zipPostProcessor);
+		MessageProperties props = new MessageProperties();
+		props.setContentEncoding("foo");
+		Message message = new Message("foo".getBytes(), props);
+		template.send("", ROUTE, message);
+		message = new Message("bar".getBytes(), props);
+		template.send("", ROUTE, message);
+		Thread.sleep(100);
+		message = template.receive(ROUTE);
+		assertNotNull(message);
+		assertEquals("zip:foo", message.getMessageProperties().getContentEncoding());
+		UnzipPostProcessor unzipper = new UnzipPostProcessor();
+		message = unzipper.postProcessMessage(message);
+		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	@Test
+	public void testCompressionWithContainer() throws Exception {
+		final List<Message> received = new ArrayList<Message>();
+		final CountDownLatch latch = new CountDownLatch(2);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
+		container.setQueueNames(ROUTE);
+		container.setMessageListener(new MessageListener() {
+
+			@Override
+			public void onMessage(Message message) {
+				received.add(message);
+				latch.countDown();
+			}
+		});
+		container.setReceiveTimeout(100);
+		container.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
+			BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
+			template.setConnectionFactory(this.connectionFactory);
+			template.setBeforePublishPostProcessors(new GZipPostProcessor());
+			MessageProperties props = new MessageProperties();
+			Message message = new Message("foo".getBytes(), props);
+			template.send("", ROUTE, message);
+			message = new Message("bar".getBytes(), props);
+			template.send("", ROUTE, message);
+			assertTrue(latch.await(10,  TimeUnit.SECONDS));
+			assertEquals(2, received.size());
+			assertEquals("foo", new String(received.get(0).getBody()));
+			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
+			assertEquals("bar", new String(received.get(1).getBody()));
+			assertEquals(3, received.get(0).getMessageProperties().getContentLength());
+		}
+		finally {
+			container.stop();
+		}
+	}
+
+	private int getStreamLevel(Object stream) throws Exception {
+		final AtomicReference<Method> m = new AtomicReference<Method>();
+		ReflectionUtils.doWithMethods(AbstractCompressingPostProcessor.class, new MethodCallback() {
+
+			@Override
+			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
+				method.setAccessible(true);
+				m.set(method);
+			}
+		}, new MethodFilter() {
+
+			@Override
+			public boolean matches(Method method) {
+				return method.getName().equals("getCompressorStream");
+			}
+		});
+		Object zipStream = m.get().invoke(stream, mock(OutputStream.class));
+		return TestUtils.getPropertyValue(zipStream, "def.level", Integer.class);
 	}
 
 }
