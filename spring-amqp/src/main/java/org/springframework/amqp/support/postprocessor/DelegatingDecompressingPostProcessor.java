@@ -87,16 +87,21 @@ public class DelegatingDecompressingPostProcessor implements MessagePostProcesso
 	@Override
 	public Message postProcessMessage(Message message) throws AmqpException {
 		String encoding = message.getMessageProperties().getContentEncoding();
-		int colonAt = encoding.indexOf(":");
-		if (colonAt > 0) {
-			encoding = encoding.substring(0, colonAt);
-		}
-		MessagePostProcessor decompressor = this.decompressors.get(encoding);
-		if (decompressor != null) {
-			return decompressor.postProcessMessage(message);
+		if (encoding == null) {
+			return message;
 		}
 		else {
-			return message;
+			int colonAt = encoding.indexOf(":");
+			if (colonAt > 0) {
+				encoding = encoding.substring(0, colonAt);
+			}
+			MessagePostProcessor decompressor = this.decompressors.get(encoding);
+			if (decompressor != null) {
+				return decompressor.postProcessMessage(message);
+			}
+			else {
+				return message;
+			}
 		}
 	}
 
