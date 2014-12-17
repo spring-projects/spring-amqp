@@ -41,7 +41,7 @@ public abstract class AbstractDeflaterPostProcessor extends AbstractCompressingP
 	 * @param level the level (default {@link Deflater#BEST_SPEED}
 	 * @see Deflater
 	 */
-	protected void setLevel(int level) {
+	public void setLevel(int level) {
 		this.level = level;
 	}
 

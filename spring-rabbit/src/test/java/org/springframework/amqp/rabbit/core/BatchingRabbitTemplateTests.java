@@ -24,15 +24,20 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.Deflater;
 
 import org.apache.commons.logging.Log;
 import org.junit.Before;
@@ -52,6 +57,7 @@ import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.support.postprocessor.AbstractCompressingPostProcessor;
 import org.springframework.amqp.support.postprocessor.DelegatingInflatingPostProcessor;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -60,6 +66,9 @@ import org.springframework.amqp.support.postprocessor.ZipPostProcessor;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StopWatch;
 
 /**
@@ -355,7 +364,9 @@ public class BatchingRabbitTemplateTests {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(gZipPostProcessor));
+		template.setBeforePublishPostProcessors(gZipPostProcessor);
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
@@ -375,7 +386,10 @@ public class BatchingRabbitTemplateTests {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new GZipPostProcessor());
+		GZipPostProcessor gZipPostProcessor = new GZipPostProcessor();
+		gZipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
+		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
+		template.setBeforePublishPostProcessors(gZipPostProcessor);
 		template.setAfterReceivePostProcessor(new GUnzipPostProcessor());
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
@@ -430,11 +444,14 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	@Test
-	public void testSimpleBatchZipped() throws Exception {
+	public void testSimpleBatchZippedBestCompression() throws Exception {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new ZipPostProcessor());
+		ZipPostProcessor zipPostProcessor = new ZipPostProcessor();
+		zipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
+		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(zipPostProcessor));
+		template.setBeforePublishPostProcessors(zipPostProcessor);
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
@@ -454,7 +471,9 @@ public class BatchingRabbitTemplateTests {
 		BatchingStrategy batchingStrategy = new SimpleBatchingStrategy(2, Integer.MAX_VALUE, 30000);
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
-		template.setBeforePublishPostProcessors(new ZipPostProcessor());
+		ZipPostProcessor zipPostProcessor = new ZipPostProcessor();
+		assertEquals(Deflater.BEST_SPEED, getStreamLevel(zipPostProcessor));
+		template.setBeforePublishPostProcessors(zipPostProcessor);
 		MessageProperties props = new MessageProperties();
 		props.setContentEncoding("foo");
 		Message message = new Message("foo".getBytes(), props);
@@ -508,6 +527,26 @@ public class BatchingRabbitTemplateTests {
 		finally {
 			container.stop();
 		}
+	}
+
+	private int getStreamLevel(Object stream) throws Exception {
+		final AtomicReference<Method> m = new AtomicReference<Method>();
+		ReflectionUtils.doWithMethods(AbstractCompressingPostProcessor.class, new MethodCallback() {
+
+			@Override
+			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
+				method.setAccessible(true);
+				m.set(method);
+			}
+		}, new MethodFilter() {
+
+			@Override
+			public boolean matches(Method method) {
+				return method.getName().equals("getDeflater");
+			}
+		});
+		Object zipStream = m.get().invoke(stream, mock(OutputStream.class));
+		return TestUtils.getPropertyValue(zipStream, "def.level", Integer.class);
 	}
 
 }
