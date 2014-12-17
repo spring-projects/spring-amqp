@@ -17,7 +17,6 @@ package org.springframework.amqp.support.postprocessor;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.springframework.amqp.core.MessageProperties;
@@ -41,9 +40,8 @@ public class GZipPostProcessor extends AbstractDeflaterPostProcessor {
 	}
 
 	@Override
-	protected OutputStream getDeflater(OutputStream zipped) throws IOException {
-		DeflaterOutputStream zipper = new SettableLevelGZIPOutputStream(zipped, this.level);
-		return zipper;
+	protected OutputStream getCompressorStream(OutputStream zipped) throws IOException {
+		return new SettableLevelGZIPOutputStream(zipped, this.level);
 	}
 
 	@Override

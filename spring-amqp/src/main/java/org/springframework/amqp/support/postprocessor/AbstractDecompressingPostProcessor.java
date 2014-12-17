@@ -39,7 +39,7 @@ import org.springframework.util.FileCopyUtils;
  * @author Gary Russell
  * @since 1.4.2
  */
-public abstract class AbstractInflatingPostProcessor implements MessagePostProcessor, Ordered {
+public abstract class AbstractDecompressingPostProcessor implements MessagePostProcessor, Ordered {
 
 	private final boolean alwaysDecompress;
 
@@ -50,7 +50,7 @@ public abstract class AbstractInflatingPostProcessor implements MessagePostProce
 	 * encoding only if {@link MessageProperties#SPRING_AUTO_DECOMPRESS} header is present
 	 * and true.
 	 */
-	public AbstractInflatingPostProcessor() {
+	public AbstractDecompressingPostProcessor() {
 		this(false);
 	}
 
@@ -60,7 +60,7 @@ public abstract class AbstractInflatingPostProcessor implements MessagePostProce
 	 * and true or if alwaysDecompress is true.
 	 * @param alwaysDecompress true to always decompress.
 	 */
-	public AbstractInflatingPostProcessor(boolean alwaysDecompress) {
+	public AbstractDecompressingPostProcessor(boolean alwaysDecompress) {
 		this.alwaysDecompress = alwaysDecompress;
 	}
 
@@ -84,7 +84,7 @@ public abstract class AbstractInflatingPostProcessor implements MessagePostProce
 		if (this.alwaysDecompress || (autoDecompress instanceof Boolean && ((Boolean)autoDecompress))) {
 			ByteArrayInputStream zipped = new ByteArrayInputStream(message.getBody());
 			try {
-				InputStream unzipper = getInflater(zipped);
+				InputStream unzipper = getDecompressorStream(zipped);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				FileCopyUtils.copy(unzipper, out);
 				MessageProperties messageProperties = message.getMessageProperties();
@@ -114,11 +114,11 @@ public abstract class AbstractInflatingPostProcessor implements MessagePostProce
 	}
 
 	/**
-	 * @param deflated The output stream to write the compressed data to.
-	 * @return the deflater output stream.
+	 * @param stream The output stream to write the compressed data to.
+	 * @return the decompressor input stream.
 	 * @throws IOException IOException
 	 */
-	protected abstract InputStream getInflater(InputStream deflated) throws IOException;
+	protected abstract InputStream getDecompressorStream(InputStream stream) throws IOException;
 
 	/**
 	 * @return the content-encoding header.

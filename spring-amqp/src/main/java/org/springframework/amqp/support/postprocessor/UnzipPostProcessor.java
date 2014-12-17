@@ -29,7 +29,7 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @since 1.4.2
  */
-public class UnzipPostProcessor extends AbstractInflatingPostProcessor {
+public class UnzipPostProcessor extends AbstractDecompressingPostProcessor {
 
 	public UnzipPostProcessor() {
 		super();
@@ -40,7 +40,7 @@ public class UnzipPostProcessor extends AbstractInflatingPostProcessor {
 	}
 
 	@Override
-	protected InputStream getInflater(InputStream zipped) throws IOException {
+	protected InputStream getDecompressorStream(InputStream zipped) throws IOException {
 		ZipInputStream zipper = new ZipInputStream(zipped);
 		ZipEntry entry = zipper.getNextEntry();
 		Assert.state("amqp".equals(entry.getName()));

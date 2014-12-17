@@ -18,7 +18,6 @@ package org.springframework.amqp.support.postprocessor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.InflaterInputStream;
 
 /**
  * A post processor that uses a {@link GZIPInputStream} to decompress the
@@ -27,7 +26,7 @@ import java.util.zip.InflaterInputStream;
  * @author Gary Russell
  * @since 1.4.2
  */
-public class GUnzipPostProcessor extends AbstractInflatingPostProcessor {
+public class GUnzipPostProcessor extends AbstractDecompressingPostProcessor {
 
 	public GUnzipPostProcessor() {
 		super();
@@ -38,8 +37,8 @@ public class GUnzipPostProcessor extends AbstractInflatingPostProcessor {
 	}
 
 	@Override
-	protected InputStream getInflater(InputStream zipped) throws IOException {
-		InflaterInputStream zipper = new GZIPInputStream(zipped);
+	protected InputStream getDecompressorStream(InputStream zipped) throws IOException {
+		InputStream zipper = new GZIPInputStream(zipped);
 		return zipper;
 	}
 

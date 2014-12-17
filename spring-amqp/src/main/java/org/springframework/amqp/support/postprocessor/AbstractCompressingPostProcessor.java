@@ -66,7 +66,7 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	public Message postProcessMessage(Message message) throws AmqpException {
 		ByteArrayOutputStream zipped = new ByteArrayOutputStream();
 		try {
-			OutputStream zipper = getDeflater(zipped);
+			OutputStream zipper = getCompressorStream(zipped);
 			FileCopyUtils.copy(new ByteArrayInputStream(message.getBody()), zipper);
 			MessageProperties messageProperties = message.getMessageProperties();
 			String currentEncoding = messageProperties.getContentEncoding();
@@ -96,11 +96,11 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	}
 
 	/**
-	 * @param deflated The output stream to write the compressed data to.
-	 * @return the deflater output stream.
+	 * @param stream The output stream to write the compressed data to.
+	 * @return the compressor output stream.
 	 * @throws IOException IOException
 	 */
-	protected abstract OutputStream getDeflater(OutputStream deflated) throws IOException;
+	protected abstract OutputStream getCompressorStream(OutputStream stream) throws IOException;
 
 	/**
 	 * @return the content-encoding header.

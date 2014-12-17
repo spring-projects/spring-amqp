@@ -17,7 +17,6 @@ package org.springframework.amqp.support.postprocessor;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.zip.DeflaterOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -42,7 +41,7 @@ public class ZipPostProcessor extends AbstractDeflaterPostProcessor {
 	}
 
 	@Override
-	protected DeflaterOutputStream getDeflater(OutputStream zipped) throws IOException {
+	protected OutputStream getCompressorStream(OutputStream zipped) throws IOException {
 		ZipOutputStream zipper = new SettableLevelZipOutputStream(zipped, this.level);
 		zipper.putNextEntry(new ZipEntry("amqp"));
 		return zipper;

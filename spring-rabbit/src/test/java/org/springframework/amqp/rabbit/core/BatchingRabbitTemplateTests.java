@@ -58,7 +58,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.postprocessor.AbstractCompressingPostProcessor;
-import org.springframework.amqp.support.postprocessor.DelegatingInflatingPostProcessor;
+import org.springframework.amqp.support.postprocessor.DelegatingDecompressingPostProcessor;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.support.postprocessor.UnzipPostProcessor;
@@ -430,7 +430,7 @@ public class BatchingRabbitTemplateTests {
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
 		template.setBeforePublishPostProcessors(new GZipPostProcessor());
-		template.setAfterReceivePostProcessor(new DelegatingInflatingPostProcessor());
+		template.setAfterReceivePostProcessor(new DelegatingDecompressingPostProcessor());
 		MessageProperties props = new MessageProperties();
 		props.setContentEncoding("foo");
 		Message message = new Message("foo".getBytes(), props);
@@ -504,7 +504,7 @@ public class BatchingRabbitTemplateTests {
 			}
 		});
 		container.setReceiveTimeout(100);
-		container.setAfterReceivePostProcessors(new DelegatingInflatingPostProcessor());
+		container.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
 		container.afterPropertiesSet();
 		container.start();
 		try {
@@ -542,7 +542,7 @@ public class BatchingRabbitTemplateTests {
 
 			@Override
 			public boolean matches(Method method) {
-				return method.getName().equals("getDeflater");
+				return method.getName().equals("getCompressorStream");
 			}
 		});
 		Object zipStream = m.get().invoke(stream, mock(OutputStream.class));

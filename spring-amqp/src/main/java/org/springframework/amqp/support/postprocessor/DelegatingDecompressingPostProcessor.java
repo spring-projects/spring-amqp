@@ -30,42 +30,42 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Gary Russell
  * @since 1.4.2
  */
-public class DelegatingInflatingPostProcessor implements MessagePostProcessor {
+public class DelegatingDecompressingPostProcessor implements MessagePostProcessor {
 
-	private final Map<String, MessagePostProcessor> inflaters = new HashMap<String, MessagePostProcessor>();
+	private final Map<String, MessagePostProcessor> decompressors = new HashMap<String, MessagePostProcessor>();
 
-	public DelegatingInflatingPostProcessor() {
-		this.inflaters.put("gzip", new GUnzipPostProcessor());
-		this.inflaters.put("zip", new UnzipPostProcessor());
+	public DelegatingDecompressingPostProcessor() {
+		this.decompressors.put("gzip", new GUnzipPostProcessor());
+		this.decompressors.put("zip", new UnzipPostProcessor());
 	}
 
 	/**
-	 * Add a message post processor to the map of inflaters.
-	 * @param contentEncoding the content encoding; messages will be inflated with this post processor
+	 * Add a message post processor to the map of decompressing MessageProcessors.
+	 * @param contentEncoding the content encoding; messages will be decompressed with this post processor
 	 * if its {@code content-encoding} property matches, or begins with this key followed by ":".
-	 * @param inflater the inflating {@link MessagePostProcessor}.
+	 * @param decompressor the decompressing {@link MessagePostProcessor}.
 	 */
-	public void addInflater(String contentEncoding, MessagePostProcessor inflater) {
-		this.inflaters.put(contentEncoding, inflater);
+	public void addDecompressor(String contentEncoding, MessagePostProcessor decompressor) {
+		this.decompressors.put(contentEncoding, decompressor);
 	}
 
 	/**
-	 * Remove the inflater for this encoding; content will not be inflated even if the
+	 * Remove the decompressor for this encoding; content will not be decompressed even if the
 	 * {@link MessageProperties#SPRING_AUTO_DECOMPRESS} header is true.
 	 * @param contentEncoding the content encoding.
-	 * @return the inflater if it was present was present.
+	 * @return the decompressor if it was present.
 	 */
-	public MessagePostProcessor removeInflater(String contentEncoding) {
-		return this.inflaters.remove(contentEncoding);
+	public MessagePostProcessor removeDecompressor(String contentEncoding) {
+		return this.decompressors.remove(contentEncoding);
 	}
 
 	/**
-	 * Replace all the inflaters.
-	 * @param inflaters the inflaters.
+	 * Replace all the decompressors.
+	 * @param decompressors the decompressors.
 	 */
-	public void setInflaters(Map<String, MessagePostProcessor> inflaters) {
-		this.inflaters.clear();
-		this.inflaters.putAll(inflaters);
+	public void setDecompressors(Map<String, MessagePostProcessor> decompressors) {
+		this.decompressors.clear();
+		this.decompressors.putAll(decompressors);
 	}
 
 	@Override
@@ -75,9 +75,9 @@ public class DelegatingInflatingPostProcessor implements MessagePostProcessor {
 		if (colonAt > 0) {
 			encoding = encoding.substring(0, colonAt);
 		}
-		MessagePostProcessor inflater = this.inflaters.get(encoding);
-		if (inflater != null) {
-			return inflater.postProcessMessage(message);
+		MessagePostProcessor decompressor = this.decompressors.get(encoding);
+		if (decompressor != null) {
+			return decompressor.postProcessMessage(message);
 		}
 		else {
 			return message;
