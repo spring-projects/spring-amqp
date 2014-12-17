@@ -46,6 +46,8 @@ public class MessageProperties implements Serializable {
 
 	public static final String BATCH_FORMAT_LENGTH_HEADER4 = "lengthHeader4";
 
+	public static final String SPRING_AUTO_DECOMPRESS = "springAutoDecompress";
+
 
 	static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
@@ -296,6 +298,7 @@ public class MessageProperties implements Serializable {
 	public Integer getMessageCount() {
 		return this.messageCount;
 	}
+
 
 	@Override
 	public int hashCode() {

@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
@@ -41,6 +43,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecution
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
@@ -91,6 +94,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
 
 	private boolean initialized;
+
+	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 
 	private volatile ApplicationContext applicationContext;
 
@@ -310,8 +315,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * messages (true) or call the listener with the batch (false). Default: true.
 	 * @param deBatchingEnabled the deBatchingEnabled to set.
 	 */
-	protected void setDeBatchingEnabled(boolean deBatchingEnabled) {
+	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
 		this.deBatchingEnabled = deBatchingEnabled;
+	}
+
+	/**
+	 * Set {@link MessagePostProcessor}s that will be applied after message reception, before
+	 * invoking the {@link MessageListener}. Often used to decompress data.  Processors are invoked in order,
+	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
+	 * @param afterReceivePostProcessors the post processor.
+	 */
+	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
+		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
+		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
 	}
 
 	/**
@@ -599,20 +616,26 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
 	 *
 	 * @param channel the Rabbit Channel to operate on
-	 * @param message the received Rabbit Message
+	 * @param messageIn the received Rabbit Message
 	 * @throws Throwable Any Throwable.
 	 *
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	protected void executeListener(Channel channel, Message message) throws Throwable {
+	protected void executeListener(Channel channel, Message messageIn) throws Throwable {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Rejecting received message because the listener container has been stopped: " + message);
+				logger.warn("Rejecting received message because the listener container has been stopped: " + messageIn);
 			}
 			throw new MessageRejectedWhileStoppingException();
 		}
 		try {
+			Message message = messageIn;
+			if (this.afterReceivePostProcessors != null) {
+				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
+					message = processor.postProcessMessage(message);
+				}
+			}
 			Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
 			if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
 				ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());

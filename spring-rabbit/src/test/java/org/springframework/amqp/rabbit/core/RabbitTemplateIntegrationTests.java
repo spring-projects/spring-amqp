@@ -68,6 +68,8 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
+import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.expression.common.LiteralExpression;
@@ -1101,6 +1103,40 @@ public class RabbitTemplateIntegrationTests {
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
 			logger.info("Broker does not support fast replies; test skipped " + e.getMessage());
+		}
+	}
+
+	@Test
+	public void testReplyCompressionWithContainer() {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.template.getConnectionFactory());
+		container.setQueueNames(ROUTE);
+		MessageListenerAdapter messageListener = new MessageListenerAdapter(new Object() {
+
+			@SuppressWarnings("unused")
+			public String handleMessage(String message) {
+				return message.toUpperCase();
+			}
+		});
+		messageListener.setReplyPostProcessor(new GZipPostProcessor());
+		container.setMessageListener(messageListener);
+		container.setReceiveTimeout(100);
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			RabbitTemplate template = new RabbitTemplate();
+			template.setConnectionFactory(this.template.getConnectionFactory());
+			MessageProperties props = new MessageProperties();
+			props.setContentType("text/plain");
+			Message message = new Message("foo".getBytes(), props);
+			Message reply = template.sendAndReceive("", ROUTE, message);
+			assertNotNull(reply);
+			assertEquals("gzip:UTF-8", reply.getMessageProperties().getContentEncoding());
+			GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
+			reply = unzipper.postProcessMessage(reply);
+			assertEquals("FOO", new String(reply.getBody()));
+		}
+		finally {
+			container.stop();
 		}
 	}
 
