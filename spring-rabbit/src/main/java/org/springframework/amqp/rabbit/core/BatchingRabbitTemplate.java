@@ -94,8 +94,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate implements Lifecycle 
 	}
 
 	private synchronized void releaseBatches() {
-		MessageBatch batch;
-		while ((batch = this.batchingStrategy.releaseBatch()) != null) {
+		for (MessageBatch batch : this.batchingStrategy.releaseBatches()) {
 			super.send(batch.getExchange(), batch.getRoutingKey(), batch.getMessage(), null);
 		}
 	}

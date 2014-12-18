@@ -107,9 +107,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
 	}
 
@@ -121,9 +119,7 @@ public class BatchingRabbitTemplateTests {
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("foo", new String(message.getBody()));
 	}
 
@@ -136,9 +132,7 @@ public class BatchingRabbitTemplateTests {
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003foo", new String(message.getBody()));
 	}
 
@@ -152,13 +146,9 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("foo", new String(message.getBody()));
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("bar", new String(message.getBody()));
 	}
 
@@ -174,13 +164,9 @@ public class BatchingRabbitTemplateTests {
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003foo", new String(message.getBody()));
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("\u0000\u0000\u0000\u0003bar\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
 	}
 
@@ -194,13 +180,9 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("foo", new String(message.getBody()));
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("bar", new String(message.getBody()));
 	}
 
@@ -215,13 +197,9 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("f", new String(message.getBody()));
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("bar", new String(message.getBody()));
 	}
 
@@ -235,9 +213,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
 	}
 
@@ -372,9 +348,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("gzip", message.getMessageProperties().getContentEncoding());
 		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
@@ -396,9 +370,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertNull(message.getMessageProperties().getContentEncoding());
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
 	}
@@ -415,9 +387,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("gzip:foo", message.getMessageProperties().getContentEncoding());
 		GUnzipPostProcessor unzipper = new GUnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
@@ -457,9 +427,7 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("zip", message.getMessageProperties().getContentEncoding());
 		UnzipPostProcessor unzipper = new UnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
@@ -480,13 +448,21 @@ public class BatchingRabbitTemplateTests {
 		template.send("", ROUTE, message);
 		message = new Message("bar".getBytes(), props);
 		template.send("", ROUTE, message);
-		Thread.sleep(100);
-		message = template.receive(ROUTE);
-		assertNotNull(message);
+		message = receive(template);
 		assertEquals("zip:foo", message.getMessageProperties().getContentEncoding());
 		UnzipPostProcessor unzipper = new UnzipPostProcessor();
 		message = unzipper.postProcessMessage(message);
 		assertEquals("\u0000\u0000\u0000\u0003foo\u0000\u0000\u0000\u0003bar", new String(message.getBody()));
+	}
+
+	private Message receive(BatchingRabbitTemplate template) throws InterruptedException {
+		Message message = null;
+		int n = 0;
+		while (n++ < 200 && (message = template.receive(ROUTE)) == null) {
+			Thread.sleep(50);
+		}
+		assertNotNull(message);
+		return message;
 	}
 
 	@Test

@@ -15,6 +15,7 @@
  */
 package org.springframework.amqp.rabbit.core.support;
 
+import java.util.Collection;
 import java.util.Date;
 
 import org.springframework.amqp.core.Message;
@@ -45,10 +46,9 @@ public interface BatchingStrategy {
 	Date nextRelease();
 
 	/**
-	 * Release a batch, perhaps due to a timeout. May be called repeatedly
-	 * until {@code null} is returned.
-	 * @return The batched message, or null if no batches are ready.
+	 * Release batch(es), perhaps due to a timeout.
+	 * @return The batched message(s).
 	 */
-	MessageBatch releaseBatch();
+	Collection<MessageBatch> releaseBatches();
 
 }

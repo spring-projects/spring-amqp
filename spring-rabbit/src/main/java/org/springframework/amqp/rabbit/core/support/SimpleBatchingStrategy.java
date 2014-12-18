@@ -17,6 +17,8 @@ package org.springframework.amqp.rabbit.core.support;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -44,11 +46,11 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 
 	private final List<Message> messages = new ArrayList<Message>();
 
-	private volatile String exchange;
+	private String exchange;
 
-	private volatile String routingKey;
+	private String routingKey;
 
-	private volatile int currentSize;
+	private int currentSize;
 
 	/**
 	 * @param batchSize the batch size.
@@ -79,7 +81,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		int bufferUse = 4 + message.getBody().length;
 		MessageBatch batch = null;
 		if (this.messages.size() > 0 && this.currentSize + bufferUse > this.bufferLimit) {
-			batch = releaseBatch();
+			batch = doReleaseBatch();
 			this.exchange = exchange;
 			this.routingKey = routingKey;
 		}
@@ -87,7 +89,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		messages.add(message);
 		if (batch == null && (messages.size() >= this.batchSize
 								|| this.currentSize >= this.bufferLimit)) {
-			batch = releaseBatch();
+			batch = doReleaseBatch();
 		}
 		return batch;
 	}
@@ -107,7 +109,17 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 	}
 
 	@Override
-	public MessageBatch releaseBatch() {
+	public Collection<MessageBatch> releaseBatches() {
+		MessageBatch batch = doReleaseBatch();
+		if (batch == null) {
+			return Collections.emptyList();
+		}
+		else {
+			return Collections.singletonList(batch);
+		}
+	}
+
+	private MessageBatch doReleaseBatch() {
 		if (this.messages.size() < 1) {
 			return null;
 		}
