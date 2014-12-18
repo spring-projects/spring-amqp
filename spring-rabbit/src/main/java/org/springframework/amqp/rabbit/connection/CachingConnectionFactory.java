@@ -245,7 +245,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		if (!RabbitUtils.isNormalChannelClose(cause)) {
+		if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Channel shutdown: " + cause.getMessage());
+			}
+		}
+		else if (!RabbitUtils.isNormalChannelClose(cause)) {
 			logger.error("Channel shutdown: " + cause.getMessage());
 		}
 	}

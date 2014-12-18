@@ -191,6 +191,15 @@ public abstract class RabbitUtils {
 				&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText());
 	}
 
+	public static boolean isPassiveDeclarationChannelClose(ShutdownSignalException sig) {
+		Object shutdownReason = determineShutdownReason(sig);
+		return shutdownReason instanceof AMQP.Channel.Close
+				&& AMQP.NOT_FOUND == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
+				&& ((((AMQP.Channel.Close) shutdownReason).getClassId() == 40 // exchange
+					|| ((AMQP.Channel.Close) shutdownReason).getClassId() == 50) // queue
+					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 10); // declare
+	}
+
 	protected static Object determineShutdownReason(ShutdownSignalException sig) {
 		if (shutDownSignalReasonMethod == null) {
 			return false;

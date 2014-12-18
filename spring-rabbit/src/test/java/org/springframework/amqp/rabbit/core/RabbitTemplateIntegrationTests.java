@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,9 +23,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -45,11 +51,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
@@ -71,6 +79,8 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -88,6 +98,7 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -1138,6 +1149,64 @@ public class RabbitTemplateIntegrationTests {
 		finally {
 			container.stop();
 		}
+	}
+
+	@Test
+	public void testDegugLogOnPassiveDeclaration() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
+		when(logger.isDebugEnabled()).thenReturn(true);
+		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		final String queueName = UUID.randomUUID().toString();
+		final String exchangeName = UUID.randomUUID().toString();
+		try {
+			template.execute(new ChannelCallback<Void>() {
+
+				@Override
+				public Void doInRabbit(Channel channel) throws Exception {
+					channel.queueDeclarePassive(queueName);
+					return null;
+				}
+			});
+			fail("Expected exception");
+		}
+		catch (Exception e) {
+			assertThat(e, instanceOf(AmqpIOException.class));
+			assertThat(e.getCause(), instanceOf(IOException.class));
+			assertThat(e.getCause().getCause(), instanceOf(ShutdownSignalException.class));
+			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
+		}
+		try {
+			template.execute(new ChannelCallback<Void>() {
+
+				@Override
+				public Void doInRabbit(Channel channel) throws Exception {
+					channel.exchangeDeclarePassive(exchangeName);
+					return null;
+				}
+			});
+			fail("Expected exception");
+		}
+		catch (Exception e) {
+			assertThat(e, instanceOf(AmqpIOException.class));
+			assertThat(e.getCause(), instanceOf(IOException.class));
+			assertThat(e.getCause().getCause(), instanceOf(ShutdownSignalException.class));
+			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
+		}
+		verify(logger, never()).error(org.mockito.Matchers.any());
+		ArgumentCaptor<Object> logs = ArgumentCaptor.forClass(Object.class);
+		verify(logger, atLeast(2)).debug(logs.capture());
+		boolean queue = false;
+		boolean exchange = false;
+		for (Object log : logs.getAllValues()) {
+			String logMessage = (String) log;
+			queue |= (logMessage.contains(queueName) && logMessage.contains("404"));
+			exchange |= (logMessage.contains(queueName) && logMessage.contains("404"));
+		}
+		assertTrue(queue);
+		assertTrue(exchange);
+		connectionFactory.destroy();
 	}
 
 	@SuppressWarnings("serial")

@@ -20,6 +20,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Message;
@@ -37,6 +40,8 @@ import org.springframework.util.FileCopyUtils;
  * @since 1.4.2
  */
 public abstract class AbstractCompressingPostProcessor implements MessagePostProcessor, Ordered {
+
+	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final boolean autoDecompress;
 
@@ -75,7 +80,11 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 			if (this.autoDecompress) {
 				messageProperties.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
 			}
-			return new Message(zipped.toByteArray(), messageProperties);
+			byte[] compressed = zipped.toByteArray();
+			if (logger.isTraceEnabled()) {
+				logger.trace("Compressed " + message.getBody().length + " to " + compressed.length);
+			}
+			return new Message(compressed, messageProperties);
 		}
 		catch (IOException e) {
 			throw new AmqpIOException(e);
