@@ -583,7 +583,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		factory.setProxyTargetClass(false);
 		factory.addInterface(ContainerDelegate.class);
 		factory.setTarget(delegate);
-		proxy = (ContainerDelegate) factory.getProxy();
+		proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
 	}
 
 	// -------------------------------------------------------------------------
