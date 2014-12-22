@@ -16,7 +16,6 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -108,7 +108,7 @@ public class BlockingQueueConsumer {
 
 	private final boolean defaultRequeuRejected;
 
-	private final Collection<String> consumerTags = Collections.synchronizedSet(new HashSet<String>());
+	private final Map<String, String> consumerTags = new ConcurrentHashMap<String, String>();
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
@@ -233,24 +233,23 @@ public class BlockingQueueConsumer {
 	}
 
 	protected void basicCancel() {
-		try {
-			synchronized (this.consumerTags) {
-				for (String consumerTag : this.consumerTags) {
-					this.channel.basicCancel(consumerTag);
+		for (String consumerTag : this.consumerTags.keySet()) {
+			try {
+				this.channel.basicCancel(consumerTag);
+			}
+			catch (IOException e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Error performing 'basicCancel'", e);
 				}
-				this.consumerTags.clear();
+			}
+			catch (AlreadyClosedException e) {
+				if (logger.isTraceEnabled()) {
+					logger.trace(this.channel + " is already closed");
+				}
+				break;
 			}
 		}
-		catch (IOException e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error performing 'basicCancel'", e);
-			}
-		}
-		catch (AlreadyClosedException e) {
-			if (logger.isTraceEnabled()) {
-				logger.trace(this.channel + " is already closed");
-			}
-		}
+		this.consumerTags.clear();
 		this.cancelled.set(true);
 	}
 
@@ -286,6 +285,8 @@ public class BlockingQueueConsumer {
 		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 				delivery.getProperties(), envelope, "UTF-8");
 		messageProperties.setMessageCount(0);
+		messageProperties.setConsumerTag(delivery.getConsumerTag());
+		messageProperties.setConsumerQueue(this.consumerTags.get(delivery.getConsumerTag()));
 		Message message = new Message(body, messageProperties);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Received message: " + message);
@@ -458,10 +459,16 @@ public class BlockingQueueConsumer {
 	}
 
 	private void consumeFromQueue(String queue) throws IOException {
-		this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(), "", false, this.exclusive,
+		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(), "", false, this.exclusive,
 				this.consumerArgs, this.consumer);
-		if (logger.isDebugEnabled()) {
-			logger.debug("Started on queue '" + queue + "': " + this);
+		if (consumerTag != null) {
+			this.consumerTags.put(consumerTag, queue);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Started on queue '" + queue + "' with tag " + consumerTag + ": " + this);
+			}
+		}
+		else {
+			logger.error("Null consumer tag received for queue " + queue);
 		}
 	}
 
@@ -491,7 +498,8 @@ public class BlockingQueueConsumer {
 		if (consumer != null && consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelReceived.get()) {
 			try {
-				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags, this.transactional);
+				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags.keySet(),
+						this.transactional);
 			}
 			catch (Exception e) {
 				if (logger.isDebugEnabled()) {
@@ -517,9 +525,6 @@ public class BlockingQueueConsumer {
 		@Override
 		public void handleConsumeOk(String consumerTag) {
 			super.handleConsumeOk(consumerTag);
-			synchronized(BlockingQueueConsumer.this.consumerTags) {
-				BlockingQueueConsumer.this.consumerTags.add(consumerTag);
-			}
 			if (logger.isDebugEnabled()) {
 				logger.debug("ConsumeOK : " + BlockingQueueConsumer.this);
 			}
@@ -546,9 +551,7 @@ public class BlockingQueueConsumer {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Cancel received for " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			synchronized (BlockingQueueConsumer.this.consumerTags) {
-				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			}
+			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
 			BlockingQueueConsumer.this.cancelReceived.set(true);
 		}
 
@@ -569,7 +572,7 @@ public class BlockingQueueConsumer {
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
 			try {
-				queue.put(new Delivery(envelope, properties, body));
+				queue.put(new Delivery(consumerTag, envelope, properties, body));
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -583,14 +586,23 @@ public class BlockingQueueConsumer {
 	 */
 	private static class Delivery {
 
+		private final String consumerTag;
+
 		private final Envelope envelope;
+
 		private final AMQP.BasicProperties properties;
+
 		private final byte[] body;
 
-		public Delivery(Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
+		public Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
+			this.consumerTag = consumerTag;
 			this.envelope = envelope;
 			this.properties = properties;
 			this.body = body;
+		}
+
+		public String getConsumerTag() {
+			return consumerTag;
 		}
 
 		public Envelope getEnvelope() {

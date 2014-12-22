@@ -84,7 +84,7 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherReturns"));
 		assertEquals(CachingConnectionFactory.CacheMode.CONNECTION, connectionFactory.getCacheMode());
 		assertEquals(0,  TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
-		assertEquals(10, connectionFactory.getConnectionCachesize());
+		assertEquals(10, connectionFactory.getConnectionCacheSize());
 	}
 
 	@Test

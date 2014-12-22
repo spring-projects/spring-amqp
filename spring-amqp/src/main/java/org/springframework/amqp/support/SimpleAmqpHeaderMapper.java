@@ -233,6 +233,14 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			if (StringUtils.hasText(userId)) {
 				headers.put(AmqpHeaders.USER_ID, userId);
 			}
+			String consumerTag = amqpMessageProperties.getConsumerTag();
+			if (StringUtils.hasText(consumerTag)) {
+				headers.put(AmqpHeaders.CONSUMER_TAG, consumerTag);
+			}
+			String consumerQueue = amqpMessageProperties.getConsumerQueue();
+			if (StringUtils.hasText(consumerQueue)) {
+				headers.put(AmqpHeaders.CONSUMER_QUEUE, consumerQueue);
+			}
 
 			// Map custom headers
 			for (Map.Entry<String, Object> entry : amqpMessageProperties.getHeaders().entrySet()) {

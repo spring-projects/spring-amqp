@@ -170,13 +170,13 @@ public class SimpleMessageListenerContainerTests {
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		doAnswer(new Answer<Object>() {
+		doAnswer(new Answer<String>() {
 
 			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
+			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("1");
-				return null;
+				return "1";
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		final CountDownLatch latch = new CountDownLatch(2);
@@ -240,13 +240,14 @@ public class SimpleMessageListenerContainerTests {
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		doAnswer(new Answer<Object>() {
+		final String consumerTag = "1";
+		doAnswer(new Answer<String>() {
 
 			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
+			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				consumer.get().handleConsumeOk("1");
-				return null;
+				consumer.get().handleConsumeOk(consumerTag);
+				return consumerTag;
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		final CountDownLatch latch = new CountDownLatch(2);
@@ -261,7 +262,7 @@ public class SimpleMessageListenerContainerTests {
 
 		final List<Message> messages = new ArrayList<Message>();
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setQueueNames("foo");
+		container.setQueueNames("foobar");
 		container.setTxSize(2);
 		container.setMessageListener(new MessageListener() {
 
@@ -274,13 +275,15 @@ public class SimpleMessageListenerContainerTests {
 		BasicProperties props = new BasicProperties();
 		byte[] payload = "baz".getBytes();
 		Envelope envelope = new Envelope(1L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
+		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		envelope = new Envelope(2L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
+		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		envelope = new Envelope(3L, false, "foo", "bar");
-		consumer.get().handleDelivery("1", envelope, props, payload);
+		consumer.get().handleDelivery(consumerTag, envelope, props, payload);
 		assertTrue(latch.await(5, TimeUnit.SECONDS));
 		assertEquals(3, messages.size());
+		assertEquals(consumerTag, messages.get(0).getMessageProperties().getConsumerTag());
+		assertEquals("foobar", messages.get(0).getMessageProperties().getConsumerQueue());
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
 
 			@Override
@@ -288,7 +291,7 @@ public class SimpleMessageListenerContainerTests {
 				container.stop();
 			}
 		});
-		consumer.get().handleCancelOk("1");
+		consumer.get().handleCancelOk(consumerTag);
 		verify(channel, times(2)).basicAck(anyLong(), anyBoolean());
 		verify(channel).basicAck(2, true);
 		// second set was short
@@ -313,7 +316,7 @@ public class SimpleMessageListenerContainerTests {
 				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("foo");
 				args.set((Map<?, ?>) invocation.getArguments()[5]);
-				return null;
+				return "foo";
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
 
@@ -388,6 +391,7 @@ public class SimpleMessageListenerContainerTests {
 		container.stop();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddQueuesAndStartInCycle() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -396,6 +400,17 @@ public class SimpleMessageListenerContainerTests {
 		when(channel1.isOpen()).thenReturn(true);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel1);
+		final AtomicInteger count = new AtomicInteger();
+		doAnswer(new Answer<String>() {
+
+			@Override
+			public String answer(InvocationOnMock invocation) throws Throwable {
+				Consumer cons = (Consumer) invocation.getArguments()[6];
+				String consumerTag = "consFoo" + count.incrementAndGet();
+				cons.handleConsumeOk(consumerTag);
+				return consumerTag;
+			}
+		}).when(channel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListener() {
@@ -407,7 +422,6 @@ public class SimpleMessageListenerContainerTests {
 		container.afterPropertiesSet();
 
 		for (int i = 0; i < 10; i++) {
-			System.out.println(i);
 			container.addQueueNames("foo" + i);
 			if (!container.isRunning()) {
 				container.start();
@@ -425,9 +439,10 @@ public class SimpleMessageListenerContainerTests {
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				Consumer cons = (Consumer) invocation.getArguments()[6];
 				consumers.add(cons);
-				cons.handleConsumeOk(String.valueOf(consumerTag.getAndIncrement()));
+				String actualTag = String.valueOf(consumerTag.getAndIncrement());
+				cons.handleConsumeOk(actualTag);
 				latch.countDown();
-				return null;
+				return actualTag;
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 	}
@@ -508,13 +523,13 @@ public class SimpleMessageListenerContainerTests {
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		doAnswer(new Answer<Object>() {
+		doAnswer(new Answer<String>() {
 
 			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
+			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
 				consumer.get().handleConsumeOk("foo");
-				return null;
+				return "foo";
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
@@ -555,6 +570,7 @@ public class SimpleMessageListenerContainerTests {
 
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
+				String returnValue = null;
 				Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
 				for (Object consumer : consumers) {
 					ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
@@ -565,11 +581,12 @@ public class SimpleMessageListenerContainerTests {
 						}
 						else {
 							rabbitConsumer.handleConsumeOk("foo");
+							returnValue = "foo";
 						}
 						latch.countDown();
 					}
 				}
-				return null;
+				return returnValue;
 			}
 		};
 
