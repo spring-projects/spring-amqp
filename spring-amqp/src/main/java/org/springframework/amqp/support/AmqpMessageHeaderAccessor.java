@@ -31,6 +31,7 @@ import org.springframework.util.MimeType;
  * implementation giving access to AMQP-specific headers.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  */
 public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
@@ -137,6 +138,7 @@ public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		return (String) getHeader(AmqpHeaders.REPLY_TO);
 	}
 
+	@Override
 	public Long getTimestamp() {
 		Date amqpTimestamp = (Date) getHeader(AmqpHeaders.TIMESTAMP);
 		if (amqpTimestamp != null) {
@@ -153,6 +155,14 @@ public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 
 	public String getUserId() {
 		return (String) getHeader(AmqpHeaders.USER_ID);
+	}
+
+	public String getConsumerTag() {
+		return (String) getHeader(AmqpHeaders.CONSUMER_TAG);
+	}
+
+	public String getConsumerQueue() {
+		return (String) getHeader(AmqpHeaders.CONSUMER_QUEUE);
 	}
 
 }

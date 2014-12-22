@@ -92,4 +92,14 @@ public abstract class AmqpHeaders {
 
 	public static final String CHANNEL = PREFIX + "channel";
 
+	/**
+	 * The tag of the listener container consumer that received the message.
+	 */
+	public static final String CONSUMER_TAG = PREFIX + "consumerTag";
+
+	/**
+	 * The queue from which the listener container consumer received the message.
+	 */
+	public static final String CONSUMER_QUEUE = PREFIX + "consumerQueue";
+
 }
