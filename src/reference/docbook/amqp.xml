@@ -1616,7 +1616,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         for a fixed reply queue (to avoid the need to create a temporary queue for each request).
         Starting with <emphasis>Spring AMQP version 1.4.1</emphasis> Direct reply-to will be used by default
         (if supported by the server) instead of creating temporary reply queues.
-        When no <code>replyQueue</code> is provided (or it is set with the name <code>amqp.rabbitmq.reply-to</code>),
+        When no <code>replyQueue</code> is provided (or it is set with the name <code>amq.rabbitmq.reply-to</code>),
         the <classname>RabbitTemplate</classname> will automatically
         detect whether Direct reply-to is supported and either use it or fall back to using a temporary reply queue.
         When using Direct reply-to, a <code>reply-listener</code> is not required and should not be configured.
@@ -1629,7 +1629,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <section>
       <title>Message Correlation With A Reply Queue</title>
       <para>
-      When using a fixed reply queue (other than <code>amqp.rabbitmq.reply-to</code>),
+      When using a fixed reply queue (other than <code>amq.rabbitmq.reply-to</code>),
       it is necessary to provide correlation data so that replies can be correlated
       to requests. See <ulink url="http://www.rabbitmq.com/tutorials/tutorial-six-java.html">
       RabbitMQ Remote Procedure Call (RPC)</ulink>. By default, the standard <code>correlationId</code> property will
