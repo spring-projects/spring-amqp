@@ -47,23 +47,21 @@ import com.rabbitmq.client.ShutdownSignalException;
  * returns the same Connection from all {@link #createConnection()}
  * calls, and ignores calls to {@link com.rabbitmq.client.Connection#close()} and caches
  * {@link com.rabbitmq.client.Channel}.
- *
  * <p>
  * By default, only one Channel will be cached, with further requested Channels being created and disposed on demand.
  * Consider raising the {@link #setChannelCacheSize(int) "channelCacheSize" value} in case of a high-concurrency
  * environment.
- *
  * <p>
- * When the cache mode is {@link CacheMode#CONNECTION}, a new (or cached) connection is used for each request. In this case,
- * no channels are cached, just connections. The intended use case is a dedicated connection for long-lived
- * channels, such as those used in listener container threads. In those cases, the channel must be closed
- * anyway in order to re-queue any un-acked messages.
+ * When the cache mode is {@link CacheMode#CONNECTION}, a new (or cached) connection is used for each {@link #createConnection()};
+ * connections are cached according to the {@link #setConnectionCacheSize(int) "connectionCacheSize" value}.
+ * Both connections and channels are cached in this mode.
  * <p>
  * <b>{@link CacheMode#CONNECTION} is not compatible with a Rabbit Admin that auto-declares queues etc.</b>
  * <p>
- * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its shared Connection.</b>
+ * <b>NOTE: This ConnectionFactory requires explicit closing of all Channels obtained form its Connection(s).</b>
  * This is the usual recommendation for native Rabbit access code anyway. However, with this ConnectionFactory, its use
- * is mandatory in order to actually allow for Channel reuse.
+ * is mandatory in order to actually allow for Channel reuse. {@link Channel#close()} returns the channel to the
+ * cache, if there is room, or physically closes the channel otherwise.
  *
  * @author Mark Pollack
  * @author Mark Fisher
@@ -79,7 +77,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		 */
 		CHANNEL,
 		/**
-		 * Cache connections - no channel caching
+		 * Cache connections and channels within each connection
 		 */
 		CONNECTION
 	}
