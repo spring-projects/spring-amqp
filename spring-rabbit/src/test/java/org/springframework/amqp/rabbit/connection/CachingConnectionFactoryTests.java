@@ -17,6 +17,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -35,7 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,6 +47,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -202,6 +207,107 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannel2, atLeastOnce()).close();
 		verify(mockChannel3, atLeastOnce()).close();
 
+	}
+
+	@Test
+	public void testCheckoutLimit() throws IOException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con = ccf.createConnection();
+
+		Channel channel1 = con.createChannel(false);
+
+		try {
+			con.createChannel(false);
+			fail("Exception expected");
+		}
+		catch (AmqpTimeoutException e) {}
+
+		// should be ignored, and added last into channel cache.
+		channel1.close();
+
+		// remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false);
+
+		assertSame(ch1, channel1);
+
+		ch1.close();
+
+		verify(mockConnection, times(1)).createChannel();
+
+		con.close(); // should be ignored
+
+		verify(mockConnection, never()).close();
+		verify(mockChannel1, never()).close();
+
+		ccf.destroy();
+	}
+
+	@Test
+	public void testCheckoutLimitWithRelease() throws IOException, Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		// Called during physical close
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10000);
+
+		final Connection con = ccf.createConnection();
+
+		final AtomicReference<Channel> channelOne = new AtomicReference<Channel>();
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				Channel channel1 = con.createChannel(false);
+				latch.countDown();
+				channelOne.set(channel1);
+				try {
+					Thread.sleep(100);
+					channel1.close();
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				catch (IOException e) {
+				}
+			}
+
+		}).start();
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		Channel channel2 = con.createChannel(false);
+		assertSame(channelOne.get(), channel2);
+
+		channel2.close();
+
+		verify(mockConnection, never()).close();
+		verify(mockChannel1, never()).close();
+
+		ccf.destroy();
 	}
 
 	@Test
