@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.connection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -43,6 +44,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.core.ChannelCallback;
@@ -114,6 +116,41 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		assertEquals(5, openConnections.size());
 		assertEquals(3, idleConnections.size());
+		for (Connection connection : connections) {
+			connection.close();
+		}
+	}
+
+	@Test
+	public void testCachedConnectionsChannelLimit() throws Exception {
+		connectionFactory.setCacheMode(CacheMode.CONNECTION);
+		connectionFactory.setConnectionCacheSize(2);
+		connectionFactory.setChannelCheckoutTimeout(10);
+		connectionFactory.setExecutor(Executors.newCachedThreadPool());
+		List<Connection> connections = new ArrayList<Connection>();
+		connections.add(connectionFactory.createConnection());
+		connections.add(connectionFactory.createConnection());
+		List<Channel> channels = new ArrayList<Channel>();
+		channels.add(connections.get(0).createChannel(false));
+		try {
+			channels.add(connections.get(0).createChannel(false));
+			fail("Exception expected");
+		}
+		catch (AmqpTimeoutException e) {}
+		channels.add(connections.get(1).createChannel(false));
+		try {
+			channels.add(connections.get(1).createChannel(false));
+			fail("Exception expected");
+		}
+		catch (AmqpTimeoutException e) {}
+		channels.get(0).close();
+		channels.get(1).close();
+		channels.add(connections.get(0).createChannel(false));
+		channels.add(connections.get(1).createChannel(false));
+		assertSame(channels.get(0), channels.get(2));
+		assertSame(channels.get(1), channels.get(3));
+		channels.get(2).close();
+		channels.get(3).close();
 		for (Connection connection : connections) {
 			connection.close();
 		}
