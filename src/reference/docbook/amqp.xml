@@ -280,6 +280,25 @@
 	    would be most suitable.
 	  </para>
 	</important>
+    <para>
+        It is important to understand that the cache size is (by default) not a limit, but merely the number
+        of channels that can be cached. With a cache size of, say, 10, any number of channels can actually
+        be in use. If more than 10 channels are being used and they are all returned to the cache, 10 will
+        go in the cache; the remainder will be physically closed.
+    </para>
+    <para>
+        Starting with <emphasis>version 1.4.2</emphasis>, the <classname>CachingConnectionFactory</classname>
+        has a property <code>channelCheckoutTimeout</code>. When this property is greater than zero,
+        the <code>channelCacheSize</code> becomes a limit on the number of channels that can be created
+        on a connection. If the limit is reached, calling threads will block until a channel is available
+        or this timeout is reached, in which case a <classname>AmqpTimeoutException</classname> is thrown.
+    </para>
+    <caution>
+        Channels used within the framework (e.g. <classname>RabbitTemplate</classname>) will be reliably
+        returned to the cache. If you create channels outside of the framework, (e.g. by accessing
+        the connection(s) directly and invoking <code>createChannel()</code>), you must return them (by closing)
+        reliably, perhaps in a <code>finally</code> block, to avoid running out of channels.
+    </caution>
 
     <programlisting language="java"><![CDATA[CachingConnectionFactory connectionFactory = new CachingConnectionFactory("somehost");
 connectionFactory.setUsername("guest");
