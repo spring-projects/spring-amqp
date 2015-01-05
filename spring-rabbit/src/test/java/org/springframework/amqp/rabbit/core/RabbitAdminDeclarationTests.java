@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,7 +278,7 @@ public class RabbitAdminDeclarationTests {
 		verify(Config.channel2, times(0)).queueDeclare("foo", true, false, false, null);
 		verify(Config.channel2, times(0)).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
 		verify(Config.channel2, times(0)).queueBind("foo", "bar", "foo", null);
-		context.destroy();
+		context.close();
 	}
 
 	@Test
