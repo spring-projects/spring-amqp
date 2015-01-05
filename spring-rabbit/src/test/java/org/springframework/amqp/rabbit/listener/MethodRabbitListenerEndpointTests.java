@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
-import static org.mockito.Mockito.eq;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.amqp.rabbit.test.MessageTestUtils.createTextMessage;
@@ -133,11 +133,13 @@ public class MethodRabbitListenerEndpointTests {
 
 	@Test
 	public void resolveHeaderAndPayload() throws Exception {
-		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class, int.class);
+		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class, int.class, String.class, String.class);
 
 		Channel channel = mock(Channel.class);
 		MessageProperties properties = new MessageProperties();
 		properties.setHeader("myCounter", 55);
+		properties.setConsumerTag("consumerTag");
+		properties.setConsumerQueue("queue");
 		org.springframework.amqp.core.Message message = createTextMessage("my payload", properties);
 		listener.onMessage(message, channel);
 		assertDefaultListenerMethodInvocation();
@@ -469,10 +471,14 @@ public class MethodRabbitListenerEndpointTests {
 			assertEquals("Wrong message payload", "test", message.getPayload());
 		}
 
-		public void resolveHeaderAndPayload(@Payload String content, @Header int myCounter) {
+		public void resolveHeaderAndPayload(@Payload String content, @Header int myCounter,
+				@Header(AmqpHeaders.CONSUMER_TAG) String tag,
+				@Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
 			invocations.put("resolveHeaderAndPayload", true);
 			assertEquals("Wrong @Payload resolution", "my payload", content);
 			assertEquals("Wrong @Header resolution", 55, myCounter);
+			assertEquals("Wrong consumer tag header", "consumerTag", tag);
+			assertEquals("Wrong queue header", "queue", queue);
 		}
 
 		public void resolveCustomHeaderNameAndPayload(@Payload String content, @Header("myCounter") int counter) {

@@ -106,7 +106,7 @@ public class ExternalTxManagerTests {
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
+				return "consumerTag";
 			}
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -213,7 +213,7 @@ public class ExternalTxManagerTests {
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
+				return "consumerTag";
 			}
 		}).when(listenerChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -322,7 +322,7 @@ public class ExternalTxManagerTests {
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
+				return "consumerTag";
 			}
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -424,7 +424,7 @@ public class ExternalTxManagerTests {
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
+				return "consumerTag";
 			}
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -527,7 +527,7 @@ public class ExternalTxManagerTests {
 			@Override
 			public String answer(InvocationOnMock invocation) throws Throwable {
 				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
+				return "consumerTag";
 			}
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));

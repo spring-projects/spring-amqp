@@ -120,10 +120,8 @@ public abstract class RabbitUtils {
 			return;
 		}
 		try {
-			synchronized(consumerTags) {
-				for (String consumerTag : consumerTags) {
-					channel.basicCancel(consumerTag);
-				}
+			for (String consumerTag : consumerTags) {
+				channel.basicCancel(consumerTag);
 			}
 			if (transactional) {
 				/*

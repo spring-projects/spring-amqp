@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.support;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +31,6 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.JsonMessageConverter;
 import org.springframework.messaging.MessageHeaders;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Mark Fisher
@@ -132,6 +133,8 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setTimestamp(testTimestamp);
 		amqpProperties.setType("test.type");
 		amqpProperties.setUserId("test.userId");
+		amqpProperties.setConsumerTag("consumer.tag");
+		amqpProperties.setConsumerQueue("consumer.queue");
 		amqpProperties.setHeader(AmqpHeaders.SPRING_REPLY_CORRELATION, "test.correlation");
 		amqpProperties.setHeader(AmqpHeaders.SPRING_REPLY_TO_STACK, "test.replyTo2");
 		Map<String, Object> headerMap = headerMapper.toHeaders(amqpProperties);
@@ -154,6 +157,8 @@ public class SimpleAmqpHeaderMapperTests {
 		assertEquals("test.userId", headerMap.get(AmqpHeaders.USER_ID));
 		assertEquals("test.correlation", headerMap.get(AmqpHeaders.SPRING_REPLY_CORRELATION));
 		assertEquals("test.replyTo2", headerMap.get(AmqpHeaders.SPRING_REPLY_TO_STACK));
+		assertEquals("consumer.tag", headerMap.get(AmqpHeaders.CONSUMER_TAG));
+		assertEquals("consumer.queue", headerMap.get(AmqpHeaders.CONSUMER_QUEUE));
 	}
 
 	@Test // INT-2090

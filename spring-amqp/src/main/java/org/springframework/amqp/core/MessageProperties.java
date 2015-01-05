@@ -99,6 +99,12 @@ public class MessageProperties implements Serializable {
 
 	private volatile Integer messageCount;
 
+	// Not included in hashCode()
+
+	private volatile String consumerTag;
+
+	private volatile String consumerQueue;
+
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
 	}
@@ -217,7 +223,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	protected final boolean isContentLengthSet() {
-		return contentLengthSet;
+		return this.contentLengthSet;
 	}
 
 	public void setDeliveryMode(MessageDeliveryMode deliveryMode) {
@@ -288,7 +294,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	protected final boolean isDeliveryTagSet() {
-		return deliveryTagSet;
+		return this.deliveryTagSet;
 	}
 
 	public void setMessageCount(Integer messageCount) {
@@ -299,6 +305,21 @@ public class MessageProperties implements Serializable {
 		return this.messageCount;
 	}
 
+	public String getConsumerTag() {
+		return this.consumerTag;
+	}
+
+	public void setConsumerTag(String consumerTag) {
+		this.consumerTag = consumerTag;
+	}
+
+	public String getConsumerQueue() {
+		return this.consumerQueue;
+	}
+
+	public void setConsumerQueue(String consumerQueue) {
+		this.consumerQueue = consumerQueue;
+	}
 
 	@Override
 	public int hashCode() {
