@@ -1594,6 +1594,26 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     </property>
 </bean>]]></programlisting>
     </sect2>
+      <sect2>
+          <title>ContentTypeDelegatingMessageConverter</title>
+
+          <para>
+              This class was introduced in <emphasis>version 1.4.2</emphasis> and allows delegation
+              to a specific <interfacename>MessageConverter</interfacename> based on the content type
+              property in the <classname>MessageProperties</classname>. By default, it will delegate
+              to a <classname>SimpleMessageConverter</classname> if there is no <code>contentType</code>
+              property, or a value that matches none of the configured converters.
+          </para>
+
+          <programlisting language="xml"><![CDATA[<bean id="contentTypeConverter" class="ContentTypeDelegatingMessageConverter">
+    <property name="delegates">
+        <map>
+            <entry key="application/json" value-ref="jsonMessageConverter" />
+            <entry key="application/xml" value-ref="xmlMessageConverter" />
+        </map>
+    </property>
+</bean>]]></programlisting>
+      </sect2>
   </section>
 
   <section id="request-reply">
