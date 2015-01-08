@@ -1395,7 +1395,7 @@ public Message<OrderStatus> processOrder(Order order) {
     </section>
   </section>
 
-  <section>
+  <section id="message-converters">
     <title>Message Converters</title>
 
     <para>The <interfacename>AmqpTemplate</interfacename> also defines several
@@ -1650,7 +1650,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
     <section id="direct-reply-to">
         <title>RabbitMQ Direct reply-to</title>
         <important>
-        Starting the <emphasis>version 3.4.0</emphasis>, the RabbitMQ server now supports
+        Starting with <emphasis>version 3.4.0</emphasis>, the RabbitMQ server now supports
         <ulink url="http://www.rabbitmq.com/direct-reply-to.html">Direct reply-to</ulink>; this eliminates the main reason
         for a fixed reply queue (to avoid the need to create a temporary queue for each request).
         Starting with <emphasis>Spring AMQP version 1.4.1</emphasis> Direct reply-to will be used by default

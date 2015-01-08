@@ -24,7 +24,7 @@
 	</para>
 	<programlisting>compile 'org.springframework.amqp:spring-rabbit:${version}'</programlisting>
 
-	<section>
+	<section id="compatibility">
 		<title>Compatibility</title>
 		<para>
 			While the default Spring Framework version dependency is 4.1.x, Spring AMQP is generally compatible

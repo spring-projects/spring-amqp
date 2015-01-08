@@ -113,6 +113,7 @@
 			</para>
 		</section>
 		<section>
+			<title>Listeners and the Routing Connection Factory</title>
 			<para>
 				A <classname>SimpleMessageListenerContainer</classname> can be configured with a routing
 				connection factory to enable connection selection based on the queue names.
@@ -150,9 +151,18 @@ catch (MessageConversionException e) {
 		<section>
 			<title>RabbitMQ 3.4 Compatibility</title>
 			<para>
-				Now the Spring AMQP is compatible with the <emphasis>RabbitMQ 3.4</emphasis>.
-				However Spring AMQP still keeps the minimal RabbitMQ Client library in version
-				<emphasis>3.3.x</emphasis> to provide backward compatibility with legacy applications.
+				Spring AMQP is now compatible with the <emphasis>RabbitMQ 3.4</emphasis>,
+				including direct reply-to; see <xref linkend="compatibility" /> and
+				<xref linkend="direct-reply-to" /> for more information.
+			</para>
+		</section>
+		<section>
+			<title>ContentTypeDelegatingMessageConverter</title>
+			<para>
+				The <classname>ContentTypeDelegatingMessageConverter</classname> has been introduced to select
+				the <interfacename>MessageConverter</interfacename> to use, based on the <code>contentType</code>
+				property in the <classname>MessageProperties</classname>. See <xref linkend="message-converters"/>
+				for more information.
 			</para>
 		</section>
 	</section>
