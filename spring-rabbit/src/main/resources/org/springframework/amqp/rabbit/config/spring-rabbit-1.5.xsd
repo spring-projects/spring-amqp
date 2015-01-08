@@ -1,0 +1,1263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://www.springframework.org/schema/rabbit" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tool="http://www.springframework.org/schema/tool"
+	xmlns:beans="http://www.springframework.org/schema/beans" targetNamespace="http://www.springframework.org/schema/rabbit"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xsd:import namespace="http://www.springframework.org/schema/beans" />
+	<xsd:import namespace="http://www.springframework.org/schema/tool" />
+
+	<xsd:element name="queue">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+				Creates a queue for consumers to retrieve messages.  Uses an existing queue
+				with the same name if it exists on the broker, or else declares a
+				new one.  If you want to send a message use an exchange.
+			]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="queue-arguments" minOccurs="0" maxOccurs="1" />
+			</xsd:sequence>
+			<xsd:attribute name="id" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						The id of the queue in case it is different than the name.  Clients can receive or listen for messages by referring to the
+						queue itself, or to its name.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="name" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						The name of the queue.  Clients can receive or listen for messages by referring to the
+						queue itself, or to its name.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="auto-delete" use="optional" type="xsd:string" default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						Flag indicating that an queue will be deleted when it is no longer in use, i.e. the connection that declared it is closed. Default is false.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="exclusive" use="optional" type="xsd:string" default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					Flag indicating that the queue is exclusive to this connection.  Default is false.
+				]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="durable" use="optional" type="xsd:string" default="true">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is true.
+				]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="queue-arguments" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+					A reference to a <queue-arguments/> element.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.Map" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attributeGroup ref="declarable" />
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="queue-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+						A Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:element name="direct-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a direct exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a
+					new one.  A direct exchange routes messages
+					to queues that are bound to the exchange when the routing key in the message
+					matches that in the binding exactly.  You can set up bindings here too, either with
+					explicit routing keys, or using the queue name implicitly.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded" type="directBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+											Declares a binding of a queue to this exchange either with
+											an explicit routing key, or using the queue name implicitly.
+										]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="topic-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a topic exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a
+					new one.  A topic exchange routes messages
+					to queues that are bound to the exchange when the routing key in the message
+					matches the routing pattern in the binding of the queue.
+					You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded" type="topicBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+											Declares a binding of a queue to this exchange either with
+											a routing pattern, e.g. "uk.weather.*" or "uk.#".
+										]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="fanout-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a fanout exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a
+					new one.  A fanout exchange routes messages
+					to all queues that are bound to the exchange.  You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded" type="bindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+												Binds a queue to this exchange.  All messages sent to this exchange will be
+												placed on this queue by the broker.
+											]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="headers-exchange">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+					Creates a headers exchange for producers to send messages to.  Uses an existing exchange
+					with the same name if it exists on the broker, or declares a
+					new one.  A headers exchange routes messages
+					to all queues where a message header matches that specified in the binding of the queue.
+					You can set up bindings here too.
+				]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="exchangeType">
+					<xsd:sequence>
+						<xsd:element name="bindings" minOccurs="0" maxOccurs="1">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[
+									Groups bindings of queues to this exchange.
+								]]></xsd:documentation>
+							</xsd:annotation>
+							<xsd:complexType>
+								<xsd:choice>
+									<xsd:element name="binding" maxOccurs="unbounded" type="headersBindingType">
+										<xsd:annotation>
+											<xsd:documentation><![CDATA[
+												Binds a queue to this exchange.  Messages sent to this exchange will be
+												placed on this queue by the broker if they contain a header that matches
+												this binding (key-value pair).
+											]]></xsd:documentation>
+										</xsd:annotation>
+									</xsd:element>
+								</xsd:choice>
+							</xsd:complexType>
+						</xsd:element>
+					</xsd:sequence>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="exchangeType">
+		<xsd:sequence>
+			<xsd:element ref="exchange-arguments" minOccurs="0" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="id" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					The id of the exchange bean definition in case it is different than the name.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" use="required" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					The name of the exchange. Clients can send a message by referring to the
+					exchange itself, or to its name.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="auto-delete" use="optional" type="xsd:string" default="false">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that an exchange will be deleted when no longer in use, i.e. the connection that declared it is closed. Default is false.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durable" use="optional" type="xsd:string" default="true">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that the exchange is durable, i.e. will survive broker restart.  Default is true.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attributeGroup ref="declarable" />
+	</xsd:complexType>
+
+	<xsd:element name="exchange-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+				A Map to pass to the broker when this component is declared.
+			]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="directBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="key" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+							An explicit routing key binding the queue to this exchange.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="topicBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="pattern" use="required">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						An explicit routing pattern binding the queue to this exchange.  In the pattern,
+						the symbol # matches one or more words and the symbol * matches any single word.
+						Typical bindings might be "uk.#" for all items in the uk, "#.weather" for all
+						weather items, or "uk.weather" for all uk weather items.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="headersBindingType">
+		<xsd:complexContent>
+			<xsd:extension base="bindingType">
+				<xsd:attribute name="key" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						The header name to match messages for routing.
+						This attribute is mutually exclusive with 'binding-arguments' sub-element.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="value" use="optional">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+						The header value to match messages for routing.
+						This attribute is mutually exclusive with 'binding-arguments' sub-element.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="bindingType">
+		<xsd:sequence>
+			<xsd:element ref="binding-arguments" minOccurs="0" maxOccurs="1" />
+		</xsd:sequence>
+		<xsd:attribute name="queue" use="optional">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Queue"><![CDATA[
+				The bean name of the Queue to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Queue" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exchange" use="optional">
+			<xsd:annotation>
+				<xsd:documentation source="java:org.springframework.amqp.core.Exchange"><![CDATA[
+				The bean name of another exchange to bind to this exchange.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.core.Exchange" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:element name="binding-arguments" type="mapType">
+		<xsd:annotation>
+			<xsd:documentation source="java:java.util.Map"><![CDATA[
+						A Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="mapType">
+		<xsd:complexContent>
+			<xsd:extension base="beans:mapType">
+				<xsd:attribute name="id" type="xsd:string" />
+				<xsd:attribute name="ref" use="optional">
+					<xsd:annotation>
+						<xsd:documentation source="java:java.util.Map"><![CDATA[
+						The bean name of the Map to pass to the broker when this component is declared.
+						]]></xsd:documentation>
+						<xsd:appinfo>
+							<tool:annotation kind="ref">
+								<tool:expected-type type="java.util.Map" />
+							</tool:annotation>
+						</xsd:appinfo>
+					</xsd:annotation>
+				</xsd:attribute>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+
+	<xsd:element name="annotation-driven">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Enables the detection of @RabbitListener annotation on any Spring-managed object. If
+	present, a message listener container will be created to receive the relevant
+	messages and invoke the annotated method accordingly.
+
+	See Javadoc for the org.springframework.amqp.rabbit.annotation.EnableRabbit annotation
+	for	information	on code-based alternatives to this XML element.
+			]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="registry" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies the org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry
+	instance to	use to register annotated listener endpoints. If not provided, a default
+	instance will be used by default.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="container-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies the org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory instance
+	to use to create the container for a listener endpoint that does not define a specific
+	factory. This permits in practice to omit the "containerFactory" attribute of the RabbitListener
+	annotation. This attribute is not required as each endpoint may define the factory to use and,
+	as a convenience, the RabbitListenerContainerFactory with name 'rabbitListenerContainerFactory'
+	is looked up by default.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="handler-method-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies a custom org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory
+	instance to	use to configure the message listener responsible to serve an endpoint detected by this
+	processor. By default, DefaultMessageHandlerMethodFactory is used and it can be configured
+	further to support additional method arguments or to customize conversion and validation
+	support. See org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory
+	Javadoc for more details.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory"/>
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="listener-container">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Each listener child element will be hosted by a container whose configuration
+	is determined by this parent element. This variant builds RabbitMQ
+	listener containers, operating against a specified ConnectionFactory.
+			]]></xsd:documentation>
+			<xsd:appinfo>
+				<tool:annotation>
+					<tool:exports type="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer" />
+				</tool:annotation>
+			</xsd:appinfo>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="listenerContainerBaseType">
+					<xsd:sequence>
+						<xsd:element name="listener" type="listenerType" minOccurs="0" maxOccurs="unbounded" />
+					</xsd:sequence>
+					<xsd:attribute name="connection-factory" type="xsd:string" default="rabbitConnectionFactory">
+						<xsd:annotation>
+							<xsd:documentation><![CDATA[
+				A reference to the org.springframework.amqp.rabbit.connection.ConnectionFactory.
+				Default referenced bean name is "rabbitConnectionFactory".
+							]]></xsd:documentation>
+							<xsd:appinfo>
+								<tool:annotation kind="ref">
+									<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+								</tool:annotation>
+							</xsd:appinfo>
+						</xsd:annotation>
+					</xsd:attribute>
+					<xsd:attribute name="message-converter" type="xsd:string">
+						<xsd:annotation>
+							<xsd:documentation><![CDATA[
+				A reference to the MessageConverter strategy for converting AMQP Messages to
+				listener method arguments for any referenced 'listener' that is a POJO.
+				Default is a SimpleMessageConverter.
+							]]></xsd:documentation>
+							<xsd:appinfo>
+								<tool:annotation kind="ref">
+									<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+								</tool:annotation>
+							</xsd:appinfo>
+						</xsd:annotation>
+					</xsd:attribute>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:complexType name="listenerContainerBaseType">
+		<xsd:attribute name="id" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Optional bean id for the container.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="task-executor" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	A reference to a Spring TaskExecutor (or standard JDK 1.5 Executor) for executing
+	listener invokers. Default is a SimpleAsyncTaskExecutor, using internally managed threads.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="java.util.concurrent.Executor" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="error-handler" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	A reference to an ErrorHandler strategy for handling any uncaught Exceptions
+	that may occur during the execution of the MessageListener.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.util.ErrorHandler" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="acknowledge" default="auto">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The acknowledge mode: "auto", "manual", or "none".
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:NMTOKEN">
+					<xsd:enumeration value="auto" />
+					<xsd:enumeration value="manual" />
+					<xsd:enumeration value="none" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="transaction-manager" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	A reference to an external PlatformTransactionManager.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.transaction.PlatformTransactionManager" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="channel-transacted" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Flag to indicate that the channel should be used transactionally.
+	Cannot be 'true' if acknowledge is 'none'. Default is false.
+					]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="concurrency" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The number of concurrent consumers to start for each listener initially.
+	See also 'max-concurrency'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="max-concurrency" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The maximum number of concurrent consumers to start, if needed, on demand.
+	Must be greater than or equal to 'concurrency'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="min-start-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time in milliseconds which must elapse before each new consumer is started
+	on demand. Default 10000 (10 seconds).
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="min-stop-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time in milliseconds which must elapse before a consumer is stopped
+	since the last consumer was stopped when an idle consumer is detected.
+	Default 60000 (1 minute).
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="min-consecutive-active" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The minimum number of consecutive actions processed by consumer, without a receive
+	timeout occurring, when considering starting a new consumer.
+	Also impacted by 'transaction-size' see the
+	reference documentation. Default 10.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="min-consecutive-idle" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The minimum number of receive timeouts a consumer must experience before
+	considering stopping a consumer. Also impacted by 'transaction-size' see the
+	reference documentation. Default 10.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="prefetch" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
+	to improve throughput. It should be greater than or equal to the transaction size.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="transaction-size" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Tells the container how many messages to process in a single transaction (if the channel is transactional). For
+	best results it should be less than or equal to the prefetch count. Also used to determine how often acks
+	are sent when using AUTO acknowledge mode.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="receive-timeout" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time for which a consumer waits for a message; used together with 'transaction-size' to determine whether
+	or not a consumer is idle, why dynamic concurrency is enabled using 'max-concurrency'. When 'transaction-size'
+	is greater than 1 (default), acks for processed message(s) can be delayed up to ('transaction-size' - 1) *
+	this value because the ack is sent after `transaction-size` attempts to receive a message have occurred.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="requeue-rejected" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Tells the container the default requeue behavior when rejecting messages. Default is 'true' meaning messages
+	will be requeued, unless the listener signals not to by throwing an AmqpRejectAndDontRequeueException. When
+	set to false, messages will never be requeued.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="phase" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The lifecycle phase within which this container should start and stop. The lower
+	the value the earlier this container will start and the later it will stop. The
+	default is Integer.MAX_VALUE meaning the container will start as late as possible
+	and stop as soon as possible.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="auto-startup" type="xsd:string" default="true">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Flag to indicate that the container should start up automatically when the enclosing context is refreshed.  Default true.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="advice-chain" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Reference to a chain of AOP advice to be applied to the listener.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="recovery-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time in milliseconds between attempts to start a consumer if it fails to start with a non-fatal error. Default 5000.
+	See also 'missing-queues-fatal'. Fatal errors include authentication problems.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="missing-queues-fatal" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When `true` (default), if none of the queues are available on the broker, the condition is considered fatal; this
+	can prevent application startup; it can also cause the container to stop if the queues are deleted while the
+	container is running. Set to 'false' and this condition will not be considered fatal, and the container will
+	continue to attempt to passively declare the queues, according to the 'recovery-interval'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="auto-declare" default="true">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The flag to indicate that a new Consumer should redeclare AMQP objects (Queues, Exchanges, Bindings),
+	when they might be removed according to their 'auto-delete' option or 'ttl' policy since the last Consumer stop.
+	Defaults to 'true'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:union memberTypes="xsd:boolean xsd:string" />
+			</xsd:simpleType>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="listenerType">
+		<xsd:attribute name="id" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The unique identifier for this listener.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="queue-names" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The queue names for this listener as a comma-separated list. Either this or queues is required.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="queues" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The queues (bean references) for this listener as a comma-separated list. Either this or queue-names is required.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exclusive" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When true, a single consumer in the container will have exlusive use of the queue(s), preventing other consumers from
+	receiving messages from the queue(s). When true, requires a concurrency of 1. Default false.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="priority" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The priority of this listener's Consumer. Requires RabbitMQ 3.2 or higher.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="ref" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The bean name of the listener object, implementing
+	the MessageListener/ChannelAwareMessageListener interface
+	or defining the specified listener method. Required.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref" />
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="method" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The name of the listener method to invoke. If not specified,
+	the target bean is supposed to implement the MessageListener
+	or ChannelAwareMessageListener interface.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="response-exchange" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The name of the default response Exchange to send response messages to.
+	This will be applied in case of a request message that does not carry
+	a "replyTo" property. Note: This only applies to a listener method with
+	a return value, for which each result object will be converted into a
+	response message.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="response-routing-key" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The routing key to send along with a response message.
+	This will be applied in case of a request message that does not carry
+	a "replyTo" property. Note: This only applies to a listener method with
+	a return value, for which each result object will be converted into a
+	response message.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="admin" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Reference to a 'RabbitAdmin'. Required if the listener is using auto-delete
+	queues and those queues are configured for conditional declaration. This
+	is the admin that will (re)declare those queues when the container is
+	(re)started. See the reference documentation for more information.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.amqp.rabbit.core.RabbitAdmin" />
+					</tool:annotation>
+				</xsd:appinfo>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:element name="admin">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit admin (org.springframework.amqp.rabbit.core.RabbitAdmin),
+	used to manage exchanges, queues and bindings.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique name for this rabbit admin used as a bean definition identifier.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-factory" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to rabbit connection factory. Either 'connection-factory' or
+	'template' attribute can be set.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="auto-startup" default="true">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Specifies if the queues, exchanges and bindings in the context should automatically be declared
+	(lazily, when a connection is established to the broker). Default value is 'true'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
+			</xsd:attribute>
+			<xsd:attribute name="ignore-declaration-exceptions" default="false">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	If automatic declaration is enabled (see 'auto-startup'), if this is set to 'true', exceptions will
+	be logged (WARNings) but declaration of other elements will continue. If false, declarations will
+	cease when an exception occurs. Default value is 'false'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="template">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit template (org.springframework.amqp.rabbit.core.RabbitTemplate)
+	for convenient access to the broker.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="reply-listener" type="listenerContainerBaseType"
+					minOccurs="0" maxOccurs="1">
+					<xsd:annotation>
+						<xsd:documentation><![CDATA[
+	A <listener-container/> used to receive asynchronous replies on the reply-channel the
+	<listener/> child element is disallowed because the template itself is the listener.
+						]]></xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:sequence>
+			<xsd:attribute name="id" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique name for this rabbit template used as a bean definition identifier.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="routing-key" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default routing key for sending messages.  Default is empty.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="exchange" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default exchange for sending messages.  Default is empty (the default exchange).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="queue" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Default queue for receiving messages. Default is empty (non-existent queue).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="reply-timeout" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Timeout for send and receive in milliseconds.  Default is 5000 (5 seconds).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="channel-transacted" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Flag to indicate that the channel should be used transactionally.  Default is false.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="encoding" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Encoding to use for packing and unpacking MessageProperties of type String.  Default is UTF-8.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="message-converter" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	MessageConverter to convert between raw bytes and Java objects in the *convert* methods.  Defaults to a simple implementation that handles Strings, byte arrays and Serializable.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.support.converter.MessageConverter" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-factory" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to rabbit connection factory.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="reply-queue" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to a <queue/> for replies; optional; if not supplied, methods expecting replies
+	will use a temporary, exclusive, auto-delete queue.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.Queue" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="mandatory" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When 'true' sets the mandatory flag on basic.publish; only applies if
+	a 'return-callback' is provided. Mutually exclusive with 'mandatory-expression'.
+	Defaults to 'false'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
+			</xsd:attribute>
+			<xsd:attribute name="mandatory-expression" use="optional" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to be evaluated against each request message to determine a 'mandatory' boolean value.
+	The BeanFactoryResolver is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@myBean.isMandatory(#root)`.
+	Only applies if a 'return-callback' is provided. Mutually exclusive with 'mandatory'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="return-callback" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to an implementation of RabbitTemplate.ReturnCallback - invoked if
+	a return is received for a message published with mandatory set
+	that couldn't be delivered according to the semantics of that option.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ReturnCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="confirm-callback" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to an implementation of RabbitTemplate.ConfirmCallback - invoked if
+	a confirm (ack or nack) return is received for a published message.
+	Requires a 'connection-factory' that has 'publisher-confirms' set to 'true'.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.RabbitTemplate.ConfirmCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="correlation-key" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Header name used to convey correlation data for send and receive operations. If not specified, the standard
+	correlationId message property is used. Previous versions of spring-amqp used a header 'spring_reply_correlation'; if you
+	wish to continue to use that value, specify it here.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="retry-template" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a RetryTemplate - used to invoke retries on Rabbit operations (such as when a connection fails).
+	By default, retries are not attempted.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.retry.support.RetryTemplate" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="recovery-callback" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a RecoveryCallback - used in the 'retryTemplate.execute()'. Ignored if 'retry-template' isn't provided.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.retry.RecoveryCallback" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="send-connection-factory-selector-expression" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to evaluate the 'lookupKey' for each request message,
+	when an 'AbstractRoutingConnectionFactory' is in used for this 'template'.
+	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@vhostFor.select(messageProperties.headers.customerId)'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="receive-connection-factory-selector-expression" type="xsd:string">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A SpEL expression to evaluate the 'lookupKey' for each 'receive' operation,
+	when an 'AbstractRoutingConnectionFactory' is in used for this 'template'; the root object
+	for the evaluation is the queue name.
+	The 'BeanFactoryResolver' is available too, if the RabbitTemplate is used from Spring Context,
+	allowing for expressions such as '@vhostFor.select(#root)'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="connection-factory">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Creates a rabbit CachingConnectionFactory with sensible defaults.
+					]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Unique name for this rabbit connection factory used as a bean definition identifier.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="host" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Hostname to connect to broker.  Default is "localhost".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="port" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Port number to connect to broker.  Default is 5672.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="addresses" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	List of addresses; e.g. host1,host2:4567,host3 - overrides host/port if supplied.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="username" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Username to connect to broker.  Default is "guest".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="password" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Password to connect to broker.  Default is "guest".
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="virtual-host" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Virtual host name to connect to broker.  Default is "/".  Virtual hosts are logical partitions of the broker with separate queues, excchanges, users, etc.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="channel-cache-size" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Cache size for channels.  More channels can be used by clients, but in excess of this number they will not be cached.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-factory" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to native rabbit connection factory, where you can specify native features like client properties.  The other properties (host, port) etc. on this element
+	override the ones on the native connection factory (which is used as a parent bean definition).
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="com.rabbitmq.client.ConnectionFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="executor" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to an ExecutorService, or ThreadPoolTaskExecutor (as defined by a <task:executor/>
+	element). Passed to the Rabbit library when creating the connection. When not supplied, the
+	Rabbit library currently uses a fixed thread pool ExecutorService with 5 threads.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.concurrent.Executor" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="publisher-confirms" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When true, channels on connections created by this factory support publisher confirms.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="publisher-returns" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When true, channels on connections created by this factory support publisher returns.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="requested-heartbeat" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Sets the requested heardbeat interval on the underlying Rabbit connection factory.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-timeout" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Sets the connection timeout (milliseconds) on the underlying Rabbit connection factory.
+	Default: 0 (infinite timeout).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="cache-mode" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When 'CHANNEL', channels are cached within a single connection (default); when 'CONNECTION',
+	connections and their channels are cached. CONNECTION might be suitable for a listener
+	container.
+					]]></xsd:documentation>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="cacheModes xsd:string"/>
+				</xsd:simpleType>
+			</xsd:attribute>
+			<xsd:attribute name="connection-cache-size" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The size of the cache when cache-mode is 'CONNECTION'.
+	More connections can be used by clients, but in excess of this number they will not be cached.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:attributeGroup name="declarable">
+		<xsd:attribute name="auto-declare">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Specifies if the this element should automatically be declared
+	(lazily, when a connection is established to the broker).
+	See also 'declared-by'.
+	Default value is 'true'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleType>
+				<xsd:union memberTypes="xsd:boolean xsd:string" />
+			</xsd:simpleType>
+		</xsd:attribute>
+		<xsd:attribute name="declared-by" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	If 'auto-declare' is true, specifies a (comma-delimited) list of
+	RabbitAdmins (if they have 'auto-startup="true"') that should
+	declare this element (lazily, when a connection is established with the broker).
+	If not specified, or empty, then all auto-startup RabbitAdmins will declare the element.
+	Default value is all RabbitAdmins.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:attributeGroup>
+
+	<xsd:simpleType name="cacheModes">
+		<xsd:restriction base="xsd:token">
+			<xsd:enumeration value="CHANNEL"/>
+			<xsd:enumeration value="CONNECTION"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+</xsd:schema>
