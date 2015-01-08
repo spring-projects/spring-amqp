@@ -165,6 +165,15 @@ catch (MessageConversionException e) {
 				for more information.
 			</para>
 		</section>
+		<section>
+			<title>ContentTypeDelegatingMessageConverter</title>
+			<para>
+				The <classname>ContentTypeDelegatingMessageConverter</classname> has been introduced to select
+				the specific <interfacename>MessageConverter</interfacename> based on the <code>contentType</code>
+				property in the <classname>MessageProperties</classname>. See <xref linkend="message-converters"/>
+				for more information.
+			</para>
+		</section>
 	</section>
 
 	<section>
