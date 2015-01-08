@@ -155,6 +155,15 @@ catch (MessageConversionException e) {
 				<emphasis>3.3.x</emphasis> to provide backward compatibility with legacy applications.
 			</para>
 		</section>
+		<section>
+			<title>ContentTypeDelegatingMessageConverter</title>
+			<para>
+				The <classname>ContentTypeDelegatingMessageConverter</classname> has been introduced to select
+				the specific <interfacename>MessageConverter</interfacename> based on the <code>contentType</code>
+				property in the <classname>MessageProperties</classname>. See <xref linkend="message-converters"/>
+				for more information.
+			</para>
+		</section>
 	</section>
 
 	<section>

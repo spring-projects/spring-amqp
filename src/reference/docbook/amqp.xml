@@ -1395,7 +1395,7 @@ public Message<OrderStatus> processOrder(Order order) {
     </section>
   </section>
 
-  <section>
+  <section id="message-converters">
     <title>Message Converters</title>
 
     <para>The <interfacename>AmqpTemplate</interfacename> also defines several
