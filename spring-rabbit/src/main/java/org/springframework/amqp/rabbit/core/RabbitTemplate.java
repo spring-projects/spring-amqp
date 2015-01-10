@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -491,13 +491,13 @@ public class RabbitTemplate extends RabbitAccessor
 
 	private void evaluateFastReplyTo() {
 		this.usingFastReplyTo = false;
-		if (this.replyQueue == null || AddressUtils.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
+		if (this.replyQueue == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
 			try {
 				execute(new ChannelCallback<Void>() {
 
 					@Override
 					public Void doInRabbit(Channel channel) throws Exception {
-						channel.queueDeclarePassive(AddressUtils.AMQ_RABBITMQ_REPLY_TO);
+						channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 						return null;
 					}
 				});
@@ -910,7 +910,7 @@ public class RabbitTemplate extends RabbitAccessor
 						"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
 				String replyTo;
 				if (RabbitTemplate.this.usingFastReplyTo) {
-					replyTo = AddressUtils.AMQ_RABBITMQ_REPLY_TO;
+					replyTo = Address.AMQ_RABBITMQ_REPLY_TO;
 				}
 				else {
 					DeclareOk queueDeclaration = channel.queueDeclare();

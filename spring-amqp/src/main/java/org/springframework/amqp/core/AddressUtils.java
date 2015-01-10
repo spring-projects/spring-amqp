@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ package org.springframework.amqp.core;
  */
 public class AddressUtils {
 
-	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
-
 	/**
 	 * Decodes the reply-to {@link Address} into exchange/key.
 	 *
@@ -31,18 +29,7 @@ public class AddressUtils {
 	 * @return the Address.
 	 */
 	public static Address decodeReplyToAddress(Message request) {
-		Address replyTo;
-		String replyToString = request.getMessageProperties().getReplyTo();
-		if (replyToString == null) {
-			replyTo = null;
-		}
-		else if (replyToString.startsWith(AMQ_RABBITMQ_REPLY_TO)) {
-			replyTo = new Address("", replyToString);
-		}
-		else {
-			replyTo = new Address(replyToString);
-		}
-		return replyTo;
+		return request.getMessageProperties().getReplyToAddress();
 	}
 
 }
