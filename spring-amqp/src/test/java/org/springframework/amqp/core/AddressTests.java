@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.junit.Test;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Artem Bilan
+ * @author Gary Russell
  */
 public class AddressTests {
 
@@ -81,6 +82,20 @@ public class AddressTests {
 		assertEquals("", address.getExchangeName());
 		assertEquals("", address.getRoutingKey());
 		assertEquals("/", address.toString());
+	}
+
+	@Test
+	public void testDirectReplyTo() {
+		String replyTo = Address.AMQ_RABBITMQ_REPLY_TO + ".ab/cd/ef";
+		MessageProperties props = new MessageProperties();
+		props.setReplyTo(replyTo);
+		Message message = new Message("foo".getBytes(), props);
+		Address address = AddressUtils.decodeReplyToAddress(message);
+		assertEquals("", address.getExchangeName());
+		assertEquals(replyTo, address.getRoutingKey());
+		address = props.getReplyToAddress();
+		assertEquals("", address.getExchangeName());
+		assertEquals(replyTo, address.getRoutingKey());
 	}
 
 }

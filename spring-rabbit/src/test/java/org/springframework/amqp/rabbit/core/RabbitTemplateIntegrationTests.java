@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -59,7 +59,6 @@ import org.mockito.stubbing.Answer;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
@@ -1074,7 +1073,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveFastExplicit() {
-		this.template.setReplyQueue(new Queue(AddressUtils.AMQ_RABBITMQ_REPLY_TO));
+		this.template.setReplyQueue(new Queue(Address.AMQ_RABBITMQ_REPLY_TO));
 		sendAndReceiveFastGuts();
 	}
 
@@ -1084,7 +1083,7 @@ public class RabbitTemplateIntegrationTests {
 
 				@Override
 				public Void doInRabbit(Channel channel) throws Exception {
-					channel.queueDeclarePassive(AddressUtils.AMQ_RABBITMQ_REPLY_TO);
+					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 					return null;
 				}
 			});
@@ -1109,7 +1108,7 @@ public class RabbitTemplateIntegrationTests {
 			Object result = this.template.convertSendAndReceive("foo");
 			container.stop();
 			assertEquals("FOO", result);
-			assertThat(replyToWas.get(), startsWith(AddressUtils.AMQ_RABBITMQ_REPLY_TO));
+			assertThat(replyToWas.get(), startsWith(Address.AMQ_RABBITMQ_REPLY_TO));
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
