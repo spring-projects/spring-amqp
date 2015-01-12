@@ -90,7 +90,7 @@ public class AddressTests {
 		MessageProperties props = new MessageProperties();
 		props.setReplyTo(replyTo);
 		Message message = new Message("foo".getBytes(), props);
-		Address address = AddressUtils.decodeReplyToAddress(message);
+		Address address = message.getMessageProperties().getReplyToAddress();
 		assertEquals("", address.getExchangeName());
 		assertEquals(replyTo, address.getRoutingKey());
 		address = props.getReplyToAddress();
