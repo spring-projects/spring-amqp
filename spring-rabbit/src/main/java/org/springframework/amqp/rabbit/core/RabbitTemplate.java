@@ -33,7 +33,6 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.AddressUtils;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -1164,7 +1163,7 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
 	private Address getReplyToAddress(Message request) throws AmqpException {
-		Address replyTo = AddressUtils.decodeReplyToAddress(request);
+		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
 			if (this.exchange == null) {
 				throw new AmqpException(
