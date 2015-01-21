@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.admin;
+
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +47,14 @@ import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpPeer;
 import com.ericsson.otp.erlang.OtpSelf;
 
+/**
+ * @author Mark Pollack
+ * @author Mark Fisher
+ * @author Chris Beams
+ * @author Dave Syer
+ * @author Gary Russell
+ * @author Artem Bilan
+ */
 public class JInterfaceIntegrationTests {
 
 	private static Log logger = LogFactory.getLog(JInterfaceIntegrationTests.class);
@@ -134,6 +148,34 @@ public class JInterfaceIntegrationTests {
 				logger.debug("i = " + i);
 			}
 		}
+	}
+
+	@Test
+	public void testConcurrency() throws Exception {
+		SingleConnectionFactory cf = new SingleConnectionFactory("rabbit-monitor", NODE_NAME);
+		cf.afterPropertiesSet();
+		final ErlangTemplate template = new ErlangTemplate(cf);
+		template.afterPropertiesSet();
+
+		ExecutorService executorService = Executors.newFixedThreadPool(10);
+
+		for (int i = 0; i < 10; i++) {
+			final int j = i;
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					Assert.assertEquals((long) j, template.executeAndConvertRpc("erlang", "abs", -j));
+				}
+
+			});
+		}
+
+		executorService.shutdown();
+
+		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
+
+		cf.destroy();
 	}
 
 	public OtpConnection createConnection() throws Exception {

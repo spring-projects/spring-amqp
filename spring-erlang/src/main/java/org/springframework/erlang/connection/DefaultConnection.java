@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.erlang.connection;
 
 import java.io.IOException;
@@ -24,9 +25,10 @@ import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 
 /**
- * Basic implementation of {@link ConnectionProxy} that delegates to an underlying OtpConnection.
+ * Basic implementation of {@link ConnectionProxy} that delegates
+ * to an underlying {@link OtpConnection}.
  * @author Mark Pollack
- *
+ * @author Artem Bilan
  */
 public class DefaultConnection implements ConnectionProxy {
 
@@ -37,19 +39,26 @@ public class DefaultConnection implements ConnectionProxy {
 		this.otpConnection = otpConnection;
 	}
 
+	@Override
 	public void close() {
-		otpConnection.close();
+		this.otpConnection.close();
 	}
 
-	public void sendRPC(String mod, String fun, OtpErlangList args)
-			throws IOException {
-		otpConnection.sendRPC(mod, fun, args);
-
+	@Override
+	public void sendRPC(String mod, String fun, OtpErlangList args) throws IOException {
+		this.otpConnection.sendRPC(mod, fun, args);
 	}
 
-	public OtpErlangObject receiveRPC() throws IOException, OtpErlangExit,
-			OtpAuthException {
-		return otpConnection.receiveRPC();
+	@Override
+	public OtpErlangObject receiveRPC() throws IOException, OtpErlangExit, OtpAuthException {
+		return this.otpConnection.receiveRPC();
+	}
+
+	@Override
+	public synchronized OtpErlangObject sendAndReceiveRPC(String mod, String fun, OtpErlangList args)
+			throws IOException, OtpErlangExit, OtpAuthException {
+		sendRPC(mod, fun, args);
+		return receiveRPC();
 	}
 
 	public OtpConnection getTargetConnection() {
