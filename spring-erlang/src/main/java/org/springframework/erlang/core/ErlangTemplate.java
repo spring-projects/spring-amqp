@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.ericsson.otp.erlang.*;
 
 /**
  * @author Mark Pollack
+ * @author Artem Bilan
  */
 public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 
@@ -47,9 +48,7 @@ public class ErlangTemplate extends ErlangAccessor implements ErlangOperations {
 		return execute(new ConnectionCallback<OtpErlangObject>() {
 			public OtpErlangObject doInConnection(Connection connection) throws Exception {
 				logger.debug("Sending RPC for module [" + module + "] function [" + function + "] args [" + args);
-				connection.sendRPC(module, function, args);
-				//TODO consider dedicated response object.
-				OtpErlangObject response = connection.receiveRPC();
+				OtpErlangObject response = connection.sendAndReceiveRPC(module, function, args);
 				logger.debug("Response received = " + response.toString());
 				handleResponseError(module, function, response);
 				return response;
