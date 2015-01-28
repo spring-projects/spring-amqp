@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,11 +15,16 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
@@ -28,13 +33,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
@@ -43,10 +54,13 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.support.GenericApplicationContext;
 
+import com.rabbitmq.client.Channel;
+
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.3
  *
  */
@@ -235,6 +249,55 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container2.stop();
+	}
+
+	@Test
+	public void testRestartConsumerOnBasicQosIoException() throws Exception {
+		this.template.convertAndSend(queue.getName(), "foo");
+
+		ConnectionFactory connectionFactory = new SingleConnectionFactory("localhost", BrokerTestUtils.getPort());
+
+		final AtomicBoolean networkGlitch = new AtomicBoolean();
+
+		class MockChannel extends PublisherCallbackChannelImpl {
+
+			public MockChannel(Channel delegate) {
+				super(delegate);
+			}
+
+			@Override
+			public void basicQos(int prefetchCount) throws IOException {
+				if (networkGlitch.compareAndSet(false, true)) {
+					throw new IOException("Intentional connection reset");
+				}
+				super.basicQos(prefetchCount);
+			}
+
+		}
+
+		Connection connection = spy(connectionFactory.createConnection());
+		when(connection.createChannel(anyBoolean())).then(new Answer<Channel>() {
+
+			@Override
+			public Channel answer(InvocationOnMock invocation) throws Throwable {
+				return new MockChannel((Channel) invocation.callRealMethod());
+			}
+
+		});
+
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		dfa.setPropertyValue("connection", connection);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
+		container.setQueueNames(queue.getName());
+		container.setRecoveryInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(networkGlitch.get());
 	}
 
 	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {
