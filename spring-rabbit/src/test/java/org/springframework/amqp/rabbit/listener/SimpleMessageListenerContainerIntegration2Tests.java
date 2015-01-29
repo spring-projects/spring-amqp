@@ -390,6 +390,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setMissingQueuesFatal(false);
 		container.setDeclarationRetries(1);
 		container.setFailedDeclarationRetryInterval(100);
+		container.setRetryDeclarationInterval(30000);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -397,6 +398,13 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		this.template.convertAndSend(queue.getName(), "foo");
 
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		// verify properties propagated to consumer
+		BlockingQueueConsumer consumer = (BlockingQueueConsumer) TestUtils
+				.getPropertyValue(container, "consumers", Map.class).keySet().iterator().next();
+		assertEquals(1, TestUtils.getPropertyValue(consumer, "declarationRetries"));
+		assertEquals(100L, TestUtils.getPropertyValue(consumer, "failedDeclarationRetryInterval"));
+		assertEquals(30000L, TestUtils.getPropertyValue(consumer, "retryDeclarationInterval"));
 
 		container.stop();
 	}
