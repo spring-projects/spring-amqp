@@ -620,7 +620,7 @@ public class BlockingQueueConsumer {
 	}
 
 	@SuppressWarnings("serial")
-	public class DeclarationException extends AmqpException {
+	private static class DeclarationException extends AmqpException {
 
 		public DeclarationException() {
 			super("Failed to declare queue(s):");
