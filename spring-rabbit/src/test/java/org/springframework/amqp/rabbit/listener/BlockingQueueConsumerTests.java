@@ -113,6 +113,9 @@ public class BlockingQueueConsumerTests {
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
+		com.rabbitmq.client.Connection rabbitConnection = mock(com.rabbitmq.client.Connection.class);
+		when(rabbitConnection.isOpen()).thenReturn(true);
+		when(channel.getConnection()).thenReturn(rabbitConnection);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(new Answer<Object>() {
 

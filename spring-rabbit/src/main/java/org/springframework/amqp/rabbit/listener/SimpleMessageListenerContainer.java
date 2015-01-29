@@ -170,6 +170,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private ContainerDelegate proxy = delegate;
 
+	private Integer declarationRetries;
+
+	private Long failedDeclarationRetryInterval;
+
+	private Long retryDeclarationInterval;
+
 	/**
 	 * Default constructor for convenient dependency injection via setters.
 	 */
@@ -547,6 +553,33 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * Set the number of retries after passive queue declaration fails.
+	 * @param declarationRetries The number of retries, default 3.
+	 * @see #setFailedDeclarationRetryInterval(int)
+	 */
+	public void setDeclarationRetries(int declarationRetries) {
+		this.declarationRetries = declarationRetries;
+	}
+
+	/**
+	 * Set the interval between passive queue declaration attempts in milliseconds.
+	 * @param failedDeclarationRetryInterval the interval, default 5000.
+	 * @see #setDeclarationRetries(int)
+	 */
+	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
+		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
+	}
+
+	/**
+	 * When consuming multiple queues, set the interval between declaration attempts when only
+	 * a subset of the queues were available (milliseconds).
+	 * @param retryDeclarationInterval the interval, default 60000.
+	 */
+	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
+		this.retryDeclarationInterval = retryDeclarationInterval;
+	}
+
+	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
@@ -852,6 +885,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, cancellationLock,
 				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
 				this.consumerArgs, this.exclusive, queues);
+		if (this.declarationRetries != null) {
+			consumer.setDeclarationRetries(this.declarationRetries);
+		}
+		if (this.failedDeclarationRetryInterval != null) {
+			consumer.setFailedDeclarationRetryInterval(this.failedDeclarationRetryInterval);
+		}
+		if (this.retryDeclarationInterval != null) {
+			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
+		}
 		return consumer;
 	}
 

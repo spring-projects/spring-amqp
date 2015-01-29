@@ -53,6 +53,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -86,6 +87,8 @@ public class BlockingQueueConsumer {
 
 	private Channel channel;
 
+	private Connection connection;
+
 	private RabbitResourceHolder resourceHolder;
 
 	private InternalConsumer consumer;
@@ -114,7 +117,11 @@ public class BlockingQueueConsumer {
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
-	private final long retryDeclarationInterval = 60000;
+	private long retryDeclarationInterval = 60000;
+
+	private long failedDeclarationRetryInterval = 5000;
+
+	private int declarationRetries = 3;
 
 	private long lastRetryDeclaration;
 
@@ -232,6 +239,33 @@ public class BlockingQueueConsumer {
 	 */
 	@Deprecated
 	public final void setQuiesce(long shutdownTimeout) {
+	}
+
+	/**
+	 * Set the number of retries after passive queue declaration fails.
+	 * @param declarationRetries The number of retries, default 3.
+	 * @see #setFailedDeclarationRetryInterval(int)
+	 */
+	public void setDeclarationRetries(int declarationRetries) {
+		this.declarationRetries = declarationRetries;
+	}
+
+	/**
+	 * Set the interval between passive queue declaration attempts in milliseconds.
+	 * @param failedDeclarationRetryInterval the interval, default 5000.
+	 * @see #setDeclarationRetries(int)
+	 */
+	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
+		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
+	}
+
+	/**
+	 * When consuming multiple queues, set the interval between declaration attempts when only
+	 * a subset of the queues were available (milliseconds).
+	 * @param retryDeclarationInterval the interval, default 60000.
+	 */
+	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
+		this.retryDeclarationInterval = retryDeclarationInterval;
 	}
 
 	protected void basicCancel() {
@@ -388,6 +422,7 @@ public class BlockingQueueConsumer {
 		try {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional);
 			this.channel = resourceHolder.getChannel();
+			this.connection = this.channel.getConnection();
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -397,21 +432,21 @@ public class BlockingQueueConsumer {
 		this.activeObjectCounter.add(this);
 
 		// mirrored queue might be being moved
-		int passiveDeclareTries = 3;
+		int passiveDeclareRetries = this.declarationRetries;
 		do {
 			try {
 				attemptPassiveDeclarations();
-				if (passiveDeclareTries < 3 && logger.isInfoEnabled()) {
+				if (passiveDeclareRetries < this.declarationRetries && logger.isInfoEnabled()) {
 					logger.info("Queue declaration succeeded after retrying");
 				}
-				passiveDeclareTries = 0;
+				passiveDeclareRetries = 0;
 			}
 			catch (DeclarationException e) {
-				if (passiveDeclareTries > 0 && channel.isOpen()) {
+				if (passiveDeclareRetries > 0 && channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
-						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareTries-1), e);
+						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
 						try {
-							Thread.sleep(5000);
+							Thread.sleep(this.failedDeclarationRetryInterval);
 						}
 						catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
@@ -433,7 +468,7 @@ public class BlockingQueueConsumer {
 				}
 			}
 		}
-		while (passiveDeclareTries-- > 0);
+		while (passiveDeclareRetries-- > 0);
 
 		if (!acknowledgeMode.isAutoAck()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
@@ -484,8 +519,11 @@ public class BlockingQueueConsumer {
 				if (logger.isWarnEnabled()) {
 					logger.warn("Failed to declare queue:" + queueName);
 				}
+				if (!this.connection.isOpen()) {
+					throw new AmqpIOException(e);
+				}
 				if (failures == null) {
-					failures = new DeclarationException();
+					failures = new DeclarationException(e);
 				}
 				failures.addFailedQueue(queueName);
 			}
@@ -625,6 +663,10 @@ public class BlockingQueueConsumer {
 
 		public DeclarationException() {
 			super("Failed to declare queue(s):");
+		}
+
+		public DeclarationException(Throwable t) {
+			super("Failed to declare queue(s):", t);
 		}
 
 		private final List<String> failedQueues = new ArrayList<String>();
