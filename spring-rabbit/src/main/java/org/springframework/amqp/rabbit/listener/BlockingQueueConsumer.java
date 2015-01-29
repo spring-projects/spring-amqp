@@ -67,6 +67,7 @@ import com.rabbitmq.utility.Utility;
  * @author Gary Russell
  * @author Casper Mout
  * @author Artem Bilan
+ * @author Alex Panchenko
  */
 public class BlockingQueueConsumer {
 
@@ -620,7 +621,7 @@ public class BlockingQueueConsumer {
 	}
 
 	@SuppressWarnings("serial")
-	public class DeclarationException extends AmqpException {
+	private static class DeclarationException extends AmqpException {
 
 		public DeclarationException() {
 			super("Failed to declare queue(s):");
