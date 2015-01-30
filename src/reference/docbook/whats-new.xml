@@ -14,6 +14,26 @@
 				treated the same a null, and the host/port will be used.
 			</para>
 		</section>
+		<section>
+			<title>Properties to Control Container Queue Declaration Behavior</title>
+			<para>
+				When the listener container consumers start, they attempt to passively
+				declare the queues to ensure they are available on the broker.
+				Previously, if these declarations failed, for example because the queues
+				didn't exist, or when an HA queue was being moved, the retry logic
+				was fixed at 3 retry attempts at 5 second intervals. If the queue(s) still
+				do not exist, the behavior is controlled by the
+				<code>missingQueuesFatal</code> property (default true). Also, for containers
+				configured to listen from multiple queues, if only a subset of queues are
+				available, the consumer retried the missing queues on a fixed interval
+				of 60 seconds.
+			</para>
+			<para>
+				These 3 properties (<code>declarationRetries, failedDeclarationRetryInterval,
+				retryDeclarationInterval</code>) are now configurable. See
+				<xref linkend="containerAttributes" /> for more information.
+			</para>
+		</section>
 	</section>
 	<section>
 		<title>Changes in 1.4 Since 1.3</title>

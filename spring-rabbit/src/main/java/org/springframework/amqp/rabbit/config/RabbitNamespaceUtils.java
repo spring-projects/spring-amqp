@@ -85,6 +85,11 @@ public class RabbitNamespaceUtils {
 
 	private static final String AUTO_DECLARE = "auto-declare";
 
+	private static final String DECLARATION_RETRIES = "declaration-retries";
+
+	private static final String FAILED_DECLARATION_RETRY_INTERVAL = "failed-declaration-retry-interval";
+
+	private static final String MISSING_QUEUE_RETRY_INTERVAL = "missing-queue-retry-interval";
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -212,6 +217,21 @@ public class RabbitNamespaceUtils {
 		String autoDeclare = containerEle.getAttribute(AUTO_DECLARE);
 		if (StringUtils.hasText(autoDeclare)) {
 			containerDef.getPropertyValues().add("autoDeclare", new TypedStringValue(autoDeclare));
+		}
+
+		String declarationRetries = containerEle.getAttribute(DECLARATION_RETRIES);
+		if (StringUtils.hasText(declarationRetries)) {
+			containerDef.getPropertyValues().add("declarationRetries", new TypedStringValue(declarationRetries));
+		}
+
+		String failedDeclarationRetryInterval = containerEle.getAttribute(FAILED_DECLARATION_RETRY_INTERVAL);
+		if (StringUtils.hasText(failedDeclarationRetryInterval)) {
+			containerDef.getPropertyValues().add("failedDeclarationRetryInterval", new TypedStringValue(failedDeclarationRetryInterval));
+		}
+
+		String retryDeclarationInterval = containerEle.getAttribute(MISSING_QUEUE_RETRY_INTERVAL);
+		if (StringUtils.hasText(retryDeclarationInterval)) {
+			containerDef.getPropertyValues().add("retryDeclarationInterval", new TypedStringValue(retryDeclarationInterval));
 		}
 
 		return containerDef;

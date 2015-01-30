@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,9 @@ public class BlockingQueueConsumerTests {
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
+		com.rabbitmq.client.Connection rabbitConnection = mock(com.rabbitmq.client.Connection.class);
+		when(rabbitConnection.isOpen()).thenReturn(true);
+		when(channel.getConnection()).thenReturn(rabbitConnection);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(new Answer<Object>() {
 
