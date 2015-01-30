@@ -53,7 +53,6 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -86,8 +85,6 @@ public class BlockingQueueConsumer {
 	private final boolean transactional;
 
 	private Channel channel;
-
-	private Connection connection;
 
 	private RabbitResourceHolder resourceHolder;
 
@@ -425,7 +422,6 @@ public class BlockingQueueConsumer {
 		try {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional);
 			this.channel = resourceHolder.getChannel();
-			this.connection = this.channel.getConnection();
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -522,7 +518,7 @@ public class BlockingQueueConsumer {
 				if (logger.isWarnEnabled()) {
 					logger.warn("Failed to declare queue:" + queueName);
 				}
-				if (!this.connection.isOpen()) {
+				if (!this.channel.isOpen()) {
 					throw new AmqpIOException(e);
 				}
 				if (failures == null) {
