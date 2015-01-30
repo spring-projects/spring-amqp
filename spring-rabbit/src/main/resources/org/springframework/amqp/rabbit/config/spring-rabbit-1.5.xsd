@@ -706,6 +706,33 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="declaration-retries" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The number of times to attempt passive queue declarations during consumer initialization (or when attempting
+	to declare additional queues when only a subset were available during initialization). Default: 3.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="failed-declaration-retry-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The interval, in milliseconds, between passive queue declaration attempts during consumer initialization
+	(or when attempting to declare additional queues when only a subset were available during initialization).
+	Default: 5000.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="missing-queue-retry-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The interval, in milliseconds, between passive queue declaration attempts when multiple queues are being
+	used and only a subset of those queues were available during initialization. When this interval expires,
+	any missing queues will be attempted to be declared, according to the 'declaration-retries' and
+	'failed-declaration-retry-interval' settings. Default: 60000.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="auto-declare" default="true">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[

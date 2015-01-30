@@ -2742,14 +2742,14 @@ public RabbitTransactionManager rabbitTransactionManager() {
               <para>When set to <code>true</code> (default), if none of the configured
               queues are available on the broker, it is considered fatal. This causes
               the application context to fail to initialize during startup; also, when the queues
-              are deleted while the container is running, the consumers make 3 attempts
+              are deleted while the container is running, by default, the consumers make 3 retries
               to connect to the queues (at 5 second intervals) and stop the container
               if these attempts fail.</para>
               <para>This was not configurable in previous versions.</para>
-              <para>When set to <code>false</code>, after making the 3 attempts, the container
+              <para>When set to <code>false</code>, after making the 3 retries, the container
               will go into recovery mode, as with other problems, such as the broker being
               down. The container will attempt to recover according to the <code>recoveryInterval</code>
-              property. During each recovery attempt, each consumer will again try 3 times
+              property. During each recovery attempt, each consumer will again try 4 times
               to passively declare the queues at 5 second intervals. This process will
               continue indefinitely.</para>
               <para>You can also use a properties bean to set the property
@@ -2759,10 +2759,13 @@ public RabbitTransactionManager rabbitTransactionManager() {
 </util:properties>]]></programlisting>
               <para>This global property will not be applied to any containers that have an explicit
               <code>missingQueuesFatal</code> property set.</para>
+              <para>The default retry properties (3 retries at 5 second intervals)
+              can be overridden using the properties below.</para>
               </entry>
             </row>
 			  <row>
-				  <entry><literallayout>autoDeclare (auto-declare)</literallayout></entry>
+				  <entry><literallayout>autoDeclare
+(auto-declare)</literallayout></entry>
 
 				  <entry><para>Starting with <emphasis>version 1.4</emphasis>,
 					  <classname>SimpleMessageListenerContainer</classname> has this new
@@ -2777,6 +2780,56 @@ public RabbitTransactionManager rabbitTransactionManager() {
 					</para>
 				  </entry>
 			  </row>
+			<row>
+				<entry><literallayout>declarationRetries
+(declaration-retries)</literallayout></entry>
+
+				<entry><para>Starting with <emphasis>versions 1.4.3, 1.3.9</emphasis>,
+					<classname>SimpleMessageListenerContainer</classname> has this new
+					property. The namespace attribute is available in <emphasis>version 1.5.</emphasis></para>
+					<para>
+						The number of retry attempts when passive queue declaration fails. Passive queue
+						declaration occurs when the consumer starts or, when consuming from multiple queues,
+						when not all queues were available during initialization. When none of the configured
+						queues can be passively declared (for any reason) after the retries are exhausted,
+						the container behavior is controlled by the 'missingQueuesFatal` property above.
+						Default: 3 retries (4 attempts).
+					</para>
+				</entry>
+			</row>
+			<row>
+				<entry><literallayout>failedDeclarationRetryInterval
+(failed-declaration-retry-interval)</literallayout></entry>
+
+				<entry><para>Starting with <emphasis>versions 1.4.3, 1.3.9</emphasis>,
+					<classname>SimpleMessageListenerContainer</classname> has this new
+					property. The namespace attribute is available in <emphasis>version 1.5.</emphasis></para>
+					<para>
+						The interval between passive queue declaration retry attempts. Passive queue
+						declaration occurs when the consumer starts or, when consuming from multiple queues,
+						when not all queues were available during initialization. Default: 5000
+						(5 seconds).
+					</para>
+				</entry>
+			</row>
+			<row>
+				<entry><literallayout>retryDeclarationInterval
+(missing-queue-retry-interval)</literallayout></entry>
+
+				<entry><para>Starting with <emphasis>versions 1.4.3, 1.3.9</emphasis>,
+					<classname>SimpleMessageListenerContainer</classname> has this new
+					property. The namespace attribute is available in <emphasis>version 1.5.</emphasis></para>
+					<para>
+						If a subset of the configured queues are available during consumer initialization,
+						the consumer starts consuming from those queues. The consumer will attempt to
+						passively declare the missing queues using this interval. When this interval elapses,
+						the 'declarationRetries' and 'failedDeclarationRetryInterval' will again be used.
+						If there are still missing queues, the consumer will again wait for this
+						interval before trying again. This process will continue indefinitely until
+						all queues are available. Default: 60000 (1 minute).
+					</para>
+				</entry>
+			</row>
           </tbody>
         </tgroup>
       </table></para>
