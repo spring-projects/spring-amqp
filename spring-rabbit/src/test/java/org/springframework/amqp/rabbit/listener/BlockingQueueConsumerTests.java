@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ public class BlockingQueueConsumerTests {
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
+		when(channel.isOpen()).thenReturn(true);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(new Answer<Object>() {
 
@@ -123,6 +124,9 @@ public class BlockingQueueConsumerTests {
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 20, "good", "bad");
 
+		blockingQueueConsumer.setDeclarationRetries(1);
+		blockingQueueConsumer.setRetryDeclarationInterval(10);
+		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(20);

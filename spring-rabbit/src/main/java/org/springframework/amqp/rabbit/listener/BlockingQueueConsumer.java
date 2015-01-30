@@ -115,7 +115,11 @@ public class BlockingQueueConsumer {
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
-	private final long retryDeclarationInterval = 60000;
+	private long retryDeclarationInterval = 60000;
+
+	private long failedDeclarationRetryInterval = 5000;
+
+	private int declarationRetries = 3;
 
 	private long lastRetryDeclaration;
 
@@ -237,6 +241,37 @@ public class BlockingQueueConsumer {
 			logger.debug("Quiescing consumer: " + this);
 		}
 	}
+
+	/**
+	 * Set the number of retries after passive queue declaration fails.
+	 * @param declarationRetries The number of retries, default 3.
+	 * @see #setFailedDeclarationRetryInterval(long)
+	 * @since 1.3.9
+	 */
+	public void setDeclarationRetries(int declarationRetries) {
+		this.declarationRetries = declarationRetries;
+	}
+
+	/**
+	 * Set the interval between passive queue declaration attempts in milliseconds.
+	 * @param failedDeclarationRetryInterval the interval, default 5000.
+	 * @see #setDeclarationRetries(int)
+	 * @since 1.3.9
+	 */
+	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
+		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
+	}
+
+	/**
+	 * When consuming multiple queues, set the interval between declaration attempts when only
+	 * a subset of the queues were available (milliseconds).
+	 * @param retryDeclarationInterval the interval, default 60000.
+	 * @since 1.3.9
+	 */
+	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
+		this.retryDeclarationInterval = retryDeclarationInterval;
+	}
+
 
 	/**
 	 * Check if we are in shutdown mode and if so throw an exception.
@@ -374,21 +409,21 @@ public class BlockingQueueConsumer {
 		this.activeObjectCounter.add(this);
 
 		// mirrored queue might be being moved
-		int passiveDeclareTries = 3;
+		int passiveDeclareRetries = this.declarationRetries;
 		do {
 			try {
 				attemptPassiveDeclarations();
-				if (passiveDeclareTries < 3 && logger.isInfoEnabled()) {
+				if (passiveDeclareRetries < this.declarationRetries && logger.isInfoEnabled()) {
 					logger.info("Queue declaration succeeded after retrying");
 				}
-				passiveDeclareTries = 0;
+				passiveDeclareRetries = 0;
 			}
 			catch (DeclarationException e) {
-				if (passiveDeclareTries > 0 && channel.isOpen()) {
+				if (passiveDeclareRetries > 0 && channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
-						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareTries-1), e);
+						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
 						try {
-							Thread.sleep(5000);
+							Thread.sleep(this.failedDeclarationRetryInterval);
 						}
 						catch (InterruptedException e1) {
 							Thread.currentThread().interrupt();
@@ -410,7 +445,7 @@ public class BlockingQueueConsumer {
 				}
 			}
 		}
-		while (passiveDeclareTries-- > 0);
+		while (passiveDeclareRetries-- > 0);
 
 		if (!acknowledgeMode.isAutoAck()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
@@ -455,8 +490,11 @@ public class BlockingQueueConsumer {
 				if (logger.isWarnEnabled()) {
 					logger.warn("Failed to declare queue:" + queueName);
 				}
+				if (!this.channel.isOpen()) {
+					throw new AmqpIOException(e);
+				}
 				if (failures == null) {
-					failures = new DeclarationException();
+					failures = new DeclarationException(e);
 				}
 				failures.addFailedQueue(queueName);
 			}
@@ -612,6 +650,10 @@ public class BlockingQueueConsumer {
 
 		public DeclarationException() {
 			super("Failed to declare queue(s):");
+		}
+
+		public DeclarationException(Throwable t) {
+			super("Failed to declare queue(s):", t);
 		}
 
 		private final List<String> failedQueues = new ArrayList<String>();
