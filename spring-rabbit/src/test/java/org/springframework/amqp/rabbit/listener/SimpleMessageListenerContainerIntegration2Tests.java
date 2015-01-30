@@ -58,6 +58,7 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.support.GenericApplicationContext;
 
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 
 /**
@@ -318,6 +319,86 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(networkGlitch.get());
+
+		container.stop();
+	}
+
+	@Test
+	public void testRestartConsumerOnConnectionLossDuringQueueDeclare() throws Exception {
+		this.template.convertAndSend(queue.getName(), "foo");
+
+		ConnectionFactory connectionFactory = new CachingConnectionFactory("localhost", BrokerTestUtils.getPort());
+
+		final AtomicBoolean networkGlitch = new AtomicBoolean();
+
+		class MockChannel extends PublisherCallbackChannelImpl {
+
+			public MockChannel(Channel delegate) {
+				super(delegate);
+			}
+
+			@Override
+			public DeclareOk queueDeclarePassive(String queue) throws IOException {
+				if (networkGlitch.compareAndSet(false, true)) {
+					getConnection().close();
+					throw new IOException("Intentional connection reset");
+				}
+				return super.queueDeclarePassive(queue);
+			}
+
+		}
+
+		Connection connection = spy(connectionFactory.createConnection());
+		when(connection.createChannel(anyBoolean())).then(new Answer<Channel>() {
+
+			@Override
+			public Channel answer(InvocationOnMock invocation) throws Throwable {
+				return new MockChannel((Channel) invocation.callRealMethod());
+			}
+
+		});
+
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		dfa.setPropertyValue("connection", connection);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
+		container.setQueueNames(queue.getName());
+		container.setRecoveryInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(networkGlitch.get());
+
+		container.stop();
+	}
+
+	@Test
+	public void testRestartConsumerMissingQueue() throws Exception {
+		Queue queue = new AnonymousQueue();
+		this.template.convertAndSend(queue.getName(), "foo");
+
+		ConnectionFactory connectionFactory = new CachingConnectionFactory("localhost", BrokerTestUtils.getPort());
+
+		CountDownLatch latch = new CountDownLatch(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
+		container.setQueues(queue);
+		container.setRecoveryInterval(500);
+		container.setMissingQueuesFatal(false);
+		container.setDeclarationRetries(1);
+		container.setFailedDeclarationRetryInterval(100);
+		container.afterPropertiesSet();
+		container.start();
+
+		new RabbitAdmin(connectionFactory).declareQueue(queue);
+		this.template.convertAndSend(queue.getName(), "foo");
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		container.stop();
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
