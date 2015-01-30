@@ -244,7 +244,8 @@ public class BlockingQueueConsumer {
 	/**
 	 * Set the number of retries after passive queue declaration fails.
 	 * @param declarationRetries The number of retries, default 3.
-	 * @see #setFailedDeclarationRetryInterval(int)
+	 * @see #setFailedDeclarationRetryInterval(long)
+	 * @since 1.3.9
 	 */
 	public void setDeclarationRetries(int declarationRetries) {
 		this.declarationRetries = declarationRetries;
@@ -254,6 +255,7 @@ public class BlockingQueueConsumer {
 	 * Set the interval between passive queue declaration attempts in milliseconds.
 	 * @param failedDeclarationRetryInterval the interval, default 5000.
 	 * @see #setDeclarationRetries(int)
+	 * @since 1.3.9
 	 */
 	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
 		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
@@ -263,6 +265,7 @@ public class BlockingQueueConsumer {
 	 * When consuming multiple queues, set the interval between declaration attempts when only
 	 * a subset of the queues were available (milliseconds).
 	 * @param retryDeclarationInterval the interval, default 60000.
+	 * @since 1.3.9
 	 */
 	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
 		this.retryDeclarationInterval = retryDeclarationInterval;
