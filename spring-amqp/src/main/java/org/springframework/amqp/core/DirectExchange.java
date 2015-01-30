@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,11 @@ public class DirectExchange extends AbstractExchange {
 
 	public DirectExchange(String name, boolean durable, boolean autoDelete, Map<String,Object> arguments) {
 		super(name, durable, autoDelete, arguments);
+	}
+
+	public DirectExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments,
+			Map<String, Object> properties) {
+		super(name, durable, autoDelete, arguments, properties);
 	}
 
 	@Override

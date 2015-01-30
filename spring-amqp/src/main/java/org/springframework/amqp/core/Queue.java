@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -77,6 +77,23 @@ public class Queue extends AbstractDeclarable {
 	 * @param arguments the arguments used to declare the queue
 	 */
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) {
+		this(name, durable, exclusive, autoDelete, arguments, null);
+	}
+
+	/**
+	 * Construct a new queue, given a name, durability flag, and auto-delete flag, and arguments.
+	 * @param name the name of the queue - must not be null; set to "" to have the broker generate the name.
+	 * @param durable true if we are declaring a durable queue (the queue will survive a server restart)
+	 * @param exclusive true if we are declaring an exclusive queue (the queue will only be used by the declarer's
+	 * connection)
+	 * @param autoDelete true if the server should delete the queue when it is no longer in use
+	 * @param arguments the arguments used to declare the queue
+	 * @param properties addition properties returned over REST by the broker
+	 *
+	 */
+	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments,
+			Map<String, Object> properties) {
+		super(properties);
 		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
 		this.durable = durable;
