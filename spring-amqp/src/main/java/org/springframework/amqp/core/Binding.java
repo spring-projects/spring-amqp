@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -43,13 +43,21 @@ public class Binding extends AbstractDeclarable {
 
 	private final DestinationType destinationType;
 
+	private final Map<String, Object> properties;
+
 	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
 			Map<String, Object> arguments) {
+		this(destination, destinationType, exchange, routingKey, arguments, null);
+	}
+
+	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
+			Map<String, Object> arguments, Map<String, Object> properties) {
 		this.destination = destination;
 		this.destinationType = destinationType;
 		this.exchange = exchange;
 		this.routingKey = routingKey;
 		this.arguments = arguments;
+		this.properties = properties;
 	}
 
 	public String getDestination() {
@@ -74,6 +82,10 @@ public class Binding extends AbstractDeclarable {
 
 	public boolean isDestinationQueue() {
 		return DestinationType.QUEUE.equals(destinationType);
+	}
+
+	public Map<String, Object> getProperties() {
+		return properties;
 	}
 
 	@Override
