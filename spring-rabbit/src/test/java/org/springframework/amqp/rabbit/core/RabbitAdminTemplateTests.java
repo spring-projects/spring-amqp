@@ -16,8 +16,10 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +30,7 @@ import org.junit.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -66,18 +69,26 @@ public class RabbitAdminTemplateTests {
 	@Test
 	public void testBindings() {
 		RabbitAdmin admin = new RabbitAdmin(new CachingConnectionFactory("localhost"));
-		DirectExchange exchange = new DirectExchange(UUID.randomUUID().toString(), false, true);
+		Exchange exchange = new DirectExchange(UUID.randomUUID().toString(), false, true);
 		admin.declareExchange(exchange);
 		Queue queue = admin.declareQueue();
-		Binding binding = BindingBuilder.bind(queue).to(exchange).with("foo");
+		Binding binding = BindingBuilder
+				.bind(queue)
+				.to(exchange)
+				.with("foo")
+				.and(Collections.<String, Object>singletonMap("alternate-exchange", ""));
 		admin.declareBinding(binding);
 		RabbitAdminTemplate template = new RabbitAdminTemplate();
-		List<Map<String, Object>> bindings = template.exchangeBindings("/", exchange.getName());
+		List<Binding> bindings = template.exchangeBindings("/", exchange.getName());
 		assertEquals(1, bindings.size());
-		assertEquals(exchange.getName(), bindings.get(0).get("source"));
-		assertEquals("foo", bindings.get(0).get("routing_key"));
-		assertEquals("queue", bindings.get(0).get("destination_type"));
-		assertEquals(queue.getName(), bindings.get(0).get("destination"));
+		assertEquals(exchange.getName(), bindings.get(0).getExchange());
+		assertEquals("foo", bindings.get(0).getRoutingKey());
+		assertEquals(Binding.DestinationType.QUEUE, bindings.get(0).getDestinationType());
+		assertEquals(queue.getName(), bindings.get(0).getDestination());
+		assertNotNull(bindings.get(0).getArguments());
+		assertEquals("", bindings.get(0).getArguments().get("alternate-exchange"));
+		assertNotNull(bindings.get(0).getProperties());
+		assertEquals("/", bindings.get(0).getProperties().get("vhost"));
 	}
 
 }
