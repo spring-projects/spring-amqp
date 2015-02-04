@@ -177,7 +177,6 @@ project('spring-amqp') {
 
 		compile "org.springframework:spring-core:$springVersion"
 		compile "org.springframework:spring-web:$springVersion"
-		compile "org.apache.httpcomponents:httpclient:$httpClientVersion"
 		compile ("org.springframework:spring-messaging:$springVersion", optional)
 		compile ("org.springframework:spring-oxm:$springVersion", optional)
 		compile ("org.springframework:spring-context:$springVersion", optional)
@@ -213,6 +212,7 @@ project('spring-rabbit') {
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
+		compile ("org.apache.httpcomponents:httpclient:$httpClientVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"

@@ -89,7 +89,7 @@ public class Queue extends AbstractDeclarable {
 	 * @param autoDelete true if the server should delete the queue when it is no longer in use
 	 * @param arguments the arguments used to declare the queue
 	 * @param properties addition properties returned over REST by the broker
-	 *
+	 * @since 1.5
 	 */
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments,
 			Map<String, Object> properties) {

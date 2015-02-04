@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +47,8 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.support.Policy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -95,13 +98,14 @@ public class RabbitManagementTemplate {
 			}
 
 		});
+		restTemplate.setMessageConverters(Collections.<HttpMessageConverter<?>>singletonList(
+				new MappingJackson2HttpMessageConverter()));
 		this.restTemplate = restTemplate;
 		this.baseUri = baseUri;
 	}
 
-	public RabbitManagementTemplate(String baseUri, RestTemplate restTemplate) {
-		this.restTemplate = restTemplate;
-		this.baseUri = baseUri;
+	public Map<String, Object> aliveness() {
+		return aliveness("/");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -178,9 +182,9 @@ public class RabbitManagementTemplate {
 		return queueMapsToQueues(queueMaps);
 	}
 
-	public Queue queue(String vhost, String exchange) {
+	public Queue queue(String vhost, String queue) {
 		URI uri = UriComponentsBuilder.fromUriString(this.baseUri).pathSegment("queues", "{vhost}", "{queue}")
-				.buildAndExpand(vhost, exchange).encode().toUri();
+				.buildAndExpand(vhost, queue).encode().toUri();
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = this.restTemplate.getForObject(uri, Map.class);
 		return queueMapToQueue(map);
@@ -326,7 +330,10 @@ public class RabbitManagementTemplate {
 	public static Queue queueMapToQueue(Map<String, Object> map) {
 		String name = (String) map.get("name");
 		boolean durable = (Boolean) map.get("durable");
-		boolean exclusive = false; // not returned (Boolean) map.get("exclusive");
+		Boolean exclusive = (Boolean) map.get("exclusive");
+		if (exclusive == null) {
+			exclusive = false;
+		}
 		boolean autoDelete = (Boolean) map.get("auto_delete");
 		@SuppressWarnings("unchecked")
 		Map<String, Object> arguments = (Map<String, Object>) map.get("arguments");

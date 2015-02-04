@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -40,6 +41,9 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.support.Policy;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
+
 /**
  * @author Gary Russell
  * @since 1.5
@@ -52,7 +56,7 @@ public class RabbitManagementTemplateTests {
 	private final RabbitManagementTemplate template = new RabbitManagementTemplate();
 
 	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunning();
+	public static BrokerRunning brokerAndManagementRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	@After
 	public void tearDown() {
@@ -61,7 +65,7 @@ public class RabbitManagementTemplateTests {
 
 	@Test
 	public void testAliveness() {
-		Map<String, Object> aliveness = this.template.aliveness("/");
+		Map<String, Object> aliveness = this.template.aliveness();
 		assertNotNull(aliveness.get("status"));
 		assertEquals("ok", aliveness.get("status"));
 	}
@@ -195,16 +199,26 @@ public class RabbitManagementTemplateTests {
 	}
 
 	@Test
-	public void testSpecificQueue() {
+	public void testSpecificQueue() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Map<String, Object> args = Collections.<String, Object>singletonMap("foo", "bar");
 		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, true, args);
 		admin.declareQueue(queue);
+		Channel channel = this.connectionFactory.createConnection().createChannel(false);
+		String consumer = channel.basicConsume(queue.getName(), false, "", false, true, null, new DefaultConsumer(channel));
 		Queue queueOut = this.template.queue("/", queue.getName());
+		int n = 0;
+		while (n++ < 100 && queueOut.getProperties().get("exclusive_consumer_tag").equals("")) {
+			Thread.sleep(100);
+			queueOut = template.queue("/", queue.getName());
+		}
 		assertTrue(queueOut.isDurable());
 		assertTrue(queueOut.isAutoDelete());
 		assertEquals(queue.getName(), queueOut.getName());
 		assertEquals(args, queueOut.getArguments());
+		assertEquals(consumer, queueOut.getProperties().get("exclusive_consumer_tag"));
+		channel.basicCancel(consumer);
+		channel.close();
 		admin.deleteQueue(queue.getName());
 	}
 
@@ -256,6 +270,7 @@ public class RabbitManagementTemplateTests {
 				break;
 			}
 		}
+		assertNull(out);
 	}
 
 }
