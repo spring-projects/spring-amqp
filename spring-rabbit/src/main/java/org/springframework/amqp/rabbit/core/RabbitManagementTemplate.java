@@ -330,10 +330,7 @@ public class RabbitManagementTemplate {
 	public static Queue queueMapToQueue(Map<String, Object> map) {
 		String name = (String) map.get("name");
 		boolean durable = (Boolean) map.get("durable");
-		Boolean exclusive = (Boolean) map.get("exclusive");
-		if (exclusive == null) {
-			exclusive = false;
-		}
+		boolean exclusive = map.get("owner_pid_details") != null;
 		boolean autoDelete = (Boolean) map.get("auto_delete");
 		@SuppressWarnings("unchecked")
 		Map<String, Object> arguments = (Map<String, Object>) map.get("arguments");

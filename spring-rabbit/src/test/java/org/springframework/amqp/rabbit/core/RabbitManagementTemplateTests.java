@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -202,24 +203,36 @@ public class RabbitManagementTemplateTests {
 	public void testSpecificQueue() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Map<String, Object> args = Collections.<String, Object>singletonMap("foo", "bar");
-		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, true, args);
-		admin.declareQueue(queue);
+		Queue queue1 = new Queue(UUID.randomUUID().toString(), false, true, true, args);
+		admin.declareQueue(queue1);
+		Queue queue2 = new Queue(UUID.randomUUID().toString(), true, false, false, args);
+		admin.declareQueue(queue2);
 		Channel channel = this.connectionFactory.createConnection().createChannel(false);
-		String consumer = channel.basicConsume(queue.getName(), false, "", false, true, null, new DefaultConsumer(channel));
-		Queue queueOut = this.template.queue("/", queue.getName());
+		String consumer = channel.basicConsume(queue1.getName(), false, "", false, true, null, new DefaultConsumer(channel));
+		Queue queueOut = this.template.queue("/", queue1.getName());
 		int n = 0;
 		while (n++ < 100 && queueOut.getProperties().get("exclusive_consumer_tag").equals("")) {
 			Thread.sleep(100);
-			queueOut = template.queue("/", queue.getName());
+			queueOut = template.queue("/", queue1.getName());
 		}
-		assertTrue(queueOut.isDurable());
+		assertFalse(queueOut.isDurable());
+		assertTrue(queueOut.isExclusive());
 		assertTrue(queueOut.isAutoDelete());
-		assertEquals(queue.getName(), queueOut.getName());
+		assertEquals(queue1.getName(), queueOut.getName());
 		assertEquals(args, queueOut.getArguments());
 		assertEquals(consumer, queueOut.getProperties().get("exclusive_consumer_tag"));
 		channel.basicCancel(consumer);
 		channel.close();
-		admin.deleteQueue(queue.getName());
+
+		queueOut = this.template.queue("/", queue2.getName());
+		assertTrue(queueOut.isDurable());
+		assertFalse(queueOut.isExclusive());
+		assertFalse(queueOut.isAutoDelete());
+		assertEquals(queue2.getName(), queueOut.getName());
+		assertEquals(args, queueOut.getArguments());
+
+		admin.deleteQueue(queue1.getName());
+		admin.deleteQueue(queue2.getName());
 	}
 
 	@Test
