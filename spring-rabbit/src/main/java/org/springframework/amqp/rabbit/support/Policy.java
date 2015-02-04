@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a broker policy.
+ * Represents a broker policy; used with the REST API to add or list policies.
  *
  * @author Gary Russell
  * @since 1.5
