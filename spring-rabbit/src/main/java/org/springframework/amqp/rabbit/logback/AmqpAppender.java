@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import ch.qos.logback.core.Layout;
  * </pre>
  *
  * @author Artem Bilan
+ * @author Gary Russell
  * @since 1.4
  */
 public class AmqpAppender extends AppenderBase<ILoggingEvent> {
@@ -389,6 +390,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.connectionFactory.setVirtualHost(this.virtualHost);
 		maybeDeclareExchange();
 		this.senderPool = Executors.newCachedThreadPool();
+		synchronized(this) {
+		} // (logically) flush all variables to main memory
 		for (int i = 0; i < this.senderPoolSize; i++) {
 			this.senderPool.submit(new EventSender());
 		}
@@ -454,6 +457,13 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
+
+		public EventSender() {
+			synchronized(AmqpAppender.this) {
+				// (logically) invalidate the CPU cache so we see all outer class fields correctly
+			}
+		}
+
 		@Override
 		public void run() {
 			try {

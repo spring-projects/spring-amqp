@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 by the original author(s).
+ * Copyright (c) 2011-2015 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -409,6 +409,8 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	protected void startSenders() {
 		senderPool = Executors.newCachedThreadPool();
+		synchronized(this) {
+		} // (logically) flush all variables to main memory
 		for (int i = 0; i < senderPoolSize; i++) {
 			senderPool.submit(new EventSender());
 		}
@@ -495,6 +497,13 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
+
+		public EventSender() {
+			synchronized(AmqpAppender.this) {
+				// (logically) invalidate the CPU cache so we see all outer class fields correctly
+			}
+		}
+
 		@Override
 		public void run() {
 			try {
