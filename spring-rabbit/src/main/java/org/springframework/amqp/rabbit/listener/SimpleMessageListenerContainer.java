@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -201,7 +202,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param adviceChain the advice chain to set
 	 */
 	public void setAdviceChain(Advice[] adviceChain) {
-		this.adviceChain = adviceChain;
+		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 	/**
