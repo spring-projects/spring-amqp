@@ -973,9 +973,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 										getConnectionFactory(), true);
 								try {
 									return doReceiveAndExecute(consumer);
-								} catch (RuntimeException e) {
+								}
+								catch (RuntimeException e) {
 									throw e;
-								} catch (Throwable e) {
+								}
+								catch (Throwable e) {//NOSONAR
+									// ok to catch Throwable here because we re-throw it below
 									throw new WrappedTransactionException(e);
 								}
 							}

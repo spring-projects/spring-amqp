@@ -605,8 +605,8 @@ public class AmqpAppender extends AppenderSkeleton {
 					}
 				}
 			}
-			catch (Throwable t) {
-				throw new RuntimeException(t.getMessage(), t);
+			catch (Exception e) {
+				throw new RuntimeException(e.getMessage(), e);
 			}
 		}
 	}

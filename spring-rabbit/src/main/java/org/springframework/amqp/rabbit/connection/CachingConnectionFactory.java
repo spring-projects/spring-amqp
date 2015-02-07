@@ -521,7 +521,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					try {
 						channel.close();
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
@@ -532,7 +532,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					try {
 						channel.close();
 					}
-					catch (Throwable ex) {
+					catch (Exception ex) {
 						logger.trace("Could not close cached Rabbit Channel", ex);
 					}
 				}
