@@ -119,7 +119,7 @@ public class MessageProperties implements Serializable {
 
 	// NOTE qpid java timestamp is long, presumably can convert to Date.
 	public Date getTimestamp() {
-		return this.timestamp;
+		return this.timestamp;//NOSONAR
 	}
 
 	// NOTE Not forward compatible with qpid 1.0 .NET
@@ -178,7 +178,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	public byte[] getCorrelationId() {
-		return this.correlationId;
+		return this.correlationId;//NOSONAR
 	}
 
 	public void setReplyTo(String replyTo) {

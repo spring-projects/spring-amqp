@@ -93,7 +93,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile boolean deBatchingEnabled = DEFAULT_DEBATCHING_ENABLED;
 
-	private boolean initialized;
+	private volatile boolean initialized;
 
 	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 

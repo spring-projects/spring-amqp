@@ -265,7 +265,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		this.otpPeer = new OtpPeer(this.peerNodeName.trim());
 	}
 
-	private class SharedConnectionInvocationHandler implements
+	private static class SharedConnectionInvocationHandler implements
 			InvocationHandler {
 
 		private final Connection target;

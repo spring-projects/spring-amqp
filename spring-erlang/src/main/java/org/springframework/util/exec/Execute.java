@@ -163,7 +163,7 @@ public class Execute {
 	 * @return the commandline used to create a subprocess
 	 */
 	public String[] getCommandline() {
-		return cmdl;
+		return cmdl;//NOSONAR
 	}
 
 	public String getCommandLineString() {
@@ -195,7 +195,7 @@ public class Execute {
 	 */
 	public String[] getEnvironment() {
 		if (env == null || newEnvironment) {
-			return env;
+			return env;//NOSONAR
 		}
 		return patchEnvironment();
 	}

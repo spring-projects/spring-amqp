@@ -48,7 +48,7 @@ public class Message implements Serializable {
 	}
 
 	public byte[] getBody() {
-		return this.body;
+		return this.body;//NOSONAR
 	}
 
 	public MessageProperties getMessageProperties() {
