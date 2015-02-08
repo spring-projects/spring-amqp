@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
-import org.apache.log4j.MDC;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.ErrorCode;
 import org.apache.log4j.spi.LocationInfo;
@@ -142,17 +141,12 @@ public class AmqpAppender extends AppenderSkeleton {
 	/**
 	 * Log4J Layout to use to generate routing key.
 	 */
-	private Layout routingKeyLayout = new PatternLayout(routingKeyPattern);
+	private Layout routingKeyLayout;
 
 	/**
 	 * Used to synchronize access to pattern layouts.
 	 */
 	private final Object layoutMutex = new Object();
-
-	/**
-	 * Whether or not we've tried to declare this exchange yet.
-	 */
-	private final AtomicBoolean exchangeDeclared = new AtomicBoolean(false);
 
 	/**
 	 * Configuration arbitrary application ID.
@@ -312,7 +306,6 @@ public class AmqpAppender extends AppenderSkeleton {
 
 	public void setRoutingKeyPattern(String routingKeyPattern) {
 		this.routingKeyPattern = routingKeyPattern;
-		this.routingKeyLayout = new PatternLayout(routingKeyPattern);
 	}
 
 	public boolean isDeclareExchange() {
@@ -395,16 +388,18 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.charset = charset;
 	}
 
-	/**
-	 * Submit the required number of senders into the pool.
-	 */
-	protected void startSenders() {
-		senderPool = Executors.newCachedThreadPool();
-		synchronized(this) {
-		} // (logically) flush all variables to main memory
-		for (int i = 0; i < senderPoolSize; i++) {
-			senderPool.submit(new EventSender());
-		}
+	@Override
+	public void activateOptions() {
+		this.routingKeyLayout = new PatternLayout(this.routingKeyPattern
+				.replaceAll("%X\\{applicationId\\}", this.applicationId));
+		this.connectionFactory = new CachingConnectionFactory();
+		this.connectionFactory.setHost(host);
+		this.connectionFactory.setPort(port);
+		this.connectionFactory.setUsername(username);
+		this.connectionFactory.setPassword(password);
+		this.connectionFactory.setVirtualHost(virtualHost);
+		maybeDeclareExchange();
+		startSenders();
 	}
 
 	/**
@@ -434,26 +429,19 @@ public class AmqpAppender extends AppenderSkeleton {
 		}
 	}
 
+	/**
+	 * Submit the required number of senders into the pool.
+	 */
+	protected void startSenders() {
+		this.senderPool = Executors.newCachedThreadPool();
+		for (int i = 0; i < senderPoolSize; i++) {
+			senderPool.submit(new EventSender());
+		}
+	}
+
 	@Override
 	public void append(LoggingEvent event) {
-		if (null == senderPool && this.initializing.compareAndSet(false, true)) {
-			try {
-				connectionFactory = new CachingConnectionFactory();
-				connectionFactory.setHost(host);
-				connectionFactory.setPort(port);
-				connectionFactory.setUsername(username);
-				connectionFactory.setPassword(password);
-				connectionFactory.setVirtualHost(virtualHost);
-				maybeDeclareExchange();
-				exchangeDeclared.set(true);
-
-				startSenders();
-			}
-			finally {
-				this.initializing.set(false);
-			}
-		}
-		events.add(new Event(event, event.getProperties()));
+		this.events.add(new Event(event, event.getProperties()));
 	}
 
 	@Override
@@ -477,12 +465,6 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
-
-		public EventSender() {
-			synchronized(AmqpAppender.this) {
-				// (logically) invalidate the CPU cache so we see all outer class fields correctly
-			}
-		}
 
 		@Override
 		public void run() {
@@ -509,7 +491,6 @@ public class AmqpAppender extends AppenderSkeleton {
 					// Set applicationId, if we're using one
 					if (null != applicationId) {
 						amqpProps.setAppId(applicationId);
-						MDC.put(APPLICATION_ID, applicationId);
 					}
 
 					// Set timestamp
@@ -574,11 +555,6 @@ public class AmqpAppender extends AppenderSkeleton {
 						else {
 							errorHandler.error("Could not send log message " + logEvent.getRenderedMessage()
 									+ " after " + maxSenderRetries + " retries", e, ErrorCode.WRITE_FAILURE, logEvent);
-						}
-					}
-					finally {
-						if (null != applicationId) {
-							MDC.remove(APPLICATION_ID);
 						}
 					}
 				}
