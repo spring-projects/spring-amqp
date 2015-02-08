@@ -90,59 +90,6 @@ public class AmqpAppenderIntegrationTests {
 	}
 
 	@Test
-	public void testInit() {
-		final AtomicInteger count = new AtomicInteger();
-		final LoggingEvent event = new LoggingEvent
-				("foo", null, 1, Level.INFO, "bar",
-				 "baz", null, null, null,
-				 new HashMap<String, String>());
-		AmqpAppender appender = new AmqpAppender() {
-
-			@Override
-			protected void maybeDeclareExchange() {
-				super.maybeDeclareExchange();
-				if (count.incrementAndGet() < 2) {
-					// ensure we don't try to initialize again while initializing
-					append(event);
-				}
-			}
-
-		};
-		appender.append(event);
-		assertEquals(1, count.get());
-	}
-
-	@Test
-	public void testInitRetry() {
-		final AtomicInteger count = new AtomicInteger();
-		final LoggingEvent event = new LoggingEvent
-				("foo", null, 1, Level.INFO, "bar",
-				 "baz", null, null, null,
-				 new HashMap<String, String>());
-		AmqpAppender appender = new AmqpAppender() {
-
-			@Override
-			protected void maybeDeclareExchange() {
-				super.maybeDeclareExchange();
-				if (count.incrementAndGet() < 2) {
-					throw new RuntimeException("foo");
-				}
-			}
-
-		};
-		try {
-			appender.append(event);
-			fail("Expected exception");
-		}
-		catch (RuntimeException e) {
-			assertEquals("foo", e.getMessage());
-		}
-		// ensure we initialize again if the first time failed
-		appender.append(event);
-		assertEquals(2, count.get());
-	}
-
-	@Test
 	public void testAppender() throws InterruptedException {
 		TestListener testListener = (TestListener) applicationContext.getBean("testListener", 4);
 		listenerContainer.setMessageListener(testListener);
