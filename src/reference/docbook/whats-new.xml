@@ -34,6 +34,13 @@
 				<xref linkend="containerAttributes" /> for more information.
 			</para>
 		</section>
+		<section>
+			<title>Class Package Change</title>
+			<para>
+				The <classname>RabbitGatewaySupport</classname> class has been moved from
+				<code>o.s.amqp.rabbit.core.support</code> to <code>o.s.amqp.rabbit.core</code>.
+			</para>
+		</section>
 	</section>
 	<section>
 		<title>Changes in 1.4 Since 1.3</title>

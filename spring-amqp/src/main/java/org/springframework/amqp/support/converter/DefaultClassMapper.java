@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -35,11 +35,11 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 
+	private static final String DEFAULT_HASHTABLE_TYPE_ID = "Hashtable";
+
 	private volatile Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 
 	private volatile Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
-
-	private final String defaultHashtableTypeId = "Hashtable";
 
 	private volatile Class<?> defaultHashtableClass = Hashtable.class;
 
@@ -71,7 +71,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 			return classIdMapping.get(classOfObjectToConvert);
 		}
 		if (Map.class.isAssignableFrom(classOfObjectToConvert)) {
-			return this.defaultHashtableTypeId;
+			return DEFAULT_HASHTABLE_TYPE_ID;
 		}
 		return classOfObjectToConvert.getName();
 	}
@@ -80,7 +80,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		if (this.idClassMapping.containsKey(classId)) {
 			return idClassMapping.get(classId);
 		}
-		if (classId.equals(this.defaultHashtableTypeId)) {
+		if (classId.equals(DEFAULT_HASHTABLE_TYPE_ID)) {
 			return this.defaultHashtableClass;
 		}
 		try {
@@ -94,6 +94,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		}
 	}
 
+	@Override
 	public void afterPropertiesSet() throws Exception {
 		validateIdTypeMapping();
 	}
@@ -109,10 +110,12 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		this.idClassMapping = finalIdClassMapping;
 	}
 
+	@Override
 	public void fromClass(Class<?> clazz, MessageProperties properties) {
 		properties.getHeaders().put(getClassIdFieldName(), fromClass(clazz));
 	}
 
+	@Override
 	public Class<?> toClass(MessageProperties properties) {
 		Map<String, Object> headers = properties.getHeaders();
 		Object classIdFieldNameValue = headers.get(getClassIdFieldName());
