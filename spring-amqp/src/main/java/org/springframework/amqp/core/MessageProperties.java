@@ -114,7 +114,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	public void setTimestamp(Date timestamp) {
-		this.timestamp = timestamp;
+		this.timestamp = timestamp;//NOSONAR
 	}
 
 	// NOTE qpid java timestamp is long, presumably can convert to Date.
@@ -173,8 +173,8 @@ public class MessageProperties implements Serializable {
 		return this.type;
 	}
 
-	public void setCorrelationId(byte[] correlationId) {//NOSONAR
-		this.correlationId = correlationId;
+	public void setCorrelationId(byte[] correlationId) {
+		this.correlationId = correlationId;//NOSONAR
 	}
 
 	public byte[] getCorrelationId() {

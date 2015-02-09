@@ -1011,7 +1011,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (ImmediateAcknowledgeAmqpException e) {
 				break;
 			}
-			catch (Throwable ex) {
+			catch (Throwable ex) {//NOSONAR
 				consumer.rollbackOnExceptionIfNecessary(ex);
 				throw ex;
 			}
@@ -1049,7 +1049,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			start.await(60000L, TimeUnit.MILLISECONDS);
+			start.await(60000L, TimeUnit.MILLISECONDS);//NOSONAR - ignore return value
 			return this.startupException;
 		}
 
@@ -1084,7 +1084,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				catch (FatalListenerStartupException ex) {
 					throw ex;
 				}
-				catch (Throwable t) {
+				catch (Throwable t) {//NOSONAR
 					this.start.countDown();
 					handleStartupFailure(t);
 					throw t;
@@ -1183,11 +1183,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					this.logConsumerException(e);
 				}
 			}
-			catch (Error e) {
+			catch (Error e) {//NOSONAR
+				// ok to catch Error - we're aborting so will stop
 				logger.error("Consumer thread error, thread abort.", e);
 				aborted = true;
 			}
-			catch (Throwable t) {
+			catch (Throwable t) {//NOSONAR
+				// by now, t must be an exception
 				this.logConsumerException(t);
 			}
 			finally {
