@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.junit.runners.model.Statement;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
 import org.springframework.util.StringUtils;
 
 /**
@@ -75,6 +76,8 @@ public class BrokerRunning extends TestWatcher {
 
 	private final boolean purge;
 
+	private final boolean management;
+
 	private final Queue[] queues;
 
 	private final int DEFAULT_PORT = BrokerTestUtils.getPort();
@@ -119,10 +122,23 @@ public class BrokerRunning extends TestWatcher {
 		return new BrokerRunning(false);
 	}
 
+	/**
+	 * @return a new rule that assumes an existing broker with the management plugin
+	 * @since 1.5
+	 */
+	public static BrokerRunning isBrokerAndManagementRunning() {
+		return new BrokerRunning(true, false, true);
+	}
+
 	private BrokerRunning(boolean assumeOnline, boolean purge, Queue... queues) {
+		this(assumeOnline, purge, false, queues);
+	}
+
+	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, Queue... queues) {
 		this.assumeOnline = assumeOnline;
 		this.queues = queues;
 		this.purge = purge;
+		this.management = management;
 		setPort(DEFAULT_PORT);
 	}
 
@@ -132,6 +148,10 @@ public class BrokerRunning extends TestWatcher {
 
 	private BrokerRunning(boolean assumeOnline) {
 		this(assumeOnline, new Queue(DEFAULT_QUEUE_NAME));
+	}
+
+	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management) {
+		this(assumeOnline, purge, management, new Queue(DEFAULT_QUEUE_NAME));
 	}
 
 	/**
@@ -198,6 +218,12 @@ public class BrokerRunning extends TestWatcher {
 				Assume.assumeTrue(brokerOffline.get(port));
 			}
 
+			if (this.management) {
+				Map<String, Object> status = new RabbitManagementTemplate().aliveness();
+				if (!("ok".equalsIgnoreCase((String) status.get("status")))) {
+					throw new RuntimeException("Aliveness test failed, status:" + status.get("status"));
+				}
+			}
 		}
 		catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);

@@ -2238,6 +2238,16 @@ public Binding binding() {
 	return binding;
 }]]></programlisting>
     </section>
+    <section id="rabbit-management-template">
+    	<title>Rabbit Management Interface</title>
+		<para>
+			Starting with <emphasis>version 1.5</emphasis> the <classname>RabbitManagementTemplate</classname>
+			is now available. This provides an abstraction over much of the <code>RabbitMQ</code> REST API.
+			It allows you to obtain information about exchanges, queues, bindings etc, as well as to
+			add/remove policies. Refer to the class javadocs for more information.
+		</para>
+
+    </section>
   </section>
 
   <section id="exception-handling">

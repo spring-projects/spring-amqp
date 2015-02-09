@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -45,6 +45,12 @@ public class Binding extends AbstractDeclarable {
 
 	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
 			Map<String, Object> arguments) {
+		this(destination, destinationType, exchange, routingKey, arguments, null);
+	}
+
+	public Binding(String destination, DestinationType destinationType, String exchange, String routingKey,
+			Map<String, Object> arguments, Map<String, Object> properties) {
+		super(properties);
 		this.destination = destination;
 		this.destinationType = destinationType;
 		this.exchange = exchange;
@@ -78,7 +84,9 @@ public class Binding extends AbstractDeclarable {
 
 	@Override
 	public String toString() {
-		return "Binding [destination=" + destination + ", exchange=" + exchange + ", routingKey=" + routingKey + "]";
+		return "Binding [destination=" + destination
+				+ ", destinationType=" + destinationType
+				+ ", exchange=" + exchange + ", routingKey=" + routingKey + "]";
 	}
 
 }

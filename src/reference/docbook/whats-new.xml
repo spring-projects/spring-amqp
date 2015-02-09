@@ -6,6 +6,15 @@
 	<section>
 		<title>Changes in 1.5 Since 1.4</title>
 		<section>
+			<title>RabbitManagementTemplate Introduced</title>
+			<para>
+				This new component provides an abstraction over the RabbitMQ REST API,
+				allowing you to list queues, exchanges, bindings etc.
+				See <xref linkend="rabbit-management-template" /> for more information.
+			</para>
+			<para>
+				The <code>spring-erlang</code> sub-project is no longer supported.
+			</para>
 			<title>Empty Addresses Property in CachingConnectionFactory</title>
 			<para>
 				Previously, if the connection factory was configured with a host/port,

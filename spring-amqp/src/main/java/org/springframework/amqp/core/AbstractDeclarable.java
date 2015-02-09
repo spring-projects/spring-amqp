@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.springframework.util.Assert;
 
@@ -34,6 +35,12 @@ public abstract class AbstractDeclarable implements Declarable {
 	private volatile boolean shouldDeclare = true;
 
 	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
+
+	private final Map<String, Object> properties;
+
+	public AbstractDeclarable(Map<String, Object> properties) {
+		this.properties = properties;
+	}
 
 	@Override
 	public boolean shouldDeclare() {
@@ -75,4 +82,14 @@ public abstract class AbstractDeclarable implements Declarable {
 		}
 		this.declaringAdmins = declaringAdmins;
 	}
+
+	/**
+	 * Get additional properties returned by the broker over the REST API.
+	 * @return the properties.
+	 * @since 1.5
+	 */
+	public Map<String, Object> getProperties() {
+		return properties;
+	}
+
 }

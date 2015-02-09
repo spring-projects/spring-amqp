@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,12 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * @param arguments the arguments used to declare the exchange
 	 */
 	public AbstractExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments) {
-		super();
+		this(name, durable, autoDelete, arguments, null);
+	}
+
+	public AbstractExchange(String name, boolean durable, boolean autoDelete, Map<String, Object> arguments,
+			Map<String, Object> properties) {
+		super(properties);
 		this.name = name;
 		this.durable = durable;
 		this.autoDelete = autoDelete;
@@ -77,16 +82,20 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 		}
 	}
 
+	@Override
 	public abstract String getType();
 
+	@Override
 	public String getName() {
 		return name;
 	}
 
+	@Override
 	public boolean isDurable() {
 		return durable;
 	}
 
+	@Override
 	public boolean isAutoDelete() {
 		return autoDelete;
 	}
@@ -98,6 +107,7 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * Return the collection of arbitrary arguments to use when declaring an exchange.
 	 * @return the collection of arbitrary arguments to use when declaring an exchange.
 	 */
+	@Override
 	public Map<String, Object> getArguments() {
 		return arguments;
 	}
