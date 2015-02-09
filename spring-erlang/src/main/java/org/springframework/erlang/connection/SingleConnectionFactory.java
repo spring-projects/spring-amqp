@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,7 +198,8 @@ public class SingleConnectionFactory implements ConnectionFactory,
 			// TODO there are other close overloads close(int closeCode,
 			// java.lang.String closeMessage, int timeout)
 			connection.close();
-		} catch (Throwable ex) {
+		}
+		catch (Exception ex) {
 			logger.debug("Could not close shared Rabbit Connection", ex);
 		}
 	}
@@ -264,7 +265,7 @@ public class SingleConnectionFactory implements ConnectionFactory,
 		this.otpPeer = new OtpPeer(this.peerNodeName.trim());
 	}
 
-	private class SharedConnectionInvocationHandler implements
+	private static class SharedConnectionInvocationHandler implements
 			InvocationHandler {
 
 		private final Connection target;

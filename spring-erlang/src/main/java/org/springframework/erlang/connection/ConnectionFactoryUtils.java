@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Mark Pollack
+ * @author Gary Russell
  */
 public class ConnectionFactoryUtils {
 
@@ -41,7 +42,7 @@ public class ConnectionFactoryUtils {
 		try {
 			con.close();
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			logger.debug("Could not close Otp Connection", ex);
 		}
 	}

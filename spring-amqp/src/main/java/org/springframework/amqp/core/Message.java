@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -42,13 +42,13 @@ public class Message implements Serializable {
 
 	private final byte[] body;
 
-	public Message(byte[] body, MessageProperties messageProperties) {
+	public Message(byte[] body, MessageProperties messageProperties) {//NOSONAR
 		this.body = body;
 		this.messageProperties = messageProperties;
 	}
 
 	public byte[] getBody() {
-		return this.body;
+		return this.body;//NOSONAR
 	}
 
 	public MessageProperties getMessageProperties() {
@@ -87,7 +87,7 @@ public class Message implements Serializable {
 			// ignore
 		}
 		// Comes out as '[B@....b' (so harmless)
-		return body.toString()+"(byte["+body.length+"])";
+		return body.toString()+"(byte["+body.length+"])";//NOSONAR
 	}
 
 	@Override

@@ -391,7 +391,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		maybeDeclareExchange();
 		this.senderPool = Executors.newCachedThreadPool();
 		synchronized(this) {
-		} // (logically) flush all variables to main memory
+			// (logically) flush all variables to main memory
+		}
 		for (int i = 0; i < this.senderPoolSize; i++) {
 			this.senderPool.submit(new EventSender());
 		}
@@ -556,8 +557,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 					}
 				}
 			}
-			catch (Throwable t) {
-				throw new RuntimeException(t.getMessage(), t);
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
@@ -565,7 +566,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Small helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
 	 */
-	protected class Event {
+	protected static class Event {
 
 		final ILoggingEvent event;
 

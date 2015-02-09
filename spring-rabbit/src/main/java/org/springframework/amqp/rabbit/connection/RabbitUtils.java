@@ -87,7 +87,7 @@ public abstract class RabbitUtils {
 					logger.debug("Unexpected exception on closing RabbitMQ Channel", sig);
 				}
 			}
-			catch (Throwable ex) {
+			catch (Exception ex) {
 				logger.debug("Unexpected exception on closing RabbitMQ Channel", ex);
 			}
 		}

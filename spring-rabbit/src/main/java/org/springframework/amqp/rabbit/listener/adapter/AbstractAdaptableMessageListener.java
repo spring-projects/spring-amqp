@@ -155,7 +155,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 		try {
 			onMessage(message, null);
 		}
-		catch (Throwable ex) {
+		catch (Exception ex) {
 			handleListenerException(ex);
 		}
 	}

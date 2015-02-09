@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,16 +67,16 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 			redelivered = messageProperties.isRedelivered();
 			return invocation.proceed();
 		}
-		catch (Throwable t) {
+		catch (Exception e) {
 			if (id != null && redelivered) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Canceling delivery of retried message that has no ID");
 				}
 				throw new ListenerExecutionFailedException("Cannot retry message without an ID",
-						new AmqpRejectAndDontRequeueException(t), message);
+						new AmqpRejectAndDontRequeueException(e), message);
 			}
 			else {
-				throw t;
+				throw e;
 			}
 		}
 		finally {

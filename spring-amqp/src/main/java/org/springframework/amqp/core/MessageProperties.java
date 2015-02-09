@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -119,7 +119,7 @@ public class MessageProperties implements Serializable {
 
 	// NOTE qpid java timestamp is long, presumably can convert to Date.
 	public Date getTimestamp() {
-		return this.timestamp;
+		return this.timestamp;//NOSONAR
 	}
 
 	// NOTE Not forward compatible with qpid 1.0 .NET
@@ -173,12 +173,12 @@ public class MessageProperties implements Serializable {
 		return this.type;
 	}
 
-	public void setCorrelationId(byte[] correlationId) {
+	public void setCorrelationId(byte[] correlationId) {//NOSONAR
 		this.correlationId = correlationId;
 	}
 
 	public byte[] getCorrelationId() {
-		return this.correlationId;
+		return this.correlationId;//NOSONAR
 	}
 
 	public void setReplyTo(String replyTo) {

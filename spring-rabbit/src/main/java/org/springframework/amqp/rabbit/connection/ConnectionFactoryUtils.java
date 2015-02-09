@@ -142,8 +142,9 @@ public class ConnectionFactoryUtils {
 
 			return resourceHolderToUse;
 
-		} catch (IOException ex) {
-			RabbitUtils.closeChannel(channel);
+		}
+		catch (IOException ex) {
+			RabbitUtils.closeChannel(channel);//NOSONAR
 			RabbitUtils.closeConnection(connection);
 			throw new AmqpIOException(ex);
 		}

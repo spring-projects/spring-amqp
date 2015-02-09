@@ -410,7 +410,8 @@ public class AmqpAppender extends AppenderSkeleton {
 	protected void startSenders() {
 		senderPool = Executors.newCachedThreadPool();
 		synchronized(this) {
-		} // (logically) flush all variables to main memory
+			// (logically) flush all variables to main memory
+		}
 		for (int i = 0; i < senderPoolSize; i++) {
 			senderPool.submit(new EventSender());
 		}
@@ -605,8 +606,8 @@ public class AmqpAppender extends AppenderSkeleton {
 					}
 				}
 			}
-			catch (Throwable t) {
-				throw new RuntimeException(t.getMessage(), t);
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
@@ -615,7 +616,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Small helper class to encapsulate a LoggingEvent, its MDC properties, and the number of retries.
 	 */
 	@SuppressWarnings("rawtypes")
-	protected class Event {
+	protected static class Event {
 
 		final LoggingEvent event;
 

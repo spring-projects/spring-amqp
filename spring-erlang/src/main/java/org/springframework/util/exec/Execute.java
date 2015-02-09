@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
@@ -32,6 +33,7 @@ import org.apache.commons.logging.LogFactory;
  *
  * @author thomas.haas@softwired-inc.com
  * @author Costin Leau
+ * @author Gary Russell
  */
 public class Execute {
 
@@ -84,7 +86,7 @@ public class Execute {
 					if (var == null) {
 						var = lineSep + line;
 					} else {
-						var += lineSep + line;
+						var += lineSep + line;//NOSONAR
 					}
 				} else {
 					// New env var...append the previous one if we have it.
@@ -161,7 +163,7 @@ public class Execute {
 	 * @return the commandline used to create a subprocess
 	 */
 	public String[] getCommandline() {
-		return cmdl;
+		return cmdl;//NOSONAR
 	}
 
 	public String getCommandLineString() {
@@ -174,7 +176,7 @@ public class Execute {
 	 * @param commandline the commandline of the subprocess to launch
 	 */
 	public void setCommandline(String[] commandline) {
-		cmdl = commandline;
+		cmdl = Arrays.copyOf(commandline, commandline.length);
 	}
 
 	/**
@@ -193,7 +195,7 @@ public class Execute {
 	 */
 	public String[] getEnvironment() {
 		if (env == null || newEnvironment) {
-			return env;
+			return env;//NOSONAR
 		}
 		return patchEnvironment();
 	}
@@ -205,7 +207,7 @@ public class Execute {
 	 * <em>key=value</em>
 	 */
 	public void setEnvironment(String[] env) {
-		this.env = env;
+		this.env = Arrays.copyOf(env, env.length);
 	}
 
 	/**
