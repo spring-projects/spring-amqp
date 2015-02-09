@@ -71,10 +71,7 @@ public class Execute {
 			exe.setCommandline(getProcEnvCommand());
 			// Make sure we do not recurse forever
 			exe.setNewenvironment(true);
-			int retval = exe.execute();
-			if (retval != 0) {
-				// Just try to use what we got
-			}
+			exe.execute();
 
 			BufferedReader in = new BufferedReader(new StringReader(out.toString()));
 			String var = null;
@@ -98,7 +95,8 @@ public class Execute {
 			}
 			// Since we "look ahead" before adding, there's one last env var.
 			procEnvironment.addElement(var);
-		} catch (Exception exc) {
+		}
+		catch (Exception exc) {
 			exc.printStackTrace();
 			// Just try to see how much we got
 		}
