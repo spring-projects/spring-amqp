@@ -9,7 +9,7 @@ buildscript {
 		maven { url 'http://repo.springsource.org/plugins-release' }
 	}
 	dependencies {
-		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.6'
+		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.8'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath 'org.springframework.build.gradle:spring-io-plugin:0.0.3.RELEASE'
 	}
@@ -112,7 +112,7 @@ subprojects { subproject ->
 		}
 		testCompile "org.springframework:spring-test:$springVersion"
 
-		jacoco group: "org.jacoco", name: "org.jacoco.agent", version: "0.5.6.201201232323", classifier: "runtime"
+		jacoco group: "org.jacoco", name: "org.jacoco.agent", version: "0.7.2.201409121644", classifier: "runtime"
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -401,6 +401,6 @@ task dist(dependsOn: assemble) {
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
-	gradleVersion = '1.12'
+	gradleVersion = '2.3-rc-3'
 	distributionUrl = "http://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
