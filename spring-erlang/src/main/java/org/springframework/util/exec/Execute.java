@@ -73,7 +73,7 @@ public class Execute {
 			exe.setNewenvironment(true);
 			exe.execute();
 
-			BufferedReader in = new BufferedReader(new StringReader(out.toString()));
+			BufferedReader in = new BufferedReader(new StringReader(out.toString()));//NOSONAR (default charset)
 			String var = null;
 			String line, lineSep = System.getProperty("line.separator");
 			while ((line = in.readLine()) != null) {

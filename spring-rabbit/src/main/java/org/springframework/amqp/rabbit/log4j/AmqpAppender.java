@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.AppenderSkeleton;
@@ -242,8 +241,6 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Used to determine whether {@link MessageProperties#setMessageId(String)} is set.
 	 */
 	private boolean generateId = false;
-
-	private final AtomicBoolean initializing = new AtomicBoolean();
 
 	public String getHost() {
 		return host;
@@ -558,7 +555,7 @@ public class AmqpAppender extends AppenderSkeleton {
 							catch (UnsupportedEncodingException e) {/* fall back to default */}
 						}
 						if (message == null) {
-							message = new Message(msgBody.toString().getBytes(), amqpProps);
+							message = new Message(msgBody.toString().getBytes(), amqpProps);//NOSONAR (default charset)
 						}
 						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(exchangeName, routingKey, message);

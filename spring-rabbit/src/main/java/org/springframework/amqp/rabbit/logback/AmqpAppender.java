@@ -522,7 +522,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 								message = new Message(msgBody.getBytes(AmqpAppender.this.charset), amqpProps);
 							}
 							catch (UnsupportedEncodingException e) {
-								message = new Message(msgBody.getBytes(), amqpProps);
+								message = new Message(msgBody.getBytes(), amqpProps);//NOSONAR (default charset)
 							}
 						}
 
