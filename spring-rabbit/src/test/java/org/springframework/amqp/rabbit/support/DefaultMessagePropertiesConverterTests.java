@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,14 +13,17 @@
 package org.springframework.amqp.rabbit.support;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.DataInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -101,6 +104,26 @@ public class DefaultMessagePropertiesConverterTests {
 		assertEquals("LongString nested in Map not converted to String",
 				longStringString, ((Map<String, Object>) messageProperties.getHeaders().get("map")).get("longString"));
 	}
+
+	@Test
+	public void testLongLongString() {
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put("longString", longString);
+		headers.put("string1025", LongStringHelper.asLongString(new byte[1025]));
+		headers.put("string1026", LongStringHelper.asLongString(new byte[1026]));
+		BasicProperties source = new BasicProperties.Builder()
+				.headers(headers)
+				.build();
+		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(source, envelope,
+				"UTF-8");
+		assertThat(messageProperties.getHeaders().get("longString"), Matchers.instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1025"), Matchers.instanceOf(DataInputStream.class));
+		assertThat(messageProperties.getHeaders().get("string1026"), Matchers.instanceOf(DataInputStream.class));
+		MessagePropertiesConverter longConverter = new DefaultMessagePropertiesConverter(1025);
+		messageProperties = longConverter.toMessageProperties(source, envelope, "UTF-8");
+		assertThat(messageProperties.getHeaders().get("longString"), Matchers.instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1025"), Matchers.instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1026"), Matchers.instanceOf(DataInputStream.class));	}
 
 	@Test
 	public void testFromUnsupportedValue() {
