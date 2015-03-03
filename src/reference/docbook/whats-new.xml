@@ -41,6 +41,17 @@
 				<code>o.s.amqp.rabbit.core.support</code> to <code>o.s.amqp.rabbit.core</code>.
 			</para>
 		</section>
+		<section>
+			<title>DefaultMessagePropertiesConverter</title>
+			<para>
+				The <classname>DefaultMessagePropertiesConverter</classname> can now be configured to
+				determine the maximum length of a <classname>LongString</classname> that will be converted
+				to a <classname>String</classname> rather than a <classname>DataInputStream</classname>.
+				The converter has an alternative constructor that takes the value as a limit.
+				Previously, this limit was hard-coded at <code>1024</code> bytes.
+				(Also available in <emphasis>1.4.4</emphasis>).
+			</para>
+		</section>
 	</section>
 	<section>
 		<title>Changes in 1.4 Since 1.3</title>
