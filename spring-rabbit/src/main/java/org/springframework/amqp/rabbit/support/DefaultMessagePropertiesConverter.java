@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -40,6 +40,28 @@ import com.rabbitmq.client.LongString;
  * @since 1.0
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
+
+	private static final int DEFAULT_LONG_STRING_LIMIT = 1024;
+
+	private final int longStringLimit;
+
+
+	/**
+	 * Construct an instance where {@link LongString}s will be returned as a
+	 * {@link java.io.DataInputStream} when longer than 1024 bytes.
+	 */
+	public DefaultMessagePropertiesConverter() {
+		this(DEFAULT_LONG_STRING_LIMIT);
+	}
+
+	/**
+	 * Construct an instance where {@link LongString}s will be returned as a
+	 * {@link java.io.DataInputStream} when longer than this limit.
+	 * @param longStringLimit the limit.
+	 */
+	public DefaultMessagePropertiesConverter(int longStringLimit) {
+		this.longStringLimit = longStringLimit;
+	}
 
 	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
 			final String charset) {
@@ -163,11 +185,11 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 
 	/**
 	 * Converts a LongString value to either a String or DataInputStream based on a length-driven threshold. If the
-	 * length is 1024 bytes or less, a String will be returned, otherwise a DataInputStream is returned.
+	 * length is {@link #longStringLimit} bytes or less, a String will be returned, otherwise a DataInputStream is returned.
 	 */
 	private Object convertLongString(LongString longString, String charset) {
 		try {
-			if (longString.length() <= 1024) {
+			if (longString.length() <= this.longStringLimit) {
 				return new String(longString.getBytes(), charset);
 			} else {
 				return longString.getStream();
