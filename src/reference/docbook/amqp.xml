@@ -1615,7 +1615,19 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
 </bean>]]></programlisting>
       </sect2>
   </section>
-
+  <section id="message-properties-converters">
+    <title>Message Propeties Converters</title>
+    The <interfacename>MessagePropertiesConverter</interfacename> strategy interface is used to convert
+    between the rabbit client <classname>BasicProperties</classname> and Spring AMQP
+    <classname>MessageProperties</classname>. The default implementation
+    (<classname>DefaultMessagePropertiesConverter</classname>) is usually sufficient for most purposes
+    but you can implement your own if needed. The default properties converter, by default, will
+    convert <classname>BasicProperties</classname> elements of type <classname>LongString</classname>
+    to <classname>String</classname>s when the size is not greater than 1024 bytes.
+    Larger <classname>LongString</classname>s
+    are returned as a <classname>DataInputStream</classname>. This limit can be overridden with
+    a constructor argument.
+  </section>
   <section id="request-reply">
     <title>Request/Reply Messaging</title>
 
