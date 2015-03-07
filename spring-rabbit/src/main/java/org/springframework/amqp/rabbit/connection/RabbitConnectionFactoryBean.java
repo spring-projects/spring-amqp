@@ -31,16 +31,16 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.ExceptionHandler;
-import com.rabbitmq.client.SaslConfig;
-import com.rabbitmq.client.SocketConfigurator;
-
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ExceptionHandler;
+import com.rabbitmq.client.SaslConfig;
+import com.rabbitmq.client.SocketConfigurator;
 
 
 /**
@@ -54,11 +54,15 @@ import org.springframework.util.StringUtils;
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
 
+	private static final String TLS_V1_1 = "TLSv1.1";
+
 	private final ConnectionFactory connectionFactory = new ConnectionFactory();
 
 	private boolean useSSL;
 
 	private Resource sslPropertiesLocation;
+
+	private volatile String sslAlgorithm = TLS_V1_1;
 
 	/**
 	 * Whether or not the factory should be configured to use SSL.
@@ -66,6 +70,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setUseSSL(boolean useSSL) {
 		this.useSSL = useSSL;
+	}
+
+	/**
+	 * Set the algorithm to use; default TLSv1.1.
+	 * @param sslAlgorithm the algorithm.
+	 */
+	public void setSslAlgorithm(String sslAlgorithm) {
+		this.sslAlgorithm = sslAlgorithm;
 	}
 
 	/**
@@ -279,10 +291,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
 			tmf.init(tks);
 
-			SSLContext context = SSLContext.getInstance("SSLv3");
+			SSLContext context = createSSLContext();
 			context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 			this.connectionFactory.useSslProtocol(context);
 		}
+	}
+
+	protected SSLContext createSSLContext() throws NoSuchAlgorithmException {
+		return SSLContext.getInstance(this.sslAlgorithm);
 	}
 
 }
