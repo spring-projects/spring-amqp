@@ -253,7 +253,7 @@ asciidoctor {
 			imagesdir: '',
 			stylesdir: "stylesheets/",
 			stylesheet: 'golo.css',
-			appversion: "$version",
+			'spring-amqp-version': "$version",
 			'source-highlighter': 'highlightjs'
 		]
 	]

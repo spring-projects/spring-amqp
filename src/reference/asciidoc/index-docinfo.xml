@@ -1,5 +1,5 @@
 <productname>Spring AMQP</productname>
-<releaseinfo>{appversion}</releaseinfo>
+<releaseinfo>{spring-amqp-version}</releaseinfo>
 <copyright>
 	<year>2010-2015</year>
 	<holder>Pivotal Software Inc.</holder>

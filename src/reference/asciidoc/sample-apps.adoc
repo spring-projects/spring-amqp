@@ -12,6 +12,8 @@ The samples are both Maven-based, so you should be able to import them directly 
 
 ==== Hello World
 
+===== Introduction
+
 The Hello World sample demonstrates both synchronous and asynchronous message reception.
 You can import the 'spring-rabbit-helloworld' sample into the IDE and then follow the discussion below.
 

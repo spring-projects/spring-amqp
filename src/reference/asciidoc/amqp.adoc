@@ -5,23 +5,25 @@ In this chapter, we will explore the interfaces and classes that are the essenti
 
 ==== AMQP Abstractions
 
+===== Introduction
+
 Spring AMQP consists of a handful of modules, each represented by a JAR in the distribution.
-These modules are: spring-amqp, spring-rabbit and spring-erlang.
+These modules are: spring-amqp, and spring-rabbit.
 The 'spring-amqp' module contains the `org.springframework.amqp.core` package.
 Within that package, you will find the classes that represent the core AMQP "model".
 Our intention is to provide generic abstractions that do not rely on any particular AMQP broker implementation or client library.
 End user code will be more portable across vendor implementations as it can be developed against the abstraction layer only.
 These abstractions are then used implemented by broker-specific modules, such as 'spring-rabbit'.
-For the 1.0 release there is only a RabbitMQ implementation however the abstractions have been validated in .NET using Apache Qpid in addition to RabbitMQ.
-Since AMQP operates at the protocol level in principle the RabbitMQ client can be used with any broker that supports the same protocol version, but we do not test any other brokers at present.
+There is currently only a RabbitMQ implementation; however the abstractions have been validated in .NET using Apache Qpid in addition to RabbitMQ.
+Since AMQP operates at the protocol level in principle, the RabbitMQ client can be used with any broker that supports the same protocol version, but we do not test any other brokers at present.
 
-The overview here assumes that you are already familiar with the basics of the AMQP specification already.
+The overview here assumes that you are already familiar with the basics of the AMQP specification.
 If you are not, then have a look at the resources listed in <<resources>>
 
 ===== Message
 
 The 0-8 and 0-9-1 AMQP specifications do not define a Message class or interface.
-Instead, when performing an operation such as '`Monospaced ([basicPublish])`', the content is passed as a byte-array argument and additional properties are passed in as separate arguments.
+Instead, when performing an operation such as `basicPublish()`, the content is passed as a byte-array argument and additional properties are passed in as separate arguments.
 Spring AMQP defines a Message class as part of a more general AMQP domain model representation.
 The purpose of the Message class is to simply encapsulate the body and properties within a single instance so that the API can in turn be simpler.
 The Message class definition is quite straightforward.
@@ -175,6 +177,8 @@ As one of the main components involved in actual AMQP messaging, it is discussed
 
 [[connections]]
 ==== Connection and Resource Management
+
+===== Introduction
 
 Whereas the AMQP model we described in the previous section is generic and applicable to all implementations, when we get into the management of resources, the details are specific to the broker implementation.
 Therefore, in this section, we will be focusing on code that exists only within our "spring-rabbit" module since at this point, RabbitMQ is the only supported implementation.
@@ -410,20 +414,19 @@ For example, if you configure the container with `setQueueNames("foo, bar")`, th
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
 
-Confirmed and returned messages are supported by setting the `CachingConnectionFactory`'s `publisherConfirms` and `publisherReturns` properties to 'true' respectively.
+Confirmed and returned messages are supported by setting the `CachingConnectionFactory`\'s `publisherConfirms` and `publisherReturns` properties to 'true' respectively.
 
-When these options are set, `Channel`s created by
-        the factory are wrapped in an `PublisherCallbackChannel`which is used to facilitate the callbacks.
-When such a channel is obtained, the
-        client can register a `PublisherCallbackChannel.Listener`with the `Channel`.
-The
-        `PublisherCallbackChannel`implementation contains logic
-        to route a confirm/return to the appropriate listener.These features are explained further in the following sections.
+When these options are set, `Channel` s created by the factory are wrapped in an `PublisherCallbackChannel`, which is used to facilitate the callbacks.
+When such a channel is obtained, the client can register a `PublisherCallbackChannel.Listener` with the `Channel`.
+The `PublisherCallbackChannel` implementation contains logic to route a confirm/return to the appropriate listener.
+These features are explained further in the following sections.
 
 TIP: For some more background information, please see the following blog post by the RabbitMQ team titled http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/[Introducing Publisher Confirms].
 
 [[amqp-template]]
 ==== AmqpTemplate
+
+===== Introduction
 
 As with many other high-level abstractions provided by the Spring Framework and related projects, Spring AMQP provides a "template" that plays a central role.
 The interface that defines the main operations is called `AmqpTemplate`.
@@ -562,6 +565,8 @@ Starting with *version 1.4* `RabbitMessagingTemplate`, built on top of `RabbitTe
 This allows you to create the message to send in generic manner.
 
 ==== Sending messages
+
+===== Introduction
 
 When sending a Message, one can use any of the following methods:
 
@@ -715,8 +720,10 @@ Bean references, such as `"@myBean.isMandatory(#root)"` can be used in the expre
 [[receiving-messages]]
 ==== Receiving messages
 
-Message reception is always a bit more complicated than sending.
-The reason is that there are two ways to receive a `Message`.
+===== Introduction
+
+Message reception is always a little more complicated than sending.
+There are two ways to receive a `Message`.
 The simpler option is to poll for a single `Message` at a time with a polling method call.
 The more complicated yet more common approach is to register a listener that will receive `Messages` on-demand, asynchronously.
 We will look at an example of each approach in the next two sub-sections.
@@ -1203,6 +1210,8 @@ To modify this factory, you need to configure the underlying RabbitMQ `Connectio
 [[message-converters]]
 ==== Message Converters
 
+===== Introduction
+
 The `AmqpTemplate` also defines several methods for sending and receiving Messages that will delegate to a `MessageConverter`.
 The `MessageConverter` itself is quite straightforward.
 It provides a single method for each direction: one for converting *to* a Message and another for converting *from* a Message.
@@ -1381,6 +1390,8 @@ By default, it will delegate to a `SimpleMessageConverter` if there is no `conte
 
 [[request-reply]]
 ==== Request/Reply Messaging
+
+===== Introduction
 
 The `AmqpTemplate` also provides a variety of `sendAndReceive` methods that accept the same argument options that you have seen above for the one-way send operations (exchange, routingKey, and Message).
 Those methods are quite useful for request/reply scenarios since they handle the configuration of the necessary "reply-to" property before sending and can listen for the reply message on an exclusive Queue that is created internally for that purpose.
@@ -1571,6 +1582,8 @@ If the message has no `replyToAddress` property, the message will be rejected an
 
 [[broker-configuration]]
 ==== Configuring the broker
+
+===== Introduction
 
 The AMQP specification describes how the protocol can be used to configure Queues, Exchanges and Bindings on the broker.
 These operations which are portable from the 0.8 specification and higher are present in the AmqpAdmin interface in the org.springframework.amqp.core package.
@@ -1950,6 +1963,8 @@ The default `FatalExceptionStrategy` logs a warning message.
 
 ==== Transactions
 
+===== Introduction
+
 The Spring Rabbit framework has support for automatic transaction management in the synchronous and asynchronous use cases with a number of different semantics that can be selected declaratively, as is familiar to existing users of Spring transactions.
 This makes many if not most common messaging patterns very easy to implement.
 
@@ -2022,12 +2037,12 @@ NOTE: Prior to *RabbitMQ 2.7.0*, such messages (and any that are unacked when a 
 ===== Using the RabbitTransactionManager
 
 The http://static.springsource.org/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/transaction/RabbitTransactionManager.html[RabbitTransactionManager] is an alternative to executing Rabbit operations within, and synchronized with, external transactions.
-This Transaction Manager is an implementation of the `Ulink (Section qName:ulink level:6, chunks:[PlatformTransactionManager] attrs:[url:http://static.springsource.org/spring/docs/current/javadoc-api/org/springframework/transaction/PlatformTransactionManager.html])` interface and should be used with a single Rabbit ConnectionFactory.
+This Transaction Manager is an implementation of the http://static.springsource.org/spring/docs/current/javadoc-api/org/springframework/transaction/PlatformTransactionManager.html[PlatformTransactionManager] interface and should be used with a single Rabbit ConnectionFactory.
 
 IMPORTANT: This strategy is not able to provide XA transactions, for example in order to share transactions between messaging and database access.
 
 Application code is required to retrieve the transactional Rabbit resources via `ConnectionFactoryUtils.getTransactionalResourceHolder(ConnectionFactory, boolean)` instead of a standard `Connection.createChannel()` call with subsequent Channel creation.
-When using Spring's `Ulink (Section qName:ulink level:6, chunks:[RabbitTemplate] attrs:[url:http://static.springsource.org/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/core/RabbitTemplate.html])`, it will autodetect a thread-bound Channel and automatically participate in it.
+When using Spring AMQP's http://static.springsource.org/spring-amqp/docs/latest_ga/api/org/springframework/amqp/rabbit/core/RabbitTemplate.html[RabbitTemplate], it will autodetect a thread-bound Channel and automatically participate in its transaction.
 
 With Java Configuration you can setup a new RabbitTransactionManager using:
 
@@ -2061,47 +2076,20 @@ Some
     the attribute.
 
 .Configuration options for a message listener container
-[cols="2,3", options="header"]
+[cols="2l,4", options="header"]
 |===
-
-
-
-
-
-
 | Property
 (Attribute)
 
-
 | Description
-
-
-
-
-
-
-
-
 
 | channelTransacted
 (channel-transacted)
 
-
-
 | Boolean flag to signal that all messages should be acknowledged in a transaction (either manually or automatically)
-
-
-
-
-
-
-
-
 
 | acknowledgeMode
 (acknowledge)
-
-
 
 | `NONE` = no acks will be sent (incompatible with `channelTransacted=true`).
 RabbitMQ calls this "autoack" because the broker assumes all messages are acked without any action from the consumer.
@@ -2111,337 +2099,136 @@ Note that `acknowledgeMode` is complementary to channelTransacted - if the chann
 This is the default mode.
 See also `txSize`.
 
-
-
-
-
-
-
-
-
 | transactionManager
 (transaction-manager)
-
-
 
 | External transaction manager for the operation of the listener.
 Also complementary to channelTransacted - if the `Channel` is transacted then its transaction will be synchronized with the external transaction.
 
-
-
-
-
-
-
-
-
 | prefetchCount
 (prefetch)
-
-
 
 | The number of messages to accept from the broker in one socket frame.
 The higher this is the faster the messages can be delivered, but the higher the risk of non-sequential processing.
 Ignored if the `acknowledgeMode` is NONE.
 This will be increased, if necessary, to match the `txSize`.
 
-
-
-
-
-
-
-
-
 | shutdownTimeout
 (N/A)
-
-
 
 | When a container shuts down (e.g.
 if its enclosing `ApplicationContext` is closed) it waits for in-flight messages to be processed up to this limit.
 Defaults to 5 seconds.
 After the limit is reached, if the channel is not transacted messages will be discarded.
 
-
-
-
-
-
-
-
-
 | txSize
 (transaction-size)
-
-
 
 | When used with `acknowledgeMode` AUTO, the container will attempt to process up to this number of messages before sending an ack (waiting for each one up to the receive timeout setting).
 This is also when a transactional channel is committed.
 If the `prefetchCount` is less than the `txSize`, it will be increased to match the `txSize`.
 
-
-
-
-
-
-
-
-
 | receiveTimeout
 (receive-timeout)
-
-
 
 | The maximum time to wait for each message.
 If acknowledgeMode=NONE this has very little effect - the container just spins round and asks for another message.
 It has the biggest effect for a transactional `Channel` with `txSize > 1`, since it can cause messages already consumed not to be acknowledged until the timeout expires.
 
-
-
-
-
-
-
-
-
 | autoStartup
 (auto-startup)
-
-
 
 | Flag to indicate that the container should start when the `ApplicationContext` does (as part of the `SmartLifecycle` callbacks which happen after all beans are initialized).
 Defaults to true, but set it to false if your broker might not be available on startup, and then call `start()` later manually when you know the broker is ready.
 
-
-
-
-
-
-
-
-
 | phase
 (phase)
-
-
 
 | When autoStartup is true, the lifecycle phase within which this container should start and stop.
 The lower the value the earlier this container will start and the later it will stop.
 The default is Integer.MAX_VALUE meaning the container will start as late as possible and stop as soon as possible.
 
-
-
-
-
-
-
-
-
 | adviceChain
 (advice-chain)
-
-
 
 | An array of AOP Advice to apply to the listener execution.
 This can be used to apply additional cross cutting concerns such as automatic retry in the event of broker death.
 Note that simple re-connection after an AMQP error is handled by the `CachingConnectionFactory`, as long as the broker is still alive.
 
-
-
-
-
-
-
-
-
 | taskExecutor
 (task-executor)
-
-
 
 | A reference to a Spring TaskExecutor (or standard JDK 1.5+ Executor) for executing listener invokers.
 Default is a SimpleAsyncTaskExecutor, using internally managed threads.
 
-
-
-
-
-
-
-
-
 | errorHandler
 (error-handler)
-
-
 
 | A reference to an ErrorHandler strategy for handling any uncaught Exceptions that may occur during the execution of the MessageListener.
 Default: `ConditionalRejectingErrorHandler`
 
-
-
-
-
-
-
-
-
 | concurrentConsumers
 (concurrency)
-
-
 
 | The number of concurrent consumers to initially start for each listener.
 See <<listener-concurrency>>.
 
-
-
-
-
-
-
-
-
 | maxConcurrentConsumers
 (max-concurrency)
-
-
 
 | The maximum number of concurrent consumers to start, if needed, on demand.
 Must be greater than or equal to 'concurrentConsumers'.
 See <<listener-concurrency>>.
 
-
-
-
-
-
-
-
-
 | startConsumerMinInterval
 (min-start-interval)
-
-
 
 | The time in milliseconds which must elapse before each new consumer is started on demand.
 See <<listener-concurrency>>.
 Default 10000 (10 seconds).
 
-
-
-
-
-
-
-
-
 | stopConsumerMinInterval
 (min-stop-interval)
-
-
 
 | The time in milliseconds which must elapse before a consumer is stopped, since the last consumer was stopped, when an idle consumer is detected.
 See <<listener-concurrency>>.
 Default 60000 (1 minute).
 
-
-
-
-
-
-
-
-
 | consecutiveActiveTrigger
 (min-consecutive-active)
-
-
 
 | The minimum number of consecutive messages received by a consumer, without a receive timeout occurring, when considering starting a new consumer.
 Also impacted by 'txSize'.
 See <<listener-concurrency>>.
 Default 10.
 
-
-
-
-
-
-
-
-
 | consecutiveIdleTrigger
 (min-consecutive-idle)
-
-
 
 | The minimum number of receive timeouts a consumer must experience before considering stopping a consumer.
 Also impacted by 'txSize'.
 See <<listener-concurrency>>.
 Default 10.
-.
-
-
-
-
-
-
-
-
 
 | connectionFactory
 (connection-factory)
 
-
-
 | A reference to the connectionFactory; when configuring using the XML namespace, the default referenced bean name is "rabbitConnectionFactory".
-
-
-
-
-
-
-
-
 
 | defaultRequeueRejected
 (requeue-rejected)
 
-
-
 | Determines whether messages that are rejected because the listener threw an exception should be requeued or not.
 Default 'true'.
-
-
-
-
-
-
-
-
 
 | recoveryInterval
 (recovery-interval)
 
-
-
 | Determines the time in milliseconds between attempts to start a consumer if it fails to start for non-fatal reasons.
 Default '5000'.
 
-
-
-
-
-
-
-
-
 | exclusive
 (exclusive)
-
-
 
 | Determines whether the single consumer in this container has exclusive access to the queue(s).
 The concurrency of the container must be 1 when this is true.
@@ -2449,17 +2236,8 @@ If another consumer has exclusive access, the container will attempt to recover 
 When using the namespace, this attribute appears on the <rabbit:listener/> element along with the queue names.
 Default 'false'.
 
-
-
-
-
-
-
-
 | rabbitAdmin
 (admin)
-
-
 
 | When a listener container listens to at least one auto-delete queue and it is found to be missing during startup, the container uses a `RabbitAdmin` to declare the queue and any related bindings and exchanges.
 If such elements are configured to use conditional declaration (see <<conditional-declaration>>), the container must use the admin that was configured to declare those elements.
@@ -2467,17 +2245,8 @@ Specify that admin here; only required when using auto-delete queues with condit
 If you do not wish the auto-delete queue(s) to be declared until the container is started, set `auto-startup` to `false` on the admin.
 Defaults to a `RabbitAdmin` that will declare all non-conditional elements.
 
-
-
-
-
-
-
-
 | missingQueuesFatal
 (missing-queues-fatal)
-
-
 
 | Starting with *version 1.3.5*, `SimpleMessageListenerContainer` has this new property.
 
@@ -2504,17 +2273,8 @@ This global property will not be applied to any containers that have an explicit
 
 The default retry properties (3 retries at 5 second intervals) can be overridden using the properties below.
 
-
-
-
-
-
-
-
 | autoDeclare
 (auto-declare)
-
-
 
 | Starting with *version 1.4*, `SimpleMessageListenerContainer` has this new property.
 
@@ -2522,17 +2282,8 @@ When set to `true` (default), the container will redeclare all AMQP objects (Que
 To disable this behavior, set this property to `false`.
 Note that the container will fail to start if all of its queues are missing.
 
-
-
-
-
-
-
-
 | declarationRetries
 (declaration-retries)
-
-
 
 | Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
 The namespace attribute is available in *version 1.5.*
@@ -2542,17 +2293,9 @@ Passive queue declaration occurs when the consumer starts or, when consuming fro
 When none of the configured queues can be passively declared (for any reason) after the retries are exhausted, the container behavior is controlled by the 'missingQueuesFatal` property above.
 Default: 3 retries (4 attempts).
 
-
-
-
-
-
-
-
 | failedDeclarationRetryInterval
-(failed-declaration-retry-interval)
-
-
+(failed-declaration-retry-
+interval)
 
 | Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
 The namespace attribute is available in *version 1.5.*
@@ -2561,17 +2304,9 @@ The interval between passive queue declaration retry attempts.
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
 Default: 5000 (5 seconds).
 
-
-
-
-
-
-
-
 | retryDeclarationInterval
-(missing-queue-retry-interval)
-
-
+(missing-queue-retry-
+interval)
 
 | Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
 The namespace attribute is available in *version 1.5.*
@@ -2582,11 +2317,6 @@ When this interval elapses, the 'declarationRetries' and 'failedDeclarationRetry
 If there are still missing queues, the consumer will again wait for this interval before trying again.
 This process will continue indefinitely until all queues are available.
 Default: 60000 (1 minute).
-
-
-
-
-
 
 |===
 
@@ -2648,6 +2378,8 @@ Previously a cancel on one queue cancelled the entire consumer and eventually th
 If you wish to permanently remove a queue, you should update the container before or after deleting to queue, to avoid future attempts to consume from it.
 
 ==== Resilience: Recovering from Errors and Broker Failures
+
+===== Introduction
 
 Some of the key (and most popular) high-level features that Spring AMQP provides are to do with recovery and automatic re-connection in the event of a protocol error or broker failure.
 We have seen all the relevant components already in this guide, but it should help to bring them all together here and call out the features and recovery scenarios individually.
