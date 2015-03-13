@@ -9,11 +9,14 @@ buildscript {
 		maven { url 'http://repo.springsource.org/plugins-release' }
 	}
 	dependencies {
-		classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.8'
+		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
+		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.0'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath 'org.springframework.build.gradle:spring-io-plugin:0.0.3.RELEASE'
 	}
 }
+
+def docsDir = 'src/reference/asciidoc' // Will be default with newer asciidoctor plugin
 
 ext {
 	linkHomepage = 'http://www.spring.io/spring-amqp'
@@ -233,11 +236,39 @@ project('spring-rabbit') {
 
 }
 
-apply plugin: 'docbook-reference'
+apply plugin: org.asciidoctor.gradle.AsciidoctorPlugin
+
+asciidoctor {
+	sourceDir file("$docsDir")
+	sourceDocumentNames = files("$docsDir/index.adoc") // Change in >= 1.5.1
+	outputDir file("$buildDir/html")
+	backends = ['html5', 'docbook']
+	logDocuments = true
+	options = [
+		doctype: 'book',
+		attributes: [
+			docinfo: '',
+			toc2: '',
+			'compat-mode': '',
+			imagesdir: '',
+			stylesdir: "stylesheets/",
+			stylesheet: 'golo.css',
+			appversion: "$version",
+			'source-highlighter': 'highlightjs'
+		]
+	]
+}
+
+apply plugin: DocbookReferencePlugin
 
 reference {
-	sourceDir = file('src/reference/docbook')
+	sourceFileName = 'index.xml'
+	sourceDir = file("$buildDir/html")
+	pdfFilename = 'spring-amqp-reference.pdf'
+	expandPlaceholders = ''
 }
+
+reference.dependsOn asciidoctor
 
 apply plugin: 'sonar-runner'
 

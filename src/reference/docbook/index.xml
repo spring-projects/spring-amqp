@@ -100,7 +100,6 @@
             </para>
         </partintro>
         <xi:include href="amqp.xml"/>
-        <xi:include href="erlang.xml"/>
         <xi:include href="sample-apps.xml"/>
     </part>
     <part>
@@ -122,6 +121,5 @@
             </para>
         </partintro>
         <xi:include href="further-reading.xml"/>
-        <xi:include href="bibliography.xml"/>
     </part>
 </book>

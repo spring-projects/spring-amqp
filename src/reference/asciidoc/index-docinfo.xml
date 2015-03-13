@@ -1,0 +1,48 @@
+<productname>Spring AMQP</productname>
+<releaseinfo>{appversion}</releaseinfo>
+<copyright>
+	<year>2010-2015</year>
+	<holder>Pivotal Software Inc.</holder>
+</copyright>
+<authorgroup>
+		<author>
+				<firstname>Mark</firstname>
+				<surname>Pollack</surname>
+		</author>
+		<author>
+				<firstname>Mark</firstname>
+				<surname>Fisher</surname>
+		</author>
+		<author>
+				<firstname>Oleg</firstname>
+				<surname>Zhurakousky</surname>
+		</author>
+		<author>
+				<firstname>Dave</firstname>
+				<surname>Syer</surname>
+		</author>
+		<author>
+				<firstname>Gary</firstname>
+				<surname>Russell</surname>
+		</author>
+		<author>
+				<firstname>Gunnar</firstname>
+				<surname>Hillert</surname>
+		</author>
+		<author>
+				<firstname>Artem</firstname>
+				<surname>Bilan</surname>
+		</author>
+		<author>
+				<firstname>Stéphane</firstname>
+				<surname>Nicoll</surname>
+		</author>
+</authorgroup>
+<legalnotice>
+	<para>
+		Copies of this document may be made for your own use and for distribution to
+		others, provided that you do not charge any fee for such copies and further
+		provided that each copy contains this Copyright Notice, whether distributed in
+		print or electronically.
+	</para>
+</legalnotice>
