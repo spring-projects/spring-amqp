@@ -17,7 +17,9 @@ include::whats-new.adoc[]
 
 == Reference
 
-This part of the reference documentation details the various components that comprise Spring AMQP. The <<amqp,main chapter>> covers the core classes to develop an AMQP application. This part also includes a chapter about the <<sample-apps,sample applications>>.
+This part of the reference documentation details the various components that comprise Spring AMQP.
+The <<amqp,main chapter>> covers the core classes to develop an AMQP application.
+This part also includes a chapter about the <<sample-apps,sample applications>>.
 
 include::amqp.adoc[]
 include::sample-apps.adoc[]
