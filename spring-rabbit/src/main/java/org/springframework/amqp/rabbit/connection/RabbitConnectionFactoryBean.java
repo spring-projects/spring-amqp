@@ -31,22 +31,30 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.ExceptionHandler;
-import com.rabbitmq.client.SaslConfig;
-import com.rabbitmq.client.SocketConfigurator;
-
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ExceptionHandler;
+import com.rabbitmq.client.SaslConfig;
+import com.rabbitmq.client.SocketConfigurator;
+
 
 /**
  * Factory bean to create a RabbitMQ ConnectionFactory, delegating most
  * setter methods and optionally enabling SSL, with or without
- * certificate validation.
+ * certificate validation. When {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation}
+ * is not null, the default implementation loads a {@code PKCS12} keystore and a
+ * {@code JKS} truststore using the supplied properties and intializes {@code SunX509} key
+ * and trust manager factories. These are then used to initialize an {@link SSLContext}
+ * using the {@link #setSslAlgorithm(String) sslAlgorithm} (default TLSv1.1).
+ * <p>
+ * Override {@link #createSSLContext()} to create and/or perform further modification of the context.
+ * <p>
+ * Override {@link #setUpSSL()} to take complete control over setting up SSL.
  *
  * @author Gary Russell
  *
@@ -54,11 +62,13 @@ import org.springframework.util.StringUtils;
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
 
-	private final ConnectionFactory connectionFactory = new ConnectionFactory();
+	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
 
 	private boolean useSSL;
 
 	private Resource sslPropertiesLocation;
+
+	private volatile String sslAlgorithm = "SSLv3";
 
 	/**
 	 * Whether or not the factory should be configured to use SSL.
@@ -66,6 +76,30 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setUseSSL(boolean useSSL) {
 		this.useSSL = useSSL;
+	}
+
+	/**
+	 * @return true to use ssl.
+	 * @since 1.4.4.
+	 */
+	protected boolean isUseSSL() {
+		return useSSL;
+	}
+
+	/**
+	 * Set the algorithm to use; default SSLv3.
+	 * @param sslAlgorithm the algorithm.
+	 */
+	public void setSslAlgorithm(String sslAlgorithm) {
+		this.sslAlgorithm = sslAlgorithm;
+	}
+
+	/**
+	 * @return the ssl algorithm.
+	 * @since 1.4.4
+	 */
+	protected String getSslAlgorithm() {
+		return sslAlgorithm;
 	}
 
 	/**
@@ -81,6 +115,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setSslPropertiesLocation(Resource sslPropertiesLocation) {
 		this.sslPropertiesLocation = sslPropertiesLocation;
+	}
+
+	/**
+	 * @return the properties location.
+	 * @since 1.4.4
+	 */
+	protected Resource getSslPropertiesLocation() {
+		return sslPropertiesLocation;
 	}
 
 	/**
@@ -246,7 +288,12 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		return this.connectionFactory;
 	}
 
-	private void setUpSSL() throws Exception {
+	/**
+	 * Override this method to take complete control over the SSL setup.
+	 * @throws Exception an Exception.
+	 * @since 1.4.4
+	 */
+	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null) {
 			this.connectionFactory.useSslProtocol();
 		}
@@ -279,10 +326,21 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
 			tmf.init(tks);
 
-			SSLContext context = SSLContext.getInstance("SSLv3");
+			SSLContext context = createSSLContext();
 			context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 			this.connectionFactory.useSslProtocol(context);
 		}
+	}
+
+	/**
+	 * Override this method to create and/or configure the {@link SSLContext} used
+	 * by the {@link ConnectionFactory}.
+	 * @return The {@link SSLContext}.
+	 * @throws NoSuchAlgorithmException if the algorithm is not available.
+	 * @since 1.4.4
+	 */
+	protected SSLContext createSSLContext() throws NoSuchAlgorithmException {
+		return SSLContext.getInstance(this.sslAlgorithm);
 	}
 
 }
