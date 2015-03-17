@@ -29,7 +29,7 @@
     basics of the AMQP specification already. If you are not, then have a look
     at the resources listed in <xref linkend="resources" /></para>
 
-    <sect2>
+    <section>
       <title>Message</title>
 
       <para>The 0-8 and 0-9-1 AMQP specifications do not define a Message
@@ -69,9 +69,9 @@
       'contentType', and several more. Those properties can also be extended
       with user-defined 'headers' by calling the <methodname>setHeader(String
       key, Object value)</methodname> method.</para>
-    </sect2>
+    </section>
 
-    <sect2>
+    <section>
       <title>Exchange</title>
 
       <para>The <interfacename>Exchange</interfacename> interface represents
@@ -116,9 +116,9 @@
         routing keys. You will learn more about the default Exchange's usage
         within Spring AMQP in <xref linkend="amqp-template" />.</para>
       </note>
-    </sect2>
+    </section>
 
-    <sect2>
+    <section>
       <title>Queue</title>
 
       <para>The <classname>Queue</classname> class represents the component
@@ -161,9 +161,9 @@
       <note>See the section on queues in <xref linkend="broker-configuration" />
       for information about declaring queues using namespace support, including
       queue arguments.</note>
-    </sect2>
+    </section>
 
-    <sect2>
+    <section>
       <title>Binding</title>
 
       <para>Given that a producer sends to an Exchange and a consumer receives
@@ -211,7 +211,7 @@
       that approach for generating AMQP-related bean definitions and
       recognizes the Queues, Exchanges, and Bindings so that they will all be
       declared on the AMQP broker upon application startup.</para>
-    </sect2>
+    </section>
 
     <para>The <interfacename>AmqpTemplate</interfacename> is also defined
     within the core package. As one of the main components involved in actual
@@ -1454,7 +1454,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       The <classname>MessageListenerAdapter</classname> mentioned in <xref linkend="async-consumer"/>
       also uses a <classname>MessageConverter</classname>.
     </note>
-    <sect2>
+    <section>
       <title>SimpleMessageConverter</title>
 
       <para>The default implementation of the
@@ -1464,7 +1464,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
       explicitly configure an alternative. It handles text-based content,
       serialized Java objects, and simple byte arrays.</para>
 
-      <sect3>
+      <section>
         <title>Converting From a Message</title>
 
         <para>If the content type of the input Message begins with "text"
@@ -1494,9 +1494,9 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         <para>For all other content-types, the
         <classname>SimpleMessageConverter</classname> will return the Message
         body content directly as a byte array.</para>
-      </sect3>
+      </section>
 
-      <sect3>
+      <section>
         <title>Converting To a Message</title>
 
         <para>When converting to a Message from an arbitrary Java Object, the
@@ -1506,10 +1506,10 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         convert), and it will set the content-type property accordingly. If
         the Object to be converted does not match one of those types, the
         Message body will be null.</para>
-      </sect3>
-    </sect2>
+      </section>
+    </section>
 
-    <sect2>
+    <section>
       <title>JsonMessageConverter and Jackson2JsonMessageConverter</title>
 
       <para>As mentioned in the previous section, relying on Java
@@ -1568,9 +1568,9 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         </bean>
     </property>
 </bean>]]></programlisting>
-    </sect2>
+    </section>
 
-    <sect2>
+    <section>
       <title>MarshallingMessageConverter</title>
 
       <para>Yet another option is the
@@ -1593,8 +1593,8 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         </bean>
     </property>
 </bean>]]></programlisting>
-    </sect2>
-      <sect2>
+    </section>
+      <section>
           <title>ContentTypeDelegatingMessageConverter</title>
 
           <para>
@@ -1613,7 +1613,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;]]></programlist
         </map>
     </property>
 </bean>]]></programlisting>
-      </sect2>
+      </section>
   </section>
   <section id="message-properties-converters">
     <title>Message Properties Converters</title>
