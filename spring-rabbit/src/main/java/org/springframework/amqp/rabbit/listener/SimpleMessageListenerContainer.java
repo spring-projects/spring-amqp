@@ -217,7 +217,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * <p>
 	 * Raising the number of concurrent consumers is recommended in order to scale the consumption of messages coming in
 	 * from a queue. However, note that any ordering guarantees are lost once multiple consumers are registered. In
-	 * general, stick with 1 consumer for low-volume queues. Cannot be less than {@link #maxConcurrentConsumers} (if set).
+	 * general, stick with 1 consumer for low-volume queues. Cannot be more than {@link #maxConcurrentConsumers} (if set).
 	 *
 	 * @see #setMaxConcurrentConsumers(int)
 	 *
