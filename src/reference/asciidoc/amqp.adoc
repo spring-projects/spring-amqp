@@ -2096,10 +2096,11 @@ Some
 | acknowledgeMode
 (acknowledge)
 
-| `NONE` = no acks will be sent (incompatible with `channelTransacted=true`).
+a|
+* `NONE` = no acks will be sent (incompatible with `channelTransacted=true`).
 RabbitMQ calls this "autoack" because the broker assumes all messages are acked without any action from the consumer.
-MANUAL = the listener must acknowledge all messages by calling `Channel.basicAck()`.
-AUTO = the container will acknowledge the message automatically, unless the `MessageListener` throws an exception.
+* `MANUAL` = the listener must acknowledge all messages by calling `Channel.basicAck()`.
+* `AUTO` = the container will acknowledge the message automatically, unless the `MessageListener` throws an exception.
 Note that `acknowledgeMode` is complementary to channelTransacted - if the channel is transacted then the broker requires a commit notification in addition to the ack.
 This is the default mode.
 See also `txSize`.
