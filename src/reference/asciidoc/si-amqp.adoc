@@ -1,0 +1,63 @@
+[[spring-integration-amqp]]
+=== Spring Integration AMQP Support
+
+[[spring-integration-amqp-introduction]]
+==== Introduction
+
+The http://www.springsource.org/spring-integration[Spring Integration] project includes AMQP Channel Adapters and Gateways that build upon the Spring AMQP project.
+Those adapters are developed and released in the Spring Integration project.
+In Spring Integration, "Channel Adapters" are unidirectional (one-way) whereas "Gateways" are bidirectional (request-reply).
+We provide an inbound-channel-adapter, outbound-channel-adapter, inbound-gateway, and outbound-gateway.
+
+Since the AMQP adapters are part of the Spring Integration release, the documentation will be available as part of the Spring Integration distribution.
+As a taster, we just provide a quick overview of the main features here.
+
+==== Inbound Channel Adapter
+
+To receive AMQP Messages from a Queue, configure an <inbound-channel-adapter>
+
+[source,xml]
+----
+<amqp:inbound-channel-adapter channel="fromAMQP"
+                              queue-names="some.queue"
+                              connection-factory="rabbitConnectionFactory"/>
+----
+
+==== Outbound Channel Adapter
+
+To send AMQP Messages to an Exchange, configure an <outbound-channel-adapter>.
+A 'routing-key' may optionally be provided in addition to the exchange name.
+
+[source,xml]
+----
+<amqp:outbound-channel-adapter channel="toAMQP"
+                               exchange-name="some.exchange"
+                               routing-key="foo"
+                               amqp-template="rabbitTemplate"/>
+----
+
+==== Inbound Gateway
+
+To receive an AMQP Message from a Queue, and respond to its reply-to address, configure an <inbound-gateway>.
+
+[source,xml]
+----
+<amqp:inbound-gateway request-channel="fromAMQP"
+                      reply-channel="toAMQP"
+                      queue-names="some.queue"
+                      connection-factory="rabbitConnectionFactory"/>
+----
+
+==== Outbound Gateway
+
+To send AMQP Messages to an Exchange and receive back a response from a remote client, configure an <outbound-gateway>.
+A 'routing-key' may optionally be provided in addition to the exchange name.
+
+[source,xml]
+----
+<amqp:outbound-gateway request-channel="toAMQP"
+                       reply-channel="fromAMQP"
+                       exchange-name="some.exchange"
+                       routing-key="foo"
+                       amqp-template="rabbitTemplate"/>
+----
