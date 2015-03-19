@@ -9,23 +9,21 @@ Prerequisites: install and run the RabbitMQ broker (http://www.rabbitmq.com/down
 Then grab the spring-rabbit JAR and all its dependencies - the easiest way to do that is to declare a dependency in your build tool, e.g.
 for Maven:
 
-[source,xml]
+[source,xml,subs="+attributes"]
 ----
 <dependency>
   <groupId>org.springframework.amqp</groupId>
   <artifactId>spring-rabbit</artifactId>
-  <version>${spring.amqp.version}</version>
+  <version>{spring-amqp-version}</version>
 </dependency>
 ----
 
 And for gradle:
 
-[source,groovy]
+[source,groovy,subs="+attributes"]
 ----
-compile 'org.springframework.amqp:spring-rabbit:${spring.amqp.version}'
+compile 'org.springframework.amqp:spring-rabbit:{spring-amqp-version}'
 ----
-
-In each case, `${spring.amqp.version}` would be a version such as {spring-amqp-version} (the version corresponding to this manual).
 
 [[compatibility]]
 ===== Compatibility
