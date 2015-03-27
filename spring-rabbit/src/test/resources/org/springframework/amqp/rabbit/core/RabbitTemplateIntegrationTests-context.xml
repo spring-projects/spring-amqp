@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<rabbit:template id="routingTemplate"
+		connection-factory="rcf"
+		send-connection-factory-selector-expression="messageProperties.headers['cfKey']" />
+
+	<bean id="rcf" class="org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory">
+		<property name="targetConnectionFactories">
+			<map>
+				<entry key="foo" value-ref="cf1"/>
+				<entry key="bar" value-ref="cf2"/>
+			</map>
+		</property>
+		<property name="defaultTargetConnectionFactory" ref="defaultCF"/>
+	</bean>
+
+	<bean class="org.springframework.amqp.rabbit.core.RabbitTemplateIntegrationTests$RCFConfig" />
+
+</beans>
