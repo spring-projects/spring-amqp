@@ -23,8 +23,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -51,7 +54,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -67,6 +72,8 @@ import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -81,8 +88,12 @@ import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
@@ -95,6 +106,7 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 import org.springframework.util.ReflectionUtils.FieldFilter;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -107,6 +119,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gunnar Hillert
  * @author Artem Bilan
  */
+@ContextConfiguration
+@RunWith(SpringJUnit4ClassRunner.class)
 public class RabbitTemplateIntegrationTests {
 
 	private static final Log logger = LogFactory.getLog(RabbitTemplateIntegrationTests.class);
@@ -116,6 +130,15 @@ public class RabbitTemplateIntegrationTests {
 	private static final Queue REPLY_QUEUE = new Queue("test.reply.queue");
 
 	private RabbitTemplate template;
+
+	@Autowired
+	private RabbitTemplate routingTemplate;
+
+	@Autowired
+	private ConnectionFactory cf1;
+
+	@Autowired
+	private ConnectionFactory cf2;
 
 	@Before
 	public void create() {
@@ -1208,6 +1231,39 @@ public class RabbitTemplateIntegrationTests {
 		connectionFactory.destroy();
 	}
 
+	@Test
+	public void testRouting() throws Exception {
+		Connection connection1 = mock(Connection.class);
+		when(this.cf1.createConnection()).thenReturn(connection1);
+		Channel channel1 = mock(Channel.class);
+		when(connection1.createChannel(false)).thenReturn(channel1);
+		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", new MessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				message.getMessageProperties().setHeader("cfKey", "foo");
+				return message;
+			}
+		});
+		verify(channel1).basicPublish(anyString(), anyString(), Matchers.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
+
+		Connection connection2 = mock(Connection.class);
+		when(this.cf2.createConnection()).thenReturn(connection2);
+		Channel channel2 = mock(Channel.class);
+		when(connection2.createChannel(false)).thenReturn(channel2);
+		this.routingTemplate.convertAndSend("exchange", "routingKey", "xyz", new MessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				message.getMessageProperties().setHeader("cfKey", "bar");
+				return message;
+			}
+		});
+		verify(channel1).basicPublish(anyString(), anyString(), Matchers.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
+	}
+
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
 		public PlannedException() {
@@ -1233,6 +1289,25 @@ public class RabbitTemplateIntegrationTests {
 
 		@Override
 		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+		}
+
+	}
+
+	public static class RCFConfig {
+
+		@Bean
+		public ConnectionFactory cf1() {
+			return mock(ConnectionFactory.class);
+		}
+
+		@Bean
+		public ConnectionFactory cf2() {
+			return mock(ConnectionFactory.class);
+		}
+
+		@Bean
+		public ConnectionFactory defaultCF() {
+			return mock(ConnectionFactory.class);
 		}
 
 	}
