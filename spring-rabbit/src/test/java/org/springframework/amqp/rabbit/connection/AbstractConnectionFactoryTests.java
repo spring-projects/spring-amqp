@@ -1,10 +1,13 @@
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,7 +17,12 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.ConnectionFactory;
 
@@ -24,6 +32,7 @@ import com.rabbitmq.client.ConnectionFactory;
 public abstract class AbstractConnectionFactoryTests {
 
 	protected abstract AbstractConnectionFactory createConnectionFactory(ConnectionFactory mockConnectionFactory);
+
 	@Test
 	public void testWithListener() throws IOException {
 
@@ -35,16 +44,24 @@ public abstract class AbstractConnectionFactoryTests {
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+			@Override
 			public void onCreate(Connection connection) {
 				called.incrementAndGet();
 			}
+			@Override
 			public void onClose(Connection connection) {
 				called.decrementAndGet();
 			}
 		}));
 
+		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
+		when(logger.isInfoEnabled()).thenReturn(true);
+		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		Connection con = connectionFactory.createConnection();
 		assertEquals(1, called.get());
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).info(captor.capture());
+		assertThat(captor.getValue(), containsString("Created new connection: SimpleConnection"));
 
 		con.close();
 		assertEquals(1, called.get());
@@ -75,9 +92,11 @@ public abstract class AbstractConnectionFactoryTests {
 		assertEquals(0, called.get());
 
 		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+			@Override
 			public void onCreate(Connection connection) {
 				called.incrementAndGet();
 			}
+			@Override
 			public void onClose(Connection connection) {
 				called.decrementAndGet();
 			}

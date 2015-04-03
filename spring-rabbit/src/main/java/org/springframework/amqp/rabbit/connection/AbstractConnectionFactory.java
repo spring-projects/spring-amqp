@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -73,6 +73,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.rabbitConnectionFactory.setHost(host);
 	}
 
+	@Override
 	public String getHost() {
 		return this.rabbitConnectionFactory.getHost();
 	}
@@ -81,6 +82,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.rabbitConnectionFactory.setVirtualHost(virtualHost);
 	}
 
+	@Override
 	public String getVirtualHost() {
 		return rabbitConnectionFactory.getVirtualHost();
 	}
@@ -97,6 +99,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.rabbitConnectionFactory.setConnectionTimeout(connectionTimeout);
 	}
 
+	@Override
 	public int getPort() {
 		return this.rabbitConnectionFactory.getPort();
 	}
@@ -134,6 +137,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.connectionListener.setDelegates(listeners);
 	}
 
+	@Override
 	public void addConnectionListener(ConnectionListener listener) {
 		this.connectionListener.addDelegate(listener);
 	}
@@ -195,15 +199,21 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	protected final Connection createBareConnection() {
 		try {
+			Connection connection = null;
 			if (this.addresses != null) {
-				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses),
+				connection = new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses),
 									this.closeTimeout);
 			}
 			else {
-				return new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService),
+				connection = new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService),
 									this.closeTimeout);
 			}
-		} catch (IOException e) {
+			if (logger.isInfoEnabled()) {
+				logger.info("Created new connection: " + connection);
+			}
+			return connection;
+		}
+		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
@@ -221,6 +231,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return temp;
 	}
 
+	@Override
 	public void destroy() {
 	}
 }

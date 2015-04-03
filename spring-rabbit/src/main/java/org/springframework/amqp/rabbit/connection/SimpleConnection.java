@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.util.ObjectUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -37,6 +38,7 @@ public class SimpleConnection implements Connection {
 		this.closeTimeout = closeTimeout;
 	}
 
+	@Override
 	public Channel createChannel(boolean transactional) {
 		try {
 			Channel channel = delegate.createChannel();
@@ -50,6 +52,7 @@ public class SimpleConnection implements Connection {
 		}
 	}
 
+	@Override
 	public void close() {
 		try {
 			// let the physical close time out if necessary
@@ -59,9 +62,17 @@ public class SimpleConnection implements Connection {
 		}
 	}
 
+	@Override
 	public boolean isOpen() {
 		return delegate != null
 				&& (delegate.isOpen() || this.delegate.getClass().getSimpleName().contains("AutorecoveringConnection"));
+	}
+
+	@Override
+	public String toString() {
+		return "SimpleConnection@"
+				+ ObjectUtils.getIdentityHexString(this)
+				+ " [delegate=" + delegate + "]";
 	}
 
 }
