@@ -328,7 +328,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					}
 					else {
 						try {
-							channel.getTargetChannel().close(); // to remove it from auto-recovery if so configured
+							Channel target = channel.getTargetChannel();
+							if (target != null) {
+								target.close(); // to remove it from auto-recovery if so configured
+							}
 						}
 						catch (AlreadyClosedException e) {
 							if (logger.isTraceEnabled()) {
@@ -592,7 +595,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 				// Handle close method: don't pass the call on.
 				if (active) {
 					synchronized (this.channelList) {
-						if (!RabbitUtils.isPhysicalCloseRequired() && this.channelList.size() < getChannelCacheSize()) {
+						if (!RabbitUtils.isPhysicalCloseRequired() &&
+								(this.channelList.size() < getChannelCacheSize()
+										|| this.channelList.contains((ChannelProxy) proxy))) {
 							logicalClose((ChannelProxy) proxy);
 							// Remain open in the channel list.
 							releasePermit();
@@ -656,9 +661,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
+			if (target == null) {
+				return;
+			}
 			if (this.target != null && !this.target.isOpen()) {
 				synchronized (targetMonitor) {
 					if (this.target != null && !this.target.isOpen()) {
+						if (this.channelList.contains(proxy)) {
+							this.channelList.remove(proxy);
+						}
 						this.target = null;
 						return;
 					}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,6 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
@@ -1111,4 +1112,28 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }));
 		verifyNoMoreInteractions(mock);
 	}
+
+	@Test
+	public void testChannelCloseIdempotency() throws IOException {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		when(mockChannel.isOpen()).thenReturn(true).thenReturn(false);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		Connection con = ccf.createConnection();
+
+		Channel channel = con.createChannel(false);
+//		RabbitUtils.setPhysicalCloseRequired(true);
+		channel.close(); // should be ignored, and placed into channel cache.
+		channel.close(); // physically closed, so remove from the cache.
+		channel.close(); // physically closed and removed from the cache  before, so void "close".
+		Channel channel2 = con.createChannel(false);
+		assertNotSame(channel, channel2);
+	}
+
 }
