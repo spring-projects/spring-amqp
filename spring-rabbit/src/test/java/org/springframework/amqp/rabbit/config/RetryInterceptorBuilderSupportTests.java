@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -194,15 +196,31 @@ public class RetryInterceptorBuilderSupportTests {
 		AmqpTemplate amqpTemplate = mock(AmqpTemplate.class);
 
 		RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
-				.recoverer(new RepublishMessageRecoverer(amqpTemplate))
+				.recoverer(new RepublishMessageRecoverer(amqpTemplate) {
+
+					@Override
+					protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
+						return Collections.singletonMap("fooHeader", "barValue");
+					}
+
+				})
 				.build();
 
 		final AtomicInteger count = new AtomicInteger();
 		Foo delegate = createDelegate(interceptor, count);
-		Message message = MessageBuilder.withBody("".getBytes()).setReceivedRoutingKey("foo").build();
+		Message message = MessageBuilder
+				.withBody("".getBytes())
+				.setReceivedExchange("exch")
+				.setReceivedRoutingKey("foo")
+				.build();
 		delegate.onMessage("", message);
 		assertEquals(3, count.get());
 		verify(amqpTemplate).send("error.foo", message);
+		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_EXCEPTION_STACKTRACE));
+		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_EXCEPTION_MESSAGE));
+		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_ORIGINAL_EXCHANGE));
+		assertNotNull(message.getMessageProperties().getHeaders().get(RepublishMessageRecoverer.X_ORIGINAL_ROUTING_KEY));
+		assertEquals("barValue", message.getMessageProperties().getHeaders().get("fooHeader"));
 	}
 
 	@Test
