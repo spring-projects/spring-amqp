@@ -364,7 +364,7 @@ public class BatchingRabbitTemplateTests {
 		gZipPostProcessor.setLevel(Deflater.BEST_COMPRESSION);
 		assertEquals(Deflater.BEST_COMPRESSION, getStreamLevel(gZipPostProcessor));
 		template.setBeforePublishPostProcessors(gZipPostProcessor);
-		template.setAfterReceivePostProcessor(new GUnzipPostProcessor());
+		template.setAfterReceivePostProcessors(new GUnzipPostProcessor());
 		MessageProperties props = new MessageProperties();
 		Message message = new Message("foo".getBytes(), props);
 		template.send("", ROUTE, message);
@@ -400,7 +400,7 @@ public class BatchingRabbitTemplateTests {
 		BatchingRabbitTemplate template = new BatchingRabbitTemplate(batchingStrategy, this.scheduler);
 		template.setConnectionFactory(this.connectionFactory);
 		template.setBeforePublishPostProcessors(new GZipPostProcessor());
-		template.setAfterReceivePostProcessor(new DelegatingDecompressingPostProcessor());
+		template.setAfterReceivePostProcessors(new DelegatingDecompressingPostProcessor());
 		MessageProperties props = new MessageProperties();
 		props.setContentEncoding("foo");
 		Message message = new Message("foo".getBytes(), props);

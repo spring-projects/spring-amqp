@@ -324,6 +324,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * invoking the {@link MessageListener}. Often used to decompress data.  Processors are invoked in order,
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
 	 * @param afterReceivePostProcessors the post processor.
+	 * @since 1.4.2
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");

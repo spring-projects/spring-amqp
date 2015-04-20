@@ -193,7 +193,7 @@ When creating an instance of `CachingConnectionFactory`, the 'hostname' can be p
 The 'username' and 'password' properties should be provided as well.
 If you would like to configure the size of the channel cache (the default is 1), you could call the `setChannelCacheSize()` method here as well.
 
-Starting with *version 1.3*, the `CachingConnectionFactory` can be configured to cache connections as well as just channels.
+Starting with _version 1.3_, the `CachingConnectionFactory` can be configured to cache connections as well as just channels.
 In this case, each call to `createConnection()` creates a new connection (or retrieves an idle one from the cache).
 Closing a connection returns it to the cache (if the cache size has not been reached).
 Channels created on such connections are cached too.
@@ -214,7 +214,7 @@ It is important to understand that the cache size is (by default) not a limit, b
 With a cache size of, say, 10, any number of channels can actually be in use.
 If more than 10 channels are being used and they are all returned to the cache, 10 will go in the cache; the remainder will be physically closed.
 
-Starting with *version 1.4.2*, the `CachingConnectionFactory` has a property `channelCheckoutTimeout`.
+Starting with _version 1.4.2_, the `CachingConnectionFactory` has a property `channelCheckoutTimeout`.
 When this property is greater than zero, the `channelCacheSize` becomes a limit on the number of channels that can be created on a connection.
 If the limit is reached, calling threads will block until a channel is available or this timeout is reached, in which case a `AmqpTimeoutException` is thrown.
 
@@ -321,7 +321,7 @@ For convenience, a factory bean is provided to assist in configuring the connect
 
 ===== Configuring SSL
 
-Starting with *version 1.4*, a convenient `RabbitConnectionFactoryBean` is provided to enable convenient configuration of SSL properties on the underlying client connection factory, using dependency injection.
+Starting with _version 1.4_, a convenient `RabbitConnectionFactoryBean` is provided to enable convenient configuration of SSL properties on the underlying client connection factory, using dependency injection.
 Other setters simply delegate to the underlying factory.
 Previously you had to configure the SSL options programmatically.
 
@@ -359,7 +359,7 @@ Typically this properties file will be secured by the operating system with the 
 [[routing-connection-factory]]
 ===== Routing Connection Factory
 
-Starting with *version 1.3*, the `AbstractRoutingConnectionFactory` has been introduced.
+Starting with _version 1.3_, the `AbstractRoutingConnectionFactory` has been introduced.
 This provides a mechanism to configure mappings for several `ConnectionFactories` and determine a target `ConnectionFactory` by some `lookupKey` at runtime.
 Typically, the implementation checks a thread-bound context.
 For convenience, Spring AMQP provides the `SimpleRoutingConnectionFactory`, which gets the current thread-bound `lookupKey` from the `SimpleResourceHolder`:
@@ -397,7 +397,7 @@ public class MyService {
 It is important to unbind the resource after use.
 For more information see the JavaDocs of `AbstractRoutingConnectionFactory`.
 
-Starting with *version 1.4*, the `RabbitTemplate` supports the SpEL `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` properties, which are evaluated on each AMQP protocol interaction operation (`send`, `sendAndReceive`, `receive` or `receiveAndReply`), resolving to a `lookupKey` value for the provided `AbstractRoutingConnectionFactory`.
+Starting with _version 1.4_, the `RabbitTemplate` supports the SpEL `sendConnectionFactorySelectorExpression` and `receiveConnectionFactorySelectorExpression` properties, which are evaluated on each AMQP protocol interaction operation (`send`, `sendAndReceive`, `receive` or `receiveAndReply`), resolving to a `lookupKey` value for the provided `AbstractRoutingConnectionFactory`.
 Bean references, such as `"@vHostResolver.getVHost(#root)"` can be used in the expression.
 For `send` operations, the Message to be sent is the root evaluation object; for `receive` operations, the *queueName* is the root evaluation object.
 
@@ -408,7 +408,7 @@ But, if `lenientFallback = false`, an `IllegalStateException` is thrown.
 
 The Namespace support also provides the `send-connection-factory-selector-expression` and `receive-connection-factory-selector-expression` attributes on the `<rabbit:template>` component.
 
-Also starting with *version 1.4*, you can configure a routing connection factory in a `SimpleMessageListenerContainer`.
+Also starting with _version 1.4_, you can configure a routing connection factory in a `SimpleMessageListenerContainer`.
 In that case, the list of queue names is used as the lookup key.
 For example, if you configure the container with `setQueueNames("foo, bar")`, the lookup key will be `"[foo,bar]"` (no spaces).
 
@@ -446,7 +446,7 @@ We will explore Message sending and reception, respectively, in the two sections
 [[template-retry]]
 ===== Adding Retry Capabilities
 
-Starting with *version 1.3* you can now configure the `RabbitTemplate` to use a `RetryTemplate` to help with handling problems with broker connectivity.
+Starting with _version 1.3_ you can now configure the `RabbitTemplate` to use a `RetryTemplate` to help with handling problems with broker connectivity.
 Refer to the https://github.com/spring-projects/spring-retry[spring-retry] project for complete information; the following is just one example that uses an exponential back off policy and the default `SimpleRetryPolicy` which will make three attempts before throwing the exception to the caller.
 
 Using the XML namespace:
@@ -484,7 +484,7 @@ public AmqpTemplate rabbitTemplate();
 }
 ----
 
-Starting with *version 1.4*, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
+Starting with _version 1.4_, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
 It is used as a second argument for the `RetryTemplate.execute(RetryCallback<T, E> retryCallback,
 			RecoveryCallback<T>recoveryCallback)`.
 
@@ -554,17 +554,18 @@ The `ack` is true for an `ack` and false for a `nack`.
 For `nack` s, the cause may contain a reason for the nack, if it is available when the `nack` is generated.
 An example is when sending a message to a non-existent exchange.
 In that case the broker closes the channel; the reason for the closure is included in the `cause`.
-`cause` was added in *version 1.4*.
+`cause` was added in _version 1.4_.
 
 Only one `ConfirmCallback` is supported by a `RabbitTemplate`.
 
 [[template-messaging]]
 ===== Messaging integration
 
-Starting with *version 1.4* `RabbitMessagingTemplate`, built on top of `RabbitTemplate`, provides an integration with the Spring Framework messaging abstraction, i.e.
+Starting with _version 1.4_ `RabbitMessagingTemplate`, built on top of `RabbitTemplate`, provides an integration with the Spring Framework messaging abstraction, i.e.
 `org.springframework.messaging.Message`.
 This allows you to create the message to send in generic manner.
 
+[[sending-messages]]
 ==== Sending messages
 
 ===== Introduction
@@ -639,7 +640,7 @@ template.send(new Message("Hello World".getBytes(), someProperties));
 [[message-builder]]
 ===== Message Builder API
 
-Starting with *version 1.3*, a message builder API is provided by the `MessageBuilder` and `MessagePropertiesBuilder`; they provides a convenient "fluent" means of creating a message or message properties:
+Starting with _version 1.3_, a message builder API is provided by the `MessageBuilder` and `MessagePropertiesBuilder`; they provides a convenient "fluent" means of creating a message or message properties:
 
 [source,java]
 ----
@@ -715,8 +716,43 @@ This allows the sender to correlate a confirm (ack or nack) with the sent messag
 
 When the template's `mandatory` property is 'true' returned messages are provided by the callback described in <<amqp-template>>.
 
-Starting with *version 1.4* the `RabbitTemplate` supports the SpEL `mandatoryExpression` property, which is evaluated against each request message, as the root evaluation object, resolving to a `boolean` value.
+Starting with _version 1.4_ the `RabbitTemplate` supports the SpEL `mandatoryExpression` property, which is evaluated against each request message, as the root evaluation object, resolving to a `boolean` value.
 Bean references, such as `"@myBean.isMandatory(#root)"` can be used in the expression.
+
+[[template-batching]]
+===== Batching
+
+Starting with _version 1.4.2_, the `BatchingRabbitTemplate` has been introduced.
+This is a subclass of `RabbitTemplate` with an overridden `send` method that batches messages according to the
+`BatchingStrategy`; only when a batch is complete is the message sent to RabbitMQ.
+
+[source, java]
+----
+public interface BatchingStrategy {
+
+	MessageBatch addToBatch(String exchange, String routingKey, Message message);
+
+	Date nextRelease();
+
+	Collection<MessageBatch> releaseBatches();
+
+}
+----
+
+CAUTION: Batched data is held in memory; unsent messages can be lost in the event of a system failure.
+
+A `SimpleBatchingStrategy` is provided.
+It supports sending messages to a single exchange/routing key. It has properties:
+
+- `batchSize` - the number of messages in a batch before it is sent
+- `bufferLimit` - the maximum size of the batched message; this will preempt the `batchSize` if exceeded, and cause a partial batch to be sent
+- `timeout` - a time after which a partial batch will be sent when there is no new activity adding messages to the batch
+
+The `SimpleBatchingStrategy` formats the batch by preceding each embedded message with a 4 byte binary length.
+This is communicated to the receiving system by setting the `springBatchFormat` message property to `lengthHeader4`.
+
+IMPORTANT: Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header). Rejecting any message from a batch will cause the entire batch to be rejected.
+
 
 [[receiving-messages]]
 ==== Receiving messages
@@ -752,7 +788,7 @@ Object receiveAndConvert() throws AmqpException;
 Object receiveAndConvert(String queueName) throws AmqpException;
 ----
 
-Similar to `sendAndReceive` methods, beginning with *version 1.3*, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages:
+Similar to `sendAndReceive` methods, beginning with _version 1.3_, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages:
 [source,java]
 ----
 <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback)
@@ -924,15 +960,15 @@ For convenience, the namespace provides the `priority` attribute on the `listene
 </rabbit:listener-container>
 ----
 
-Starting with *version 1.3* the queue(s) on which the container is listening can be modified at runtime; see <<listener-queues>>.
+Starting with _version 1.3_ the queue(s) on which the container is listening can be modified at runtime; see <<listener-queues>>.
 
 [[lc-auto-delete]]
 ====== 'auto-delete' Queues
 
 When a container is configured to listen to `auto-delete` queue(s), or the queue has an `x-expires` option or the http://www.rabbitmq.com/ttl.html[Time-To-Live] policy is configured on the Broker, the queue is removed by the broker when the container is stopped (last consumer is cancelled).
-Before *version 1.3*, the container could not be restarted because the queue was missing; the `RabbitAdmin` only automatically redeclares queues etc, when the connection is closed/opens, which does not happen when the container is stopped/started.
+Before _version 1.3_, the container could not be restarted because the queue was missing; the `RabbitAdmin` only automatically redeclares queues etc, when the connection is closed/opens, which does not happen when the container is stopped/started.
 
-Starting with *version 1.3*, the container will now use a `RabbitAdmin` to redeclare any missing queues during startup.
+Starting with _version 1.3_, the container will now use a `RabbitAdmin` to redeclare any missing queues during startup.
 
 You can also use conditional declaration (<<conditional-declaration>>) together with an `auto-startup="false"` admin to defer queue declaration until the container is started.
 
@@ -958,10 +994,16 @@ In this case, the queue and exchange are declared by `containerAdmin` which has 
 Also, the container is not started for the same reason.
 When the container is later started, it uses it's reference to `containerAdmin` to declare the elements.
 
+[[de-batching]]
+===== Batched Messages
+
+Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header). Rejecting any message from a batch will cause the entire batch to be rejected.
+See <<template-batching>> for more information about batching.
+
 [[async-annotation-driven]]
 ===== Annotation-driven listener endpoints
 
-Starting with *version 1.4*, the easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
+Starting with _version 1.4_, the easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
 In a nutshell, it allows you to expose a method of a managed bean as a Rabbit listener endpoint.
 
 [source,java]
@@ -1376,7 +1418,7 @@ In terms of configuration, it's most common to provide the constructor argument 
 
 ===== ContentTypeDelegatingMessageConverter
 
-This class was introduced in *version 1.4.2* and allows delegation to a specific `MessageConverter` based on the content type property in the `MessageProperties`.
+This class was introduced in _version 1.4.2_ and allows delegation to a specific `MessageConverter` based on the content type property in the `MessageProperties`.
 By default, it will delegate to a `SimpleMessageConverter` if there is no `contentType` property, or a value that matches none of the configured converters.
 
 [source,xml]
@@ -1400,6 +1442,31 @@ The `MessagePropertiesConverter` strategy interface is used to convert between t
 The default properties converter will convert `BasicProperties` elements of type `LongString` to `String` s
 when the size is not greater than `1024` bytes. Larger `LongString` s are returned as a `DataInputStream.
 This limit can be overridden with a constructor argument.
+
+[[post-processing]]
+==== Modifying Messages - Compression and More
+
+A number of extension points exist where you can perform some processing on a message, either before it is sent to RabbitMQ, or immediately after it is received.
+
+As can be seen in <<message-converters>>, one such extension point is in the `AmqpTemplate` `convertAndReceive` operations, where you can provide a `MessagePostProcessor`.
+For example, after your POJO has been converted, the `MessagePostProcessor` enables you to set custom headers or properties on the `Message`.
+
+Starting with _version 1.4.2_, additional extension points have been added to the `RabbitTemplate` - `setBeforePublishPostProcessors()` and `setAfterReceivePostProcessors()`.
+The first enables a post processor to run immediately before sending to RabbitMQ. When using batching (see <<template-batching>>), this is invoked after the batch is assembled and before the batch is sent. The second is invoked immediately after a message is received.
+
+These extension points are used for such features as compression and, for this purpose, several `MessagePostProcessor` s are provided:
+
+- GZipPostProcessor
+- ZipPostProcessor
+
+for compressing messages before sending, and
+
+- GUnzipPostProcessor
+- UnzipPostProcessor
+
+for decompressing received messages.
+
+Similarly, the `SimpleMessageListenerContainer` also has a `setAfterReceivePostProcessors()` method, allowing the decompression to be performed after messages are received by the container.
 
 [[request-reply]]
 ==== Request/Reply Messaging
@@ -1433,7 +1500,7 @@ While the container and template share a connection factory, they do not share a
 [[direct-reply-to]]
 ===== RabbitMQ Direct reply-to
 
-IMPORTANT: Starting with *version 3.4.0*, the RabbitMQ server now supports http://www.rabbitmq.com/direct-reply-to.html[Direct reply-to]; this eliminates the main reason for a fixed reply queue (to avoid the need to create a temporary queue for each request).
+IMPORTANT: Starting with _version 3.4.0_, the RabbitMQ server now supports http://www.rabbitmq.com/direct-reply-to.html[Direct reply-to]; this eliminates the main reason for a fixed reply queue (to avoid the need to create a temporary queue for each request).
 Starting with *Spring AMQP version 1.4.1* Direct reply-to will be used by default (if supported by the server) instead of creating temporary reply queues.
 When no `replyQueue` is provided (or it is set with the name `amq.rabbitmq.reply-to`), the `RabbitTemplate` will automatically detect whether Direct reply-to is supported and either use it or fall back to using a temporary reply queue.
 When using Direct reply-to, a `reply-listener` is not required and should not be configured.
@@ -1516,7 +1583,7 @@ A complete example of a `RabbitTemplate` wired with a fixed reply queue, togethe
 
 IMPORTANT: When the reply times out (`replyTimeout`), the `sendAndReceive()` methods return null.
 
-Prior to *version 1.3.6*, late replies for timed out messages were simply logged.
+Prior to _version 1.3.6_, late replies for timed out messages were simply logged.
 Now, if a late reply is received, it is rejected (the template throws an `AmqpRejectAndDontRequeueException`).
 If the reply queue is configured to send rejected messages to a dead letter exchange, the reply can be retrieved for later analysis.
 Simply bind a queue to the configured dead letter exchange with a routing key equal to the reply queue's name.
@@ -1766,7 +1833,7 @@ This behavior can be modified by setting the `ignore-declaration-failures` attri
 This option instructs the `RabbitAdmin` to log the exception, and continue declaring other elements.
 
 [[headers-exchange]]
-Starting with *version 1.3* the HeadersExchange can be configured to match on multiple headers; you can also specify whether any or all headers must match:
+Starting with _version 1.3_ the HeadersExchange can be configured to match on multiple headers; you can also specify whether any or all headers must match:
 
 [source,xml]
 ----
@@ -1967,9 +2034,9 @@ As discussed in <<async-listeners>>, the listener can throw an `AmqpRejectAndDon
 However, there is a class of errors where the listener cannot control the behavior.
 When a message that cannot be converted is encountered (for example an invalid `content_encoding` header), the `MessageConversionException` is thrown before the message reaches user code.
 With `defaultRequeueRejected` set to `true` (default), such messages would be redelivered over and over.
-Before *version 1.3.2*, users needed to write a custom `ErrorHandler`, as discussed in <<exception-handling>> to avoid this situation.
+Before _version 1.3.2_, users needed to write a custom `ErrorHandler`, as discussed in <<exception-handling>> to avoid this situation.
 
-Starting with *version 1.3.2*, the default `ErrorHandler` is now a `ConditionalRejectingErrorHandler` which will reject (and not requeue) messages that fail with a `MessageConversionException`.
+Starting with _version 1.3.2_, the default `ErrorHandler` is now a `ConditionalRejectingErrorHandler` which will reject (and not requeue) messages that fail with a `MessageConversionException`.
 An instance of this error handler can be configured with a `FatalExceptionStrategy` so users can provide their own rules for conditional message rejection, e.g.
 a delegate implementation to the `BinaryExceptionClassifier` from Spring Retry (<<async-listeners>>).
 In addition, the `ListenerExecutionFailedException` now has a `failedMessage` property which can be used in the decision.
@@ -2264,7 +2331,7 @@ Defaults to a `RabbitAdmin` that will declare all non-conditional elements.
 | missingQueuesFatal
 (missing-queues-fatal)
 
-| Starting with *version 1.3.5*, `SimpleMessageListenerContainer` has this new property.
+| Starting with _version 1.3.5_, `SimpleMessageListenerContainer` has this new property.
 
 When set to `true` (default), if none of the configured queues are available on the broker, it is considered fatal.
 This causes the application context to fail to initialize during startup; also, when the queues are deleted while the container is running, by default, the consumers make 3 retries to connect to the queues (at 5 second intervals) and stop the container if these attempts fail.
@@ -2292,7 +2359,7 @@ The default retry properties (3 retries at 5 second intervals) can be overridden
 | autoDeclare
 (auto-declare)
 
-| Starting with *version 1.4*, `SimpleMessageListenerContainer` has this new property.
+| Starting with _version 1.4_, `SimpleMessageListenerContainer` has this new property.
 
 When set to `true` (default), the container will redeclare all AMQP objects (Queues, Exchanges, Bindings), if it detects that at least one of its queues is missing during startup, perhaps because it's an `auto-delete` or an expired queue, but the redeclaration will proceed if the queue is missing for any reason.
 To disable this behavior, set this property to `false`.
@@ -2301,8 +2368,8 @@ Note that the container will fail to start if all of its queues are missing.
 | declarationRetries
 (declaration-retries)
 
-| Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
-The namespace attribute is available in *version 1.5.*
+| Starting with _versions 1.4.3, 1.3.9_, `SimpleMessageListenerContainer` has this new property.
+The namespace attribute is available in _version 1.5._
 
 The number of retry attempts when passive queue declaration fails.
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
@@ -2313,8 +2380,8 @@ Default: 3 retries (4 attempts).
 (failed-declaration-retry-
 interval)
 
-| Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
-The namespace attribute is available in *version 1.5.*
+| Starting with _versions 1.4.3, 1.3.9_, `SimpleMessageListenerContainer` has this new property.
+The namespace attribute is available in _version 1.5._
 
 The interval between passive queue declaration retry attempts.
 Passive queue declaration occurs when the consumer starts or, when consuming from multiple queues, when not all queues were available during initialization.
@@ -2324,8 +2391,8 @@ Default: 5000 (5 seconds).
 (missing-queue-retry-
 interval)
 
-| Starting with *versions 1.4.3, 1.3.9*, `SimpleMessageListenerContainer` has this new property.
-The namespace attribute is available in *version 1.5.*
+| Starting with _versions 1.4.3, 1.3.9_, `SimpleMessageListenerContainer` has this new property.
+The namespace attribute is available in _version 1.5._
 
 If a subset of the configured queues are available during consumer initialization, the consumer starts consuming from those queues.
 The consumer will attempt to passively declare the missing queues using this interval.
@@ -2344,9 +2411,9 @@ By default, the listener container will start a single consumer which will recei
 When examining the table in the previous section, you will see a number of properties/attributes that control concurrency.
 The simplest is `concurrentConsumers`, which simply creates that (fixed) number of consumers which will concurrently process messages.
 
-Prior to *version 1.3.0*, this was the only setting available and the container had to be stopped and started again to change the setting.
+Prior to _version 1.3.0_, this was the only setting available and the container had to be stopped and started again to change the setting.
 
-Since *version 1.3.0*, you can now dynamically adjust the `concurrentConsumers` property.
+Since _version 1.3.0_, you can now dynamically adjust the `concurrentConsumers` property.
 If it is changed while the container is running, consumers will be added or removed as necessary to adjust to the new setting.
 
 In addition, a new property `maxConcurrentConsumers` has been added and the container will dynamically adjust the concurrency based on workload.
@@ -2369,7 +2436,7 @@ This is because the broker will share its work across all the active consumers.
 [[exclusive-consumer]]
 ==== Exclusive Consumer
 
-Also starting with *version 1.3*, the listener container can be configured with a single exclusive consumer; this prevents other containers from consuming from the queue(s) until the current consumer is cancelled.
+Also starting with _version 1.3_, the listener container can be configured with a single exclusive consumer; this prevents other containers from consuming from the queue(s) until the current consumer is cancelled.
 The concurrency of such a container must be 1.
 
 When using exclusive consumers, other containers will attempt to consume from the queue(s) according to the `recoveryInterval` property, and log a WARNing if the attempt fails.
@@ -2377,7 +2444,7 @@ When using exclusive consumers, other containers will attempt to consume from th
 [[listener-queues]]
 ==== Listener Container Queues
 
-*Version 1.3* introduced a number of improvements for handling multiple queues in a listener container.
+_version 1.3_ introduced a number of improvements for handling multiple queues in a listener container.
 
 The container must be configured to listen on at least one queue; this was the case previously too, but now queues can be added and removed at runtime.
 The container will recycle (cancel and re-create) the consumers when any pre-fetched messages have been processed.
@@ -2435,7 +2502,7 @@ Stateless retry is appropriate if there is no transaction or if a transaction is
 Note that stateless retry is simpler to configure and analyse than stateful retry, but it is not usually appropriate if there is an ongoing transaction which must be rolled back or definitely is going to roll back.
 A dropped connection in the middle of a transaction should have the same effect as a rollback, so for reconnection where the transaction is started higher up the stack, stateful retry is usually the best choice.
 
-Starting with *version 1.3*, a builder API is provided to aid in assembling these interceptors using Java (or in `@Configuration` classes), for example:
+Starting with _version 1.3_, a builder API is provided to aid in assembling these interceptors using Java (or in `@Configuration` classes), for example:
 
 [source,java]
 ----
@@ -2477,7 +2544,7 @@ The `MessageRecover` is called when all retries have been exhausted.
 The default `MessageRecoverer` simply consumes the errant message and emits a WARN message.
 In which case, the message is ACK'd and won't be sent to the Dead Letter Exchange, if any.
 
-Starting with *version 1.3*, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after retries are exhausted:
+Starting with _version 1.3_, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after retries are exhausted:
 
 [source,java]
 ----
