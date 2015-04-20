@@ -439,6 +439,7 @@ public class RabbitTemplate extends RabbitAccessor
 	 * such as compression. Processors are invoked in order, depending on {@code PriorityOrder},
 	 * {@code Order} and finally unordered.
 	 * @param beforePublishPostProcessors the post processor.
+	 * @since 1.4.2
 	 */
 	public void setBeforePublishPostProcessors(MessagePostProcessor... beforePublishPostProcessors) {
 		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
@@ -447,13 +448,24 @@ public class RabbitTemplate extends RabbitAccessor
 	}
 
 	/**
+	 * @deprecated use {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}
+	 * @param afterReceivePostProcessors the post processors.
+	 * @since 1.4.2
+	 */
+	@Deprecated
+	public void setAfterReceivePostProcessor(MessagePostProcessor... afterReceivePostProcessors) {
+		setAfterReceivePostProcessors(afterReceivePostProcessors);
+	}
+
+	/**
 	 * Set a {@link MessagePostProcessor} that will be invoked immediately after a {@code Channel#basicGet()}
 	 * and before any message conversion is performed.
 	 * May be used for operations such as decompression  Processors are invoked in order,
 	 * depending on {@code PriorityOrder}, {@code Order} and finally unordered.
 	 * @param afterReceivePostProcessors the post processor.
+	 * @since 1.5
 	 */
-	public void setAfterReceivePostProcessor(MessagePostProcessor... afterReceivePostProcessors) {
+	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
