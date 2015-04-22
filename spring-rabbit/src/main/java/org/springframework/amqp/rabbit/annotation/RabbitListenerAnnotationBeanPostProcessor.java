@@ -20,7 +20,14 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Binding.DestinationType;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.ExchangeTypes;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -103,6 +110,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
 	private BeanExpressionContext expressionContext;
+
+	private int increment;
 
 	@Override
 	public int getOrder() {
@@ -239,7 +248,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
-		endpoint.setQueueNames(resolveQueues(rabbitListener.queues()));
+		endpoint.setQueueNames(resolveQueues(rabbitListener));
 
 		endpoint.setExclusive(rabbitListener.exclusive());
 		String priority = resolve(rabbitListener.priority());
@@ -281,6 +290,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 
+		registerBeansForDeclaration(rabbitListener);
 		this.registrar.registerEndpoint(endpoint, factory);
 	}
 
@@ -293,20 +303,41 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] resolveQueues(String... queues) {
-		String[] result = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			Object resolvedValue = resolveExpression(queues[i]);
-			if (resolvedValue instanceof Queue) {
-				result[i] = ((Queue) resolvedValue).getName();
+	private String[] resolveQueues(RabbitListener annotation) {
+		String[] queues = annotation.queues();
+		QueueBinding[] bindings = annotation.bindings();
+		if (queues.length > 0 && bindings.length > 0) {
+			throw new BeanInitializationException("@RabbitListener can have 'queues' or 'bindings' but not both");
+		}
+		int length = queues.length > 0 ? queues.length : bindings.length;
+		String[] result = new String[length];
+		if (queues.length > 0) {
+			for (int i = 0; i < queues.length; i++) {
+				Object resolvedValue = resolveExpression(queues[i]);
+				if (resolvedValue instanceof Queue) {
+					result[i] = ((Queue) resolvedValue).getName();
+				}
+				else if (resolvedValue instanceof String) {
+					result[i] = (String) resolvedValue;
+				}
+				else {
+					throw new IllegalArgumentException(String.format(
+							"@RabbitListener can't resolve '%s' as either a String or a Queue",
+							resolvedValue));
+				}
 			}
-			else if (resolvedValue instanceof String) {
-				result[i] = (String) resolvedValue;
-			}
-			else {
-				throw new IllegalArgumentException(String.format(
-						"@RabbitListener can't resolve '%s' as either a String or a Queue",
-						resolvedValue));
+		}
+		else {
+			for (int i = 0; i < bindings.length; i++) {
+				Object resolvedValue = resolveExpression(bindings[i].value().value());
+				if (resolvedValue instanceof String) {
+					result[i] = (String) resolvedValue;
+				}
+				else {
+					throw new IllegalArgumentException(String.format(
+							"@RabbitListener can't resolve '%s' as a String",
+							resolvedValue));
+				}
 			}
 		}
 		return result;
@@ -332,6 +363,66 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
 		}
 		return value;
+	}
+
+	private void registerBeansForDeclaration(RabbitListener rabbitListener) {
+		if (this.beanFactory instanceof ConfigurableBeanFactory) {
+			for (QueueBinding binding : rabbitListener.bindings()) {
+				org.springframework.amqp.rabbit.annotation.Queue bindingQueue = binding.value();
+				String queueName = (String) resolveExpression(bindingQueue.value());
+				Queue queue = new Queue(queueName,
+						resolveExpressionAsBoolean(bindingQueue.durable()),
+						resolveExpressionAsBoolean(bindingQueue.exclusive()),
+						resolveExpressionAsBoolean(bindingQueue.autoDelete()));
+				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
+				Exchange exchange = null;
+				org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
+				String exchangeName = (String) resolveExpression(bindingExchange.value());
+				String exchangeType = bindingExchange.type();
+				Binding actualBinding = null;
+				Object key = resolveExpression(binding.key());
+				if (!(key instanceof String)) {
+					throw new BeanInitializationException("key must resolved to a String, not: " + key.getClass().toString());
+				}
+ 				String resolvedKey = (String) key;
+				if (exchangeType.equals(ExchangeTypes.DIRECT)) {
+					exchange = new DirectExchange(exchangeName,
+							resolveExpressionAsBoolean(bindingExchange.durable()),
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey, null);
+				}
+				else if (exchangeType.equals(ExchangeTypes.FANOUT)) {
+					exchange = new FanoutExchange(exchangeName,
+							resolveExpressionAsBoolean(bindingExchange.durable()),
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, null, null);
+				}
+				else if (exchangeType.equals(ExchangeTypes.TOPIC)) {
+					exchange = new TopicExchange(exchangeName,
+							resolveExpressionAsBoolean(bindingExchange.durable()),
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey, null);
+				}
+				else {
+					throw new BeanInitializationException("Unexpected exchange type: " + exchangeType);
+				}
+				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment, exchange);
+				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment, actualBinding);
+			}
+		}
+	}
+
+	private boolean resolveExpressionAsBoolean(String value) {
+		Object resolved = resolveExpression(value);
+		if (resolved instanceof Boolean) {
+			return (Boolean) resolved;
+		}
+		else if (resolved instanceof String) {
+			return Boolean.valueOf((String) resolved);
+		}
+		else {
+			return false;
+		}
 	}
 
 	/**
