@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,6 +18,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -53,6 +57,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -335,6 +340,16 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(route);
 		assertEquals(null, result);
+	}
+
+	@Test
+	public void testConnectionCloseLog() {
+		Log logger = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
+		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", logger);
+		Connection conn = this.connectionFactory.createConnection();
+		conn.createChannel(false);
+		this.connectionFactory.destroy();
+		verify(logger, never()).error(anyString());
 	}
 
 	@Test
