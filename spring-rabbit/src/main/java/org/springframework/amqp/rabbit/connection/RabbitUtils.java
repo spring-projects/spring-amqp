@@ -184,9 +184,10 @@ public abstract class RabbitUtils {
 
 	public static boolean isNormalChannelClose(ShutdownSignalException sig) {
 		Object shutdownReason = determineShutdownReason(sig);
-		return shutdownReason instanceof AMQP.Channel.Close
-				&& AMQP.REPLY_SUCCESS == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
-				&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText());
+		return isNormalShutdown(sig) ||
+				(shutdownReason instanceof AMQP.Channel.Close
+					&& AMQP.REPLY_SUCCESS == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
+					&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText()));
 	}
 
 	public static boolean isPassiveDeclarationChannelClose(ShutdownSignalException sig) {
