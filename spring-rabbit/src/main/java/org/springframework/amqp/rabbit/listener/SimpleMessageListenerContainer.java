@@ -51,6 +51,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
@@ -156,6 +157,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean missingQueuesFatalSet;
 
 	private volatile boolean autoDeclare = true;
+
+	private volatile ConsumerTagStrategy consumerTagStrategy;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -583,6 +586,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * Set the implementation of {@link ConsumerTagStrategy} to generate consumer tags.
+	 * By default, the RabbitMQ server generates consumer tags.
+	 * @param consumerTagStrategy the consumerTagStrategy to set.
+	 * @since 1.4.5
+	 */
+	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
+		this.consumerTagStrategy = consumerTagStrategy;
+	}
+
+	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
@@ -896,6 +909,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		if (this.retryDeclarationInterval != null) {
 			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
+		}
+		if (this.consumerTagStrategy != null) {
+			consumer.setTagStrategy(this.consumerTagStrategy);
 		}
 		return consumer;
 	}

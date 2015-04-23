@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.aopalliance.aop.Advice;
 
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -32,6 +33,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * for those that are used to build such container definition manually.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  */
 public class SimpleRabbitListenerContainerFactory
@@ -66,6 +68,8 @@ public class SimpleRabbitListenerContainerFactory
 	private Long recoveryInterval;
 
 	private Boolean missingQueuesFatal;
+
+	private ConsumerTagStrategy consumerTagStrategy;
 
 	/**
 	 * @param taskExecutor the {@link Executor} to use.
@@ -187,6 +191,14 @@ public class SimpleRabbitListenerContainerFactory
 		this.missingQueuesFatal = missingQueuesFatal;
 	}
 
+	/**
+	 * @param consumerTagStrategy the consumerTagStrategy to set
+	 * @see SimpleMessageListenerContainer#setConsumerTagStrategy(ConsumerTagStrategy)
+	 */
+	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
+		this.consumerTagStrategy = consumerTagStrategy;
+	}
+
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -240,6 +252,9 @@ public class SimpleRabbitListenerContainerFactory
 		}
 		if (this.missingQueuesFatal != null) {
 			instance.setMissingQueuesFatal(this.missingQueuesFatal);
+		}
+		if (this.consumerTagStrategy != null) {
+			instance.setConsumerTagStrategy(this.consumerTagStrategy);
 		}
 	}
 
