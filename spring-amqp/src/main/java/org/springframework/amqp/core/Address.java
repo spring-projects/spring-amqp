@@ -35,6 +35,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Fisher
  * @author Dave Syer
  * @author Artem Bilan
+ * @author Gary Russell
  */
 public class Address {
 
