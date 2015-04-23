@@ -48,6 +48,8 @@ import org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledExcep
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.amqp.support.ServerGeneratesConsumerTagStrategy;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -121,6 +123,8 @@ public class BlockingQueueConsumer {
 	private int declarationRetries = 3;
 
 	private long lastRetryDeclaration;
+
+	private ConsumerTagStrategy tagStrategy = new ServerGeneratesConsumerTagStrategy();
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -266,6 +270,15 @@ public class BlockingQueueConsumer {
 	 */
 	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
 		this.retryDeclarationInterval = retryDeclarationInterval;
+	}
+
+	/**
+	 * Set the {@link ConsumerTagStrategy} to use when generating consumer tags.
+	 * @param tagStrategy the tagStrategy to set
+	 * @since 1.4.5
+	 */
+	public void setTagStrategy(ConsumerTagStrategy tagStrategy) {
+		this.tagStrategy = tagStrategy;
 	}
 
 	protected void basicCancel() {
@@ -495,7 +508,8 @@ public class BlockingQueueConsumer {
 	}
 
 	private void consumeFromQueue(String queue) throws IOException {
-		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(), "", false, this.exclusive,
+		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(),
+				this.tagStrategy.createConsumerTag(queue), false, this.exclusive,
 				this.consumerArgs, this.consumer);
 		if (consumerTag != null) {
 			this.consumerTags.put(consumerTag, queue);

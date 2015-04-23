@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,7 +12,11 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+
+import java.util.Map;
+import java.util.UUID;
 
 import org.apache.log4j.Level;
 import org.junit.Rule;
@@ -26,19 +30,24 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.amqp.utils.test.TestUtils;
 
 /**
  * @author Dave Syer
  * @author Gunnar Hillert
+ * @author Gary Russell
  * @since 1.0
  *
  */
 public class BlockingQueueConsumerIntegrationTests {
 
-	private static Queue queue = new Queue("test.queue");
+	private static Queue queue1 = new Queue("test.queue1");
+
+	private static Queue queue2 = new Queue("test.queue2");
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue1, queue2);
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
@@ -56,13 +65,25 @@ public class BlockingQueueConsumerIntegrationTests {
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
-				AcknowledgeMode.AUTO, true, 1, queue.getName());
+				AcknowledgeMode.AUTO, true, 1, queue1.getName(), queue2.getName());
+		final String consumerTagPrefix = UUID.randomUUID().toString();
+		blockingQueueConsumer.setTagStrategy(new ConsumerTagStrategy() {
+
+			@Override
+			public String createConsumerTag(String queue) {
+				return consumerTagPrefix + '#' + queue;
+			}
+		});
 		blockingQueueConsumer.start();
+		assertNotNull(TestUtils.getPropertyValue(blockingQueueConsumer, "consumerTags", Map.class).get(
+				consumerTagPrefix + "#" + queue1.getName()));
+		assertNotNull(TestUtils.getPropertyValue(blockingQueueConsumer, "consumerTags", Map.class).get(
+				consumerTagPrefix + "#" + queue2.getName()));
 
 		// TODO: make this into a proper assertion. An exception can be thrown here by the Rabbit client and printed to
 		// stderr without being rethrown (so hard to make a test fail).
 		blockingQueueConsumer.stop();
-		assertNull(template.receiveAndConvert(queue.getName()));
+		assertNull(template.receiveAndConvert(queue1.getName()));
 		connectionFactory.destroy();
 
 	}

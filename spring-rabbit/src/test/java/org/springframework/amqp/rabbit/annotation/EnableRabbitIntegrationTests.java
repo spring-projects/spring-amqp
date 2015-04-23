@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,6 +48,8 @@ import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,6 +66,7 @@ import org.springframework.util.ErrorHandler;
  *
  * @author Stephane Nicoll
  * @author Artem Bilan
+ * @author Gary Russell
  * @since 1.4
  */
 @ContextConfiguration(classes = EnableRabbitIntegrationTests.EnableRabbitConfig.class)
@@ -82,6 +87,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private AtomicReference<Throwable> errorHandlerError;
+
+	@Autowired
+	private String tagPrefix;
 
 	@Test
 	public void simpleEndpoint() {
@@ -114,7 +122,7 @@ public class EnableRabbitIntegrationTests {
 		Message reply = rabbitTemplate.sendAndReceive("test.reply", request);
 		assertEquals("Wrong reply", "content", MessageTestUtils.extractText(reply));
 		assertEquals("Wrong foo header", "fooValue", reply.getMessageProperties().getHeaders().get("foo"));
-		assertEquals("Wrong bar header", "barValue", reply.getMessageProperties().getHeaders().get("bar"));
+		assertThat((String) reply.getMessageProperties().getHeaders().get("bar"), Matchers.startsWith(tagPrefix));
 	}
 
 	@Test
@@ -165,9 +173,10 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queues = "test.reply")
-		public org.springframework.messaging.Message<?> reply(String payload, @Header String foo) {
+		public org.springframework.messaging.Message<?> reply(String payload, @Header String foo,
+				@Header(AmqpHeaders.CONSUMER_TAG) String tag) {
 			return MessageBuilder.withPayload(payload)
-					.setHeader("foo", foo).setHeader("bar", "barValue").build();
+					.setHeader("foo", foo).setHeader("bar", tag).build();
 		}
 
 		@RabbitListener(queues = "test.sendTo")
@@ -187,12 +196,31 @@ public class EnableRabbitIntegrationTests {
 	@EnableRabbit
 	public static class EnableRabbitConfig {
 
+		private int increment;
+
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
 			return factory;
+		}
+
+		@Bean
+		public String tagPrefix() {
+			return UUID.randomUUID().toString();
+		}
+
+		@Bean
+		public ConsumerTagStrategy consumerTagStrategy() {
+			return new ConsumerTagStrategy() {
+
+				@Override
+				public String createConsumerTag(String queue) {
+					return tagPrefix() + increment++;
+				}
+			};
 		}
 
 		@Bean
