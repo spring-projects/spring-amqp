@@ -112,10 +112,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
+		Channel mockTxChannel = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
+		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2, mockTxChannel);
 
 		when(mockChannel1.basicGet("foo", false)).thenReturn(new GetResponse(null, null, null, 1));
 		when(mockChannel2.basicGet("bar", false)).thenReturn(new GetResponse(null, null, null, 1));
@@ -129,6 +130,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		Channel channel1 = con.createChannel(false);
 		Channel channel2 = con.createChannel(false);
+
+		ChannelProxy txChannel = (ChannelProxy) con.createChannel(true);
+		assertTrue(txChannel.isTransactional());
+		verify(mockTxChannel).txSelect();
+		txChannel.close();
 
 		channel1.basicGet("foo", true);
 		channel2.basicGet("bar", true);
@@ -148,7 +154,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ch1.close();
 		ch2.close();
 
-		verify(mockConnection, times(2)).createChannel();
+		verify(mockConnection, times(3)).createChannel();
 
 		con.close(); // should be ignored
 

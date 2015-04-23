@@ -597,7 +597,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					synchronized (this.channelList) {
 						if (!RabbitUtils.isPhysicalCloseRequired() &&
 								(this.channelList.size() < getChannelCacheSize()
-										|| this.channelList.contains((ChannelProxy) proxy))) {
+										|| this.channelList.contains(proxy))) {
 							logicalClose((ChannelProxy) proxy);
 							// Remain open in the channel list.
 							releasePermit();
@@ -618,6 +618,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 			else if (methodName.equals("isOpen")) {
 				// Handle isOpen method: we are closed if the target is closed
 				return this.target != null && this.target.isOpen();
+			}
+			else if (methodName.equals("isTransactional")) {
+				return this.transactional;
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {
