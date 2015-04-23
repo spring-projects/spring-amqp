@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.MethodBeforeAdvice;
 import org.springframework.beans.DirectFieldAccessor;
@@ -96,6 +97,7 @@ public class ListenerContainerParserTests {
 		assertEquals(5, TestUtils.getPropertyValue(container, "declarationRetries"));
 		assertEquals(1000L, TestUtils.getPropertyValue(container, "failedDeclarationRetryInterval"));
 		assertEquals(30000L, TestUtils.getPropertyValue(container, "retryDeclarationInterval"));
+		assertEquals(beanFactory.getBean("tagger"), TestUtils.getPropertyValue(container, "consumerTagStrategy"));
 	}
 
 	@Test
@@ -200,4 +202,14 @@ public class ListenerContainerParserTests {
 		public void before(Method method, Object[] args, Object target) throws Throwable {
 		}
 	}
+
+	public static class TestConsumerTagStrategy implements ConsumerTagStrategy {
+
+		@Override
+		public String createConsumerTag(String queue) {
+			return "foo";
+		}
+
+	}
+
 }
