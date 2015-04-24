@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,13 +15,15 @@ package org.springframework.amqp.remoting;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -38,10 +40,13 @@ import org.springframework.amqp.remoting.testservice.TestServiceInterface;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.remoting.RemoteProxyFailureException;
+import org.springframework.remoting.support.RemoteInvocation;
 
 /**
  * @author David Bilge
  * @author Artem Bilan
+ * @author Gary Russell
  * @since 1.2
  */
 public class RemotingTest {
@@ -70,6 +75,11 @@ public class RemotingTest {
 		AmqpTemplate directForwardingTemplate = new AbstractAmqpTemplate() {
 			@Override
 			public Object convertSendAndReceive(Object payload) throws AmqpException {
+				Object[] arguments = ((RemoteInvocation) payload).getArguments();
+				if (arguments.length == 1 && arguments[0].equals("timeout")) {
+					return null;
+				}
+
 				MessageConverter messageConverter = serviceExporter.getMessageConverter();
 
 				Address replyTo = new Address("fakeExchangeName", "fakeRoutingKey");
@@ -91,7 +101,17 @@ public class RemotingTest {
 
 	@Test
 	public void testEcho() {
-		Assert.assertEquals("Echo Test", riggedProxy.simpleStringReturningTestMethod("Test"));
+		assertEquals("Echo Test", riggedProxy.simpleStringReturningTestMethod("Test"));
+	}
+
+	@Test
+	public void testSimulatedTimeout() throws Exception {
+		try {
+			this.riggedProxy.simulatedTimeoutMethod("timeout");
+		}
+		catch (RemoteProxyFailureException e) {
+			assertThat(e.getMessage(), containsString("'simulatedTimeoutMethod' with arguments '[timeout]'"));
+		}
 	}
 
 	@Test(expected = RuntimeException.class)
@@ -108,7 +128,7 @@ public class RemotingTest {
 	@Test
 	public void testActuallyExceptionReturningMethod() {
 		SpecialException returnedException = riggedProxy.actuallyExceptionReturningMethod();
-		Assert.assertNotNull(returnedException);
+		assertNotNull(returnedException);
 	}
 
 	@Test
@@ -116,7 +136,7 @@ public class RemotingTest {
 		MessageConverter messageConverter = this.serviceExporter.getMessageConverter();
 		this.serviceExporter.setMessageConverter(new SimpleMessageConverter() {
 
-			private AtomicBoolean invoked = new AtomicBoolean();
+			private final AtomicBoolean invoked = new AtomicBoolean();
 
 			@Override
 			protected Message createMessage(Object object, MessageProperties messageProperties)
