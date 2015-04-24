@@ -13,6 +13,8 @@
 
 package org.springframework.amqp.remoting.client;
 
+import java.util.Arrays;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
@@ -57,7 +59,11 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 		}
 
 		if (rawResult == null) {
-			throw new RemoteProxyFailureException("No reply received - perhaps a timeout in the template?", null);
+			throw new RemoteProxyFailureException("No reply received from '" +
+					remoteInvocation.getMethodName() +
+					"' with arguments '" +
+					Arrays.asList(remoteInvocation.getArguments()) +
+					"' - perhaps a timeout in the template?", null);
 		}
 		else if (!(rawResult instanceof RemoteInvocationResult)) {
 			throw new RemoteProxyFailureException("Expected a result of type "

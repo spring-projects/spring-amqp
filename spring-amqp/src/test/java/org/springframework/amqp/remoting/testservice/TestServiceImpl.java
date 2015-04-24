@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,6 +15,7 @@ package org.springframework.amqp.remoting.testservice;
 
 /**
  * @author David Bilge
+ * @author Gary Russell
  * @since 1.2
  */
 public class TestServiceImpl implements TestServiceInterface {
@@ -47,4 +48,10 @@ public class TestServiceImpl implements TestServiceInterface {
 	public SpecialException actuallyExceptionReturningMethod() {
 		return new SpecialException("This exception should not be thrown on the client side but just be returned!");
 	}
+
+	@Override
+	public Object simulatedTimeoutMethod(Object o) {
+		return null;
+	}
+
 }
