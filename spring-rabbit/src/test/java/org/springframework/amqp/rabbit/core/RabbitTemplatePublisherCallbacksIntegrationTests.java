@@ -61,6 +61,8 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -188,6 +190,36 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
 		cleanUp();
 		verify(logger, never()).error(any());
+	}
+
+	@Test
+	public void testPublisherConfirmWithSendAndReceive() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(1);
+		final AtomicReference<CorrelationData> confirmCD = new AtomicReference<CorrelationData>();
+		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				confirmCD.set(correlationData);
+				latch.countDown();
+			}
+		});
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactoryWithConfirmsEnabled);
+		container.setQueueNames(ROUTE);
+		container.setMessageListener(new MessageListenerAdapter(new Object() {
+
+			@SuppressWarnings("unused")
+			public String handleMessage(String in) {
+				return in.toUpperCase();
+			}
+		}));
+		container.start();
+		CorrelationData correlationData = new CorrelationData("abc");
+		String result = (String) this.templateWithConfirmsEnabled.convertSendAndReceive(ROUTE, (Object) "message", correlationData);
+		container.stop();
+		assertEquals("MESSAGE", result);
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertEquals(correlationData, confirmCD.get());
 	}
 
 	@Test
