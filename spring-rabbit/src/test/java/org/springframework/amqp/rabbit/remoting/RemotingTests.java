@@ -15,7 +15,9 @@
  */
 package org.springframework.amqp.rabbit.remoting;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -25,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +78,7 @@ public class RemotingTests {
 			fail("Exception expected");
 		}
 		catch (RemoteProxyFailureException e) {
-			assertTrue("No reply received - perhaps a timeout in the template?".equals(e.getMessage()));
+			assertThat(e.getMessage(), containsString(" - perhaps a timeout in the template?"));
 		}
 	}
 
