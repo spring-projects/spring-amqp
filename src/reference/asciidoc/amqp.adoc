@@ -537,19 +537,12 @@ For Publisher Confirms (aka Publisher Acknowledgements), the template requires a
 Confirms are sent to to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
 The callback must implement this method:
 
-NOTE: When a rabbit template send operation completes, the channel is closed; this would preclude the reception of confirms or returns in the case when the connection factory cache is full (when there is space in the cache, the channel is not physically closed and the returns/confirms will proceed as normal).
-When the cache is full, the framework defers the close for up to 5 seconds, in order to allow time for the confirms/returns to be received.
-When using confirms, the channel will be closed when the last confirm is received.
-When using only returns, the channel will remain open for the full 5 seconds.
-It is generally recommended to set the connection factory's `channelCacheSize` to a large enough value so that the channel on which a message is published is returned to the cache instead of being closed.
-
 [source,java]
 ----
 void confirm(CorrelationData correlationData, boolean ack, String cause);
 ----
 
 The `CorrelationData` is an object supplied by the client when sending the original message.
-This is described further in the next section.
 The `ack` is true for an `ack` and false for a `nack`.
 For `nack` s, the cause may contain a reason for the nack, if it is available when the `nack` is generated.
 An example is when sending a message to a non-existent exchange.
@@ -557,6 +550,12 @@ In that case the broker closes the channel; the reason for the closure is includ
 `cause` was added in _version 1.4_.
 
 Only one `ConfirmCallback` is supported by a `RabbitTemplate`.
+
+NOTE: When a rabbit template send operation completes, the channel is closed; this would preclude the reception of confirms or returns in the case when the connection factory cache is full (when there is space in the cache, the channel is not physically closed and the returns/confirms will proceed as normal).
+When the cache is full, the framework defers the close for up to 5 seconds, in order to allow time for the confirms/returns to be received.
+When using confirms, the channel will be closed when the last confirm is received.
+When using only returns, the channel will remain open for the full 5 seconds.
+It is generally recommended to set the connection factory's `channelCacheSize` to a large enough value so that the channel on which a message is published is returned to the cache instead of being closed.
 
 [[template-messaging]]
 ===== Messaging integration
@@ -1479,6 +1478,10 @@ Those methods are quite useful for request/reply scenarios since they handle the
 Similar request/reply methods are also available where the `MessageConverter` is applied to both the request and reply.
 Those methods are named `convertSendAndReceive`.
 See the Javadoc of `AmqpTemplate` for more detail.
+
+Starting with _version 1.5_, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
+Together with a properly configured connection factory, this enables the receipt of publisher confirms for the send side of the operation.
+See <<template-confirms>> for more information.
 
 By default, a new temporary queue is used for each reply (but see <<direct-reply-to>>).
 However, a single reply queue can be configured on the template, which can be more efficient, and also allows you to set arguments on that queue.

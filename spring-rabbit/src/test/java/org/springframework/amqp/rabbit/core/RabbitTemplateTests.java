@@ -189,7 +189,7 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setReplyTimeout(1);
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
-		template.doSendAndReceiveWithTemporary("foo", "bar", input);
+		template.doSendAndReceiveWithTemporary("foo", "bar", input, null);
 		Envelope envelope = new Envelope(1, false, "foo", "bar");
 		// used to hang here because of the SynchronousQueue and doSendAndReceive() already exited
 		consumer.get().handleDelivery("foo", envelope, new AMQP.BasicProperties(), new byte[0]);

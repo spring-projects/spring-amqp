@@ -748,7 +748,7 @@ public class RabbitTemplate extends RabbitAccessor
 	@Override
 	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
 										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
-		return this.doReceiveAndReply(queueName, callback, replyToAddressCallback);
+		return doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -838,55 +838,98 @@ public class RabbitTemplate extends RabbitAccessor
 
 	@Override
 	public Message sendAndReceive(final Message message) throws AmqpException {
-		return this.doSendAndReceive(this.exchange, this.routingKey, message);
+		return sendAndReceive(message, null);
+	}
+
+	public Message sendAndReceive(final Message message, CorrelationData correlationData) throws AmqpException {
+		return doSendAndReceive(this.exchange, this.routingKey, message, correlationData);
 	}
 
 	@Override
 	public Message sendAndReceive(final String routingKey, final Message message) throws AmqpException {
-		return this.doSendAndReceive(this.exchange, routingKey, message);
+		return sendAndReceive(routingKey, message, null);
+	}
+
+	public Message sendAndReceive(final String routingKey, final Message message, CorrelationData correlationData) throws AmqpException {
+		return doSendAndReceive(this.exchange, routingKey, message, correlationData);
 	}
 
 	@Override
 	public Message sendAndReceive(final String exchange, final String routingKey, final Message message)
 			throws AmqpException {
-		return this.doSendAndReceive(exchange, routingKey, message);
+		return sendAndReceive(exchange, routingKey, message, null);
+	}
+
+	public Message sendAndReceive(final String exchange, final String routingKey, final Message message, CorrelationData correlationData)
+			throws AmqpException {
+		return doSendAndReceive(exchange, routingKey, message, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final Object message) throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, this.routingKey, message, null);
+		return convertSendAndReceive(message, (CorrelationData) null);
+	}
+
+	public Object convertSendAndReceive(final Object message, CorrelationData correlationData) throws AmqpException {
+		return convertSendAndReceive(this.exchange, this.routingKey, message, null, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message) throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, routingKey, message, null);
+		return convertSendAndReceive(routingKey, message, (CorrelationData) null);
+	}
+
+	public Object convertSendAndReceive(final String routingKey, final Object message, CorrelationData correlationData)
+			throws AmqpException {
+		return convertSendAndReceive(this.exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
 			throws AmqpException {
-		return this.convertSendAndReceive(exchange, routingKey, message, null);
+		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
+	}
+
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+			CorrelationData correlationData) throws AmqpException {
+		return convertSendAndReceive(exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
-	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor) throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor);
-	}
-
-	@Override
-	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor)
+	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
-		return this.convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor);
+		return convertSendAndReceive(message, messagePostProcessor, null);
+	}
+
+	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor,
+			CorrelationData correlationData) throws AmqpException {
+		return convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
+	}
+
+	@Override
+	public Object convertSendAndReceive(final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+		return convertSendAndReceive(routingKey, message, messagePostProcessor, null);
+	}
+
+	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor,
+			CorrelationData correlationData) throws AmqpException {
+		return convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+		return convertSendAndReceive(exchange, routingKey, message, messagePostProcessor, null);
+	}
+
+	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) throws AmqpException {
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
 			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
 		}
-		Message replyMessage = this.doSendAndReceive(exchange, routingKey, requestMessage);
+		Message replyMessage = doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
 		if (replyMessage == null) {
 			return null;
 		}
@@ -906,9 +949,11 @@ public class RabbitTemplate extends RabbitAccessor
 	 * @param exchange the exchange name
 	 * @param routingKey the routing key
 	 * @param message the message to send
+	 * @param correlationData the correlation data for confirms
 	 * @return the message that is received in reply
 	 */
-	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message) {
+	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message,
+			CorrelationData correlationData) {
 		if (!this.evaluatedFastReplyTo) {
 			synchronized(this) {
 				if (!this.evaluatedFastReplyTo) {
@@ -917,14 +962,15 @@ public class RabbitTemplate extends RabbitAccessor
 			}
 		}
 		if (this.replyAddress == null || this.usingFastReplyTo) {
-			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
+			return doSendAndReceiveWithTemporary(exchange, routingKey, message, correlationData);
 		}
 		else {
-			return doSendAndReceiveWithFixed(exchange, routingKey, message);
+			return doSendAndReceiveWithFixed(exchange, routingKey, message, correlationData);
 		}
 	}
 
-	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey, final Message message) {
+	protected Message doSendAndReceiveWithTemporary(final String exchange, final String routingKey,
+			final Message message, final CorrelationData correlationData) {
 		return this.execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -964,7 +1010,7 @@ public class RabbitTemplate extends RabbitAccessor
 					}
 				};
 				channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
-				doSend(channel, exchange, routingKey, message, null);
+				doSend(channel, exchange, routingKey, message, correlationData);
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
 				channel.basicCancel(consumerTag);
@@ -973,7 +1019,8 @@ public class RabbitTemplate extends RabbitAccessor
 		}, obtainTargetConnectionFactoryIfNecessary(this.sendConnectionFactorySelectorExpression, message));
 	}
 
-	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message) {
+	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
+			final CorrelationData correlationData) {
 		return this.execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -1015,7 +1062,7 @@ public class RabbitTemplate extends RabbitAccessor
 				if (logger.isDebugEnabled()) {
 					logger.debug("Sending message with tag " + messageTag);
 				}
-				doSend(channel, exchange, routingKey, message, null);
+				doSend(channel, exchange, routingKey, message, correlationData);
 				LinkedBlockingQueue<Message> replyHandoff = pendingReply.getQueue();
 				Message reply = (replyTimeout < 0) ? replyHandoff.take() : replyHandoff.poll(replyTimeout,
 						TimeUnit.MILLISECONDS);
@@ -1051,7 +1098,7 @@ public class RabbitTemplate extends RabbitAccessor
 			}
 		}
 		else {
-			return this.doExecute(action, connectionFactory);
+			return doExecute(action, connectionFactory);
 		}
 	}
 
@@ -1106,11 +1153,7 @@ public class RabbitTemplate extends RabbitAccessor
 			// try to send to configured routing key
 			routingKey = this.routingKey;
 		}
-		if (this.confirmCallback != null && channel instanceof PublisherCallbackChannel) {
-			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
-			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
-					new PendingConfirm(correlationData, System.currentTimeMillis()));
-		}
+		setupConfirm(channel, correlationData);
 		boolean mandatory = this.returnCallback != null &&
 				this.mandatoryExpression.getValue(this.evaluationContext, message, Boolean.class);
 		MessageProperties messageProperties = message.getMessageProperties();
@@ -1129,6 +1172,14 @@ public class RabbitTemplate extends RabbitAccessor
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
 			RabbitUtils.commitIfNecessary(channel);
+		}
+	}
+
+	private void setupConfirm(Channel channel, CorrelationData correlationData) {
+		if (this.confirmCallback != null && channel instanceof PublisherCallbackChannel) {
+			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
+			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
+					new PendingConfirm(correlationData, System.currentTimeMillis()));
 		}
 	}
 
