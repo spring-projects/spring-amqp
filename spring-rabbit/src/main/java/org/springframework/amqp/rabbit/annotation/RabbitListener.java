@@ -26,7 +26,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 
 /**
  * Annotation that marks a method to be the target of a Rabbit message
- * listener on the specified {@link #queues()}. The {@link #containerFactory()}
+ * listener on the specified {@link #queues()} (or {@link #bindings()}).
+ * The {@link #containerFactory()}
  * identifies the {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory
  * RabbitListenerContainerFactory} to use to build the rabbit listener container. If not
  * set, a <em>default</em> container factory is assumed to be available with a bean
@@ -67,6 +68,10 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  * adding @{@link org.springframework.messaging.handler.annotation.SendTo SendTo} to the method
  * declaration.
  *
+ * <p>When {@link #bindings()} are provided, and the application context contains a
+ * {@link org.springframework.amqp.rabbit.core.RabbitAdmin},
+ * the queue, exchange and binding will be automatically declared.
+ *
  * @author Stephane Nicoll
  * @since 1.4
  * @see EnableRabbit
@@ -99,10 +104,11 @@ public @interface RabbitListener {
 	 * The queues for this listener.
 	 * The entries can be 'queue name', 'property-placeholder keys' or 'expressions'.
 	 * Expression must be resolved to the queue name or {@code Queue} object.
+	 * Mutually exclusive with {@link #bindings()}
 	 * @return the queue names or expressions (SpEL) to listen to from target
 	 * {@link org.springframework.amqp.rabbit.listener.MessageListenerContainer}.
 	 */
-	String[] queues();
+	String[] queues() default {};
 
 	/**
 	 * When {@code true}, a single consumer in the container will have exclusive use of the
@@ -129,5 +135,12 @@ public @interface RabbitListener {
 	  @return the {@link org.springframework.amqp.rabbit.core.RabbitAdmin} bean name.
 	 */
 	String admin() default "";
+
+	/**
+	 * Array of {@link QueueBinding}s providing the listener's queue names, together
+	 * with the exchange and optional binding information.
+	 * @return the bindings.
+	 */
+	QueueBinding[] bindings() default {};
 
 }

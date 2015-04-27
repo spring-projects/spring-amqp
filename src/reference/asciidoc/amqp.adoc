@@ -1012,8 +1012,9 @@ In a nutshell, it allows you to expose a method of a managed bean as a Rabbit li
 public class MyService {
 
     @RabbitListener(queues = "myQueue")
-    public void processOrder(String data) { ...
-}
+    public void processOrder(String data) {
+        ...
+    }
 
 }
 ----
@@ -1021,6 +1022,42 @@ public class MyService {
 The idea of the example above is that, whenever a message is available on the `org.springframework.amqp.core.Queue` "myQueue", the `processOrder` method is invoked accordingly (in this case, with the payload of the message).
 
 The annotated endpoint infrastructure creates a message listener container behind the scenes for each annotated method, using a `RabbitListenerContainerFactory`.
+
+In the example above, `myQueue` must already exist and be bound to some exchange.
+Starting with _version 1.5_, the queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
+
+[source,java]
+----
+
+@Component
+public class MyService {
+
+  @RabbitListener(bindings = {
+      @QueueBinding(
+        value = @Queue(value = "myQueue", durable = "true"),
+        exchange = @Exchange(value = "auto.exch"),
+        key = "orderRoutingKey")}
+  )
+  public void processOrder(String data) {
+    ...
+  }
+
+  @RabbitListener(bindings = {
+      @QueueBinding(
+        value = @Queue(),
+        exchange = @Exchange(value = "auto.exch"),
+        key = "invoiceRoutingKey")}
+  )
+  public void processInvoice(String data) {
+    ...
+  }
+
+}
+----
+
+In the first example, a queue `myQueue` will be declared automatically (durable) together with the exchange, if needed, and bound to the exchange with the routing key.
+In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
+Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 
 [[async-annotation-driven-enable]]
 ====== Enable listener endpoint annotations
