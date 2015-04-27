@@ -1489,13 +1489,22 @@ All of the <<containerAttributes>> attributes allowed on a <listener-container/>
 [source,xml]
 ----
 <rabbit:template id="amqpTemplate"
-        connection-factory="connectionFactory" reply-queue="replies">
+        connection-factory="connectionFactory"
+        reply-queue="replies"
+        reply-address="replyEx/routeReply">
     <rabbit:reply-listener/>
 </rabbit:template>
 
 ----
 
 While the container and template share a connection factory, they do not share a channel and therefore requests and replies are not performed within the same transaction (if transactional).
+
+NOTE: Prior to _version 1.5_, the `reply-address` attribute was not available, replies were always routed using the default exchange and the `reply-queue` name as the routing key.
+This is still the default but you can now specify the new `reply-address` attribute.
+The `reply-address` can contain an address with the form `<exchange>/<routingKey>` and the reply will be routed to the specified *exchange* and routed to a queue bound with the *routing key*.
+The `reply-address` has precedence over `reply-queue`. The `<reply-listener>` must be configured as a separate
+`<listener-container>` component, when only `reply-address` is in use, anyway `reply-address` and `reply-queue`
+(or `queues` attribute on the `<listener-container>`) must refer to the same queue logically.
 
 [[direct-reply-to]]
 ===== RabbitMQ Direct reply-to

@@ -1008,7 +1008,27 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	A reference to a <queue/> for replies; optional; if not supplied, methods expecting replies
-	will use a temporary, exclusive, auto-delete queue.
+	will use a temporary, exclusive, auto-delete queue or, if the RabbitMQ version is 3.4 or higher,
+	using the 'direct reply-to' mechanism. See also 'reply-address'.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.Queue" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="reply-address" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reply addressing information; by default, replies will be routed to the default exchange
+	using the 'reply-queue' name as the routing key; an address with the form
+	'exchange/routingKey' means that replies will be published to the specified exchange
+	and routed using the specified routing key.
+	The 'reply-address' value has precedence over 'reply-queue' value.
+	The '<reply-listener>' must be configured as a separate '<listener-container>' component, when only
+	'reply-address' is in use.
+	The 'reply-address' and 'reply-queue' must refer to the same queue logically for proper reply routing logic.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">

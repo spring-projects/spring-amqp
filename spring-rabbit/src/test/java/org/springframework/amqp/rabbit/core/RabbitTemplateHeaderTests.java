@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 
@@ -74,8 +74,8 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
-		Queue replyQueue = new Queue("new.replyTo");
-		template.setReplyQueue(replyQueue);
+		String replyAddress = "new.replyTo";
+		template.setReplyAddress(replyAddress);
 		if (!standardHeader) {
 			template.setCorrelationKey(CORRELATION_HEADER);
 		}
@@ -85,6 +85,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
@@ -106,7 +107,7 @@ public class RabbitTemplateHeaderTests {
 		assertNotNull(reply);
 
 		assertNotNull(replyTo.get());
-		assertEquals("new.replyTo", replyTo.get());
+		assertEquals(replyAddress, replyTo.get());
 		assertNotNull(correlationId.get());
 		assertNull(reply.getMessageProperties().getReplyTo());
 		if (standardHeader) {
@@ -128,8 +129,8 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
-		Queue replyQueue = new Queue("new.replyTo");
-		template.setReplyQueue(replyQueue);
+		String replyAddress = "new.replyTo";
+		template.setReplyAddress(replyAddress);
 		template.setReplyTimeout(60000);
 
 		MessageProperties messageProperties = new MessageProperties();
@@ -139,6 +140,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
@@ -155,7 +157,7 @@ public class RabbitTemplateHeaderTests {
 		assertNotNull(reply);
 
 		assertNotNull(replyTo.get());
-		assertEquals("new.replyTo", replyTo.get());
+		assertEquals(replyAddress, replyTo.get());
 		assertNotNull(correlationId.get());
 		assertFalse("saveThis".equals(correlationId.get()));
 		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
@@ -173,17 +175,20 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
-		Queue replyQueue = new Queue("replyTo2");
-		template.setReplyQueue(replyQueue);
+		String replyTo2 = "replyTo2";
+		template.setReplyAddress(replyTo2);
 
 		MessageProperties messageProperties = new MessageProperties();
-		messageProperties.setReplyTo("replyTo1");
+		String replyTo1 = "replyTo1";
+		messageProperties.setReplyTo(replyTo1);
 		messageProperties.setCorrelationId("a".getBytes());
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicInteger count = new AtomicInteger();
 		final List<String> nestedReplyTo = new ArrayList<String>();
 		final List<String> nestedCorrelation = new ArrayList<String>();
+		final String replyAddress3 = "replyTo3";
 		doAnswer(new Answer<Object>() {
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				nestedReplyTo.add(basicProps.getReplyTo());
@@ -193,7 +198,7 @@ public class RabbitTemplateHeaderTests {
 				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 				if (count.incrementAndGet() < 2) {
 					Message anotherMessage = new Message("Second".getBytes(), springProps);
-					template.setReplyQueue(new Queue("replyTo3"));
+					template.setReplyAddress(replyAddress3);
 					replyMessage = template.sendAndReceive(anotherMessage);
 					nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
 					nestedCorrelation.add(new String(replyMessage.getMessageProperties().getCorrelationId(), "UTF-8"));
@@ -207,11 +212,11 @@ public class RabbitTemplateHeaderTests {
 		assertNotNull(reply);
 
 		assertEquals(3, nestedReplyTo.size());
-		assertEquals("replyTo2", nestedReplyTo.get(0));
-		assertEquals("replyTo3", nestedReplyTo.get(1));
-		assertEquals("replyTo2", nestedReplyTo.get(2)); // intermediate reply
+		assertEquals(replyTo2, nestedReplyTo.get(0));
+		assertEquals(replyAddress3, nestedReplyTo.get(1));
+		assertEquals(replyTo2, nestedReplyTo.get(2)); // intermediate reply
 
-		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
+		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
 		assertEquals("a", new String(reply.getMessageProperties().getCorrelationId(), "UTF-8"));
 
 	}
@@ -228,16 +233,18 @@ public class RabbitTemplateHeaderTests {
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setCorrelationKey(CORRELATION_HEADER);
-		Queue replyQueue = new Queue("new.replyTo");
-		template.setReplyQueue(replyQueue);
+		String replyAddress = "new.replyTo";
+		template.setReplyAddress(replyAddress);
 
 		MessageProperties messageProperties = new MessageProperties();
-		messageProperties.setReplyTo("replyTo1");
+		String replyTo1 = "replyTo1";
+		messageProperties.setReplyTo(replyTo1);
 		messageProperties.setCorrelationId("saveThis".getBytes());
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				replyTo.set(basicProps.getReplyTo());
@@ -255,11 +262,11 @@ public class RabbitTemplateHeaderTests {
 		assertNotNull(reply);
 
 		assertNotNull(replyTo.get());
-		assertEquals("new.replyTo", replyTo.get());
+		assertEquals(replyAddress, replyTo.get());
 		assertNotNull(correlationId.get());
-		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
+		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
 		assertTrue(!"saveThis".equals(correlationId.get()));
-		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
+		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
 
 	}
 
@@ -275,17 +282,20 @@ public class RabbitTemplateHeaderTests {
 
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setCorrelationKey(CORRELATION_HEADER);
-		Queue replyQueue = new Queue("replyTo2");
-		template.setReplyQueue(replyQueue);
+		String replyTo2 = "replyTo2";
+		template.setReplyAddress(replyTo2);
 
 		MessageProperties messageProperties = new MessageProperties();
-		messageProperties.setReplyTo("replyTo1");
+		String replyTo1 = "replyTo1";
+		messageProperties.setReplyTo(replyTo1);
 		messageProperties.setCorrelationId("a".getBytes());
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicInteger count = new AtomicInteger();
 		final List<String> nestedReplyTo = new ArrayList<String>();
 		final List<String> nestedCorrelation = new ArrayList<String>();
+		final String replyTo3 = "replyTo3";
 		doAnswer(new Answer<Object>() {
+			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
 				nestedReplyTo.add(basicProps.getReplyTo());
@@ -295,7 +305,7 @@ public class RabbitTemplateHeaderTests {
 				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 				if (count.incrementAndGet() < 2) {
 					Message anotherMessage = new Message("Second".getBytes(), springProps);
-					template.setReplyQueue(new Queue("replyTo3"));
+					template.setReplyAddress(replyTo3);
 					replyMessage = template.sendAndReceive(anotherMessage);
 					nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
 					nestedCorrelation.add((String) replyMessage.getMessageProperties().getHeaders().get(CORRELATION_HEADER));
@@ -309,11 +319,11 @@ public class RabbitTemplateHeaderTests {
 		assertNotNull(reply);
 
 		assertEquals(3, nestedReplyTo.size());
-		assertEquals("replyTo2", nestedReplyTo.get(0));
-		assertEquals("replyTo3", nestedReplyTo.get(1));
-		assertEquals("replyTo2", nestedReplyTo.get(2)); //intermediate reply
+		assertEquals(replyTo2, nestedReplyTo.get(0));
+		assertEquals(replyTo3, nestedReplyTo.get(1));
+		assertEquals(replyTo2, nestedReplyTo.get(2)); //intermediate reply
 
-		assertEquals("replyTo1", reply.getMessageProperties().getReplyTo());
+		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
 		assertEquals("a", new String(reply.getMessageProperties().getCorrelationId(), "UTF-8"));
 
 	}

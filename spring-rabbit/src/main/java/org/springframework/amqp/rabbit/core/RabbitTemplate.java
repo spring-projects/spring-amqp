@@ -161,7 +161,7 @@ public class RabbitTemplate extends RabbitAccessor
 
 	private volatile String encoding = DEFAULT_ENCODING;
 
-	private volatile Queue replyQueue;
+	private volatile String replyAddress;
 
 	private volatile ConfirmCallback confirmCallback;
 
@@ -256,11 +256,25 @@ public class RabbitTemplate extends RabbitAccessor
 	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
 	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
 	 * http://www.rabbitmq.com/direct-reply-to.html
-	 *
+	 * @deprecated - use #setReplyAddress(String replyAddress)
 	 * @param replyQueue the replyQueue to set
 	 */
+	@Deprecated
 	public void setReplyQueue(Queue replyQueue) {
-		this.replyQueue = replyQueue;
+		setReplyAddress(replyQueue.getName());
+	}
+
+	/**
+	 * An address for replies; if not provided, a temporary exclusive, auto-delete queue will
+	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
+	 * http://www.rabbitmq.com/direct-reply-to.html
+	 * <p>The address can be a simple queue name (in which case the reply will be routed via the default
+	 * exchange), or with the form {@code exchange/routingKey} to route the reply using an explicit
+	 * exchange and routing key.
+	 * @param replyAddress the replyAddress to set
+	 */
+	public void setReplyAddress(String replyAddress) {
+		this.replyAddress = replyAddress;
 		this.evaluatedFastReplyTo = false;
 	}
 
@@ -502,7 +516,7 @@ public class RabbitTemplate extends RabbitAccessor
 
 	private void evaluateFastReplyTo() {
 		this.usingFastReplyTo = false;
-		if (this.replyQueue == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyQueue.getName())) {
+		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
 				execute(new ChannelCallback<Void>() {
 
@@ -515,7 +529,7 @@ public class RabbitTemplate extends RabbitAccessor
 				this.usingFastReplyTo = true;
 			}
 			catch (Exception e) {
-				if (replyQueue != null) {
+				if (this.replyAddress != null) {
 					logger.error("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
 							+ "queues will be used:" + e.getMessage() + ".");
 				}
@@ -525,7 +539,7 @@ public class RabbitTemplate extends RabbitAccessor
 								+ "queues will be used:" + e.getMessage() + ".");
 					}
 				}
-				RabbitTemplate.this.replyQueue = null;
+				this.replyAddress = null;
 			}
 		}
 		this.evaluatedFastReplyTo = true;
@@ -902,7 +916,7 @@ public class RabbitTemplate extends RabbitAccessor
 				}
 			}
 		}
-		if (this.replyQueue == null || this.usingFastReplyTo) {
+		if (this.replyAddress == null || this.usingFastReplyTo) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message);
 		}
 		else {
@@ -973,9 +987,9 @@ public class RabbitTemplate extends RabbitAccessor
 				if (StringUtils.hasLength(savedReplyTo) && logger.isDebugEnabled()) {
 					logger.debug("Replacing replyTo header:" + savedReplyTo
 							+ " in favor of template's configured reply-queue:"
-							+ RabbitTemplate.this.replyQueue.getName());
+							+ RabbitTemplate.this.replyAddress);
 				}
-				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyQueue.getName());
+				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyAddress);
 				String savedCorrelation = null;
 				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
 					byte[] correlationId = message.getMessageProperties().getCorrelationId();

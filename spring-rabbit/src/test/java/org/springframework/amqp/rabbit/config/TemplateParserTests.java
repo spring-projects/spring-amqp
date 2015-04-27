@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -100,10 +100,10 @@ public final class TemplateParserTests {
 		assertNotNull(template);
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
 		assertNull(dfa.getPropertyValue("correlationKey"));
-		Queue queue = (Queue) dfa.getPropertyValue("replyQueue");
-		assertNotNull(queue);
+		String replyQueue = (String) dfa.getPropertyValue("replyAddress");
+		assertNotNull(replyQueue);
 		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);
-		assertSame(queueBean, queue);
+		assertEquals(queueBean.getName(), replyQueue);
 		SimpleMessageListenerContainer container =
 				beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
 		assertNotNull(container);
