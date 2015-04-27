@@ -32,23 +32,23 @@ import java.lang.annotation.Target;
 public @interface Queue {
 
 	/**
-	 * @return the queue name.
+	 * @return the queue name or "" for a generated queue name (default).
 	 */
-	String value();
+	String value() default "";
 
 	/**
 	 * @return true if the queue is to be declared as durable.
 	 */
-	String durable() default "false";
+	String durable() default "";
 
 	/**
 	 * @return true if the queue is to be declared as exclusive.
 	 */
-	String exclusive() default "false";
+	String exclusive() default "";
 
 	/**
 	 * @return true if the queue is to be declared as auto-delete.
 	 */
-	String autoDelete() default "false";
+	String autoDelete() default "";
 
 }

@@ -17,7 +17,10 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.core.Binding;
@@ -290,7 +293,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 
-		registerBeansForDeclaration(rabbitListener);
 		this.registrar.registerEndpoint(endpoint, factory);
 	}
 
@@ -303,9 +305,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private String[] resolveQueues(RabbitListener annotation) {
-		String[] queues = annotation.queues();
-		QueueBinding[] bindings = annotation.bindings();
+	private String[] resolveQueues(RabbitListener rabbitListener) {
+		String[] queues = rabbitListener.queues();
+		QueueBinding[] bindings = rabbitListener.bindings();
 		if (queues.length > 0 && bindings.length > 0) {
 			throw new BeanInitializationException("@RabbitListener can have 'queues' or 'bindings' but not both");
 		}
@@ -328,17 +330,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 		else {
-			for (int i = 0; i < bindings.length; i++) {
-				Object resolvedValue = resolveExpression(bindings[i].value().value());
-				if (resolvedValue instanceof String) {
-					result[i] = (String) resolvedValue;
-				}
-				else {
-					throw new IllegalArgumentException(String.format(
-							"@RabbitListener can't resolve '%s' as a String",
-							resolvedValue));
-				}
-			}
+			return registerBeansForDeclaration(rabbitListener);
 		}
 		return result;
 	}
@@ -365,16 +357,33 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return value;
 	}
 
-	private void registerBeansForDeclaration(RabbitListener rabbitListener) {
+	private String[] registerBeansForDeclaration(RabbitListener rabbitListener) {
+		List<String> queues = new ArrayList<String>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			for (QueueBinding binding : rabbitListener.bindings()) {
 				org.springframework.amqp.rabbit.annotation.Queue bindingQueue = binding.value();
 				String queueName = (String) resolveExpression(bindingQueue.value());
+				boolean exclusive = false;
+				boolean autoDelete = false;
+				if (!StringUtils.hasText(queueName)) {
+					queueName = UUID.randomUUID().toString();
+					if (!StringUtils.hasText(bindingQueue.exclusive())) {
+						exclusive = true;
+					}
+					if (!StringUtils.hasText(bindingQueue.autoDelete())) {
+						autoDelete = true;
+					}
+				}
+				else {
+					exclusive = resolveExpressionAsBoolean(bindingQueue.exclusive());
+					autoDelete = resolveExpressionAsBoolean(bindingQueue.autoDelete());
+				}
 				Queue queue = new Queue(queueName,
 						resolveExpressionAsBoolean(bindingQueue.durable()),
-						resolveExpressionAsBoolean(bindingQueue.exclusive()),
-						resolveExpressionAsBoolean(bindingQueue.autoDelete()));
+						exclusive,
+						autoDelete);
 				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
+				queues.add(queueName);
 				Exchange exchange = null;
 				org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 				String exchangeName = (String) resolveExpression(bindingExchange.value());
@@ -410,6 +419,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment, actualBinding);
 			}
 		}
+		return queues.toArray(new String[queues.size()]);
 	}
 
 	private boolean resolveExpressionAsBoolean(String value) {

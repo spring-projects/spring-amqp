@@ -90,6 +90,11 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	public void autoDeclareAnon() {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
+	}
+
+	@Test
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
 	}
@@ -162,6 +167,16 @@ public class EnableRabbitIntegrationTests {
 					key = "auto.rk")}
 		)
 		public String handleWithDeclare(String foo) {
+			return foo.toUpperCase();
+		}
+
+		@RabbitListener(bindings = {
+				@QueueBinding(
+					value = @Queue(),
+					exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
+					key = "auto.anon.rk")}
+		)
+		public String handleWithDeclareAnon(String foo) {
 			return foo.toUpperCase();
 		}
 
