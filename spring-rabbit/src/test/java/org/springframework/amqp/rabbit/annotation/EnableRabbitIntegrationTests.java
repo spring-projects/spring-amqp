@@ -43,6 +43,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -90,6 +91,16 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private String tagPrefix;
+
+	@Test
+	public void autoDeclare() {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+	}
+
+	@Test
+	public void autoDeclareAnon() {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
+	}
 
 	@Test
 	public void simpleEndpoint() {
@@ -156,6 +167,25 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	public static class MyService {
+
+		@RabbitListener(bindings = @QueueBinding(
+				value = @Queue(value = "auto.declare", autoDelete = "true"),
+				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
+				key = "auto.rk")
+		)
+		public String handleWithDeclare(String foo) {
+			return foo.toUpperCase();
+		}
+
+		@RabbitListener(bindings = {
+				@QueueBinding(
+					value = @Queue(),
+					exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
+					key = "auto.anon.rk")}
+		)
+		public String handleWithDeclareAnon(String foo) {
+			return foo.toUpperCase();
+		}
 
 		@RabbitListener(queues = "test.simple")
 		public String capitalize(String foo) {
@@ -269,6 +299,11 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public RabbitTemplate rabbitTemplate() {
 			return new RabbitTemplate(rabbitConnectionFactory());
+		}
+
+		@Bean
+		public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+			return new RabbitAdmin(connectionFactory);
 		}
 
 	}

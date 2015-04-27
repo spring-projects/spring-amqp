@@ -32,6 +32,20 @@ The converter has an alternative constructor that takes the value as a limit.
 Previously, this limit was hard-coded at `1024` bytes.
 (Also available in _1.4.4_).
 
+===== @QueueBinding for @RabbitListener
+
+The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with `queues`
+attribute to allow to specify the `queue`, its `exchange` and `binding` between them for declaration with the
+`RabbitAdmin` on the Broker.
+See <<async-annotation-driven>> for more information.
+
+===== The reply-address for RabbitTemplate
+
+The `reply-address` attribute has been added to the `<rabbit-template>` component alongside with `reply-queue`.
+See <<request-reply>> for more information.
+(Also available in _1.4.4_ as setter on the `RabbitTemplate`).
+
+
 ==== Changes in 1.4 Since 1.3
 
 ===== @RabbitListener Annotation
