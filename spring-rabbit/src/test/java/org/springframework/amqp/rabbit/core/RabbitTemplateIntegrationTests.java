@@ -996,7 +996,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
-		this.template.setReplyQueue(REPLY_QUEUE);
+		this.template.setReplyAddress(REPLY_QUEUE.getName());
 		this.template.setReplyTimeout(10000);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
@@ -1096,7 +1096,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveFastExplicit() {
-		this.template.setReplyQueue(new Queue(Address.AMQ_RABBITMQ_REPLY_TO));
+		this.template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
 		sendAndReceiveFastGuts();
 	}
 

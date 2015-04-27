@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -58,6 +61,9 @@ public class JavaConfigFixedReplyQueueTests {
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
+	@Autowired
+	private Exchange replyExchange;
+
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
@@ -69,6 +75,11 @@ public class JavaConfigFixedReplyQueueTests {
 	@Test
 	public void test() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("foo"));
+		Message message = MessageBuilder.withBody("foo".getBytes())
+				.setContentType("text/plain")
+				.build();
+		Message reply = this.rabbitTemplate.sendAndReceive(message);
+		assertEquals(this.replyExchange.getName(), reply.getMessageProperties().getReceivedExchange());
 	}
 
 	@Configuration
@@ -89,7 +100,7 @@ public class JavaConfigFixedReplyQueueTests {
 			RabbitTemplate template = new RabbitTemplate(rabbitConnectionFactory());
 			template.setExchange(ex().getName());
 			template.setRoutingKey("test");
-			template.setReplyQueue(replyQueue());
+			template.setReplyAddress(replyExchange().getName() + "/" + replyQueue().getName());
 			return template;
 		}
 
@@ -130,12 +141,24 @@ public class JavaConfigFixedReplyQueueTests {
 			return BindingBuilder.bind(requestQueue()).to(ex()).with("test");
 		}
 
+		@Bean
+		public Binding replyBinding() {
+			return BindingBuilder.bind(replyQueue())
+					.to(replyExchange())
+					.with(replyQueue().getName());
+		}
+
 		/**
 		 * @return an anonymous (auto-delete) queue.
 		 */
 		@Bean
 		public Queue requestQueue() {
 			return new AnonymousQueue();
+		}
+
+		@Bean
+		public DirectExchange replyExchange() {
+			return new DirectExchange(UUID.randomUUID().toString(), false, true);
 		}
 
 		/**
