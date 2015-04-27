@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,8 @@ public class RabbitNamespaceUtils {
 	private static final String FAILED_DECLARATION_RETRY_INTERVAL = "failed-declaration-retry-interval";
 
 	private static final String MISSING_QUEUE_RETRY_INTERVAL = "missing-queue-retry-interval";
+
+	private static final String CONSUMER_TAG_STRATEGY = "consumer-tag-strategy";
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -232,6 +234,12 @@ public class RabbitNamespaceUtils {
 		String retryDeclarationInterval = containerEle.getAttribute(MISSING_QUEUE_RETRY_INTERVAL);
 		if (StringUtils.hasText(retryDeclarationInterval)) {
 			containerDef.getPropertyValues().add("retryDeclarationInterval", new TypedStringValue(retryDeclarationInterval));
+		}
+
+		String consumerTagStrategy = containerEle.getAttribute(CONSUMER_TAG_STRATEGY);
+		if (StringUtils.hasText(consumerTagStrategy)) {
+			containerDef.getPropertyValues().add("consumerTagStrategy",
+					new RuntimeBeanReference(consumerTagStrategy));
 		}
 
 		return containerDef;
