@@ -15,12 +15,11 @@
  */
 package org.springframework.amqp.rabbit.core;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AmqpManagementOperations;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
@@ -46,7 +45,7 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  * @since 1.5
  *
  */
-public class RabbitManagementTemplate {
+public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	private static final String DEFAULT_VHOST = "/";
 
@@ -73,8 +72,6 @@ public class RabbitManagementTemplate {
 	 * @param uri the uri.
 	 * @param username the user.
 	 * @param password the password.
-	 * @throws URISyntaxException syntax exception.
-	 * @throws MalformedURLException  badly formed URL exception.
 	 */
 	public RabbitManagementTemplate(String uri, String username, String password) {
 		try {
@@ -92,19 +89,12 @@ public class RabbitManagementTemplate {
 		return this.rabbitClient;
 	}
 
-	/**
-	 * Add an exchange to the default vhost ('/').
-	 * @param exchange the exchange.
-	 */
+	@Override
 	public void addExchange(Exchange exchange) {
 		addExchange(DEFAULT_VHOST, exchange);
 	}
 
-	/**
-	 * Add an exchange to the specified vhost.
-	 * @param vhost the vhost.
-	 * @param exchange the exchange.
-	 */
+	@Override
 	public void addExchange(String vhost, Exchange exchange) {
 		ExchangeInfo info = new ExchangeInfo();
 		info.setArguments(exchange.getArguments());
@@ -114,88 +104,52 @@ public class RabbitManagementTemplate {
 		this.rabbitClient.declareExchange(vhost, exchange.getName(), info);
 	}
 
-	/**
-	 * Purge a queue in the default vhost ('/').
-	 * @param queue the queue.
-	 */
+	@Override
 	public void purgeQueue(Queue queue) {
 		this.rabbitClient.purgeQueue(DEFAULT_VHOST, queue.getName());
 	}
 
-	/**
-	 * Purge a queue in the provided vhost.
-	 * @param vhost the vhost.
-	 * @param queue the queue.
-	 */
+	@Override
 	public void purgeQueue(String vhost, Queue queue) {
 		this.rabbitClient.purgeQueue(vhost, queue.getName());
 	}
 
-	/**
-	 * Delete a queue from the default vhost ('/').
-	 * @param queue the queue.
-	 */
+	@Override
 	public void deleteQueue(Queue queue) {
 		this.rabbitClient.deleteQueue(DEFAULT_VHOST, queue.getName());
 	}
 
-	/**
-	 * Delete a queue from the provided vhost.
-	 * @param vhost the vhost.
-	 * @param queue the queue.
-	 */
+	@Override
 	public void deleteQueue(String vhost, Queue queue) {
 		this.rabbitClient.deleteQueue(vhost, queue.getName());
 	}
 
-	/**
-	 * Get a specific queue from the default vhost ('/').
-	 * @param name the queue name.
-	 * @return the Queue.
-	 */
+	@Override
 	public Queue getQueue(String name) {
 		return getQueue(DEFAULT_VHOST, name);
 	}
 
-	/**
-	 * Get a specific queue from the provided vhost.
-	 * @param name the queue name.
-	 * @return the Queue.
-	 */
+	@Override
 	public Queue getQueue(String vhost, String name) {
 		return convert(this.rabbitClient.getQueue(vhost, name));
 	}
 
-	/**
-	 * Get all queues.
-	 * @return the queues.
-	 */
+	@Override
 	public List<Queue> getQueues() {
 		return converteQueueList(this.rabbitClient.getQueues());
 	}
 
-	/**
-	 * Get all queues in the provided vhost.
-	 * @param vhost the vhost.
-	 * @return the queues.
-	 */
+	@Override
 	public List<Queue> getQueues(String vhost) {
 		return converteQueueList(this.rabbitClient.getQueues(vhost));
 	}
 
-	/**
-	 * Add a queue to the default vhost ('/').
-	 * @param queue the queue.
-	 */
+	@Override
 	public void addQueue(Queue queue) {
 		addQueue(DEFAULT_VHOST, queue);
 	}
 
-	/**
-	 * Add a queue to the specified vhost.
-	 * @param vhost the vhost.
-	 * @param queue the queue.
-	 */
+	@Override
 	public void addQueue(String vhost, Queue queue) {
 		QueueInfo info = new QueueInfo();
 		info.setArguments(queue.getArguments());
@@ -205,83 +159,47 @@ public class RabbitManagementTemplate {
 		this.rabbitClient.declareQueue(vhost, queue.getName(), info);
 	}
 
-	/**
-	 * Delete an exchange from the default vhost ('/').
-	 * @param exchange the queue.
-	 */
+	@Override
 	public void deleteExchange(Exchange exchange) {
 		this.rabbitClient.deleteQueue(DEFAULT_VHOST, exchange.getName());
 	}
 
-	/**
-	 * Delete an exchange from the provided vhost.
-	 * @param vhost the vhost.
-	 * @param exchange the queue.
-	 */
+	@Override
 	public void deleteExchange(String vhost, Exchange exchange) {
 		this.rabbitClient.deleteExchange(vhost, exchange.getName());
 	}
 
-	/**
-	 * Get a specific queue from the default vhost ('/').
-	 * @param name the exchange name.
-	 * @return the Exchange.
-	 */
+	@Override
 	public Exchange getExchange(String name) {
 		return getExchange(DEFAULT_VHOST, name);
 	}
 
-	/**
-	 * Get a specific exchange from the provided vhost.
-	 * @param name the exchange name.
-	 * @return the Exchange.
-	 */
+	@Override
 	public Exchange getExchange(String vhost, String name) {
 		return convert(this.rabbitClient.getExchange(vhost, name));
 	}
 
-	/**
-	 * Get all exchanges.
-	 * @return the exchanges.
-	 */
+	@Override
 	public List<Exchange> getExchanges() {
 		return converteExchangeList(this.rabbitClient.getExchanges());
 	}
 
-	/**
-	 * Get all exchanges in the provided vhost. Only {@link DirectExchange},
-	 * {@link FanoutExchange}, {@link HeadersExchange} and {@link TopicExchange}s
-	 * are returned.
-	 * @param vhost the vhost.
-	 * @return the exchanges.
-	 */
+	@Override
 	public List<Exchange> getExchanges(String vhost) {
 		return converteExchangeList(this.rabbitClient.getExchanges(vhost));
 	}
 
-	/**
-	 * Get all bindings.
-	 * @return the bindings.
-	 */
+	@Override
 	public List<Binding> getBindings() {
 		return converteBindingList(this.rabbitClient.getBindings());
 	}
 
-	/**
-	 * Get all bindings in the provided vhost.
-	 * @param vhost the vhost.
-	 * @return the bindings.
-	 */
+	@Override
 	public List<Binding> getBindings(String vhost) {
 		return converteBindingList(this.rabbitClient.getBindings(vhost));
 	}
 
-	/**
-	 * Get all bindings from the provided exchange in the provided vhost.
-	 * @param vhost the vhost.
-	 * @param exchange the exchange name.
-	 * @return the bindings.
-	 */
+	@Override
 	public List<Binding> getBindingsForExchange(String vhost, String exchange) {
 		return converteBindingList(this.rabbitClient.getBindingsBySource(vhost, exchange));
 	}
