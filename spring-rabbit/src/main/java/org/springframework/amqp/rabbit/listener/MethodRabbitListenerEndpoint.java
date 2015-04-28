@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -79,15 +80,19 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		this.messageHandlerMethodFactory = messageHandlerMethodFactory;
 	}
 
+	/**
+	 * @return the messageHandlerMethodFactory
+	 */
+	protected MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
+		return messageHandlerMethodFactory;
+	}
 
 	@Override
 	protected MessagingMessageListenerAdapter createMessageListener(MessageListenerContainer container) {
 		Assert.state(this.messageHandlerMethodFactory != null,
 				"Could not create message listener - MessageHandlerMethodFactory not set");
 		MessagingMessageListenerAdapter messageListener = createMessageListenerInstance();
-		InvocableHandlerMethod invocableHandlerMethod =
-				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), getMethod());
-		messageListener.setHandlerMethod(invocableHandlerMethod);
+		messageListener.setHandlerMethod(configureListenerAdapter(messageListener));
 		Address replyToAddress = getDefaultReplyToAddress();
 		if (replyToAddress != null) {
 			messageListener.setResponseExchange(replyToAddress.getExchangeName());
@@ -98,6 +103,17 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 			messageListener.setMessageConverter(messageConverter);
 		}
 		return messageListener;
+	}
+
+	/**
+	 * Create a {@link HandlerAdapter} for this listener adapter.
+	 * @param messageListener the listener adapter.
+	 * @return the handler adapter.
+	 */
+	protected HandlerAdapter configureListenerAdapter(MessagingMessageListenerAdapter messageListener) {
+		InvocableHandlerMethod invocableHandlerMethod =
+				this.messageHandlerMethodFactory.createInvocableHandlerMethod(getBean(), getMethod());
+		return new HandlerAdapter(invocableHandlerMethod);
 	}
 
 	/**

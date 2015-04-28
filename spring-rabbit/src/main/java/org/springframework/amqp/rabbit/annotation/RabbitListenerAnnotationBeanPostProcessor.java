@@ -34,6 +34,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
@@ -213,21 +214,50 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	@Override
-	public Object postProcessAfterInitialization(final Object bean, String beanName) throws BeansException {
+	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
+		final RabbitListener classLevelListener = AnnotationUtils.findAnnotation(bean.getClass(), RabbitListener.class);
+		final List<Method> multiMethods = new ArrayList<Method>();
 		ReflectionUtils.doWithMethods(targetClass, new ReflectionUtils.MethodCallback() {
+
 			@Override
 			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
 				RabbitListener rabbitListener = AnnotationUtils.getAnnotation(method, RabbitListener.class);
 				if (rabbitListener != null) {
-					processAmqpListener(rabbitListener, method, bean);
+					processAmqpListener(rabbitListener, method, bean, beanName);
+				}
+				if (classLevelListener != null) {
+					RabbitHandler rabbitHandler = AnnotationUtils.getAnnotation(method, RabbitHandler.class);
+					if (rabbitHandler != null) {
+						multiMethods.add(method);
+					}
 				}
 			}
 		});
+		if (classLevelListener != null) {
+			processMultiMethodListener(classLevelListener, multiMethods, bean, beanName);
+		}
 		return bean;
 	}
 
-	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean) {
+	private void processMultiMethodListener(RabbitListener classLevelListener, List<Method> multiMethods, Object bean,
+			String beanName) {
+		List<Method> checkedMethods = new ArrayList<Method>();
+		for (Method method : multiMethods) {
+			checkedMethods.add(checkProxy(method, bean));
+		}
+		MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
+		processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
+	}
+
+	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
+		method = checkProxy(method, bean);
+		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
+		endpoint.setMethod(method);
+		processListener(endpoint, rabbitListener, bean, method, beanName);
+	}
+
+	private Method checkProxy(Method method, Object bean) {
 		if (AopUtils.isJdkDynamicProxy(bean)) {
 			try {
 				// Found a @RabbitListener method on the target class for this JDK proxy ->
@@ -246,10 +276,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 								"attribute to 'true'", method.getName(), method.getDeclaringClass().getSimpleName()));
 			}
 		}
+		return method;
+	}
 
-		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
+	private void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
+			Object adminTarget, String beanName) {
 		endpoint.setBean(bean);
-		endpoint.setMethod(method);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
 		endpoint.setQueueNames(resolveQueues(rabbitListener));
@@ -274,7 +306,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on [" +
-						method + "], no " + RabbitAdmin.class.getSimpleName() + " with id '" +
+						adminTarget + "], no " + RabbitAdmin.class.getSimpleName() + " with id '" +
 						rabbitAdmin + "' was found in the application context", ex);
 			}
 		}
@@ -289,7 +321,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on [" +
-						method + "], no " + RabbitListenerContainerFactory.class.getSimpleName() + " with id '" +
+						adminTarget + "] for bean " + beanName + ", no " + RabbitListenerContainerFactory.class.getSimpleName() + " with id '" +
 						containerFactoryBeanName + "' was found in the application context", ex);
 			}
 		}

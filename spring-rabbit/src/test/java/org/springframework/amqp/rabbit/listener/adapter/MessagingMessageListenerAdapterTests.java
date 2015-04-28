@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mock;
 import static org.springframework.amqp.rabbit.test.MessageTestUtils.createTextMessage;
 
 import java.lang.reflect.Method;
@@ -119,7 +119,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	protected MessagingMessageListenerAdapter createInstance(Method m) {
 		MessagingMessageListenerAdapter adapter = new MessagingMessageListenerAdapter();
-		adapter.setHandlerMethod(factory.createInvocableHandlerMethod(sample, m));
+		adapter.setHandlerMethod(new HandlerAdapter(factory.createInvocableHandlerMethod(sample, m)));
 		return adapter;
 	}
 

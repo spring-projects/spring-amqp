@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -105,6 +106,19 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
+	}
+
+	@Test
+	public void multiListener() {
+		Bar bar = new Bar();
+		bar.field = "bar";
+		assertEquals("BAR: bar", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", bar));
+		Baz baz = new Baz();
+		baz.field = "baz";
+		assertEquals("BAZ: baz", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz));
+		Qux qux = new Qux();
+		qux.field = "qux";
+		assertEquals("QUX: qux: multi.rk", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux));
 	}
 
 	@Test
@@ -305,6 +319,56 @@ public class EnableRabbitIntegrationTests {
 		public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
 			return new RabbitAdmin(connectionFactory);
 		}
+
+		@Bean
+		public MultiListenerBean multiListener() {
+			return new MultiListenerBean();
+		}
+
+	}
+
+	@RabbitListener(bindings = @QueueBinding
+			(value = @Queue,
+			exchange = @Exchange(value = "multi.exch", autoDelete = "true"),
+			key = "multi.rk"))
+	static class MultiListenerBean {
+
+		@RabbitHandler
+		public String bar(Bar bar) {
+			return "BAR: " + bar.field;
+		}
+
+		@RabbitHandler
+		public String baz(Baz baz) {
+			return "BAZ: " + baz.field;
+		}
+
+		@RabbitHandler
+		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+			return "QUX: " + qux.field + ": " + rk;
+		}
+
+	}
+
+	@SuppressWarnings("serial")
+	static class Foo implements Serializable {
+
+		String field;
+
+	}
+
+	@SuppressWarnings("serial")
+	static class Bar extends Foo implements Serializable {
+
+	}
+
+	@SuppressWarnings("serial")
+	static class Baz extends Foo implements Serializable {
+
+	}
+
+	@SuppressWarnings("serial")
+	static class Qux extends Foo implements Serializable {
 
 	}
 
