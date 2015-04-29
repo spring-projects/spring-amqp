@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.ListenerContainerParserTests.TestBean;
@@ -58,7 +59,7 @@ public final class ListenerContainerPlaceholderParserTests {
 
 	@Test
 	public void testParseWithQueueNames() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("container1$testListener", SimpleMessageListenerContainer.class);
+		SimpleMessageListenerContainer container = beanFactory.getBean("testListener", SimpleMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
 		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
 		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());

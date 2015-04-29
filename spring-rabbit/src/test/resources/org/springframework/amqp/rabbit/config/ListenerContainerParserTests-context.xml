@@ -11,33 +11,33 @@
 
 	<rabbit:queue id="bar" />
 
-	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
+	<rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
 			max-concurrency="6" receive-timeout="9876" recovery-interval="5555" missing-queues-fatal="false"
 			min-start-interval="1234" min-stop-interval="2345" min-consecutive-active="12" min-consecutive-idle="34"
 			declaration-retries="5" failed-declaration-retry-interval="1000" missing-queue-retry-interval="30000"
 			consumer-tag-strategy="tagger">
-		<rabbit:listener queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
+		<rabbit:listener id="container1" queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container2" connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
+	<rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual" concurrency="5"
 			auto-declare="false">
-		<rabbit:listener queues="foo, bar" ref="testBean" method="handle"/>
+		<rabbit:listener id="container2" queues="foo, bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container3" connection-factory="connectionFactory" advice-chain="adviceChain">
-		<rabbit:listener queues="foo" exclusive="true" ref="testBean" method="handle"/>
+	<rabbit:listener-container connection-factory="connectionFactory" advice-chain="adviceChain">
+		<rabbit:listener id="container3" queues="foo" exclusive="true" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container4" connection-factory="connectionFactory">
-		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	<rabbit:listener-container connection-factory="connectionFactory">
+		<rabbit:listener id="container4" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container5" connection-factory="connectionFactory" requeue-rejected="false">
-		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	<rabbit:listener-container connection-factory="connectionFactory" requeue-rejected="false">
+		<rabbit:listener id="container5" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container6" connection-factory="connectionFactory" channel-transacted="true" transaction-size="5" >
-		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	<rabbit:listener-container connection-factory="connectionFactory" channel-transacted="true" transaction-size="5" >
+		<rabbit:listener id="container6" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
 	<rabbit:listener-container id="containerWithNamedListeners" connection-factory="connectionFactory">

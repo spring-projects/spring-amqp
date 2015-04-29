@@ -18,8 +18,8 @@
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 
-	<rabbit:listener-container id="container1" concurrency="2">
-		<rabbit:listener id="listener1" ref="foo" queues="anon" />
+	<rabbit:listener-container concurrency="2">
+		<rabbit:listener id="container1" ref="foo" queues="anon" />
 	</rabbit:listener-container>
 
 	<!-- With Conditional Declarations -->
@@ -32,8 +32,8 @@
 		</rabbit:bindings>
 	</rabbit:direct-exchange>
 
-	<rabbit:listener-container id="container2" auto-startup="false">
-		<rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
+	<rabbit:listener-container auto-startup="false">
+		<rabbit:listener id="container2" ref="foo" queues="otherAnon" admin="containerAdmin" />
 	</rabbit:listener-container>
 
 	<rabbit:queue id="xExpires" name="xExpires">
@@ -42,12 +42,12 @@
 		</rabbit:queue-arguments>
 	</rabbit:queue>
 
-	<rabbit:listener-container id="container3" concurrency="2">
-		<rabbit:listener ref="foo" queues="xExpires"/>
+	<rabbit:listener-container concurrency="2">
+		<rabbit:listener id="container3" ref="foo" queues="xExpires"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="container4" auto-declare="false">
-		<rabbit:listener ref="foo" queues="anon2"/>
+	<rabbit:listener-container auto-declare="false">
+		<rabbit:listener id="container4" ref="foo" queues="anon2"/>
 	</rabbit:listener-container>
 
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />
