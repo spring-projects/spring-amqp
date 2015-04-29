@@ -512,7 +512,11 @@
 		<xsd:attribute name="id" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	Optional bean id for the container.
+	Deprecated - the top level container 'id' is no longer used when naming the child
+	'listener' beans - the 'id' there alone is now used instead. Also, the 'id'
+	attribute was ignored in a rabbit template 'reply-listener' where the bean name
+	is always 'templateId.replyListener'. This attribute will be removed in a future
+	release.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
@@ -765,7 +769,8 @@
 		<xsd:attribute name="id" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	The unique identifier for this listener.
+	The unique identifier for this listener. Normal bean name overrides will apply - a
+	listener that is parsed later with the same id will override this bean.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
