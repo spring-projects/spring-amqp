@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2013 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,20 +13,18 @@
 
 package org.springframework.amqp.rabbit.config;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.w3c.dom.Element;
 
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -62,8 +60,6 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String EXCLUSIVE = "exclusive";
 
-	private final Set<String> listenerIds = new HashSet<String>();
-
 	private static final AtomicInteger instance = new AtomicInteger();
 
 	private boolean instanceUsed;
@@ -95,7 +91,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		String ref = listenerEle.getAttribute(REF_ATTRIBUTE);
 		if (!StringUtils.hasText(ref)) {
 			parserContext.getReaderContext().error("Listener 'ref' attribute contains empty value.", listenerEle);
-		} else {
+		}
+		else {
 			listenerDef.getPropertyValues().add("delegate", new RuntimeBeanReference(ref));
 		}
 
@@ -140,23 +137,9 @@ class ListenerContainerParser implements BeanDefinitionParser {
 			containerDef.getPropertyValues().add("exclusive", exclusive);
 		}
 
-		String parentElementId = containerEle.getAttribute(ID_ATTRIBUTE);
-		// If no bean id is given auto generate one using the ReaderContext's BeanNameGenerator
-		if (!StringUtils.hasText(parentElementId)) {
-			parentElementId = this.generateBeanName();
-		}
 		String childElementId = listenerEle.getAttribute(ID_ATTRIBUTE);
-		boolean hasChildElementId = StringUtils.hasText(childElementId);
-		String containerBeanName = parentElementId + (hasChildElementId ? ("$" + childElementId) : "");
-		if (multipleElements && !hasChildElementId) {
-			containerBeanName += "." + index;
-		}
-		if (this.listenerIds.contains(containerBeanName)) {
-			parserContext.getReaderContext().error("You cannot have multiple listener elements with the same 'id' ("
-					+ containerBeanName + ")",
-				listenerEle);
-		}
-		this.listenerIds.add(containerBeanName);
+		String containerBeanName = StringUtils.hasText(childElementId) ? childElementId :
+			BeanDefinitionReaderUtils.generateBeanName(containerDef, parserContext.getRegistry());
 
 		if (!NamespaceUtils.isAttributeDefined(listenerEle, QUEUE_NAMES_ATTRIBUTE)
 				&& !NamespaceUtils.isAttributeDefined(listenerEle, QUEUES_ATTRIBUTE)) {
@@ -208,8 +191,4 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
 	}
 
-	private String generateBeanName() {
-		this.instanceUsed = true;
-		return SimpleMessageListenerContainer.class.getName() + "#" + instance.get();
-	}
 }

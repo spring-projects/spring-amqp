@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,8 +67,8 @@ public class ListenFromAutoDeleteQueueTests {
 	public void setup() {
 		this.context = new ClassPathXmlApplicationContext(this.getClass().getSimpleName() + "-context.xml",
 				this.getClass());
-		this.listenerContainer1 = context.getBean("container1$listener1", SimpleMessageListenerContainer.class);
-		this.listenerContainer2 = context.getBean("container2$listener2", SimpleMessageListenerContainer.class);
+		this.listenerContainer1 = context.getBean("container1", SimpleMessageListenerContainer.class);
+		this.listenerContainer2 = context.getBean("container2", SimpleMessageListenerContainer.class);
 	}
 
 	@After

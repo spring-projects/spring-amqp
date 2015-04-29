@@ -2198,7 +2198,7 @@ If you prefer using XML configuration, declare the following bean in your XML Ap
 
 There are quite a few options for configuring a `SimpleMessageListenerContainer` related to transactions and quality of service, and some of them interact with each other.
 
-The table below shows the container property names and their equivalent attribute names (in parentheses) when using the namespace to configure a `<rabbit:message-listener-container/>`.
+The table below shows the container property names and their equivalent attribute names (in parentheses) when using the namespace to configure a `<rabbit:listener-container/>`.
 
 Some
     properties are not exposed by the namespace; indicated by `N/A`for

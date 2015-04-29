@@ -142,26 +142,30 @@ public class ListenerContainerParserTests {
 
 	@Test
 	public void testNamedListeners() throws Exception {
-		beanFactory.getBean("containerWithNamedListeners$testListener1", SimpleMessageListenerContainer.class);
-		beanFactory.getBean("containerWithNamedListeners$testListener2", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("testListener1", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("testListener2", SimpleMessageListenerContainer.class);
 	}
 
 	@Test
 	public void testAnonListeners() throws Exception {
-		beanFactory.getBean("containerWithAnonListener", SimpleMessageListenerContainer.class);
-		beanFactory.getBean("containerWithAnonListeners.0", SimpleMessageListenerContainer.class);
-		beanFactory.getBean("containerWithAnonListeners$namedListener", SimpleMessageListenerContainer.class);
-		beanFactory.getBean("containerWithAnonListeners.2", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0",
+				SimpleMessageListenerContainer.class);
+		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#1",
+				SimpleMessageListenerContainer.class);
+		beanFactory.getBean("namedListener", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#2",
+				SimpleMessageListenerContainer.class);
 	}
 
 	@Test
 	public void testAnonEverything() throws Exception {
 		SimpleMessageListenerContainer container = beanFactory.getBean(
-				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0.0",
+				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#3",
 				SimpleMessageListenerContainer.class);
 		assertEquals("ex1", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
 				"responseExchange"));
-		container = beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0.1",
+		container = beanFactory.getBean(
+				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#4",
 				SimpleMessageListenerContainer.class);
 		assertEquals("ex2", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
 				"responseExchange"));
@@ -169,15 +173,8 @@ public class ListenerContainerParserTests {
 
 	@Test
 	public void testAnonParent() throws Exception {
-		beanFactory.getBean(
-				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#1$anonParentL1",
-				SimpleMessageListenerContainer.class);
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#1$anonParentL2",
-				SimpleMessageListenerContainer.class);
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#2$anonParentL1",
-				SimpleMessageListenerContainer.class);
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#2$anonParentL2",
-				SimpleMessageListenerContainer.class);
+		beanFactory.getBean("anonParentL1", SimpleMessageListenerContainer.class);
+		beanFactory.getBean("anonParentL2", SimpleMessageListenerContainer.class);
 	}
 
 	@Test
