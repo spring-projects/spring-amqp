@@ -1000,7 +1000,9 @@ Batched messages are automatically de-batched by listener containers (using the 
 See <<template-batching>> for more information about batching.
 
 [[async-annotation-driven]]
-===== Annotation-driven listener endpoints
+===== Annotation-driven Listener Endpoints
+
+====== Introduction
 
 Starting with _version 1.4_, the easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
 In a nutshell, it allows you to expose a method of a managed bean as a Rabbit listener endpoint.
@@ -1271,6 +1273,41 @@ The valid values are:
 Also `@SendTo` can be used without a `value` attribute.
 This case is equal to an empty sendTo pattern.
 `@SendTo` is only used if the inbound message does not have a `replyToAddress` property.
+
+[[annotation-method-selection]]
+====== Multi-Method Listeners
+
+Starting with _version 1.5_, the `@RabbitListener` annotation can now be specified at the class level.
+Together with the new `@RabbitHandler` annotation, this allows a single listener to invoke different methods, based on the payload type of the incoming message.
+This is best described using an example:
+
+[source, java]
+----
+@RabbitListener(queues = "someQueue"
+public class MultiListenerBean {
+
+	@RabbitHandler
+	public String bar(Bar bar) {
+		return "BAR: " + bar.field;
+	}
+
+	@RabbitHandler
+	public String baz(Baz baz) {
+		return "BAZ: " + baz.field;
+	}
+
+	@RabbitHandler
+	public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+		return "QUX: " + qux.field + ": " + rk;
+	}
+
+}
+----
+
+In this case, the individual `@RabbitHandler` methods are invoked if the converted payload is a `Bar`, `Baz` or `Qux`.
+It is important to understand that the system must be able to identify a unique method based on the payload type.
+The type is checked for assignability to a single parameter that has no annotations, or is annotated with the `@Payload` annotation.
+Notice that the same method signatures apply as discussed in the method-level `@RabbitListener` described above.
 
 ===== Threading and Asynchronous Consumers
 

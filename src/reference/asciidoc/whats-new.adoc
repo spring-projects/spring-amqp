@@ -45,6 +45,10 @@ The `reply-address` attribute has been added to the `<rabbit-template>` componen
 See <<request-reply>> for more information.
 (Also available in _1.4.4_ as setter on the `RabbitTemplate`).
 
+===== Class-Level @RabbitListener
+
+The `@RabbitListener` annotation can now be applied at the class level.
+Together with the new `@RabbitHandler` method annotation, this allows the handler method to be selected based on payload type. See <<annotation-method-selection>> for more information.
 
 ===== Listener Container Bean Names (XML)
 

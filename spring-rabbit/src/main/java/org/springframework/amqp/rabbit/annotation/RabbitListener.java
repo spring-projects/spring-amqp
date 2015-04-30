@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 
 /**
@@ -61,7 +65,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  * for convenient access to all method arguments.</li>
  * </ul>
  *
- * <p>Annotated method may have a non {@code void} return type. When they do, the result of the
+ * <p>Annotated methods may have a non {@code void} return type. When they do, the result of the
  * method invocation is sent as a reply to the queue defined by the
  * {@link org.springframework.amqp.core.MessageProperties#getReplyTo() ReplyTo}  header of the
  * incoming message. When this value is not set, a default queue can be provided by
@@ -72,13 +76,23 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  * {@link org.springframework.amqp.rabbit.core.RabbitAdmin},
  * the queue, exchange and binding will be automatically declared.
  *
+ * <p>When defined at the method level, a listener container is created for each method. The
+ * {@link MessageListener} is a {@link MessagingMessageListenerAdapter}, configured with a
+ * {@link MethodRabbitListenerEndpoint}.
+ *
+ * <p>When defined at the class level, a single message listener container is used to service
+ * all methods annotated with {@code @RabbitHandler}. Method signatures of such annotated
+ * methods must not cause any ambiguity such that a single method can be resolved for a
+ * particular inbound message. The {@link MessagingMessageListenerAdapter} is configured with
+ * a {@link MultiMethodRabbitListenerEndpoint}.
+ *
  * @author Stephane Nicoll
  * @author Gary Russell
  * @since 1.4
  * @see EnableRabbit
  * @see RabbitListenerAnnotationBeanPostProcessor
  */
-@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @MessageMapping
 @Documented
