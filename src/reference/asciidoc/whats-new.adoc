@@ -47,6 +47,7 @@ See <<request-reply>> for more information.
 
 ===== The RabbitManagementTemplate
 
+
 The `RabbitManagementTemplate` has been introduced to monitor and configure RabbitMQ Broker using REST API from its
 https://www.rabbitmq.com/management.html[Management Plugin].
 See <<management-template>> for more information.
@@ -61,7 +62,11 @@ Normal Spring bean name overrides are applied; if a later `<listener/>` is parse
 bean, the new definition will override the existing one.
 Previously, bean names were composed from the ids of the `<listener-container/>` and `<listener/>` elements.
 
-==== Changes in 1.4 Since 1.3
+
+===== Class-Level @RabbitListener
+
+The `@RabbitListener` annotation can now be applied at the class level.
+Together with the new `@RabbitHandler` method annotation, this allows the handler method to be selected based on payload type. See <<annotation-method-selection>> for more information.==== Changes in 1.4 Since 1.3
 
 ===== @RabbitListener Annotation
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,13 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
-import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 
 /**
  * A {@link org.springframework.amqp.core.MessageListener MessageListener}
- * adapter that invokes a configurable {@link InvocableHandlerMethod}.
+ * adapter that invokes a configurable {@link HandlerAdapter}.
  *
  * <p>Wraps the incoming {@link org.springframework.amqp.core.Message
  * AMQP Message} to Spring's {@link Message} abstraction, copying the
@@ -49,17 +48,17 @@ import com.rabbitmq.client.Channel;
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
 
-	private InvocableHandlerMethod handlerMethod;
+	private HandlerAdapter handlerMethod;
 
 	private final MessagingMessageConverterAdapter messagingMessageConverter = new MessagingMessageConverterAdapter();
 
 
 	/**
-	 * Set the {@link InvocableHandlerMethod} to use to invoke the method
+	 * Set the {@link HandlerAdapter} to use to invoke the method
 	 * processing an incoming {@link org.springframework.amqp.core.Message}.
-	 * @param handlerMethod {@link InvocableHandlerMethod} instance.
+	 * @param handlerMethod {@link HandlerAdapter} instance.
 	 */
-	public void setHandlerMethod(InvocableHandlerMethod handlerMethod) {
+	public void setHandlerMethod(HandlerAdapter handlerMethod) {
 		this.handlerMethod = handlerMethod;
 	}
 
@@ -114,23 +113,23 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		catch (org.springframework.messaging.converter.MessageConversionException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
-					"be invoked with the incoming message"),
+					"be invoked with the incoming message", message.getPayload()),
 					new MessageConversionException("Cannot handle message", ex));
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
-					"be invoked with the incoming message"), ex);
+					"be invoked with the incoming message", message.getPayload()), ex);
 		}
 		catch (Exception ex) {
 			throw new ListenerExecutionFailedException("Listener method '" +
-					this.handlerMethod.getMethod().toGenericString() + "' threw exception", ex);
+					this.handlerMethod.getMethodAsString(message.getPayload()) + "' threw exception", ex);
 		}
 	}
 
-	private String createMessagingErrorMessage(String description) {
+	private String createMessagingErrorMessage(String description, Object payload) {
 		return description + "\n"
 				+ "Endpoint handler details:\n"
-				+ "Method [" + this.handlerMethod.getMethod() + "]\n"
+				+ "Method [" + this.handlerMethod.getMethodAsString(payload) + "]\n"
 				+ "Bean [" + this.handlerMethod.getBean() + "]";
 	}
 

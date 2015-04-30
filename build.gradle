@@ -212,7 +212,7 @@ project('spring-rabbit') {
 		testCompile project(":spring-erlang")
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
