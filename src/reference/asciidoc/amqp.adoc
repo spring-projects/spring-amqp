@@ -1283,7 +1283,7 @@ This is best described using an example:
 
 [source, java]
 ----
-@RabbitListener(queues = "someQueue"
+@RabbitListener(queues = "someQueue")
 public class MultiListenerBean {
 
 	@RabbitHandler

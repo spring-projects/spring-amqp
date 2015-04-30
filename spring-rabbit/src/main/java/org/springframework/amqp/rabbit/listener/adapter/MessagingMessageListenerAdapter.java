@@ -24,14 +24,13 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
-import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 
 /**
  * A {@link org.springframework.amqp.core.MessageListener MessageListener}
- * adapter that invokes a configurable {@link InvocableHandlerMethod}.
+ * adapter that invokes a configurable {@link HandlerAdapter}.
  *
  * <p>Wraps the incoming {@link org.springframework.amqp.core.Message
  * AMQP Message} to Spring's {@link Message} abstraction, copying the
@@ -55,9 +54,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 
 	/**
-	 * Set the {@link InvocableHandlerMethod} to use to invoke the method
+	 * Set the {@link HandlerAdapter} to use to invoke the method
 	 * processing an incoming {@link org.springframework.amqp.core.Message}.
-	 * @param handlerMethod {@link InvocableHandlerMethod} instance.
+	 * @param handlerMethod {@link HandlerAdapter} instance.
 	 */
 	public void setHandlerMethod(HandlerAdapter handlerMethod) {
 		this.handlerMethod = handlerMethod;
