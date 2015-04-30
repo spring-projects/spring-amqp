@@ -2066,6 +2066,66 @@ public Binding binding() {
 }
 ----
 
+[[management-template]]
+==== RabbitMQ REST API
+
+When the management plugin is enabled, the RabbitMQ server exposes a REST API to monitor and configure the broker.
+A https://github.com/rabbitmq/hop[Java Binding for the API] is now provided.
+In general, you can use that API directly, but a convenience wrapper is provided to use the familiar Spring AMQP `Queue`, `Exchange`, and `Binding` domain objects with the API.
+More information is available for these objects when using the `com.rabbitmq.http.client.Client` API directly (`QueueInfo`, `ExchangeInfo`, and `BindingInfo` respectively).
+The following operations are available on the `RabbitManagementTemplate`:
+
+[source, java]
+----
+public interface AmqpManagementOperations {
+
+	void addExchange(Exchange exchange);
+
+	void addExchange(String vhost, Exchange exchange);
+
+	void purgeQueue(Queue queue);
+
+	void purgeQueue(String vhost, Queue queue);
+
+	void deleteQueue(Queue queue);
+
+	void deleteQueue(String vhost, Queue queue);
+
+	Queue getQueue(String name);
+
+	Queue getQueue(String vhost, String name);
+
+	List<Queue> getQueues();
+
+	List<Queue> getQueues(String vhost);
+
+	void addQueue(Queue queue);
+
+	void addQueue(String vhost, Queue queue);
+
+	void deleteExchange(Exchange exchange);
+
+	void deleteExchange(String vhost, Exchange exchange);
+
+	Exchange getExchange(String name);
+
+	Exchange getExchange(String vhost, String name);
+
+	List<Exchange> getExchanges();
+
+	List<Exchange> getExchanges(String vhost);
+
+	List<Binding> getBindings();
+
+	List<Binding> getBindings(String vhost);
+
+	List<Binding> getBindingsForExchange(String vhost, String exchange);
+
+}
+----
+
+Refer to the javadocs for more information.
+
 [[exception-handling]]
 ==== Exception Handling
 
