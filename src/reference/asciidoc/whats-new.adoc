@@ -45,6 +45,12 @@ The `reply-address` attribute has been added to the `<rabbit-template>` componen
 See <<request-reply>> for more information.
 (Also available in _1.4.4_ as setter on the `RabbitTemplate`).
 
+===== The RabbitManagementTemplate
+
+The `RabbitManagementTemplate` has been introduced to monitor and configure RabbitMQ Broker using REST API from its
+https://www.rabbitmq.com/management.html[Management Plugin].
+See <<management-template>> for more information.
+
 
 ===== Listener Container Bean Names (XML)
 
