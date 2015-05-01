@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -28,9 +28,10 @@ import org.springframework.util.Assert;
  *
  * @author Artem Bilan
  * @author Josh Chappelle
+ * @author Gary Russell
  * @since 1.3
  */
-public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory {
+public abstract class AbstractRoutingConnectionFactory implements ConnectionFactory, RoutingConnectionFactory {
 
 	private final Map<Object, ConnectionFactory> targetConnectionFactories =
 			new ConcurrentHashMap<Object, ConnectionFactory>();
@@ -177,11 +178,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 		return this.determineTargetConnectionFactory().getVirtualHost();
 	}
 
-	/**
-	 * Returns the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
-	 * @param key The lookup key of which the {@link ConnectionFactory} is bound
-	 * @return the {@link ConnectionFactory} bound to given lookup key, null if one does not exist
-	 */
+	@Override
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		return targetConnectionFactories.get(key);
 	}
