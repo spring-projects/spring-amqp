@@ -31,13 +31,13 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -390,8 +390,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@Override
 	public ConnectionFactory getConnectionFactory() {
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
-		if (connectionFactory instanceof AbstractRoutingConnectionFactory) {
-			ConnectionFactory targetConnectionFactory = ((AbstractRoutingConnectionFactory) connectionFactory)
+		if (connectionFactory instanceof RoutingConnectionFactory) {
+			ConnectionFactory targetConnectionFactory = ((RoutingConnectionFactory) connectionFactory)
 					.getTargetConnectionFactory(this.queueNames.toString().replaceAll(" ", ""));
 			if (targetConnectionFactory != null) {
 				return targetConnectionFactory;
