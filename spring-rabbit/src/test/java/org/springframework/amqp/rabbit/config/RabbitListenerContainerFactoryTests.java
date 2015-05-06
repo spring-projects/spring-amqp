@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package org.springframework.amqp.rabbit.config;
 
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.mock;
 
 import java.util.concurrent.Executor;
 
@@ -35,12 +39,12 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.ErrorHandler;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * @author Stephane Nicoll
+ * @author Artem Bilan
  */
 public class RabbitListenerContainerFactoryTests {
 
@@ -91,7 +95,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setReceiveTimeout(1500L);
 		this.factory.setDefaultRequeueRejected(false);
 		this.factory.setAdviceChain(advice);
-		this.factory.setRecoveryInterval(3000L);
+		BackOff recoveryBackOff = new ExponentialBackOff();
+		this.factory.setRecoveryBackOff(recoveryBackOff);
 		this.factory.setMissingQueuesFatal(true);
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
@@ -117,7 +122,7 @@ public class RabbitListenerContainerFactoryTests {
 		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
 		assertEquals("Wrong number of advice", 1, actualAdviceChain.length);
 		assertSame("Wrong advice", advice, actualAdviceChain[0]);
-		assertEquals(3000L, fieldAccessor.getPropertyValue("recoveryInterval"));
+		assertSame(recoveryBackOff, fieldAccessor.getPropertyValue("recoveryBackOff"));
 		assertEquals(true, fieldAccessor.getPropertyValue("missingQueuesFatal"));
 		assertEquals(messageListener, container.getMessageListener());
 		assertEquals("myQueue", container.getQueueNames()[0]);

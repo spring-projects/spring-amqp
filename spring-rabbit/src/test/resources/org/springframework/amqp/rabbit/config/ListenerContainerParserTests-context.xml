@@ -46,10 +46,21 @@
 	</rabbit:listener-container>
 
 <!-- Invalid -->
-<!-- 	<rabbit:listener-container id="containerWithNamedListenersSame" connection-factory="connectionFactory"> -->
-<!-- 		<rabbit:listener id="testListener3" queues="foo" ref="testBean" method="handle"/> -->
-<!-- 		<rabbit:listener id="testListener3" queues="bar" ref="testBean" method="handle"/> -->
-<!-- 	</rabbit:listener-container> -->
+
+	<!--<rabbit:listener-container id="containerWithNamedListenersSame" connection-factory="connectionFactory">
+ 		<rabbit:listener id="testListener3" queues="foo" ref="testBean" method="handle"/>
+ 		<rabbit:listener id="testListener3" queues="bar" ref="testBean" method="handle"/>
+ 	</rabbit:listener-container>-->
+
+	<!--<bean id="backOff" class="org.springframework.util.backoff.FixedBackOff"/>
+
+	<rabbit:listener-container connection-factory="connectionFactory"
+							   recovery-interval="100"
+							   recovery-back-off="backOff">
+		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
+	</rabbit:listener-container>-->
+<!-- Invalid -->
+
 
 	<rabbit:listener-container id="containerWithAnonListener" connection-factory="connectionFactory">
 		<rabbit:listener queues="foo" ref="testBean" method="handle"/>

@@ -81,6 +81,8 @@ public class RabbitNamespaceUtils {
 
 	private static final String RECOVERY_INTERVAL = "recovery-interval";
 
+	private static final String RECOVERY_BACK_OFF = "recovery-back-off";
+
 	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
 
 	private static final String AUTO_DECLARE = "auto-declare";
@@ -207,8 +209,17 @@ public class RabbitNamespaceUtils {
 		}
 
 		String recoveryInterval = containerEle.getAttribute(RECOVERY_INTERVAL);
+		String recoveryBackOff = containerEle.getAttribute(RECOVERY_BACK_OFF);
 		if (StringUtils.hasText(recoveryInterval)) {
+			if (StringUtils.hasText(recoveryBackOff)) {
+				parserContext.getReaderContext()
+						.error("'" + RECOVERY_INTERVAL + "' and '" + RECOVERY_BACK_OFF + "' are mutually exclusive",
+						containerEle);
+			}
 			containerDef.getPropertyValues().add("recoveryInterval", new TypedStringValue(recoveryInterval));
+		}
+		if (StringUtils.hasText(recoveryBackOff)) {
+			containerDef.getPropertyValues().add("recoveryBackOff", new RuntimeBeanReference(recoveryBackOff));
 		}
 
 		String missingQueuesFatal = containerEle.getAttribute(MISSING_QUEUES_FATAL);

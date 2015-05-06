@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,8 +13,10 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -69,6 +71,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
@@ -562,6 +565,24 @@ public class SimpleMessageListenerContainerTests {
 		consumer.get().handleCancel("foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		container.stop();
+	}
+
+	@Test
+	public void testContainerNotRecoveredAfterExhaustingRecoveryBackOff() throws Exception {
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(mock(ConnectionFactory.class));
+		container.setQueueNames("foo");
+		container.setRecoveryBackOff(new FixedBackOff(100, 3));
+		container.setConcurrentConsumers(10);
+		container.afterPropertiesSet();
+		container.start();
+
+		// Since backOff exhausting makes listenerContainer as invalid (calls stop()),
+		// it is enough to check the listenerContainer activity
+		int n = 0;
+		while (container.isActive() && n++ < 10) {
+			Thread.sleep(100);
+		}
+		assertThat(n, lessThanOrEqualTo(10));
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

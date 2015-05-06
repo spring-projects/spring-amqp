@@ -69,6 +69,9 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.BackOffExecution;
+import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -96,11 +99,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public static final int DEFAULT_PREFETCH_COUNT = 1;
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
-
-	/**
-	 * The default recovery interval: 5000 ms = 5 seconds.
-	 */
-	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
@@ -130,7 +128,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
-	private long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
+	private BackOff recoveryBackOff = new FixedBackOff();
 
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
@@ -214,8 +212,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param recoveryInterval The recovery interval.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
-		this.recoveryInterval = recoveryInterval;
+		this.recoveryBackOff = new FixedBackOff(recoveryInterval, FixedBackOff.UNLIMITED_ATTEMPTS);
 	}
+
+	/**
+	 * Specify the {@link BackOff} for interval between recovery attempts.
+	 * The default is 5000 ms, that is, 5 seconds.
+	 * @param recoveryBackOff The BackOff to recover.
+	 * @since 1.5
+	 */
+	public void setRecoveryBackOff(BackOff recoveryBackOff) {
+		Assert.notNull(recoveryBackOff, "'recoveryBackOff' must not be null.");
+		this.recoveryBackOff = recoveryBackOff;
+	}
+
 
 	/**
 	 * Specify the number of concurrent consumers to create. Default is 1.
@@ -914,6 +924,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.consumerTagStrategy != null) {
 			consumer.setTagStrategy(this.consumerTagStrategy);
 		}
+		consumer.setBackOffExecution(this.recoveryBackOff.start());
 		return consumer;
 	}
 
@@ -928,7 +939,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// we haven't counted down yet)
 					this.cancellationLock.release(consumer);
 					this.consumers.remove(consumer);
-					consumer = createBlockingQueueConsumer();
+					BlockingQueueConsumer newConsumer = createBlockingQueueConsumer();
+					newConsumer.setBackOffExecution(consumer.getBackOffExecution());
+					consumer = newConsumer;
 					this.consumers.put(consumer, true);
 				}
 				catch (RuntimeException e) {
@@ -1093,7 +1106,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					else {
 						this.start.countDown();
-						handleStartupFailure(e);
+						handleStartupFailure(this.consumer.getBackOffExecution());
 						throw e;
 					}
 				}
@@ -1102,7 +1115,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				catch (Throwable t) {//NOSONAR
 					this.start.countDown();
-					handleStartupFailure(t);
+					handleStartupFailure(this.consumer.getBackOffExecution());
 					throw t;
 				}
 
@@ -1266,13 +1279,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval} to give the container a
 	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 * @param t the exception that stopped the startup
+	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
 	 * @throws Exception if the shared connection still can't be established
 	 */
-	protected void handleStartupFailure(Throwable t) throws Exception {
+	protected void handleStartupFailure(BackOffExecution backOffExecution) throws Exception {
+		long recoveryInterval = backOffExecution.nextBackOff();
+		if (BackOffExecution.STOP == recoveryInterval) {
+			stop();
+			return;
+		}
 		try {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Recovering consumer in " + this.recoveryInterval + " ms.");
+				logger.debug("Recovering consumer in " + recoveryInterval + " ms.");
 			}
 			long timeout = System.currentTimeMillis() + recoveryInterval;
 			while (isActive() && System.currentTimeMillis() < timeout) {
