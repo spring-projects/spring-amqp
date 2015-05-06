@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,14 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
+ * @author Artem Bilan
  * @since 1.4
  * @see org.springframework.amqp.rabbit.annotation.RabbitListenerConfigurer
  */
 public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, InitializingBean {
+
+	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
+			new ArrayList<AmqpListenerEndpointDescriptor>();
 
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
@@ -47,9 +51,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 
 	private BeanFactory beanFactory;
 
-	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
-			new ArrayList<AmqpListenerEndpointDescriptor>();
-
+	private boolean startImmediately;
 
 	/**
 	 * Set the {@link RabbitListenerEndpointRegistry} instance to use.
@@ -127,8 +129,12 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	}
 
 	protected void registerAllEndpoints() {
-		for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
-			this.endpointRegistry.registerListenerContainer(descriptor.endpoint, resolveContainerFactory(descriptor));
+		synchronized (this.endpointDescriptors) {
+			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
+				this.endpointRegistry.registerListenerContainer(
+						descriptor.endpoint, resolveContainerFactory(descriptor));
+			}
+			this.startImmediately = true;  // trigger immediate startup
 		}
 	}
 
@@ -164,7 +170,16 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		Assert.notNull(endpoint, "Endpoint must be set");
 		Assert.hasText(endpoint.getId(), "Endpoint id must be set");
 		// Factory may be null, we defer the resolution right before actually creating the container
-		this.endpointDescriptors.add(new AmqpListenerEndpointDescriptor(endpoint, factory));
+		AmqpListenerEndpointDescriptor descriptor = new AmqpListenerEndpointDescriptor(endpoint, factory);
+		synchronized (this.endpointDescriptors) {
+			if (this.startImmediately) { // Register and start immediately
+				this.endpointRegistry.registerListenerContainer(descriptor.endpoint,
+						resolveContainerFactory(descriptor), true);
+			}
+			else {
+				this.endpointDescriptors.add(descriptor);
+			}
+		}
 	}
 
 	/**
