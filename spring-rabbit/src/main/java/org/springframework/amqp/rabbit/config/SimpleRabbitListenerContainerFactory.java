@@ -24,6 +24,8 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.FixedBackOff;
 
 /**
  * A {@link RabbitListenerContainerFactory} implementation to build a regular
@@ -34,6 +36,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.4
  */
 public class SimpleRabbitListenerContainerFactory
@@ -65,7 +68,7 @@ public class SimpleRabbitListenerContainerFactory
 
 	private Advice[] adviceChain;
 
-	private Long recoveryInterval;
+	private BackOff recoveryBackOff;
 
 	private Boolean missingQueuesFatal;
 
@@ -180,7 +183,16 @@ public class SimpleRabbitListenerContainerFactory
 	 * @see SimpleMessageListenerContainer#setRecoveryInterval
 	 */
 	public void setRecoveryInterval(Long recoveryInterval) {
-		this.recoveryInterval = recoveryInterval;
+		this.recoveryBackOff = new FixedBackOff(recoveryInterval, FixedBackOff.UNLIMITED_ATTEMPTS);
+	}
+
+	/**
+	 * @param recoveryBackOff The BackOff to recover.
+	 * @since 1.5
+	 * @see SimpleMessageListenerContainer#setRecoveryBackOff(BackOff)
+	 */
+	public void setRecoveryBackOff(BackOff recoveryBackOff) {
+		this.recoveryBackOff = recoveryBackOff;
 	}
 
 	/**
@@ -247,8 +259,8 @@ public class SimpleRabbitListenerContainerFactory
 		if (this.adviceChain != null) {
 			instance.setAdviceChain(this.adviceChain);
 		}
-		if (this.recoveryInterval != null) {
-			instance.setRecoveryInterval(this.recoveryInterval);
+		if (this.recoveryBackOff != null) {
+			instance.setRecoveryBackOff(this.recoveryBackOff);
 		}
 		if (this.missingQueuesFatal != null) {
 			instance.setMissingQueuesFatal(this.missingQueuesFatal);

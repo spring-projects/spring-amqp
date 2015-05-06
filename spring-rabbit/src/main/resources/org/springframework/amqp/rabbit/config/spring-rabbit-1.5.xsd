@@ -697,7 +697,23 @@
 				<xsd:documentation><![CDATA[
 	The time in milliseconds between attempts to start a consumer if it fails to start with a non-fatal error. Default 5000.
 	See also 'missing-queues-fatal'. Fatal errors include authentication problems.
+	Mutually exclusive with 'recovery-back-off'.
 				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="recovery-back-off" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The BackOff bean reference for recovery interval between attempts to start a consumer
+	if it fails to start with a non-fatal error. Default FixedBackOff with unlimited retries every 5 seconds.
+	See also 'missing-queues-fatal'. Fatal errors include authentication problems.
+	Mutually exclusive with 'recovery-interval'.
+				]]></xsd:documentation>
+				<xsd:appinfo>
+					<tool:annotation kind="ref">
+						<tool:expected-type type="org.springframework.util.backoff.BackOff" />
+					</tool:annotation>
+				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
 		<xsd:attribute name="missing-queues-fatal" type="xsd:string">

@@ -49,6 +49,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -124,6 +125,8 @@ public class BlockingQueueConsumer {
 	private long lastRetryDeclaration;
 
 	private ConsumerTagStrategy tagStrategy;
+
+	private BackOffExecution backOffExecution;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -278,6 +281,19 @@ public class BlockingQueueConsumer {
 	 */
 	public void setTagStrategy(ConsumerTagStrategy tagStrategy) {
 		this.tagStrategy = tagStrategy;
+	}
+
+	/**
+	 * Set the {@link BackOffExecution} to use for the recovery in the {@code SimpleMessageListenerContainer}.
+	 * @param backOffExecution the backOffExecution.
+	 * @since 1.5
+	 */
+	public void setBackOffExecution(BackOffExecution backOffExecution) {
+		this.backOffExecution = backOffExecution;
+	}
+
+	public BackOffExecution getBackOffExecution() {
+		return backOffExecution;
 	}
 
 	protected void basicCancel() {

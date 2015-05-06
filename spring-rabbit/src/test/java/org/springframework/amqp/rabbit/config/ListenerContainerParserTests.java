@@ -51,6 +51,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 /**
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class ListenerContainerParserTests {
 
@@ -90,7 +91,7 @@ public class ListenerContainerParserTests {
 		Object xPriority = consumerArgs.get("x-priority");
 		assertNotNull(xPriority);
 		assertEquals(10, xPriority);
-		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryInterval", Long.class));
+		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryBackOff.interval", Long.class));
 		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
 		assertFalse(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
 		assertTrue(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
