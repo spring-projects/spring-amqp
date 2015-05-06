@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.annotation;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import org.hamcrest.core.Is;
@@ -25,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -37,6 +40,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
@@ -45,8 +49,8 @@ import org.springframework.messaging.handler.annotation.support.MethodArgumentNo
 import org.springframework.stereotype.Component;
 
 /**
- *
  * @author Stephane Nicoll
+ * @author Artem Bilan
  */
 public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
@@ -134,6 +138,23 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		new AnnotationConfigApplicationContext(
 				EnableRabbitSampleConfig.class, InvalidPriorityBean.class).close();
 	}
+
+	@Test
+	public void lazyComponent() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				EnableRabbitDefaultContainerFactoryConfig.class, LazyBean.class);
+		RabbitListenerContainerTestFactory defaultFactory =
+				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
+		assertEquals(0, defaultFactory.getListenerContainers().size());
+
+		context.getBean(LazyBean.class); // trigger lazy resolution
+		assertEquals(1, defaultFactory.getListenerContainers().size());
+		MessageListenerTestContainer container = defaultFactory.getListenerContainers().get(0);
+		assertTrue("Should have been started " + container, container.isStarted());
+		context.close(); // Close and stop the listeners
+		assertTrue("Should have been stopped " + container, container.isStopped());
+	}
+
 
 	@EnableRabbit
 	@Configuration
@@ -276,6 +297,17 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		@RabbitListener(queues = "myQueue", priority = "NotANumber")
 		public void customHandle(String msg) {
 		}
+
+	}
+
+	@Component
+	@Lazy
+	static class LazyBean {
+
+		@RabbitListener(queues = "myQueue")
+		public void handle(String msg) {
+		}
+
 	}
 
 }
