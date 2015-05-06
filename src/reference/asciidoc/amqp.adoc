@@ -1288,17 +1288,17 @@ public class MultiListenerBean {
 
 	@RabbitHandler
 	public String bar(Bar bar) {
-		return "BAR: " + bar.field;
+		...
 	}
 
 	@RabbitHandler
 	public String baz(Baz baz) {
-		return "BAZ: " + baz.field;
+		...
 	}
 
 	@RabbitHandler
 	public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
-		return "QUX: " + qux.field + ": " + rk;
+		...
 	}
 
 }
