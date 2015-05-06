@@ -3,6 +3,12 @@
 
 ==== Changes in 1.5 Since 1.4
 
+===== spring-erlang is No Longer Supported
+
+The `spring-erlang` jar is no longer included in the distribution.
+Use <<management-template>> instead.
+
+
 ===== Empty Addresses Property in CachingConnectionFactory
 
 Previously, if the connection factory was configured with a host/port, but also an empty String was supplied for `addresses`, the host and port were ignored.
@@ -67,6 +73,8 @@ Previously, bean names were composed from the ids of the `<listener-container/>`
 
 The `@RabbitListener` annotation can now be applied at the class level.
 Together with the new `@RabbitHandler` method annotation, this allows the handler method to be selected based on payload type. See <<annotation-method-selection>> for more information.==== Changes in 1.4 Since 1.3
+
+==== Changes in 1.4 Since 1.3
 
 ===== @RabbitListener Annotation
 
