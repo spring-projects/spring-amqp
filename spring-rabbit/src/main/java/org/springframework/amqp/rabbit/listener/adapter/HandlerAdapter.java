@@ -15,7 +15,6 @@
  */
 package org.springframework.amqp.rabbit.listener.adapter;
 
-import org.springframework.amqp.rabbit.listener.DelegatingInvocableHandler;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
