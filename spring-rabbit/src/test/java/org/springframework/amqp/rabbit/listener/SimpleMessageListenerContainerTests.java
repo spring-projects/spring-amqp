@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -569,10 +570,20 @@ public class SimpleMessageListenerContainerTests {
 
 	@Test
 	public void testContainerNotRecoveredAfterExhaustingRecoveryBackOff() throws Exception {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(mock(ConnectionFactory.class));
+		SimpleMessageListenerContainer container =
+				spy(new SimpleMessageListenerContainer(mock(ConnectionFactory.class)));
 		container.setQueueNames("foo");
 		container.setRecoveryBackOff(new FixedBackOff(100, 3));
-		container.setConcurrentConsumers(10);
+		container.setConcurrentConsumers(3);
+		doAnswer(new Answer<BlockingQueueConsumer>() {
+
+			@Override
+			public BlockingQueueConsumer answer(InvocationOnMock invocation) throws Throwable {
+				BlockingQueueConsumer consumer = spy((BlockingQueueConsumer) invocation.callRealMethod());
+				doThrow(RuntimeException.class).when(consumer).start();
+				return consumer;
+			}
+		}).when(container).createBlockingQueueConsumer();
 		container.afterPropertiesSet();
 		container.start();
 

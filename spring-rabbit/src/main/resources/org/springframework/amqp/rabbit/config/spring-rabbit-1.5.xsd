@@ -705,7 +705,7 @@
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
 	The BackOff bean reference for recovery interval between attempts to start a consumer
-	if it fails to start with a non-fatal error. Default 5000.
+	if it fails to start with a non-fatal error. Default FixedBackOff with unlimited retries every 5 seconds.
 	See also 'missing-queues-fatal'. Fatal errors include authentication problems.
 	Mutually exclusive with 'recovery-interval'.
 				]]></xsd:documentation>

@@ -100,6 +100,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
+	/**
+	 * The default recovery interval: 5000 ms = 5 seconds.
+	 */
+	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
+
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
@@ -128,7 +133,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
-	private BackOff recoveryBackOff = new FixedBackOff();
+	private BackOff recoveryBackOff = new FixedBackOff(DEFAULT_RECOVERY_INTERVAL, FixedBackOff.UNLIMITED_ATTEMPTS);
 
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
@@ -207,8 +212,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Specify the interval between recovery attempts, in <b>milliseconds</b>. The default is 5000 ms, that is, 5
-	 * seconds.
+	 * Specify the interval between recovery attempts, in <b>milliseconds</b>.
+	 * The default is 5000 ms, that is, 5 seconds.
 	 * @param recoveryInterval The recovery interval.
 	 */
 	public void setRecoveryInterval(long recoveryInterval) {
@@ -218,6 +223,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Specify the {@link BackOff} for interval between recovery attempts.
 	 * The default is 5000 ms, that is, 5 seconds.
+	 * With the {@link BackOff} you can supply the {@code maxAttempts} for recovery before
+	 * the {@link #stop()} will be performed.
 	 * @param recoveryBackOff The BackOff to recover.
 	 * @since 1.5
 	 */
@@ -1219,7 +1226,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (Throwable t) {//NOSONAR
 				// by now, it must be an exception
-				this.logConsumerException(t);
+				if (isActive()) {
+					this.logConsumerException(t);
+				}
 			}
 			finally {
 				if (SimpleMessageListenerContainer.this.transactionManager != null) {
@@ -1277,7 +1286,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval} to give the container a
+	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval}
+	 * or {@link #setRecoveryBackOff(BackOff)} to give the container a
 	 * chance to recover from consumer startup failure, e.g. if the broker is down.
 	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
 	 * @throws Exception if the shared connection still can't be established
@@ -1285,11 +1295,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected void handleStartupFailure(BackOffExecution backOffExecution) throws Exception {
 		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {
-			stop();
+			synchronized (this) {
+				if (isActive()) {
+					logger.warn("stopping container - restart recovery attempts exhausted");
+					stop();
+				}
+			}
 			return;
 		}
 		try {
-			if (logger.isDebugEnabled()) {
+			if (logger.isDebugEnabled() && isActive()) {
 				logger.debug("Recovering consumer in " + recoveryInterval + " ms.");
 			}
 			long timeout = System.currentTimeMillis() + recoveryInterval;

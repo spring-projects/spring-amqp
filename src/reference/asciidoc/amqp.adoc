@@ -2453,13 +2453,21 @@ Default 'true'.
 
 | Determines the time in milliseconds between attempts to start a consumer if it fails to start for non-fatal reasons.
 Default '5000'.
+Mutually exclusive with `recoveryBackOff`.
 
+| recoveryBackOff
+(recovery-back-off)
+
+| Specifies the `BackOff` for intervals between attempts to start a consumer if it fails to start for non-fatal reasons.
+Default is `FixedBackOff` with unlimited retries every 5 seconds.
+Mutually exclusive with `recoveryInterval`.
 | exclusive
 (exclusive)
 
 | Determines whether the single consumer in this container has exclusive access to the queue(s).
 The concurrency of the container must be 1 when this is true.
-If another consumer has exclusive access, the container will attempt to recover the consumer, according to the `recovery-interval`.
+If another consumer has exclusive access, the container will attempt to recover the consumer, according to the
+`recovery-interval` or `recovery-back-off`.
 When using the namespace, this attribute appears on the <rabbit:listener/> element along with the queue names.
 Default 'false'.
 
