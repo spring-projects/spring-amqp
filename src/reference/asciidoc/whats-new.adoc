@@ -8,18 +8,21 @@
 The `spring-erlang` jar is no longer included in the distribution.
 Use <<management-template>> instead.
 
-
 ===== Empty Addresses Property in CachingConnectionFactory
 
-Previously, if the connection factory was configured with a host/port, but also an empty String was supplied for `addresses`, the host and port were ignored.
-Now, an empty `addresses` String is treated the same a null, and the host/port will be used.
+Previously, if the connection factory was configured with a host/port, but an empty String was also supplied for
+`addresses`, the host and port were ignored.
+Now, an empty `addresses` String is treated the same as a `null`, and the host/port will be used.
 
 ===== Properties to Control Container Queue Declaration Behavior
 
-When the listener container consumers start, they attempt to passively declare the queues to ensure they are available on the broker.
-Previously, if these declarations failed, for example because the queues didn't exist, or when an HA queue was being moved, the retry logic was fixed at 3 retry attempts at 5 second intervals.
+When the listener container consumers start, they attempt to passively declare the queues to ensure they are available
+on the broker.
+Previously, if these declarations failed, for example because the queues didn't exist, or when an HA queue was being
+moved, the retry logic was fixed at 3 retry attempts at 5 second intervals.
 If the queue(s) still do not exist, the behavior is controlled by the `missingQueuesFatal` property (default true).
-Also, for containers configured to listen from multiple queues, if only a subset of queues are available, the consumer retried the missing queues on a fixed interval of 60 seconds.
+Also, for containers configured to listen from multiple queues, if only a subset of queues are available, the consumer
+retried the missing queues on a fixed interval of 60 seconds.
 
 These 3 properties (`declarationRetries, failedDeclarationRetryInterval,
 				retryDeclarationInterval`) are now configurable.
@@ -40,24 +43,22 @@ Previously, this limit was hard-coded at `1024` bytes.
 
 ===== @QueueBinding for @RabbitListener
 
-The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with `queues`
-attribute to allow to specify the `queue`, its `exchange` and `binding` between them for declaration with the
-`RabbitAdmin` on the Broker.
+The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with the `queues`
+attribute to allow the specification of the `queue`, its `exchange` and `binding` for declaration by a `RabbitAdmin` on
+the Broker.
 See <<async-annotation-driven>> for more information.
 
 ===== The reply-address for RabbitTemplate
 
-The `reply-address` attribute has been added to the `<rabbit-template>` component alongside with `reply-queue`.
+The `reply-address` attribute has been added to the `<rabbit-template>` component as an alternative `reply-queue`.
 See <<request-reply>> for more information.
-(Also available in _1.4.4_ as setter on the `RabbitTemplate`).
+(Also available in _1.4.4_ as a setter on the `RabbitTemplate`).
 
 ===== The RabbitManagementTemplate
 
-
-The `RabbitManagementTemplate` has been introduced to monitor and configure RabbitMQ Broker using REST API from its
-https://www.rabbitmq.com/management.html[Management Plugin].
+The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker using the REST API
+provided by its https://www.rabbitmq.com/management.html[Management Plugin].
 See <<management-template>> for more information.
-
 
 ===== Listener Container Bean Names (XML)
 
@@ -68,7 +69,6 @@ Normal Spring bean name overrides are applied; if a later `<listener/>` is parse
 bean, the new definition will override the existing one.
 Previously, bean names were composed from the ids of the `<listener-container/>` and `<listener/>` elements.
 
-
 ===== Class-Level @RabbitListener
 
 The `@RabbitListener` annotation can now be applied at the class level.
@@ -77,7 +77,7 @@ type. See <<annotation-method-selection>> for more information.
 
 ===== SimpleMessageListenerContainer: BackOff support
 
-The `SimpleMessageListenerContainer` can now be supplied with the `BackOff` for `consumer` startup recovery.
+The `SimpleMessageListenerContainer` can now be supplied with a `BackOff` instance for `consumer` startup recovery.
 See <<containerAttributes>> for more information.
 
 ==== Changes in 1.4 Since 1.3
