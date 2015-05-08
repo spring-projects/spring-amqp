@@ -17,18 +17,23 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.ListenerContainerParserTests.TestBean;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -52,7 +57,10 @@ public final class ListenerContainerPlaceholderParserTests {
 	@After
 	public void closeBeanFactory() throws Exception {
 		if (beanFactory!=null) {
+			CachingConnectionFactory cf = this.beanFactory.getBean(CachingConnectionFactory.class);
 			((ConfigurableApplicationContext)beanFactory).close();
+			assertTrue(TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class)
+					.isTerminated());
 		}
 	}
 

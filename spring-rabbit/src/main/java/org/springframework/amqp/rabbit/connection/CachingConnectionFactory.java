@@ -36,7 +36,12 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -72,7 +77,10 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class CachingConnectionFactory extends AbstractConnectionFactory implements InitializingBean, ShutdownListener {
+public class CachingConnectionFactory extends AbstractConnectionFactory
+		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent> {
+
+	private ApplicationContext applicationContext;
 
 	public enum CacheMode {
 		/**
@@ -118,6 +126,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 	private volatile boolean publisherReturns;
 
 	private volatile boolean initialized;
+
+	private volatile boolean stopped;
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -282,6 +292,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 		}
 	}
 
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
+
+	@Override
+	public void onApplicationEvent(ContextClosedEvent event) {
+		if (this.applicationContext == event.getApplicationContext()) {
+			this.stopped = true;
+			this.deferredCloseExecutor.shutdownNow();
+		}
+	}
+
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		if (this.channelCheckoutTimeout > 0) {
 			Semaphore checkoutPermits = this.checkoutPermits.get(connection);
@@ -438,6 +461,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 
 	@Override
 	public final Connection createConnection() throws AmqpException {
+//		Not backported due to at least one user relying on being able to create connections after destroy
+//		Assert.state(!this.stopped,
+//				"The ApplicationContext is closed and the ConnectionFactory can no longer create connections.");
 		synchronized (this.connectionMonitor) {
 			if (this.cacheMode == CacheMode.CHANNEL) {
 				if (this.connection == null) {
@@ -597,7 +623,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory implemen
 					synchronized (this.channelList) {
 						if (!RabbitUtils.isPhysicalCloseRequired() &&
 								(this.channelList.size() < getChannelCacheSize()
-										|| this.channelList.contains((ChannelProxy) proxy))) {
+										|| this.channelList.contains(proxy))) {
 							logicalClose((ChannelProxy) proxy);
 							// Remain open in the channel list.
 							releasePermit();
