@@ -1134,15 +1134,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					ConsumerChannelRegistry.registerConsumerChannel(consumer.getChannel(), getConnectionFactory());
 				}
 
-				// Always better to stop receiving as soon as possible if
-				// transactional
-				boolean continuable = false;
-				while (isActive(this.consumer) || this.consumer.hasDelivery() || continuable) {
+				while (isActive(this.consumer) || this.consumer.hasDelivery()) {
 					try {
-						// Will come back false when the queue is drained
-						continuable = receiveAndExecute(this.consumer) && !isChannelTransacted();
+						boolean receivedOk = receiveAndExecute(this.consumer); // At least one message received
 						if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
-							if (continuable) {
+							if (receivedOk) {
 								if (isActive(this.consumer)) {
 									consecutiveIdles = 0;
 									if (consecutiveMessages++ > SimpleMessageListenerContainer.this.consecutiveActiveTrigger) {

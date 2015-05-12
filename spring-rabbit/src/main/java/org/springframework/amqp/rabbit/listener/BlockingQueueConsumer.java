@@ -803,7 +803,8 @@ public class BlockingQueueConsumer {
 				RabbitUtils.commitIfNecessary(channel);
 			}
 
-		} finally {
+		}
+		finally {
 			deliveryTags.clear();
 		}
 
