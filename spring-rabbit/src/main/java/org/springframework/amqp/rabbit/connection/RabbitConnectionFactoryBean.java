@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private volatile String sslAlgorithm = TLS_V1_1;
 
+	private volatile boolean sslAlgorithmSet;
+
 	/**
 	 * Whether or not the factory should be configured to use SSL.
 	 * @param useSSL true to use SSL.
@@ -94,6 +96,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setSslAlgorithm(String sslAlgorithm) {
 		this.sslAlgorithm = sslAlgorithm;
+		this.sslAlgorithmSet = true;
 	}
 
 	/**
@@ -297,7 +300,12 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null) {
-			this.connectionFactory.useSslProtocol();
+			if (this.sslAlgorithmSet) {
+				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
+			}
+			else {
+				this.connectionFactory.useSslProtocol();
+			}
 		}
 		else {
 			Properties sslProperties = new Properties();
