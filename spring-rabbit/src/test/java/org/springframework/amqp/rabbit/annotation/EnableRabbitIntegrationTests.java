@@ -99,6 +99,11 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	public void autoDeclareFanout() {
+		assertEquals("FOOFOO", rabbitTemplate.convertSendAndReceive("auto.exch.fanout", "", "foo"));
+	}
+
+	@Test
 	public void autoDeclareAnon() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
 	}
@@ -189,6 +194,14 @@ public class EnableRabbitIntegrationTests {
 		)
 		public String handleWithDeclare(String foo) {
 			return foo.toUpperCase();
+		}
+
+		@RabbitListener(bindings = @QueueBinding(
+				value = @Queue(value = "auto.declare.fanout", autoDelete = "true"),
+				exchange = @Exchange(value = "auto.exch.fanout", autoDelete = "true", type="fanout"))
+		)
+		public String handleWithFanout(String foo) {
+			return foo.toUpperCase() + foo.toUpperCase();
 		}
 
 		@RabbitListener(bindings = {

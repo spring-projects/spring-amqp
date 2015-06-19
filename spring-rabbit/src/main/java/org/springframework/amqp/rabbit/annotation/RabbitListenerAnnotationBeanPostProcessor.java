@@ -437,7 +437,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					exchange = new FanoutExchange(exchangeName,
 							resolveExpressionAsBoolean(bindingExchange.durable()),
 							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
-					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, null, null);
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, "", null);
 				}
 				else if (exchangeType.equals(ExchangeTypes.TOPIC)) {
 					exchange = new TopicExchange(exchangeName,
