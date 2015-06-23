@@ -48,6 +48,12 @@ attribute to allow the specification of the `queue`, its `exchange` and `binding
 the Broker.
 See <<async-annotation-driven>> for more information.
 
+===== Automatic Exchange, Queue, Binding Declaration
+
+It is now possible to declare beans that define a collection of these entities and the `RabbitAdmin` will add the
+contents to the list of entities that it will declare when a connection is established.
+See <<collection-declaration>> for more information.
+
 ===== The reply-address for RabbitTemplate
 
 The `reply-address` attribute has been added to the `<rabbit-template>` component as an alternative `reply-queue`.
