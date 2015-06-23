@@ -32,6 +32,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.logging.Log;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -128,6 +130,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private volatile boolean initialized;
 
 	private volatile boolean stopped;
+
+	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
 	/** Synchronization monitor for the shared Connection */
 	private final Object connectionMonitor = new Object();
@@ -253,6 +257,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.channelCheckoutTimeout = channelCheckoutTimeout;
 	}
 
+	/**
+	 * Set the strategy for logging close exceptions; by default, if a channgel is closed due to a failed
+	 * passive queue declaration, it is logged at debug level. Normal channel closes (200 OK) are not
+	 * logged. All others are logged at ERROR level (unless access is refused due to an exclusive consumer
+	 * condition, in which case, it is logged at INFO level).
+	 * @param closeExceptionLogger the {@link ConditionalExceptionLogger}.
+	 * @since 1.5
+	 */
+	public void setCloseExceptionLogger(ConditionalExceptionLogger closeExceptionLogger) {
+		Assert.notNull(closeExceptionLogger, "'closeExceptionLogger' cannot be null");
+		this.closeExceptionLogger = closeExceptionLogger;
+	}
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.initialized = true;
@@ -282,14 +299,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Channel shutdown: " + cause.getMessage());
-			}
-		}
-		else if (!RabbitUtils.isNormalChannelClose(cause)) {
-			logger.error("Channel shutdown: " + cause.getMessage());
-		}
+		this.closeExceptionLogger.log(logger, cause);
 	}
 
 	@Override
@@ -878,6 +888,50 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		public String toString() {
 			return cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated " +
 					"Rabbit Connection: " + this.target;
+		}
+
+	}
+
+	/**
+	 * A strategy interface for conditional exception logging.
+	 * @since 1.5
+	 *
+	 */
+	public interface ConditionalExceptionLogger {
+
+		void log(Log logger, Throwable t);
+
+	}
+
+	/**
+	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel
+	 * close exceptions.
+	 * @since 1.5
+	 *
+	 */
+	private class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
+
+		@Override
+		public void log(Log logger, Throwable t) {
+			if (t instanceof ShutdownSignalException) {
+				ShutdownSignalException cause = (ShutdownSignalException) t;
+				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Channel shutdown: " + cause.getMessage());
+					}
+				}
+				else if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
+					if (logger.isInfoEnabled()) {
+						logger.info("Channel shutdown: " + cause.getMessage());
+					}
+				}
+				else if (!RabbitUtils.isNormalChannelClose(cause)) {
+					logger.error("Channel shutdown: " + cause.getMessage());
+				}
+			}
+			else {
+				logger.error("Unexpected invocation of " + this.getClass(), t);
+			}
 		}
 
 	}

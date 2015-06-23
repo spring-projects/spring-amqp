@@ -424,6 +424,23 @@ These features are explained further in the following sections.
 
 TIP: For some more background information, please see the following blog post by the RabbitMQ team titled http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/[Introducing Publisher Confirms].
 
+[[channel-close-logging]]
+===== Logging Channel Close Events
+
+A mechanism to enable users to control logging levels was introduced in _version 1.5_.
+
+The `CachingConnectionFactory` uses a default strategy to log channel closures as follows:
+
+* Normal channel closes (200 OK) are not logged.
+* If a channel is closed due to a failed passive queue declaration, it is logged at debug level.
+* If a channel is closed because the `basic.consume` is refused due to an exclusive consumer condition, it is logged at
+INFO level.
+* All others are logged at ERROR level.
+
+To modify this behavior, inject a custom `CachingConnectionFacory.ConditionalExceptionLogger` into the
+`CachingConnectionFactory` in its `closeExceptionLogger` property.
+
+
 [[amqp-template]]
 ==== AmqpTemplate
 
