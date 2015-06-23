@@ -781,12 +781,22 @@ The simpler option is to poll for a single `Message` at a time with a polling me
 The more complicated yet more common approach is to register a listener that will receive `Messages` on-demand, asynchronously.
 We will look at an example of each approach in the next two sub-sections.
 
+[[polling-consumer]]
 ===== Polling Consumer
 
 The `AmqpTemplate` itself can be used for polled Message reception.
-If no message is available, `null` is returned immediately; there is no blocking.
+By default, if no message is available, `null` is returned immediately; there is no blocking.
+Starting with _version 1.5_, you can now set a `receiveTimeout`, in milliseconds, and the receive methods will block for
+up to that long, waiting for a message. A value less than zero means block indefinitely (or at least until the
+connection to the broker is lost).
+
+CAUTION: Since the receive operation creates a new `QueueingConsumer` for each message, this technique is not really
+appropriate for high-volume environments; consider using an asynchronous consumer, or a `receiveTimeout` of zero for
+those use cases.
+
 There are two simple 'receive' methods available.
-As with the Exchange on the sending side, there is a method that requires a default queue property having been set directly on the template itself, and there is a method that accepts a queue parameter at runtime.
+As with the Exchange on the sending side, there is a method that requires a default queue property having been set
+directly on the template itself, and there is a method that accepts a queue parameter at runtime.
 
 [source,java]
 ----

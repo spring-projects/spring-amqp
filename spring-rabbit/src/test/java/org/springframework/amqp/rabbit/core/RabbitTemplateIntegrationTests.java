@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -74,6 +75,8 @@ import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -101,6 +104,7 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
@@ -156,6 +160,72 @@ public class RabbitTemplateIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
+
+	@Test
+	public void testReceiveNonBlocking() throws Exception {
+		this.template.convertAndSend(ROUTE, "nonblock");
+		int n = 0;
+		String out = (String) this.template.receiveAndConvert(ROUTE);
+		while (n++ < 100 && out == null) {
+			Thread.sleep(100);
+		}
+		assertNotNull(out);
+		assertEquals("nonblock", out);
+		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test
+	public void testReceiveBlocking() throws Exception {
+		this.template.convertAndSend(ROUTE, "block");
+		this.template.setReceiveTimeout(10000);
+		String out = (String) this.template.receiveAndConvert(ROUTE);
+		assertNotNull(out);
+		assertEquals("block", out);
+		this.template.setReceiveTimeout(0);
+		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test
+	public void testReceiveBlockingNoTimeout() throws Exception {
+		this.template.convertAndSend(ROUTE, "blockNoTO");
+		this.template.setReceiveTimeout(-1);
+		String out = (String) this.template.receiveAndConvert(ROUTE);
+		assertNotNull(out);
+		assertEquals("blockNoTO", out);
+		this.template.setReceiveTimeout(1); // test the no message after timeout path
+		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test
+	public void testReceiveBlockingTx() throws Exception {
+		this.template.convertAndSend(ROUTE, "blockTX");
+		this.template.setChannelTransacted(true);
+		this.template.setReceiveTimeout(10000);
+		String out = (String) this.template.receiveAndConvert(ROUTE);
+		assertNotNull(out);
+		assertEquals("blockTX", out);
+		this.template.setReceiveTimeout(0);
+		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test
+	public void testReceiveBlockingGlobalTx() throws Exception {
+		template.convertAndSend(ROUTE, "blockGTXNoTO");
+		RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(
+				this.template.getConnectionFactory(), true);
+		TransactionSynchronizationManager.setActualTransactionActive(true);
+		ConnectionFactoryUtils.bindResourceToTransaction(resourceHolder, this.template.getConnectionFactory(), true);
+		template.setReceiveTimeout(-1);
+		template.setChannelTransacted(true);
+		String out = (String) template.receiveAndConvert(ROUTE);
+		resourceHolder.commitAll();
+		resourceHolder.closeAll();
+		assertSame(resourceHolder, TransactionSynchronizationManager.unbindResource(template.getConnectionFactory()));
+		assertNotNull(out);
+		assertEquals("blockGTXNoTO", out);
+		this.template.setReceiveTimeout(0);
+		assertNull(this.template.receive(ROUTE));
+	}
 
 	@Test
 	public void testSendToNonExistentAndThenReceive() throws Exception {

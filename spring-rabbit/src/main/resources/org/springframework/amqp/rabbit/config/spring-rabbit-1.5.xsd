@@ -980,10 +980,18 @@
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
+			<xsd:attribute name="receive-timeout" type="xsd:string" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Timeout for receive operations in milliseconds; '-1' to wait indefinitely.
+	Default is 0 (immediate timeout).
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
 			<xsd:attribute name="reply-timeout" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Timeout for send and receive in milliseconds.  Default is 5000 (5 seconds).
+	Timeout for send and receive operations in milliseconds.  Default is 5000 (5 seconds).
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>

@@ -92,6 +92,11 @@ public final class TemplateParserTests {
 		assertEquals("foo", accessor.getPropertyValue("correlationKey"));
 		assertSame(beanFactory.getBean(RetryTemplate.class), accessor.getPropertyValue("retryTemplate"));
 		assertSame(beanFactory.getBean(RecoveryCallback.class), accessor.getPropertyValue("recoveryCallback"));
+		assertEquals(123L, accessor.getPropertyValue("receiveTimeout"));
+		assertEquals(1000L, accessor.getPropertyValue("replyTimeout"));
+		assertEquals("foo", accessor.getPropertyValue("exchange"));
+		assertEquals("bar", accessor.getPropertyValue("queue"));
+		assertEquals("spam", accessor.getPropertyValue("routingKey"));
 	}
 
 	@Test
