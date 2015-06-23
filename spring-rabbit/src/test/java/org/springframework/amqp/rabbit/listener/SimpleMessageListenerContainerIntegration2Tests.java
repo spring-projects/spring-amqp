@@ -10,8 +10,10 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -218,6 +220,9 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void testExclusive() throws Exception {
+		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
+		when(logger.isInfoEnabled()).thenReturn(true);
+		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container1 = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container1.setMessageListener(new MessageListenerAdapter(new PojoListener(latch1)));
@@ -255,6 +260,9 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container2.stop();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).info(captor.capture());
+		assertThat(captor.getAllValues(), contains(containsString("exclusive")));
 	}
 
 	@Test

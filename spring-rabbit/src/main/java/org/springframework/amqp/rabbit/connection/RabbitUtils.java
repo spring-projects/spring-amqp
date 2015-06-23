@@ -199,6 +199,15 @@ public abstract class RabbitUtils {
 					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 10); // declare
 	}
 
+	public static boolean isExclusiveUseChannelClose(ShutdownSignalException sig) {
+		Object shutdownReason = determineShutdownReason(sig);
+		return shutdownReason instanceof AMQP.Channel.Close
+				&& AMQP.ACCESS_REFUSED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
+				&& ((AMQP.Channel.Close) shutdownReason).getClassId() == 60 // basic
+				&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 20 // consume
+				&& ((AMQP.Channel.Close) shutdownReason).getReplyText().contains("exclusive");
+	}
+
 	public static Object determineShutdownReason(ShutdownSignalException sig) {
 		if (shutDownSignalReasonMethod == null) {
 			return false;
