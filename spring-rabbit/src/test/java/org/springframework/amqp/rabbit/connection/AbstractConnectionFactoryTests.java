@@ -12,7 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +33,7 @@ public abstract class AbstractConnectionFactoryTests {
 	protected abstract AbstractConnectionFactory createConnectionFactory(ConnectionFactory mockConnectionFactory);
 
 	@Test
-	public void testWithListener() throws IOException {
+	public void testWithListener() throws Exception {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
@@ -79,7 +78,7 @@ public abstract class AbstractConnectionFactoryTests {
 	}
 
 	@Test
-	public void testWithListenerRegisteredAfterOpen() throws IOException {
+	public void testWithListenerRegisteredAfterOpen() throws Exception {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);

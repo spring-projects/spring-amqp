@@ -44,6 +44,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -75,7 +76,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testWithConnectionFactoryDefaults() throws IOException {
+	public void testWithConnectionFactoryDefaults() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
@@ -107,7 +108,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 	}
 	@Test
-	public void testWithConnectionFactoryCacheSize() throws IOException {
+	public void testWithConnectionFactoryCacheSize() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -165,7 +166,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCacheSizeExceeded() throws IOException {
+	public void testCacheSizeExceeded() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -221,7 +222,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCheckoutLimit() throws IOException {
+	public void testCheckoutLimit() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -305,6 +306,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				}
 				catch (IOException e) {
 				}
+				catch (TimeoutException e) {
+				}
 			}
 
 		}).start();
@@ -322,7 +325,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testCacheSizeExceededAfterClose() throws IOException {
+	public void testCacheSizeExceededAfterClose() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -369,7 +372,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testTransactionalAndNonTransactionalChannelsSegregated() throws IOException {
+	public void testTransactionalAndNonTransactionalChannelsSegregated() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -426,7 +429,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testWithConnectionFactoryDestroy() throws IOException {
+	public void testWithConnectionFactoryDestroy() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
@@ -496,7 +499,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testWithChannelListener() throws IOException {
+	public void testWithChannelListener() throws Exception {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
@@ -537,7 +540,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testWithConnectionListener() throws IOException {
+	public void testWithConnectionListener() throws Exception {
 
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
@@ -1087,7 +1090,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void setAddressesEmpty() throws IOException {
+	public void setAddressesEmpty() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setHost("abc");
@@ -1099,7 +1102,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void setAddressesOneHost() throws IOException {
+	public void setAddressesOneHost() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1");
@@ -1109,7 +1112,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void setAddressesTwoHosts() throws IOException {
+	public void setAddressesTwoHosts() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1,mq2");
@@ -1120,7 +1123,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
-	public void testChannelCloseIdempotency() throws IOException {
+	public void testChannelCloseIdempotency() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);

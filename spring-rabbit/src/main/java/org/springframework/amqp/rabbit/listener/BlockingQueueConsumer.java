@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -424,6 +425,9 @@ public class BlockingQueueConsumer {
 								channel.close();
 							}
 							catch (IOException e) {
+								//Ignore it
+							}
+							catch (TimeoutException e) {
 								//Ignore it
 							}
 						}
