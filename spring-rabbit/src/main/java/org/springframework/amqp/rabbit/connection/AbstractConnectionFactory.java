@@ -18,6 +18,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -214,6 +215,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			return connection;
 		}
 		catch (IOException e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+		catch (TimeoutException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}

@@ -192,7 +192,7 @@ public class PublisherCallbackChannelImpl
 		return this.delegate.getConnection();
 	}
 
-	public void close(int closeCode, String closeMessage) throws IOException {
+	public void close(int closeCode, String closeMessage) throws IOException, TimeoutException {
 		this.delegate.close(closeCode, closeMessage);
 	}
 
@@ -225,7 +225,9 @@ public class PublisherCallbackChannelImpl
 	/**
 	 * Added to the 3.3.x client
 	 * @since 1.3.3
+	 * @deprecated in the 3.5.3 client
 	 */
+	@Deprecated
 	public boolean flowBlocked() {
 		if (this.flowBlockedMethod != null) {
 			return (Boolean) ReflectionUtils.invokeMethod(this.flowBlockedMethod, this.delegate);
@@ -241,14 +243,17 @@ public class PublisherCallbackChannelImpl
 		this.delegate.abort(closeCode, closeMessage);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void addFlowListener(FlowListener listener) {
 		this.delegate.addFlowListener(listener);
 	}
 
+	@SuppressWarnings("deprecation")
 	public boolean removeFlowListener(FlowListener listener) {
 		return this.delegate.removeFlowListener(listener);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void clearFlowListeners() {
 		this.delegate.clearFlowListeners();
 	}
@@ -618,7 +623,7 @@ public class PublisherCallbackChannelImpl
 // END PURE DELEGATE METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public void close() throws IOException {
+	public void close() throws IOException, TimeoutException {
 		try {
 			this.delegate.close();
 		}

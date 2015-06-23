@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.amqp.AmqpException;
@@ -364,6 +365,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						catch (IOException e) {
 							if (logger.isDebugEnabled()) {
 								logger.debug("Unexpected Exception closing channel " + e.getMessage());
+							}
+						}
+						catch (TimeoutException e) {
+							if (logger.isWarnEnabled()) {
+								logger.warn("TimeoutException closing channel " + e.getMessage());
 							}
 						}
 						channel = null;
@@ -753,6 +759,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								}
 								catch (IOException e) {}
 								catch (AlreadyClosedException e) {}
+								catch (TimeoutException e) {}
 							}
 						}
 

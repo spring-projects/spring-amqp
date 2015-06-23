@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -410,6 +411,9 @@ public class BlockingQueueConsumer {
 							catch (IOException e) {
 								//Ignore it
 							}
+							catch (TimeoutException e) {
+								//Ignore it
+							}
 						}
 					}
 					if (available) {
@@ -529,8 +533,12 @@ public class BlockingQueueConsumer {
 					this.channel.queueDeclarePassive(queueName);
 				}
 				catch (IllegalArgumentException e) {
-					if (this.channel instanceof ChannelProxy) {
-						((ChannelProxy) this.channel).getTargetChannel().close();
+					try {
+						if (this.channel instanceof ChannelProxy) {
+							((ChannelProxy) this.channel).getTargetChannel().close();
+						}
+					}
+					catch (TimeoutException e1) {
 					}
 					throw new FatalListenerStartupException("Illegal Argument on Queue Declaration", e);
 				}

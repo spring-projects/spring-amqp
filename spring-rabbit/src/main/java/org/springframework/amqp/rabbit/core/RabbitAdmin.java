@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -279,8 +280,12 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					return props;
 				}
 				catch (IllegalArgumentException e) {
-					if (channel instanceof ChannelProxy) {
-						((ChannelProxy) channel).getTargetChannel().close();
+					try {
+						if (channel instanceof ChannelProxy) {
+							((ChannelProxy) channel).getTargetChannel().close();
+						}
+					}
+					catch (TimeoutException e1) {
 					}
 					return null;
 				}
@@ -473,10 +478,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						declareOks[i] = declareOk;
 					}
 					catch (IllegalArgumentException e) {
-						if (channel instanceof ChannelProxy) {
-							((ChannelProxy) channel).getTargetChannel().close();
+						try {
+							if (channel instanceof ChannelProxy) {
+								((ChannelProxy) channel).getTargetChannel().close();
+							}
+							throw new IOException(e);
 						}
-						throw new IOException(e);
+						catch (TimeoutException e1) {
+						}
 					}
 				}
 				catch (IOException e) {
