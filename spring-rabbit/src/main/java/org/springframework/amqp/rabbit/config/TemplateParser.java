@@ -42,6 +42,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String ROUTING_KEY_ATTRIBUTE = "routing-key";
 
+	private static final String RECEIVE_TIMEOUT_ATTRIBUTE = "receive-timeout";
+
 	private static final String REPLY_TIMEOUT_ATTRIBUTE = "reply-timeout";
 
 	private static final String MESSAGE_CONVERTER_ATTRIBUTE = "message-converter";
@@ -101,6 +103,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, QUEUE_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, EXCHANGE_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ROUTING_KEY_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, RECEIVE_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_TIMEOUT_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, ENCODING_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, MESSAGE_CONVERTER_ATTRIBUTE);

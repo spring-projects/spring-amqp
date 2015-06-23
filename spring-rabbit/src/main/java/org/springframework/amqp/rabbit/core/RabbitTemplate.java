@@ -26,6 +26,7 @@ import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -79,6 +80,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * <p>
@@ -152,6 +155,8 @@ public class RabbitTemplate extends RabbitAccessor
 
 	// The default queue name that will be used for synchronous receives.
 	private volatile String queue;
+
+	private volatile long receiveTimeout = 0;
 
 	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
@@ -276,6 +281,18 @@ public class RabbitTemplate extends RabbitAccessor
 	public void setReplyAddress(String replyAddress) {
 		this.replyAddress = replyAddress;
 		this.evaluatedFastReplyTo = false;
+	}
+
+	/**
+	 * Specify the receive timeout in milliseconds when using {@code receive()} methods (for {@code sendAndReceive()}
+	 * methods, refer to {@link #setReplyTimeout(long) replyTimeout}. By default, the value is zero, which
+	 * means the {@code receive()} methods will return {@code null} immediately if there is no message
+	 * available. Set to less than zero to wait for a message indefinitely.
+	 * @param receiveTimeout the timeout.
+	 * @since 1.5
+	 */
+	public void setReceiveTimeout(long receiveTimeout) {
+		this.receiveTimeout = receiveTimeout;
 	}
 
 	/**
@@ -668,7 +685,22 @@ public class RabbitTemplate extends RabbitAccessor
 	}
 
 	@Override
-	public Message receive(final String queueName) {
+	public Message receive(String queueName) {
+		if (this.receiveTimeout == 0) {
+			return doReceiveNoWait(queueName);
+		}
+		else {
+			return doReceive(queueName);
+		}
+	}
+
+	/**
+	 * Non-blocking receive with timeout.
+	 * @param queueName the queue to receive from.
+	 * @return The message, or null if none immediately available.
+	 * @since 1.5
+	 */
+	protected Message doReceiveNoWait(final String queueName) {
 		return execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -692,6 +724,71 @@ public class RabbitTemplate extends RabbitAccessor
 				return null;
 			}
 		}, obtainTargetConnectionFactoryIfNecessary(this.receiveConnectionFactorySelectorExpression, queueName));
+	}
+
+	/**
+	 * Blocking receive with timeout.
+	 * @param queueName the queue to receive from.
+	 * @return The message, or null if the time expires.
+	 * @since 1.5
+	 */
+	protected Message doReceive(final String queueName) {
+		return execute(new ChannelCallback<Message>() {
+
+			@Override
+			public Message doInRabbit(Channel channel) throws Exception {
+				channel.basicQos(1);
+				final CountDownLatch latch = new CountDownLatch(1);
+				QueueingConsumer consumer = new QueueingConsumer(channel) {
+
+					@Override
+					public void handleCancel(String consumerTag) throws IOException {
+						super.handleCancel(consumerTag);
+						latch.countDown();
+					}
+
+					@Override
+					public void handleConsumeOk(String consumerTag) {
+						super.handleConsumeOk(consumerTag);
+						latch.countDown();
+					}
+
+				};
+				channel.basicConsume(queueName, consumer);
+				if (!latch.await(10, TimeUnit.SECONDS)) {
+					if (channel instanceof ChannelProxy) {
+						((ChannelProxy) channel).getTargetChannel().close();
+					}
+					throw new AmqpException("Blocking receive, consumer failed to consume");
+				}
+				Delivery delivery;
+				if (receiveTimeout < 0) {
+					delivery = consumer.nextDelivery();
+				}
+				else {
+					delivery = consumer.nextDelivery(receiveTimeout);
+				}
+				channel.basicCancel(consumer.getConsumerTag());
+				if (delivery == null) {
+					return null;
+				}
+				else {
+					if (isChannelLocallyTransacted(channel)) {
+						channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+						channel.txCommit();
+					}
+					else if (isChannelTransacted()) {
+						ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel,
+								delivery.getEnvelope().getDeliveryTag());
+					}
+					else {
+						channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+					}
+					return buildMessageFromDelivery(delivery);
+				}
+			}
+
+		});
 	}
 
 	@Override
@@ -1196,11 +1293,20 @@ public class RabbitTemplate extends RabbitAccessor
 		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
 	}
 
+	private Message buildMessageFromDelivery(Delivery delivery) {
+		return buildMessage(delivery.getEnvelope(), delivery.getProperties(), delivery.getBody(), -1);
+	}
 	private Message buildMessageFromResponse(GetResponse response) {
+		return buildMessage(response.getEnvelope(), response.getProps(), response.getBody(), response.getMessageCount());
+	}
+
+	private Message buildMessage(Envelope envelope, BasicProperties properties, byte[] body, int msgCount) {
 		MessageProperties messageProps = this.messagePropertiesConverter.toMessageProperties(
-				response.getProps(), response.getEnvelope(), this.encoding);
-		messageProps.setMessageCount(response.getMessageCount());
-		Message message = new Message(response.getBody(), messageProps);
+				properties, envelope, this.encoding);
+		if (msgCount >= 0) {
+			messageProps.setMessageCount(msgCount);
+		}
+		Message message = new Message(body, messageProps);
 		if (this.afterReceivePostProcessors != null) {
 			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 				message = processor.postProcessMessage(message);
