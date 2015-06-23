@@ -82,7 +82,7 @@ subprojects { subproject ->
 		log4jVersion = '1.2.17'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.1'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.3'
 		rabbitmqHttpClientVersion = '1.0.0.M1'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.6.RELEASE'
@@ -216,9 +216,6 @@ project('spring-rabbit') {
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 	}
-
-	// suppress deprecation warnings (@SuppressWarnings("deprecation") is not enough for javac)
-	compileJava.options.compilerArgs = ["${xLintArg},-deprecation"]
 
 }
 

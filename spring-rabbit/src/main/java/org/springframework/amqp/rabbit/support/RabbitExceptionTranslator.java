@@ -18,11 +18,13 @@ package org.springframework.amqp.rabbit.support;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.util.Assert;
@@ -61,6 +63,9 @@ public class RabbitExceptionTranslator {
 		}
 		if (ex instanceof IOException) {
 			return new AmqpIOException((IOException) ex);
+		}
+		if (ex instanceof TimeoutException) {
+			return new AmqpTimeoutException((IOException) ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);
