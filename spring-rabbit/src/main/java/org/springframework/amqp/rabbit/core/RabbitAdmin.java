@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -16,6 +16,7 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -353,9 +354,31 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		}
 
 		logger.debug("Initializing declarations");
-		final Collection<Exchange> exchanges = filterDeclarables(applicationContext.getBeansOfType(Exchange.class).values());
-		final Collection<Queue> queues = filterDeclarables(applicationContext.getBeansOfType(Queue.class).values());
-		final Collection<Binding> bindings = filterDeclarables(applicationContext.getBeansOfType(Binding.class).values());
+		Collection<Exchange> contextExchanges = new LinkedList<Exchange>(this.applicationContext.getBeansOfType(Exchange.class).values());
+		Collection<Queue> contextQueues = new LinkedList<Queue>(this.applicationContext.getBeansOfType(Queue.class).values());
+		Collection<Binding> contextBindings = new LinkedList<Binding>(this.applicationContext.getBeansOfType(Binding.class).values());
+
+		@SuppressWarnings("rawtypes")
+		Collection<Collection> collections = this.applicationContext.getBeansOfType(Collection.class).values();
+		for (Collection<?> collection : collections) {
+			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
+				for (Object declarable : collection) {
+					if (declarable instanceof Exchange) {
+						contextExchanges.add((Exchange) declarable);
+					}
+					else if (declarable instanceof Queue) {
+						contextQueues.add((Queue) declarable);
+					}
+					else if (declarable instanceof Binding) {
+						contextBindings.add((Binding) declarable);
+					}
+				}
+			}
+		}
+
+		final Collection<Exchange> exchanges = filterDeclarables(contextExchanges);
+		final Collection<Queue> queues = filterDeclarables(contextQueues);
+		final Collection<Binding> bindings = filterDeclarables(contextBindings);
 
 		for (Exchange exchange : exchanges) {
 			if (!exchange.isDurable() || exchange.isAutoDelete()) {
