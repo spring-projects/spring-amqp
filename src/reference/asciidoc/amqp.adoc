@@ -437,7 +437,7 @@ The `CachingConnectionFactory` uses a default strategy to log channel closures a
 INFO level.
 * All others are logged at ERROR level.
 
-To modify this behavior, inject a custom `CachingConnectionFacory.ConditionalExceptionLogger` into the
+To modify this behavior, inject a custom `ConditionalExceptionLogger` into the
 `CachingConnectionFactory` in its `closeExceptionLogger` property.
 
 

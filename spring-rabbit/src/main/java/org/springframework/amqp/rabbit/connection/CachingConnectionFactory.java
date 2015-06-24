@@ -38,6 +38,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
+import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -299,7 +300,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		this.closeExceptionLogger.log(logger, cause);
+		this.closeExceptionLogger.log(logger, "Channel shutdown" ,cause);
 	}
 
 	@Override
@@ -893,17 +894,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * A strategy interface for conditional exception logging.
-	 * @since 1.5
-	 *
-	 */
-	public interface ConditionalExceptionLogger {
-
-		void log(Log logger, Throwable t);
-
-	}
-
-	/**
 	 * Default implementation of {@link ConditionalExceptionLogger} for logging channel
 	 * close exceptions.
 	 * @since 1.5
@@ -912,25 +902,25 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
 
 		@Override
-		public void log(Log logger, Throwable t) {
+		public void log(Log logger, String message, Throwable t) {
 			if (t instanceof ShutdownSignalException) {
 				ShutdownSignalException cause = (ShutdownSignalException) t;
 				if (RabbitUtils.isPassiveDeclarationChannelClose(cause)) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Channel shutdown: " + cause.getMessage());
+						logger.debug(message + ": " + cause.getMessage());
 					}
 				}
 				else if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
 					if (logger.isInfoEnabled()) {
-						logger.info("Channel shutdown: " + cause.getMessage());
+						logger.info(message + ": " + cause.getMessage());
 					}
 				}
 				else if (!RabbitUtils.isNormalChannelClose(cause)) {
-					logger.error("Channel shutdown: " + cause.getMessage());
+					logger.error(message + ": " + cause.getMessage());
 				}
 			}
 			else {
-				logger.error("Unexpected invocation of " + this.getClass(), t);
+				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
 			}
 		}
 
