@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.net.URI;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
@@ -72,6 +73,15 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 		}
 		setHost(hostname);
 		setPort(port);
+	}
+
+	/**
+	 * Create a new SingleConnectionFactory given a {@link URI}.
+	 * @param uri the amqp uri configuring the connection
+	 */
+	public SingleConnectionFactory(URI uri) {
+		super(new com.rabbitmq.client.ConnectionFactory());
+		setUri(uri);
 	}
 
 	/**

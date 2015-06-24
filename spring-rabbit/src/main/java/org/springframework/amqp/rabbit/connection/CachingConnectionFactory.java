@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -163,6 +164,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		setHost(hostname);
 		setPort(port);
+	}
+
+	/**
+	 * Create a new CachingConnectionFactory given a {@link URI}.
+	 * @param uri the amqp uri configuring the connection
+	 */
+	public CachingConnectionFactory(URI uri) {
+		super(new com.rabbitmq.client.ConnectionFactory());
+		setUri(uri);
 	}
 
 	/**
