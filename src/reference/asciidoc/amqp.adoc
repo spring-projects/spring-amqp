@@ -770,8 +770,8 @@ We will look at an example of each approach in the next two sub-sections.
 The `AmqpTemplate` itself can be used for polled Message reception.
 By default, if no message is available, `null` is returned immediately; there is no blocking.
 Starting with _version 1.5_, you can now set a `receiveTimeout`, in milliseconds, and the receive methods will block for
-up to that long, waiting for a message. A value of `-1` means block indefinitely (or at least until the connection to the
-broker is lost).
+up to that long, waiting for a message. A value less than zero means block indefinitely (or at least until the
+connection to the broker is lost).
 
 CAUTION: Since the receive operation creates a new `QueueingConsumer` for each message, this technique is not really
 appropriate for high-volume environments; consider using an asynchronous consumer, or a `receiveTimeout` of zero for

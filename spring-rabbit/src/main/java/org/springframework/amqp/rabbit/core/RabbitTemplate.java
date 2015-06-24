@@ -695,7 +695,7 @@ public class RabbitTemplate extends RabbitAccessor
 	}
 
 	/**
-	 * Non-blocking receive with timeout.
+	 * Non-blocking receive.
 	 * @param queueName the queue to receive from.
 	 * @return The message, or null if none immediately available.
 	 * @since 1.5
