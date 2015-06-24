@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,6 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -67,6 +70,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Steve Powell
  */
 public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTests {
 
@@ -1119,6 +1123,22 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.createConnection();
 		verify(mock).newConnection(isNull(ExecutorService.class),
 				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }));
+		verifyNoMoreInteractions(mock);
+	}
+
+	@Test
+	public void setUri() throws Exception {
+		URI uri = new URI("amqp://localhost:1234/%2f");
+
+		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
+
+		ccf.setUri(uri);
+		ccf.createConnection();
+
+		InOrder order = inOrder(mock);
+		order.verify(mock).setUri(uri);
+		order.verify(mock).newConnection((ExecutorService)null);
 		verifyNoMoreInteractions(mock);
 	}
 

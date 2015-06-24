@@ -8,11 +8,17 @@
 The `spring-erlang` jar is no longer included in the distribution.
 Use <<management-template>> instead.
 
-===== Empty Addresses Property in CachingConnectionFactory
+===== CachingConnectionFactory Changes
+
+====== Empty Addresses Property in CachingConnectionFactory
 
 Previously, if the connection factory was configured with a host/port, but an empty String was also supplied for
 `addresses`, the host and port were ignored.
 Now, an empty `addresses` String is treated the same as a `null`, and the host/port will be used.
+
+====== URI Constructor
+
+The `CachingConnectionFactory` has an additional constructor, with a `URI` parameter, to configure the broker connection.
 
 ===== Properties to Control Container Queue Declaration Behavior
 

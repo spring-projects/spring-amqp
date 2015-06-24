@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.net.URI;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
@@ -27,6 +28,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Fisher
  * @author Mark Pollack
  * @author Dave Syer
+ * @author Steve Powell
  */
 public class SingleConnectionFactory extends AbstractConnectionFactory {
 
@@ -75,6 +77,15 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	}
 
 	/**
+	 * Create a new SingleConnectionFactory given a {@link URI}.
+	 * @param uri the amqp uri configuring the connection
+	 */
+	public SingleConnectionFactory(URI uri) {
+		super(new com.rabbitmq.client.ConnectionFactory());
+		setUri(uri);
+	}
+
+	/**
 	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
@@ -82,6 +93,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 		super(rabbitConnectionFactory);
 	}
 
+	@Override
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
 		super.setConnectionListeners(listeners);
 		// If the connection is already alive we assume that the new listeners want to be notified
@@ -90,6 +102,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 		}
 	}
 
+	@Override
 	public void addConnectionListener(ConnectionListener listener) {
 		super.addConnectionListener(listener);
 		// If the connection is already alive we assume that the new listener wants to be notified
@@ -116,6 +129,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * As this bean implements DisposableBean, a bean factory will automatically invoke this on destruction of its
 	 * cached singletons.
 	 */
+	@Override
 	public final void destroy() {
 		synchronized (this.connectionMonitor) {
 			if (connection != null) {
@@ -195,18 +209,23 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if (this == obj) {
 				return true;
-			if (obj == null)
+			}
+			if (obj == null) {
 				return false;
-			if (getClass() != obj.getClass())
+			}
+			if (getClass() != obj.getClass()) {
 				return false;
+			}
 			SharedConnectionProxy other = (SharedConnectionProxy) obj;
 			if (target == null) {
-				if (other.target != null)
+				if (other.target != null) {
 					return false;
-			} else if (!target.equals(other.target))
+				}
+			} else if (!target.equals(other.target)) {
 				return false;
+			}
 			return true;
 		}
 

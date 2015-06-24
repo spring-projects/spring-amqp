@@ -14,7 +14,10 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +37,7 @@ import com.rabbitmq.client.Address;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Steve Powell
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean {
@@ -55,7 +59,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
 	/**
-	 * Create a new SingleConnectionFactory for the given target ConnectionFactory.
+	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory.
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
 	public AbstractConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
@@ -73,6 +77,40 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
+	}
+
+	/**
+	 * @param uri the URI
+	 * @see com.rabbitmq.client.ConnectionFactory#setUri(URI)
+	 * @since 1.5
+	 */
+	public void setUri(URI uri) {
+		try {
+			this.rabbitConnectionFactory.setUri(uri);
+		}
+		catch (URISyntaxException use) {
+			logger.info("setUri() was passed an invalid URI; it is ignored", use);
+		}
+		catch (GeneralSecurityException gse) {
+			logger.info("setUri() was passed an invalid URI; it is ignored", gse);
+		}
+	}
+
+	/**
+	 * @param uri the URI
+	 * @see com.rabbitmq.client.ConnectionFactory#setUri(String)
+	 * @since 1.5
+	 */
+	public void setUri(String uri) {
+		try {
+			this.rabbitConnectionFactory.setUri(uri);
+		}
+		catch (URISyntaxException use) {
+			logger.info("setUri() was passed an invalid URI; it is ignored", use);
+		}
+		catch (GeneralSecurityException gse) {
+			logger.info("setUri() was passed an invalid URI; it is ignored", gse);
+		}
 	}
 
 	@Override
