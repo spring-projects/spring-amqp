@@ -52,6 +52,7 @@ import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
@@ -72,15 +73,19 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @since 1.0.1
  *
  */
-public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
+public class PublisherCallbackChannelImpl
+		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final String[] METHODS_OF_INTEREST = new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
+	private static final String[] METHODS_OF_INTEREST =
+			new String[] {"getFlow", "flow", "flowBlocked", "basicConsume", "basicQos"};
 
 	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
+
 		@Override
 		public boolean matches(java.lang.reflect.Method method) {
 			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
 		}
+
 	};
 
 	private final Log logger = LogFactory.getLog(this.getClass());
@@ -108,7 +113,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 
-		// The following reflection is required to maintain comatibility with pre 3.3.x clients.
+		// The following reflection is required to maintain compatibility with pre 3.3.x clients.
 		final AtomicReference<java.lang.reflect.Method> getFlowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowMethod = new AtomicReference<java.lang.reflect.Method>();
 		final AtomicReference<java.lang.reflect.Method> flowBlockedMethod = new AtomicReference<java.lang.reflect.Method>();
@@ -453,7 +458,8 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			return (String) ReflectionUtils.invokeMethod(this.basicConsumeFourArgsMethod, this.delegate, queue,
 					autoAck, arguments, callback);
 		}
-		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' is not supported by the client library");
+		throw new UnsupportedOperationException("'basicConsume(String, boolean, Map, Consumer)' " +
+				"is not supported by the client library");
 	}
 
 	public String basicConsume(String queue, boolean autoAck,
@@ -557,28 +563,36 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public void close() throws IOException {
-		if (this.delegate.isOpen()) {
+		try {
 			this.delegate.close();
 		}
-		generateNacksForPendingAcks();
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(this.delegate + " is already closed");
+			}
+		}
+		generateNacksForPendingAcks("Channel closed by application");
 	}
 
-	private void generateNacksForPendingAcks() {
+	private void generateNacksForPendingAcks(String cause) {
 		synchronized (this.pendingConfirms) {
 			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
 				Listener listener = entry.getKey();
-				for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-					try {
-						handleNack(confirmEntry.getKey(), false);
+				synchronized(entry.getValue()) {
+					for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+						try {
+							handleNack(confirmEntry.getKey(), false);
+						}
+						catch (IOException e) {
+							logger.error("Error delivering Nack afterShutdown", e);
+						}
 					}
-					catch (IOException e) {
-						logger.error("Error delivering Nack afterShutdown", e);
-					}
+					listener.removePendingConfirmsReference(this, entry.getValue());
 				}
-				listener.removePendingConfirmsReference(this, entry.getValue());
 			}
 			this.pendingConfirms.clear();
 			this.listenerForSeq.clear();
+			this.listeners.clear();
 		}
 	}
 
@@ -650,13 +664,15 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 					// find all unack'd confirms for this listener and handle them
 					SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
 					if (confirmsMap != null) {
-						Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
-						Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
-						while (iterator.hasNext()) {
-							Entry<Long, PendingConfirm> entry = iterator.next();
-							PendingConfirm value = entry.getValue();
-							iterator.remove();
-							doHandleConfirm(ack, involvedListener, value);
+						synchronized(confirmsMap) {
+							Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
+							Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
+							while (iterator.hasNext()) {
+								Entry<Long, PendingConfirm> entry = iterator.next();
+								PendingConfirm value = entry.getValue();
+								iterator.remove();
+								doHandleConfirm(ack, involvedListener, value);
+							}
 						}
 					}
 				}
@@ -669,7 +685,11 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 		else {
 			Listener listener = this.listenerForSeq.remove(seq);
 			if (listener != null) {
-				PendingConfirm pendingConfirm = this.pendingConfirms.get(listener).remove(seq);
+				SortedMap<Long, PendingConfirm> confirmsForListener = this.pendingConfirms.get(listener);
+				PendingConfirm pendingConfirm = null;
+				synchronized (confirmsForListener) {
+					pendingConfirm = confirmsForListener.remove(seq);
+				}
 				if (pendingConfirm != null) {
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
@@ -697,7 +717,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 	public void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
 		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
 		Assert.notNull(pendingConfirmsForListener, "Listener not registered");
-		synchronized (this.pendingConfirms) {
+		synchronized (pendingConfirmsForListener) {
 			pendingConfirmsForListener.put(seq, pendingConfirm);
 		}
 		this.listenerForSeq.put(seq, listener);
@@ -712,7 +732,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException
 	{
-		Object uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
+		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (logger.isWarnEnabled()) {
@@ -728,7 +748,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		generateNacksForPendingAcks();
+		generateNacksForPendingAcks(cause.getMessage());
 	}
 
 // Object
@@ -741,10 +761,7 @@ public class PublisherCallbackChannelImpl implements PublisherCallbackChannel, C
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this) {
-			return true;
-		}
-		return this.delegate.equals(obj);
+		return obj == this || this.delegate.equals(obj);
 	}
 
 	@Override
