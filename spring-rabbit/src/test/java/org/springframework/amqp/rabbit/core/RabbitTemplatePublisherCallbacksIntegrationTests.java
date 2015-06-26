@@ -45,6 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
@@ -792,5 +793,59 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 	}
+
+	// AMQP-506 ConcurrentModificationException
+	@Test
+	public void testPublisherConfirmGetUnconfirmedConcurrency() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
+		final AtomicLong seq = new AtomicLong();
+		doAnswer(new Answer<Long>() {
+
+			@Override
+			public Long answer(InvocationOnMock invocation) throws Throwable {
+				return seq.incrementAndGet();
+			}
+		}).when(mockChannel).getNextPublishSeqNo();
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		doReturn(mockChannel).when(mockConnection).createChannel();
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setPublisherConfirms(true);
+		final RabbitTemplate template = new RabbitTemplate(ccf);
+
+		final AtomicBoolean confirmed = new AtomicBoolean();
+		template.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				confirmed.set(true);
+			}
+		});
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		final AtomicBoolean sentAll = new AtomicBoolean();
+		exec.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				for (int i = 0; i < 10000; i++) {
+					template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+				}
+				sentAll.set(true);
+			}
+		});
+		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
+		long t1 = System.currentTimeMillis();
+		while (!sentAll.get() && System.currentTimeMillis() < t1 + 20000) {
+			unconfirmed = template.getUnconfirmed(-1);
+		}
+		assertTrue(sentAll.get());
+		assertFalse(confirmed.get());
+	}
+
 
 }

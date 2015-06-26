@@ -514,16 +514,18 @@ public class RabbitTemplate extends RabbitAccessor
 			long threshold = System.currentTimeMillis() - age;
 			for (Entry<Object, SortedMap<Long, PendingConfirm>> channelPendingConfirmEntry : this.pendingConfirms.entrySet()) {
 				SortedMap<Long, PendingConfirm> channelPendingConfirms = channelPendingConfirmEntry.getValue();
-				Iterator<Entry<Long, PendingConfirm>> iterator = channelPendingConfirms.entrySet().iterator();
-				PendingConfirm pendingConfirm;
-				while (iterator.hasNext()) {
-					pendingConfirm = iterator.next().getValue();
-					if (pendingConfirm.getTimestamp() < threshold) {
-						unconfirmed.add(pendingConfirm.getCorrelationData());
-						iterator.remove();
-					}
-					else {
-						break;
+				synchronized(channelPendingConfirms) {
+					Iterator<Entry<Long, PendingConfirm>> iterator = channelPendingConfirms.entrySet().iterator();
+					PendingConfirm pendingConfirm;
+					while (iterator.hasNext()) {
+						pendingConfirm = iterator.next().getValue();
+						if (pendingConfirm.getTimestamp() < threshold) {
+							unconfirmed.add(pendingConfirm.getCorrelationData());
+							iterator.remove();
+						}
+						else {
+							break;
+						}
 					}
 				}
 			}
