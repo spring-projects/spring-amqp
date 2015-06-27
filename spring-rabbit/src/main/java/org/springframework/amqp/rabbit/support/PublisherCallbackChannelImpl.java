@@ -794,7 +794,7 @@ public class PublisherCallbackChannelImpl
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException
 	{
-		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION).toString();
+		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (logger.isWarnEnabled()) {
