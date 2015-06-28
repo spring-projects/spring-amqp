@@ -12,8 +12,11 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +29,7 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
@@ -86,6 +90,23 @@ public class BlockingQueueConsumerIntegrationTests {
 		assertNull(template.receiveAndConvert(queue1.getName()));
 		connectionFactory.destroy();
 
+	}
+
+	@Test
+	public void testAvoidHangAMQP_508() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		String longName = new String(new byte[300]).replace('\u0000', 'x');
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 1, longName, "foobar");
+		try {
+			blockingQueueConsumer.start();
+			fail("expected exception");
+		}
+		catch (FatalListenerStartupException e) {
+			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+		}
+		connectionFactory.destroy();
 	}
 
 }

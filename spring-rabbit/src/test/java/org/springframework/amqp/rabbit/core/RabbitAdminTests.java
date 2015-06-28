@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -226,6 +227,25 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
 		ctx.close();
+	}
+
+	@Test
+	public void testAvoidHangAMQP_508() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		String longName = new String(new byte[300]).replace('\u0000', 'x');
+		try {
+			admin.declareQueue(new Queue(longName));
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		String goodName = "foobar";
+		admin.declareQueue(new Queue(goodName));
+		assertNull(admin.getQueueProperties(longName));
+		assertNotNull(admin.getQueueProperties(goodName));
+		admin.deleteQueue(goodName);
+		cf.destroy();
 	}
 
 	@Configuration
