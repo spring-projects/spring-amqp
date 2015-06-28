@@ -41,6 +41,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
@@ -545,7 +546,19 @@ public class BlockingQueueConsumer {
 		DeclarationException failures = null;
 		for (String queueName : this.queues) {
 			try {
-				this.channel.queueDeclarePassive(queueName);
+				try {
+					this.channel.queueDeclarePassive(queueName);
+				}
+				catch (IllegalArgumentException e) {
+					try {
+						if (this.channel instanceof ChannelProxy) {
+							((ChannelProxy) this.channel).getTargetChannel().close();
+						}
+					}
+					catch (TimeoutException e1) {
+					}
+					throw new FatalListenerStartupException("Illegal Argument on Queue Declaration", e);
+				}
 			}
 			catch (IOException e) {
 				if (logger.isWarnEnabled()) {
