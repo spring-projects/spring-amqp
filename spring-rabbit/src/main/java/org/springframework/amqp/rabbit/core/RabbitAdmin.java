@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -29,6 +30,7 @@ import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
@@ -262,6 +264,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					props.put(QUEUE_CONSUMER_COUNT, declareOk.getConsumerCount());
 					return props;
 				}
+				catch (IllegalArgumentException e) {
+					try {
+						if (channel instanceof ChannelProxy) {
+							((ChannelProxy) channel).getTargetChannel().close();
+						}
+					}
+					catch (TimeoutException e1) {
+					}
+					return null;
+				}
 				catch (Exception e) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Queue '" + queueName + "' does not exist");
@@ -445,9 +457,21 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					logger.debug("declaring Queue '" + queue.getName() + "'");
 				}
 				try {
-					DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
-							queue.getArguments());
-					declareOks[i] = declareOk;
+					try {
+						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
+								queue.getArguments());
+						declareOks[i] = declareOk;
+					}
+					catch (IllegalArgumentException e) {
+						try {
+							if (channel instanceof ChannelProxy) {
+								((ChannelProxy) channel).getTargetChannel().close();
+							}
+						}
+						catch (TimeoutException e1) {
+						}
+						throw new IOException(e);
+					}
 				}
 				catch (IOException e) {
 					if (this.ignoreDeclarationExceptions) {
