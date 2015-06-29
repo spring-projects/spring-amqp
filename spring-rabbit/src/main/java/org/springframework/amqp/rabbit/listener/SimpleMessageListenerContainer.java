@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.aopalliance.aop.Advice;
+import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
@@ -52,6 +53,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
@@ -187,6 +189,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private Long failedDeclarationRetryInterval;
 
 	private Long retryDeclarationInterval;
+
+	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
 
 	/**
 	 * Default constructor for convenient dependency injection via setters.
@@ -625,6 +629,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
 		this.consumerTagStrategy = consumerTagStrategy;
+	}
+
+	/**
+	 * Set a {@link ConditionalExceptionLogger} for logging exclusive consumer failures. The
+	 * default is to log such failures at WARN level.
+	 * @param exclusiveConsumerExceptionLogger the conditional exception logger.
+	 * @since 1.5
+	 */
+	public void setExclusiveConsumerExceptionLogger(ConditionalExceptionLogger exclusiveConsumerExceptionLogger) {
+		this.exclusiveConsumerExceptionLogger = exclusiveConsumerExceptionLogger;
 	}
 
 	/**
@@ -1196,7 +1210,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				if (SimpleMessageListenerContainer.this.missingQueuesFatal) {
 					logger.error("Consumer received fatal exception on startup", ex);
 					this.startupException = ex;
-					// Fatal, w point re-throwing, so just abort.
+					// Fatal, but no point re-throwing, so just abort.
 					aborted = true;
 				}
 				publishEvent("Consumer queue(s) not available", aborted, ex);
@@ -1227,7 +1241,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (AmqpIOException e) {
 				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
 						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
-					logger.warn(e.getCause().getCause().toString());
+					exclusiveConsumerExceptionLogger.log(logger, "Exclusive consumer failure", e.getCause().getCause());
 					publishEvent("Consumer raised exception, attempting restart", false, e);
 				}
 				else {
@@ -1346,6 +1360,33 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		public WrappedTransactionException(Throwable cause) {
 			super(cause);
 		}
+	}
+
+	/**
+	 * Default implementation of {@link ConditionalExceptionLogger} for logging exclusive
+	 * consumer failures.
+	 * @since 1.5
+	 */
+	private static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
+
+		@Override
+		public void log(Log logger, String message, Throwable t) {
+			if (t instanceof ShutdownSignalException) {
+				ShutdownSignalException cause = (ShutdownSignalException) t;
+				if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
+					if (logger.isWarnEnabled()) {
+						logger.warn(message + ": " + cause.toString());
+					}
+				}
+				else if (!RabbitUtils.isNormalChannelClose(cause)) {
+					logger.error(message + ": " + cause.getMessage());
+				}
+			}
+			else {
+				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
+			}
+		}
+
 	}
 
 }

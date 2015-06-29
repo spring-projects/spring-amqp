@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -262,6 +263,9 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
 		container2.setApplicationEventPublisher(publisher);
 		container2.afterPropertiesSet();
+		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
+		when(containerLogger.isWarnEnabled()).thenReturn(true);
+		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
 		for (int i = 0; i < 1000; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
@@ -285,6 +289,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertEquals("Consumer raised exception, attempting restart", event.getReason());
 		assertFalse(event.isFatal());
 		assertThat(event.getThrowable(), instanceOf(AmqpIOException.class));
+		verify(containerLogger).warn(any());
 	}
 
 	@Test

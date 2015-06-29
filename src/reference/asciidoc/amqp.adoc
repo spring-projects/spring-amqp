@@ -440,6 +440,7 @@ INFO level.
 To modify this behavior, inject a custom `ConditionalExceptionLogger` into the
 `CachingConnectionFactory` in its `closeExceptionLogger` property.
 
+Also see <<consumer-events>>.
 
 [[amqp-template]]
 ==== AmqpTemplate
@@ -1043,6 +1044,13 @@ These events can be consumed by implementing `ApplicationListener<ListenerContai
 
 NOTE: System-wide events (such as connection failures) will be published by all consumers when `concurrentConsumers`
 is greater than 1.
+
+If a consumer fails because one if its queues is being used exclusively, by default, as well as publishing the
+event, a `WARN` log is issued. To change this logging behavior, provide a custom `ConditionalExceptionLogger` in the
+`SimpleMessageListenerContainer` 's `exclusiveConsumerExceptionLogger` property.
+See also <<channel-close-logging>>.
+
+Fatal errors are always logged at `ERROR` level; this it not modifiable.
 
 [[consumerTags]]
 ==== Consumer Tags
