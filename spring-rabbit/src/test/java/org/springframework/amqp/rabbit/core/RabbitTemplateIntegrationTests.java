@@ -64,6 +64,7 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -149,6 +150,7 @@ public class RabbitTemplateIntegrationTests {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
+		connectionFactory.setPublisherReturns(true);
 		template = new RabbitTemplate(connectionFactory);
 		template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
 	}
@@ -268,6 +270,20 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(ROUTE);
 		assertEquals(null, result);
+	}
+
+	@Test
+	public void testSendAndReceiveUndeliverable() throws Exception {
+		template.setMandatory(true);
+		try {
+			template.convertSendAndReceive(ROUTE + "xxxxxxxx", "undeliverable");
+			fail("expected exception");
+		}
+		catch (AmqpMessageReturnedException e) {
+			assertEquals("undeliverable", new String(e.getReturnedMessage().getBody()));
+			assertEquals("NO_ROUTE", e.getReplyText());
+		}
+		assertEquals(0, TestUtils.getPropertyValue(template, "replyHolder", Map.class).size());
 	}
 
 	@Test

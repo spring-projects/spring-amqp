@@ -252,6 +252,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 						}
 						templateWithConfirmsEnabled.doSend(channel, "", ROUTE,
 								new SimpleMessageConverter().toMessage("message", new MessageProperties()),
+								false,
 								new CorrelationData("def"));
 						return null;
 					}
@@ -416,6 +417,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 						}
 						template.doSend(channel, "", ROUTE,
 							new SimpleMessageConverter().toMessage("message", new MessageProperties()),
+							false,
 							new CorrelationData("def"));
 						threadSentLatch.countDown();
 						return null;
