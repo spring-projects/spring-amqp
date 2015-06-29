@@ -529,12 +529,8 @@ public class BlockingQueueConsumer {
 					this.channel.queueDeclarePassive(queueName);
 				}
 				catch (IllegalArgumentException e) {
-					try {
-						if (this.channel instanceof ChannelProxy) {
-							((ChannelProxy) this.channel).getTargetChannel().close();
-						}
-					}
-					catch (TimeoutException e1) {
+					if (this.channel instanceof ChannelProxy) {
+						((ChannelProxy) this.channel).getTargetChannel().close();
 					}
 					throw new FatalListenerStartupException("Illegal Argument on Queue Declaration", e);
 				}

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
@@ -265,12 +264,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					return props;
 				}
 				catch (IllegalArgumentException e) {
-					try {
-						if (channel instanceof ChannelProxy) {
-							((ChannelProxy) channel).getTargetChannel().close();
-						}
-					}
-					catch (TimeoutException e1) {
+					if (channel instanceof ChannelProxy) {
+						((ChannelProxy) channel).getTargetChannel().close();
 					}
 					return null;
 				}
@@ -458,17 +453,13 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				}
 				try {
 					try {
-						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
-								queue.getArguments());
+						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(),
+								queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
 						declareOks[i] = declareOk;
 					}
 					catch (IllegalArgumentException e) {
-						try {
-							if (channel instanceof ChannelProxy) {
-								((ChannelProxy) channel).getTargetChannel().close();
-							}
-						}
-						catch (TimeoutException e1) {
+						if (channel instanceof ChannelProxy) {
+							((ChannelProxy) channel).getTargetChannel().close();
 						}
 						throw new IOException(e);
 					}
@@ -549,7 +540,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private boolean isDeclaringImplicitQueueBinding(Binding binding) {
 		if (isImplicitQueueBinding(binding)) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("The default exchange is implicitly bound to every queue, with a routing key equal to the queue name.");
+				logger.debug("The default exchange is implicitly bound to every queue, " +
+						"with a routing key equal to the queue name.");
 			}
 			return true;
 		}
@@ -569,4 +561,5 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private boolean isImplicitQueueBinding(Binding binding) {
 		return isDefaultExchange(binding.getExchange()) && binding.getDestination().equals(binding.getRoutingKey());
 	}
+
 }
