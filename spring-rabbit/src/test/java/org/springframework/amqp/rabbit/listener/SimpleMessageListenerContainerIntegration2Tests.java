@@ -15,11 +15,14 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +45,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -51,6 +55,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
@@ -58,6 +63,7 @@ import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -138,6 +144,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	public void testDeleteOneQueue() throws Exception {
 		CountDownLatch latch = new CountDownLatch(20);
 		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
+		container.setApplicationEventPublisher(publisher);
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 			template.convertAndSend(queue1.getName(), i + "foo");
@@ -169,6 +177,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			Thread.sleep(200);
 		}
 		assertTrue("Failed to detect missing queue", n < 100);
+		ArgumentCaptor<ListenerContainerConsumerFailedEvent> captor = ArgumentCaptor
+				.forClass(ListenerContainerConsumerFailedEvent.class);
+		verify(publisher).publishEvent(captor.capture());
+		ListenerContainerConsumerFailedEvent event = captor.getValue();
+		assertThat(event.getThrowable(), instanceOf(ConsumerCancelledException.class));
 		DirectFieldAccessor dfa = new DirectFieldAccessor(newConsumer);
 		dfa.setPropertyValue("lastRetryDeclaration", 0);
 		dfa.setPropertyValue("retryDeclarationInterval", 100);
@@ -246,6 +259,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setApplicationContext(context);
 		container2.setRecoveryInterval(500);
 		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exlusive.
+		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
+		container2.setApplicationEventPublisher(publisher);
 		container2.afterPropertiesSet();
 		container2.start();
 		for (int i = 0; i < 1000; i++) {
@@ -263,6 +278,13 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		verify(logger).info(captor.capture());
 		assertThat(captor.getAllValues(), contains(containsString("exclusive")));
+		ArgumentCaptor<ListenerContainerConsumerFailedEvent> eventCaptor = ArgumentCaptor
+				.forClass(ListenerContainerConsumerFailedEvent.class);
+		verify(publisher).publishEvent(eventCaptor.capture());
+		ListenerContainerConsumerFailedEvent event = eventCaptor.getValue();
+		assertEquals("Consumer raised exception, attempting restart", event.getReason());
+		assertFalse(event.isFatal());
+		assertThat(event.getThrowable(), instanceOf(AmqpIOException.class));
 	}
 
 	@Test

@@ -58,6 +58,8 @@ import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -84,7 +86,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Artem Bilan
  * @since 1.0
  */
-public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
+public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer
+		implements ApplicationEventPublisherAware {
 
 	private static final long DEFAULT_START_CONSUMER_MIN_INTERVAL = 10000;
 
@@ -163,6 +166,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean autoDeclare = true;
 
 	private volatile ConsumerTagStrategy consumerTagStrategy;
+
+	private volatile ApplicationEventPublisher applicationEventPublisher;
 
 	public interface ContainerDelegate {
 		void invokeListener(Channel channel, Message message) throws Exception;
@@ -490,6 +495,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setMissingQueuesFatal(boolean missingQueuesFatal) {
 		this.missingQueuesFatal = missingQueuesFatal;
 		this.missingQueuesFatalSet = true;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * @since 1.5
+	 */
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	@Override
@@ -1176,6 +1190,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 				aborted = true;
+				publishEvent("Consumer thread interrupted, processing stopped", true, e);
 			}
 			catch (QueuesNotAvailableException ex) {
 				if (SimpleMessageListenerContainer.this.missingQueuesFatal) {
@@ -1184,17 +1199,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// Fatal, w point re-throwing, so just abort.
 					aborted = true;
 				}
+				publishEvent("Consumer queue(s) not available", aborted, ex);
 			}
 			catch (FatalListenerStartupException ex) {
 				logger.error("Consumer received fatal exception on startup", ex);
 				this.startupException = ex;
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
+				publishEvent("Consumer received fatal exception on startup", true, ex);
 			}
 			catch (FatalListenerExecutionException ex) {
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
+				publishEvent("Consumer received fatal exception during processing", true, ex);
 			}
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
@@ -1210,6 +1228,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
 						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
 					logger.warn(e.getCause().getCause().toString());
+					publishEvent("Consumer raised exception, attempting restart", false, e);
 				}
 				else {
 					this.logConsumerException(e);
@@ -1271,6 +1290,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			else {
 				logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
 						+ "Exception summary: " + t);
+			}
+			publishEvent("Consumer raised exception, attempting restart", false, t);
+		}
+
+		private void publishEvent(String reason, boolean fatal, Throwable t) {
+			if (applicationEventPublisher != null) {
+				applicationEventPublisher.publishEvent(new ListenerContainerConsumerFailedEvent(
+						SimpleMessageListenerContainer.this, reason, t, fatal));
 			}
 		}
 

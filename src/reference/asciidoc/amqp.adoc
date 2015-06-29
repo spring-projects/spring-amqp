@@ -1026,6 +1026,24 @@ When the container is later started, it uses it's reference to `containerAdmin` 
 Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header). Rejecting any message from a batch will cause the entire batch to be rejected.
 See <<template-batching>> for more information about batching.
 
+[[consumer-events]]
+===== Consumer Failure Events
+
+Starting with _version 1.5_, the `SimpleMessageListenerContainer` publishes application events whenever a listener
+(consumer) experiences a failure of some kind.
+The event `ListenerContainerConsumerFailedEvent` has the following properties:
+
+* `container` - the listener container where the consumer experienced the problem.
+* `reason` - a textual reason for the failure.
+* `fatal` - a boolean indicating whether the failure was fatal; with non-fatal exceptions, the container will attempt
+to restart the consumer, according to the `retryInterval`.
+* `throwable` - the `Throwable` that was caught.
+
+These events can be consumed by implementing `ApplicationListener<ListenerContainerConsumerFailedEvent>`.
+
+NOTE: System-wide events (such as connection failures) will be published by all consumers when `concurrentConsumers`
+is greater than 1.
+
 [[consumerTags]]
 ==== Consumer Tags
 
