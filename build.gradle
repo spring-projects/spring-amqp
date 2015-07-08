@@ -12,7 +12,7 @@ buildscript {
 		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
 		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.0'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
-		classpath 'org.springframework.build.gradle:spring-io-plugin:0.0.3.RELEASE'
+		classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
 	}
 }
 
@@ -63,8 +63,12 @@ subprojects { subproject ->
 			maven { url 'http://repo.spring.io/libs-snapshot' }
 		}
 
-		dependencies {
-			springIoVersions "io.spring.platform:platform-versions:$platformVersion@properties"
+		dependencyManagement {
+			springIoTestRuntime {
+				imports {
+					mavenBom "io.spring.platform:platform-bom:$platformVersion"
+				}
+			}
 		}
 	}
 
