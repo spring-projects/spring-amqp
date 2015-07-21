@@ -79,6 +79,7 @@ public class EnableRabbitIntegrationTests {
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
+			"test.sendTo.spel", "test.sendTo.reply.spel",
 			"test.invalidPojo");
 
 	@Autowired
@@ -160,12 +161,25 @@ public class EnableRabbitIntegrationTests {
 		rabbitTemplate.convertAndSend("test.sendTo", "bar");
 		int n = 0;
 		Object result = null;
-		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply")) == null && n++ < 10) {
+		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply")) == null && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertTrue(n < 10);
+		assertTrue(n < 100);
 		assertNotNull(result);
 		assertEquals("BAR", result);
+	}
+
+	@Test
+	public void simpleEndpointWithSendToSpel() throws InterruptedException {
+		rabbitTemplate.convertAndSend("test.sendTo.spel", "bar");
+		int n = 0;
+		Object result = null;
+		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel")) == null && n++ < 100) {
+			Thread.sleep(100);
+		}
+		assertTrue(n < 100);
+		assertNotNull(result);
+		assertEquals("BARbar", result);
 	}
 
 	@Test
@@ -242,6 +256,12 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(queues = "test.sendTo.spel")
+		@SendTo("#{spelReplyTo}")
+		public String capitalizeAndSendToSpel(String foo) {
+			return foo.toUpperCase() + foo;
+		}
+
 		@RabbitListener(queues = "test.invalidPojo")
 		public void handleIt(Date body) {
 
@@ -254,6 +274,11 @@ public class EnableRabbitIntegrationTests {
 	public static class EnableRabbitConfig {
 
 		private int increment;
+
+		@Bean
+		public String spelReplyTo() {
+			return "test.sendTo.reply.spel";
+		}
 
 		@Bean
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {

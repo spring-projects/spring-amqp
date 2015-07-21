@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,30 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.BeanExpressionResolver;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.Assert;
 
 /**
  * Base model for a Rabbit listener endpoint
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  * @see MethodRabbitListenerEndpoint
  * @see SimpleRabbitListenerEndpoint
  */
-public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEndpoint {
+public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEndpoint, BeanFactoryAware {
 
 	private String id;
 
-	private Collection<Queue> queues = new ArrayList<Queue>();
+	private final Collection<Queue> queues = new ArrayList<Queue>();
 
-	private Collection<String> queueNames = new ArrayList<String>();
+	private final Collection<String> queueNames = new ArrayList<String>();
 
 	private boolean exclusive;
 
@@ -50,6 +57,33 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private RabbitAdmin admin;
 
+	private BeanFactory beanFactory;
+
+	private BeanExpressionResolver resolver;
+
+	private BeanExpressionContext expressionContext;
+
+
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		this.beanFactory = beanFactory;
+		if (beanFactory instanceof ConfigurableListableBeanFactory) {
+			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
+			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
+		}
+	}
+
+	protected BeanFactory getBeanFactory() {
+		return beanFactory;
+	}
+
+	protected BeanExpressionResolver getResolver() {
+		return resolver;
+	}
+
+	protected BeanExpressionContext getBeanExpressionContext() {
+		return expressionContext;
+	}
 
 	public void setId(String id) {
 		this.id = id;

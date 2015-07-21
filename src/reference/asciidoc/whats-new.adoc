@@ -47,11 +47,19 @@ The converter has an alternative constructor that takes the value as a limit.
 Previously, this limit was hard-coded at `1024` bytes.
 (Also available in _1.4.4_).
 
-===== @QueueBinding for @RabbitListener
+===== @RabbitListener Improvements
+
+====== @QueueBinding for @RabbitListener
 
 The `bindings` attribute has been added to the `@RabbitListener` annotation as mutually exclusive with the `queues`
 attribute to allow the specification of the `queue`, its `exchange` and `binding` for declaration by a `RabbitAdmin` on
 the Broker.
+
+====== SpEL in @SendTo
+
+The default reply address (`@SendTo`) for a `@RabbitListener` can now be a SpEL expression.
+
+
 See <<async-annotation-driven>> for more information.
 
 ===== Automatic Exchange, Queue, Binding Declaration

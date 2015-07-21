@@ -132,9 +132,20 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 				throw new IllegalStateException("Invalid @" + SendTo.class.getSimpleName() + " annotation on '"
 						+ getMethod() + "' one destination must be set (got " + Arrays.toString(destinations) + ")");
 			}
-			return destinations.length == 1 ? new Address(destinations[0]) : new Address(null);
+			return destinations.length == 1 ? new Address(resolve(destinations[0])) : new Address(null);
 		}
 		return null;
+	}
+
+	private String resolve(String value) {
+		if (this.getResolver() != null) {
+			Object newValue = this.getResolver().evaluate(value, getBeanExpressionContext());
+			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
+			return (String) newValue;
+		}
+		else {
+			return value;
+		}
 	}
 
 	@Override

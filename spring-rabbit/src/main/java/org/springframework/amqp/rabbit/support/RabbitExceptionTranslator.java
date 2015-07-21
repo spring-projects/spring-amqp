@@ -65,7 +65,7 @@ public class RabbitExceptionTranslator {
 			return new AmqpIOException((IOException) ex);
 		}
 		if (ex instanceof TimeoutException) {
-			return new AmqpTimeoutException((IOException) ex);
+			return new AmqpTimeoutException(ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);

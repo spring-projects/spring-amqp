@@ -1352,6 +1352,27 @@ Also `@SendTo` can be used without a `value` attribute.
 This case is equal to an empty sendTo pattern.
 `@SendTo` is only used if the inbound message does not have a `replyToAddress` property.
 
+Starting with _version 1.5_, the `@SendTo` value can be a SpEL Expression, for example...
+
+[source, java]
+----
+@RabbitListener(queues = "test.sendTo.spel")
+@SendTo("#{spelReplyTo}")
+public String capitalizeWithSendToSpel(String foo) {
+    return foo.toUpperCase();
+}
+...
+@Bean
+public String spelReplyTo() {
+    return "test.sendTo.reply.spel";
+}
+----
+
+The expression must evaluate to a `String`, which can be a simple queue name (sent to the default exchange) or with
+the form `exchange/routingKey` as discussed above.
+The expression is evaluated once, during context initialization.
+For dynamic reply routing, the message sender should include a `reply_to` message property.
+
 [[annotation-method-selection]]
 ====== Multi-Method Listeners
 
