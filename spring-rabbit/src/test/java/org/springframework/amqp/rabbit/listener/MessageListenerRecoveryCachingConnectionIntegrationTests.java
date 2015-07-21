@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -108,6 +108,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		if (container != null) {
 			container.shutdown();
 		}
+		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test
@@ -138,6 +139,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		assertEquals("bar", new String(bytes));
 		assertEquals(null, template.receiveAndConvert(queue.getName()));
 
+		this.container.stop();
 		((DisposableBean) connectionFactory).destroy();
 
 	}
@@ -196,6 +198,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		assertNull(template.receiveAndConvert(queue.getName()));
 
+		this.container.stop();
 		((DisposableBean) connectionFactory1).destroy();
 		((DisposableBean) connectionFactory2).destroy();
 	}
@@ -220,6 +223,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		assertNull(template.receiveAndConvert(queue.getName()));
 
+		this.container.stop();
 		((DisposableBean) connectionFactory1).destroy();
 		((DisposableBean) connectionFactory2).destroy();
 	}
@@ -281,6 +285,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		assertNull(template.receiveAndConvert(queue.getName()));
 
+		this.container.stop();
 		((DisposableBean) connectionFactory1).destroy();
 		((DisposableBean) connectionFactory2).destroy();
 
@@ -309,6 +314,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		assertNull(template.receiveAndConvert(queue.getName()));
 
+		this.container.stop();
 		((DisposableBean) connectionFactory).destroy();
 
 	}

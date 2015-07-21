@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -76,6 +76,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+			ConditionalRejectingErrorHandler.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, MessageListenerRecoveryRepeatIntegrationTests.class);
 
 	@Rule
@@ -94,7 +95,6 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 			logger.info("Initializing at start of test");
 			connectionFactory = createConnectionFactory();
 			listener = new CloseConnectionListener();
-			container = createContainer(queue.getName(), listener, connectionFactory);
 		}
 	}
 
@@ -110,12 +110,16 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 			if (connectionFactory != null) {
 				((DisposableBean) connectionFactory).destroy();
 			}
+			this.brokerIsRunning.removeTestQueues();
 		}
 	}
 
 	@Test
 	@Repeat(1000)
 	public void testListenerRecoversFromClosedConnection() throws Exception {
+		if (this.container == null) {
+			this.container = createContainer(queue.getName(), listener, connectionFactory);
+		}
 
 		// logger.info("Testing...");
 

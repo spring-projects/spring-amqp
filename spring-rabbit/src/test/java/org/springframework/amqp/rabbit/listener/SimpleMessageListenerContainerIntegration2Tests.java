@@ -91,7 +91,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	private RabbitAdmin admin;
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue, queue1);
 
 	@Rule
 	public LongRunningIntegrationTest longRunningIntegrationTest = new LongRunningIntegrationTest();
@@ -120,6 +120,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			container.shutdown();
 		}
 		((DisposableBean) template.getConnectionFactory()).destroy();
+		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Test
@@ -356,6 +357,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue(networkGlitch.get());
 
 		container.stop();
+		((DisposableBean) connectionFactory).destroy();
 	}
 
 	@Test
@@ -408,6 +410,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue(networkGlitch.get());
 
 		container.stop();
+		((DisposableBean) connectionFactory).destroy();
 	}
 
 	@Test
@@ -442,6 +445,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertEquals(30000L, TestUtils.getPropertyValue(consumer, "retryDeclarationInterval"));
 
 		container.stop();
+		((DisposableBean) connectionFactory).destroy();
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {

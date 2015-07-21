@@ -19,15 +19,19 @@ import static org.junit.Assert.fail;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -43,21 +47,27 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @DirtiesContext
 public class StopStartIntegrationTests {
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	@ClassRule
+	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private static AtomicInteger deliveries = new AtomicInteger();
 
 	private static int COUNT = 10000;
 
 	@Autowired
-	private ApplicationContext ctx;
-
-	@Autowired
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
 	private SimpleMessageListenerContainer container;
+
+	@BeforeClass
+	@AfterClass
+	public static void setupAndCleanUp() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteQueue("stop.start.queue");
+		cf.destroy();
+	}
 
 	@Test
 	public void test() throws Exception {

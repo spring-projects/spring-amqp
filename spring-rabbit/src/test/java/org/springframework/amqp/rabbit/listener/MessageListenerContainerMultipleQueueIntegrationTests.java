@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -52,10 +53,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	private static Queue queue2 = new Queue("test.queue.2");
 
 	@Rule
-	public BrokerRunning brokerIsRunningAndQueue1Empty = BrokerRunning.isRunningWithEmptyQueues(queue1);
-
-	@Rule
-	public BrokerRunning brokerIsRunningAndQueue2Empty = BrokerRunning.isRunningWithEmptyQueues(queue2);
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue1, queue2);
 
 	@Rule
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
@@ -64,6 +62,10 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
 
+	@After
+	public void tearDown() {
+		this.brokerIsRunning.removeTestQueues();
+	}
 
 	@Test
 	public void testMultipleQueues() {

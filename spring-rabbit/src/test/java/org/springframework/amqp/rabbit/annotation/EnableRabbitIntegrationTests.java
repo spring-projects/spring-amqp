@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.Matchers;
+import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,6 +94,11 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private String tagPrefix;
+
+	@AfterClass
+	public static void tearDown() {
+		brokerRunning.removeTestQueues();
+	}
 
 	@Test
 	public void autoDeclare() {

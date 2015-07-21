@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -50,8 +54,17 @@ public class MissingIdRetryTests {
 
 	private volatile CountDownLatch latch;
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	@ClassRule
+	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+
+	@BeforeClass
+	@AfterClass
+	public static void setupAndCleanUp() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteQueue("retry.test.queue");
+		cf.destroy();
+	}
 
 	@SuppressWarnings("rawtypes")
 	@Test

@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.log4j;
 
+import javax.annotation.PreDestroy;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -48,6 +50,15 @@ public class AmqpAppenderConfiguration {
 	@Bean
 	public SingleConnectionFactory connectionFactory() {
 		return new SingleConnectionFactory("localhost");
+	}
+
+	@PreDestroy
+	public void destroy() {
+		SingleConnectionFactory cf = new SingleConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.deleteExchange(EXCHANGE);
+		admin.deleteQueue(QUEUE);
+		cf.destroy();
 	}
 
 	@Bean
