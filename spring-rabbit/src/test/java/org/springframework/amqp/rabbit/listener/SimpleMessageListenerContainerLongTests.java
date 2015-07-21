@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,6 +50,11 @@ public class SimpleMessageListenerContainerLongTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo");
+
+	@After
+	public void tearDown() {
+		this.brokerRunning.removeTestQueues();
+	}
 
 	@Test
 	public void testChangeConsumerCount() throws Exception {

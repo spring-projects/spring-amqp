@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,6 +100,11 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		}).when(errorHandler).handleError(any(Throwable.class));
 	}
 
+	@After
+	public void tearDown() {
+		this.brokerIsRunning.removeTestQueues();
+	}
+
 	@Test // AMQP-385
 	public void testErrorHandlerThrowsARADRE() throws Exception {
 		RabbitTemplate template = this.createTemplate(1);
@@ -145,6 +151,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.stop();
 		verify(logger, never()).warn(contains("Consumer raised exception"), any(Throwable.class));
 		verify(qLogger).debug(contains("Rejecting messages (requeue=false)"));
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	@Test
@@ -275,6 +282,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		e = new ListenerExecutionFailedException("foo", new MessageConversionException("bar",
 				new AmqpRejectAndDontRequeueException("baz")));
 		eh.handleError(e);
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	public void doTest(int messageCount, ErrorHandler errorHandler, CountDownLatch latch, Object listener)

@@ -15,6 +15,8 @@
  */
 package org.springframework.amqp.rabbit.test;
 
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +28,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -227,6 +230,9 @@ public class BrokerRunning extends TestWatcher {
 				}
 			}
 		}
+		catch (AmqpTimeoutException e) {
+			fail("Timed out getting connection");
+		}
 		catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);
 			brokerOnline.put(port, false);
@@ -244,6 +250,16 @@ public class BrokerRunning extends TestWatcher {
 
 	private boolean isDefaultQueue(String queue) {
 		return DEFAULT_QUEUE_NAME.equals(queue);
+	}
+
+	public void removeTestQueues() {
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost("localhost");
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		for (Queue queue : this.queues) {
+			admin.deleteQueue(queue.getName());
+		}
+		connectionFactory.destroy();
 	}
 
 }

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.log4j.Level;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -57,6 +58,11 @@ public class BlockingQueueConsumerIntegrationTests {
 	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
 			BlockingQueueConsumerIntegrationTests.class);
+
+	@After
+	public void tearDown() {
+		this.brokerIsRunning.removeTestQueues();
+	}
 
 	@Test
 	public void testTransactionalLowLevel() throws Exception {

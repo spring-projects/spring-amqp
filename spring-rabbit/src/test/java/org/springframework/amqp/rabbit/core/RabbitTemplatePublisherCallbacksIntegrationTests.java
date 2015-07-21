@@ -134,6 +134,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		if (connectionFactoryWithReturnsEnabled != null) {
 			connectionFactoryWithReturnsEnabled.destroy();
 		}
+		this.brokerIsRunning.removeTestQueues();
 	}
 
 	@Rule

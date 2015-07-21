@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Level;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -140,6 +141,11 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		return template;
 	}
 
+	@After
+	public void tearDown() {
+		this.brokerIsRunning.removeTestQueues();
+	}
+
 	@Test
 	public void testTransactionalLowLevel() throws Exception {
 		doTest(MessageCount.MEDIUM, Concurrency.LOW, TransactionMode.ON);
@@ -196,6 +202,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		catch (Throwable t) {
 			fail("expected FatalListenerStartupException:" + t.getClass() + ":" + t.getMessage());
 		}
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	private void doTest(MessageCount level, Concurrency concurrency, TransactionMode transactionMode) throws Exception {
@@ -410,6 +417,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		assertTrue("awaitConsumeSecond.count=" + awaitConsumeSecond.getCount(),
 				awaitConsumeSecond.await(10, TimeUnit.SECONDS));
 		container.stop();
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 	@Test
@@ -449,6 +457,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		}
 		finally {
 			container.stop();
+			connectionFactory.destroy();
 		}
 	}
 
@@ -477,6 +486,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			Thread.sleep(500);
 		}
 		assertTrue(n < 10);
+		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
 
