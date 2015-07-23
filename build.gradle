@@ -6,10 +6,10 @@ apply plugin: 'idea'
 
 buildscript {
 	repositories {
-		maven { url 'http://repo.springsource.org/plugins-release' }
+		maven { url 'https://repo.spring.io/plugins-release' }
 	}
 	dependencies {
-		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
+		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.1'
 		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.0'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath 'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
@@ -19,7 +19,7 @@ buildscript {
 def docsDir = 'src/reference/asciidoc' // Will be default with newer asciidoctor plugin
 
 ext {
-	linkHomepage = 'http://www.spring.io/spring-amqp'
+	linkHomepage = 'https://projects.spring.io/spring-amqp'
 	linkCi       = 'https://build.spring.io/browse/AMQP'
 	linkIssue    = 'https://jira.spring.io/browse/AMQP'
 	linkScmUrl           = 'https://github.com/spring-projects/spring-amqp'
@@ -32,9 +32,9 @@ allprojects {
 
 	repositories {
 		if (version.endsWith('BUILD-SNAPSHOT')) {
-			maven { url 'http://repo.spring.io/libs-snapshot' }
+			maven { url 'https://repo.spring.io/libs-snapshot' }
 		}
-		maven { url 'http://repo.spring.io/libs-release' }
+		maven { url 'https://repo.spring.io/libs-release' }
 	}
 	apply plugin: 'javadocHotfix'
 }
@@ -44,7 +44,7 @@ ext {
 	javadocLinks = [
 		"http://docs.oracle.com/javase/6/docs/api/",
 		"http://docs.oracle.com/javaee/6/api/",
-		"http://docs.spring.io/spring/docs/4.1.x/javadoc-api/"
+		"http://docs.spring.io/spring/docs/current/javadoc-api/"
 	] as String[]
 }
 
@@ -55,12 +55,13 @@ subprojects { subproject ->
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
+	apply plugin: 'jacoco'
 
 	if (project.hasProperty('platformVersion')) {
 		apply plugin: 'spring-io'
 
 		repositories {
-			maven { url 'http://repo.spring.io/libs-snapshot' }
+			maven { url 'https://repo.spring.io/libs-snapshot' }
 		}
 
 		dependencyManagement {
@@ -100,10 +101,8 @@ subprojects { subproject ->
 		}
 	}
 
-	// See http://www.gradle.org/docs/current/userguide/dependency_management.html#sub:configurations
-	// and http://www.gradle.org/docs/current/dsl/org.gradle.api.artifacts.ConfigurationContainer.html
-	configurations {
-		jacoco //Configuration Group used by Sonar to provide Code Coverage using JaCoCo
+	jacoco {
+		toolVersion = "0.7.5.201505241946"
 	}
 
 	// dependencies that are common across all java projects
@@ -118,8 +117,6 @@ subprojects { subproject ->
 			exclude group: 'org.hamcrest'
 		}
 		testCompile "org.springframework:spring-test:$springVersion"
-
-		jacoco group: "org.jacoco", name: "org.jacoco.agent", version: "0.7.2.201409121644", classifier: "runtime"
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -145,7 +142,10 @@ subprojects { subproject ->
 	}
 
 	test {
-		jvmArgs "-javaagent:${configurations.jacoco.asPath}=destfile=${buildDir}/jacoco.exec,includes=org.springframework.*"
+		jacoco {
+			append = false
+			destinationFile = file("$buildDir/jacoco.exec")
+		}
 	}
 
 	task testAll(type: Test)
@@ -174,6 +174,8 @@ subprojects { subproject ->
 		archives sourcesJar
 		archives javadocJar
 	}
+
+	build.dependsOn jacocoTestReport
 
 }
 
@@ -419,6 +421,6 @@ task dist(dependsOn: assemble) {
 
 task wrapper(type: Wrapper) {
 	description = 'Generates gradlew[.bat] scripts'
-	gradleVersion = '2.3'
+	gradleVersion = '2.5'
 	distributionUrl = "http://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 }
