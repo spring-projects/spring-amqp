@@ -54,6 +54,7 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -122,8 +123,8 @@ import com.rabbitmq.client.QueueingConsumer.Delivery;
  * @author Artem Bilan
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor
-		implements BeanFactoryAware, RabbitOperations, MessageListener, PublisherCallbackChannel.Listener {
+public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
+		ListenerContainerAware, PublisherCallbackChannel.Listener {
 
 	private static final String RETURN_CORRELATION_KEY = "spring_request_return_correlation";
 
@@ -200,6 +201,8 @@ public class RabbitTemplate extends RabbitAccessor
 	private volatile Collection<MessagePostProcessor> beforePublishPostProcessors;
 
 	private volatile Collection<MessagePostProcessor> afterReceivePostProcessors;
+
+	private volatile boolean isListener;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -508,6 +511,28 @@ public class RabbitTemplate extends RabbitAccessor
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	/**
+	 * Invoked by the container during startup so it can verify the queue is correctly
+	 * configured (if a simple reply queue name is used instead of exchange/routingKey.
+	 * @return the queue name, if configured.
+	 * @since 1.5
+	 */
+	@Override
+	public String expectedQueueName() {
+		this.isListener = true;
+		String replyQueue = null;
+		if (this.replyAddress != null) {
+			Address address = new Address(this.replyAddress);
+			if (address.getExchangeName() == "") {
+				replyQueue = address.getRoutingKey();
+			}
+			else {
+				logger.debug("Cannot verify reply queue because it has the form 'exchange/routingKey'");
+			}
+		}
+		return replyQueue;
 	}
 
 	/**
@@ -1143,6 +1168,8 @@ public class RabbitTemplate extends RabbitAccessor
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData) {
+		Assert.state(this.isListener, "RabbitTemplate is not configured as MessageListener - "
+							+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(new ChannelCallback<Message>() {
 
 			@Override

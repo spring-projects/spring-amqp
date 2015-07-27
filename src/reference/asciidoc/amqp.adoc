@@ -1691,6 +1691,7 @@ Of course, the client and server must use the same header for correlation data.
 NOTE: Spring AMQP version 1.1 used a custom property `spring_reply_correlation` for this data.
 If you wish to revert to this behavior with the current version, perhaps to maintain compatibility with another application using 1.1, you must set the attribute to `spring_reply_correlation`.
 
+[[reply-listener]]
 ===== Reply Listener Container
 
 When using RabbitMQ versions prior to _3.4.0_, a new temporary queue is used for each reply.
@@ -1726,6 +1727,16 @@ NOTE: When the template does not use a fixed `replyQueue` (or is using Direct re
 
 If you define your `RabbitTemplate` as a `<bean/>`, or using an `@Configuration` class to define it as an `@Bean`, or when creating the template programmatically, you will need to define and wire up the reply listener container yourself.
 If you fail to do this, the template will never receive the replies and will eventually time out and return null as the reply to a call to a `sendAndReceive` method.
+
+Starting with _version 1.5_, the `RabbitTemplate` will detect if it has been
+configured as a `MessageListener` to receive replies.
+If not, attempts to send and receive messages with a reply address
+will fail with an `IllegalStateException` (because the replies will never be received).
+
+Further, if a simple `replyAddress` (queue name) is used, the reply listener container will verify that it is listening
+to a queue with the same name.
+This check cannot be performed if the reply address is an exchange and routing key and a debug log message will be
+written.
 
 IMPORTANT: When wiring the reply listener and template yourself, it is important to ensure that the template's `replyQueue` and the container's `queues` (or `queueNames`) properties refer to the same queue.
 The template inserts the reply queue into the outbound message `replyTo` property.
