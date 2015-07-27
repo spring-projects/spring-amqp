@@ -87,6 +87,13 @@ When the `mandatory` flag is set when using `sendAndReceive` and `convertSendAnd
 will throw an `AmqpMessageReturnedException` if the request message can't be deliverted.
 See <<reply-timeout>> for more information.
 
+====== Improper Reply Listener Configuration
+
+The framework will attempt to verify proper configuration of a reply listener container when using a named
+reply queue.
+
+See <<reply-listener>> for more information.
+
 ===== The RabbitManagementTemplate
 
 The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker using the REST API
