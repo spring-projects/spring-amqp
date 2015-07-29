@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.amqp;
+package org.springframework.amqp.core;
 
-import org.springframework.amqp.core.Message;
+import org.springframework.amqp.AmqpException;
 
 /**
  * Exception thrown in an RPC scenario if the request message cannot be delivered when

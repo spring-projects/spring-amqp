@@ -64,8 +64,8 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;

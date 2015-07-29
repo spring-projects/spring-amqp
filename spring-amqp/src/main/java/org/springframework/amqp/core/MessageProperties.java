@@ -173,8 +173,8 @@ public class MessageProperties implements Serializable {
 		return this.type;
 	}
 
-	public void setCorrelationId(byte[] correlationId) {
-		this.correlationId = correlationId;//NOSONAR
+	public void setCorrelationId(byte[] correlationId) {//NOSONAR
+		this.correlationId = correlationId;
 	}
 
 	public byte[] getCorrelationId() {

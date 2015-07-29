@@ -72,8 +72,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
 		for (int i = 0; i < childElements.size(); i++) {
-			parseListener(childElements.get(i), element, parserContext,
-							i, childElements.size() > 1);
+			parseListener(childElements.get(i), element, parserContext);
 		}
 
 		parserContext.popAndRegisterContainingComponent();
@@ -83,8 +82,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		return null;
 	}
 
-	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext,
-			int index, boolean multipleElements) {
+	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
 

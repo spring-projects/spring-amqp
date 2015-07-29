@@ -251,11 +251,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
-		method = checkProxy(method, bean);
+		Method methodToUse = checkProxy(method, bean);
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
-		endpoint.setMethod(method);
+		endpoint.setMethod(methodToUse);
 		endpoint.setBeanFactory(this.beanFactory);
-		processListener(endpoint, rabbitListener, bean, method, beanName);
+		processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
 	}
 
 	private Method checkProxy(Method method, Object bean) {

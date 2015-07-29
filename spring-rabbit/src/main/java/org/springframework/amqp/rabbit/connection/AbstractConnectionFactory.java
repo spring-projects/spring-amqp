@@ -42,6 +42,8 @@ import com.rabbitmq.client.Address;
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean {
 
+	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
+
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
@@ -89,10 +91,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			this.rabbitConnectionFactory.setUri(uri);
 		}
 		catch (URISyntaxException use) {
-			logger.info("setUri() was passed an invalid URI; it is ignored", use);
+			logger.info(BAD_URI, use);
 		}
 		catch (GeneralSecurityException gse) {
-			logger.info("setUri() was passed an invalid URI; it is ignored", gse);
+			logger.info(BAD_URI, gse);
 		}
 	}
 
@@ -106,10 +108,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			this.rabbitConnectionFactory.setUri(uri);
 		}
 		catch (URISyntaxException use) {
-			logger.info("setUri() was passed an invalid URI; it is ignored", use);
+			logger.info(BAD_URI, use);
 		}
 		catch (GeneralSecurityException gse) {
-			logger.info("setUri() was passed an invalid URI; it is ignored", gse);
+			logger.info(BAD_URI, gse);
 		}
 	}
 

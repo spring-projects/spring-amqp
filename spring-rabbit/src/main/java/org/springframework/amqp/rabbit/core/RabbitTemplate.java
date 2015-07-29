@@ -33,9 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIllegalStateException;
-import org.springframework.amqp.AmqpMessageReturnedException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -179,7 +179,7 @@ public class RabbitTemplate extends RabbitAccessor
 
 	private volatile ReturnCallback returnCallback;
 
-	private volatile boolean confirmsOrReturnsCapable;
+	private volatile Boolean confirmsOrReturnsCapable;
 
 	private volatile Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
@@ -216,7 +216,6 @@ public class RabbitTemplate extends RabbitAccessor
 	public RabbitTemplate(ConnectionFactory connectionFactory) {
 		this();
 		setConnectionFactory(connectionFactory);
-		afterPropertiesSet();
 	}
 
 	/**
@@ -509,15 +508,6 @@ public class RabbitTemplate extends RabbitAccessor
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
-	}
-
-	@Override
-	public void afterPropertiesSet() {
-		super.afterPropertiesSet();
-		if (getConnectionFactory() instanceof CachingConnectionFactory) {
-			CachingConnectionFactory ccf = (CachingConnectionFactory) getConnectionFactory();
-			this.confirmsOrReturnsCapable = ccf.isPublisherConfirms() || ccf.isPublisherReturns();
-		}
 	}
 
 	/**
@@ -1256,6 +1246,15 @@ public class RabbitTemplate extends RabbitAccessor
 		RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(
 				(connectionFactory != null ? connectionFactory : getConnectionFactory()), isChannelTransacted());
 		Channel channel = resourceHolder.getChannel();
+		if (this.confirmsOrReturnsCapable == null) {
+			if (getConnectionFactory() instanceof CachingConnectionFactory) {
+				CachingConnectionFactory ccf = (CachingConnectionFactory) getConnectionFactory();
+				this.confirmsOrReturnsCapable = ccf.isPublisherConfirms() || ccf.isPublisherReturns();
+			}
+			else {
+				this.confirmsOrReturnsCapable = Boolean.FALSE;
+			}
+		}
 		if (this.confirmsOrReturnsCapable) {
 			addListener(channel);
 		}
@@ -1303,18 +1302,19 @@ public class RabbitTemplate extends RabbitAccessor
 			routingKey = this.routingKey;
 		}
 		setupConfirm(channel, correlationData);
-		MessageProperties messageProperties = message.getMessageProperties();
+		Message messageToUse = message;
+		MessageProperties messageProperties = messageToUse.getMessageProperties();
 		if (mandatory) {
 			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_CORRELATION_KEY, this.uuid);
 		}
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
-				message = processor.postProcessMessage(message);
+				messageToUse = processor.postProcessMessage(messageToUse);
 			}
 		}
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
 				.fromMessageProperties(messageProperties, encoding);
-		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
+		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, messageToUse.getBody());
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
@@ -1444,13 +1444,13 @@ public class RabbitTemplate extends RabbitAccessor
 			String routingKey,
 			BasicProperties properties,
 			byte[] body)
-		throws IOException
- {
+		throws IOException {
 
 		ReturnCallback returnCallback = this.returnCallback;
 		if (returnCallback == null) {
-			String messageTag = properties.getHeaders().remove(RETURN_CORRELATION_KEY).toString();
-			if (messageTag != null) {
+			Object messageTagHeader = properties.getHeaders().remove(RETURN_CORRELATION_KEY);
+			if (messageTagHeader != null) {
+				String messageTag = messageTagHeader.toString();
 				final PendingReply pendingReply = this.replyHolder.get(messageTag);
 				if (pendingReply != null) {
 					returnCallback = new ReturnCallback() {
@@ -1592,7 +1592,7 @@ public class RabbitTemplate extends RabbitAccessor
 
 		public Message get() throws InterruptedException {
 			Object reply = this.queue.take();
-			return reply == null ? null : processReply(reply);
+			return processReply(reply);
 		}
 
 		public Message get(long timeout, TimeUnit unit) throws InterruptedException {

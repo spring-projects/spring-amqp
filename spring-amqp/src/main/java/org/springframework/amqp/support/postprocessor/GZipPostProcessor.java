@@ -49,7 +49,7 @@ public class GZipPostProcessor extends AbstractDeflaterPostProcessor {
 		return "gzip";
 	}
 
-	private static class SettableLevelGZIPOutputStream extends GZIPOutputStream {
+	private static final class SettableLevelGZIPOutputStream extends GZIPOutputStream {
 
 		private SettableLevelGZIPOutputStream(OutputStream out, int level) throws IOException {
 			super(out);
