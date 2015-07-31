@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -52,6 +53,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecution
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
@@ -726,6 +728,27 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	@Override
 	protected void doStart() throws Exception {
+		if (getMessageListener() instanceof ListenerContainerAware) {
+			Collection<String> expectedQueueNames = ((ListenerContainerAware) getMessageListener()).expectedQueueNames();
+			if (expectedQueueNames != null) {
+				String[] queueNames = getQueueNames();
+				Assert.state(expectedQueueNames.size() == getQueueNames().length,
+						"Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
+						+ Arrays.asList(queueNames));
+				boolean found = false;
+				for (String queueName : queueNames) {
+					if (expectedQueueNames.contains(queueName)) {
+						found = true;
+					}
+					else {
+						found = false;
+						break;
+					}
+				}
+				Assert.state(found, "Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
+						+ Arrays.asList(queueNames));
+			}
+		}
 		super.doStart();
 		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
 			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
