@@ -76,7 +76,7 @@ public class RabbitTemplateHeaderTests {
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
-		template.expectedQueueName();
+		template.expectedQueueNames();
 		if (!standardHeader) {
 			template.setCorrelationKey(CORRELATION_HEADER);
 		}
@@ -133,7 +133,7 @@ public class RabbitTemplateHeaderTests {
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
 		template.setReplyTimeout(60000);
-		template.expectedQueueName();
+		template.expectedQueueNames();
 
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setReplyTo("replyTo1");
@@ -179,7 +179,7 @@ public class RabbitTemplateHeaderTests {
 		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		String replyTo2 = "replyTo2";
 		template.setReplyAddress(replyTo2);
-		template.expectedQueueName();
+		template.expectedQueueNames();
 
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";
@@ -238,7 +238,7 @@ public class RabbitTemplateHeaderTests {
 		template.setCorrelationKey(CORRELATION_HEADER);
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
-		template.expectedQueueName();
+		template.expectedQueueNames();
 
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";
@@ -288,7 +288,7 @@ public class RabbitTemplateHeaderTests {
 		template.setCorrelationKey(CORRELATION_HEADER);
 		String replyTo2 = "replyTo2";
 		template.setReplyAddress(replyTo2);
-		template.expectedQueueName();
+		template.expectedQueueNames();
 
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";

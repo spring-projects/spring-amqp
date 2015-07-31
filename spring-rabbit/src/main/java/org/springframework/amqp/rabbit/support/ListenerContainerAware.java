@@ -15,6 +15,8 @@
  */
 package org.springframework.amqp.rabbit.support;
 
+import java.util.Collection;
+
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 
@@ -29,10 +31,10 @@ import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 public interface ListenerContainerAware {
 
 	/**
-	 * Return the queue name that the listener expects to listen to.
+	 * Return the queue names that the listener expects to listen to.
 	 *
-	 * @return the queue name.
+	 * @return the queue names.
 	 */
-	String expectedQueueName();
+	Collection<String> expectedQueueNames();
 
 }

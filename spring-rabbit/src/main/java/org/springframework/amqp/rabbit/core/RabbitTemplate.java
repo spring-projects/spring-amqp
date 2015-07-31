@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -520,13 +521,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @since 1.5
 	 */
 	@Override
-	public String expectedQueueName() {
+	public Collection<String> expectedQueueNames() {
 		this.isListener = true;
-		String replyQueue = null;
+		Collection<String> replyQueue = null;
 		if (this.replyAddress != null) {
 			Address address = new Address(this.replyAddress);
 			if (address.getExchangeName() == "") {
-				replyQueue = address.getRoutingKey();
+				replyQueue = Collections.singletonList(address.getRoutingKey());
 			}
 			else {
 				logger.debug("Cannot verify reply queue because it has the form 'exchange/routingKey'");

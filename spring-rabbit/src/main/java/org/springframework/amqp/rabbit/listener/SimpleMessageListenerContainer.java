@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -728,17 +729,23 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doStart() throws Exception {
 		if (getMessageListener() instanceof ListenerContainerAware) {
-			String expectedQueueName = ((ListenerContainerAware) getMessageListener()).expectedQueueName();
-			if (expectedQueueName != null) {
+			Collection<String> expectedQueueNames = ((ListenerContainerAware) getMessageListener()).expectedQueueNames();
+			if (expectedQueueNames != null) {
 				String[] queueNames = getQueueNames();
+				Assert.state(expectedQueueNames.size() == getQueueNames().length,
+						"Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
+						+ Arrays.asList(queueNames));
 				boolean found = false;
 				for (String queueName : queueNames) {
-					if (queueName.equals(expectedQueueName)) {
+					if (expectedQueueNames.contains(queueName)) {
 						found = true;
+					}
+					else {
+						found = false;
 						break;
 					}
 				}
-				Assert.state(found, "Listener expects us to be listening on '" + expectedQueueName + "'; our queues: "
+				Assert.state(found, "Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
 						+ Arrays.asList(queueNames));
 			}
 		}

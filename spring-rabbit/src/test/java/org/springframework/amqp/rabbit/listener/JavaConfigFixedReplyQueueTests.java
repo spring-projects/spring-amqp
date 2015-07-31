@@ -120,9 +120,9 @@ public class JavaConfigFixedReplyQueueTests {
 			Throwable t = e.getCause();
 			assertThat(t, Matchers.instanceOf(IllegalStateException.class));
 			assertThat(t.getMessage(),
-					Matchers.containsString("Listener expects us to be listening on '"
+					Matchers.containsString("Listener expects us to be listening on '["
 							+ TestUtils.getPropertyValue(this.fixedReplyQRabbitTemplateWrongQueue, "replyAddress")
-							+ "'; our queues: " + Arrays.asList(this.replyListenerContainerWrongQueue.getQueueNames())));
+							+ "]'; our queues: " + Arrays.asList(this.replyListenerContainerWrongQueue.getQueueNames())));
 		}
 	}
 
