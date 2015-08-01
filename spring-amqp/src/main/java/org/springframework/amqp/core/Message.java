@@ -43,7 +43,7 @@ public class Message implements Serializable {
 	private final byte[] body;
 
 	public Message(byte[] body, MessageProperties messageProperties) {//NOSONAR
-		this.body = body;
+		this.body = body;//NOSONAR
 		this.messageProperties = messageProperties;
 	}
 

@@ -526,7 +526,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Collection<String> replyQueue = null;
 		if (this.replyAddress != null) {
 			Address address = new Address(this.replyAddress);
-			if (address.getExchangeName() == "") {
+			if ("".equals(address.getExchangeName())) {
 				replyQueue = Collections.singletonList(address.getRoutingKey());
 			}
 			else {
