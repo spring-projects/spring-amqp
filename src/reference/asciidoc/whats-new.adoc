@@ -20,6 +20,13 @@ Now, an empty `addresses` String is treated the same as a `null`, and the host/p
 
 The `CachingConnectionFactory` has an additional constructor, with a `URI` parameter, to configure the broker connection.
 
+====== Connection Reset
+
+A new method `resetConnection()` has been added to allow users to reset the connection (or connections).
+This might be used, for example, to reconnect to the primary broker after failing over to the secondary broker.
+This *will* impact in-process operations.
+The existing `destroy()` method does exactly the same, but the new method has a less daunting name.
+
 ===== Properties to Control Container Queue Declaration Behavior
 
 When the listener container consumers start, they attempt to passively declare the queues to ensure they are available
