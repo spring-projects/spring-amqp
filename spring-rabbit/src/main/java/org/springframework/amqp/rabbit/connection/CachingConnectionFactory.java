@@ -548,6 +548,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	@Override
 	public final void destroy() {
+		resetConnection();
+	}
+
+	/**
+	 * Close the connection(s). This will impact any in-process operations. New
+	 * connection(s) will be created on demand after this method returns. This might be
+	 * used to force a reconnect to the primary broker after failing over to a secondary
+	 * broker.
+	 */
+	public void resetConnection() {
 		synchronized (this.connectionMonitor) {
 			if (connection != null) {
 				this.connection.destroy();
