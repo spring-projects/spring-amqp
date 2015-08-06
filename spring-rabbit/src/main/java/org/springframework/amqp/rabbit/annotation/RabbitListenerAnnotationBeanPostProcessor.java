@@ -401,10 +401,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				boolean autoDelete = false;
 				if (!StringUtils.hasText(queueName)) {
 					queueName = UUID.randomUUID().toString();
-					if (!StringUtils.hasText(bindingQueue.exclusive())) {
+					// default exclusive/autodelete to true when anonymous
+					if (!StringUtils.hasText(bindingQueue.exclusive())
+							|| resolveExpressionAsBoolean(bindingQueue.exclusive())) {
 						exclusive = true;
 					}
-					if (!StringUtils.hasText(bindingQueue.autoDelete())) {
+					if (!StringUtils.hasText(bindingQueue.autoDelete())
+							|| resolveExpressionAsBoolean(bindingQueue.autoDelete())) {
 						autoDelete = true;
 					}
 				}

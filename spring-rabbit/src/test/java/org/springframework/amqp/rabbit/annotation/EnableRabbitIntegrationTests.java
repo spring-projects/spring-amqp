@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -30,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -87,6 +87,9 @@ public class EnableRabbitIntegrationTests {
 	private RabbitTemplate rabbitTemplate;
 
 	@Autowired
+	private RabbitAdmin rabbitAdmin;
+
+	@Autowired
 	private CountDownLatch errorHandlerLatch;
 
 	@Autowired
@@ -96,7 +99,7 @@ public class EnableRabbitIntegrationTests {
 	private String tagPrefix;
 
 	@AfterClass
-	public static void tearDown() {
+	public static void tearDownClass() {
 		brokerRunning.removeTestQueues();
 	}
 
@@ -113,6 +116,15 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoDeclareAnon() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
+	}
+
+	@Test
+	public void autoDeclareAnonWitAtts() {
+		String received = (String) rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.atts.rk", "foo");
+		assertThat(received, startsWith("foo:"));
+		org.springframework.amqp.core.Queue anonQueueWithAttributes
+			= new org.springframework.amqp.core.Queue(received.substring(4), true, true, true);
+		this.rabbitAdmin.declareQueue(anonQueueWithAttributes); // will fail if atts not correctly set
 	}
 
 	@Test
@@ -159,7 +171,7 @@ public class EnableRabbitIntegrationTests {
 		Message reply = rabbitTemplate.sendAndReceive("test.reply", request);
 		assertEquals("Wrong reply", "content", MessageTestUtils.extractText(reply));
 		assertEquals("Wrong foo header", "fooValue", reply.getMessageProperties().getHeaders().get("foo"));
-		assertThat((String) reply.getMessageProperties().getHeaders().get("bar"), Matchers.startsWith(tagPrefix));
+		assertThat((String) reply.getMessageProperties().getHeaders().get("bar"), startsWith(tagPrefix));
 	}
 
 	@Test
@@ -232,6 +244,15 @@ public class EnableRabbitIntegrationTests {
 		)
 		public String handleWithDeclareAnon(String foo) {
 			return foo.toUpperCase();
+		}
+
+		@RabbitListener(bindings = @QueueBinding(
+				value = @Queue(autoDelete = "true", exclusive="true", durable="true"),
+				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
+				key = "auto.anon.atts.rk")
+		)
+		public String handleWithDeclareAnonQueueWithAtts(String foo, @Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
+			return foo + ":" + queue;
 		}
 
 		@RabbitListener(queues = "test.simple")
