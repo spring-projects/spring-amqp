@@ -11,7 +11,7 @@
 
 	<rabbit:queue id="bar" />
 
-	<rabbit:listener-container id="container6" connection-factory="connectionFactory" channel-transacted="true" acknowledge="none" >
+	<rabbit:listener-container connection-factory="connectionFactory" channel-transacted="true" acknowledge="none" >
 		<rabbit:listener id="testListener" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
