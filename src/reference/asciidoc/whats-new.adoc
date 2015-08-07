@@ -109,12 +109,19 @@ See <<management-template>> for more information.
 
 ===== Listener Container Bean Names (XML)
 
-The `id` attribute on the `<listener-container/>` element is deprecated and ignored.
+[IMPORTANT]
+====
+The `id` attribute on the `<listener-container/>` element has been removed.
 Starting with this release, the `id` on the `<listener/>` child element is used alone to name the listener container
-bean.
+bean created for each listener element.
+
 Normal Spring bean name overrides are applied; if a later `<listener/>` is parsed with the same `id` as an existing
 bean, the new definition will override the existing one.
 Previously, bean names were composed from the ids of the `<listener-container/>` and `<listener/>` elements.
+
+When migrating to this release, if you have `id` s on your `<listener-container/>` elements, remove them and set the
+`id` on the child `<listener/>` element instead.
+====
 
 ===== Class-Level @RabbitListener
 

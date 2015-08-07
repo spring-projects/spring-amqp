@@ -509,6 +509,12 @@
 	</xsd:element>
 
 	<xsd:complexType name="listenerContainerBaseType">
+<!--
+	REMOVED in 1.5 - originally, it was deprecated in 1.5 M1 but that resulted in confusion.
+	So, we decided to remove it completely so configuration will fail fast when migrating to 1.5.
+
+	Users need to move the id from the listener-container element to the child listener elements.
+
 		<xsd:attribute name="id" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
@@ -520,6 +526,7 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+-->
 		<xsd:attribute name="task-executor" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
