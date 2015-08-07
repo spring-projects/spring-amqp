@@ -19,7 +19,8 @@
 
 	<rabbit:queue id="bar" />
 
-	<rabbit:listener-container id="container1" connection-factory="connectionFactory" acknowledge="manual" concurrency="${five}" transaction-size="${one}" auto-startup="${false}">
+	<rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual"
+			concurrency="${five}" transaction-size="${one}" auto-startup="${false}">
 		<rabbit:listener id="testListener" queue-names="foo, #{bar.name}" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 

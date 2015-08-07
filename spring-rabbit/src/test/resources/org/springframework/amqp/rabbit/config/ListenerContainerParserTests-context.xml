@@ -40,7 +40,7 @@
 		<rabbit:listener id="container6" queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="containerWithNamedListeners" connection-factory="connectionFactory">
+	<rabbit:listener-container connection-factory="connectionFactory">
 		<rabbit:listener id="testListener1" queues="foo" ref="testBean" method="handle"/>
 		<rabbit:listener id="testListener2" queues="bar" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
@@ -62,11 +62,11 @@
 <!-- Invalid -->
 
 
-	<rabbit:listener-container id="containerWithAnonListener" connection-factory="connectionFactory">
+	<rabbit:listener-container connection-factory="connectionFactory">
 		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
 	</rabbit:listener-container>
 
-	<rabbit:listener-container id="containerWithAnonListeners" connection-factory="connectionFactory">
+	<rabbit:listener-container connection-factory="connectionFactory">
 		<rabbit:listener queues="foo" ref="testBean" method="handle"/>
 		<rabbit:listener id="namedListener" queues="bar" ref="testBean" method="handle"/>
 		<rabbit:listener queues="bar" ref="testBean" method="handle"/>
