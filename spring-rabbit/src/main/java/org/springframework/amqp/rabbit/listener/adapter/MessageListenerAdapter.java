@@ -19,11 +19,14 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -125,6 +128,8 @@ import com.rabbitmq.client.Channel;
  */
 public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 
+	private final Map<String, String> queueOrTagToMethodName = new HashMap<String, String>();
+
 	/**
 	 * Out-of-the-box value for the default listener method: "handleMessage".
 	 */
@@ -208,6 +213,42 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		return this.defaultListenerMethod;
 	}
 
+
+	/**
+	 * Set the mapping of queue name or consumer tag to method name. The first lookup
+	 * is by queue name, if that returns null, we lookup by consumer tag, if that
+	 * returns null, the {@link #setDefaultListenerMethod(String) defaultListenerMethod}
+	 * is used.
+	 * @param queueOrTagToMethodName the map.
+	 * @since 1.5
+	 */
+	public void setQueueOrTagToMethodName(Map<String, String> queueOrTagToMethodName) {
+		this.queueOrTagToMethodName.putAll(queueOrTagToMethodName);
+	}
+
+	/**
+	 * Add the mapping of a queue name or consumer tag to a method name. The first lookup
+	 * is by queue name, if that returns null, we lookup by consumer tag, if that
+	 * returns null, the {@link #setDefaultListenerMethod(String) defaultListenerMethod}
+	 * is used.
+	 * @param queueOrTag The queue name or consumer tag.
+	 * @param methodName The method name.
+	 * @since 1.5
+	 */
+	public void addQueueOrTagToMethodName(String queueOrTag, String methodName) {
+		this.queueOrTagToMethodName.put(queueOrTag, methodName);
+	}
+
+	/**
+	 * Remove the mapping of a queue name or consumer tag to a method name.
+	 * @param queueOrTag The queue name or consumer tag.
+	 * @return the method name that was removed, or null.
+	 * @since 1.5
+	 */
+	public String removeQueueOrTagToMethodName(String queueOrTag) {
+		return this.queueOrTagToMethodName.remove(queueOrTag);
+	}
+
 	/**
 	 * Spring {@link ChannelAwareMessageListener} entry point.
 	 * <p>
@@ -260,16 +301,31 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	}
 
 	/**
-	 * Determine the name of the listener method that is supposed to handle the given message.
+	 * Determine the name of the listener method that will handle the given message.
 	 * <p>
-	 * The default implementation simply returns the configured default listener method, if any.
+	 * The default implementation first consults the
+	 * {@link #setQueueOrTagToMethodName(Map) queueOrTagToMethodName} map looking for a
+	 * match on the consumer queue or consumer tag; if no match found, it simply returns
+	 * the configured default listener method, or "handleMessage" if not configured.
 	 * @param originalMessage the Rabbit request message
-	 * @param extractedMessage the converted Rabbit request message, to be passed into the listener method as argument
+	 * @param extractedMessage the converted Rabbit request message, to be passed into the
+	 * listener method as argument
 	 * @return the name of the listener method (never <code>null</code>)
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setDefaultListenerMethod
+	 * @see #setQueueOrTagToMethodName
 	 */
 	protected String getListenerMethodName(Message originalMessage, Object extractedMessage) throws Exception {
+		if (this.queueOrTagToMethodName.size() > 0) {
+			MessageProperties props = originalMessage.getMessageProperties();
+			String methodName = this.queueOrTagToMethodName.get(props.getConsumerQueue());
+			if (methodName == null) {
+				methodName = this.queueOrTagToMethodName.get(props.getConsumerTag());
+			}
+			if (methodName != null) {
+				return methodName;
+			}
+		}
 		return getDefaultListenerMethod();
 	}
 
