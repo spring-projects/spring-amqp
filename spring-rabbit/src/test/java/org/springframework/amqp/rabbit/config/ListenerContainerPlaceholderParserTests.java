@@ -17,8 +17,10 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.After;
 import org.junit.Before;
@@ -27,46 +29,50 @@ import org.junit.Test;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.ListenerContainerParserTests.TestBean;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  */
 public final class ListenerContainerPlaceholderParserTests {
 
-	private BeanFactory beanFactory;
+	private GenericApplicationContext context;
 
 	@Before
 	public void setUp() throws Exception {
-		beanFactory = new GenericXmlApplicationContext(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
-		((GenericXmlApplicationContext)beanFactory).getDefaultListableBeanFactory().setBeanExpressionResolver(new StandardBeanExpressionResolver());
+		this.context = new GenericXmlApplicationContext(
+				new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
 	}
 
 	@After
 	public void closeBeanFactory() throws Exception {
-		if (beanFactory!=null) {
-			((ConfigurableApplicationContext)beanFactory).close();
+		if (this.context!=null) {
+			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
+			this.context.close();
+			assertTrue(TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class)
+					.isTerminated());
 		}
 	}
 
 	@Test
 	public void testParseWithQueueNames() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("testListener", SimpleMessageListenerContainer.class);
+		SimpleMessageListenerContainer container = this.context.getBean("testListener", SimpleMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
-		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
+		assertEquals(this.context.getBean(ConnectionFactory.class), container.getConnectionFactory());
 		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());
 		DirectFieldAccessor listenerAccessor = new DirectFieldAccessor(container.getMessageListener());
-		assertEquals(beanFactory.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
+		assertEquals(this.context.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
-		Queue queue = beanFactory.getBean("bar", Queue.class);
+		Queue queue = this.context.getBean("bar", Queue.class);
 		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
 	}
 

@@ -325,6 +325,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void onApplicationEvent(ContextClosedEvent event) {
 		if (this.applicationContext == event.getApplicationContext()) {
 			this.stopped = true;
+			this.deferredCloseExecutor.shutdownNow();
 		}
 	}
 
