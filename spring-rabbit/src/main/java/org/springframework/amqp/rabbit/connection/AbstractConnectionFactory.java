@@ -27,6 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
@@ -40,7 +41,7 @@ import com.rabbitmq.client.Address;
  * @author Steve Powell
  *
  */
-public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean {
+public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware {
 
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
@@ -59,6 +60,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
 
 	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
+
+	private volatile String beanName;
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory.
@@ -245,6 +248,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return closeTimeout;
 	}
 
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
 	protected final Connection createBareConnection() {
 		try {
 			Connection connection = null;
@@ -285,4 +293,15 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	@Override
 	public void destroy() {
 	}
+
+	@Override
+	public String toString() {
+		if (this.beanName != null) {
+			return this.beanName;
+		}
+		else {
+			return super.toString();
+		}
+	}
+
 }

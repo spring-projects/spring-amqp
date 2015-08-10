@@ -342,8 +342,10 @@ Previously you had to configure the SSL options programmatically.
 ----
 
 Refer to the https://www.rabbitmq.com/ssl.html[RabbitMQ Documentation] for information about configuring SSL.
-Omit the `sslPropertiesLocation` property to connect over SSL without certificate validation.
-When using certificate validation, the property is a Spring `Resource` pointing to a properties file containing the following keys:
+Omit the `keyStore` and `trustStore` configuration to connect over SSL without certificate validation.
+Key and trust store configuration can be provided as follows:
+
+The `sslPropertiesLocation` property is a Spring `Resource` pointing to a properties file containing the following keys:
 
 [source]
 ----
@@ -355,6 +357,10 @@ trustStore.passPhrase=secret
 
 The `keyStore` and `truststore` are Spring `Resources` pointing to the stores.
 Typically this properties file will be secured by the operating system with the application having read access.
+
+Starting with Spring AMQP _version 1.5_, these properties can be set directly on the factory bean.
+If both discrete properties and `sslPropertiesLocation` is provided, properties in the latter will override the
+discrete values.
 
 [[routing-connection-factory]]
 ===== Routing Connection Factory
@@ -410,7 +416,65 @@ The Namespace support also provides the `send-connection-factory-selector-expres
 
 Also starting with _version 1.4_, you can configure a routing connection factory in a `SimpleMessageListenerContainer`.
 In that case, the list of queue names is used as the lookup key.
-For example, if you configure the container with `setQueueNames("foo, bar")`, the lookup key will be `"[foo,bar]"` (no spaces).
+For example, if you configure the container with `setQueueNames("foo", "bar")`, the lookup key will be `"[foo,bar]"` (no spaces).
+
+[[queue-affinity]]
+===== Queue Affinity and the LocalizedQueueConnectionFactory
+
+When using HA queues in a cluster, for the best performance, it can be desirable to connect to the physical broker
+where the master queue resides.
+While the `CachingConnectionFactory` can be configured with multiple broker addresses; this is to fail over and the
+client will attempt to connect in order.
+The `LocalizedQueueConnectionFactory` uses the REST API provided by the admin plugin to determine which node the
+queue is mastered.
+It then creates (or retrieves from a cache) a `CachingConnectionFactory` that will connect to just that node.
+If the connection fails, the new master node is determined and the consumer connects to it.
+The `LocalizedQueueConnectionFactory` is configured with a default connection factory, in case the physical location
+of the queue cannot be determined, in which case it will connect as normal to the cluster.
+
+The `LocalizedQueueConnectionFactory` is a `RoutingConnectionFactory` and the `SimpleMessageListenerContainer` uses the
+queue names as the lookup key as discussed in <<routing-connection-factory>> above.
+
+NOTE: For this reason (the use of the queue name for the lookup), the `LocalizedQueueConnectionFactory` can only be
+used if the container is configured to listen to a single queue.
+
+NOTE: The RabbitMQ management plugin must be enabled on each node.
+
+Here is an example configuration, using Spring Boot's RabbitProperties to configure the factories:
+
+[source, xml]
+----
+@Autowired
+private RabbitProperties props;
+
+private final String[] adminUris = { "http://host1:15672", "http://host2:15672" };
+
+private final String[] nodes = { "rabbit@host1", "rabbit@host2" };
+
+@Bean
+public ConnectionFactory defaultConnectionFactory() {
+    CachingConnectionFactory cf = new CachingConnectionFactory();
+    cf.setAddresses(this.props.getAddresses());
+    cf.setUsername(this.props.getUsername());
+    cf.setPassword(this.props.getPassword());
+    cf.setVirtualHost(this.props.getVirtualHost());
+    return cf;
+}
+
+@Bean
+public ConnectionFactory queueAffinityCF(
+        @Qualifier("defaultConnectionFactory") ConnectionFactory defaultCF) throws Exception{
+    return new LocalizedQueueConnectionFactory(defaultCF,
+            StringUtils.commaDelimitedListToStringArray(this.props.getAddresses()),
+            this.adminUris, this.nodes,
+            this.props.getVirtualHost(), this.props.getUsername(), this.props.getPassword(),
+            false, null);
+}
+----
+
+Notice that the first three parameters are arrays of `addresses`, `adminUris` and `nodes`.
+These are positional in that when a container attempts to connect to a queue, it determines on which node the queue is
+mastered and connects to the address in the same array position.
 
 [[cf-pub-conf-ret]]
 ===== Publisher Confirms and Returns
