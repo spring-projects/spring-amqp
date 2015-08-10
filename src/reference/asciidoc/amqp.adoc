@@ -876,6 +876,8 @@ if (received) {
 IMPORTANT: Spring AMQP also supports annotated-listener endpoints through the use of the `@RabbitListener` annotation and provides an open infrastructure to register endpoints programmatically.
 This is by far the most convenient way to setup an asynchronous consumer, see <<async-annotation-driven>> for more details.
 
+====== Message Listener
+
 For asynchronous Message reception, a dedicated component (not the `AmqpTemplate`) is involved.
 That component is a container for a Message consuming callback.
 We will look at the container and its properties in just a moment, but first we should look at the callback since that is where your application code will be integrated with the messaging system.
@@ -898,6 +900,9 @@ public interface ChannelAwareMessageListener {
 }
 ----
 
+[[message-listener-adapter]]
+====== MessageListenerAdapter
+
 If you prefer to maintain a stricter separation between your application logic and the messaging API, you can rely upon an adapter implementation that is provided by the framework.
 This is often referred to as "Message-driven POJO" support.
 When using the adapter, you only need to provide a reference to the instance that the adapter itself should invoke.
@@ -909,6 +914,18 @@ MessageListenerAdapter listener = new MessageListenerAdapter(somePojo);
 ----
 
 You can subclass the adapter and provide an implementation of `getListenerMethodName()` to dynamically select different methods based on the message.
+This method has two paramters, the `originalMessage` and `extractedMessage`, the latter being the result of any conversion.
+By default, a `SimpleMessageConverter` is configured; see <<simple-message-converter>> for more information and
+information about other converters available.
+
+Starting with _version 1.4.2_, the original message has properties `consumerQueue` and `consumerTag` which can be used
+to determine which queue a message was received from.
+
+Starting with _version 1.5_, you can configure a map of consumer queue/tag to method name, to dynamically select the
+method to call.
+If no entry is in the map, we fall back to the default listener method.
+
+====== Container
 
 Now that you've seen the various options for the Message-listening callback, we can turn our attention to the container.
 Basically, the container handles the "active" responsibilities so that the listener callback can remain passive.
@@ -1479,6 +1496,7 @@ Object receiveAndConvert(String queueName) throws AmqpException;
 
 NOTE: The `MessageListenerAdapter` mentioned in <<async-consumer>> also uses a `MessageConverter`.
 
+[[simple-message-converter]]
 ===== SimpleMessageConverter
 
 The default implementation of the `MessageConverter` strategy is called `SimpleMessageConverter`.
