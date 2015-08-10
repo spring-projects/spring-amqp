@@ -154,7 +154,12 @@ See <<consumerTags>>.
 
 The `MessageListenerAdapter` now supports a map of queue names (or consumer tags) to method names, to determine
 which delegate method to call based on the queue the message was received from.
-See <<message-listener-adapter>>.
+
+===== LocalizedQueueConnectionFactory
+
+A new connection factory that connects to the node in a cluster where a mirrored queue actually resides.
+
+See <<queue-affinity>>.
 
 ==== Changes in 1.4 Since 1.3
 

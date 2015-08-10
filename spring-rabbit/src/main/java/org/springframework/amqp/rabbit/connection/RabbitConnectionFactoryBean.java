@@ -62,13 +62,31 @@ import com.rabbitmq.client.SocketConfigurator;
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
 
+	private static final String KEY_STORE = "keyStore";
+
+	private static final String TRUST_STORE = "trustStore";
+
+	private static final String KEY_STORE_PASS_PHRASE = "keyStore.passPhrase";
+
+	private static final String TRUST_STORE_PASS_PHRASE = "trustStore.passPhrase";
+
 	private static final String TLS_V1_1 = "TLSv1.1";
 
 	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
 
+	private final Properties sslProperties = new Properties();
+
 	private boolean useSSL;
 
 	private Resource sslPropertiesLocation;
+
+	private volatile String keyStore;
+
+	private volatile String trustStore;
+
+	private volatile String keyStorePassphrase;
+
+	private volatile String trustStorePassphrase;
 
 	private volatile String sslAlgorithm = TLS_V1_1;
 
@@ -116,6 +134,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <li>keyStore.passPhrase=secret</li>
 	 * <li>trustStore.passPhrase=secret</li>
 	 * </ul>
+	 * <p>
+	 * If this is provided, its properties (if present) will override the explicitly
+	 * set property in this bean.
 	 * @param sslPropertiesLocation the Resource to the ssl properties
 	 */
 	public void setSslPropertiesLocation(Resource sslPropertiesLocation) {
@@ -128,6 +149,80 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected Resource getSslPropertiesLocation() {
 		return sslPropertiesLocation;
+	}
+
+	/**
+	 * @return the key store resource.
+	 * @since 1.5
+	 */
+	protected String getKeyStore() {
+		return this.keyStore == null ? this.sslProperties.getProperty(KEY_STORE) : this.keyStore;
+	}
+
+	/**
+	 * Set the key store resource (e.g. file:/foo/keystore) - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param keyStore the keystore resource.
+	 * @since 1.5
+	 */
+	public void setKeyStore(String keyStore) {
+		this.keyStore = keyStore;
+	}
+
+	/**
+	 * @return the trust store resource.
+	 * @since 1.5
+	 */
+	protected String getTrustStore() {
+		return this.trustStore == null ? this.sslProperties.getProperty(TRUST_STORE) : this.trustStore;
+	}
+
+	/**
+	 * Set the key store resource (e.g. file:/foo/truststore) - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param trustStore the keystore resource.
+	 * @since 1.5
+	 */
+	public void setTrustStore(String trustStore) {
+		this.trustStore = trustStore;
+	}
+
+	/**
+	 * @return the key store pass phrase.
+	 * @since 1.5
+	 */
+	protected String getKeyStorePassphrase() {
+		return this.keyStorePassphrase == null ? this.sslProperties.getProperty(KEY_STORE_PASS_PHRASE)
+				: this.keyStorePassphrase;
+	}
+
+	/**
+	 * Set the key store pass phrase - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param keyStorePassphrase the key store pass phrase.
+	 * @since 1.5
+	 */
+	public void setKeyStorePassphrase(String keyStorePassphrase) {
+		this.keyStorePassphrase = keyStorePassphrase;
+	}
+
+	/**
+	 * @return the trust store pass phrase.
+	 * @since 1.5
+	 */
+	protected String getTrustStorePassphrase() {
+		return this.trustStorePassphrase == null ? this.sslProperties.getProperty(TRUST_STORE_PASS_PHRASE)
+				: this.trustStorePassphrase;
+	}
+
+	/**
+	 * Set the trust store pass phrase - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param trustStorePassphrase the trust store pass phrase.
+	 * @since 1.5
+	 */
+	public void setTrustStorePassphrase(String trustStorePassphrase) {
+		this.trustStorePassphrase = trustStorePassphrase;
 	}
 
 	/**
@@ -299,7 +394,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.4.4
 	 */
 	protected void setUpSSL() throws Exception {
-		if (this.sslPropertiesLocation == null) {
+		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
+				&& this.keyStorePassphrase == null && this.trustStorePassphrase == null) {
 			if (this.sslAlgorithmSet) {
 				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
 			}
@@ -308,17 +404,18 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			}
 		}
 		else {
-			Properties sslProperties = new Properties();
-			sslProperties.load(this.sslPropertiesLocation.getInputStream());
+			if (this.sslPropertiesLocation != null) {
+				this.sslProperties.load(this.sslPropertiesLocation.getInputStream());
+			}
 			PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-			String keyStoreName = sslProperties.getProperty("keyStore");
-			Assert.state(StringUtils.hasText(keyStoreName), "keyStore property required");
-			String trustStoreName = sslProperties.getProperty("trustStore");
-			Assert.state(StringUtils.hasText(trustStoreName), "trustStore property required");
-			String keyStorePassword = sslProperties.getProperty("keyStore.passPhrase");
-			Assert.state(StringUtils.hasText(keyStorePassword), "keyStore.passPhrase property required");
-			String trustStorePassword = sslProperties.getProperty("trustStore.passPhrase");
-			Assert.state(StringUtils.hasText(trustStorePassword), "trustStore.passPhrase property required");
+			String keyStoreName = getKeyStore();
+			Assert.state(StringUtils.hasText(keyStoreName), KEY_STORE + " property required");
+			String trustStoreName = getTrustStore();
+			Assert.state(StringUtils.hasText(trustStoreName), TRUST_STORE + " property required");
+			String keyStorePassword = getKeyStorePassphrase();
+			Assert.state(StringUtils.hasText(keyStorePassword), KEY_STORE_PASS_PHRASE + " property required");
+			String trustStorePassword = getTrustStorePassphrase();
+			Assert.state(StringUtils.hasText(trustStorePassword), TRUST_STORE_PASS_PHRASE + " property required");
 			Resource keyStore = resolver.getResource(keyStoreName);
 			Resource trustStore = resolver.getResource(trustStoreName);
 			char[] keyPassphrase = keyStorePassword.toCharArray();

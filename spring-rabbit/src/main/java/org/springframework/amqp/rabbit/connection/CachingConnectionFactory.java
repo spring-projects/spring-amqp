@@ -612,7 +612,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@Override
 	public String toString() {
 		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize + ", host=" + this.getHost()
-				+ ", port=" + this.getPort() + ", active=" + active + "]";
+				+ ", port=" + this.getPort() + ", active=" + active
+				+ " " + super.toString() + "]";
 	}
 
 	private class CachedChannelInvocationHandler implements InvocationHandler {
