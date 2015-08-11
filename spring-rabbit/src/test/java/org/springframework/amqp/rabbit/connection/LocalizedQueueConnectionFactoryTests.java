@@ -106,14 +106,14 @@ public class LocalizedQueueConnectionFactoryTests {
 
 
 			@Override
-			protected ConnectionFactory createConnectionFactory(String address) throws Exception {
+			protected ConnectionFactory createConnectionFactory(String address, String node) throws Exception {
 				return mockCF(address);
 			}
 
 		};
 		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
 		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
-		when(logger.isDebugEnabled()).thenReturn(true);
+		when(logger.isInfoEnabled()).thenReturn(true);
 		doAnswer(new CallsRealMethods()).when(logger).debug(anyString());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(lqcf);
@@ -126,7 +126,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(),
 				anyBoolean(), anyMap(),
 				Matchers.any(Consumer.class));
-		verify(logger, atLeast(1)).debug(captor.capture());
+		verify(logger, atLeast(1)).info(captor.capture());
 		assertTrue(assertLog(captor.getAllValues(), "Queue: q is on node: rabbit@foo at: localhost:1235"));
 
 		// Fail rabbit1 and verify the container switches to rabbit2
@@ -142,7 +142,7 @@ public class LocalizedQueueConnectionFactoryTests {
 				anyBoolean(), anyMap(),
 				Matchers.any(Consumer.class));
 		container.stop();
-		verify(logger, atLeast(1)).debug(captor.capture());
+		verify(logger, atLeast(1)).info(captor.capture());
 		assertTrue(assertLog(captor.getAllValues(), "Queue: q is on node: rabbit@bar at: localhost:1236"));
 	}
 
