@@ -58,11 +58,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	private final ConnectionFactory defaultConnectionFactory;
 
-	private final String[] addresses;
-
 	private final String[] adminUris;
 
-	private final String[] nodes;
+	private final Map<String, String> nodeToAddress = new HashMap<String, String>();
 
 	private final String vhost;
 
@@ -83,12 +81,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	private final String trustStorePassPhrase;
 
 	/**
-	 *
-	 * @param defaultConnectionFactory the fallback connection factory to use if the queue can't be located.
-	 * @param addresses the rabbitmq server addresses (host:port, ...).
-	 * @param adminUris the rabbitmq admin addresses (http://host:port, ...) must be the same length
-	 * as addresses.
-	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...).
+	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
+	 * can't be located.
+	 * @param nodeToAddress a Map of node to address: (rabbit@server1 : server1:5672)
+	 * @param adminUris the rabbitmq admin addresses (http://host:port, ...) must be the
+	 * same length as addresses.
 	 * @param vhost the virtual host.
 	 * @param username the user name.
 	 * @param password the password.
@@ -96,16 +93,12 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * @param sslPropertiesLocation the SSL properties location.
 	 */
 	public LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory,
-			String[] addresses, String[] adminUris, String[] nodes, String vhost,
-			String username, String password, boolean useSSL, Resource sslPropertiesLocation) {
+			Map<String, String> nodeToAddress, String[] adminUris, String vhost, String username, String password,
+			boolean useSSL, Resource sslPropertiesLocation) {
 		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		Assert.isTrue(addresses.length == adminUris.length
-				&& addresses.length == nodes.length,
-				"'addresses', 'adminAddresses', and 'nodes' properties must have equal length");
 		this.defaultConnectionFactory = defaultConnectionFactory;
-		this.addresses = Arrays.copyOf(addresses, addresses.length);
 		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		this.nodes = Arrays.copyOf(nodes, nodes.length);
+		this.nodeToAddress.putAll(nodeToAddress);
 		this.vhost = vhost;
 		this.username = username;
 		this.password = password;
@@ -115,12 +108,76 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	}
 
 	/**
-	 *
 	 * @param defaultConnectionFactory the fallback connection factory to use if the queue can't be located.
-	 * @param addresses the rabbitmq server addresses (host:port, ...).
+	 * @param nodeToAddress a Map of node to address: (rabbit@server1 : server1:5672)
 	 * @param adminUris the rabbitmq admin addresses (http://host:port, ...) must be the same length
 	 * as addresses.
-	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...).
+	 * @param vhost the virtual host.
+	 * @param username the user name.
+	 * @param password the password.
+	 * @param useSSL use SSL.
+	 * @param keyStore the key store resource (e.g. "file:/foo/keystore").
+	 * @param trustStore the trust store resource (e.g. "file:/foo/truststore").
+	 * @param keyStorePassPhrase the pass phrase for the key store.
+	 * @param trustStorePassPhrase the pass phrase for the trust store.
+	 */
+	public LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory,
+			Map<String, String> nodeToAddress, String[] adminUris, String vhost, String username, String password,
+			boolean useSSL, String keyStore, String trustStore,
+			String keyStorePassPhrase, String trustStorePassPhrase) {
+		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
+		this.defaultConnectionFactory = defaultConnectionFactory;
+		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
+		this.nodeToAddress.putAll(nodeToAddress);
+		this.vhost = vhost;
+		this.username = username;
+		this.password = password;
+		this.useSSL = useSSL;
+		this.sslPropertiesLocation = null;
+		this.keyStore = keyStore;
+		this.trustStore = trustStore;
+		this.keyStorePassPhrase = keyStorePassPhrase;
+		this.trustStorePassPhrase = trustStorePassPhrase;
+	}
+
+	/**
+	 * @param defaultConnectionFactory the fallback connection factory to use if the queue
+	 * can't be located.
+	 * @param addresses the rabbitmq server addresses (host:port, ...).
+	 * @param adminUris the rabbitmq admin addresses (http://host:port, ...)
+	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...)
+	 * must be the same length as addresses.
+	 * @param vhost the virtual host.
+	 * @param username the user name.
+	 * @param password the password.
+	 * @param useSSL use SSL.
+	 * @param sslPropertiesLocation the SSL properties location.
+	 */
+	public LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory, String[] addresses,
+			String[] adminUris, String[] nodes, String vhost, String username, String password, boolean useSSL,
+			Resource sslPropertiesLocation) {
+		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
+		Assert.isTrue(addresses.length == nodes.length,
+				"'addresses', 'adminAddresses', and 'nodes' properties must have equal length");
+		this.defaultConnectionFactory = defaultConnectionFactory;
+		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
+		for (int i = 0; i < addresses.length; i++) {
+			this.nodeToAddress.put(nodes[i], addresses[i]);
+		}
+		this.vhost = vhost;
+		this.username = username;
+		this.password = password;
+		this.useSSL = useSSL;
+		this.sslPropertiesLocation = sslPropertiesLocation;
+		this.keyStore = this.trustStore = this.keyStorePassPhrase = this.trustStorePassPhrase = null;
+	}
+
+	/**
+	 * @param defaultConnectionFactory the fallback connection factory to use if the queue can't be located.
+	 * @param addresses the rabbitmq server addresses (host:port, ...).
+	 * @param adminUris the rabbitmq admin addresses (http://host:port, ...).
+	 * @param nodes the rabbitmq nodes corresponding to addresses (rabbit@server1, ...)  must be the same length
+	 * as addresses.
 	 * @param vhost the virtual host.
 	 * @param username the user name.
 	 * @param password the password.
@@ -135,13 +192,13 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 			String username, String password, boolean useSSL, String keyStore, String trustStore,
 			String keyStorePassPhrase, String trustStorePassPhrase) {
 		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		Assert.isTrue(addresses.length == adminUris.length
-				&& addresses.length == nodes.length,
+		Assert.isTrue(addresses.length == nodes.length,
 				"'addresses', 'adminAddresses', and 'nodes' properties must have equal length");
 		this.defaultConnectionFactory = defaultConnectionFactory;
-		this.addresses = Arrays.copyOf(addresses, addresses.length);
 		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		this.nodes = Arrays.copyOf(nodes, nodes.length);
+		for (int i = 0; i < addresses.length; i++) {
+			this.nodeToAddress.put(nodes[i], addresses[i]);
+		}
 		this.vhost = vhost;
 		this.username = username;
 		this.password = password;
@@ -214,10 +271,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				if (queueInfo != null) {
 					String node = queueInfo.getNode();
 					if (node != null) {
-						for (int j = 0; j < this.nodes.length; j++) {
-							if (this.nodes[j].equals(node)) {
-								return nodeConnectionFactory(queue, j);
-							}
+						String uri = this.nodeToAddress.get(node);
+						if (uri != null) {
+							return nodeConnectionFactory(queue, node, uri);
 						}
 						if (logger.isDebugEnabled()) {
 							logger.debug("No match for node: " + node);
@@ -251,9 +307,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		return new Client(adminUri, username, password);
 	}
 
-	private synchronized ConnectionFactory nodeConnectionFactory(String queue, int index) throws Exception {
-		String address = this.addresses[index];
-		String node = this.nodes[index];
+	private synchronized ConnectionFactory nodeConnectionFactory(String queue, String node, String address)
+			throws Exception {
 		if (logger.isInfoEnabled()) {
 			logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
 		}
