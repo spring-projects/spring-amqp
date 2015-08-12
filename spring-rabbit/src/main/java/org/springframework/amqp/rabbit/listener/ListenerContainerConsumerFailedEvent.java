@@ -41,16 +41,12 @@ public class ListenerContainerConsumerFailedEvent extends AmqpEvent {
 	 * @param throwable the throwable.
 	 * @param fatal true if the startup failure was fatal (will not be retried).
 	 */
-	public ListenerContainerConsumerFailedEvent(SimpleMessageListenerContainer source, String reason,
+	public ListenerContainerConsumerFailedEvent(Object source, String reason,
 			Throwable throwable, boolean fatal) {
 		super(source);
 		this.reason = reason;
 		this.fatal = fatal;
 		this.throwable = throwable;
-	}
-
-	public SimpleMessageListenerContainer getContainer() {
-		return (SimpleMessageListenerContainer) this.source;
 	}
 
 	public String getReason() {

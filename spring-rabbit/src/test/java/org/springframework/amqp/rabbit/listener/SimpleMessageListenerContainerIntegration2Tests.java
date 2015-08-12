@@ -184,6 +184,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		verify(publisher).publishEvent(captor.capture());
 		ListenerContainerConsumerFailedEvent event = captor.getValue();
 		assertThat(event.getThrowable(), instanceOf(ConsumerCancelledException.class));
+		assertFalse(event.isFatal());
 		DirectFieldAccessor dfa = new DirectFieldAccessor(newConsumer);
 		dfa.setPropertyValue("lastRetryDeclaration", 0);
 		dfa.setPropertyValue("retryDeclarationInterval", 100);
