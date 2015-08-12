@@ -440,6 +440,13 @@ used if the container is configured to listen to a single queue.
 
 NOTE: The RabbitMQ management plugin must be enabled on each node.
 
+CAUTION: This connection factory is intended for long-lived connections, such as those used by the
+`SimpleMessageListenerContainer`.
+It is not intended for short connection use, such as with a `RabbitTemplate` because of the overhead of invoking the
+REST API before making the connection.
+Also, for publish operations, the queue is unknown, and the message is published to all cluster members anyway,
+so the logic of looking up the node has little value.
+
 Here is an example configuration, using Spring Boot's RabbitProperties to configure the factories:
 
 [source, xml]
@@ -463,7 +470,7 @@ public ConnectionFactory defaultConnectionFactory() {
 
 @Bean
 public ConnectionFactory queueAffinityCF(
-        @Qualifier("defaultConnectionFactory") ConnectionFactory defaultCF) throws Exception{
+        @Qualifier("defaultConnectionFactory") ConnectionFactory defaultCF) {
     return new LocalizedQueueConnectionFactory(defaultCF,
             StringUtils.commaDelimitedListToStringArray(this.props.getAddresses()),
             this.adminUris, this.nodes,

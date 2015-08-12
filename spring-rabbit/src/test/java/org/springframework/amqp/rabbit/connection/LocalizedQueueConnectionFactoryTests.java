@@ -65,8 +65,6 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  */
 public class LocalizedQueueConnectionFactoryTests {
 
-	private final Map<String, ConnectionFactory> cfs = new HashMap<String, ConnectionFactory>();
-
 	private final Map<String, Connection> connections = new HashMap<String, Connection>();
 
 	private final Map<String, Channel> channels = new HashMap<String, Channel>();
@@ -206,7 +204,6 @@ public class LocalizedQueueConnectionFactoryTests {
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
 		when(connectionFactory.getHost()).thenReturn(address);
-		this.cfs.put(address, connectionFactory);
 		this.connections.put(address, connection);
 		this.channels.put(address, channel);
 		return connectionFactory;

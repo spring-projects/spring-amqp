@@ -297,7 +297,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * Create a client instance.
 	 * @param adminUri the admin URI.
 	 * @param username the username
-	 * @param password the pasword.
+	 * @param password the password.
 	 * @return The client.
 	 * @throws MalformedURLException if the URL is malformed
 	 * @throws URISyntaxException if there is a syntax error.
