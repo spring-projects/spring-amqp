@@ -56,13 +56,28 @@ import com.rabbitmq.client.Channel;
  */
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, InitializingBean {
 
-	protected static final String DEFAULT_EXCHANGE_NAME = "";
+	/**
+	 * The default exchange name.
+	 */
+	public static final String DEFAULT_EXCHANGE_NAME = "";
 
-	protected static final Object QUEUE_NAME = "QUEUE_NAME";
+	/**
+	 * Property key for the queue name in the {@link Properties} returned by
+	 * {@link #getQueueProperties(String)}.
+	 */
+	public static final Object QUEUE_NAME = "QUEUE_NAME";
 
-	protected static final Object QUEUE_MESSAGE_COUNT = "QUEUE_MESSAGE_COUNT";
+	/**
+	 * Property key for the message count in the {@link Properties} returned by
+	 * {@link #getQueueProperties(String)}.
+	 */
+	public static final Object QUEUE_MESSAGE_COUNT = "QUEUE_MESSAGE_COUNT";
 
-	protected static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
+	/**
+	 * Property key for the consumer count in the {@link Properties} returned by
+	 * {@link #getQueueProperties(String)}.
+	 */
+	public static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
