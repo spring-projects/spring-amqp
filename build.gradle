@@ -87,10 +87,10 @@ subprojects { subproject ->
 		log4jVersion = '1.2.17'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.3'
-		rabbitmqHttpClientVersion = '1.0.0.M1'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.4'
+		rabbitmqHttpClientVersion = '1.0.0.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.6.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.1.7.RELEASE'
 
 		springRetryVersion = '1.1.2.RELEASE'
 	}
@@ -202,12 +202,15 @@ project('spring-rabbit') {
 		compile project(":spring-amqp")
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
+		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
+			exclude group: 'org.springframework'
+		}
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
+		compile "org.springframework:spring-web:$springVersion"
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
