@@ -98,4 +98,9 @@ public class AddressTests {
 		assertEquals(replyTo, address.getRoutingKey());
 	}
 
+	@Test
+	public void testEquals() {
+		assertEquals(new Address("foo/bar"), new Address("foo/bar"));
+	}
+
 }
