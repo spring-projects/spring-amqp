@@ -121,6 +121,32 @@ public class Address {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		Address address = (Address) o;
+
+		return !(this.exchangeName != null
+				? !this.exchangeName.equals(address.exchangeName)
+				: address.exchangeName != null)
+				&& !(this.routingKey != null
+				? !this.routingKey.equals(address.routingKey)
+				: address.routingKey != null);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = exchangeName != null ? exchangeName.hashCode() : 0;
+		result = 31 * result + (routingKey != null ? routingKey.hashCode() : 0);
+		return result;
+	}
+
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(this.exchangeName + "/");
 		if (StringUtils.hasText(this.routingKey)) {
