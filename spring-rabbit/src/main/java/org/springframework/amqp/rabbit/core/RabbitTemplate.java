@@ -46,10 +46,10 @@ import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
@@ -1275,9 +1275,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				(connectionFactory != null ? connectionFactory : getConnectionFactory()), isChannelTransacted());
 		Channel channel = resourceHolder.getChannel();
 		if (this.confirmsOrReturnsCapable == null) {
-			if (getConnectionFactory() instanceof CachingConnectionFactory) {
-				CachingConnectionFactory ccf = (CachingConnectionFactory) getConnectionFactory();
-				this.confirmsOrReturnsCapable = ccf.isPublisherConfirms() || ccf.isPublisherReturns();
+			if (getConnectionFactory() instanceof PublisherCallbackChannelConnectionFactory) {
+				PublisherCallbackChannelConnectionFactory pcccf =
+						(PublisherCallbackChannelConnectionFactory) getConnectionFactory();
+				this.confirmsOrReturnsCapable = pcccf.isPublisherConfirms() || pcccf.isPublisherReturns();
 			}
 			else {
 				this.confirmsOrReturnsCapable = Boolean.FALSE;

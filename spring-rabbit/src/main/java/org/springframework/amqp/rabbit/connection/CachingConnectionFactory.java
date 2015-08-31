@@ -84,7 +84,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Steve Powell
  */
 public class CachingConnectionFactory extends AbstractConnectionFactory
-		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent> {
+		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
+				PublisherCallbackChannelConnectionFactory {
 
 	private ApplicationContext applicationContext;
 
@@ -242,10 +243,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.connectionCacheSize = connectionCacheSize;
 	}
 
+	@Override
 	public boolean isPublisherConfirms() {
 		return this.publisherConfirms;
 	}
 
+	@Override
 	public boolean isPublisherReturns() {
 		return this.publisherReturns;
 	}
