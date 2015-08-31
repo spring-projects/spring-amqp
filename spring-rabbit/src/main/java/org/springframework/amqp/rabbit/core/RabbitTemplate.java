@@ -776,30 +776,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
-				channel.basicQos(1);
-				final CountDownLatch latch = new CountDownLatch(1);
-				QueueingConsumer consumer = new QueueingConsumer(channel) {
-
-					@Override
-					public void handleCancel(String consumerTag) throws IOException {
-						super.handleCancel(consumerTag);
-						latch.countDown();
-					}
-
-					@Override
-					public void handleConsumeOk(String consumerTag) {
-						super.handleConsumeOk(consumerTag);
-						latch.countDown();
-					}
-
-				};
-				channel.basicConsume(queueName, consumer);
-				if (!latch.await(10, TimeUnit.SECONDS)) {
-					if (channel instanceof ChannelProxy) {
-						((ChannelProxy) channel).getTargetChannel().close();
-					}
-					throw new AmqpException("Blocking receive, consumer failed to consume");
-				}
+				QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
 				Delivery delivery;
 				if (receiveTimeout < 0) {
 					delivery = consumer.nextDelivery();
@@ -894,24 +871,51 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 			@Override
 			public Boolean doInRabbit(Channel channel) throws Exception {
-				boolean channelTransacted = RabbitTemplate.this.isChannelTransacted();
+				boolean channelTransacted = isChannelTransacted();
+				Message receiveMessage = null;
+				boolean channelLocallyTransacted = isChannelLocallyTransacted(channel);
 
-				GetResponse response = channel.basicGet(queueName, !channelTransacted);
-				// Response can be null in the case that there is no message on the queue.
-				if (response != null) {
-					long deliveryTag = response.getEnvelope().getDeliveryTag();
-					boolean channelLocallyTransacted = RabbitTemplate.this.isChannelLocallyTransacted(channel);
+				if (receiveTimeout == 0) {
+					GetResponse response = channel.basicGet(queueName, !channelTransacted);
+					// Response can be null in the case that there is no message on the queue.
+					if (response != null) {
+						long deliveryTag = response.getEnvelope().getDeliveryTag();
 
-					if (channelLocallyTransacted) {
-						channel.basicAck(deliveryTag, false);
+						if (channelLocallyTransacted) {
+							channel.basicAck(deliveryTag, false);
+						}
+						else if (channelTransacted) {
+							// Not locally transacted but it is transacted so it could be
+							// synchronized with an external transaction
+							ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+						}
+						receiveMessage = buildMessageFromResponse(response);
 					}
-					else if (channelTransacted) {
-						// Not locally transacted but it is transacted so it could be synchronized with an external transaction
-						ConnectionFactoryUtils.registerDeliveryTag(RabbitTemplate.this.getConnectionFactory(), channel, deliveryTag);
+				}
+				else {
+					QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
+					Delivery delivery;
+					if (receiveTimeout < 0) {
+						delivery = consumer.nextDelivery();
 					}
-
-					Message receiveMessage = RabbitTemplate.this.buildMessageFromResponse(response);
-
+					else {
+						delivery = consumer.nextDelivery(receiveTimeout);
+					}
+					channel.basicCancel(consumer.getConsumerTag());
+					if (delivery != null) {
+						long deliveryTag = delivery.getEnvelope().getDeliveryTag();
+						if (channelTransacted & !channelLocallyTransacted) {
+							// Not locally transacted but it is transacted so it could be
+							// synchronized with an external transaction
+							ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
+						}
+						else {
+							channel.basicAck(deliveryTag, false);
+						}
+						receiveMessage = buildMessageFromDelivery(delivery);
+					}
+				}
+				if (receiveMessage != null) {
 					Object receive = receiveMessage;
 					if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
 						receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
@@ -1592,6 +1596,34 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		catch (UnsupportedEncodingException e) {
 			throw new AmqpIllegalStateException("Invalid Character Set:" + this.encoding, e);
 		}
+	}
+
+	private QueueingConsumer createQueueingConsumer(final String queueName, Channel channel) throws Exception {
+		channel.basicQos(1);
+		final CountDownLatch latch = new CountDownLatch(1);
+		QueueingConsumer consumer = new QueueingConsumer(channel) {
+
+			@Override
+			public void handleCancel(String consumerTag) throws IOException {
+				super.handleCancel(consumerTag);
+				latch.countDown();
+			}
+
+			@Override
+			public void handleConsumeOk(String consumerTag) {
+				super.handleConsumeOk(consumerTag);
+				latch.countDown();
+			}
+
+		};
+		channel.basicConsume(queueName, consumer);
+		if (!latch.await(10, TimeUnit.SECONDS)) {
+			if (channel instanceof ChannelProxy) {
+				((ChannelProxy) channel).getTargetChannel().close();
+			}
+			throw new AmqpException("Blocking receive, consumer failed to consume");
+		}
+		return consumer;
 	}
 
 	private static class PendingReply {

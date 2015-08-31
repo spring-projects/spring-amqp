@@ -913,10 +913,20 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveAndReply() {
+	public void testReceiveAndReplyBlocking() {
+		testReceiveAndReply(10000);
+	}
+
+	@Test
+	public void testReceiveAndReplyNonBlocking() {
+		testReceiveAndReply(0);
+	}
+
+	private void testReceiveAndReply(long timeout) {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		this.template.convertAndSend(ROUTE, "test");
+		template.setReceiveTimeout(timeout);
 
 		boolean received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
@@ -961,6 +971,9 @@ public class RabbitTemplateIntegrationTests {
 		assertTrue(result instanceof Integer);
 		assertEquals(4, result);
 
+		if (timeout > 0) {
+			this.template.setReceiveTimeout(1);
+		}
 		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
 			@Override
@@ -971,6 +984,7 @@ public class RabbitTemplateIntegrationTests {
 		assertFalse(received);
 
 		this.template.convertAndSend(ROUTE, "test");
+		this.template.setReceiveTimeout(timeout);
 		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
 			@Override
@@ -980,10 +994,12 @@ public class RabbitTemplateIntegrationTests {
 		});
 		assertTrue(received);
 
+		this.template.setReceiveTimeout(0);
 		result = this.template.receive();
 		assertNull(result);
 
 		this.template.convertAndSend(ROUTE, "TEST");
+		this.template.setReceiveTimeout(timeout);
 		received = this.template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
 			@Override
@@ -1006,11 +1022,13 @@ public class RabbitTemplateIntegrationTests {
 		result = this.template.receiveAndConvert(ROUTE);
 		assertEquals("TEST", result);
 
-		assertEquals(null, template.receive(ROUTE));
+		this.template.setReceiveTimeout(0);
+		assertEquals(null, this.template.receive(ROUTE));
 
-		template.setChannelTransacted(true);
+		this.template.setChannelTransacted(true);
 
 		this.template.convertAndSend(ROUTE, "TEST");
+		this.template.setReceiveTimeout(timeout);
 		result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
 					@Override
@@ -1029,9 +1047,11 @@ public class RabbitTemplateIntegrationTests {
 					}
 				});
 		assertEquals("TEST", result);
-		assertEquals(null, template.receive(ROUTE));
+		this.template.setReceiveTimeout(0);
+		assertEquals(null, this.template.receive(ROUTE));
 
 		this.template.convertAndSend(ROUTE, "TEST");
+		this.template.setReceiveTimeout(timeout);
 		try {
 			new TransactionTemplate(new TestTransactionManager())
 					.execute(new TransactionCallbackWithoutResult() {
@@ -1059,11 +1079,12 @@ public class RabbitTemplateIntegrationTests {
 			assertTrue(e.getCause() instanceof PlannedException);
 		}
 
-		assertEquals("TEST", template.receiveAndConvert(ROUTE));
-		assertEquals(null, template.receive(ROUTE));
+		assertEquals("TEST", this.template.receiveAndConvert(ROUTE));
+		this.template.setReceiveTimeout(0);
+		assertEquals(null, this.template.receive(ROUTE));
 
 		template.convertAndSend("test");
-
+		this.template.setReceiveTimeout(timeout);
 		try {
 			this.template.receiveAndReply(new ReceiveAndReplyCallback<Double, Void>() {
 
