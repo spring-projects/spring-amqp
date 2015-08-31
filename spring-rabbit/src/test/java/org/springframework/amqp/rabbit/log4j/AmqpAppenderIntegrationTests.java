@@ -44,7 +44,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.util.Log4jConfigurer;
 
 /**
  * @author Jon Brisbin <jbrisbin@vmware.com>
@@ -67,9 +66,10 @@ public class AmqpAppenderIntegrationTests {
 
 	private SimpleMessageListenerContainer listenerContainer;
 
+	@SuppressWarnings("deprecation") // SF 4.2.1
 	@Before
 	public void setUp() throws Exception {
-		Log4jConfigurer.initLogging("classpath:log4j-amqp.properties");
+		org.springframework.util.Log4jConfigurer.initLogging("classpath:log4j-amqp.properties");
 		log = Logger.getLogger(getClass());
 		listenerContainer = applicationContext.getBean(SimpleMessageListenerContainer.class);
 	}
@@ -79,9 +79,10 @@ public class AmqpAppenderIntegrationTests {
 		listenerContainer.shutdown();
 	}
 
+	@SuppressWarnings("deprecation")  // SF 4.2.1
 	@AfterClass
 	public static void reset() throws Exception {
-		Log4jConfigurer.initLogging("classpath:log4j.properties");
+		org.springframework.util.Log4jConfigurer.initLogging("classpath:log4j.properties");
 	}
 
 	@Test
@@ -169,12 +170,13 @@ public class AmqpAppenderIntegrationTests {
 	/*
 	 * When running as main(); should shutdown cleanly.
 	 */
+	@SuppressWarnings("deprecation") // SF 4.2.1
 	public static void main(String[] args) throws Exception {
-		Log4jConfigurer.initLogging("classpath:log4j-amqp.properties");
+		org.springframework.util.Log4jConfigurer.initLogging("classpath:log4j-amqp.properties");
 		Log logger = LogFactory.getLog(AmqpAppenderIntegrationTests.class);
 		logger.info("foo");
 		Thread.sleep(1000);
-		Log4jConfigurer.shutdownLogging();
+		org.springframework.util.Log4jConfigurer.shutdownLogging();
 	}
 
 	public static class EnhancedAppender extends AmqpAppender {
