@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,13 @@ package org.springframework.amqp.rabbit.listener.exception;
  */
 public class ConsumerCancelledException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 3815997920289066359L;
+
+	public ConsumerCancelledException() {
+	}
+
+	public ConsumerCancelledException(Throwable cause) {
+		super(cause);
+	}
 
 }
