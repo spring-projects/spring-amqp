@@ -28,10 +28,10 @@ compile 'org.springframework.amqp:spring-rabbit:{spring-amqp-version}'
 [[compatibility]]
 ===== Compatibility
 
-While the default Spring Framework version dependency is 4.1.x, Spring AMQP is generally compatible with earlier versions of Spring Framework.
-Annotation-based listeners and the `RabbitMessagingTemplate` require Spring Framework 4.1, however.
+While the default Spring Framework version dependency is 4.2.x, Spring AMQP is generally compatible with earlier versions of Spring Framework.
+Annotation-based listeners and the `RabbitMessagingTemplate` require Spring Framework 4.1 or higher, however.
 
-Similarly, the default `amqp-client` version is 3.4.x but the framework is generally compatible with earlier versions.
+Similarly, the default `amqp-client` version is 3.5.x but the framework is generally compatible with earlier versions.
 However, of course, features that rely on newer client versions will not be available.
 
 ===== Very, Very Quick
