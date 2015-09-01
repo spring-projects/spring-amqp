@@ -159,4 +159,13 @@ public @interface RabbitListener {
 	 */
 	QueueBinding[] bindings() default {};
 
+	/**
+	 * If provided, the listener container for this listener will be added to a bean
+	 * with this value as its name, of type {@code Collection<MessageListenerContainer>}.
+	 * This allows, for example, iteration over the collection to start/stop a subset
+	 * of containers.
+	 * @return the bean name for the group.
+	 */
+	String group() default "";
+
 }

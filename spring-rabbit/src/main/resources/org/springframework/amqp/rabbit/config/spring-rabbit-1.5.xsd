@@ -527,6 +527,17 @@
 			</xsd:annotation>
 		</xsd:attribute>
 -->
+		<xsd:attribute name="group" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When provided, the containers created by this element will be added to a bean of type
+	'Collection<MessageListenerContainer>` with this as the bean name. It allows,
+	for example, access to the containers to start/stop etc, by iterating over the collection.
+	If the same group is used multiple times, the collection will be the aggregate of all
+	containers so designated.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="task-executor" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
