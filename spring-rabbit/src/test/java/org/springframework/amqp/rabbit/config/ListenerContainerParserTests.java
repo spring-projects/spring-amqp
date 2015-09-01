@@ -19,15 +19,18 @@ package org.springframework.amqp.rabbit.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.aopalliance.aop.Advice;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -99,6 +102,10 @@ public class ListenerContainerParserTests {
 		assertEquals(1000L, TestUtils.getPropertyValue(container, "failedDeclarationRetryInterval"));
 		assertEquals(30000L, TestUtils.getPropertyValue(container, "retryDeclarationInterval"));
 		assertEquals(beanFactory.getBean("tagger"), TestUtils.getPropertyValue(container, "consumerTagStrategy"));
+		Collection<?> group = beanFactory.getBean("containerGroup", Collection.class);
+		assertEquals(3, group.size());
+		assertThat(group, Matchers.contains(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
+				beanFactory.getBean("testListener2")));
 	}
 
 	@Test
@@ -181,7 +188,7 @@ public class ListenerContainerParserTests {
 	@Test
 	public void testIncompatibleTxAtts() {
 		try {
-			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass());
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();;
 			fail("Parse exception exptected");
 		}
 		catch (BeanDefinitionParsingException e) {

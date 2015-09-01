@@ -123,6 +123,11 @@ When migrating to this release, if you have `id` s on your `<listener-container/
 `id` on the child `<listener/>` element instead.
 ====
 
+However, to support starting/stopping containers as a group, a new `group` attribute has been added.
+When this attribute is defined, the containers created by this element are added to a bean with this name, of type
+`Collection<SimpleMessageListenerContainer`.
+You can iterate over this group to start/stop containers.
+
 ===== Class-Level @RabbitListener
 
 The `@RabbitListener` annotation can now be applied at the class level.

@@ -63,6 +63,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private BeanExpressionContext expressionContext;
 
+	private String group;
+
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -179,6 +181,19 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 */
 	public RabbitAdmin getAdmin() {
 		return admin;
+	}
+
+	@Override
+	public String getGroup() {
+		return group;
+	}
+
+	/**
+	 * Set the group for the corresponding listener container.
+	 * @param group the group.
+	 */
+	public void setGroup(String group) {
+		this.group = group;
 	}
 
 	@Override

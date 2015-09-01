@@ -286,6 +286,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
 		endpoint.setQueueNames(resolveQueues(rabbitListener));
+		String group = rabbitListener.group();
+		if (StringUtils.hasText(group)) {
+			Object resolvedGroup = resolveExpression(group);
+			if (resolvedGroup instanceof String) {
+				endpoint.setGroup((String) resolvedGroup);
+			}
+		}
 
 		endpoint.setExclusive(rabbitListener.exclusive());
 		String priority = resolve(rabbitListener.priority());

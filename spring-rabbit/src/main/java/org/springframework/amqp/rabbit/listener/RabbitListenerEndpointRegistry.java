@@ -16,8 +16,10 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,11 +27,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Creates the necessary {@link MessageListenerContainer} instances for the
@@ -52,7 +59,7 @@ import org.springframework.util.Assert;
  * @see MessageListenerContainer
  * @see RabbitListenerContainerFactory
  */
-public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLifecycle {
+public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLifecycle, ApplicationContextAware {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -61,6 +68,15 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	private int phase = Integer.MAX_VALUE;
 
+	private ConfigurableApplicationContext applicationContext;
+
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		if (applicationContext instanceof ConfigurableApplicationContext) {
+			this.applicationContext = (ConfigurableApplicationContext) applicationContext;
+		}
+	}
 
 	/**
 	 * Return the {@link MessageListenerContainer} with the specified id or
@@ -105,6 +121,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	 * @see #getListenerContainers()
 	 * @see #getListenerContainer(String)
 	 */
+	@SuppressWarnings("unchecked")
 	public void registerListenerContainer(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> factory,
 	                                      boolean startImmediately) {
 		Assert.notNull(endpoint, "Endpoint must not be null");
@@ -117,6 +134,17 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 					"Another endpoint is already registered with id '" + id + "'");
 			MessageListenerContainer container = createListenerContainer(endpoint, factory);
 			this.listenerContainers.put(id, container);
+			if (StringUtils.hasText(endpoint.getGroup()) && this.applicationContext != null) {
+				List<MessageListenerContainer> containerGroup;
+				if (this.applicationContext.containsBean(endpoint.getGroup())) {
+					containerGroup = this.applicationContext.getBean(endpoint.getGroup(), List.class);
+				}
+				else {
+					containerGroup = new ArrayList<MessageListenerContainer>();
+					this.applicationContext.getBeanFactory().registerSingleton(endpoint.getGroup(), containerGroup);
+				}
+				containerGroup.add(container);
+			}
 			if (startImmediately) {
 				startIfNecessary(container);
 			}
