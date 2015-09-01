@@ -260,8 +260,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setMessageListener(new MessageListenerAdapter(new PojoListener(latch2)));
 		container2.setQueueNames(queue.getName());
 		container2.setApplicationContext(context);
-		container2.setRecoveryInterval(500);
-		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exlusive.
+		container2.setRecoveryInterval(1000);
+		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exclusive.
 		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
 		container2.setApplicationEventPublisher(publisher);
 		container2.afterPropertiesSet();

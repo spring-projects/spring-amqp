@@ -13,17 +13,20 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanDefinitionHolder;
+import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.support.ManagedMap;
@@ -44,6 +47,8 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String ID_ATTRIBUTE = "id";
 
+	private static final String GROUP_ATTRIBUTE = "group";
+
 	private static final String QUEUE_NAMES_ATTRIBUTE = "queue-names";
 
 	private static final String QUEUES_ATTRIBUTE = "queues";
@@ -60,29 +65,48 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 	private static final String EXCLUSIVE = "exclusive";
 
-	private static final AtomicInteger instance = new AtomicInteger();
-
-	private boolean instanceUsed;
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(),
 				parserContext.extractSource(element));
 		parserContext.pushContainingComponent(compositeDef);
 
+		String group = element.getAttribute(GROUP_ATTRIBUTE);
+		ManagedList<RuntimeBeanReference> containerList = null;
+		if (StringUtils.hasText(group)) {
+			BeanDefinition groupDef;
+			if (parserContext.getRegistry().containsBeanDefinition(group)) {
+				groupDef = parserContext.getRegistry().getBeanDefinition(group);
+			}
+			else {
+				BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(ArrayList.class);
+				builder.addConstructorArgValue(new ManagedList<RuntimeBeanReference>());
+				groupDef = builder.getBeanDefinition();
+				BeanDefinitionHolder holder = new BeanDefinitionHolder(groupDef, group);
+				BeanDefinitionReaderUtils.registerBeanDefinition(holder, parserContext.getRegistry());
+			}
+			ConstructorArgumentValues constructorArgumentValues = groupDef.getConstructorArgumentValues();
+			if (!ArrayList.class.getName().equals(groupDef.getBeanClassName())
+					|| constructorArgumentValues.getArgumentCount() != 1
+					|| constructorArgumentValues.getIndexedArgumentValue(0, ManagedList.class) == null) {
+				parserContext.getReaderContext().error("Unexpected configuration for bean " + group, element);
+			}
+			containerList = (ManagedList<RuntimeBeanReference>) constructorArgumentValues
+					.getIndexedArgumentValue(0, ManagedList.class).getValue();
+		}
+
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
 		for (int i = 0; i < childElements.size(); i++) {
-			parseListener(childElements.get(i), element, parserContext);
+			parseListener(childElements.get(i), element, parserContext, containerList);
 		}
 
 		parserContext.popAndRegisterContainingComponent();
-		if (this.instanceUsed) {
-			instance.incrementAndGet();
-		}
 		return null;
 	}
 
-	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext) {
+	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext,
+			ManagedList<RuntimeBeanReference> containerList) {
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));
 
@@ -187,6 +211,10 @@ class ListenerContainerParser implements BeanDefinitionParser {
 
 		// Register the listener and fire event
 		parserContext.registerBeanComponent(new BeanComponentDefinition(containerDef, containerBeanName));
+
+		if (containerList != null) {
+			containerList.add(new RuntimeBeanReference(containerBeanName));
+		}
 	}
 
 }

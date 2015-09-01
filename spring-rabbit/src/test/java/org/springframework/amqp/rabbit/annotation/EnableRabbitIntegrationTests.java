@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,7 @@ import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Header;
@@ -98,6 +100,9 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private String tagPrefix;
 
+	@Autowired
+	private ApplicationContext context;
+
 	@AfterClass
 	public static void tearDownClass() {
 		brokerRunning.removeTestQueues();
@@ -130,6 +135,7 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
+		assertEquals(2, this.context.getBean("testGroup", List.class).size());
 	}
 
 	@Test
@@ -255,12 +261,12 @@ public class EnableRabbitIntegrationTests {
 			return foo + ":" + queue;
 		}
 
-		@RabbitListener(queues = "test.simple")
+		@RabbitListener(queues = "test.simple", group = "testGroup")
 		public String capitalize(String foo) {
 			return foo.toUpperCase();
 		}
 
-		@RabbitListener(queues = "test.header")
+		@RabbitListener(queues = "test.header", group = "testGroup")
 		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
 			return prefix + content.toUpperCase();
 		}
