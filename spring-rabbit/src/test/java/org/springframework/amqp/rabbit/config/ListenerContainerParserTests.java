@@ -27,7 +27,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.aopalliance.aop.Advice;
 import org.hamcrest.Matchers;
@@ -63,8 +62,6 @@ public class ListenerContainerParserTests {
 	@Before
 	public void setUp() throws Exception {
 		ListenerContainerParser parser = new ListenerContainerParser();
-		AtomicInteger instance = (AtomicInteger) ReflectionTestUtils.getField(parser, "instance");
-		instance.set(0);
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
