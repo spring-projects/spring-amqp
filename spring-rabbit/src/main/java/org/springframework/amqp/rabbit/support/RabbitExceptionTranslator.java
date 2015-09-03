@@ -70,8 +70,7 @@ public class RabbitExceptionTranslator {
 			return new AmqpTimeoutException(ex);
 		}
 		if (ex instanceof ConsumerCancelledException) {
-			//TODO do we need this extra exception in the Spring for the same reason as that one in Rabbit Client?
-			return new org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledException();
+			return new org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledException(ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);
