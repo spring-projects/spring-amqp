@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
@@ -81,8 +82,10 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -114,6 +117,8 @@ import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -177,6 +182,89 @@ public class RabbitTemplateIntegrationTests {
 		assertNotNull(out);
 		assertEquals("nonblock", out);
 		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test(expected = ConsumerCancelledException.class)
+	public void testReceiveConsumerCanceled() throws Exception {
+		ConnectionFactory connectionFactory = new SingleConnectionFactory("localhost", BrokerTestUtils.getPort());
+
+		class MockConsumer implements Consumer {
+
+			private final Consumer delegate;
+
+			MockConsumer(Consumer delegate) {
+				this.delegate = delegate;
+			}
+
+			@Override
+			public void handleConsumeOk(String consumerTag) {
+				this.delegate.handleConsumeOk(consumerTag);
+				try {
+					handleCancel(consumerTag);
+				}
+				catch (IOException e) {
+					throw new IllegalStateException(e);
+				}
+			}
+
+			@Override
+			public void handleCancelOk(String consumerTag) {
+				this.delegate.handleCancelOk(consumerTag);
+			}
+
+			@Override
+			public void handleCancel(String consumerTag) throws IOException {
+				this.delegate.handleCancel(consumerTag);
+			}
+
+			@Override
+			public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
+				this.delegate.handleShutdownSignal(consumerTag, sig);
+			}
+
+			@Override
+			public void handleRecoverOk(String consumerTag) {
+				this.delegate.handleRecoverOk(consumerTag);
+			}
+
+			@Override
+			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
+					throws IOException {
+				this.delegate.handleDelivery(consumerTag, envelope, properties, body);
+			}
+
+		}
+
+		class MockChannel extends PublisherCallbackChannelImpl {
+
+			public MockChannel(Channel delegate) {
+				super(delegate);
+			}
+
+			@Override
+			public String basicConsume(String queue, Consumer callback)
+					throws IOException {
+				return super.basicConsume(queue, new MockConsumer(callback));
+			}
+
+		}
+
+		Connection connection = spy(connectionFactory.createConnection());
+		when(connection.createChannel(anyBoolean())).then(new Answer<Channel>() {
+
+			@Override
+			public Channel answer(InvocationOnMock invocation) throws Throwable {
+				return new MockChannel((Channel) invocation.callRealMethod());
+			}
+
+		});
+
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
+		dfa.setPropertyValue("connection", connection);
+
+		this.template = new RabbitTemplate(connectionFactory);
+		this.template.setReceiveTimeout(10000);
+		this.template.receive(ROUTE);
 	}
 
 	@Test
