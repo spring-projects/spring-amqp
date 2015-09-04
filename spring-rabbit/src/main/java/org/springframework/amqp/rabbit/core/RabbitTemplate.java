@@ -904,7 +904,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					channel.basicCancel(consumer.getConsumerTag());
 					if (delivery != null) {
 						long deliveryTag = delivery.getEnvelope().getDeliveryTag();
-						if (channelTransacted & !channelLocallyTransacted) {
+						if (channelTransacted && !channelLocallyTransacted) {
 							// Not locally transacted but it is transacted so it could be
 							// synchronized with an external transaction
 							ConnectionFactoryUtils.registerDeliveryTag(getConnectionFactory(), channel, deliveryTag);
