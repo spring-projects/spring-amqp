@@ -70,7 +70,7 @@ public class RabbitExceptionTranslator {
 			return new AmqpTimeoutException(ex);
 		}
 		if (ex instanceof ConsumerCancelledException) {
-			return new org.springframework.amqp.rabbit.listener.exception.ConsumerCancelledException(ex);
+			return new org.springframework.amqp.rabbit.support.ConsumerCancelledException(ex);
 		}
 		// fallback
 		return new UncategorizedAmqpException(ex);

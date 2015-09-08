@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.amqp.rabbit.listener.exception;
+package org.springframework.amqp.rabbit.support;
 
 /**
  * Thrown when the broker cancels the consumer and the message
