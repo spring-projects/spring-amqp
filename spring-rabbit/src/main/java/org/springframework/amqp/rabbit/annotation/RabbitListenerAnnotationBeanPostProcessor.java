@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -352,28 +353,41 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		if (queues.length > 0 && bindings.length > 0) {
 			throw new BeanInitializationException("@RabbitListener can have 'queues' or 'bindings' but not both");
 		}
-		int length = queues.length > 0 ? queues.length : bindings.length;
-		String[] result = new String[length];
+		List<String> result = new ArrayList<String>();
 		if (queues.length > 0) {
 			for (int i = 0; i < queues.length; i++) {
 				Object resolvedValue = resolveExpression(queues[i]);
-				if (resolvedValue instanceof Queue) {
-					result[i] = ((Queue) resolvedValue).getName();
-				}
-				else if (resolvedValue instanceof String) {
-					result[i] = (String) resolvedValue;
-				}
-				else {
-					throw new IllegalArgumentException(String.format(
-							"@RabbitListener can't resolve '%s' as either a String or a Queue",
-							resolvedValue));
-				}
+				resolveAsString(resolvedValue, result);
 			}
 		}
 		else {
 			return registerBeansForDeclaration(rabbitListener);
 		}
-		return result;
+		return result.toArray(new String[result.size()]);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void resolveAsString(Object resolvedValue, List<String> result) {
+		Object resolvedValueToUse = resolvedValue;
+		if (resolvedValue instanceof String[]) {
+			resolvedValueToUse = Arrays.asList((String[]) resolvedValue);
+		}
+		if (resolvedValueToUse instanceof Queue) {
+			result.add(((Queue) resolvedValueToUse).getName());
+		}
+		else if (resolvedValueToUse instanceof String) {
+			result.add((String) resolvedValueToUse);
+		}
+		else if (resolvedValueToUse instanceof Iterable) {
+			for (Object object : (Iterable<Object>) resolvedValueToUse) {
+				resolveAsString(object, result);
+			}
+		}
+		else {
+			throw new IllegalArgumentException(String.format(
+					"@RabbitListener can't resolve '%s' as either a String or a Queue",
+					resolvedValue));
+		}
 	}
 
 	private Object resolveExpression(String value) {

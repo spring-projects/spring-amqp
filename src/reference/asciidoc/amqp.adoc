@@ -1384,6 +1384,43 @@ public class AppConfig implements RabbitListenerConfigurer {
 }
 ----
 
+[[annotation-multiple-queues]]
+====== Listening to Multiple Queues
+
+When using the `queues` attribute, you can specify that the associated container can listen to multiple queues.
+You can use a `@Header` annotation to make the queue name from which a message was received available to the POJO
+method:
+
+[source, java]
+----
+@Component
+public class MyService {
+
+    @RabbitListener(queues = { "queue1", "queue2" } )
+    public void processOrder(String data, @Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
+        ...
+    }
+
+}
+----
+
+Starting with _version 1.5_, you can externalize the queue names using property placeholders, and SpEL:
+
+[source, java]
+----
+@Component
+public class MyService {
+
+    @RabbitListener(queues = "#{'${property.with.comma.delimited.queue.names}'.split(',')}" )
+    public void processOrder(String data, @Header(AmqpHeaders.CONSUMER_QUEUE) String queue) {
+        ...
+    }
+
+}
+----
+
+Prior to _version 1.5_, only a single queue could be specified this way; each queue needed a separate property.
+
 [[async-annotation-driven-reply]]
 ====== Reply Management
 
