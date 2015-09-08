@@ -66,6 +66,9 @@ the Broker.
 
 The default reply address (`@SendTo`) for a `@RabbitListener` can now be a SpEL expression.
 
+====== Multiple Queue Names Via Properties
+
+It is now possible to use a combination of SpEL and property placeholders to specify multiple queues for a listener.
 
 See <<async-annotation-driven>> for more information.
 

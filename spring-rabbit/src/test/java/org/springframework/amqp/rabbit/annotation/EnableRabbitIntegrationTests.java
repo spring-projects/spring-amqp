@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
@@ -25,6 +26,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -49,6 +53,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
@@ -83,7 +88,8 @@ public class EnableRabbitIntegrationTests {
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel",
-			"test.invalidPojo");
+			"test.invalidPojo",
+			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -136,6 +142,17 @@ public class EnableRabbitIntegrationTests {
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
 		assertEquals(2, this.context.getBean("testGroup", List.class).size());
+	}
+
+	@Test
+	public void commas() {
+		assertEquals("FOOfoo", rabbitTemplate.convertSendAndReceive("test,with,commas", "foo"));
+		List<?> commaContainers = this.context.getBean("commas", List.class);
+		assertEquals(1, commaContainers.size());
+		SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) commaContainers.get(0);
+		List<String> queueNames = Arrays.asList(container.getQueueNames());
+		assertThat(queueNames,
+				contains("test.comma.1", "test.comma.2", "test,with,commas", "test.comma.3", "test.comma.4"));
 	}
 
 	@Test
@@ -266,6 +283,14 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(queues = {"#{'test.comma.1,test.comma.2'.split(',')}",
+								  "test,with,commas",
+								  "#{commaQueues}"},
+						group = "commas")
+		public String multiQueuesConfig(String foo) {
+			return foo.toUpperCase() + foo;
+		}
+
 		@RabbitListener(queues = "test.header", group = "testGroup")
 		public String capitalizeWithHeader(@Payload String content, @Header String prefix) {
 			return prefix + content.toUpperCase();
@@ -325,6 +350,16 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public String tagPrefix() {
 			return UUID.randomUUID().toString();
+		}
+
+		@Bean
+		public Collection<org.springframework.amqp.core.Queue> commaQueues() {
+			org.springframework.amqp.core.Queue comma3 = new org.springframework.amqp.core.Queue("test.comma.3");
+			org.springframework.amqp.core.Queue comma4 = new org.springframework.amqp.core.Queue("test.comma.4");
+			List<org.springframework.amqp.core.Queue> list = new ArrayList<org.springframework.amqp.core.Queue>();
+			list.add(comma3);
+			list.add(comma4);
+			return list;
 		}
 
 		@Bean
