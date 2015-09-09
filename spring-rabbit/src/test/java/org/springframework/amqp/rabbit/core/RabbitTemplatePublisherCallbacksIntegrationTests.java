@@ -56,6 +56,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -342,6 +343,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -454,6 +456,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -497,6 +500,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -508,7 +512,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
-			}}).when(mockChannel).getNextPublishSeqNo();
+			}
+		}).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setPublisherConfirms(true);
@@ -542,6 +547,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -613,6 +619,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
+		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockChannel.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
@@ -841,14 +848,83 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				sentAll.set(true);
 			}
 		});
-		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		long t1 = System.currentTimeMillis();
 		while (!sentAll.get() && System.currentTimeMillis() < t1 + 20000) {
-			unconfirmed = template.getUnconfirmed(-1);
+			template.getUnconfirmed(-1);
 		}
 		assertTrue(sentAll.get());
 		assertFalse(confirmed.get());
 	}
 
+	// AMQP-532 ConcurrentModificationException
+	@Test
+	public void testPublisherConfirmCloseConcurrency() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+		final AtomicLong seq1 = new AtomicLong();
+		doAnswer(new Answer<Long>() {
+
+			@Override
+			public Long answer(InvocationOnMock invocation) throws Throwable {
+				return seq1.incrementAndGet();
+			}
+		}).when(mockChannel1).getNextPublishSeqNo();
+
+		Channel mockChannel2 = mock(Channel.class);
+		when(mockChannel2.isOpen()).thenReturn(true);
+		final AtomicLong seq2 = new AtomicLong();
+		doAnswer(new Answer<Long>() {
+
+			@Override
+			public Long answer(InvocationOnMock invocation) throws Throwable {
+				return seq2.incrementAndGet();
+			}
+		}).when(mockChannel2).getNextPublishSeqNo();
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setPublisherConfirms(true);
+		final RabbitTemplate template = new RabbitTemplate(ccf);
+
+		final AtomicBoolean confirmed = new AtomicBoolean();
+		template.setConfirmCallback(new ConfirmCallback() {
+
+			@Override
+			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+				confirmed.set(true);
+			}
+		});
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		final AtomicInteger sent = new AtomicInteger();
+		doAnswer(new Answer<Boolean>(){
+
+			@Override
+			public Boolean answer(InvocationOnMock invocation) throws Throwable {
+				boolean closed = sent.incrementAndGet() < 100;
+				System.out.println(closed);
+				return closed;
+			}
+		}).when(mockChannel1).isOpen();
+		final CountDownLatch sentAll = new CountDownLatch(1);
+		exec.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				for (int i = 0; i < 1000; i++) {
+					try {
+						template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+					}
+					catch (AmqpException e) {}
+				}
+				sentAll.countDown();
+			}
+		});
+		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
+		assertTrue(confirmed.get());
+	}
 
 }

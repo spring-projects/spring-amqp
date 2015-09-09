@@ -691,6 +691,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {
+					if (this.target instanceof PublisherCallbackChannel) {
+						this.target.close();
+						throw new InvocationTargetException(new AmqpException("PublisherCallbackChannel is closed"));
+					}
 					this.target = null;
 				}
 				synchronized (targetMonitor) {
@@ -703,10 +707,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			catch (InvocationTargetException ex) {
 				if (this.target == null || !this.target.isOpen()) {
 					// Basic re-connection logic...
-					this.target = null;
 					if (logger.isDebugEnabled()) {
-						logger.debug("Detected closed channel on exception.  Re-initializing: " + target);
+						logger.debug("Detected closed channel on exception.  Re-initializing: " + this.target);
 					}
+					this.target = null;
 					synchronized (targetMonitor) {
 						if (this.target == null) {
 							this.target = createBareChannel(theConnection, transactional);
