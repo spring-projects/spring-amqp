@@ -635,29 +635,37 @@ public class PublisherCallbackChannelImpl
 		generateNacksForPendingAcks("Channel closed by application");
 	}
 
-	private void generateNacksForPendingAcks(String cause) {
-		synchronized (this.pendingConfirms) {
-			for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
-				Listener listener = entry.getKey();
-				synchronized(entry.getValue()) {
-					for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-						try {
-							confirmEntry.getValue().setCause(cause);
-							handleNack(confirmEntry.getKey(), false);
-						}
-						catch (IOException e) {
-							logger.error("Error delivering Nack afterShutdown", e);
-						}
-					}
-					listener.removePendingConfirmsReference(this, entry.getValue());
+	private synchronized void generateNacksForPendingAcks(String cause) {
+		for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
+			Listener listener = entry.getKey();
+			for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
+				try {
+					confirmEntry.getValue().setCause(cause);
+					handleNack(confirmEntry.getKey(), false);
+				}
+				catch (IOException e) {
+					logger.error("Error delivering Nack afterShutdown", e);
 				}
 			}
-			this.pendingConfirms.clear();
-			this.listenerForSeq.clear();
-			this.listeners.clear();
+			listener.removePendingConfirmsReference(this, entry.getValue());
 		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("PendingConfirms cleared");
+		}
+		this.pendingConfirms.clear();
+		this.listenerForSeq.clear();
+		this.listeners.clear();
 	}
 
+	/**
+	 * Add the listener and return the internal map of pending confirmations for that listener.
+	 * Callers <b>must</b> synchronize on this channel object when modifying the map.
+	 * This method will be changed in a future release to NOT expose the map.
+	 * @param listener the listener.
+	 * @return the internal map of pending confirmations.
+	 * TODO: do not expose the map externally; change the {@code RabbitTemplate#getUnconfirmed(long)}
+	 * functionality to delegate to a method here.
+	 */
 	public synchronized SortedMap<Long, PendingConfirm> addListener(Listener listener) {
 		Assert.notNull(listener, "Listener cannot be null");
 		if (this.listeners.size() == 0) {
@@ -689,6 +697,9 @@ public class PublisherCallbackChannelImpl
 			}
 		}
 		this.pendingConfirms.remove(listener);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Removed listener " + listener);
+		}
 		return result;
 	}
 
@@ -711,47 +722,40 @@ public class PublisherCallbackChannelImpl
 		this.processAck(seq, false, multiple);
 	}
 
-	private void processAck(long seq, boolean ack, boolean multiple) {
+	private synchronized void processAck(long seq, boolean ack, boolean multiple) {
 		if (multiple) {
 			/*
 			 * Piggy-backed ack - extract all Listeners for this and earlier
 			 * sequences. Then, for each Listener, handle each of it's acks.
 			 * Finally, remove the sequences from listenerForSeq.
 			 */
-			synchronized(this.pendingConfirms) {
-				Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
-				// eliminate duplicates
-				Set<Listener> listeners = new HashSet<Listener>(involvedListeners.values());
-				for (Listener involvedListener : listeners) {
-					// find all unack'd confirms for this listener and handle them
-					SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
-					if (confirmsMap != null) {
-						synchronized(confirmsMap) {
-							Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
-							Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
-							while (iterator.hasNext()) {
-								Entry<Long, PendingConfirm> entry = iterator.next();
-								PendingConfirm value = entry.getValue();
-								iterator.remove();
-								doHandleConfirm(ack, involvedListener, value);
-							}
-						}
+			Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
+			// eliminate duplicates
+			Set<Listener> listeners = new HashSet<Listener>(involvedListeners.values());
+			for (Listener involvedListener : listeners) {
+				// find all unack'd confirms for this listener and handle them
+				SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
+				if (confirmsMap != null) {
+					Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
+					Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
+					while (iterator.hasNext()) {
+						Entry<Long, PendingConfirm> entry = iterator.next();
+						PendingConfirm value = entry.getValue();
+						iterator.remove();
+						doHandleConfirm(ack, involvedListener, value);
 					}
 				}
-				List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
-				for (Long key : seqs) {
-					this.listenerForSeq.remove(key);
-				}
+			}
+			List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
+			for (Long key : seqs) {
+				this.listenerForSeq.remove(key);
 			}
 		}
 		else {
 			Listener listener = this.listenerForSeq.remove(seq);
 			if (listener != null) {
 				SortedMap<Long, PendingConfirm> confirmsForListener = this.pendingConfirms.get(listener);
-				PendingConfirm pendingConfirm = null;
-				synchronized (confirmsForListener) {
-					pendingConfirm = confirmsForListener.remove(seq);
-				}
+				PendingConfirm pendingConfirm = confirmsForListener.remove(seq);
 				if (pendingConfirm != null) {
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
@@ -776,12 +780,11 @@ public class PublisherCallbackChannelImpl
 		}
 	}
 
-	public void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
+	public synchronized void addPendingConfirm(Listener listener, long seq, PendingConfirm pendingConfirm) {
 		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
-		Assert.notNull(pendingConfirmsForListener, "Listener not registered");
-		synchronized (pendingConfirmsForListener) {
-			pendingConfirmsForListener.put(seq, pendingConfirm);
-		}
+		Assert.notNull(pendingConfirmsForListener,
+				"Listener not registered: " + listener + " " + this.pendingConfirms.keySet());
+		pendingConfirmsForListener.put(seq, pendingConfirm);
 		this.listenerForSeq.put(seq, listener);
 	}
 
