@@ -548,7 +548,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			long threshold = System.currentTimeMillis() - age;
 			for (Entry<Object, SortedMap<Long, PendingConfirm>> channelPendingConfirmEntry : this.pendingConfirms.entrySet()) {
 				SortedMap<Long, PendingConfirm> channelPendingConfirms = channelPendingConfirmEntry.getValue();
-				synchronized(channelPendingConfirms) {
+				synchronized(channelPendingConfirmEntry.getKey()) { // channel
 					Iterator<Entry<Long, PendingConfirm>> iterator = channelPendingConfirms.entrySet().iterator();
 					PendingConfirm pendingConfirm;
 					while (iterator.hasNext()) {
