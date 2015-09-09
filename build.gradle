@@ -203,7 +203,7 @@ project('spring-rabbit') {
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
-			exclude group: 'org.springframework'
+			exclude group: 'org.springframework', module: 'spring-web'
 		}
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
