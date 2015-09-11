@@ -638,14 +638,15 @@ public class PublisherCallbackChannelImpl
 	private synchronized void generateNacksForPendingAcks(String cause) {
 		for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
 			Listener listener = entry.getKey();
-			for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
-				try {
-					confirmEntry.getValue().setCause(cause);
-					handleNack(confirmEntry.getKey(), false);
+			Iterator<Entry<Long, PendingConfirm>> iterator = entry.getValue().entrySet().iterator();
+			while(iterator.hasNext()) {
+				Entry<Long, PendingConfirm> confirmEntry = iterator.next();
+				confirmEntry.getValue().setCause(cause);
+				if (logger.isDebugEnabled()) {
+					logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
 				}
-				catch (IOException e) {
-					logger.error("Error delivering Nack afterShutdown", e);
-				}
+				processAck(confirmEntry.getKey(), false, false, false);
+				iterator.remove();
 			}
 			listener.removePendingConfirmsReference(this, entry.getValue());
 		}
@@ -711,7 +712,7 @@ public class PublisherCallbackChannelImpl
 		if (logger.isDebugEnabled()) {
 			logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
 		}
-		this.processAck(seq, true, multiple);
+		this.processAck(seq, true, multiple, true);
 	}
 
 	public void handleNack(long seq, boolean multiple)
@@ -719,10 +720,10 @@ public class PublisherCallbackChannelImpl
 		if (logger.isDebugEnabled()) {
 			logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
 		}
-		this.processAck(seq, false, multiple);
+		this.processAck(seq, false, multiple, true);
 	}
 
-	private synchronized void processAck(long seq, boolean ack, boolean multiple) {
+	private synchronized void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
 		if (multiple) {
 			/*
 			 * Piggy-backed ack - extract all Listeners for this and earlier
@@ -755,7 +756,13 @@ public class PublisherCallbackChannelImpl
 			Listener listener = this.listenerForSeq.remove(seq);
 			if (listener != null) {
 				SortedMap<Long, PendingConfirm> confirmsForListener = this.pendingConfirms.get(listener);
-				PendingConfirm pendingConfirm = confirmsForListener.remove(seq);
+				PendingConfirm pendingConfirm;
+				if (remove) {
+					pendingConfirm = confirmsForListener.remove(seq);
+				}
+				else {
+					pendingConfirm = confirmsForListener.get(seq);
+				}
 				if (pendingConfirm != null) {
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
