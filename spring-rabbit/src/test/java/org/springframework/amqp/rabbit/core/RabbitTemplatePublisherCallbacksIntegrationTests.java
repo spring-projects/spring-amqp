@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -64,6 +65,8 @@ import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.rabbit.support.PendingConfirm;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
@@ -81,6 +84,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Gunar Hillert
  * @author Artem Bilan
+ * @author Rolf Arne Corneliussen
  * @since 1.1
  *
  */
@@ -890,6 +894,46 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
 		assertTrue(confirmed.get());
+	}
+
+	@Test
+	public void testPublisherCallbackChannelImplCloseWithPending() throws Exception {
+
+		final AtomicInteger nacks = new AtomicInteger();
+
+		Listener listener = mock(Listener.class);
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				boolean ack = (Boolean) invocation.getArguments()[1];
+				if (!ack) {
+					nacks.incrementAndGet();
+				}
+				return null;
+			}
+
+		}).when(listener).handleConfirm(any(PendingConfirm.class), anyBoolean());
+		when(listener.getUUID()).thenReturn(UUID.randomUUID().toString());
+		when(listener.isConfirmListener()).thenReturn(true);
+
+		Channel channelMock = mock(Channel.class);
+
+		PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(channelMock);
+
+		channel.addListener(listener);
+
+		for (int i = 0; i < 2; i++) {
+			long seq = i + 1000;
+			channel.addPendingConfirm(listener, seq,
+					new PendingConfirm(new CorrelationData(Long.toHexString(seq)), System.currentTimeMillis()));
+		}
+
+		channel.close();
+
+		assertEquals(0, TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size());
+		assertEquals(2, nacks.get());
+
 	}
 
 }
