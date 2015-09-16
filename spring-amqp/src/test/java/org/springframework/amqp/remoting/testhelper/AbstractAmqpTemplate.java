@@ -84,12 +84,32 @@ public abstract class AbstractAmqpTemplate implements AmqpTemplate {
 	}
 
 	@Override
+	public Message receive(long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Message receive(String queueName, long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public Object receiveAndConvert() throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 

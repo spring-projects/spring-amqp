@@ -138,6 +138,31 @@ public interface AmqpTemplate {
 	 */
 	Message receive(String queueName) throws AmqpException;
 
+	/**
+	 * Receive a message from a default queue, waiting up to the specified wait time if necessary for a message
+	 * to become available.
+	 *
+	 * @param timeoutMillis how long to wait before giving up. Zero value means the method will return {@code null}
+	 *                      immediately if there is no message available. Negative value makes method wait for
+	 *                      a message indefinitely.
+	 * @return a message or null if the time expires
+	 * @throws AmqpException if there is a problem
+	 */
+	Message receive(long timeoutMillis) throws AmqpException;
+
+	/**
+	 * Receive a message from a specific queue, waiting up to the specified wait time if necessary for a message
+	 * to become available.
+	 *
+	 * @param queueName the queue to receive from
+	 * @param timeoutMillis how long to wait before giving up. Zero value means the method will return {@code null}
+	 *                      immediately if there is no message available. Negative value makes method wait for
+	 *                      a message indefinitely.
+	 * @return a message or null if the time expires
+	 * @throws AmqpException if there is a problem
+	 */
+	Message receive(String queueName, long timeoutMillis) throws AmqpException;
+
 	// receive methods with conversion
 
 	/**
@@ -158,6 +183,31 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	Object receiveAndConvert(String queueName) throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from a default queue and convert it to a Java object. Wait up to the
+	 * specified wait time if necessary for a message to become available.
+	 *
+	 * @param timeoutMillis how long to wait before giving up. Zero value means the method will return {@code null}
+	 *                      immediately if there is no message available. Negative value makes method wait for
+	 *                      a message indefinitely.
+	 * @return a message or null if the time expires
+	 * @throws AmqpException if there is a problem
+	 */
+	Object receiveAndConvert(long timeoutMillis) throws AmqpException;
+
+	/**
+	 * Receive a message if there is one from a specific queue and convert it to a Java object. Wait up to the
+	 * specified wait time if necessary for a message to become available.
+	 *
+	 * @param queueName the name of the queue to poll
+	 * @param timeoutMillis how long to wait before giving up. Zero value means the method will return {@code null}
+	 *                      immediately if there is no message available. Negative value makes method wait for
+	 *                      a message indefinitely.
+	 * @return a message or null if the time expires
+	 * @throws AmqpException if there is a problem
+	 */
+	Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
 
 	// receive and send methods for provided callback
 

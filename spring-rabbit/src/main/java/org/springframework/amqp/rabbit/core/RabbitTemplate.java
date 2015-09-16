@@ -729,7 +729,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			return doReceiveNoWait(queueName);
 		}
 		else {
-			return doReceive(queueName);
+			return receive(queueName, this.receiveTimeout);
 		}
 	}
 
@@ -765,13 +765,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}, obtainTargetConnectionFactoryIfNecessary(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
-	/**
-	 * Blocking receive with timeout.
-	 * @param queueName the queue to receive from.
-	 * @return The message, or null if the time expires.
-	 * @since 1.5
-	 */
-	protected Message doReceive(final String queueName) {
+	@Override
+	public Message receive(long timeoutMillis) throws AmqpException {
+		String queue = this.getRequiredQueue();
+		return this.receive(queue, timeoutMillis);
+	}
+
+	@Override
+	public Message receive(final String queueName, final long timeoutMillis) {
 		return execute(new ChannelCallback<Message>() {
 
 			@Override
@@ -782,7 +783,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					delivery = consumer.nextDelivery();
 				}
 				else {
-					delivery = consumer.nextDelivery(receiveTimeout);
+					delivery = consumer.nextDelivery(timeoutMillis);
 				}
 				channel.basicCancel(consumer.getConsumerTag());
 				if (delivery == null) {
@@ -815,8 +816,23 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
 		Message response = receive(queueName);
-		if (response != null) {
-			return getRequiredMessageConverter().fromMessage(response);
+		return convertMessage(response);
+	}
+
+	@Override
+	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
+		return receiveAndConvert(this.getRequiredQueue(), timeoutMillis);
+	}
+
+	@Override
+	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
+		Message response = receive(queueName, timeoutMillis);
+		return convertMessage(response);
+	}
+
+	private Object convertMessage(Message message) {
+		if (message != null) {
+			return getRequiredMessageConverter().fromMessage(message);
 		}
 		return null;
 	}
