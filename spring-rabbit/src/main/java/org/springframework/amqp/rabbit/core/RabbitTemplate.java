@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -122,6 +122,7 @@ import com.rabbitmq.client.QueueingConsumer.Delivery;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ernest Sadykov
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
@@ -729,7 +730,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			return doReceiveNoWait(queueName);
 		}
 		else {
-			return doReceive(queueName);
+			return receive(queueName, this.receiveTimeout);
 		}
 	}
 
@@ -765,24 +766,30 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}, obtainTargetConnectionFactoryIfNecessary(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
-	/**
-	 * Blocking receive with timeout.
-	 * @param queueName the queue to receive from.
-	 * @return The message, or null if the time expires.
-	 * @since 1.5
-	 */
-	protected Message doReceive(final String queueName) {
+	@Override
+	public Message receive(long timeoutMillis) throws AmqpException {
+		String queue = getRequiredQueue();
+		if (timeoutMillis == 0) {
+			return doReceiveNoWait(queue);
+		}
+		else {
+			return receive(queue, timeoutMillis);
+		}
+	}
+
+	@Override
+	public Message receive(final String queueName, final long timeoutMillis) {
 		return execute(new ChannelCallback<Message>() {
 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
 				Delivery delivery;
-				if (receiveTimeout < 0) {
+				if (timeoutMillis < 0) {
 					delivery = consumer.nextDelivery();
 				}
 				else {
-					delivery = consumer.nextDelivery(receiveTimeout);
+					delivery = consumer.nextDelivery(timeoutMillis);
 				}
 				channel.basicCancel(consumer.getConsumerTag());
 				if (delivery == null) {
@@ -814,7 +821,17 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
-		Message response = receive(queueName);
+		return receiveAndConvert(queueName, this.receiveTimeout);
+	}
+
+	@Override
+	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
+		return receiveAndConvert(this.getRequiredQueue(), timeoutMillis);
+	}
+
+	@Override
+	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
+		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
 		if (response != null) {
 			return getRequiredMessageConverter().fromMessage(response);
 		}

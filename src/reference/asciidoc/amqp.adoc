@@ -879,22 +879,29 @@ We will look at an example of each approach in the next two sub-sections.
 The `AmqpTemplate` itself can be used for polled Message reception.
 By default, if no message is available, `null` is returned immediately; there is no blocking.
 Starting with _version 1.5_, you can now set a `receiveTimeout`, in milliseconds, and the receive methods will block for
-up to that long, waiting for a message. A value less than zero means block indefinitely (or at least until the
+up to that long, waiting for a message.
+A value less than zero means block indefinitely (or at least until the
 connection to the broker is lost).
+_Version 1.6_ introduced variants of the `receive` methods allowing the timeout to be passed in on each call.
 
 CAUTION: Since the receive operation creates a new `QueueingConsumer` for each message, this technique is not really
 appropriate for high-volume environments; consider using an asynchronous consumer, or a `receiveTimeout` of zero for
 those use cases.
 
-There are two simple 'receive' methods available.
+There are four simple 'receive' methods available.
 As with the Exchange on the sending side, there is a method that requires a default queue property having been set
 directly on the template itself, and there is a method that accepts a queue parameter at runtime.
+_Version 1.6_ introduced variants to accept `timeoutMillis` to override `receiveTimeout` on a per-request basis.
 
 [source,java]
 ----
 Message receive() throws AmqpException;
 
 Message receive(String queueName) throws AmqpException;
+
+Message receive(long timeoutMillis) throws AmqpException;
+
+Message receive(String queueName, long timeoutMillis) throws AmqpException;
 ----
 
 Just like in the case of sending messages, the `AmqpTemplate` has some convenience methods for receiving POJOs instead of `Message` instances, and implementations will provide a way to customize the `MessageConverter` used to create the `Object` returned:
@@ -904,6 +911,10 @@ Just like in the case of sending messages, the `AmqpTemplate` has some convenien
 Object receiveAndConvert() throws AmqpException;
 
 Object receiveAndConvert(String queueName) throws AmqpException;
+
+Message receiveAndConvert(long timeoutMillis) throws AmqpException;
+
+Message receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
 ----
 
 Similar to `sendAndReceive` methods, beginning with _version 1.3_, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages:

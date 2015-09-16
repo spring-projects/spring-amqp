@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -22,6 +22,7 @@ import org.springframework.amqp.core.ReplyToAddressCallback;
 
 /**
  * @author David Bilge
+ * @author Ernest Sadykov
  * @since 1.2
  */
 public abstract class AbstractAmqpTemplate implements AmqpTemplate {
@@ -84,12 +85,32 @@ public abstract class AbstractAmqpTemplate implements AmqpTemplate {
 	}
 
 	@Override
+	public Message receive(long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Message receive(String queueName, long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public Object receiveAndConvert() throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Object receiveAndConvert(long timeoutMillis) throws AmqpException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
 		throw new UnsupportedOperationException();
 	}
 
