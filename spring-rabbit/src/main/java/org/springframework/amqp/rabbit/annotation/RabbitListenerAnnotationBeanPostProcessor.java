@@ -39,6 +39,7 @@ import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoin
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -266,6 +267,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				// Found a @RabbitListener method on the target class for this JDK proxy ->
 				// is it also present on the proxy itself?
 				method = bean.getClass().getMethod(method.getName(), method.getParameterTypes());
+				Class<?>[] proxiedInterfaces = ((Advised) bean).getProxiedInterfaces();
+				for (Class<?> iface : proxiedInterfaces) {
+					try {
+						method = iface.getMethod(method.getName(), method.getParameterTypes());
+						break;
+					}
+					catch (NoSuchMethodException noMethod) {
+					}
+				}
 			}
 			catch (SecurityException ex) {
 				ReflectionUtils.handleReflectionException(ex);
