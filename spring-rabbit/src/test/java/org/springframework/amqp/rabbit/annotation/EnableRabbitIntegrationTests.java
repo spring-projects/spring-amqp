@@ -115,6 +115,9 @@ public class EnableRabbitIntegrationTests {
 	private ApplicationContext context;
 
 	@Autowired
+	private TxService txService;
+
+	@Autowired
 	private TxClassLevel txClassLevel;
 
 	@AfterClass
@@ -125,6 +128,15 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoDeclare() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+	}
+
+	@Test
+	public void tx() {
+		assertTrue(AopUtils.isJdkDynamicProxy(this.txService));
+		Baz baz = new Baz();
+		baz.field = "baz";
+		rabbitTemplate.setReplyTimeout(600000);
+		assertEquals("BAZ: baz: auto.rk.tx", rabbitTemplate.convertSendAndReceive("auto.exch.tx", "auto.rk.tx", baz));
 	}
 
 	@Test
@@ -175,6 +187,8 @@ public class EnableRabbitIntegrationTests {
 		qux.field = "qux";
 		assertEquals("QUX: qux: multi.rk", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux));
 		assertEquals("BAR: barbar", rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar));
+		assertEquals("BAZ: bazbaz: multi.rk.tx",
+				rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", baz));
 		assertTrue(AopUtils.isJdkDynamicProxy(this.txClassLevel));
 	}
 
@@ -248,6 +262,27 @@ public class EnableRabbitIntegrationTests {
 				instanceOf(org.springframework.messaging.converter.MessageConversionException.class));
 		assertThat(throwable.getCause().getCause().getCause().getMessage(),
 				containsString("Failed to convert message payload 'bar' to 'java.util.Date'"));
+	}
+
+	interface TxService {
+
+		@Transactional
+		String baz(@Payload Baz baz, @Header("amqp_receivedRoutingKey") String rk);
+
+	}
+
+	static class TxServiceImpl implements TxService {
+
+		@Override
+		@RabbitListener(bindings = @QueueBinding(
+				value = @Queue(),
+				exchange = @Exchange(value = "auto.exch.tx", autoDelete = "true"),
+				key = "auto.rk.tx")
+		)
+		public String baz(Baz baz, String rk) {
+			return "BAZ: " + baz.field + ": " + rk;
+		}
+
 	}
 
 	public static class MyService {
@@ -418,6 +453,11 @@ public class EnableRabbitIntegrationTests {
 			return new MyService();
 		}
 
+		@Bean
+		public TxService txService() {
+			return new TxServiceImpl();
+		}
+
 		// Rabbit infrastructure setup
 
 		@Bean
@@ -482,8 +522,8 @@ public class EnableRabbitIntegrationTests {
 		@Transactional
 		String foo(Bar bar);
 
-//		@Transactional
-//		String Baz(@Payload Baz baz, String rk); // TODO: AMQP-541
+		@Transactional
+		String baz(@Payload Baz baz, @Header("amqp_receivedRoutingKey") String rk);
 
 	}
 
@@ -498,10 +538,10 @@ public class EnableRabbitIntegrationTests {
 			return "BAR: " + bar.field + bar.field;
 		}
 
-//		@RabbitHandler
-//		public String bar(@Payload Baz baz, @Header("amqp_receivedRoutingKey") String rk) { // TODO: AMQP-541
-//			return "BAZ: " + baz.field + baz.field;
-//		}
+		@RabbitHandler
+		public String baz(Baz baz, String rk) {
+			return "BAZ: " + baz.field + baz.field + ": " + rk;
+		}
 
 	}
 
