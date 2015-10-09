@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,23 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
  */
 public class CorrelationData {
 
-	private String id;
+	private volatile String id;
 
 	public CorrelationData(String id) {
 		this.id = id;
 	}
 
 	public String getId() {
-		return id;
+		return this.id;
+	}
+
+	protected void setId(String id) {
+		this.id = id;
 	}
 
 	@Override
 	public String toString() {
 		return "CorrelationData [id=" + id + "]";
 	}
+
 }
