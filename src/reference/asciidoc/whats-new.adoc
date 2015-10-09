@@ -43,9 +43,16 @@ of `RabbitAdmin` s in the application context.
 
 ===== AmqpTemplate: receive with timeout
 
-A bunch of of new `receive()` methods with `timeout` have been introduced for the `AmqpTemple`
+A number of new `receive()` methods with `timeout` have been introduced for the `AmqpTemplate`
  and its `RabbitTemplate` implementation.
 See <<polling-consumer>> for more information.
+
+===== AsyncRabbitTemplate
+
+A new `AsyncRabbitTemplate` has been introduced.
+This template provides a number of send and receive methods, where the return value is a `ListenableFuture`, which can
+be used later to obtain the result either synchronously, or asynchronously.
+See <<async-template>> for more information.
 
 ===== RabbitTemplate Changes
 

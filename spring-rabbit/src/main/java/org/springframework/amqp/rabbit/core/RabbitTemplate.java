@@ -241,6 +241,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * @return the name of the default exchange used by this template.
+	 *
+	 * @since 1.6
+	 */
+	public String getExchange() {
+		return this.exchange;
+	}
+
+	/**
 	 * The value of a default routing key to use for send operations when none is specified. Default is empty which is
 	 * not helpful when using the default (or any direct) exchange, but fine if the exchange is a headers exchange for
 	 * instance.
@@ -249,6 +258,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public void setRoutingKey(String routingKey) {
 		this.routingKey = routingKey;
+	}
+
+	/**
+	 * @return the default routing key used by this template.
+	 *
+	 * @since 1.6
+	 */
+	public String getRoutingKey() {
+		return this.routingKey;
 	}
 
 	/**
@@ -640,7 +658,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public void send(final String exchange, final String routingKey, final Message message) throws AmqpException {
-		this.send(exchange, routingKey, message, null);
+		send(exchange, routingKey, message, null);
 	}
 
 	public void send(final String exchange, final String routingKey,

@@ -120,7 +120,7 @@ public class Queue  {
 
     // Getters and Setters omitted for brevity
 
-
+}
 ----
 
 Notice that the constructor takes the Queue name.
@@ -545,6 +545,8 @@ In the examples that follow, you will often see usage of an "AmqpTemplate", but 
 
 As mentioned above, the `AmqpTemplate` interface defines all of the basic operations for sending and receiving Messages.
 We will explore Message sending and reception, respectively, in the two sections that follow.
+
+See also <<async-template>>.
 
 [[template-retry]]
 ===== Adding Retry Capabilities
@@ -2076,6 +2078,81 @@ Simply bind a queue to the configured dead letter exchange with a routing key eq
 
 Refer to the https://www.rabbitmq.com/dlx.html[RabbitMQ Dead Letter Documentation] for more information about configuring dead lettering.
 You can also take a look at the `FixedReplyQueueDeadLetterTests` test case for an example.
+
+[[async-template]]
+===== AsyncRabbitTemplate
+
+_Version 1.6_ introduced the `AsyncRabbitTemplate`.
+This has similar `sendAndReceive` (and `convertSendAndReceive`) methods to those on the link:#amqp-template[AmqpTemplate]
+but instead of blocking, they return a `ListenableFuture`.
+
+The `sendAndReceive` methods return a `RabbitMessageFuture`; the `convertSendAndReceive` methods return a
+`RabbitConverterFuture`.
+
+You can either synchronously retrieve the result later, by invoking `get()` on the future, or you can register a
+callback which will be called asynchronously with the result.
+
+[source, java]
+----
+@Autowired
+private AsyncRabbitTemplate template;
+
+...
+
+public void doSomeWorkAndGetResultLater() {
+
+    ...
+
+    ListenableFuture<String> future = this.template.convertSendAndReceive("foo");
+
+    // do some more work
+
+    String reply = null;
+    try {
+        reply = future.get();
+    }
+    catch (ExecutionException e) {
+        ...
+    }
+
+    ...
+
+}
+
+public void doSomeWorkAndGetResultAsync() {
+
+    ...
+
+    ListenableFuture<String> future = this.template.convertSendAndReceive("foo");
+    future.addCallback(new ListenableFutureCallback<String>() {
+
+        @Override
+        public void onSuccess(String result) {
+            ...
+        }
+
+        @Override
+        public void onFailure(Throwable ex) {
+            ...
+        }
+
+    });
+
+    ...
+
+}
+----
+
+If `mandatory` is set, and the message can't be delivered, the future will throw an `ExecutionException` with a cause of
+`AmqpMessageReturnedException` which encapsulates the returned message and information about the return.
+
+If `enableConfirms` is set, the future will have a property `confirm` which is itself a `ListenableFuture<Boolean>`
+with `true` indicating a successful publish.
+If the confirm future is false, the `RabbitFuture` will have a further property `nackCause` - the reason for the
+failure, if available.
+
+IMPORTANT: The publisher confirm is discarded if it is received after the reply - since the reply implies a successful
+publish.
 
 [[remoting]]
 ===== Spring Remoting with AMQP
