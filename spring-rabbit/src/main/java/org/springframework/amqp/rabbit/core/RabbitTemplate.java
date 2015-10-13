@@ -778,7 +778,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-				Delivery delivery = consumer.nextDelivery(timeoutMillis);
+				Delivery delivery;
+                if (timeoutMillis < 0) {
+                    delivery = consumer.nextDelivery();
+                }
+                else {
+                    delivery = consumer.nextDelivery(timeoutMillis);
+                }
 				channel.basicCancel(consumer.getConsumerTag());
 				if (delivery == null) {
 					return null;
