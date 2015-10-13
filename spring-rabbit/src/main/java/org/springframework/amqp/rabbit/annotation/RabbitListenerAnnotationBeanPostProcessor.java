@@ -217,7 +217,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
-		final RabbitListener classLevelListener = AnnotationUtils.findAnnotation(bean.getClass(), RabbitListener.class);
+		final RabbitListener classLevelListener = AnnotationUtils.findAnnotation(targetClass, RabbitListener.class);
 		final List<Method> multiMethods = new ArrayList<Method>();
 		ReflectionUtils.doWithMethods(targetClass, new ReflectionUtils.MethodCallback() {
 

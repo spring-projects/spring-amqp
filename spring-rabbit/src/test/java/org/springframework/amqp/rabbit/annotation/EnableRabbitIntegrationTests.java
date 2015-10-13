@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -59,6 +60,7 @@ import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -70,6 +72,9 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
 
 /**
@@ -108,6 +113,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private ApplicationContext context;
+
+	@Autowired
+	private TxClassLevel txClassLevel;
 
 	@AfterClass
 	public static void tearDownClass() {
@@ -166,6 +174,8 @@ public class EnableRabbitIntegrationTests {
 		Qux qux = new Qux();
 		qux.field = "qux";
 		assertEquals("QUX: qux: multi.rk", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", qux));
+		assertEquals("BAR: barbar", rabbitTemplate.convertSendAndReceive("multi.exch.tx", "multi.rk.tx", bar));
+		assertTrue(AopUtils.isJdkDynamicProxy(this.txClassLevel));
 	}
 
 	@Test
@@ -329,6 +339,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Configuration
 	@EnableRabbit
+	@EnableTransactionManagement
 	public static class EnableRabbitConfig {
 
 		private int increment;
@@ -431,6 +442,16 @@ public class EnableRabbitIntegrationTests {
 			return new MultiListenerBean();
 		}
 
+		@Bean
+		public PlatformTransactionManager transactionManager() {
+			return mock(PlatformTransactionManager.class);
+		}
+
+		@Bean
+		public TxClassLevel txClassLevel() {
+			return new TxClassLevelImpl();
+		}
+
 	}
 
 	@RabbitListener(bindings = @QueueBinding
@@ -453,6 +474,34 @@ public class EnableRabbitIntegrationTests {
 		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
 			return "QUX: " + qux.field + ": " + rk;
 		}
+
+	}
+
+	interface TxClassLevel {
+
+		@Transactional
+		String foo(Bar bar);
+
+//		@Transactional
+//		String Baz(@Payload Baz baz, String rk); // TODO: AMQP-541
+
+	}
+
+	@RabbitListener(bindings = @QueueBinding
+			(value = @Queue,
+			exchange = @Exchange(value = "multi.exch.tx", autoDelete = "true"),
+			key = "multi.rk.tx"))
+	static class TxClassLevelImpl implements TxClassLevel {
+
+		@RabbitHandler
+		public String foo(Bar bar) {
+			return "BAR: " + bar.field + bar.field;
+		}
+
+//		@RabbitHandler
+//		public String bar(@Payload Baz baz, @Header("amqp_receivedRoutingKey") String rk) { // TODO: AMQP-541
+//			return "BAZ: " + baz.field + baz.field;
+//		}
 
 	}
 
