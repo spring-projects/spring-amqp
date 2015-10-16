@@ -248,6 +248,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			checkedMethods.add(checkProxy(method, bean));
 		}
 		MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
+		endpoint.setBeanFactory(this.beanFactory);
 		processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
 	}
 

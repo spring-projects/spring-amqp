@@ -19,6 +19,9 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.adapter.DelegatingInvocableHandler;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
@@ -35,6 +38,8 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 
 	private final Object bean;
 
+	private DelegatingInvocableHandler delegatingHandler;
+
 	public MultiMethodRabbitListenerEndpoint(List<Method> methods, Object bean) {
 		this.methods = methods;
 		this.bean = bean;
@@ -47,7 +52,33 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 			invocableHandlerMethods.add(getMessageHandlerMethodFactory()
 					.createInvocableHandlerMethod(getBean(), method));
 		}
-		return new HandlerAdapter(new DelegatingInvocableHandler(invocableHandlerMethods, this.bean));
+		this.delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods, this.bean, getResolver(),
+				getBeanExpressionContext());
+		return new HandlerAdapter(this.delegatingHandler);
+	}
+
+
+	@Override
+	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
+		return new MultiMethodMessageListenerAdapter();
+	}
+
+
+	private final class MultiMethodMessageListenerAdapter extends MessagingMessageListenerAdapter {
+
+		@Override
+		protected Address getReplyToAddress(Message request) throws Exception {
+			Address replyTo = request.getMessageProperties().getReplyToAddress();
+			Address defaultReplyTo = delegatingHandler.getDefaultReplyTo();
+			if (replyTo == null && defaultReplyTo == null) {
+				throw new AmqpException(
+						"Cannot determine ReplyTo message property value: " +
+								"Request message does not contain reply-to property, " +
+								"and no @SendTo annotation found.");
+			}
+			return replyTo == null ? defaultReplyTo : replyTo;
+		}
+
 	}
 
 }

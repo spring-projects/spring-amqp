@@ -167,7 +167,9 @@ public class EnableRabbitIntegrationTests {
 	public void multiListener() {
 		Bar bar = new Bar();
 		bar.field = "bar";
-		assertEquals("BAR: bar", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", bar));
+		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
+		rabbitTemplate.setReceiveTimeout(10000);
+		assertEquals("BAR: bar", this.rabbitTemplate.receiveAndConvert("sendTo.replies"));
 		Baz baz = new Baz();
 		baz.field = "baz";
 		assertEquals("BAZ: baz", rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", baz));
@@ -452,6 +454,16 @@ public class EnableRabbitIntegrationTests {
 			return new TxClassLevelImpl();
 		}
 
+		@Bean
+		public org.springframework.amqp.core.Queue sendToReplies() {
+			return new org.springframework.amqp.core.Queue(sendToRepliesBean(), false, false, true);
+		}
+
+		@Bean
+		public String sendToRepliesBean() {
+			return "sendTo.replies";
+		}
+
 	}
 
 	@RabbitListener(bindings = @QueueBinding
@@ -461,6 +473,7 @@ public class EnableRabbitIntegrationTests {
 	static class MultiListenerBean {
 
 		@RabbitHandler
+		@SendTo("#{sendToRepliesBean}")
 		public String bar(Bar bar) {
 			return "BAR: " + bar.field;
 		}

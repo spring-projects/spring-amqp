@@ -23,8 +23,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 
@@ -78,13 +76,13 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  *
  * <p>When defined at the method level, a listener container is created for each method. The
  * {@link MessageListener} is a {@link MessagingMessageListenerAdapter}, configured with a
- * {@link MethodRabbitListenerEndpoint}.
+ * {@link org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint}.
  *
  * <p>When defined at the class level, a single message listener container is used to service
  * all methods annotated with {@code @RabbitHandler}. Method signatures of such annotated
  * methods must not cause any ambiguity such that a single method can be resolved for a
  * particular inbound message. The {@link MessagingMessageListenerAdapter} is configured with
- * a {@link MultiMethodRabbitListenerEndpoint}.
+ * a {@link org.springframework.amqp.rabbit.listener.MultiMethodRabbitListenerEndpoint}.
  *
  * @author Stephane Nicoll
  * @author Gary Russell
