@@ -1510,20 +1510,21 @@ This is best described using an example:
 @RabbitListener(queues = "someQueue")
 public class MultiListenerBean {
 
-	@RabbitHandler
-	public String bar(Bar bar) {
-		...
-	}
+    @RabbitHandler
+    @SendTo("my.reply.queue")
+    public String bar(Bar bar) {
+        ...
+    }
 
-	@RabbitHandler
-	public String baz(Baz baz) {
-		...
-	}
+    @RabbitHandler
+    public String baz(Baz baz) {
+        ...
+    }
 
-	@RabbitHandler
-	public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
-		...
-	}
+    @RabbitHandler
+    public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+        ...
+    }
 
 }
 ----
@@ -1532,6 +1533,8 @@ In this case, the individual `@RabbitHandler` methods are invoked if the convert
 It is important to understand that the system must be able to identify a unique method based on the payload type.
 The type is checked for assignability to a single parameter that has no annotations, or is annotated with the `@Payload` annotation.
 Notice that the same method signatures apply as discussed in the method-level `@RabbitListener` described above.
+
+Notice that the `@SendTo` must be specified on each method (if needed); it is not supported at the class level.
 
 ====== Container Management
 
