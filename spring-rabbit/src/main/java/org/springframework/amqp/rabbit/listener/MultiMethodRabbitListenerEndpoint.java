@@ -69,7 +69,10 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 		@Override
 		protected Address getReplyToAddress(Message request) throws Exception {
 			Address replyTo = request.getMessageProperties().getReplyToAddress();
-			Address defaultReplyTo = delegatingHandler.getDefaultReplyTo();
+			Address defaultReplyTo = null;
+			if (delegatingHandler != null) {
+				defaultReplyTo = delegatingHandler.getDefaultReplyTo();
+			}
 			if (replyTo == null && defaultReplyTo == null) {
 				throw new AmqpException(
 						"Cannot determine ReplyTo message property value: " +

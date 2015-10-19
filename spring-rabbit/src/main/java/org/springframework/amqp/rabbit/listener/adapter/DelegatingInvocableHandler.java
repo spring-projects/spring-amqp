@@ -98,11 +98,12 @@ public class DelegatingInvocableHandler {
 	public Object invoke(Message<?> message, Object... providedArgs) throws Exception {
 		Class<? extends Object> payloadClass = message.getPayload().getClass();
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
+		Object result = handler.invoke(message, providedArgs);
 		Address replyTo = this.defaultReplyToForHandler.get(handler);
 		if (replyTo != null) {
 			defaultReplyTo.set(replyTo);
 		}
-		return handler.invoke(message, providedArgs);
+		return result;
 	}
 
 	/**
