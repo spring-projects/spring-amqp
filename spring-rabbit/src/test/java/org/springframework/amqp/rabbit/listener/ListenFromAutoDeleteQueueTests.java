@@ -46,6 +46,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.util.backoff.BackOffExecution;
 
 /**
  * @author Gary Russell
@@ -146,6 +147,7 @@ public class ListenFromAutoDeleteQueueTests {
 		//Prevent a long 'passiveDeclare' process
 		BlockingQueueConsumer consumer = mock(BlockingQueueConsumer.class);
 		doThrow(RuntimeException.class).when(consumer).start();
+		when(consumer.getBackOffExecution()).thenReturn(mock(BackOffExecution.class));
 		when(listenerContainer.createBlockingQueueConsumer()).thenReturn(consumer);
 
 		listenerContainer.start();

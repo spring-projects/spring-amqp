@@ -1353,7 +1353,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @throws Exception if the shared connection still can't be established
 	 */
 	protected void handleStartupFailure(BackOffExecution backOffExecution) throws Exception {
-		long recoveryInterval = backOffExecution != null ? backOffExecution.nextBackOff() : DEFAULT_RECOVERY_INTERVAL;
+		long recoveryInterval = backOffExecution.nextBackOff();
 		if (BackOffExecution.STOP == recoveryInterval) {
 			synchronized (this) {
 				if (isActive()) {
