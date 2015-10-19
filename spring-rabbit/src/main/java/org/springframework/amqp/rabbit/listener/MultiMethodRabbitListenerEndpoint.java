@@ -36,13 +36,11 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 
 	private final List<Method> methods;
 
-	private final Object bean;
-
 	private DelegatingInvocableHandler delegatingHandler;
 
 	public MultiMethodRabbitListenerEndpoint(List<Method> methods, Object bean) {
 		this.methods = methods;
-		this.bean = bean;
+		setBean(bean);
 	}
 
 	@Override
@@ -52,7 +50,7 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 			invocableHandlerMethods.add(getMessageHandlerMethodFactory()
 					.createInvocableHandlerMethod(getBean(), method));
 		}
-		this.delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods, this.bean, getResolver(),
+		this.delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods, getBean(), getResolver(),
 				getBeanExpressionContext());
 		return new HandlerAdapter(this.delegatingHandler);
 	}
