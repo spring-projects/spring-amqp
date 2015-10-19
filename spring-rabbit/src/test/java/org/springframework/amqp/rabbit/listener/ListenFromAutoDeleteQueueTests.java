@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,6 +38,7 @@ import org.junit.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -63,12 +65,15 @@ public class ListenFromAutoDeleteQueueTests {
 
 	private static BlockingQueue<Message> queue = new LinkedBlockingQueue<Message>();
 
+	private Queue expiringQueue;
+
 	@Before
 	public void setup() {
 		this.context = new ClassPathXmlApplicationContext(this.getClass().getSimpleName() + "-context.xml",
 				this.getClass());
 		this.listenerContainer1 = context.getBean("container1", SimpleMessageListenerContainer.class);
 		this.listenerContainer2 = context.getBean("container2", SimpleMessageListenerContainer.class);
+		this.expiringQueue = context.getBean("xExpires", Queue.class);
 	}
 
 	@After
@@ -107,7 +112,7 @@ public class ListenFromAutoDeleteQueueTests {
 	@Test
 	public void testRedeclareXExpiresQueue() throws Exception {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
-		template.convertAndSend("xExpires", "foo");
+		template.convertAndSend(this.expiringQueue.getName(), "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container3",
 				SimpleMessageListenerContainer.class);
@@ -115,15 +120,15 @@ public class ListenFromAutoDeleteQueueTests {
 		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "rabbitAdmin", RabbitAdmin.class));
 		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
 		int n = 0;
-		while (admin.getQueueProperties("xExpires") != null && n < 100) {
+		while (admin.getQueueProperties(this.expiringQueue.getName()) != null && n < 100) {
 			Thread.sleep(100);
 			n++;
 		}
 		assertTrue(n < 100);
 		listenerContainer.start();
-		template.convertAndSend("xExpires", "foo");
+		template.convertAndSend(this.expiringQueue.getName(), "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
-		verify(admin, times(1)).initialize(); // should only be called by one of the consumers
+		verify(admin, atLeastOnce()).initialize(); // with short x-expires, both consumers might redeclare
 	}
 
 	@Test
@@ -141,6 +146,7 @@ public class ListenFromAutoDeleteQueueTests {
 		//Prevent a long 'passiveDeclare' process
 		BlockingQueueConsumer consumer = mock(BlockingQueueConsumer.class);
 		doThrow(RuntimeException.class).when(consumer).start();
+//		when(consumer.getBackOffExecution()).thenReturn(mock(BackOffExecution.class));
 		when(listenerContainer.createBlockingQueueConsumer()).thenReturn(consumer);
 
 		listenerContainer.start();
