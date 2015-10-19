@@ -36,7 +36,7 @@
 		<rabbit:listener id="container2" ref="foo" queues="otherAnon" admin="containerAdmin" />
 	</rabbit:listener-container>
 
-	<rabbit:queue id="xExpires" name="xExpires">
+	<rabbit:queue id="xExpires" name="#{T(java.util.UUID).randomUUID().toString()}">
 		<rabbit:queue-arguments>
 			<entry key="x-expires" value="#{100}"/>
 		</rabbit:queue-arguments>
