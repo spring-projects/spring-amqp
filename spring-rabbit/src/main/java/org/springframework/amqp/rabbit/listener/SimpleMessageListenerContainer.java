@@ -1113,6 +1113,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return this.adviceChain;
 	}
 
+	@Override
+	public String toString() {
+		return "SimpleMessageListenerContainer [concurrentConsumers=" + this.concurrentConsumers
+				+ (this.maxConcurrentConsumers != null ? ", maxConcurrentConsumers=" + this.maxConcurrentConsumers : "")
+				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
+	}
+
 	private class AsyncMessageProcessingConsumer implements Runnable {
 
 		private final BlockingQueueConsumer consumer;
