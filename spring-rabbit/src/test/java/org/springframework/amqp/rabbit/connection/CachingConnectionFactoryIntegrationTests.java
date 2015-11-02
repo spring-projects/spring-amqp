@@ -73,12 +73,14 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class CachingConnectionFactoryIntegrationTests {
 
+	private static final String CF_INTEGRATION_TEST_QUEUE = "cfIntegrationTest";
+
 	private static Log logger = LogFactory.getLog(CachingConnectionFactoryIntegrationTests.class);
 
 	private CachingConnectionFactory connectionFactory;
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(CF_INTEGRATION_TEST_QUEUE);
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
@@ -92,6 +94,9 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@After
 	public void close() {
+		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
+			new RabbitAdmin(this.connectionFactory).deleteQueue(CF_INTEGRATION_TEST_QUEUE);
+		}
 		connectionFactory.destroy();
 	}
 
@@ -305,7 +310,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		Queue queue = new Queue("foo");
+		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
 		admin.declareQueue(queue);
 		final String route = queue.getName();
 
