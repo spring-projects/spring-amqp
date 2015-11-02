@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,14 +26,12 @@ import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
-import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Stephane Nicoll
+ * @author Gary Russell
+ * @since 1.4
  */
 public class RabbitListenerEndpointRegistrarTests {
 
@@ -79,6 +80,7 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.registerEndpoint(endpoint, null);
 		registrar.afterPropertiesSet();
 		assertNotNull("Container not created", registry.getListenerContainer("some id"));
+		assertEquals("some id", registry.getListenerContainerIds().iterator().next());
 		assertEquals(1, registry.getListenerContainers().size());
 	}
 
@@ -101,6 +103,7 @@ public class RabbitListenerEndpointRegistrarTests {
 		registrar.registerEndpoint(endpoint);
 		registrar.afterPropertiesSet();
 		assertNotNull("Container not created", registry.getListenerContainer("myEndpoint"));
+		assertEquals("myEndpoint", registry.getListenerContainerIds().iterator().next());
 		assertEquals(1, registry.getListenerContainers().size());
 	}
 

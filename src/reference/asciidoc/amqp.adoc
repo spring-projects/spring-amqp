@@ -1547,6 +1547,8 @@ on the registry itself which will invoke the operations on each container.
 You can also get a reference to an individual container using its `id`, using `getListenerContainer(String id)`; for
 example `registry.getListenerContainer("multi")` for the container created by the snippet above.
 
+Starting with version _1.5.2_, you can obtain the `id` s of the registered containers with `getListenerContainerIds()`.
+
 Starting with _version 1.5_, you can now assign a `group` to the container on the `RabbitListener` endpoint.
 This provides a mechanism to get a reference to a subset of containers; adding a `group` attribute causes a
 bean of type `Collection<MessageListenerContainer>` to be registered with the context with the group name.
