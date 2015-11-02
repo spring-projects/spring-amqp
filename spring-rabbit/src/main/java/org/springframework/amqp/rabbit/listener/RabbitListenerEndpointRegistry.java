@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,6 +55,7 @@ import org.springframework.util.StringUtils;
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @author Artem Bilan
+ * @author Gary Russell
  * @since 1.4
  * @see RabbitListenerEndpoint
  * @see MessageListenerContainer
@@ -84,10 +86,20 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	 * @param id the id of the container
 	 * @return the container or {@code null} if no container with that id exists
 	 * @see RabbitListenerEndpoint#getId()
+	 * @see #getListenerContainerIds()
 	 */
 	public MessageListenerContainer getListenerContainer(String id) {
 		Assert.hasText(id, "Container identifier must not be empty");
 		return this.listenerContainers.get(id);
+	}
+
+	/**
+	 * Return the ids of the managed {@link MessageListenerContainer} instance(s).
+	 * @return the ids.
+	 * @see #getListenerContainer(String)
+	 */
+	public Set<String> getListenerContainerIds() {
+		return Collections.unmodifiableSet(this.listenerContainers.keySet());
 	}
 
 	/**
