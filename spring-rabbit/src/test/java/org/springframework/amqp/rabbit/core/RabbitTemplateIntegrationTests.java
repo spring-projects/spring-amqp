@@ -50,6 +50,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
@@ -102,25 +108,25 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionSynchronizationUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 import org.springframework.util.ReflectionUtils.FieldFilter;
-
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -327,7 +333,8 @@ public class RabbitTemplateIntegrationTests {
 		try {
 			template.convertAndSend("", "no.such.route", "message");
 			// fail("Expected AmqpException");
-		} catch (AmqpException e) {
+		}
+		catch (AmqpException e) {
 			// e.printStackTrace();
 		}
 		// Now send the real message, and all should be well...
@@ -340,7 +347,8 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveWithPostProcessor() throws Exception {
-		template.convertAndSend(ROUTE, (Object)"message", new MessagePostProcessor() {
+		template.convertAndSend(ROUTE, (Object) "message", new MessagePostProcessor() {
+
 			@Override
 			public Message postProcessMessage(Message message) throws AmqpException {
 				message.getMessageProperties().setContentType("text/other");
@@ -408,6 +416,7 @@ public class RabbitTemplateIntegrationTests {
 		// closed...
 		try {
 			template.execute(new ChannelCallback<String>() {
+
 				@Override
 				public String doInRabbit(Channel channel) throws Exception {
 					// Switch off the auto-ack so the message is rolled back...
@@ -420,7 +429,8 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			assertTrue(e.getCause() instanceof PlannedException);
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -458,6 +468,7 @@ public class RabbitTemplateIntegrationTests {
 		template.setChannelTransacted(true);
 		String result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
+
 					@Override
 					public String doInTransaction(TransactionStatus status) {
 						return (String) template.receiveAndConvert(ROUTE);
@@ -475,6 +486,7 @@ public class RabbitTemplateIntegrationTests {
 		template.setChannelTransacted(true);
 		String result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
+
 					@Override
 					public String doInTransaction(TransactionStatus status) {
 						return (String) template.receiveAndConvert(ROUTE);
@@ -492,6 +504,7 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
+
 				@Override
 				public String doInTransaction(TransactionStatus status) {
 					template.receiveAndConvert(ROUTE);
@@ -499,7 +512,8 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (PlannedException e) {
+		}
+		catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -515,6 +529,7 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<String>() {
+
 				@Override
 				public String doInTransaction(TransactionStatus status) {
 					template.receiveAndConvert(ROUTE);
@@ -522,7 +537,8 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (PlannedException e) {
+		}
+		catch (PlannedException e) {
 			// Expected
 		}
 		// No rollback
@@ -534,6 +550,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testSendInExternalTransaction() throws Exception {
 		template.setChannelTransacted(true);
 		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
+
 			@Override
 			public Void doInTransaction(TransactionStatus status) {
 				template.convertAndSend(ROUTE, "message");
@@ -551,6 +568,7 @@ public class RabbitTemplateIntegrationTests {
 		template.setChannelTransacted(true);
 		try {
 			new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
+
 				@Override
 				public Void doInTransaction(TransactionStatus status) {
 					template.convertAndSend(ROUTE, "message");
@@ -558,7 +576,8 @@ public class RabbitTemplateIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (PlannedException e) {
+		}
+		catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -614,6 +633,7 @@ public class RabbitTemplateIntegrationTests {
 		connectionFactory.setExecutor(exec);
 		final Field[] fields = new Field[1];
 		ReflectionUtils.doWithFields(RabbitTemplate.class, new FieldCallback() {
+
 			@Override
 			public void doWith(Field field) throws IllegalArgumentException,
 					IllegalAccessException {
@@ -621,6 +641,7 @@ public class RabbitTemplateIntegrationTests {
 				fields[0] = field;
 			}
 		}, new FieldFilter() {
+
 			@Override
 			public boolean matches(Field field) {
 				return field.getName().equals("logger");
@@ -631,7 +652,8 @@ public class RabbitTemplateIntegrationTests {
 
 		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
 
-		doAnswer(new Answer<Object>(){
+		doAnswer(new Answer<Object>() {
+
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				String log = (String) invocation.getArguments()[0];
@@ -875,6 +897,7 @@ public class RabbitTemplateIntegrationTests {
 
 		});
 		String result = (String) template.convertSendAndReceive((Object) "message", new MessagePostProcessor() {
+
 			@Override
 			public Message postProcessMessage(Message message) throws AmqpException {
 				try {
@@ -917,6 +940,7 @@ public class RabbitTemplateIntegrationTests {
 
 		});
 		String result = (String) template.convertSendAndReceive(ROUTE, (Object) "message", new MessagePostProcessor() {
+
 			@Override
 			public Message postProcessMessage(Message message) throws AmqpException {
 				try {
@@ -1119,6 +1143,7 @@ public class RabbitTemplateIntegrationTests {
 		this.template.setReceiveTimeout(timeout);
 		result = new TransactionTemplate(new TestTransactionManager())
 				.execute(new TransactionCallback<String>() {
+
 					@Override
 					public String doInTransaction(TransactionStatus status) {
 						final AtomicReference<String> payloadReference = new AtomicReference<String>();
@@ -1148,17 +1173,17 @@ public class RabbitTemplateIntegrationTests {
 						public void doInTransactionWithoutResult(TransactionStatus status) {
 							template.receiveAndReply(new ReceiveAndReplyMessageCallback() {
 
-														 @Override
-														 public Message handle(Message message) {
-															 return message;
-														 }
-													 }, new ReplyToAddressCallback<Message>() {
+								@Override
+								public Message handle(Message message) {
+									return message;
+								}
+							}, new ReplyToAddressCallback<Message>() {
 
-														 @Override
-														 public Address getReplyToAddress(Message request, Message reply) {
-															 throw new PlannedException();
-														 }
-													 });
+								@Override
+								public Address getReplyToAddress(Message request, Message reply) {
+									throw new PlannedException();
+								}
+							});
 						}
 					});
 			fail("Expected PlannedException");
@@ -1252,7 +1277,8 @@ public class RabbitTemplateIntegrationTests {
 			if (System.currentTimeMillis() > start + 10000) {
 				fail("Something wrong with RabbitMQ");
 			}
-		} while (receiveCount.get() < count * 2);
+		}
+		while (receiveCount.get() < count * 2);
 
 
 		executor.shutdown();
@@ -1462,8 +1488,86 @@ public class RabbitTemplateIntegrationTests {
 				any(BasicProperties.class), any(byte[].class));
 	}
 
+	@Test
+	public void testSendInGlobalTransactionCommit() throws Exception {
+		testSendInGlobalTransactionGuts(false);
+
+		String result = (String) template.receiveAndConvert(ROUTE);
+		assertEquals("message", result);
+		assertNull(template.receive(ROUTE));
+	}
+
+	@Test
+	public void testSendInGlobalTransactionRollback() throws Exception {
+		testSendInGlobalTransactionGuts(true);
+
+		assertNull(template.receive(ROUTE));
+	}
+
+	@SuppressWarnings({"serial", "unchecked"})
+	private void testSendInGlobalTransactionGuts(final boolean rollback) throws Exception {
+		template.setChannelTransacted(true);
+		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
+
+			@Override
+			public Void doInTransaction(final TransactionStatus status) {
+
+				// Emulate Global TX with the mock non-new TransactionStatus
+				new TransactionInterceptor() {
+
+					{
+						prepareTransactionInfo(null, null, null, null);
+					}
+
+					@Override
+					protected TransactionInfo prepareTransactionInfo(PlatformTransactionManager tm,
+					                                                 TransactionAttribute txAttr,
+					                                                 String joinpointIdentification,
+					                                                 TransactionStatus status) {
+						TransactionInfo txInfo = new TransactionInfo(tm, txAttr, joinpointIdentification);
+						txInfo.newTransactionStatus(new SimpleTransactionStatus(false));
+
+						final ThreadLocal<TransactionInfo> transactionInfoHolder =
+								(ThreadLocal<TransactionInfo>) TestUtils.getPropertyValue(this,
+										"transactionInfoHolder");
+						assertNotNull(transactionInfoHolder);
+						transactionInfoHolder.set(txInfo);
+						TransactionSynchronizationManager.registerSynchronization(
+								new TransactionSynchronizationAdapter() {
+
+									@Override
+									public void afterCompletion(int status) {
+										transactionInfoHolder.remove();
+									}
+								});
+						return txInfo;
+					}
+
+				};
+				template.convertAndSend(ROUTE, "message");
+
+				if (rollback) {
+					TransactionSynchronizationManager.registerSynchronization(
+							new TransactionSynchronizationAdapter() {
+
+								@Override
+								public void afterCommit() {
+									TransactionSynchronizationUtils.triggerAfterCompletion(
+											TransactionSynchronization.STATUS_ROLLED_BACK);
+								}
+
+							});
+				}
+
+				return null;
+			}
+
+		});
+	}
+
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
+
 		public PlannedException() {
 			super("Planned");
 		}
