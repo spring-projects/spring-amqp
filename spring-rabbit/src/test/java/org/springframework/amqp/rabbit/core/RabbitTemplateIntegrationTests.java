@@ -1504,6 +1504,7 @@ public class RabbitTemplateIntegrationTests {
 		assertNull(template.receive(ROUTE));
 	}
 
+	@SuppressWarnings({"serial", "unchecked"})
 	private void testSendInGlobalTransactionGuts(final boolean rollback) throws Exception {
 		template.setChannelTransacted(true);
 		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
@@ -1519,18 +1520,26 @@ public class RabbitTemplateIntegrationTests {
 					}
 
 					@Override
-					@SuppressWarnings("unchecked")
 					protected TransactionInfo prepareTransactionInfo(PlatformTransactionManager tm,
 					                                                 TransactionAttribute txAttr,
 					                                                 String joinpointIdentification,
 					                                                 TransactionStatus status) {
 						TransactionInfo txInfo = new TransactionInfo(tm, txAttr, joinpointIdentification);
 						txInfo.newTransactionStatus(new SimpleTransactionStatus(false));
-						ThreadLocal<TransactionInfo> transactionInfoHolder =
+
+						final ThreadLocal<TransactionInfo> transactionInfoHolder =
 								(ThreadLocal<TransactionInfo>) TestUtils.getPropertyValue(this,
 										"transactionInfoHolder");
 						assertNotNull(transactionInfoHolder);
 						transactionInfoHolder.set(txInfo);
+						TransactionSynchronizationManager.registerSynchronization(
+								new TransactionSynchronizationAdapter() {
+
+									@Override
+									public void afterCompletion(int status) {
+										transactionInfoHolder.remove();
+									}
+								});
 						return txInfo;
 					}
 

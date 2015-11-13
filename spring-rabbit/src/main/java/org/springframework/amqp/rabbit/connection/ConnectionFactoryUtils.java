@@ -263,7 +263,14 @@ public class ConnectionFactoryUtils {
 
 		@Override
 		protected boolean shouldReleaseBeforeCompletion() {
-			return !this.locallyTransacted;
+			return false;
+		}
+
+		@Override
+		public void afterCommit() {
+			if (this.locallyTransacted) {
+				processResourceAfterCommit(this.resourceHolder);
+			}
 		}
 
 		@Override
