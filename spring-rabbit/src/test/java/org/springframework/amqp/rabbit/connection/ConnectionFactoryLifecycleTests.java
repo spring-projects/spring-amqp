@@ -97,6 +97,8 @@ public class ConnectionFactoryLifecycleTests {
 
 		@Override
 		public void stop() {
+			// Prior to the fix for AMQP-546, this threw an exception and
+			// running was not reset.
 			this.admin.deleteQueue(this.queue.getName());
 			this.running = false;
 		}

@@ -139,6 +139,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile boolean stopped;
 
+	private volatile boolean running;
+
 	private int phase = Integer.MIN_VALUE + 1000;
 
 	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
@@ -585,11 +587,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void start() {
+		this.running = true;
 	}
 
 	@Override
 	public boolean isRunning() {
-		return true;
+		return this.running;
 	}
 
 	@Override
@@ -614,10 +617,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return true;
 	}
 
+	/**
+	 * Stop the connection factory to prevent its connection from being used.
+	 * Note: ignored unless the application context is in the process of being stopped.
+	 */
+	@Override
 	public void stop() {
 		if (this.contextStopped) {
+			this.running = false;
 			this.stopped = true;
 			this.deferredCloseExecutor.shutdownNow();
+		}
+		else {
+			logger.warn("stop() is ignored unless the application context is being stopped");
 		}
 	}
 
