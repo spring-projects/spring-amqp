@@ -46,6 +46,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -85,7 +86,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
-				PublisherCallbackChannelConnectionFactory {
+				PublisherCallbackChannelConnectionFactory, SmartLifecycle {
 
 	private ApplicationContext applicationContext;
 
@@ -134,7 +135,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile boolean initialized;
 
+	private volatile boolean contextStopped;
+
 	private volatile boolean stopped;
+
+	private int phase = Integer.MIN_VALUE + 1000;
 
 	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
@@ -327,8 +332,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@Override
 	public void onApplicationEvent(ContextClosedEvent event) {
 		if (this.applicationContext == event.getApplicationContext()) {
-			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
+			this.contextStopped = true;
 		}
 	}
 
@@ -577,6 +581,50 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			this.openConnectionNonTransactionalChannels.clear();
 			this.openConnectionTransactionalChannels.clear();
 		}
+	}
+
+	@Override
+	public void start() {
+	}
+
+	@Override
+	public boolean isRunning() {
+		return true;
+	}
+
+	@Override
+	public int getPhase() {
+		return this.phase;
+	}
+
+	/**
+	 * Defaults to phase {@link Integer#MIN_VALUE - 1000} so the factory is
+	 * stopped in a very late phase, allowing other beans to use the connection
+	 * to clean up.
+	 * @see #getPhase()
+	 * @param phase the phase.
+	 * @since 1.5.3
+	 */
+	public void setPhase(int phase) {
+		this.phase = phase;
+	}
+
+	@Override
+	public boolean isAutoStartup() {
+		return true;
+	}
+
+	public void stop() {
+		if (this.contextStopped) {
+			this.stopped = true;
+			this.deferredCloseExecutor.shutdownNow();
+		}
+	}
+
+	@Override
+	public void stop(Runnable callback) {
+		stop();
+		callback.run();
 	}
 
 	/*
