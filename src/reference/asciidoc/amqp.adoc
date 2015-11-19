@@ -3076,18 +3076,23 @@ The `MessageRecover` is called when all retries have been exhausted.
 The default `MessageRecoverer` simply consumes the errant message and emits a WARN message.
 In which case, the message is ACK'd and won't be sent to the Dead Letter Exchange, if any.
 
-Starting with _version 1.3_, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after retries are exhausted:
+Starting with _version 1.3_, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after
+retries are exhausted:
 
 [source,java]
 ----
 @Bean
 RetryOperationsInterceptor interceptor() {
 	return RetryInterceptorBuilder.stateless()
-			.withMaxAttempts(5)
-			.setRecoverer(new RepublishMessageRecoverer(amqpTemplate(), "bar", "baz"))
+			.maxAttempts(5)
+			.recoverer(new RepublishMessageRecoverer(amqpTemplate(), "bar", "baz"))
 			.build();
 }
 ----
+
+The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the
+exception message, stack trace, original exchange and routing key.
+Additional headers can be added by creating a subclass and overriding `additionalHeaders()`.
 
 ===== Exception Classification for Retry
 
