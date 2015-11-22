@@ -985,7 +985,7 @@ MessageListenerAdapter listener = new MessageListenerAdapter(somePojo);
 ----
 
 You can subclass the adapter and provide an implementation of `getListenerMethodName()` to dynamically select different methods based on the message.
-This method has two paramters, the `originalMessage` and `extractedMessage`, the latter being the result of any conversion.
+This method has two parameters, the `originalMessage` and `extractedMessage`, the latter being the result of any conversion.
 By default, a `SimpleMessageConverter` is configured; see <<simple-message-converter>> for more information and
 information about other converters available.
 
@@ -1957,7 +1957,7 @@ On the client side, a `RabbitTemplate` is used as described above; on the server
 
 The client factory bean can be injected into any bean (using its `serviceInterface`); the client can then invoke methods on the proxy, resulting in remote execution over AMQP.
 
-NOTE: With the default `MessageConverter` s, the method paramters and returned value must be instances of `Serializable`.
+NOTE: With the default `MessageConverter` s, the method parameters and returned value must be instances of `Serializable`.
 
 On the server side, the `AmqpInvokerServiceExporter` has both `AmqpTemplate` and `MessageConverter` properties.
 Currently, the template's `MessageConverter` is not used.
