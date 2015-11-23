@@ -31,13 +31,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.AfterClass;
+import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,19 +60,26 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
+import org.springframework.amqp.rabbit.test.TestExecutionListenerAdapter;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestContext;
+import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.TestExecutionListeners.MergeMode;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -87,17 +96,22 @@ import org.springframework.util.ErrorHandler;
 @ContextConfiguration(classes = EnableRabbitIntegrationTests.EnableRabbitConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
+@TestExecutionListeners(mergeMode = MergeMode.MERGE_WITH_DEFAULTS,
+	listeners = EnableRabbitIntegrationTests.DeleteQueuesExecutionListener.class)
 public class EnableRabbitIntegrationTests {
 
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel",
-			"test.invalidPojo",
+			"test.invalidPojo", "differentTypes",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
+
+	@Autowired
+	private RabbitTemplate jsonRabbitTemplate;
 
 	@Autowired
 	private RabbitAdmin rabbitAdmin;
@@ -120,9 +134,26 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private TxClassLevel txClassLevel;
 
-	@AfterClass
-	public static void tearDownClass() {
-		brokerRunning.removeTestQueues();
+	@Autowired
+	private MyService service;
+
+	/**
+	 * Defer queue deletion until after the context has been stopped by the
+	 * {@link DirtiesContext}.
+	 *
+	 */
+	public static class DeleteQueuesExecutionListener extends TestExecutionListenerAdapter implements Ordered {
+
+		@Override
+		public void afterTestClass(TestContext testContext) throws Exception {
+			brokerRunning.removeTestQueues();
+		}
+
+		@Override
+		public int getOrder() {
+			return Integer.MIN_VALUE;
+		}
+
 	}
 
 	@Test
@@ -266,6 +297,16 @@ public class EnableRabbitIntegrationTests {
 				containsString("Failed to convert message payload 'bar' to 'java.util.Date'"));
 	}
 
+	@Test
+	public void testDifferentTypes() throws InterruptedException {
+		Foo1 foo = new Foo1();
+		foo.setBar("bar");
+		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
+		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
+		assertThat(this.service.foos.get(0), Matchers.instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -372,6 +413,44 @@ public class EnableRabbitIntegrationTests {
 
 		}
 
+		private final List<Object> foos = new ArrayList<Object>();
+
+		private final CountDownLatch latch = new CountDownLatch(1);
+
+		@RabbitListener(queues = "differentTypes", containerFactory="jsonListenerContainerFactory")
+		public void handleDifferent(Foo2 foo) {
+			foos.add(foo);
+			latch.countDown();
+		}
+
+	}
+
+	public static class Foo1 {
+
+		private String bar;
+
+		public String getBar() {
+			return bar;
+		}
+
+		public void setBar(String bar) {
+			this.bar = bar;
+		}
+
+	}
+
+	public static class Foo2 {
+
+		private String bar;
+
+		public String getBar() {
+			return bar;
+		}
+
+		public void setBar(String bar) {
+			this.bar = bar;
+		}
+
 	}
 
 	@Configuration
@@ -393,6 +472,28 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory jsonListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			DefaultClassMapper classMapper = new DefaultClassMapper();
+			Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+			idClassMapping.put(
+					"org.springframework.amqp.rabbit.annotation.EnableRabbitIntegrationTests$Foo1", Foo2.class);
+			classMapper.setIdClassMapping(idClassMapping);
+			messageConverter.setClassMapper(classMapper);
+			factory.setMessageConverter(messageConverter);
+			return factory;
+		}
+
+		@Bean
+		public org.springframework.amqp.core.Queue differentTypes() {
+			return new org.springframework.amqp.core.Queue("differentTypes");
 		}
 
 		@Bean
@@ -475,6 +576,13 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public RabbitTemplate jsonRabbitTemplate() {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
+			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+			return rabbitTemplate;
+		}
+
+		@Bean
 		public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
 			return new RabbitAdmin(connectionFactory);
 		}
@@ -546,11 +654,13 @@ public class EnableRabbitIntegrationTests {
 			key = "multi.rk.tx"))
 	static class TxClassLevelImpl implements TxClassLevel {
 
+		@Override
 		@RabbitHandler
 		public String foo(Bar bar) {
 			return "BAR: " + bar.field + bar.field;
 		}
 
+		@Override
 		@RabbitHandler
 		public String baz(Baz baz, String rk) {
 			return "BAZ: " + baz.field + baz.field + ": " + rk;
