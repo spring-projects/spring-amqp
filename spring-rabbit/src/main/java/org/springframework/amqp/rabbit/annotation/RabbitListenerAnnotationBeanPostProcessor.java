@@ -229,7 +229,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					processAmqpListener(rabbitListener, method, bean, beanName);
 				}
 				if (classLevelListener != null) {
-					RabbitHandler rabbitHandler = AnnotationUtils.getAnnotation(method, RabbitHandler.class);
+					RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
 					if (rabbitHandler != null) {
 						multiMethods.add(method);
 					}
