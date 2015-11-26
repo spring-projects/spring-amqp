@@ -104,7 +104,7 @@ public class EnableRabbitIntegrationTests {
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel",
-			"test.invalidPojo", "differentTypes",
+			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
 
 	@Autowired
@@ -193,6 +193,16 @@ public class EnableRabbitIntegrationTests {
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
 		assertEquals(2, this.context.getBean("testGroup", List.class).size());
+	}
+
+	@Test
+	public void simpleInheritanceMethod() {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.inheritance", "foo"));
+	}
+
+	@Test
+	public void simpleInheritanceClass() {
+		assertEquals("FOOBAR", rabbitTemplate.convertSendAndReceive("test.inheritance.class", "foo"));
 	}
 
 	@Test
@@ -324,6 +334,39 @@ public class EnableRabbitIntegrationTests {
 		)
 		public String baz(Baz baz, String rk) {
 			return "BAZ: " + baz.field + ": " + rk;
+		}
+
+	}
+
+	public interface MyServiceInterface {
+
+		@RabbitListener(queues = "test.inheritance")
+		public String testAnnotationInheritance(String foo);
+
+	}
+
+	public static class MyServiceInterfaceImpl implements MyServiceInterface {
+
+		@Override
+		public String testAnnotationInheritance(String foo) {
+			return foo.toUpperCase();
+		}
+
+	}
+
+	@RabbitListener(queues = "test.inheritance.class")
+	public interface MyServiceInterface2 {
+
+		@RabbitHandler
+		public String testAnnotationInheritance(String foo);
+
+	}
+
+	public static class MyServiceInterfaceImpl2 implements MyServiceInterface2 {
+
+		@Override
+		public String testAnnotationInheritance(String foo) {
+			return foo.toUpperCase() + "BAR";
 		}
 
 	}
@@ -492,11 +535,6 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
-		public org.springframework.amqp.core.Queue differentTypes() {
-			return new org.springframework.amqp.core.Queue("differentTypes");
-		}
-
-		@Bean
 		public String tagPrefix() {
 			return UUID.randomUUID().toString();
 		}
@@ -554,6 +592,16 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public MyService myService() {
 			return new MyService();
+		}
+
+		@Bean
+		public MyServiceInterface myInheritanceService() {
+			return new MyServiceInterfaceImpl();
+		}
+
+		@Bean
+		public MyServiceInterface2 myInheritanceService2() {
+			return new MyServiceInterfaceImpl2();
 		}
 
 		@Bean
