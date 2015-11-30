@@ -73,14 +73,10 @@ public class LocalizedQueueConnectionFactoryTests {
 
 	private final Map<String, String> consumerTags = new HashMap<String, String>();
 
-	private final CountDownLatch latch1 = new CountDownLatch(1);
-
-	private final CountDownLatch latch2 = new CountDownLatch(2);
-
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testFailOver() throws Exception {
-		ConnectionFactory defaultConnectionFactory = mockCF("localhost:1234");
+		ConnectionFactory defaultConnectionFactory = mockCF("localhost:1234", null);
 		String rabbit1 = "localhost:1235";
 		String rabbit2 = "localhost:1236";
 		String[] addresses = new String[] { rabbit1, rabbit2 };
@@ -90,22 +86,25 @@ public class LocalizedQueueConnectionFactoryTests {
 		String username = "guest";
 		String password = "guest";
 		final AtomicBoolean firstServer = new AtomicBoolean(true);
+		final Client client1 = doCreateClient(adminUris[0], username, password, nodes[0]);
+		final Client client2 = doCreateClient(adminUris[1], username, password, nodes[1]);
+		final Map<String, ConnectionFactory> mockCFs = new HashMap<String, ConnectionFactory>();
+		CountDownLatch latch1 = new CountDownLatch(1);
+		CountDownLatch latch2 = new CountDownLatch(1);
+		mockCFs.put(rabbit1, mockCF(rabbit1, latch1));
+		mockCFs.put(rabbit2, mockCF(rabbit2, latch2));
 		LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(defaultConnectionFactory, addresses,
 				adminUris, nodes, vhost, username, password, false, null) {
-
-			private final String[] nodes = new String[] { "rabbit@foo", "rabbit@bar" };
-
 
 			@Override
 			protected Client createClient(String adminUri, String username, String password)
 					throws MalformedURLException, URISyntaxException {
-				return doCreateClient(adminUri, username, password, firstServer.get() ? nodes[0] : nodes[1]);
+				return firstServer.get() ? client1 : client2;
 			}
-
 
 			@Override
 			protected ConnectionFactory createConnectionFactory(String address, String node) throws Exception {
-				return mockCF(address);
+				return mockCFs.get(address);
 			}
 
 		};
@@ -172,7 +171,7 @@ public class LocalizedQueueConnectionFactoryTests {
 			String vhost = "/";
 			String username = "guest";
 			String password = "guest";
-			LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(mockCF("localhost:1234"),
+			LocalizedQueueConnectionFactory lqcf = new LocalizedQueueConnectionFactory(mockCF("localhost:1234", null),
 					addresses, adminUris, nodes, vhost, username, password, false, null);
 			lqcf.getTargetConnectionFactory("[foo, bar]");
 		}
@@ -182,7 +181,7 @@ public class LocalizedQueueConnectionFactoryTests {
 	}
 
 	@SuppressWarnings("unchecked")
-	private ConnectionFactory mockCF(final String address) throws Exception {
+	private ConnectionFactory mockCF(final String address, final CountDownLatch latch) throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
 		Channel channel = mock(Channel.class);
@@ -197,8 +196,9 @@ public class LocalizedQueueConnectionFactoryTests {
 				String tag = UUID.randomUUID().toString();
 				consumers.put(address, (Consumer) invocation.getArguments()[6]);
 				consumerTags.put(address, tag);
-				latch1.countDown();
-				latch2.countDown();
+				if (latch != null) {
+					latch.countDown();
+				}
 				return tag;
 			}
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
