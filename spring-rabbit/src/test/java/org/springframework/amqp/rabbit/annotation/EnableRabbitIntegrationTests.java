@@ -102,7 +102,7 @@ public class EnableRabbitIntegrationTests {
 
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
-			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
+					"test.simple", "test.inheritance",  "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel",
 			"test.invalidPojo", "differentTypes",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
@@ -193,6 +193,11 @@ public class EnableRabbitIntegrationTests {
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
 		assertEquals(2, this.context.getBean("testGroup", List.class).size());
+	}
+
+	@Test
+	public void simpleInheritance() {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.inheritance", "foo"));
 	}
 
 	@Test
@@ -326,6 +331,20 @@ public class EnableRabbitIntegrationTests {
 			return "BAZ: " + baz.field + ": " + rk;
 		}
 
+	}
+
+	public interface MyServiceInterface {
+
+		@RabbitListener(queues = "test.inheritance")
+		public String testAnnotationInheritance(String foo);
+	}
+
+	public static class MyServiceInterfaceImpl implements MyServiceInterface {
+
+		@Override
+		public String testAnnotationInheritance(String foo) {
+			return foo.toUpperCase();
+		}
 	}
 
 	public static class MyService {
@@ -554,6 +573,11 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public MyService myService() {
 			return new MyService();
+		}
+
+		@Bean
+		public MyServiceInterface myInheritanceService() {
+			return new MyServiceInterfaceImpl();
 		}
 
 		@Bean

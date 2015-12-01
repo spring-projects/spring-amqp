@@ -224,12 +224,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 			@Override
 			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
-				RabbitListener rabbitListener = AnnotationUtils.getAnnotation(method, RabbitListener.class);
+				RabbitListener rabbitListener = AnnotationUtils.findAnnotation(method, RabbitListener.class);
 				if (rabbitListener != null) {
 					processAmqpListener(rabbitListener, method, bean, beanName);
 				}
 				if (classLevelListener != null) {
-					RabbitHandler rabbitHandler = AnnotationUtils.getAnnotation(method, RabbitHandler.class);
+					RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
 					if (rabbitHandler != null) {
 						multiMethods.add(method);
 					}
