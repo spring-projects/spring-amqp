@@ -69,6 +69,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -150,7 +151,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Override
 		public int getOrder() {
-			return Integer.MIN_VALUE;
+			return Ordered.HIGHEST_PRECEDENCE;
 		}
 
 	}
