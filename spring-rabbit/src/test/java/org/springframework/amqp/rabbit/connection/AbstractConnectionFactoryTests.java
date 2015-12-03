@@ -3,8 +3,10 @@ package org.springframework.amqp.rabbit.connection;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -14,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
@@ -24,6 +27,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.ConnectionFactory;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 /**
  * @author Dave Syer
@@ -150,6 +154,20 @@ public abstract class AbstractConnectionFactoryTests {
 		connectionFactory.destroy();
 
 		verify(mockConnectionFactory, never()).newConnection((ExecutorService) null);
+	}
+
+	@Test
+	public void testCreatesConnectionWithGivenFactory() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		doCallRealMethod().when(mockConnectionFactory).params(any(ExecutorService.class));
+		doCallRealMethod().when(mockConnectionFactory).setThreadFactory(any(ThreadFactory.class));
+		doCallRealMethod().when(mockConnectionFactory).getThreadFactory();
+
+		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
+		ThreadFactory connectionThreadFactory = new CustomizableThreadFactory("connection-thread-");
+		connectionFactory.setConnectionThreadFactory(connectionThreadFactory);
+
+		assertEquals(connectionThreadFactory, mockConnectionFactory.getThreadFactory());
 	}
 
 }
