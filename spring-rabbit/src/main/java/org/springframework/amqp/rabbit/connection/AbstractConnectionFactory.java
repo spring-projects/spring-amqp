@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -82,6 +83,18 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
+	}
+
+	/**
+	 * Set the {@link ThreadFactory} on the underlying rabbit connection factory.
+	 * Not exposed using XML configuration; define a bean for the Rabbit CF and
+	 * provide it to the Spring CF using the {@code connection-factory} attribute.
+	 * TODO: remove this comment when AMQP-554 is resolved.
+	 * @param threadFactory the thread factory.
+	 * @since 1.5.3
+	 */
+	public void setConnectionThreadFactory(ThreadFactory threadFactory) {
+		this.rabbitConnectionFactory.setThreadFactory(threadFactory);
 	}
 
 	/**
