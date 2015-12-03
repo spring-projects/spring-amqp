@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -82,6 +83,10 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	public void setHost(String host) {
 		this.rabbitConnectionFactory.setHost(host);
+	}
+
+	public void setConnectionThreadFactory(ThreadFactory threadFactory) {
+		this.rabbitConnectionFactory.setThreadFactory(threadFactory);
 	}
 
 	/**
