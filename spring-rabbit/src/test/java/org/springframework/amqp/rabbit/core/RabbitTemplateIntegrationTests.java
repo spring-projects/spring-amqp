@@ -29,6 +29,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -50,12 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.After;
@@ -127,6 +122,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 import org.springframework.util.ReflectionUtils.FieldFilter;
+
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -1401,7 +1403,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testDegugLogOnPassiveDeclaration() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
-		when(logger.isDebugEnabled()).thenReturn(true);
+		doReturn(true).when(logger).isDebugEnabled();
 		new DirectFieldAccessor(connectionFactory).setPropertyValue("logger", logger);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		final String queueName = UUID.randomUUID().toString();

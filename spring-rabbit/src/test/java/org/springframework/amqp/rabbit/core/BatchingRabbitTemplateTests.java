@@ -24,11 +24,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.OutputStream;
 import java.lang.reflect.Method;
@@ -322,7 +322,7 @@ public class BatchingRabbitTemplateTests {
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(errorHandler, "logger", Log.class));
 		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
-		when(logger.isWarnEnabled()).thenReturn(true);
+		doReturn(true).when(logger).isWarnEnabled();
 		doAnswer(new DoesNothing()).when(logger).warn(anyString(), any(Throwable.class));
 		try {
 			RabbitTemplate template = new RabbitTemplate();

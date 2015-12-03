@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -237,7 +238,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testExclusive() throws Exception {
 		Log logger = spy(TestUtils.getPropertyValue(this.template.getConnectionFactory(), "logger", Log.class));
-		when(logger.isInfoEnabled()).thenReturn(true);
+		doReturn(true).when(logger).isInfoEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container1 = new SimpleMessageListenerContainer(template.getConnectionFactory());
@@ -266,7 +267,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setApplicationEventPublisher(publisher);
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
-		when(containerLogger.isWarnEnabled()).thenReturn(true);
+		doReturn(true).when(containerLogger).isWarnEnabled();
 		new DirectFieldAccessor(container2).setPropertyValue("logger", containerLogger);
 		container2.start();
 		for (int i = 0; i < 1000; i++) {

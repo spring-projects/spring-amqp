@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -173,7 +174,7 @@ public class RabbitAdminTests {
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
-			when(logger.isInfoEnabled()).thenReturn(true);
+			doReturn(true).when(logger).isInfoEnabled();
 			doAnswer(new DoesNothing()).when(logger).info(anyString());
 			new DirectFieldAccessor(rabbitAdmin).setPropertyValue("logger", logger);
 			connectionFactory.createConnection().close(); // force declarations

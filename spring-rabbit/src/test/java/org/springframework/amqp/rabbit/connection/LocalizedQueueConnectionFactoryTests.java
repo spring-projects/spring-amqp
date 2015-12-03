@@ -26,6 +26,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -110,7 +111,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		};
 		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
 		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
-		when(logger.isInfoEnabled()).thenReturn(true);
+		doReturn(true).when(logger).isInfoEnabled();
 		doAnswer(new CallsRealMethods()).when(logger).debug(anyString());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(lqcf);

@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -550,7 +551,7 @@ public class SimpleMessageListenerContainerTests {
 		container.start();
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
-		when(logger.isDebugEnabled()).thenReturn(false);
+		doReturn(false).when(logger).isDebugEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(new Answer<Object>() {
 
