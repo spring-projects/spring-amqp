@@ -603,7 +603,7 @@ public class BlockingQueueConsumer {
 
 	private class InternalConsumer extends DefaultConsumer {
 
-		public InternalConsumer(Channel channel) {
+		private InternalConsumer(Channel channel) {
 			super(channel);
 		}
 
@@ -706,21 +706,21 @@ public class BlockingQueueConsumer {
 	@SuppressWarnings("serial")
 	private static class DeclarationException extends AmqpException {
 
-		public DeclarationException() {
+		private DeclarationException() {
 			super("Failed to declare queue(s):");
 		}
 
-		public DeclarationException(Throwable t) {
+		private DeclarationException(Throwable t) {
 			super("Failed to declare queue(s):", t);
 		}
 
 		private final List<String> failedQueues = new ArrayList<String>();
 
-		void addFailedQueue(String queue) {
+		private void addFailedQueue(String queue) {
 			this.failedQueues.add(queue);
 		}
 
-		public List<String> getFailedQueues() {
+		private List<String> getFailedQueues() {
 			return this.failedQueues;
 		}
 

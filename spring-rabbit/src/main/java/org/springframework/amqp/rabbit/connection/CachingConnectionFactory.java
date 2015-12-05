@@ -691,7 +691,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final boolean transactional;
 
-		public CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
+		private CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
 				Channel target,
 				LinkedList<ChannelProxy> channelList,
 				boolean transactional) {
@@ -885,7 +885,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final AtomicBoolean closeNotified = new AtomicBoolean(false);
 
-		public ChannelCachingConnectionProxy(Connection target) {
+		private ChannelCachingConnectionProxy(Connection target) {
 			this.target = target;
 		}
 

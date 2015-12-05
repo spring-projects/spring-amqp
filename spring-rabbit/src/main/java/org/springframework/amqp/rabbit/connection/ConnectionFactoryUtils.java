@@ -15,8 +15,6 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 
-import com.rabbitmq.client.Channel;
-
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.transaction.NoTransactionException;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -24,6 +22,8 @@ import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * Helper class for managing a Spring based Rabbit {@link org.springframework.amqp.rabbit.connection.ConnectionFactory},
@@ -254,7 +254,7 @@ public class ConnectionFactoryUtils {
 
 		private final RabbitResourceHolder resourceHolder;
 
-		public RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey,
+		private RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey,
 		                                     boolean locallyTransacted) {
 			super(resourceHolder, resourceKey);
 			this.resourceHolder = resourceHolder;

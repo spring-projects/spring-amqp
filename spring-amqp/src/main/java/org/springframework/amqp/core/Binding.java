@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class Binding extends AbstractDeclarable {
 
-	public static enum DestinationType {
+	public enum DestinationType {
 		QUEUE, EXCHANGE;
 	}
 

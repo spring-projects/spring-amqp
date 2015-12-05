@@ -196,11 +196,11 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 
 	private static class AmqpListenerEndpointDescriptor {
 
-		public final RabbitListenerEndpoint endpoint;
+		private final RabbitListenerEndpoint endpoint;
 
-		public final RabbitListenerContainerFactory<?> containerFactory;
+		private final RabbitListenerContainerFactory<?> containerFactory;
 
-		public AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> containerFactory) {
+		private AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> containerFactory) {
 			this.endpoint = endpoint;
 			this.containerFactory = containerFactory;
 		}

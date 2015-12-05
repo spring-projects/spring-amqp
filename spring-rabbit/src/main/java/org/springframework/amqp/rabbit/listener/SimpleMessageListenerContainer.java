@@ -1128,7 +1128,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile FatalListenerStartupException startupException;
 
-		public AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
+		private AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
 		}
@@ -1142,7 +1142,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		public FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
+		private FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
 			start.await(60000L, TimeUnit.MILLISECONDS);//NOSONAR - ignore return value
 			return this.startupException;
 		}
@@ -1387,9 +1387,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@SuppressWarnings("serial")
 	private static class WrappedTransactionException extends RuntimeException {
-		public WrappedTransactionException(Throwable cause) {
+
+		private WrappedTransactionException(Throwable cause) {
 			super(cause);
 		}
+
 	}
 
 	/**

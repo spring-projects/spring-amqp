@@ -153,7 +153,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param delegate the delegate object
 	 */
 	public MessageListenerAdapter(Object delegate) {
-		setDelegate(delegate);
+		doSetDelegate(delegate);
 	}
 
 	/**
@@ -162,8 +162,8 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param messageConverter the message converter to use
 	 */
 	public MessageListenerAdapter(Object delegate, MessageConverter messageConverter) {
-		setDelegate(delegate);
-		setMessageConverter(messageConverter);
+		doSetDelegate(delegate);
+		super.setMessageConverter(messageConverter);
 	}
 
 	/**
@@ -174,7 +174,7 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 */
 	public MessageListenerAdapter(Object delegate, String defaultListenerMethod) {
 		this(delegate);
-		setDefaultListenerMethod(defaultListenerMethod);
+		this.defaultListenerMethod = defaultListenerMethod;
 	}
 
 	/**
@@ -185,6 +185,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param delegate The delegate listener or POJO.
 	 */
 	public void setDelegate(Object delegate) {
+		doSetDelegate(delegate);
+	}
+
+	private void doSetDelegate(Object delegate) {
 		Assert.notNull(delegate, "Delegate must not be null");
 		this.delegate = delegate;
 	}
