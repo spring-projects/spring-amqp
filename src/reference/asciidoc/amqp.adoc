@@ -2073,19 +2073,25 @@ The keys for the properties returned are available as constants in the `RabbitTe
 `QUEUE_MESSAGE_COUNT`, `QUEUE_CONSUMER_COUNT`).
 The <<management-template, RabbitMQ REST API>> provides much more information in the `QueueInfo` object.
 
-The no-arg declareQueue() method defines a queue on the broker whose name is automatically generated.
+The no-arg `declareQueue()` method defines a queue on the broker with a name that is automatically generated.
 The additional properties of this auto-generated queue are `exclusive=true`, `autoDelete=true`, and `durable=false`.
 
 The `declareQueue(Queue queue)` method takes a `Queue` object and returns the name of the declared queue.
-This is useful if you wish the broker to generate the queue's name.
-This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to `false` and `exlusive, autoDelete` to `true`.
-If the provided `Queue`'s `name` property is an empty String, the Broker declares the queue with a generated name and that name is returned to the caller.
+If the provided `Queue`'s `name` property is an empty String, the broker declares the queue with a generated name and
+that name is returned to the caller.
 The `Queue` object itself is not changed.
 This functionality can only be used programmatically by invoking the `RabbitAdmin` directly.
 It is not supported for auto-declaration by the admin by defining a queue declaratively in the application context.
-A `<rabbit:queue/>` with an empty, or missing, `name` will always create an `AnonymousQueue`.
-This is because the name will change if redeclared due to a connection failure.
-Declarative queues must have fixed names because they might be referenced elsewhere in the context, for example, in a listener:
+
+This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to
+`false` and `exlusive`, `autoDelete` to `true`.
+A `<rabbit:queue/>` with an empty, or missing, `name` attribute will always create an `AnonymousQueue`.
+
+See <<anonymous-queue>> to understand why `AnonymousQueue` is preferred over broker-generated queue names, as well as
+how to control the format of the name.
+Declarative queues must have fixed names because they might be referenced elsewhere in the context, for example, in a
+listener:
+
 [source,xml]
 ----
 <rabbit:listener-container>
@@ -2295,7 +2301,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 
     /**
      * Binds to the market data exchange.
-Interested in any stock quotes
+     * Interested in any stock quotes
      * that match its routing key.
      */
     @Bean
@@ -2463,6 +2469,52 @@ public Binding binding() {
 	return binding;
 }
 ----
+
+[[anonymous-queue]]
+===== AnonymousQueue
+
+In general, when needing a uniquely-named, exclusive, auto-delete queue, it is recommended that the `AnonymousQueue` is
+used instead of broker-defined queue names (using `""` as a `Queue` name will cause the broker to generate the queue
+name).
+
+This is because:
+
+1. The queues are actually declared when the connection to the broker is established; this is long after the beans are
+created and wired together; beans using the queue need to know its name.
+In fact, the broker might not even be running when the app is started.
+2. If the connection to the broker is lost for some reason, the admin will re-declare the `AnonymousQueue` with the same
+name.
+If we used broker-declared queues, the queue name would change.
+
+Starting with _version 1.5.3_, you can control the format of the queue name used by `AnonymousQueue` s.
+
+By default, the queue name is the String representation of a `UUID`; for example:
+`07afcfe9-fe77-4983-8645-0061ec61a47a`.
+
+You can now provide an `AnonymousQueue.NamingStrategy` implementation in a constructor argument:
+
+[source, java]
+----
+@Bean
+public Queue anon1() {
+    return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy());
+}
+
+@Bean
+public Queue anon2() {
+    return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy("foo-"));
+}
+----
+
+The first will generate a queue name prefixed by `spring.gen-` followed by a base64 representation of the `UUID`, for
+example: `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
+The second will generate a queue name prefixed by `foo-` followed by a base64 representation of the `UUID`.
+
+The base64 encoding uses the "URL and Filename Safe Alphabet" from RFC 4648; trailing padding characters (`=`) are
+removed.
+
+You can provide your own naming strategy, whereby you can include other information (e.g. application, client host) in
+the queue name.
 
 [[management-template]]
 ==== RabbitMQ REST API
@@ -2854,7 +2906,7 @@ Defaults to a `RabbitAdmin` that will declare all non-conditional elements.
 | missingQueuesFatal
 (missing-queues-fatal)
 
-| Starting with _version 1.3.5_, `SimpleMessageListenerContainer` has this new property.
+a| Starting with _version 1.3.5_, `SimpleMessageListenerContainer` has this new property.
 
 When set to `true` (default), if none of the configured queues are available on the broker, it is considered fatal.
 This causes the application context to fail to initialize during startup; also, when the queues are deleted while the container is running, by default, the consumers make 3 retries to connect to the queues (at 5 second intervals) and stop the container if these attempts fail.
