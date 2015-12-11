@@ -169,6 +169,11 @@ A new connection factory that connects to the node in a cluster where a mirrored
 
 See <<queue-affinity>>.
 
+===== Anonymous Queue Naming
+
+Starting with _version 1.5.3_, you can now control how `AnonymousQueue` names are generated.
+See <<anonymous-queue>> for more information.
+
 ==== Changes in 1.4 Since 1.3
 
 ===== @RabbitListener Annotation
