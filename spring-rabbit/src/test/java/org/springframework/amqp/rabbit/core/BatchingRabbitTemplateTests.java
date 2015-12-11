@@ -321,9 +321,9 @@ public class BatchingRabbitTemplateTests {
 		container.afterPropertiesSet();
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(errorHandler, "logger", Log.class));
-		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
 		doReturn(true).when(logger).isWarnEnabled();
 		doAnswer(new DoesNothing()).when(logger).warn(anyString(), any(Throwable.class));
+		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
 		try {
 			RabbitTemplate template = new RabbitTemplate();
 			template.setConnectionFactory(this.connectionFactory);

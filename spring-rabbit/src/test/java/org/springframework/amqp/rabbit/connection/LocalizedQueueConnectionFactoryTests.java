@@ -110,8 +110,8 @@ public class LocalizedQueueConnectionFactoryTests {
 
 		};
 		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
-		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
 		doReturn(true).when(logger).isInfoEnabled();
+		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);
 		doAnswer(new CallsRealMethods()).when(logger).debug(anyString());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(lqcf);

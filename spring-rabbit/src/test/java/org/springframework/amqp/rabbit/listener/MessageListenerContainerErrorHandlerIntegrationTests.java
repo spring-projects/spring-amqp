@@ -137,15 +137,15 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		});
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
-		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		doReturn(true).when(logger).isWarnEnabled();
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(queue.getName(), "baz");
 		assertTrue(messageReceived.await(10, TimeUnit.SECONDS));
 		Object consumer = TestUtils.getPropertyValue(container, "consumers", Map.class)
 				.keySet().iterator().next();
 		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
-		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
 		doReturn(true).when(qLogger).isDebugEnabled();
+		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
 		spiedQLogger.countDown();
 		assertTrue(errorHandled.await(10, TimeUnit.SECONDS));
 		container.stop();

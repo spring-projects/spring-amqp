@@ -757,7 +757,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactoryWithConfirmsEnabled, "logger", Log.class));
-		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
 		final AtomicReference<String> log = new AtomicReference<String>();
 		doAnswer(new Answer<Object>() {
 
@@ -769,6 +768,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				return null;
 			}
 		}).when(logger).error(any());
+		new DirectFieldAccessor(connectionFactoryWithConfirmsEnabled).setPropertyValue("logger", logger);
 
 		CorrelationData correlationData = new CorrelationData("bar");
 		String exchange = UUID.randomUUID().toString();
