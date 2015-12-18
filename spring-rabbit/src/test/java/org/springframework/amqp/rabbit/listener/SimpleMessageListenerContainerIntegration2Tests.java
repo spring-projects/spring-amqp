@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,6 +50,8 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -448,6 +451,34 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		container.stop();
 		((DisposableBean) connectionFactory).destroy();
+	}
+
+	@Test
+	public void stopStartInListener() throws Exception {
+		final AtomicReference<SimpleMessageListenerContainer> container =
+				new AtomicReference<SimpleMessageListenerContainer>();
+		final CountDownLatch latch = new CountDownLatch(2);
+		class StopStartListener implements MessageListener {
+
+			boolean doneStopStart;
+
+			@Override
+			public void onMessage(Message message) {
+				if (!doneStopStart) {
+					container.get().stop();
+					container.get().start();
+					doneStopStart = true;
+				}
+				latch.countDown();
+			}
+
+		}
+		container.set(createContainer(new StopStartListener(), this.queue.getName()));
+		container.get().setShutdownTimeout(1000);
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.get().stop();
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {

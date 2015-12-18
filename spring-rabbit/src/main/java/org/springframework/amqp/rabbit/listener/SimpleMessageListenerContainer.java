@@ -818,7 +818,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.info("Successfully waited for workers to finish.");
 			}
 			else {
-				logger.info("Workers not finished.  Forcing connections to close.");
+				logger.info("Workers not finished.");
 			}
 		}
 		catch (InterruptedException e) {
@@ -835,7 +835,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private boolean isActive(BlockingQueueConsumer consumer) {
 		Boolean consumerActive;
 		synchronized(consumersMonitor) {
-			consumerActive = this.consumers != null && this.consumers.get(consumer);
+			if (this.consumers != null) {
+				Boolean active = this.consumers.get(consumer);
+				consumerActive = active != null && active;
+			}
+			else {
+				consumerActive = false;
+			}
 		}
 		return consumerActive && this.isActive();
 	}
