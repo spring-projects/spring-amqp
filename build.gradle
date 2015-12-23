@@ -87,7 +87,7 @@ subprojects { subproject ->
 		log4jVersion = '1.2.17'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.6'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.5.7'
 		rabbitmqHttpClientVersion = '1.0.0.RELEASE'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.2.2.RELEASE'

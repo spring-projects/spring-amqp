@@ -615,6 +615,20 @@ public class PublisherCallbackChannelImpl
 		throw new UnsupportedOperationException("To use the ...NoWait methods, use getDelegate().");
 	}
 
+//	@Override
+	public long consumerCount(String queue) throws IOException {
+		//TODO: invoke delegate's  consumerCount when min client is 3.6.0
+		throw new UnsupportedOperationException("Not yet supported, use getDelegate().consumerCount() "
+				+ "with a 3.6+ client");
+	}
+
+//	@Override
+	public long messageCount(String queue) throws IOException {
+		//TODO: invoke delegate's  messageCount when min client is 3.6.0
+		throw new UnsupportedOperationException("Not yet supported; use getDelegate().messageCount() "
+				+ "with a 3.6+ client");
+	}
+
 	public Channel getDelegate() {
 		return delegate;
 	}

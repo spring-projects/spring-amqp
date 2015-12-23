@@ -32,6 +32,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rabbitmq.client.Address;
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
  *
@@ -83,7 +84,8 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherConfirms"));
 		assertEquals(Boolean.FALSE, dfa.getPropertyValue("publisherReturns"));
 		assertEquals(CachingConnectionFactory.CacheMode.CONNECTION, connectionFactory.getCacheMode());
-		assertEquals(0,  TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
+		assertEquals(new ConnectionFactory().getConnectionTimeout(), // verify we didn't overwrite default
+				TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
 		assertEquals(10, connectionFactory.getConnectionCacheSize());
 	}
 
