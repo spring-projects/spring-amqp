@@ -20,7 +20,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
@@ -31,6 +30,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -78,9 +78,12 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 
 /**
  * @author Gary Russell
@@ -144,6 +147,49 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+
+	@Test
+	public void test36Methods() throws Exception {
+		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
+		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
+		assertMessageCountEquals(2L);
+		assertEquals(Long.valueOf(1), this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
+
+			@Override
+			public Long doInRabbit(Channel channel) throws Exception {
+				final CountDownLatch latch = new CountDownLatch(2);
+				String consumerTag = channel.basicConsume(ROUTE, new DefaultConsumer(channel) {
+					@Override
+					public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
+							byte[] body) throws IOException {
+						latch.countDown();
+					}
+				});
+				long consumerCount = channel.consumerCount(ROUTE);
+				assertTrue(latch.await(10, TimeUnit.SECONDS));
+				channel.basicCancel(consumerTag);
+				return consumerCount;
+			}
+
+		}));
+		assertMessageCountEquals(0L);
+	}
+
+	private void assertMessageCountEquals(long wanted) throws InterruptedException {
+		long messageCount;
+		int n = 0;
+		while ((messageCount = this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
+
+			@Override
+			public Long doInRabbit(Channel channel) throws Exception {
+				return channel.messageCount(ROUTE);
+			}
+
+		})) < wanted && n++ < 100) {
+			Thread.sleep(100);
+		};
+		assertEquals(wanted, messageCount);
+	}
 
 	@Test
 	public void testPublisherConfirmReceived() throws Exception {
@@ -690,7 +736,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertEquals(3, acks.get());
 
 
-		// 3.3.1 client
 		channel.basicConsume("foo", false, (Map) null, null);
 		verify(mockChannel).basicConsume("foo", false, (Map) null, null);
 
@@ -700,44 +745,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		doReturn(true).when(mockChannel).flowBlocked();
 		assertTrue(channel.flowBlocked());
 
-		try {
-			channel.flow(true);
-			fail("Expected exception");
-		}
-		catch (UnsupportedOperationException e) {}
-
-		try {
-			channel.getFlow();
-			fail("Expected exception");
-		}
-		catch (UnsupportedOperationException e) {}
-
-		// 3.2.4 client
-/*
-		try {
-			channel.basicConsume("foo", false, (Map) null, (Consumer) null);
-			fail("Expected exception");
-		}
-		catch (UnsupportedOperationException e) {}
-
-		try {
-			channel.basicQos(3, false);
-			fail("Expected exception");
-		}
-		catch (UnsupportedOperationException e) {}
-
-		try {
-			channel.flowBlocked();
-			fail("Expected exception");
-		}
-		catch (UnsupportedOperationException e) {}
-
-		channel.flow(true);
-		verify(mockChannel).flow(true);
-
-		channel.getFlow();
-		verify(mockChannel).getFlow();
-*/
 	}
 
 	@Test
