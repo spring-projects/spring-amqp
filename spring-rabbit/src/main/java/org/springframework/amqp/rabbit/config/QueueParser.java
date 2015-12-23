@@ -1,10 +1,10 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -17,8 +17,8 @@ import java.util.Map;
 
 import org.w3c.dom.Element;
 
-import org.springframework.amqp.core.AnonymousQueue;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueFactoryBean;
+import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
@@ -39,6 +39,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
 	private static final String REF_ATTRIBUTE = "ref";
+	private static final String NAMING_STRATEGY = "naming-strategy";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
@@ -47,45 +48,26 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 	@Override
 	protected Class<?> getBeanClass(Element element) {
-		if (NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {
-			return Queue.class;
-		}
-		else {
-			return AnonymousQueue.class;
-		}
+		return QueueFactoryBean.class;
 	}
 
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 
-		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)
+		boolean hasNameAttribute = NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE);
+		if (!hasNameAttribute
 				&& !NamespaceUtils.isAttributeDefined(element, ID_ATTRIBUTE)) {
 			parserContext.getReaderContext().error("Queue must have either id or name (or both)", element);
 		}
 
-		NamespaceUtils.addConstructorArgValueIfAttributeDefined(builder, element, NAME_ATTRIBUTE);
-
-		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)) {
-
-			if (attributeHasIllegalOverride(element, DURABLE_ATTRIBUTE, "false")
-					|| attributeHasIllegalOverride(element, EXCLUSIVE_ATTRIBUTE, "true")
-					|| attributeHasIllegalOverride(element, AUTO_DELETE_ATTRIBUTE, "true")) {
-				parserContext.getReaderContext().error(
-						"Anonymous queue cannot specify durable='true', exclusive='false' or auto-delete='false'",
-						element);
-				return;
-			}
-
-		}
-		else {
-
-			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, false);
-			NamespaceUtils
-					.addConstructorArgBooleanValueIfAttributeDefined(builder, element, EXCLUSIVE_ATTRIBUTE, false);
-			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
-					false);
-
-		}
+		builder.addConstructorArgValue(new TypedStringValue(element.getAttribute(NAME_ATTRIBUTE)));
+		builder.addConstructorArgValue(new TypedStringValue(element.getAttribute(NAMING_STRATEGY)));
+		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE,
+				hasNameAttribute);
+		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, EXCLUSIVE_ATTRIBUTE,
+				!hasNameAttribute);
+		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
+				!hasNameAttribute);
 
 		String queueArguments = element.getAttribute(ARGUMENTS);
 		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS);
@@ -118,11 +100,6 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 		}
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
-	}
-
-	private boolean attributeHasIllegalOverride(Element element, String name, String allowed) {
-		return element.getAttributeNode(name) != null && element.getAttributeNode(name).getSpecified()
-				&& !allowed.equals(element.getAttribute(name));
 	}
 
 }

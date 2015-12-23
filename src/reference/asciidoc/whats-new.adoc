@@ -1,6 +1,20 @@
 [[whats-new]]
 === What's New
 
+==== Changes in 1.6 Since 1.5
+
+===== Namespace Changes
+
+====== Connection Factory
+
+It is now possible to add a `thread-factory` to a connection factory bean declaration, for example to name the threads
+created by the `amqp-client` library.
+See <<connections>> for more information.
+
+====== Queue Definitions
+
+It is now possible to provide a naming strategy for anonymous queues; see <<anonymous-queue>> for more information.
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported

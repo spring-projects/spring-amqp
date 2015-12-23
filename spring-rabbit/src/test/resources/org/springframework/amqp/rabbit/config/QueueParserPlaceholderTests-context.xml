@@ -16,6 +16,8 @@
 				<prop key="bar">bar</prop>
 				<prop key="ttl">100</prop>
 				<prop key="ha">all</prop>
+				<prop key="nope">false</prop>
+				<prop key="spring">spring</prop>
 			</props>
 		</property>
 	</bean>
@@ -29,6 +31,16 @@
 	<rabbit:queue id="overrideAlias" name="bar" durable="true" auto-delete="true" exclusive="true" />
 
 	<rabbit:queue id="anonymous" />
+
+	<rabbit:queue id="uuidAnon" naming-strategy="uuid" />
+
+	<rabbit:queue id="springAnon" naming-strategy="${spring}" />
+
+	<rabbit:queue id="customAnon" naming-strategy="customNamer" />
+
+	<bean id="customNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy">
+		<constructor-arg value="custom.gen-" />
+	</bean>
 
 	<util:map id="myRefArguments">
 		<beans:entry key="foo" value="bar" />
@@ -58,7 +70,7 @@
 		</rabbit:queue-arguments>
 	</rabbit:queue>
 
-	<rabbit:queue id="anonymousOverride" durable="false" auto-delete="true" exclusive="true" />
+	<rabbit:queue id="anonymousOverride" durable="${nope}" auto-delete="true" exclusive="true" />
 
 	<rabbit:queue-arguments id="topLevelArgs">
 		<beans:entry key="baz" value="qux" />

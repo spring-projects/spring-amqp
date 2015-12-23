@@ -18,6 +18,16 @@
 
 	<rabbit:queue id="anonymous" />
 
+	<rabbit:queue id="uuidAnon" naming-strategy="uuid" />
+
+	<rabbit:queue id="springAnon" naming-strategy="spring" />
+
+	<rabbit:queue id="customAnon" naming-strategy="customNamer" />
+
+	<bean id="customNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy">
+		<constructor-arg value="custom.gen-" />
+	</bean>
+
 	<util:map id="myRefArguments">
 		<beans:entry key="foo" value="bar" />
 		<beans:entry key="x-message-ttl">
