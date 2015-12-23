@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -39,6 +39,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
 	private static final String REF_ATTRIBUTE = "ref";
+	private static final String NAMING_STRATEGY = "naming-strategy";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
@@ -73,12 +74,14 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 				parserContext.getReaderContext().error(
 						"Anonymous queue cannot specify durable='true', exclusive='false' or auto-delete='false'",
 						element);
-				return;
 			}
+			NamespaceUtils.addConstructorArgRefIfAttributeDefined(builder, element, NAMING_STRATEGY);
 
 		}
 		else {
-
+			if (StringUtils.hasText(element.getAttribute(NAMING_STRATEGY))) {
+				parserContext.getReaderContext().error("Only one of 'name' or 'naming-strategy' is allowed", element);
+			}
 			NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, DURABLE_ATTRIBUTE, false);
 			NamespaceUtils
 					.addConstructorArgBooleanValueIfAttributeDefined(builder, element, EXCLUSIVE_ATTRIBUTE, false);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,7 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.springframework.amqp.rabbit.test.RabbitMatchers.matchesRegex;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -97,6 +99,31 @@ public class QueueParserTests {
 		assertFalse(queue.isDurable());
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matchesRegex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
+	}
+
+	@Test
+	public void testAnonymousQueueSpringName() throws Exception {
+		Queue queue = beanFactory.getBean("springAnon", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("anonymous", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
+		assertFalse(queue.isDurable());
+		assertTrue(queue.isExclusive());
+		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matchesRegex("spring.gen-[0-9A-Za-z_\\-]{22}"));
+	}
+
+	@Test
+	public void testAnonymousQueueCustomName() throws Exception {
+		Queue queue = beanFactory.getBean("customAnon", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("anonymous", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
+		assertFalse(queue.isDurable());
+		assertTrue(queue.isExclusive());
+		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matchesRegex("custom.gen-[0-9A-Za-z_\\-]{22}"));
 	}
 
 	@Test
