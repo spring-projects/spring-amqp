@@ -304,6 +304,20 @@ Alternatively, if running in a clustered environment, use the addresses attribut
     id="connectionFactory" addresses="host1:5672,host2:5672"/>
 ----
 
+Here's an example with a custom thread factory that prefixes thread names with `rabbitmq-`.
+
+[source, xml]
+----
+<rabbit:connection-factory id="multiHost" virtual-host="/bar" addresses="host1:1234,host2,host3:4567"
+    thread-factory="tf"
+    channel-cache-size="10" username="user" password="password" />
+
+<bean id="tf" class="org.springframework.scheduling.concurrent.CustomizableThreadFactory">
+    <constructor-arg value="rabbitmq-" />
+</bean>
+
+----
+
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
 
@@ -2515,6 +2529,30 @@ removed.
 
 You can provide your own naming strategy, whereby you can include other information (e.g. application, client host) in
 the queue name.
+
+Starting with _version 1.6_, the naming strategy can be specified when using XML configuration; the strategy can
+be `uuid`, `spring`, or a reference to a bean that implements `AnonymousQueue.NamingStrategy`.
+
+[source, xml]
+----
+<rabbit:queue id="uuidAnon" />
+
+<rabbit:queue id="springAnon" naming-strategy="springNamer" />
+
+<rabbit:queue id="customAnon" naming-strategy="customNamer" />
+
+<bean id="springNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy" />
+
+<bean id="customNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy">
+    <constructor-arg value="custom.gen-" />
+</bean>
+----
+
+The first creates names with a String representation of a UUID.
+The second creates names like `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
+The third creates names like `custom.gen-MRBv9sqISkuCiPfOYfpo4g`.
+
+Of course, you can provide your own naming strategy bean.
 
 [[management-template]]
 ==== RabbitMQ REST API

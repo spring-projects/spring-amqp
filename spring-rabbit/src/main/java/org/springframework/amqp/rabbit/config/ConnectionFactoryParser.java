@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -56,6 +56,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String CONNECTION_CACHE_SIZE_ATTRIBUTE = "connection-cache-size";
 
+	private static final String THREAD_FACTORY = "thread-factory";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return CachingConnectionFactory.class;
@@ -94,6 +96,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_TIMEOUT);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CACHE_MODE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_CACHE_SIZE_ATTRIBUTE);
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, THREAD_FACTORY, "connectionThreadFactory");
 
 	}
 

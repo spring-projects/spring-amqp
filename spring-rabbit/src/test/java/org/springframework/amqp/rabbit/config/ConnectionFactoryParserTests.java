@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2014 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -114,6 +114,8 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(-1, addresses[1].getPort());
 		assertEquals("host3", addresses[2].getHost());
 		assertEquals(4567, addresses[2].getPort());
+		assertSame(beanFactory.getBean("tf"), TestUtils.getPropertyValue(connectionFactory,
+				"rabbitConnectionFactory.threadFactory"));
 	}
 
 }
