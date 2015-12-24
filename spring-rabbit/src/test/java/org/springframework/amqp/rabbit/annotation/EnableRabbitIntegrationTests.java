@@ -39,6 +39,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.aopalliance.aop.Advice;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -64,12 +67,18 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.core.PriorityOrdered;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -103,7 +112,7 @@ public class EnableRabbitIntegrationTests {
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
-			"test.sendTo.spel", "test.sendTo.reply.spel",
+			"test.sendTo.spel", "test.sendTo.reply.spel", "test.intercepted", "test.intercepted.withReply",
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
 
@@ -136,6 +145,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private MyService service;
+
+	@Autowired
+	private ListenerInterceptor interceptor;
 
 	/**
 	 * Defer queue deletion until after the context has been stopped by the
@@ -317,6 +329,15 @@ public class EnableRabbitIntegrationTests {
 		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
 	}
 
+	@Test
+	public void testInterceptor() throws InterruptedException {
+		this.rabbitTemplate.convertAndSend("test.intercepted", "intercept this");
+		assertTrue(this.interceptor.oneWayLatch.await(10, TimeUnit.SECONDS));
+		assertEquals("INTERCEPT THIS",
+				this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this"));
+		assertTrue(this.interceptor.twoWayLatch.await(10, TimeUnit.SECONDS));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -496,12 +517,102 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
+	public static class ProxiedListener {
+
+		@RabbitListener(queues="test.intercepted")
+		public void listen(String foo) {
+		}
+
+		@RabbitListener(queues="test.intercepted.withReply")
+		public String listenAndReply(String foo) {
+			return foo.toUpperCase();
+		}
+
+	}
+
+	public static class ListenerInterceptor implements MethodInterceptor {
+
+		private final CountDownLatch oneWayLatch = new CountDownLatch(1);
+
+		private final CountDownLatch twoWayLatch = new CountDownLatch(1);
+
+		@Override
+		public Object invoke(MethodInvocation invocation) throws Throwable {
+			String methodName = invocation.getMethod().getName();
+			if (methodName.equals("listen") && invocation.getArguments().length == 1 &&
+					invocation.getArguments()[0].equals("intercept this")) {
+				this.oneWayLatch.countDown();
+				return invocation.proceed();
+			}
+			else if (methodName.equals("listenAndReply") && invocation.getArguments().length == 1 &&
+					invocation.getArguments()[0].equals("intercept this")) {
+				Object result = invocation.proceed();
+				if (result.equals("INTERCEPT THIS")) {
+					this.twoWayLatch.countDown();
+				}
+				return result;
+			}
+			return invocation.proceed();
+		}
+
+	}
+
+	public static class ProxyListenerBPP implements BeanPostProcessor, BeanFactoryAware, Ordered, PriorityOrdered {
+
+		private BeanFactory beanFactory;
+
+		@Override
+		public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+			this.beanFactory = beanFactory;
+		}
+
+		@Override
+		public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+			return bean;
+		}
+
+		@Override
+		public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+			if (bean instanceof ProxiedListener) {
+				ProxyFactoryBean pfb = new ProxyFactoryBean();
+				pfb.setProxyTargetClass(true); // CGLIB, false for JDK proxy (interface needed)
+				pfb.setTarget(bean);
+				pfb.addAdvice(this.beanFactory.getBean("wasCalled", Advice.class));
+				return pfb.getObject();
+			}
+			else {
+				return bean;
+			}
+		}
+
+		@Override
+		public int getOrder() {
+			return Ordered.LOWEST_PRECEDENCE - 1000; // Just before @RabbitListener post processor
+		}
+
+	}
+
 	@Configuration
 	@EnableRabbit
 	@EnableTransactionManagement
 	public static class EnableRabbitConfig {
 
 		private int increment;
+
+		@Bean
+		public static ProxyListenerBPP listenerProxier() { // note static
+			return new ProxyListenerBPP();
+		}
+
+		@Bean
+		public ProxiedListener proxy() {
+			return new ProxiedListener();
+		}
+
+		@Bean
+		public static Advice wasCalled() {
+			return new ListenerInterceptor();
+		}
 
 		@Bean
 		public String spelReplyTo() {
