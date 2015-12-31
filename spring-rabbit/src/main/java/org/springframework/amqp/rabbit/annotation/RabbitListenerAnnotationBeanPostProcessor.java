@@ -292,7 +292,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return method;
 	}
 
-	private void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
+	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
 			Object adminTarget, String beanName) {
 		endpoint.setBean(bean);
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);

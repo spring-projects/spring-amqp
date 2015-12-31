@@ -228,6 +228,17 @@ project('spring-rabbit') {
 
 }
 
+project('spring-rabbit-test') {
+	description = 'Spring Rabbit Test Support'
+	dependencies {
+
+		compile project(":spring-rabbit")
+
+	}
+
+}
+
+
 apply plugin: org.asciidoctor.gradle.AsciidoctorPlugin
 
 asciidoctor {
