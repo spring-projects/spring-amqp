@@ -1,0 +1,279 @@
+[[testing]]
+=== Testing Support
+
+==== Introduction
+
+Writing integration for asynchronous applications is necessarily more complex than testing simpler applications.
+This is made more complex when abstractions such as the `@RabbitListener` annotations come into the picture.
+The question being how to verify that, after sending a message, the listener received the message as expected.
+
+The framework itself has many unit and integration tests; some using mocks, others using integration testing with
+a live RabbitMQ broker.
+You can consult those tests for some ideas for testing scenarios.
+
+Spring AMQP _version 1.6_ introduced the `spring-rabbit-test` jar which provides support for testing some of these more
+complex scenarios.
+It is anticipated that this project will expand over time but we need community feedback to make suggestions for
+features needed to help with testing.
+Please use https://jira.spring.io/browse/AMQP[JIRA] or
+https://github.com/spring-projects/spring-amqp/issues[GitHub Issues] to provide such feedback.
+
+[[mockito-answer]]
+==== Mockito Answer<?> Implementations
+
+There are currently two `Answer<?>` implementations to help with testing:
+
+The first, `LatchCountDownAndCallRealMethodAnswer` provides an `Answer<Void>` that returns `null` and counts down
+a latch.
+
+[source, java]
+----
+LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+doAnswer(answer)
+    .when(listener).foo(anyString(), anyString());
+
+...
+
+assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
+----
+
+The second, `LambdaAnswer<T>` provides a mechanism to optionally call the real method and provides an opportunity
+to return a custom result, based on the `InvocationOnMock` and the result (if any).
+
+[source, java]
+----
+public class Foo {
+
+    public String foo(String foo) {
+        return foo.toUpperCase();
+    }
+
+}
+----
+
+[source, java]
+----
+Foo foo = spy(new Foo());
+
+doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r))
+    .when(foo).foo(anyString());
+assertEquals("FOOFOO", foo.foo("foo"));
+
+doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0]))
+    .when(foo).foo(anyString());
+assertEquals("FOOfoo", foo.foo("foo"));
+
+doAnswer(new LambdaAnswer<String>(false, (i, r) ->
+    "" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+assertEquals("foofoo", foo.foo("foo"));
+----
+
+When using Java 7 or earlier:
+
+[source, java]
+----
+doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
+    @Override
+    public String apply(InvocationOnMock i, String r) {
+        return r + r;
+    }
+})).when(foo).foo(anyString());
+----
+
+==== @RabbitListenerTest and RabbitListenerTestHarness
+
+Annotating one of your `@Configuration` classes with `@RabbitListenerTest` will cause the framework to replace the
+standard `RabbitListenerAnnotationBeanPostProcessor` with a subclass `RabbitListenerTestHarness` (it will also enable
+`@RabbitListener` detection via `@EnableRabbit`).
+
+The `RabbitListenerTestHarness` enhances the listener in two ways - it wraps it in a `Mockito Spy`, enabling normal
+`Mockito` stubbing and verification operations.
+It can also add an `Advice` to the listener enabling access to the arguments, result and or exceptions thrown.
+You can control which (or both) of these are enabled with attributes on the `@RabbitListenerTest`.
+The latter is provided for access to lower-level data about the invocation - it also supports blocking the test
+thread until the async listener is called.
+
+IMPORTANT: `final` `@RabbitListener` methods cannot be spied or advised; also, only listeners with an `id` attribute can
+be spied or advised.
+
+Let's take a look at some examples.
+
+Using spy:
+
+[source, java]
+----
+@Configuration
+@RabbitListenerTest
+public class Config {
+
+    @Bean
+    public Listener listener() {
+        return new Listener();
+    }
+
+    ...
+
+}
+
+public class Listener {
+
+    @RabbitListener(id="foo", queues="#{queue1.name}")
+    public String foo(String foo) {
+        return foo.toUpperCase();
+    }
+
+    @RabbitListener(id="bar", queues="#{queue2.name}")
+    public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+        ...
+    }
+
+}
+
+public class MyTests {
+
+    @Autowired
+    private RabbitListenerTestHarness harness; <1>
+
+    @Test
+    public void testTwoWay() throws Exception {
+        assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+
+        Listener listener = this.harness.getSpy("foo"); <2>
+        assertNotNull(listener);
+        verify(listener).foo("foo");
+    }
+
+    @Test
+    public void testOneWay() throws Exception {
+        Listener listener = this.harness.getSpy("bar");
+        assertNotNull(listener);
+
+        LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2); <3>
+        doAnswer(answer).when(listener).foo(anyString(), anyString()); <4>
+
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+
+        assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
+        verify(listener).foo("bar", this.queue2.getName());
+        verify(listener).foo("baz", this.queue2.getName());
+    }
+
+}
+----
+
+<1> Inject the harness into the test case so we can get access to the spy.
+
+<2> Get a reference to the spy so we can verify it was invoked as expected.
+Since this is a send and receive operation, there is no need to suspend the test thread because it was already
+suspended in the `RabbitTemplate` waiting for the reply.
+
+<3> In this case, we're only using a send operation so we need a latch to wait for the asynchronous call to the listener
+on the container thread.
+We use one of the link:#mockito-answer[Answer<?>] implementations to help with that.
+
+<4> Configure the spy to invoke the `Answer`.
+
+Using the capture advice:
+
+[source, java]
+----
+@Configuration
+@RabbitListenerTest(spy = false, capture = true)
+public class Config {
+
+    @Bean
+    public Listener listener() {
+        return new Listener();
+    }
+
+    ...
+
+}
+
+public class Listener {
+
+    private boolean failed;
+
+    @RabbitListener(id="foo", queues="#{queue1.name}")
+    public String foo(String foo) {
+        return foo.toUpperCase();
+    }
+
+    @RabbitListener(id="bar", queues="#{queue2.name}")
+    public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+        if (!failed && foo.equals("ex")) {
+            failed = true;
+            throw new RuntimeException(foo);
+        }
+        failed = false;
+    }
+
+}
+
+public class MyTests {
+
+    @Autowired
+    private RabbitListenerTestHarness harness; <1>
+
+    @Test
+    public void testTwoWay() throws Exception {
+        assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
+
+        InvocationData invocationData =
+            this.harness.getNextInvocationDataFor("foo", 0, TimeUnit.SECONDS); <2>
+        assertNotNull(invocationData);
+        assertThat(invocationData.getArguments()[0], equalTo("foo"));     <3>
+        assertThat((String) invocationData.getResult(), equalTo("FOO"));
+    }
+
+    @Test
+    public void testOneWay() throws Exception {
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+        this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
+
+        InvocationData invocationData =
+            this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS); <4>
+        assertNotNull(invocationData);
+        Object[] args = invocationData.getArguments();
+        assertThat((String) args[0], equalTo("bar"));
+        assertThat((String) args[1], equalTo(queue2.getName()));
+
+        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+        assertNotNull(invocationData);
+        args = invocationData.getArguments();
+        assertThat((String) args[0], equalTo("baz"));
+        assertThat((String) args[1], equalTo(queue2.getName()));
+
+        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+        assertNotNull(invocationData);
+        args = invocationData.getArguments();
+        assertThat((String) args[0], equalTo("ex"));
+        assertThat((String) args[1], equalTo(queue2.getName()));
+        assertNotNull(invocationData.getThrowable());
+        assertEquals("ex", invocationData.getThrowable().getMessage()); <5>
+
+        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+        assertNotNull(invocationData);
+        args = invocationData.getArguments();
+        assertThat((String) args[0], equalTo("ex"));
+        assertThat((String) args[1], equalTo(queue2.getName()));
+        assertNull(invocationData.getThrowable());
+    }
+
+}
+----
+
+<1> Inject the harness into the test case so we can get access to the spy.
+
+<2> Use `harness.getNextInvocationDataFor()` to retrieve the invocation data - in this case since it was a request/reply
+scenario there is no need to wait for any time because the test thread was suspended in the `RabbitTemplate` waiting
+for the result.
+
+<3> We can then verify that the argument and result was as expected.
+
+<4> This time we need some time to wait for the data, since it's an async operation on the container thread and we need
+to suspend the test thread.
+
+<5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
