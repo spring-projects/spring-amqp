@@ -16,11 +16,13 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +36,9 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ListenerContainerIdleEvent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -63,10 +65,13 @@ public class EnableRabbitIdleContainerTests {
 	@Test
 	public void testIdle() throws Exception {
 		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "foo"));
+		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "foo"));
 		assertTrue(this.listener.latch.await(10, TimeUnit.SECONDS));
 		assertEquals("foo", this.listener.event.getListenerId());
 		assertEquals(this.queue.getName(), this.listener.event.getQueues()[0]);
 		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
+		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
+		assertFalse(this.listener.barEventReceived);
 	}
 
 	@Configuration
@@ -111,24 +116,41 @@ public class EnableRabbitIdleContainerTests {
 
 	}
 
-	public static class Listener implements ApplicationListener<ListenerContainerIdleEvent> {
+	public static class Listener {
+
+		private final Log logger = LogFactory.getLog(this.getClass());
 
 		private final CountDownLatch latch = new CountDownLatch(2);
 
 		private volatile ListenerContainerIdleEvent event;
 
+		private boolean barEventReceived;
+
 		@RabbitListener(id="foo", queues="#{queue.name}")
-		public String listen(String foo) {
+		public String listenFoo(String foo) {
+			logger.info("foo: " + foo);
 			return foo.toUpperCase();
 		}
 
-		@Override
+		@EventListener(condition = "event.listenerId == 'foo'")
 		public void onApplicationEvent(ListenerContainerIdleEvent event) {
-			LogFactory.getLog(this.getClass()).info(event);
-			if ("foo".equals(event.getListenerId())) {
-				this.event = event;
-				this.latch.countDown();
+			if (!"foo".equals(event.getListenerId())) {
+				this.barEventReceived = true;
 			}
+			logger.info("foo: " + event);
+			this.event = event;
+			this.latch.countDown();
+		}
+
+		@RabbitListener(id="bar", queues="#{queue.name}")
+		public String listenBar(String bar) {
+			logger.info("bar: " + bar);
+			return bar.toUpperCase();
+		}
+
+		@EventListener(condition = "event.listenerId == 'bar'")
+		public void onApplicationEventBar(ListenerContainerIdleEvent event) {
+			logger.info("bar: " + event);
 		}
 
 	}

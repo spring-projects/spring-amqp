@@ -1641,7 +1641,7 @@ The events have 4 properties:
 
 [source, xml]
 ----
-public static class Listener implements ApplicationListener<ListenerContainerIdleEvent> {
+public class Listener {
 
     private final CountDownLatch latch = new CountDownLatch(2);
 
@@ -1652,15 +1652,16 @@ public static class Listener implements ApplicationListener<ListenerContainerIdl
         return foo.toUpperCase();
     }
 
-    @Override
+    @EventListener(condition = "event.listenerId == 'foo'")
     public void onApplicationEvent(ListenerContainerIdleEvent event) {
-        if ("foo".equals(event.getListenerId())) {
-            ...
-        }
+        ...
     }
 
 }
 ----
+
+IMPORTANT: Event listeners will see events for all containers; so, in the example above, we narrow the events received
+based on the listener ID.
 
 [[message-converters]]
 ==== Message Converters
