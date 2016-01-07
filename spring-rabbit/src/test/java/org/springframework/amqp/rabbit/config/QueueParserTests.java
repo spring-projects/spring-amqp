@@ -17,7 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.springframework.amqp.rabbit.test.RabbitMatchers.matches;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -97,6 +99,43 @@ public class QueueParserTests {
 		assertFalse(queue.isDurable());
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
+	}
+
+	@Test
+	public void testAnonymousQueueUUIDName() throws Exception {
+		Queue queue = beanFactory.getBean("uuidAnon", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("anonymous", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
+		assertFalse(queue.isDurable());
+		assertTrue(queue.isExclusive());
+		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
+	}
+
+	@Test
+	public void testAnonymousQueueSpringName() throws Exception {
+		Queue queue = beanFactory.getBean("springAnon", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("anonymous", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
+		assertFalse(queue.isDurable());
+		assertTrue(queue.isExclusive());
+		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matches("spring.gen-[0-9A-Za-z_\\-]{22}"));
+	}
+
+	@Test
+	public void testAnonymousQueueCustomName() throws Exception {
+		Queue queue = beanFactory.getBean("customAnon", Queue.class);
+		assertNotNull(queue);
+		assertNotSame("anonymous", queue.getName());
+		assertTrue(queue instanceof AnonymousQueue);
+		assertFalse(queue.isDurable());
+		assertTrue(queue.isExclusive());
+		assertTrue(queue.isAutoDelete());
+		assertThat(queue.getName(), matches("custom.gen-[0-9A-Za-z_\\-]{22}"));
 	}
 
 	@Test

@@ -114,6 +114,8 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(-1, addresses[1].getPort());
 		assertEquals("host3", addresses[2].getHost());
 		assertEquals(4567, addresses[2].getPort());
+		assertSame(beanFactory.getBean("tf"), TestUtils.getPropertyValue(connectionFactory,
+				"rabbitConnectionFactory.threadFactory"));
 	}
 
 }

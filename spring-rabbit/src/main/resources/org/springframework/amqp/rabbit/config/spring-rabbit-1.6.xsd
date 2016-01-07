@@ -31,25 +31,41 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 						The name of the queue.  Clients can receive or listen for messages by referring to the
-						queue itself, or to its name.
+						queue itself, or to its name. When no 'name' is provided an 'AnonymousQueue' with a
+						generated name is used. Also see naming strategy.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="auto-delete" use="optional" type="xsd:string" default="false">
+			<xsd:attribute name="naming-strategy" type="xsd:string" default="uuid">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+						When no 'name' is provided, a naming strategy is used to create the anonymous queue name.
+						Default (when not provided) is the String representation of a UUID. Options are
+						'uuid' - the String representation of a UUID, 'spring' - 'spring.gen-<uniqueBase64String>',
+						or a reference to an 'AnonymousQueue.NamingStrategy' implementation.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.Map" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="auto-delete" use="optional" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 						Flag indicating that an queue will be deleted when it is no longer in use, i.e. the connection that declared it is closed. Default is false.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="exclusive" use="optional" type="xsd:string" default="false">
+			<xsd:attribute name="exclusive" use="optional" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 					Flag indicating that the queue is exclusive to this connection.  Default is false.
 				]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
-			<xsd:attribute name="durable" use="optional" type="xsd:string" default="true">
+			<xsd:attribute name="durable" use="optional" type="xsd:string">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 					Flag indicating that the queue is durable, meaning that it will survive broker restarts (not that the messages in it will, although they might if they are persistent).  Default is true.
@@ -1329,6 +1345,19 @@
 	The size of the cache when cache-mode is 'CONNECTION'.
 	More connections can be used by clients, but in excess of this number they will not be cached.
 					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="thread-factory" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	A reference to a ThreadFactory used to create threads by the underlying RabbitMQ connection factory.
+	For example, this allows naming of those threads by using a CustomizableThreadFactory.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="java.util.concurrent.ThreadFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
 				</xsd:annotation>
 			</xsd:attribute>
 		</xsd:complexType>
