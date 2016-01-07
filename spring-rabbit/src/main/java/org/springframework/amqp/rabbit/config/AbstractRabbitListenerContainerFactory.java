@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.phase != null) {
 			instance.setPhase(this.phase);
 		}
+		instance.setListenerId(endpoint.getId());
 
 		endpoint.setupListenerContainer(instance);
 		initializeContainer(instance);

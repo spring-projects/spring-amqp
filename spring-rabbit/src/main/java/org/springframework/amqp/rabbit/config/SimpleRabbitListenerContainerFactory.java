@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import org.aopalliance.aop.Advice;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
@@ -40,7 +42,8 @@ import org.springframework.util.backoff.FixedBackOff;
  * @since 1.4
  */
 public class SimpleRabbitListenerContainerFactory
-		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer> {
+		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer>
+		implements ApplicationEventPublisherAware {
 
 	private Executor taskExecutor;
 
@@ -73,6 +76,10 @@ public class SimpleRabbitListenerContainerFactory
 	private Boolean missingQueuesFatal;
 
 	private ConsumerTagStrategy consumerTagStrategy;
+
+	private Long noMessageAlertInterval;
+
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	/**
 	 * @param taskExecutor the {@link Executor} to use.
@@ -211,6 +218,18 @@ public class SimpleRabbitListenerContainerFactory
 		this.consumerTagStrategy = consumerTagStrategy;
 	}
 
+	/**
+	 * How often to emit idle container events.
+	 * @param noMessageAlertInterval the interval.
+	 */
+	public void setNoMessageAlertInterval(Long noMessageAlertInterval) {
+		this.noMessageAlertInterval = noMessageAlertInterval;
+	}
+
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
+	}
+
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -267,6 +286,12 @@ public class SimpleRabbitListenerContainerFactory
 		}
 		if (this.consumerTagStrategy != null) {
 			instance.setConsumerTagStrategy(this.consumerTagStrategy);
+		}
+		if (this.noMessageAlertInterval != null) {
+			instance.setNoMessageAlertInterval(this.noMessageAlertInterval);
+		}
+		if (this.applicationEventPublisher != null) {
+			instance.setApplicationEventPublisher(this.applicationEventPublisher);
 		}
 	}
 
