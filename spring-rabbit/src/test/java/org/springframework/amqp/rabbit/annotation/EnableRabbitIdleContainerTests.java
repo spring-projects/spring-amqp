@@ -77,7 +77,7 @@ public class EnableRabbitIdleContainerTests {
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
-			factory.setNoMessageAlertInterval(500L);
+			factory.setIdleEventInterval(500L);
 			factory.setReceiveTimeout(100L);
 			return factory;
 		}

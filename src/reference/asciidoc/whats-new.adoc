@@ -1,6 +1,14 @@
 [[whats-new]]
 === What's New
 
+==== Changes in 1.6 Since 1.5
+
+===== Idle Message Listener Detection
+
+It is now possible to configure listener containers to publish `ApplicationEvent` s when idle.
+
+See <<idle-containers>> for more informatiom.
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported

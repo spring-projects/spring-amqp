@@ -15,8 +15,6 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
-import java.util.Date;
-
 import org.springframework.amqp.event.AmqpEvent;
 
 /**
@@ -30,19 +28,19 @@ import org.springframework.amqp.event.AmqpEvent;
 @SuppressWarnings("serial")
 public class ListenerContainerIdleEvent extends AmqpEvent {
 
-	private final long lastreceive;
+	private final long idleTime;
 
-	public ListenerContainerIdleEvent(SimpleMessageListenerContainer source, long lastReceive) {
+	public ListenerContainerIdleEvent(SimpleMessageListenerContainer source, long idleTime) {
 		super(source);
-		this.lastreceive = lastReceive;
+		this.idleTime = idleTime;
 	}
 
 	/**
-	 * When the last message was received
-	 * @return the time.
+	 * How long the container has been idle.
+	 * @return the time in milliseconds.
 	 */
-	public long getLastreceive() {
-		return lastreceive;
+	public long getIdleTime() {
+		return idleTime;
 	}
 
 	/**
@@ -54,8 +52,8 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	}
 
 	/**
-	 * The id of the listener, if the listener is a {@code @RabbitListener}.
-	 * @return the id, or null.
+	 * The id of the listener (if {@code @RabbitListener}) or the container bean name.
+	 * @return the id.
 	 */
 	public String getListenerId() {
 		return ((SimpleMessageListenerContainer) getSource()).getListenerId();
@@ -63,8 +61,8 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	@Override
 	public String toString() {
-		return "ListenerContainerIdleEvent [lastreceive="
-				+ new Date(lastreceive) + ", listenerId=" + getListenerId()
+		return "ListenerContainerIdleEvent [idleTime="
+				+ ((float) this.idleTime / 1000) + "s, listenerId=" + getListenerId()
 				+ ", container=" + getSource() + "]";
 	}
 

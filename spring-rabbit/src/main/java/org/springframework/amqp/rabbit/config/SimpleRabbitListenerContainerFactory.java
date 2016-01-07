@@ -77,7 +77,7 @@ public class SimpleRabbitListenerContainerFactory
 
 	private ConsumerTagStrategy consumerTagStrategy;
 
-	private Long noMessageAlertInterval;
+	private Long idleEventInterval;
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
@@ -219,11 +219,11 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
-	 * How often to emit idle container events.
-	 * @param noMessageAlertInterval the interval.
+	 * How often to publish idle container events.
+	 * @param idleEventInterval the interval.
 	 */
-	public void setNoMessageAlertInterval(Long noMessageAlertInterval) {
-		this.noMessageAlertInterval = noMessageAlertInterval;
+	public void setIdleEventInterval(Long idleEventInterval) {
+		this.idleEventInterval = idleEventInterval;
 	}
 
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -287,8 +287,8 @@ public class SimpleRabbitListenerContainerFactory
 		if (this.consumerTagStrategy != null) {
 			instance.setConsumerTagStrategy(this.consumerTagStrategy);
 		}
-		if (this.noMessageAlertInterval != null) {
-			instance.setNoMessageAlertInterval(this.noMessageAlertInterval);
+		if (this.idleEventInterval != null) {
+			instance.setIdleEventInterval(this.idleEventInterval);
 		}
 		if (this.applicationEventPublisher != null) {
 			instance.setApplicationEventPublisher(this.applicationEventPublisher);

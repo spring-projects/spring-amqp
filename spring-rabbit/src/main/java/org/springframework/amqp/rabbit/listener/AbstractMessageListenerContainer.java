@@ -404,11 +404,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * The 'id' attribute of the listener (if it's a {@code @RabbitListener})
-	 * @return the id, or null if it's not a RabbitListener.
+	 * The 'id' attribute of the listener.
+	 * @return the id (or the container bean name if no id set).
 	 */
 	public String getListenerId() {
-		return listenerId;
+		return this.listenerId != null ? this.listenerId : this.beanName;
 	}
 
 	public void setListenerId(String listenerId) {

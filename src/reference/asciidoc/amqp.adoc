@@ -1568,6 +1568,100 @@ At the time of writing, if this is not configured, the client uses an internal t
 The `RabbitMQ client` uses a `ThreadFactory` to create threads for low-level I/O (socket) operations.
 To modify this factory, you need to configure the underlying RabbitMQ `ConnectionFactory`, as discussed in <<connection-factory>>.
 
+[[idle-containers]]
+===== Detecting Idle Asynchronous Consumers
+
+While efficient, one problem with asynchronous consumers is detecting when they are idle - users might want to take
+some action if no messages arrive for some period of time.
+
+Starting with _version 1.6_, it is now possible to configure the listener container to publish a
+`ListenerContainerIdleEvent` when some time passes with no message delivery.
+While the container is idle, an event will be published every `idleEventInterval` milliseconds.
+
+To configure this feature, set the `idleEventInterval` on the container:
+
+====== xml
+
+[source, xml]
+----
+<rabbit:listener-container connection-factory="connectionFactory"
+        ...
+        idle-event-interval="60000"
+        ...
+        >
+    <rabbit:listener id="container1" queue-names="foo" ref="myListener" method="handle" />
+</rabbit:listener-container>
+----
+
+====== Java
+
+[source, java]
+----
+@Bean
+public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+    ...
+    container.setIdleEventInterval(60000L);
+    ...
+    return container;
+}
+----
+
+====== @RabbitListener
+
+[source, java]
+----
+@Bean
+public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    factory.setConnectionFactory(rabbitConnectionFactory());
+    factory.setIdleEventInterval(60000L);
+    ...
+    return factory;
+}
+----
+
+In each of these cases, an event will be published once per minute while the container is idle.
+
+====== Event Consumption
+
+You can capture these events by implementing `ApplicationListener` - either a general listener, or one narrowed to only
+receive this specific event.
+
+The following example combines the `@RabbitListener` and `ApplicationListener` into a single class.
+It's important to understand that the application listener will get events for all containers so you may need to
+check the listener id if you want to take specific action based on which container is idle.
+
+The events have 4 properties:
+
+- source - the listener container instance
+- id - the listener id (or container bean name)
+- idleTime - the time the container had been idle when the event was published
+- queueNames - the names of the queue(s) that the container listens to
+
+[source, xml]
+----
+public static class Listener implements ApplicationListener<ListenerContainerIdleEvent> {
+
+    private final CountDownLatch latch = new CountDownLatch(2);
+
+    private volatile ListenerContainerIdleEvent event;
+
+    @RabbitListener(id="foo", queues="#{queue.name}")
+    public String listen(String foo) {
+        return foo.toUpperCase();
+    }
+
+    @Override
+    public void onApplicationEvent(ListenerContainerIdleEvent event) {
+        if ("foo".equals(event.getListenerId())) {
+            ...
+        }
+    }
+
+}
+----
+
 [[message-converters]]
 ==== Message Converters
 
@@ -2984,6 +3078,12 @@ The namespace attribute is available in _version 1.5.x_
 
 Previously, only broker-generated consumer tags can be used; while this is still the default, you can now provide
 an implementation of <<consumerTags, ConsumerTagStrategy>>, enabling the creation of a (unique) tag for each consumer.
+
+| idleEventInterval
+(idle-event-integer)
+
+| Starting with _version 1.6_, `SimpleMessageListenerContainer` has this new property.
+See <<idle-containers>>.
 
 |===
 

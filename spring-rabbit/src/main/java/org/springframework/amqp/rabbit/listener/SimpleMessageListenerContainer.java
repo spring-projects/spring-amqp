@@ -197,7 +197,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
 
-	private Long noMessageAlertInterval;
+	private Long idleEventInterval;
 
 	private volatile long lastReceive = System.currentTimeMillis();
 
@@ -652,10 +652,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * How often to emit {@link ListenerContainerIdleEvent}s in milliseconds.
-	 * @param noMessageAlertInterval the interval.
+	 * @param idleEventInterval the interval.
 	 */
-	public void setNoMessageAlertInterval(long noMessageAlertInterval) {
-		this.noMessageAlertInterval = noMessageAlertInterval;
+	public void setIdleEventInterval(long idleEventInterval) {
+		this.idleEventInterval = idleEventInterval;
 	}
 
 	/**
@@ -1234,7 +1234,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								}
 							}
 						}
-						if (noMessageAlertInterval != null) {
+						if (idleEventInterval != null) {
 							if (receivedOk) {
 								lastReceive = System.currentTimeMillis();
 							}
@@ -1242,10 +1242,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								long now = System.currentTimeMillis();
 								long lastAlertAt = lastNoMessageAlert.get();
 								long lastReceive = SimpleMessageListenerContainer.this.lastReceive;
-								if (now > lastReceive + noMessageAlertInterval
-										&& now > lastAlertAt + noMessageAlertInterval
+								if (now > lastReceive + idleEventInterval
+										&& now > lastAlertAt + idleEventInterval
 										&& lastNoMessageAlert.compareAndSet(lastAlertAt, now)) {
-									publishIdleContainerEvent(lastReceive);
+									publishIdleContainerEvent(now - lastReceive);
 								}
 							}
 						}
@@ -1381,10 +1381,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void publishIdleContainerEvent(long lastReceive) {
+		private void publishIdleContainerEvent(long idleTime) {
 			if (applicationEventPublisher != null) {
 				applicationEventPublisher.publishEvent(
-						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, lastReceive));
+						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, idleTime));
 			}
 		}
 
