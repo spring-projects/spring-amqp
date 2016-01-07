@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,6 @@ public class ListenerContainerParserTests {
 
 	@Before
 	public void setUp() throws Exception {
-		ListenerContainerParser parser = new ListenerContainerParser();
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
@@ -103,6 +102,8 @@ public class ListenerContainerParserTests {
 		assertEquals(3, group.size());
 		assertThat(group, Matchers.contains(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
 				beanFactory.getBean("testListener2")));
+		assertEquals(1235L, ReflectionTestUtils.getField(container, "idleEventInterval"));
+		assertEquals("container1", container.getListenerId());
 	}
 
 	@Test

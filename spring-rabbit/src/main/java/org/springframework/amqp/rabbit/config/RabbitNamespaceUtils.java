@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,8 @@ public class RabbitNamespaceUtils {
 	private static final String MISSING_QUEUE_RETRY_INTERVAL = "missing-queue-retry-interval";
 
 	private static final String CONSUMER_TAG_STRATEGY = "consumer-tag-strategy";
+
+	private static final String IDLE_EVENT_INTERVAL = "idle-event-interval";
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -251,6 +253,11 @@ public class RabbitNamespaceUtils {
 		if (StringUtils.hasText(consumerTagStrategy)) {
 			containerDef.getPropertyValues().add("consumerTagStrategy",
 					new RuntimeBeanReference(consumerTagStrategy));
+		}
+
+		String idleEventInterval = containerEle.getAttribute(IDLE_EVENT_INTERVAL);
+		if (StringUtils.hasText(idleEventInterval)) {
+			containerDef.getPropertyValues().add("idleEventInterval", new TypedStringValue(idleEventInterval));
 		}
 
 		return containerDef;

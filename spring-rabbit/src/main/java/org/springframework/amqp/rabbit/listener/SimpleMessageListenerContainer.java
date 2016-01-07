@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -112,6 +113,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
+	private final AtomicLong lastNoMessageAlert = new AtomicLong();
+
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
@@ -193,6 +196,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private Long retryDeclarationInterval;
 
 	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
+
+	private Long idleEventInterval;
+
+	private volatile long lastReceive = System.currentTimeMillis();
 
 	/**
 	 * Default constructor for convenient dependency injection via setters.
@@ -641,6 +648,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setExclusiveConsumerExceptionLogger(ConditionalExceptionLogger exclusiveConsumerExceptionLogger) {
 		this.exclusiveConsumerExceptionLogger = exclusiveConsumerExceptionLogger;
+	}
+
+	/**
+	 * How often to emit {@link ListenerContainerIdleEvent}s in milliseconds.
+	 * @param idleEventInterval the interval.
+	 */
+	public void setIdleEventInterval(long idleEventInterval) {
+		this.idleEventInterval = idleEventInterval;
 	}
 
 	/**
@@ -1219,6 +1234,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								}
 							}
 						}
+						if (idleEventInterval != null) {
+							if (receivedOk) {
+								lastReceive = System.currentTimeMillis();
+							}
+							else {
+								long now = System.currentTimeMillis();
+								long lastAlertAt = lastNoMessageAlert.get();
+								long lastReceive = SimpleMessageListenerContainer.this.lastReceive;
+								if (now > lastReceive + idleEventInterval
+										&& now > lastAlertAt + idleEventInterval
+										&& lastNoMessageAlert.compareAndSet(lastAlertAt, now)) {
+									publishIdleContainerEvent(now - lastReceive);
+								}
+							}
+						}
 					}
 					catch (ListenerExecutionFailedException ex) {
 						// Continue to process, otherwise re-throw
@@ -1240,7 +1270,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.debug("Consumer thread interrupted, processing stopped.");
 				Thread.currentThread().interrupt();
 				aborted = true;
-				publishEvent("Consumer thread interrupted, processing stopped", true, e);
+				publishConsumerFailedEvent("Consumer thread interrupted, processing stopped", true, e);
 			}
 			catch (QueuesNotAvailableException ex) {
 				if (SimpleMessageListenerContainer.this.missingQueuesFatal) {
@@ -1249,20 +1279,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// Fatal, but no point re-throwing, so just abort.
 					aborted = true;
 				}
-				publishEvent("Consumer queue(s) not available", aborted, ex);
+				publishConsumerFailedEvent("Consumer queue(s) not available", aborted, ex);
 			}
 			catch (FatalListenerStartupException ex) {
 				logger.error("Consumer received fatal exception on startup", ex);
 				this.startupException = ex;
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
-				publishEvent("Consumer received fatal exception on startup", true, ex);
+				publishConsumerFailedEvent("Consumer received fatal exception on startup", true, ex);
 			}
 			catch (FatalListenerExecutionException ex) {
 				logger.error("Consumer received fatal exception during processing", ex);
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
-				publishEvent("Consumer received fatal exception during processing", true, ex);
+				publishConsumerFailedEvent("Consumer received fatal exception during processing", true, ex);
 			}
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
@@ -1278,7 +1308,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
 						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
 					exclusiveConsumerExceptionLogger.log(logger, "Exclusive consumer failure", e.getCause().getCause());
-					publishEvent("Consumer raised exception, attempting restart", false, e);
+					publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
 				}
 				else {
 					this.logConsumerException(e);
@@ -1341,13 +1371,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
 						+ "Exception summary: " + t);
 			}
-			publishEvent("Consumer raised exception, attempting restart", false, t);
+			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
 		}
 
-		private void publishEvent(String reason, boolean fatal, Throwable t) {
+		private void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
 			if (applicationEventPublisher != null) {
 				applicationEventPublisher.publishEvent(new ListenerContainerConsumerFailedEvent(
 						SimpleMessageListenerContainer.this, reason, t, fatal));
+			}
+		}
+
+		private void publishIdleContainerEvent(long idleTime) {
+			if (applicationEventPublisher != null) {
+				applicationEventPublisher.publishEvent(
+						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, idleTime));
 			}
 		}
 

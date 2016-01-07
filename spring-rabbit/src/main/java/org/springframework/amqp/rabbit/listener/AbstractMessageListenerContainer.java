@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 
 	private volatile ApplicationContext applicationContext;
+
+	private String listenerId;
 
 	/**
 	 * <p>
@@ -399,6 +401,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		return connectionFactory;
+	}
+
+	/**
+	 * The 'id' attribute of the listener.
+	 * @return the id (or the container bean name if no id set).
+	 */
+	public String getListenerId() {
+		return this.listenerId != null ? this.listenerId : this.beanName;
+	}
+
+	public void setListenerId(String listenerId) {
+		this.listenerId = listenerId;
 	}
 
 	/**

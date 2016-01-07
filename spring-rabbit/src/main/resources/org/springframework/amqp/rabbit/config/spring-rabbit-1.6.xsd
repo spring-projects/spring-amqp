@@ -797,6 +797,16 @@
 				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="idle-event-interval" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	The time in milliseconds between application events generated when the container is idle (no
+	message received). A 'ListenerContainerIdleEvent' is published each time this interval elapses
+	until a message is again received. These events can be received by an 'ApplicationListener'.
+	Events are not published unless this is set.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="listenerType">
