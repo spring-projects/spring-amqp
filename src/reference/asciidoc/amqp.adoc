@@ -1627,17 +1627,19 @@ In each of these cases, an event will be published once per minute while the con
 
 You can capture these events by implementing `ApplicationListener` - either a general listener, or one narrowed to only
 receive this specific event.
+You can also use `@EventListener`, introduced in Spring Framework 4.2.
 
-The following example combines the `@RabbitListener` and `ApplicationListener` into a single class.
+The following example combines the `@RabbitListener` and `@EventListener` into a single class.
 It's important to understand that the application listener will get events for all containers so you may need to
 check the listener id if you want to take specific action based on which container is idle.
+You can also use the `@EventListener` `condition` for this purpose.
 
 The events have 4 properties:
 
-- source - the listener container instance
-- id - the listener id (or container bean name)
-- idleTime - the time the container had been idle when the event was published
-- queueNames - the names of the queue(s) that the container listens to
+- `source` - the listener container instance
+- `id` - the listener id (or container bean name)
+- `idleTime` - the time the container had been idle when the event was published
+- `queueNames` - the names of the queue(s) that the container listens to
 
 [source, xml]
 ----
