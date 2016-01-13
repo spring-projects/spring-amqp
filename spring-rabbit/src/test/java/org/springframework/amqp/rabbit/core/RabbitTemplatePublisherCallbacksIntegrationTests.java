@@ -30,7 +30,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -78,12 +77,9 @@ import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
 
 /**
  * @author Gary Russell
@@ -147,49 +143,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
-
-	@Test
-	public void test36Methods() throws Exception {
-		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
-		this.templateWithConfirmsEnabled.convertAndSend(ROUTE, "foo");
-		assertMessageCountEquals(2L);
-		assertEquals(Long.valueOf(1), this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
-
-			@Override
-			public Long doInRabbit(Channel channel) throws Exception {
-				final CountDownLatch latch = new CountDownLatch(2);
-				String consumerTag = channel.basicConsume(ROUTE, new DefaultConsumer(channel) {
-					@Override
-					public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
-							byte[] body) throws IOException {
-						latch.countDown();
-					}
-				});
-				long consumerCount = channel.consumerCount(ROUTE);
-				assertTrue(latch.await(10, TimeUnit.SECONDS));
-				channel.basicCancel(consumerTag);
-				return consumerCount;
-			}
-
-		}));
-		assertMessageCountEquals(0L);
-	}
-
-	private void assertMessageCountEquals(long wanted) throws InterruptedException {
-		long messageCount;
-		int n = 0;
-		while ((messageCount = this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
-
-			@Override
-			public Long doInRabbit(Channel channel) throws Exception {
-				return channel.messageCount(ROUTE);
-			}
-
-		})) < wanted && n++ < 100) {
-			Thread.sleep(100);
-		};
-		assertEquals(wanted, messageCount);
-	}
 
 	@Test
 	public void testPublisherConfirmReceived() throws Exception {
