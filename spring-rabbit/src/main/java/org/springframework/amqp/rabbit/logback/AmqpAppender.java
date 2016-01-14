@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.DeclareExchangeConnectionListener;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
@@ -390,7 +391,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);
-		maybeDeclareExchange();
+		setUpExchangeDeclaration();
 		this.senderPool = Executors.newCachedThreadPool();
 		for (int i = 0; i < this.senderPoolSize; i++) {
 			this.senderPool.submit(new EventSender());
@@ -417,9 +418,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	/**
-	 * Maybe declare the exchange.
+	 * @deprecated - use {@link #setUpExchangeDeclaration()}
 	 */
+	@Deprecated
 	protected void maybeDeclareExchange() {
+		setUpExchangeDeclaration();
+	}
+
+	protected void setUpExchangeDeclaration() {
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		if (this.declareExchange) {
 			Exchange x;
@@ -438,7 +444,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 			else {
 				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			admin.declareExchange(x);
+			this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 		}
 	}
 

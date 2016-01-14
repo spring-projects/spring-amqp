@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.DeclareExchangeConnectionListener;
 
 /**
  * A Log4J appender that publishes logging events to an AMQP Exchange.
@@ -404,14 +405,19 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.connectionFactory.setUsername(username);
 		this.connectionFactory.setPassword(password);
 		this.connectionFactory.setVirtualHost(virtualHost);
-		maybeDeclareExchange();
+		setUpExchangeDeclaration();
 		startSenders();
 	}
 
 	/**
-	 * Maybe declare the exchange.
+	 * @deprecated - use {@link #setUpExchangeDeclaration()}
 	 */
+	@Deprecated
 	protected void maybeDeclareExchange() {
+		setUpExchangeDeclaration();
+	}
+
+	protected void setUpExchangeDeclaration() {
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		if (declareExchange) {
 			Exchange x;
@@ -430,8 +436,7 @@ public class AmqpAppender extends AppenderSkeleton {
 			else {
 				x = new TopicExchange(exchangeName, durable, autoDelete);
 			}
-			// admin.deleteExchange(exchangeName);
-			admin.declareExchange(x);
+			this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 		}
 	}
 

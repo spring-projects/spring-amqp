@@ -18,6 +18,7 @@
 		<charset>UTF-8</charset>
 		<durable>false</durable>
 		<deliveryMode>NON_PERSISTENT</deliveryMode>
+		<declareExchange>true</declareExchange>
 	</appender>
 
 	<logger name="org.springframework.amqp.rabbit.logback" level="DEBUG" additivity="false">

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015 by the original author(s).
+ * Copyright (c) 2011-2016 by the original author(s).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,12 +13,15 @@
 
 package org.springframework.amqp.rabbit.log4j;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -39,6 +42,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
@@ -104,6 +108,9 @@ public class AmqpAppenderIntegrationTests {
 
 		assertTrue(testListener.getLatch().await(5, TimeUnit.SECONDS));
 		assertNotNull(testListener.getId());
+
+		assertThat(TestUtils.getPropertyValue(appender, "connectionFactory.connectionListener.delegates",
+						Collection.class).size(), equalTo(1));
 	}
 
 	@Test
