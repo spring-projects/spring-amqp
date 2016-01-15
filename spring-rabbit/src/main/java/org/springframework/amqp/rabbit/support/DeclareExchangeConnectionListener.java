@@ -21,20 +21,20 @@ import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 
 /**
- * A {@link ConnectionListener} that will declare the exchange for the
- * appender, if so configured.
+ * A {@link ConnectionListener} that will declare a single exchange when the
+ * connection is established.
  *
  * @author Gary Russell
  * @since 1.5.4
  *
  */
-public class LogAppenderConnectionListener implements ConnectionListener {
+public final class DeclareExchangeConnectionListener implements ConnectionListener {
 
 	private final Exchange exchange;
 
 	private final RabbitAdmin admin;
 
-	public LogAppenderConnectionListener(Exchange exchange, RabbitAdmin admin) {
+	public DeclareExchangeConnectionListener(Exchange exchange, RabbitAdmin admin) {
 		this.exchange = exchange;
 		this.admin = admin;
 	}
@@ -45,7 +45,6 @@ public class LogAppenderConnectionListener implements ConnectionListener {
 			this.admin.declareExchange(this.exchange);
 		}
 		catch (Exception e) {
-
 		}
 	}
 
