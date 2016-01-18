@@ -18,8 +18,13 @@ It is now possible to provide a naming strategy for anonymous queues; see <<anon
 ===== Idle Message Listener Detection
 
 It is now possible to configure listener containers to publish `ApplicationEvent` s when idle.
+See <<idle-containers>> for more information.
 
-See <<idle-containers>> for more informatiom.
+===== AmqpTemple: receive with timeout
+
+A bunch of of new `receive()` methods with `timeout` have been introduced for the `AmqpTemple`
+ and its `RabbitTemplate` implementation.
+See <<polling-consumer>> for more information.
 
 ==== Changes in 1.5 Since 1.4
 
