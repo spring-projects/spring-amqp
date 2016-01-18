@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -278,8 +278,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveBlocking() throws Exception {
 		this.template.convertAndSend(ROUTE, "block");
-		this.template.setReceiveTimeout(10000);
-		String out = (String) this.template.receiveAndConvert(ROUTE);
+		String out = (String) this.template.receiveAndConvert(ROUTE, 10000);
 		assertNotNull(out);
 		assertEquals("block", out);
 		this.template.setReceiveTimeout(0);
@@ -289,8 +288,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testReceiveBlockingNoTimeout() throws Exception {
 		this.template.convertAndSend(ROUTE, "blockNoTO");
-		this.template.setReceiveTimeout(-1);
-		String out = (String) this.template.receiveAndConvert(ROUTE);
+		String out = (String) this.template.receiveAndConvert(ROUTE, -1);
 		assertNotNull(out);
 		assertEquals("blockNoTO", out);
 		this.template.setReceiveTimeout(1); // test the no message after timeout path

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -122,6 +122,7 @@ import com.rabbitmq.client.QueueingConsumer.Delivery;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Ernest Sadykov
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
@@ -767,8 +768,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Message receive(long timeoutMillis) throws AmqpException {
-		String queue = this.getRequiredQueue();
-		return this.receive(queue, timeoutMillis);
+		String queue = getRequiredQueue();
+		if (timeoutMillis == 0) {
+			return doReceiveNoWait(queue);
+		}
+		else {
+			return receive(queue, timeoutMillis);
+		}
 	}
 
 	@Override
@@ -815,8 +821,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Object receiveAndConvert(String queueName) throws AmqpException {
-		Message response = receive(queueName);
-		return convertMessage(response);
+		return receiveAndConvert(queueName, this.receiveTimeout);
 	}
 
 	@Override
@@ -827,12 +832,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException {
 		Message response = receive(queueName, timeoutMillis);
-		return convertMessage(response);
-	}
-
-	private Object convertMessage(Message message) {
-		if (message != null) {
-			return getRequiredMessageConverter().fromMessage(message);
+		if (response != null) {
+			return getRequiredMessageConverter().fromMessage(response);
 		}
 		return null;
 	}
