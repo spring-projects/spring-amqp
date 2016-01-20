@@ -75,6 +75,8 @@ public class SimpleRabbitListenerContainerFactory
 
 	private Boolean missingQueuesFatal;
 
+	private Boolean mismatchedQueuesFatal;
+
 	private ConsumerTagStrategy consumerTagStrategy;
 
 	private Long idleEventInterval;
@@ -211,6 +213,14 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
+	 * @param mismatchedQueuesFatal the mismatchedQueuesFatal to set.
+	 * @see SimpleMessageListenerContainer#setMismatchedQueuesFatal(boolean)
+	 */
+	public void setMismatchedQueuesFatal(Boolean mismatchedQueuesFatal) {
+		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
+	}
+
+	/**
 	 * @param consumerTagStrategy the consumerTagStrategy to set
 	 * @see SimpleMessageListenerContainer#setConsumerTagStrategy(ConsumerTagStrategy)
 	 */
@@ -280,6 +290,9 @@ public class SimpleRabbitListenerContainerFactory
 		}
 		if (this.recoveryBackOff != null) {
 			instance.setRecoveryBackOff(this.recoveryBackOff);
+		}
+		if (this.mismatchedQueuesFatal != null) {
+			instance.setMismatchedQueuesFatal(this.mismatchedQueuesFatal);
 		}
 		if (this.missingQueuesFatal != null) {
 			instance.setMissingQueuesFatal(this.missingQueuesFatal);

@@ -85,6 +85,8 @@ public class RabbitNamespaceUtils {
 
 	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
 
+	private static final String MISMATCHED_QUEUES_FATAL = "mismatched-queues-fatal";
+
 	private static final String AUTO_DECLARE = "auto-declare";
 
 	private static final String DECLARATION_RETRIES = "declaration-retries";
@@ -227,6 +229,11 @@ public class RabbitNamespaceUtils {
 		String missingQueuesFatal = containerEle.getAttribute(MISSING_QUEUES_FATAL);
 		if (StringUtils.hasText(missingQueuesFatal)) {
 			containerDef.getPropertyValues().add("missingQueuesFatal", new TypedStringValue(missingQueuesFatal));
+		}
+
+		String mismatchedQueuesFatal = containerEle.getAttribute(MISMATCHED_QUEUES_FATAL);
+		if (StringUtils.hasText(mismatchedQueuesFatal)) {
+			containerDef.getPropertyValues().add("mismatchedQueuesFatal", new TypedStringValue(mismatchedQueuesFatal));
 		}
 
 		String autoDeclare = containerEle.getAttribute(AUTO_DECLARE);

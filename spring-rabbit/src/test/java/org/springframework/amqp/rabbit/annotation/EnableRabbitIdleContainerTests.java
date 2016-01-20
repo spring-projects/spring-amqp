@@ -36,7 +36,10 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ListenerContainerIdleEvent;
+import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,6 +70,9 @@ public class EnableRabbitIdleContainerTests {
 	@Autowired
 	private Queue queue;
 
+	@Autowired
+	private RabbitListenerEndpointRegistry registry;
+
 	@Test
 	public void testIdle() throws Exception {
 		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "foo"));
@@ -77,6 +83,8 @@ public class EnableRabbitIdleContainerTests {
 		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
 		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
 		assertFalse(this.listener.barEventReceived);
+		MessageListenerContainer listenerContainer = registry.getListenerContainer("foo");
+		assertTrue(TestUtils.getPropertyValue(listenerContainer, "mismatchedQueuesFatal", Boolean.class));
 	}
 
 	@Configuration
@@ -89,6 +97,7 @@ public class EnableRabbitIdleContainerTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setIdleEventInterval(500L);
 			factory.setReceiveTimeout(100L);
+			factory.setMismatchedQueuesFatal(true);
 			return factory;
 		}
 

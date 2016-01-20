@@ -3078,6 +3078,26 @@ This global property will not be applied to any containers that have an explicit
 
 The default retry properties (3 retries at 5 second intervals) can be overridden using the properties below.
 
+| mismatchedQueuesFatal
+(mismatched-queues-fatal)
+
+a| This was added in _version 1.6_.
+When the container starts, if this property is true (default: false), the container checks that all queues declared in
+the context are compatible with queues already on the broker.
+If mismatched properties (e.g. `auto-delete`) or arguments (e.g. `x-message-ttl`) exist, the container
+(and application context) will fail to start with a fatal exception.
+
+If the problem is detected during recovery (e.g. after a lost connection), the container will be stopped.
+
+NOTE: If the broker is not available during initial startup, the container will start and the conditions will be
+checked when the connection is established.
+
+IMPORTANT: the check is done against all queues in the context, not just the queues that a particular listener
+is configured to use.
+If you wish to limit the checks to just those queues used by a container, you should configure a separate
+`RabbitAdmin` for the container, and provide a reference to it using the `admin` property.
+See <<conditional-declaration>> for more information.
+
 | autoDeclare
 (auto-declare)
 

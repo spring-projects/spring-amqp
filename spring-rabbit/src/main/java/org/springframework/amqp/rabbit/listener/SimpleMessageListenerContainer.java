@@ -172,6 +172,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean autoDeclare = true;
 
+	private volatile boolean mismatchedQueuesFatal = false;
+
 	private volatile ConsumerTagStrategy consumerTagStrategy;
 
 	private volatile ApplicationEventPublisher applicationEventPublisher;
@@ -511,6 +513,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * Prevent the container from starting if any of the queues defined in the context have
+	 * mismatched arguments (TTL etc). Default false.
+	 * @param mismatchedQueuesFatal true to fail initialization when this condition occurs.
+	 * @since 1.6
+	 */
+	public void setMismatchedQueuesFatal(boolean mismatchedQueuesFatal) {
+		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * @since 1.5
 	 */
@@ -764,6 +776,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ Arrays.asList(queueNames));
 			}
 		}
+		checkMismatchedQueues();
 		super.doStart();
 		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
 			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
@@ -892,6 +905,25 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (BeansException be) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("No global properties bean");
+				}
+			}
+		}
+	}
+
+	private void checkMismatchedQueues() {
+		if (this.mismatchedQueuesFatal) {
+			try {
+				getConnectionFactory().createConnection();
+			}
+			catch (AmqpConnectException e) {
+				logger.info("Broker not available; cannot check queue declarations");
+			}
+			catch (AmqpIOException e){
+				if (RabbitUtils.isMismatchedQueueArgs(e)) {
+					throw new FatalListenerStartupException("Mismatched queues", e);
+				}
+				else {
+					logger.info("Failed to get connection during start(): " + e);
 				}
 			}
 		}
@@ -1034,15 +1066,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if any of our
-	 * queues are missing. Also auto deletion of a queue can cause upstream elements
-	 * (bindings, exchanges) to be deleted too, so everything needs to be redeclared.
+	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if necessary.
+	 * Since auto deletion of a queue can cause upstream elements
+	 * (bindings, exchanges) to be deleted too, everything needs to be redeclared if
+	 * a queue is missing.
 	 * Declaration is idempotent so, aside from some network chatter, there is no issue,
 	 * and we only will do it if we detect our queue is gone.
 	 * <p>
 	 * In general it makes sense only for the 'auto-delete' or 'expired' queues,
 	 * but with the server TTL policy we don't have ability to determine 'expiration'
 	 * option for the queue.
+	 * <p>
+	 * Starting with version 1.6, if
+	 * {@link #setMismatchedQueuesFatal(boolean) mismatchedQueuesFatal} is true,
+	 * the declarations are always attempted during restart so the listener will
+	 * fail with a fatal error if mismatches occur.
 	 */
 	private synchronized void redeclareElementsIfNecessary() {
 		try {
@@ -1052,11 +1090,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
 				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 					Queue queue = entry.getValue();
-					if (queueNames.contains(queue.getName()) &&
-							this.rabbitAdmin.getQueueProperties(queue.getName()) == null) {
+					if (this.mismatchedQueuesFatal || (queueNames.contains(queue.getName()) &&
+							this.rabbitAdmin.getQueueProperties(queue.getName()) == null)) {
 						if (logger.isDebugEnabled()) {
-							logger.debug("At least one queue is missing: " + queue.getName()
-									+ "; redeclaring context exchanges, queues, bindings.");
+							logger.debug("Redeclaring context exchanges, queues, bindings.");
 						}
 						this.rabbitAdmin.initialize();
 						return;
@@ -1065,6 +1102,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		catch (Exception e) {
+			if (RabbitUtils.isMismatchedQueueArgs(e)) {
+				throw new FatalListenerStartupException("Mismatched queues", e);
+			}
 			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
 	}
