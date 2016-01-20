@@ -31,6 +31,11 @@ starting if the problem is detected during startup.
 It will also stop the container if the problem is detected later, such as after recovering from a connection failure.
 See <<containerAttributes>> for more information.
 
+===== AutoDeclare and RabbitAdmins
+
+See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
+of `RabbitAdmin` s in the application context.
+
 ===== AmqpTemple: receive with timeout
 
 A bunch of of new `receive()` methods with `timeout` have been introduced for the `AmqpTemple`

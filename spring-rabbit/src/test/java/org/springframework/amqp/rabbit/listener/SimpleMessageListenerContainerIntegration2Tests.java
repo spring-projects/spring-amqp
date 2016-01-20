@@ -221,6 +221,9 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		context.getBeanFactory().registerSingleton("foo", queue);
 		context.refresh();
 		container.setApplicationContext(context);
+		RabbitAdmin admin = new RabbitAdmin(this.template.getConnectionFactory());
+		admin.setApplicationContext(context);
+		container.setRabbitAdmin(admin);
 		container.afterPropertiesSet();
 		container.start();
 		for (int i = 0; i < 10; i++) {

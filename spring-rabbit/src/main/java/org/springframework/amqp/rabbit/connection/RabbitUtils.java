@@ -207,7 +207,7 @@ public abstract class RabbitUtils {
 	/**
 	 * Return true if the {@link ShutdownSignalException} reason is AMQP.Channel.Close
 	 * and the operation that failed was basicConsumer and the failure text contains
-	 * "exlusive".
+	 * "exclusive".
 	 * @param sig the exception.
 	 * @return true if the declaration failed because of an exclusive queue.
 	 */

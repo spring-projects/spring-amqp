@@ -3089,23 +3089,34 @@ If mismatched properties (e.g. `auto-delete`) or arguments (e.g. `x-message-ttl`
 
 If the problem is detected during recovery (e.g. after a lost connection), the container will be stopped.
 
+There must be a single `RabbitAdmin` in the application context (or one specifically configured on the container
+using the `rabbitAdmin` property); otherwise this property must be `false`.
+
 NOTE: If the broker is not available during initial startup, the container will start and the conditions will be
 checked when the connection is established.
 
 IMPORTANT: the check is done against all queues in the context, not just the queues that a particular listener
 is configured to use.
 If you wish to limit the checks to just those queues used by a container, you should configure a separate
-`RabbitAdmin` for the container, and provide a reference to it using the `admin` property.
+`RabbitAdmin` for the container, and provide a reference to it using the `rabbitAdmin` property.
 See <<conditional-declaration>> for more information.
 
 | autoDeclare
 (auto-declare)
 
-| Starting with _version 1.4_, `SimpleMessageListenerContainer` has this new property.
+a| Starting with _version 1.4_, `SimpleMessageListenerContainer` has this new property.
 
-When set to `true` (default), the container will redeclare all AMQP objects (Queues, Exchanges, Bindings), if it detects that at least one of its queues is missing during startup, perhaps because it's an `auto-delete` or an expired queue, but the redeclaration will proceed if the queue is missing for any reason.
+When set to `true` (default), the container will use a `RabbitAdmin` to redeclare all AMQP objects (Queues, Exchanges,
+Bindings), if it detects that at least one of its queues is missing during startup, perhaps because it's an
+`auto-delete` or an expired queue, but the redeclaration will proceed if the queue is missing for any reason.
 To disable this behavior, set this property to `false`.
 Note that the container will fail to start if all of its queues are missing.
+
+NOTE: Prior to _version 1.6_, if there was more than one admin in the context, the container would randomly select one.
+If there were no admins, it would create one internally.
+In either case, this could cause unexpected results.
+Starting with _version 1.6_, for `autoDeclare` to work, there must be exactly one `RabbitAdmin` in the context, or
+a reference to a specific instance must be configured on the container using the `rabbitAdmin` property.
 
 | declarationRetries
 (declaration-retries)

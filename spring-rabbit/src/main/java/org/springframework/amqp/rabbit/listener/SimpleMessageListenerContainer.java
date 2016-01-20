@@ -776,19 +776,28 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ Arrays.asList(queueNames));
 			}
 		}
-		checkMismatchedQueues();
-		super.doStart();
 		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
 			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
-			if (!admins.isEmpty()) {
+			if (admins.size() == 1) {
 				this.rabbitAdmin = admins.values().iterator().next();
 			}
+			else {
+				if (this.autoDeclare || this.mismatchedQueuesFatal) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
+								+ "RabbitAdmin in the context or you must inject one into this container; found: "
+								+ admins.size() + " for container " + this.toString());
+					}
+				}
+				if (this.mismatchedQueuesFatal) {
+					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "
+							+ "one RabbitAdmin in the context or you must inject one into this container; found: "
+							+ admins.size() + " for container " + this.toString());
+				}
+			}
 		}
-		if (this.rabbitAdmin == null && this.autoDeclare) {
-			RabbitAdmin rabbitAdmin = new RabbitAdmin(this.getConnectionFactory());
-			rabbitAdmin.setApplicationContext(this.getApplicationContext());
-			this.rabbitAdmin = rabbitAdmin;
-		}
+		checkMismatchedQueues();
+		super.doStart();
 		synchronized (this.consumersMonitor) {
 			int newConsumers = initializeConsumers();
 			if (this.consumers == null) {
@@ -911,9 +920,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void checkMismatchedQueues() {
-		if (this.mismatchedQueuesFatal) {
+		if (this.mismatchedQueuesFatal && this.rabbitAdmin != null) {
 			try {
-				getConnectionFactory().createConnection();
+				this.rabbitAdmin.initialize();
 			}
 			catch (AmqpConnectException e) {
 				logger.info("Broker not available; cannot check queue declarations");
@@ -1083,6 +1092,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * fail with a fatal error if mismatches occur.
 	 */
 	private synchronized void redeclareElementsIfNecessary() {
+		if (this.rabbitAdmin == null) {
+			return;
+		}
 		try {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			if (applicationContext != null) {
@@ -1176,7 +1188,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public String toString() {
-		return "SimpleMessageListenerContainer [concurrentConsumers=" + this.concurrentConsumers
+		return "SimpleMessageListenerContainer "
+				+ (getBeanName() != null ? "(" + getBeanName() + ") " : "")
+				+ "[concurrentConsumers=" + this.concurrentConsumers
 				+ (this.maxConcurrentConsumers != null ? ", maxConcurrentConsumers=" + this.maxConcurrentConsumers : "")
 				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
 	}

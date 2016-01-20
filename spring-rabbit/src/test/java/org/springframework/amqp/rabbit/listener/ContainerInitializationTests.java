@@ -15,6 +15,7 @@
  */
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -53,6 +54,20 @@ public class ContainerInitializationTests {
 	}
 
 	@Test
+	public void testNoAdmin() throws Exception {
+		try {
+			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config0.class);
+			context.close();
+			fail("expected initialization failure");
+		}
+		catch (ApplicationContextException e) {
+			assertThat(e.getCause().getCause(), instanceOf(IllegalStateException.class));
+			assertThat(e.getMessage(), containsString("When 'mismatchedQueuesFatal' is 'true', there must be "
+				+ "exactly one RabbitAdmin in the context or you must inject one into this container; found: 0"));
+		}
+	}
+
+	@Test
 	public void testMismatchedQueue() {
 		try {
 			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config1.class);
@@ -80,21 +95,11 @@ public class ContainerInitializationTests {
 	}
 
 	@Configuration
-	public static class Config1 {
+	static class Config0 {
 
 		@Bean
 		public ConnectionFactory connectionFactory() {
 			return new CachingConnectionFactory("localhost");
-		}
-
-		@Bean
-		public RabbitAdmin admin() {
-			return new RabbitAdmin(connectionFactory());
-		}
-
-		@Bean
-		public Queue queue() {
-			return new Queue("test.mismatch", false, false, true); // mismatched
 		}
 
 		@Bean
@@ -112,10 +117,25 @@ public class ContainerInitializationTests {
 			return container;
 		}
 
+		@Bean
+		public Queue queue() {
+			return new Queue("test.mismatch", false, false, true); // mismatched
+		}
+
 	}
 
 	@Configuration
-	public static class Config2 extends Config1 {
+	static class Config1 extends Config0 {
+
+		@Bean
+		public RabbitAdmin admin() {
+			return new RabbitAdmin(connectionFactory());
+		}
+
+	}
+
+	@Configuration
+	static class Config2 extends Config1 {
 
 		@Override
 		@Bean
