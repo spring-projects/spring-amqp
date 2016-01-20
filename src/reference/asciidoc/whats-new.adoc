@@ -15,10 +15,26 @@ See <<connections>> for more information.
 
 It is now possible to provide a naming strategy for anonymous queues; see <<anonymous-queue>> for more information.
 
-===== Idle Message Listener Detection
+===== Listener Container Changes
+
+====== Idle Message Listener Detection
 
 It is now possible to configure listener containers to publish `ApplicationEvent` s when idle.
 See <<idle-containers>> for more information.
+
+====== Mismatched Queue Detection
+
+By default, when a listener container starts, if queues with mismatched properties or arguments were detected,
+the container would log the exception but continue to listen.
+The container now has a property `mismatchedQueuesFatal` which will prevent the container (and context) from
+starting if the problem is detected during startup.
+It will also stop the container if the problem is detected later, such as after recovering from a connection failure.
+See <<containerAttributes>> for more information.
+
+===== AutoDeclare and RabbitAdmins
+
+See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
+of `RabbitAdmin` s in the application context.
 
 ===== AmqpTemple: receive with timeout
 

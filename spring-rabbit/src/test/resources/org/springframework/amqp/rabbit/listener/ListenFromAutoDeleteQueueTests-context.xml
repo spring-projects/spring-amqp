@@ -19,7 +19,7 @@
 	</rabbit:direct-exchange>
 
 	<rabbit:listener-container concurrency="2">
-		<rabbit:listener id="container1" ref="foo" queues="anon" />
+		<rabbit:listener id="container1" ref="foo" queues="anon" admin="containerAdmin" />
 	</rabbit:listener-container>
 
 	<!-- With Conditional Declarations -->
@@ -43,11 +43,11 @@
 	</rabbit:queue>
 
 	<rabbit:listener-container concurrency="2">
-		<rabbit:listener id="container3" ref="foo" queues="xExpires"/>
+		<rabbit:listener id="container3" ref="foo" queues="xExpires" admin="containerAdmin" />
 	</rabbit:listener-container>
 
 	<rabbit:listener-container auto-declare="false">
-		<rabbit:listener id="container4" ref="foo" queues="anon2"/>
+		<rabbit:listener id="container4" ref="foo" queues="anon2" admin="containerAdmin" />
 	</rabbit:listener-container>
 
 	<rabbit:admin connection-factory="rabbitConnectionFactory" />

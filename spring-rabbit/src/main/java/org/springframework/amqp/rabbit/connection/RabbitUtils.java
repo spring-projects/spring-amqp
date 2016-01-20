@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,7 +14,6 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.apache.commons.logging.Log;
@@ -23,10 +22,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
@@ -41,18 +40,6 @@ public abstract class RabbitUtils {
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
 	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
-
-	private static final Method shutDownSignalReasonMethod;
-
-	static {
-		Method method = null;
-		try {
-			method = ReflectionUtils.findMethod(ShutdownSignalException.class, "getReason");
-		}
-		finally {
-			shutDownSignalReasonMethod = method;
-		}
-	}
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
@@ -175,23 +162,41 @@ public abstract class RabbitUtils {
 		return mustClose;
 	}
 
+	/**
+	 * Return true if the {@link ShutdownSignalException} reason is AMQP.Connection.Close and
+	 * the reply code was AMQP.REPLY_SUCCESS (200) and the text equals "OK".
+	 * @param sig the exception.
+	 * @return true for a normal connection close.
+	 */
 	public static boolean isNormalShutdown(ShutdownSignalException sig) {
-		Object shutdownReason = determineShutdownReason(sig);
+		Method shutdownReason = sig.getReason();
 		return shutdownReason instanceof AMQP.Connection.Close
 				&& AMQP.REPLY_SUCCESS == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
 				&& "OK".equals(((AMQP.Connection.Close) shutdownReason).getReplyText());
 	}
 
+	/**
+	 * Return true if the {@link ShutdownSignalException} reason is AMQP.Channel.Close and
+	 * the reply code was AMQP.REPLY_SUCCESS (200) and the text equals "OK".
+	 * @param sig the exception.
+	 * @return true for a normal channel close.
+	 */
 	public static boolean isNormalChannelClose(ShutdownSignalException sig) {
-		Object shutdownReason = determineShutdownReason(sig);
+		Method shutdownReason = sig.getReason();
 		return isNormalShutdown(sig) ||
 				(shutdownReason instanceof AMQP.Channel.Close
 					&& AMQP.REPLY_SUCCESS == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
 					&& "OK".equals(((AMQP.Channel.Close) shutdownReason).getReplyText()));
 	}
 
+	/**
+	 * Return true if the {@link ShutdownSignalException} reason is AMQP.Channel.Close
+	 * and the operation that failed was exchangeDeclare or queueDeclare.
+	 * @param sig the exception.
+	 * @return true if the failure meets the conditions.
+	 */
 	public static boolean isPassiveDeclarationChannelClose(ShutdownSignalException sig) {
-		Object shutdownReason = determineShutdownReason(sig);
+		Method shutdownReason = sig.getReason();
 		return shutdownReason instanceof AMQP.Channel.Close
 				&& AMQP.NOT_FOUND == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
 				&& ((((AMQP.Channel.Close) shutdownReason).getClassId() == 40 // exchange
@@ -199,8 +204,15 @@ public abstract class RabbitUtils {
 					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 10); // declare
 	}
 
+	/**
+	 * Return true if the {@link ShutdownSignalException} reason is AMQP.Channel.Close
+	 * and the operation that failed was basicConsumer and the failure text contains
+	 * "exclusive".
+	 * @param sig the exception.
+	 * @return true if the declaration failed because of an exclusive queue.
+	 */
 	public static boolean isExclusiveUseChannelClose(ShutdownSignalException sig) {
-		Object shutdownReason = determineShutdownReason(sig);
+		Method shutdownReason = sig.getReason();
 		return shutdownReason instanceof AMQP.Channel.Close
 				&& AMQP.ACCESS_REFUSED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
 				&& ((AMQP.Channel.Close) shutdownReason).getClassId() == 60 // basic
@@ -208,15 +220,33 @@ public abstract class RabbitUtils {
 				&& ((AMQP.Channel.Close) shutdownReason).getReplyText().contains("exclusive");
 	}
 
-	public static Object determineShutdownReason(ShutdownSignalException sig) {
-		if (shutDownSignalReasonMethod == null) {
+	/**
+	 * Return true if there is a {@link ShutdownSignalException} in the cause tree and its
+	 * reason is "PRECONDITION_FAILED" and the operation being performed was queueDeclare.
+	 * This can happen if a queue has mismatched properties (auto-delete etc) or arguments
+	 * (x-message-ttl etc).
+	 * @param e the exception.
+	 * @return true if the exception was due to queue declaration precondition failed.
+	 * @since 1.6
+	 */
+	public static boolean isMismatchedQueueArgs(Exception e) {
+		Throwable cause = e;
+		ShutdownSignalException sig = null;
+		while (cause != null && sig == null) {
+			if (cause instanceof ShutdownSignalException) {
+				sig = (ShutdownSignalException) cause;
+			}
+			cause = cause.getCause();
+		}
+		if (sig == null) {
 			return false;
 		}
-		try {
-			return ReflectionUtils.invokeMethod(shutDownSignalReasonMethod, sig);
-		}
-		catch (Exception e) {
-			return false;
+		else {
+			Method shutdownReason = sig.getReason();
+			return shutdownReason instanceof AMQP.Channel.Close
+					&& AMQP.PRECONDITION_FAILED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
+					&& ((AMQP.Channel.Close) shutdownReason).getClassId() == 50 // queue
+					&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 10; // declare
 		}
 	}
 

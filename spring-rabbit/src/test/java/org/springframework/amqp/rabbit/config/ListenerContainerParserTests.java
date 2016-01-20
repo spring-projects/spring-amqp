@@ -104,6 +104,7 @@ public class ListenerContainerParserTests {
 				beanFactory.getBean("testListener2")));
 		assertEquals(1235L, ReflectionTestUtils.getField(container, "idleEventInterval"));
 		assertEquals("container1", container.getListenerId());
+		assertTrue(TestUtils.getPropertyValue(container, "mismatchedQueuesFatal", Boolean.class));
 	}
 
 	@Test

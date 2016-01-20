@@ -23,6 +23,9 @@ import org.aopalliance.aop.Advice;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -43,7 +46,7 @@ import org.springframework.util.backoff.FixedBackOff;
  */
 public class SimpleRabbitListenerContainerFactory
 		extends AbstractRabbitListenerContainerFactory<SimpleMessageListenerContainer>
-		implements ApplicationEventPublisherAware {
+		implements ApplicationContextAware, ApplicationEventPublisherAware {
 
 	private Executor taskExecutor;
 
@@ -75,11 +78,15 @@ public class SimpleRabbitListenerContainerFactory
 
 	private Boolean missingQueuesFatal;
 
+	private Boolean mismatchedQueuesFatal;
+
 	private ConsumerTagStrategy consumerTagStrategy;
 
 	private Long idleEventInterval;
 
 	private ApplicationEventPublisher applicationEventPublisher;
+
+	private ApplicationContext applicationContext;
 
 	/**
 	 * @param taskExecutor the {@link Executor} to use.
@@ -211,6 +218,15 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
+	 * @param mismatchedQueuesFatal the mismatchedQueuesFatal to set.
+	 * @since 1.6
+	 * @see SimpleMessageListenerContainer#setMismatchedQueuesFatal(boolean)
+	 */
+	public void setMismatchedQueuesFatal(Boolean mismatchedQueuesFatal) {
+		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
+	}
+
+	/**
 	 * @param consumerTagStrategy the consumerTagStrategy to set
 	 * @see SimpleMessageListenerContainer#setConsumerTagStrategy(ConsumerTagStrategy)
 	 */
@@ -231,6 +247,11 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
+
+	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
 	}
@@ -239,6 +260,9 @@ public class SimpleRabbitListenerContainerFactory
 	protected void initializeContainer(SimpleMessageListenerContainer instance) {
 		super.initializeContainer(instance);
 
+		if (this.applicationContext != null) {
+			instance.setApplicationContext(this.applicationContext);
+		}
 		if (this.taskExecutor != null) {
 			instance.setTaskExecutor(this.taskExecutor);
 		}
@@ -280,6 +304,9 @@ public class SimpleRabbitListenerContainerFactory
 		}
 		if (this.recoveryBackOff != null) {
 			instance.setRecoveryBackOff(this.recoveryBackOff);
+		}
+		if (this.mismatchedQueuesFatal != null) {
+			instance.setMismatchedQueuesFatal(this.mismatchedQueuesFatal);
 		}
 		if (this.missingQueuesFatal != null) {
 			instance.setMissingQueuesFatal(this.missingQueuesFatal);

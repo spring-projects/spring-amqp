@@ -759,6 +759,17 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="mismatched-queues-fatal" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When `true` if queues (defined in the context) are available on the broker, but have different arguments
+	(TTL etc) or properties (auto-delete etc), the condition is considered fatal; this
+	can prevent application startup; it can also cause the container to stop if the queues are deleted or the
+	connection is lost while the container is running. Default: 'false' - the container will listen to queues
+	even if the queue arguments and properties differ.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="declaration-retries" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
