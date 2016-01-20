@@ -206,6 +206,7 @@ public class SimpleRabbitListenerContainerFactory
 
 	/**
 	 * @param missingQueuesFatal the missingQueuesFatal to set.
+	 * @since 1.6
 	 * @see SimpleMessageListenerContainer#setMissingQueuesFatal
 	 */
 	public void setMissingQueuesFatal(Boolean missingQueuesFatal) {
