@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -39,13 +39,24 @@ import org.springframework.util.StringUtils;
  */
 public class Address {
 
+	/**
+	 * Use this value in {@code RabbitTemplate#setReplyAddress(String)} to use a temporary reply queue
+	 * for each request, regardless of whether the broker supports direct reply-to.
+	 */
+	public static final String TEMPORARY_REPLY_QUEUE_TOKEN = "##TEMPORARY_QUEUE##";
+
+	/**
+	 * Use this value in {@code RabbitTemplate#setReplyAddress(String)} to explicitly
+	 * indicate that direct reply-to is to be used. When there is no replyAddress, the
+	 * template will use direct reply-to if the broker supports it. See {@link #TEMPORARY_REPLY_QUEUE_TOKEN}.
+	 */
+	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
+
 	private static final Pattern pattern = Pattern.compile("^(?:.*://)?([^/]*)/?(.*)$");
 
 	private final String exchangeName;
 
 	private final String routingKey;
-
-	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
 
 	/**
 	 * Create an Address instance from a structured String in the form

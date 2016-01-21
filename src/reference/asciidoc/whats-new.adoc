@@ -36,11 +36,19 @@ See <<containerAttributes>> for more information.
 See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
 of `RabbitAdmin` s in the application context.
 
-===== AmqpTemple: receive with timeout
+===== AmqpTemplate: receive with timeout
 
 A bunch of of new `receive()` methods with `timeout` have been introduced for the `AmqpTemple`
  and its `RabbitTemplate` implementation.
 See <<polling-consumer>> for more information.
+
+===== RabbitTemplate Changes
+
+1.4.1 introduced the ability to use https://www.rabbitmq.com/direct-reply-to.html[Direct reply-to] when the broker
+supports it; it is more efficient than using a temporary queue for each reply.
+This version allows you to override this default behavior and use a temporary queue by setting the `replyAddress`
+property to `##TEMPORARY_QUEUE##`.
+See <<direct-reply-to>> for more information.
 
 ==== Changes in 1.5 Since 1.4
 
@@ -214,6 +222,7 @@ See <<queue-affinity>>.
 
 Starting with _version 1.5.3_, you can now control how `AnonymousQueue` names are generated.
 See <<anonymous-queue>> for more information.
+
 
 ==== Changes in 1.4 Since 1.3
 

@@ -569,7 +569,25 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void evaluateFastReplyTo() {
-		this.usingFastReplyTo = false;
+		this.usingFastReplyTo = useDirectReplyTo();
+		this.evaluatedFastReplyTo = true;
+	}
+
+	/**
+	 * Override this method use some other criteria to decide whether or not to use
+	 * direct reply-to (https://www.rabbitmq.com/direct-reply-to.html).
+	 * The default implementation returns true if the broker supports it and there
+	 * is no {@link #setReplyAddress(String) replyAddress} set and the replyAddress
+	 * is not "##TEMPORARY_QUEUE##". When direct reply-to is not used, the template
+	 * will create a temporary, auto-delete queue for the reply.
+	 * <p>
+	 * This method is invoked once only - when the first message is sent.
+	 * @return true to use direct reply-to.
+	 */
+	protected boolean useDirectReplyTo() {
+		if (Address.TEMPORARY_REPLY_QUEUE_TOKEN.equals(this.replyAddress)) {
+			return false;
+		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
 				execute(new ChannelCallback<Void>() {
@@ -580,7 +598,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						return null;
 					}
 				});
-				this.usingFastReplyTo = true;
+				return true;
 			}
 			catch (Exception e) {
 				if (this.replyAddress != null) {
@@ -596,7 +614,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				this.replyAddress = null;
 			}
 		}
-		this.evaluatedFastReplyTo = true;
+		return false;
 	}
 
 	@Override
@@ -1125,7 +1143,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 		}
-		if (this.replyAddress == null || this.usingFastReplyTo) {
+		if (this.replyAddress == null || this.usingFastReplyTo
+				|| this.replyAddress.equals(Address.TEMPORARY_REPLY_QUEUE_TOKEN)) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message, correlationData);
 		}
 		else {
