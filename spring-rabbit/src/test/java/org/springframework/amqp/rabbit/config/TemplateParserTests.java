@@ -14,6 +14,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -81,6 +82,7 @@ public final class TemplateParserTests {
 				TestUtils.getPropertyValue(template, "sendConnectionFactorySelectorExpression.expression"));
 		assertEquals("'foo'",
 				TestUtils.getPropertyValue(template, "receiveConnectionFactorySelectorExpression.expression"));
+		assertFalse(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
 	}
 
 	@Test
@@ -97,6 +99,7 @@ public final class TemplateParserTests {
 		assertEquals("foo", accessor.getPropertyValue("exchange"));
 		assertEquals("bar", accessor.getPropertyValue("queue"));
 		assertEquals("spam", accessor.getPropertyValue("routingKey"));
+		assertTrue(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
 	}
 
 	@Test

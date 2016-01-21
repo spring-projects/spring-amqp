@@ -1948,6 +1948,14 @@ When using Direct reply-to, a `reply-listener` is not required and should not be
 
 Reply listeners are still supported with named queues (other than `amq.rabbitmq.reply-to`), allowing control of reply concurrency etc.
 
+Starting with _version 1.6_ if, for some reason, you wish to use a temporary, exclusive, auto-delete queue for each
+reply, set the `useTemporaryReplyQueues` property to `true`.
+This property is ignored if you you set a `replyAddress`.
+
+The decision whether or not to use direct reply-to can be changed to use different criteria by subclassing
+`RabbitTemplate` and overriding `useDirectReplyTo()`.
+The method is called once only; when the first request is sent.
+
 ===== Message Correlation With A Reply Queue
 
 When using a fixed reply queue (other than `amq.rabbitmq.reply-to`), it is necessary to provide correlation data so that replies can be correlated to requests.

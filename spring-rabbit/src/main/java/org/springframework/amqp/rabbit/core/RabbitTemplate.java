@@ -200,6 +200,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private volatile boolean evaluatedFastReplyTo;
 
+	private volatile boolean useTemporaryReplyQueues;
+
 	private volatile Collection<MessagePostProcessor> beforePublishPostProcessors;
 
 	private volatile Collection<MessagePostProcessor> afterReceivePostProcessors;
@@ -516,6 +518,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * By default, when the broker supports it and no
+	 * {@link #setReplyAddress(String) replyAddress} is provided, send/receive
+	 * methods will use Direct reply-to (https://www.rabbitmq.com/direct-reply-to.html).
+	 * Setting this property to true will override that behavior and use
+	 * a temporary, auto-delete, queue for each request instead.
+	 * Changing this property has no effect once the first request has been
+	 * processed.
+	 * @param value true to use temporary queues.
+	 * @since 1.6
+	 */
+	public void setUseTemporaryReplyQueues(boolean value) {
+		this.useTemporaryReplyQueues = value;
+	}
+
+	/**
 	 * Invoked by the container during startup so it can verify the queue is correctly
 	 * configured (if a simple reply queue name is used instead of exchange/routingKey.
 	 * @return the queue name, if configured.
@@ -569,7 +586,32 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void evaluateFastReplyTo() {
-		this.usingFastReplyTo = false;
+		this.usingFastReplyTo = useDirectReplyTo();
+		this.evaluatedFastReplyTo = true;
+	}
+
+	/**
+	 * Override this method use some other criteria to decide whether or not to use
+	 * direct reply-to (https://www.rabbitmq.com/direct-reply-to.html).
+	 * The default implementation returns true if the broker supports it and there
+	 * is no {@link #setReplyAddress(String) replyAddress} set and
+	 * {@link #setUseTemporaryReplyQueues(boolean) useTemporaryReplyQueues} is false.
+	 * When direct reply-to is not used, the template
+	 * will create a temporary, exclusive, auto-delete queue for the reply.
+	 * <p>
+	 * This method is invoked once only - when the first message is sent, from a
+	 * synchronized block.
+	 * @return true to use direct reply-to.
+	 */
+	protected boolean useDirectReplyTo() {
+		if (this.useTemporaryReplyQueues) {
+			if (this.replyAddress != null) {
+				logger.error("'useTemporaryReplyQueues' is ignored when a 'replyAddress' is provided");
+			}
+			else {
+				return false;
+			}
+		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
 				execute(new ChannelCallback<Void>() {
@@ -580,7 +622,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						return null;
 					}
 				});
-				this.usingFastReplyTo = true;
+				return true;
 			}
 			catch (Exception e) {
 				if (this.replyAddress != null) {
@@ -596,7 +638,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				this.replyAddress = null;
 			}
 		}
-		this.evaluatedFastReplyTo = true;
+		return false;
 	}
 
 	@Override

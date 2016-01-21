@@ -15,6 +15,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1324,7 +1325,24 @@ public class RabbitTemplateIntegrationTests {
 		sendAndReceiveFastGuts();
 	}
 
+	@Test
+	public void testSendAndReceiveNeverFast() {
+		this.template.setUseTemporaryReplyQueues(true);
+		sendAndReceiveFastGuts(true);
+	}
+
+	@Test
+	public void testSendAndReceiveNeverFastWitReplyQueue() {
+		this.template.setUseTemporaryReplyQueues(true);
+		this.template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
+		sendAndReceiveFastGuts();
+	}
+
 	private void sendAndReceiveFastGuts() {
+		sendAndReceiveFastGuts(false);
+	}
+
+	private void sendAndReceiveFastGuts(boolean tempQueue) {
 		try {
 			this.template.execute(new ChannelCallback<Void>() {
 
@@ -1355,7 +1373,12 @@ public class RabbitTemplateIntegrationTests {
 			Object result = this.template.convertSendAndReceive("foo");
 			container.stop();
 			assertEquals("FOO", result);
-			assertThat(replyToWas.get(), startsWith(Address.AMQ_RABBITMQ_REPLY_TO));
+			if (tempQueue) {
+				assertThat(replyToWas.get(), not(startsWith(Address.AMQ_RABBITMQ_REPLY_TO)));
+			}
+			else {
+				assertThat(replyToWas.get(), startsWith(Address.AMQ_RABBITMQ_REPLY_TO));
+			}
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
