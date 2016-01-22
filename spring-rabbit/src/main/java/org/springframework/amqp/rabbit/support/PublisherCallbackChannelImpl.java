@@ -17,6 +17,7 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -658,7 +659,7 @@ public class PublisherCallbackChannelImpl
 				processAck(confirmEntry.getKey(), false, false, false);
 				iterator.remove();
 			}
-			listener.removePendingConfirmsReference(this, entry.getValue());
+			listener.revoke(this);
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("PendingConfirms cleared");
@@ -670,15 +671,10 @@ public class PublisherCallbackChannelImpl
 
 	/**
 	 * Add the listener and return the internal map of pending confirmations for that listener.
-	 * Callers <b>must</b> synchronize on this channel object when modifying the map.
-	 * This method will be changed in a future release to NOT expose the map.
 	 * @param listener the listener.
-	 * @return the internal map of pending confirmations.
-	 * TODO: do not expose the map externally; change the {@code RabbitTemplate#getUnconfirmed(long)}
-	 * functionality to delegate to a method here.
 	 */
 	@Override
-	public synchronized SortedMap<Long, PendingConfirm> addListener(Listener listener) {
+	public void addListener(Listener listener) {
 		Assert.notNull(listener, "Listener cannot be null");
 		if (this.listeners.size() == 0) {
 			this.delegate.addConfirmListener(this);
@@ -691,31 +687,32 @@ public class PublisherCallbackChannelImpl
 				logger.debug("Added listener " + listener);
 			}
 		}
-		return this.pendingConfirms.get(listener);
 	}
 
 	@Override
-	public synchronized boolean removeListener(Listener listener) {
-		Listener mappedListener = this.listeners.remove(listener.getUUID());
-		boolean result = mappedListener != null;
-		if (result && this.listeners.size() == 0) {
-			this.delegate.removeConfirmListener(this);
-			this.delegate.removeReturnListener(this);
+	public synchronized Collection<PendingConfirm> expire(Listener listener, long cutoffTime) {
+		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+		if (pendingConfirmsForListener == null) {
+			return Collections.<PendingConfirm>emptyList();
 		}
-		Iterator<Entry<Long, Listener>> iterator = this.listenerForSeq.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Long, Listener> entry = iterator.next();
-			if (entry.getValue() == listener) {
-				iterator.remove();
+		else {
+			synchronized (pendingConfirmsForListener) {
+				List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
+				Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
+				while (iterator.hasNext()) {
+					PendingConfirm pendingConfirm = iterator.next().getValue();
+					if (pendingConfirm.getTimestamp() < cutoffTime) {
+						expired.add(pendingConfirm);
+						iterator.remove();
+					}
+					else {
+						break;
+					}
+				}
+				return expired;
 			}
 		}
-		this.pendingConfirms.remove(listener);
-		if (logger.isDebugEnabled()) {
-			logger.debug("Removed listener " + listener);
-		}
-		return result;
 	}
-
 
 //	ConfirmListener
 
