@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeoutException;
 
@@ -97,7 +98,7 @@ public class PublisherCallbackChannelImpl
 
 	private final Channel delegate;
 
-	private final Map<String, Listener> listeners = new ConcurrentHashMap<String, Listener>();
+	private final ConcurrentMap<String, Listener> listeners = new ConcurrentHashMap<String, Listener>();
 
 	private final Map<Listener, SortedMap<Long, PendingConfirm>> pendingConfirms
 		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long,PendingConfirm>>();
@@ -649,15 +650,12 @@ public class PublisherCallbackChannelImpl
 	private synchronized void generateNacksForPendingAcks(String cause) {
 		for (Entry<Listener, SortedMap<Long, PendingConfirm>> entry : this.pendingConfirms.entrySet()) {
 			Listener listener = entry.getKey();
-			Iterator<Entry<Long, PendingConfirm>> iterator = entry.getValue().entrySet().iterator();
-			while(iterator.hasNext()) {
-				Entry<Long, PendingConfirm> confirmEntry = iterator.next();
+			for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
 				confirmEntry.getValue().setCause(cause);
 				if (logger.isDebugEnabled()) {
 					logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
 				}
 				processAck(confirmEntry.getKey(), false, false, false);
-				iterator.remove();
 			}
 			listener.revoke(this);
 		}
@@ -680,8 +678,7 @@ public class PublisherCallbackChannelImpl
 			this.delegate.addConfirmListener(this);
 			this.delegate.addReturnListener(this);
 		}
-		if (!this.listeners.values().contains(listener)){
-			this.listeners.put(listener.getUUID(), listener);
+		if (this.listeners.putIfAbsent(listener.getUUID(), listener) != null) {
 			this.pendingConfirms.put(listener, Collections.synchronizedSortedMap(new TreeMap<Long, PendingConfirm>()));
 			if (logger.isDebugEnabled()) {
 				logger.debug("Added listener " + listener);
@@ -696,21 +693,19 @@ public class PublisherCallbackChannelImpl
 			return Collections.<PendingConfirm>emptyList();
 		}
 		else {
-			synchronized (pendingConfirmsForListener) {
-				List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
-				Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
-				while (iterator.hasNext()) {
-					PendingConfirm pendingConfirm = iterator.next().getValue();
-					if (pendingConfirm.getTimestamp() < cutoffTime) {
-						expired.add(pendingConfirm);
-						iterator.remove();
-					}
-					else {
-						break;
-					}
+			List<PendingConfirm> expired = new ArrayList<PendingConfirm>();
+			Iterator<Entry<Long, PendingConfirm>> iterator = pendingConfirmsForListener.entrySet().iterator();
+			while (iterator.hasNext()) {
+				PendingConfirm pendingConfirm = iterator.next().getValue();
+				if (pendingConfirm.getTimestamp() < cutoffTime) {
+					expired.add(pendingConfirm);
+					iterator.remove();
 				}
-				return expired;
+				else {
+					break;
+				}
 			}
+			return expired;
 		}
 	}
 
