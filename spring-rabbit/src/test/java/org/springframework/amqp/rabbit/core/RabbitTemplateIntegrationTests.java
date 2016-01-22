@@ -1326,9 +1326,16 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testSendAndReceiveNeverFastt() {
-		this.template.setReplyAddress(Address.TEMPORARY_REPLY_QUEUE_TOKEN);
+	public void testSendAndReceiveNeverFast() {
+		this.template.setUseTemporaryReplyQueues(true);
 		sendAndReceiveFastGuts(true);
+	}
+
+	@Test
+	public void testSendAndReceiveNeverFastWitReplyQueue() {
+		this.template.setUseTemporaryReplyQueues(true);
+		this.template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
+		sendAndReceiveFastGuts();
 	}
 
 	private void sendAndReceiveFastGuts() {
@@ -1374,7 +1381,6 @@ public class RabbitTemplateIntegrationTests {
 			}
 		}
 		catch (Exception e) {
-			e.printStackTrace();
 			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
 			logger.info("Broker does not support fast replies; test skipped " + e.getMessage());
 		}

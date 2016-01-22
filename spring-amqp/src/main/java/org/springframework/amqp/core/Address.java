@@ -40,15 +40,8 @@ import org.springframework.util.StringUtils;
 public class Address {
 
 	/**
-	 * Use this value in {@code RabbitTemplate#setReplyAddress(String)} to use a temporary reply queue
-	 * for each request, regardless of whether the broker supports direct reply-to.
-	 */
-	public static final String TEMPORARY_REPLY_QUEUE_TOKEN = "##TEMPORARY_QUEUE##";
-
-	/**
 	 * Use this value in {@code RabbitTemplate#setReplyAddress(String)} to explicitly
-	 * indicate that direct reply-to is to be used. When there is no replyAddress, the
-	 * template will use direct reply-to if the broker supports it. See {@link #TEMPORARY_REPLY_QUEUE_TOKEN}.
+	 * indicate that direct reply-to is to be used.
 	 */
 	public static final String AMQ_RABBITMQ_REPLY_TO = "amq.rabbitmq.reply-to";
 

@@ -56,6 +56,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String REPLY_ADDRESS_ATTRIBUTE = "reply-address";
 
+	private static final String USE_TEMPORARY_REPLY_QUEUES_ATTRIBUTE = "use-temporary-reply-queues";
+
 	private static final String LISTENER_ELEMENT = "reply-listener";
 
 	private static final String MANDATORY_ATTRIBUTE = "mandatory";
@@ -112,6 +114,7 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 			NamespaceUtils.setReferenceIfAttributeDefined(builder, element, REPLY_QUEUE_ATTRIBUTE,
 					Conventions.attributeNameToPropertyName(REPLY_ADDRESS_ATTRIBUTE));
 		}
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, USE_TEMPORARY_REPLY_QUEUES_ATTRIBUTE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, REPLY_ADDRESS_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETURN_CALLBACK_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, CONFIRM_CALLBACK_ATTRIBUTE);

@@ -46,8 +46,8 @@ See <<polling-consumer>> for more information.
 
 1.4.1 introduced the ability to use https://www.rabbitmq.com/direct-reply-to.html[Direct reply-to] when the broker
 supports it; it is more efficient than using a temporary queue for each reply.
-This version allows you to override this default behavior and use a temporary queue by setting the `replyAddress`
-property to `##TEMPORARY_QUEUE##`.
+This version allows you to override this default behavior and use a temporary queue by setting the
+`useTemporaryReplyQueues` property to `true`.
 See <<direct-reply-to>> for more information.
 
 ==== Changes in 1.5 Since 1.4
