@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
-import java.util.SortedMap;
+import java.util.Collection;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -34,26 +34,19 @@ public interface PublisherCallbackChannel extends Channel {
 	String RETURN_CORRELATION_KEY = "spring_listener_return_correlation";
 
 	/**
-	 * Adds a {@link Listener} and returns a reference to
-	 * the pending confirms map for that listener's pending
-	 * confirms, allowing the Listener to
-	 * assess unconfirmed sends at any point in time.
-	 * The client must <b>NOT</b> modify the contents of
-	 * this array, and must synchronize on it when
-	 * iterating over its collections.
-	 *
+	 * Adds a {@link Listener}
 	 * @param listener The Listener.
-	 * @return A reference to pending confirms for the listener
 	 */
-	SortedMap<Long, PendingConfirm> addListener(Listener listener);
+	void addListener(Listener listener);
 
 	/**
-	 * Gets a reference to the current listener, or null.
-	 *
-	 * @param listener the Listener.
-	 * @return true if the listener was present.
+	 * Expire (remove) any {@link PendingConfirm}s created before cutoffTime for the
+	 * supplied listener and return them to the caller.
+	 * @param listener the listener.
+	 * @param cutoffTime the time before which expired messages were created.
+	 * @return the list of expired confirms.
 	 */
-	boolean removeListener(Listener listener);
+	Collection<PendingConfirm> expire(Listener listener, long cutoffTime);
 
 	/**
 	 * Adds a pending confirmation to this channel's map.
@@ -97,13 +90,12 @@ public interface PublisherCallbackChannel extends Channel {
 				byte[] body) throws IOException;
 
 		/**
-		 * When called, this listener must remove all references to the
-		 * pending confirm map.
+		 * When called, this listener should remove all references to the
+		 * channel - it will no longer be invoked by the channel.
 		 *
 		 * @param channel The channel.
-		 * @param unconfirmed The pending confirm map.
 		 */
-		void removePendingConfirmsReference(Channel channel, SortedMap<Long, PendingConfirm> unconfirmed);
+		void revoke(Channel channel);
 
 		/**
 		 * Returns the UUID used to identify this Listener for returns.

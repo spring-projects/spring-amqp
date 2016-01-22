@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,12 +61,10 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 
 
 /**
- *
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class LocalizedQueueConnectionFactoryTests {
-
-	private final Map<String, Connection> connections = new HashMap<String, Connection>();
 
 	private final Map<String, Channel> channels = new HashMap<String, Channel>();
 
@@ -80,9 +78,9 @@ public class LocalizedQueueConnectionFactoryTests {
 		ConnectionFactory defaultConnectionFactory = mockCF("localhost:1234", null);
 		String rabbit1 = "localhost:1235";
 		String rabbit2 = "localhost:1236";
-		String[] addresses = new String[] { rabbit1, rabbit2 };
-		String[] adminUris = new String[] { "http://localhost:11235", "http://localhost:11236" };
-		String[] nodes = new String[] { "rabbit@foo", "rabbit@bar" };
+		String[] addresses = new String[]{rabbit1, rabbit2};
+		String[] adminUris = new String[]{"http://localhost:11235", "http://localhost:11236"};
+		String[] nodes = new String[]{"rabbit@foo", "rabbit@bar"};
 		String vhost = "/";
 		String username = "guest";
 		String password = "guest";
@@ -130,8 +128,6 @@ public class LocalizedQueueConnectionFactoryTests {
 		// Fail rabbit1 and verify the container switches to rabbit2
 
 		firstServer.set(false);
-		when(channel.isOpen()).thenReturn(false);
-		when(this.connections.get(rabbit1).isOpen()).thenReturn(false);
 		this.consumers.get(rabbit1).handleCancel(consumerTags.get(rabbit1));
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		channel = this.channels.get(rabbit2);
@@ -166,9 +162,9 @@ public class LocalizedQueueConnectionFactoryTests {
 		try {
 			String rabbit1 = "localhost:1235";
 			String rabbit2 = "localhost:1236";
-			String[] addresses = new String[] { rabbit1, rabbit2 };
-			String[] adminUris = new String[] { "http://localhost:11235", "http://localhost:11236" };
-			String[] nodes = new String[] { "rabbit@foo", "rabbit@bar" };
+			String[] addresses = new String[]{rabbit1, rabbit2};
+			String[] adminUris = new String[]{"http://localhost:11235", "http://localhost:11236"};
+			String[] nodes = new String[]{"rabbit@foo", "rabbit@bar"};
 			String vhost = "/";
 			String username = "guest";
 			String password = "guest";
@@ -177,7 +173,8 @@ public class LocalizedQueueConnectionFactoryTests {
 			lqcf.getTargetConnectionFactory("[foo, bar]");
 		}
 		catch (IllegalArgumentException e) {
-			assertThat(e.getMessage(), containsString("Cannot use LocalizedQueueConnectionFactory with more than one queue: [foo, bar]"));
+			assertThat(e.getMessage(),
+					containsString("Cannot use LocalizedQueueConnectionFactory with more than one queue: [foo, bar]"));
 		}
 	}
 
@@ -188,8 +185,8 @@ public class LocalizedQueueConnectionFactoryTests {
 		Channel channel = mock(Channel.class);
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
-		when(connection.isOpen()).thenReturn(true);
-		when(channel.isOpen()).thenReturn(true);
+		when(connection.isOpen()).thenReturn(true, false);
+		when(channel.isOpen()).thenReturn(true, false);
 		doAnswer(new Answer<String>() {
 
 			@Override
@@ -205,7 +202,6 @@ public class LocalizedQueueConnectionFactoryTests {
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
 		when(connectionFactory.getHost()).thenReturn(address);
-		this.connections.put(address, connection);
 		this.channels.put(address, channel);
 		return connectionFactory;
 	}

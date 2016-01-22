@@ -19,15 +19,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -139,8 +137,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
-	private final ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>> pendingConfirms =
-			new ConcurrentHashMap<Object, SortedMap<Long, PendingConfirm>>();
+	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels =
+			new ConcurrentHashMap<Channel, RabbitTemplate>();
 
 	private final Map<String, PendingReply> replyHolder = new ConcurrentHashMap<String, PendingReply>();
 
@@ -558,27 +556,16 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * Gets unconfirmed correlation data older than age and removes them.
 	 * @param age in milliseconds
 	 * @return the collection of correlation data for which confirms have
-	 * not been received.
+	 * not been received or null if no such confirms exist.
 	 */
 	public Collection<CorrelationData> getUnconfirmed(long age) {
 		Set<CorrelationData> unconfirmed = new HashSet<CorrelationData>();
-		synchronized (this.pendingConfirms) {
-			long threshold = System.currentTimeMillis() - age;
-			for (Entry<Object, SortedMap<Long, PendingConfirm>> channelPendingConfirmEntry : this.pendingConfirms.entrySet()) {
-				SortedMap<Long, PendingConfirm> channelPendingConfirms = channelPendingConfirmEntry.getValue();
-				synchronized(channelPendingConfirmEntry.getKey()) { // channel
-					Iterator<Entry<Long, PendingConfirm>> iterator = channelPendingConfirms.entrySet().iterator();
-					PendingConfirm pendingConfirm;
-					while (iterator.hasNext()) {
-						pendingConfirm = iterator.next().getValue();
-						if (pendingConfirm.getTimestamp() < threshold) {
-							unconfirmed.add(pendingConfirm.getCorrelationData());
-							iterator.remove();
-						}
-						else {
-							break;
-						}
-					}
+		synchronized (this.publisherConfirmChannels) {
+			long cutoffTime = System.currentTimeMillis() - age;
+			for (Channel channel : this.publisherConfirmChannels.keySet()) {
+				Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
+				for (PendingConfirm confirm : confirms) {
+					unconfirmed.add(confirm.getCorrelationData());
 				}
 			}
 		}
@@ -1503,11 +1490,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private void addListener(Channel channel) {
 		if (channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
-			SortedMap<Long, PendingConfirm> pendingConfirms = publisherCallbackChannel.addListener(this);
 			Channel key = channel instanceof ChannelProxy ? ((ChannelProxy) channel).getTargetChannel() : channel;
-			if (this.pendingConfirms.putIfAbsent(key, pendingConfirms) == null
-					&& logger.isDebugEnabled()) {
-				logger.debug("Added pending confirms for " + channel + " to map, size now " + this.pendingConfirms.size());
+			if (this.publisherConfirmChannels.putIfAbsent(key, this) == null) {
+				publisherCallbackChannel.addListener(this);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Added pubsub channel: " + channel + " to map, size now " + this.publisherConfirmChannels.size());
+				}
 			}
 		}
 		else {
@@ -1584,11 +1572,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public void removePendingConfirmsReference(Channel channel,
-			SortedMap<Long, PendingConfirm> unconfirmed) {
-		this.pendingConfirms.remove(channel);
+	public void revoke(Channel channel) {
+		this.publisherConfirmChannels.remove(channel);
 		if (logger.isDebugEnabled()) {
-			logger.debug("Removed pending confirms for " + channel + " from map, size now " + this.pendingConfirms.size());
+			logger.debug("Removed pubsub channel: " + channel + " from map, size now "
+					+ this.publisherConfirmChannels.size());
 		}
 	}
 

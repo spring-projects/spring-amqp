@@ -446,7 +446,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertTrue(ids.remove("def"));
 		assertFalse(confirmed.get());
 		DirectFieldAccessor dfa = new DirectFieldAccessor(template);
-		Map<?, ?> pendingConfirms = (Map<?, ?>) dfa.getPropertyValue("pendingConfirms");
+		Map<?, ?> pendingConfirms = (Map<?, ?>) dfa.getPropertyValue("publisherConfirmChannels");
 		assertThat(pendingConfirms.size(), greaterThan(0)); // might use 2 or only 1 channel
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
@@ -854,12 +854,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
-		final AtomicBoolean confirmed = new AtomicBoolean();
+		final CountDownLatch confirmed = new CountDownLatch(1);
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
 			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-				confirmed.set(true);
+				confirmed.countDown();
 			}
 		});
 		ExecutorService exec = Executors.newSingleThreadExecutor();
@@ -869,7 +869,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			@Override
 			public Boolean answer(InvocationOnMock invocation) throws Throwable {
 				boolean closed = sent.incrementAndGet() < 100;
-				System.out.println(closed);
 				return closed;
 			}
 		}).when(mockChannel1).isOpen();
@@ -888,7 +887,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
-		assertTrue(confirmed.get());
+		assertTrue(confirmed.await(10, TimeUnit.SECONDS));
 	}
 
 	@Test
