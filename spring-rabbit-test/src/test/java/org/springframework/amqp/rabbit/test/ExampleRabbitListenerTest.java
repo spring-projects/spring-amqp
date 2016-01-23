@@ -29,7 +29,6 @@ import org.junit.runner.RunWith;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -53,7 +52,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
-public class ExampleListenerIntegrationTest {
+public class ExampleRabbitListenerTest {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
@@ -97,11 +96,11 @@ public class ExampleListenerIntegrationTest {
 
 		args = argumentQueue.poll(10, TimeUnit.SECONDS);
 		assertThat((String) args[0], equalTo("baz"));
-		assertThat((String) args[1], equalTo(queue2.getName()));	}
+		assertThat((String) args[1], equalTo(queue2.getName()));
+	}
 
 	@Configuration
-	@EnableRabbit
-	@RabbitListenerIntegrationTest
+	@RabbitListenerTest
 	public static class Config {
 
 		@Bean

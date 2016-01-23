@@ -21,11 +21,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.context.annotation.Import;
 
 /**
- * Annotate a {@code @Configuration} class with this to enable proxying
- * {@code @RabbitListener} beans to capture arguments and result (if any).
+ * Annotate a {@code @Configuration} class with this to enable Mockito
+ * spying on {@code @RabbitListener} beans to validate arguments.
  *
  * @author Gary Russell
  * @since 1.6
@@ -34,7 +35,8 @@ import org.springframework.context.annotation.Import;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(RabbitListenerTestBootstrap.class)
-public @interface RabbitListenerIntegrationTest {
+@EnableRabbit
+@Import(RabbitListenerSpyTestBootstrap.class)
+public @interface RabbitListenerSpyTest {
 
 }
