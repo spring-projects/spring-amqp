@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -678,8 +677,8 @@ public class PublisherCallbackChannelImpl
 			this.delegate.addConfirmListener(this);
 			this.delegate.addReturnListener(this);
 		}
-		if (this.listeners.putIfAbsent(listener.getUUID(), listener) != null) {
-			this.pendingConfirms.put(listener, Collections.synchronizedSortedMap(new TreeMap<Long, PendingConfirm>()));
+		if (this.listeners.putIfAbsent(listener.getUUID(), listener) == null) {
+			this.pendingConfirms.put(listener, new ConcurrentSkipListMap<Long, PendingConfirm>());
 			if (logger.isDebugEnabled()) {
 				logger.debug("Added listener " + listener);
 			}
