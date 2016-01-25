@@ -386,7 +386,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						try {
 							Channel target = channel.getTargetChannel();
 							if (target != null) {
-								target.close(); // to remove it from auto-recovery if so configured
+								target.close();
+								/*
+								 *  To remove it from auto-recovery if so configured,
+								 *  and nack any pending confirms if PublisherCallbackChannel.
+								 */
 							}
 						}
 						catch (AlreadyClosedException e) {
