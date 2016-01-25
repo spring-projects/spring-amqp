@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -860,9 +860,29 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertFalse(confirmed.get());
 	}
 
-	// AMQP-532 ConcurrentModificationException
 	@Test
-	public void testPublisherConfirmCloseConcurrency() throws Exception {
+	public void testPublisherConfirmCloseConcurrencyDetectInAllPlaces() throws Exception {
+		/*
+		 * For a new channel isOpen is currently called 5 times per send, addListener, setupConfirm x2, doSend,
+		 * logicalClose (via closeChannel).
+		 * For a cached channel an additional call is made in getChannel().
+		 *
+		 * Generally, there are currently three places (before invoke, logical close, get channel)
+		 * where the close can be detected. Run the test to verify these (and any future calls
+		 * that are added) properly emit the nacks.
+		 *
+		 * The following will detect proper operation if any more calls are added in future.
+		 */
+		for (int i = 100; i < 110; i++) {
+			testPublisherConfirmCloseConcurrency(i);
+		}
+	}
+
+	// AMQP-532 ConcurrentModificationException
+	/*
+	 * closeAfter indicates when to return false from isOpen()
+	 */
+	private void testPublisherConfirmCloseConcurrency(final int closeAfter) throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
@@ -894,12 +914,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
-		final AtomicBoolean confirmed = new AtomicBoolean();
+		final CountDownLatch confirmed = new CountDownLatch(1);
 		template.setConfirmCallback(new ConfirmCallback() {
 
 			@Override
 			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-				confirmed.set(true);
+				confirmed.countDown();
 			}
 		});
 		ExecutorService exec = Executors.newSingleThreadExecutor();
@@ -908,9 +928,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 			@Override
 			public Boolean answer(InvocationOnMock invocation) throws Throwable {
-				boolean closed = sent.incrementAndGet() < 100;
-				System.out.println(closed);
-				return closed;
+				boolean open = sent.incrementAndGet() < closeAfter;
+				return open;
 			}
 		}).when(mockChannel1).isOpen();
 		final CountDownLatch sentAll = new CountDownLatch(1);
@@ -928,7 +947,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
-		assertTrue(confirmed.get());
+		assertTrue(confirmed.await(10, TimeUnit.SECONDS));
 	}
 
 	@Test

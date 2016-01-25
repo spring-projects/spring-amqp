@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -386,7 +386,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						try {
 							Channel target = channel.getTargetChannel();
 							if (target != null) {
-								target.close(); // to remove it from auto-recovery if so configured
+								target.close();
+								/*
+								 *  To remove it from auto-recovery if so configured,
+								 *  and nack any pending confirms if PublisherCallbackChannel.
+								 */
 							}
 						}
 						catch (AlreadyClosedException e) {
@@ -801,6 +805,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			if (this.target != null && !this.target.isOpen()) {
 				synchronized (targetMonitor) {
 					if (this.target != null && !this.target.isOpen()) {
+						if (this.target instanceof PublisherCallbackChannel) {
+							this.target.close();
+						}
 						if (this.channelList.contains(proxy)) {
 							this.channelList.remove(proxy);
 						}
