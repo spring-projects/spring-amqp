@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
@@ -322,6 +324,16 @@ public class RabbitAdminIntegrationTests {
 			assertTrue(rootCause.getMessage().contains("reply-code=403"));
 			assertTrue(rootCause.getMessage().contains("operation not permitted on the default exchange"));
 		}
+	}
+
+	@Test
+	public void testQueueDeclareBad() {
+		this.rabbitAdmin.setIgnoreDeclarationExceptions(true);
+		Queue queue = new AnonymousQueue();
+		assertEquals(queue.getName(), this.rabbitAdmin.declareQueue(queue));
+		queue = new Queue(queue.getName());
+		assertNull(this.rabbitAdmin.declareQueue(queue));
+		this.rabbitAdmin.deleteQueue(queue.getName());
 	}
 
 	/**
