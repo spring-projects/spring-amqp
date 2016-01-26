@@ -68,29 +68,28 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	@Override
 	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
 			Object adminTarget, String beanName) {
+		Object proxy = bean;
 		String id = rabbitListener.id();
 		if (StringUtils.hasText(id)) {
 			if (this.attributes.getBoolean("spy")) {
-				Object spy = Mockito.spy(bean);
-				this.listeners.put(id, spy);
-				super.processListener(endpoint, rabbitListener, spy, adminTarget, beanName);
+				proxy = Mockito.spy(proxy);
+				this.listeners.put(id, proxy);
+				super.processListener(endpoint, rabbitListener, proxy, adminTarget, beanName);
 				return;
 			}
-			else {
-				try {
-					ProxyFactoryBean pfb = new ProxyFactoryBean();
-					pfb.setProxyTargetClass(true);
-					pfb.setTarget(bean);
-					CaptureAdvice advice = new CaptureAdvice();
-					pfb.addAdvice(advice);
-					Object advised = pfb.getObject();
-						this.listenerCapture.put(id, advice);
-						super.processListener(endpoint, rabbitListener, advised, adminTarget, beanName);
-						return;
-				}
-				catch (Exception e) {
-					logger.error("Failed to proxy @RabbitListener with id: " + id);
-				}
+			try {
+				ProxyFactoryBean pfb = new ProxyFactoryBean();
+				pfb.setProxyTargetClass(true);
+				pfb.setTarget(proxy);
+				CaptureAdvice advice = new CaptureAdvice();
+				pfb.addAdvice(advice);
+				Object advised = pfb.getObject();
+					this.listenerCapture.put(id, advice);
+					super.processListener(endpoint, rabbitListener, advised, adminTarget, beanName);
+					return;
+			}
+			catch (Exception e) {
+				logger.error("Failed to proxy @RabbitListener with id: " + id);
 			}
 		}
 		else {
