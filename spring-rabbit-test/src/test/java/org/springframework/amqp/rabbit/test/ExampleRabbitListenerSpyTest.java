@@ -22,14 +22,11 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
@@ -39,6 +36,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.test.mockito.LatchCountDownAndCallRealMethodAnswer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -86,22 +84,14 @@ public class ExampleRabbitListenerSpyTest {
 	public void testOneWay() throws Exception {
 		Listener listener = this.harness.getSpy("bar");
 		assertNotNull(listener);
-		final CountDownLatch latch = new CountDownLatch(2);
-		doAnswer(new Answer<Void>() {
 
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				latch.countDown();
-				invocation.callRealMethod();
-				return null;
-			}
-
-		}).when(listener).foo(anyString(), anyString());
+		LatchCountDownAndCallRealMethodAnswer answer = new LatchCountDownAndCallRealMethodAnswer(2);
+		doAnswer(answer).when(listener).foo(anyString(), anyString());
 
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
 
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(answer.getLatch().await(10, TimeUnit.SECONDS));
 		verify(listener).foo("bar", this.queue2.getName());
 		verify(listener).foo("baz", this.queue2.getName());
 	}
