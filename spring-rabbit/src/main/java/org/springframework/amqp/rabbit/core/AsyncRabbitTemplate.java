@@ -150,9 +150,9 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * routing key. Otherwise it should have the form exchange/routingKey and must
 	 * cause messages to be routed to the reply queue.
 	 *
-	 * @param template a {@link RabbitTemplate}
+	 * @param template a {@link RabbitTemplate}.
 	 * @param container a {@link SimpleMessageListenerContainer}.
-	 * @param replyAddress
+	 * @param replyAddress the reply address.
 	 */
 	public AsyncRabbitTemplate(RabbitTemplate template, SimpleMessageListenerContainer container, String replyAddress) {
 		Assert.notNull(template, "'template' cannot be null");
@@ -177,7 +177,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	}
 
 	/**
-	 * @see @{@link #getPhase()}
+	 * @see #getPhase()
 	 * @param phase the phase.
 	 */
 	public void setPhase(int phase) {
@@ -199,7 +199,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	/**
 	 * Set to true to enable publisher confirms. When enabled, the {@link RabbitFuture}
 	 * returned by the send and receive operation will have a
-	 * {@link ListenableFuture<Boolean>} in its {@code confirm} property.
+	 * {@code ListenableFuture<Boolean>} in its {@code confirm} property.
 	 * @param enableConfirms true to enable publisher confirms.
 	 */
 	public void setEnableConfirms(boolean enableConfirms) {
@@ -325,6 +325,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * Convert the object to a message and send it to the provided exchange and
 	 * routing key after invoking the {@link MessagePostProcessor}.
 	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param exchange the exchange
 	 * @param routingKey the routing key.
 	 * @param message the message.
 	 * @param messagePostProcessor the post processor.
