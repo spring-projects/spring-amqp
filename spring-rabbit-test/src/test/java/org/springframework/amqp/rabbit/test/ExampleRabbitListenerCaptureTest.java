@@ -53,7 +53,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
-public class ExampleRabbitListenerTest {
+public class ExampleRabbitListenerCaptureTest {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
@@ -115,7 +115,7 @@ public class ExampleRabbitListenerTest {
 	}
 
 	@Configuration
-	@RabbitListenerTest(spy = false)
+	@RabbitListenerTest(spy = false, capture = true)
 	public static class Config {
 
 		@Bean

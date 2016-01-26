@@ -32,6 +32,9 @@ public class LatchCountDownAndCallRealMethodAnswer implements Answer<Void> {
 
 	private final CountDownLatch latch;
 
+	/**
+	 * @param count to set in a {@link CountDownLatch}.
+	 */
 	public LatchCountDownAndCallRealMethodAnswer(int count) {
 		this.latch = new CountDownLatch(count);
 	}

@@ -39,6 +39,16 @@ import org.springframework.context.annotation.Import;
 @Import(RabbitListenerTestBootstrap.class)
 public @interface RabbitListenerTest {
 
+	/**
+	 * Set to true to create a Mockito spy on the listener.
+	 * @return true to create the spy; default true.
+	 */
 	boolean spy() default true;
+
+	/**
+	 * Set to true to advise the listener with a capture advice,
+	 * @return true to advise the listener; default false.
+	 */
+	boolean capture() default false;
 
 }

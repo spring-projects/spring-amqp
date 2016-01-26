@@ -36,6 +36,9 @@ public class AnswerTests {
 		assertEquals("FOOFOO", foo.foo("foo"));
 		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).when(foo).foo(anyString());
 		assertEquals("FOOfoo", foo.foo("foo"));
+		doAnswer(new LambdaAnswer<String>(false, (i, r) ->
+			"" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+		assertEquals("foofoo", foo.foo("foo"));
 	}
 
 	private static class Foo {

@@ -247,7 +247,6 @@ project('spring-rabbit-test') {
 			exclude group: 'org.hamcrest'
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
-		testCompile "log4j:log4j:$log4jVersion"
 
 	}
 

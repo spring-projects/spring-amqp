@@ -75,17 +75,19 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 				proxy = Mockito.spy(proxy);
 				this.listeners.put(id, proxy);
 			}
-			try {
-				ProxyFactoryBean pfb = new ProxyFactoryBean();
-				pfb.setProxyTargetClass(true);
-				pfb.setTarget(proxy);
-				CaptureAdvice advice = new CaptureAdvice();
-				pfb.addAdvice(advice);
-				proxy = pfb.getObject();
-				this.listenerCapture.put(id, advice);
-			}
-			catch (Exception e) {
-				logger.error("Failed to proxy @RabbitListener with id: " + id);
+			if (this.attributes.getBoolean("capture")) {
+				try {
+					ProxyFactoryBean pfb = new ProxyFactoryBean();
+					pfb.setProxyTargetClass(true);
+					pfb.setTarget(proxy);
+					CaptureAdvice advice = new CaptureAdvice();
+					pfb.addAdvice(advice);
+					proxy = pfb.getObject();
+					this.listenerCapture.put(id, advice);
+				}
+				catch (Exception e) {
+					logger.error("Failed to proxy @RabbitListener with id: " + id);
+				}
 			}
 		}
 		else {
