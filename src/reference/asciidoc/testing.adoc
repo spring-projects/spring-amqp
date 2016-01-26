@@ -170,7 +170,7 @@ suspended in the `RabbitTemplate` waiting for the reply.
 
 <3> In this case, we're only using a send operation so we need a latch to wait for the asynchronous call to the listener
 on the container thread.
-We use one of the link:mockito-answer[Answer<?>] implementations to help with that.
+We use one of the link:#mockito-answer[Answer<?>] implementations to help with that.
 
 <4> Configure the spy to invoke the `Answer`.
 
