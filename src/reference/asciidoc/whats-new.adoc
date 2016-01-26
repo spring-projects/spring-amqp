@@ -3,6 +3,11 @@
 
 ==== Changes in 1.6 Since 1.5
 
+===== Testing Support
+
+A new testing support library is now provided.
+See <<testing>> for more information.
+
 ===== Namespace Changes
 
 ====== Connection Factory

@@ -26,6 +26,8 @@ include::amqp.adoc[]
 
 include::sample-apps.adoc[]
 
+include::testing.adoc[]
+
 == Spring Integration - Reference
 
 This part of the reference documentation provides a quick introduction to the AMQP support within the Spring Integration project.
