@@ -71,7 +71,7 @@ public class ExampleRabbitListenerSpyTest {
 	private Queue queue2;
 
 	@Autowired
-	private RabbitListenerAnnotationSpyBeanPostProcessor harness;
+	private RabbitListenerTestHarness harness;
 
 	@Test
 	public void testTwoWay() throws Exception {
@@ -107,7 +107,7 @@ public class ExampleRabbitListenerSpyTest {
 	}
 
 	@Configuration
-	@RabbitListenerSpyTest
+	@RabbitListenerTest
 	public static class Config {
 
 		@Bean

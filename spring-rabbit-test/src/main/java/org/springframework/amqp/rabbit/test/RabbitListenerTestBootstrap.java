@@ -20,7 +20,9 @@ import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportAware;
 import org.springframework.context.annotation.Role;
+import org.springframework.core.type.AnnotationMetadata;
 
 /**
  * Overrides the default BPP with a {@link RabbitListenerTestHarness}.
@@ -30,12 +32,19 @@ import org.springframework.context.annotation.Role;
  *
  */
 @Configuration
-public class RabbitListenerTestBootstrap {
+public class RabbitListenerTestBootstrap implements ImportAware {
+
+	private AnnotationMetadata importMetadata;
+
+	@Override
+	public void setImportMetadata(AnnotationMetadata importMetadata) {
+		this.importMetadata = importMetadata;
+	}
 
 	@Bean(name = RabbitListenerConfigUtils.RABBIT_LISTENER_ANNOTATION_PROCESSOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-	public static RabbitListenerAnnotationBeanPostProcessor rabbitListenerAnnotationProcessor() {
-		return new RabbitListenerTestHarness();
+	public RabbitListenerAnnotationBeanPostProcessor rabbitListenerAnnotationProcessor() {
+		return new RabbitListenerTestHarness(this.importMetadata);
 	}
 
 }

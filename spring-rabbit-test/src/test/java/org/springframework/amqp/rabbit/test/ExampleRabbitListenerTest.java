@@ -100,7 +100,7 @@ public class ExampleRabbitListenerTest {
 	}
 
 	@Configuration
-	@RabbitListenerTest
+	@RabbitListenerTest(spy = false)
 	public static class Config {
 
 		@Bean

@@ -24,11 +24,15 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.mockito.Mockito;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.aop.framework.ProxyFactoryBean;
+import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -47,24 +51,43 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	private final Map<String, CaptureAdvice> listenerCapture = new HashMap<String, CaptureAdvice>();
 
+	private final AnnotationAttributes attributes;
+
+	private final Map<String, Object> listeners = new HashMap<String, Object>();
+
+	public RabbitListenerTestHarness(AnnotationMetadata importMetadata) {
+		Map<String, Object> map = importMetadata.getAnnotationAttributes(RabbitListenerTest.class.getName());
+		this.attributes = AnnotationAttributes.fromMap(map);
+		Assert.notNull(this.attributes,
+				"@RabbitListenerTest is not present on importing class " + importMetadata.getClassName());
+	}
+
 	@Override
 	protected void processListener(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object bean,
 			Object adminTarget, String beanName) {
 		String id = rabbitListener.id();
 		if (StringUtils.hasText(id)) {
-			try {
-				ProxyFactoryBean pfb = new ProxyFactoryBean();
-				pfb.setProxyTargetClass(true);
-				pfb.setTarget(bean);
-				CaptureAdvice advice = new CaptureAdvice();
-				pfb.addAdvice(advice);
-				Object advised = pfb.getObject();
-					this.listenerCapture.put(id, advice);
-					super.processListener(endpoint, rabbitListener, advised, adminTarget, beanName);
-					return;
+			if (this.attributes.getBoolean("spy")) {
+				Object spy = Mockito.spy(bean);
+				this.listeners.put(id, spy);
+				super.processListener(endpoint, rabbitListener, spy, adminTarget, beanName);
+				return;
 			}
-			catch (Exception e) {
-				logger.error("Failed to proxy @RabbitListener with id: " + id);
+			else {
+				try {
+					ProxyFactoryBean pfb = new ProxyFactoryBean();
+					pfb.setProxyTargetClass(true);
+					pfb.setTarget(bean);
+					CaptureAdvice advice = new CaptureAdvice();
+					pfb.addAdvice(advice);
+					Object advised = pfb.getObject();
+						this.listenerCapture.put(id, advice);
+						super.processListener(endpoint, rabbitListener, advised, adminTarget, beanName);
+						return;
+				}
+				catch (Exception e) {
+					logger.error("Failed to proxy @RabbitListener with id: " + id);
+				}
 			}
 		}
 		else {
@@ -87,6 +110,11 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 			return advice.returns;
 		}
 		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	<T> T getSpy(String id) {
+		return (T) this.listeners.get(id);
 	}
 
 	private static final class CaptureAdvice implements MethodInterceptor {

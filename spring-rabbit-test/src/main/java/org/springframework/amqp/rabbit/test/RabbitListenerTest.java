@@ -39,4 +39,6 @@ import org.springframework.context.annotation.Import;
 @Import(RabbitListenerTestBootstrap.class)
 public @interface RabbitListenerTest {
 
+	boolean spy() default true;
+
 }
