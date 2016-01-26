@@ -44,7 +44,9 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * allowing the caller to obtain the reply later, using {@code get()} or a callback.
  * <p>
  * When confirms are enabled, the future has a confirm property which is itself a
- * {@link ListenableFuture}.
+ * {@link ListenableFuture}. If the reply is received before the publisher confirm,
+ * the confirm is discarded since the reply implicitly indicates the message was
+ * published.
  * <p>
  * Returned (undeliverable) request messages are presented as a
  * {@link AmqpMessageReturnedException} cause of an {@link ExecutionException}.
@@ -204,7 +206,9 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 */
 	public void setEnableConfirms(boolean enableConfirms) {
 		this.enableConfirms = enableConfirms;
-		this.template.setConfirmCallback(this);
+		if (enableConfirms) {
+			this.template.setConfirmCallback(this);
+		}
 	}
 
 	/**
