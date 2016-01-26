@@ -74,8 +74,6 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 			if (this.attributes.getBoolean("spy")) {
 				proxy = Mockito.spy(proxy);
 				this.listeners.put(id, proxy);
-				super.processListener(endpoint, rabbitListener, proxy, adminTarget, beanName);
-				return;
 			}
 			try {
 				ProxyFactoryBean pfb = new ProxyFactoryBean();
@@ -83,10 +81,8 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 				pfb.setTarget(proxy);
 				CaptureAdvice advice = new CaptureAdvice();
 				pfb.addAdvice(advice);
-				Object advised = pfb.getObject();
-					this.listenerCapture.put(id, advice);
-					super.processListener(endpoint, rabbitListener, advised, adminTarget, beanName);
-					return;
+				proxy = pfb.getObject();
+				this.listenerCapture.put(id, advice);
 			}
 			catch (Exception e) {
 				logger.error("Failed to proxy @RabbitListener with id: " + id);
@@ -95,7 +91,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		else {
 			logger.info("The test harness can only proxy @RabbitListeners with an 'id' attribute");
 		}
-		super.processListener(endpoint, rabbitListener, bean, adminTarget, beanName);
+		super.processListener(endpoint, rabbitListener, proxy, adminTarget, beanName);
 	}
 
 	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
