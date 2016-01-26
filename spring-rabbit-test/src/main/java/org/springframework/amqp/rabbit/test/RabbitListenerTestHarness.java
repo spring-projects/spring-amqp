@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -26,11 +27,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -96,18 +99,10 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		super.processListener(endpoint, rabbitListener, bean, adminTarget, beanName);
 	}
 
-	public BlockingQueue<Object[]> getArgumentQueueFor(String id) {
+	public InvocationData getNextInvocationDataFor(String id, long wait, TimeUnit unit) throws InterruptedException {
 		CaptureAdvice advice = this.listenerCapture.get(id);
 		if (advice != null) {
-			return advice.arguments;
-		}
-		return null;
-	}
-
-	public BlockingQueue<Object> getResultQueueFor(String id) {
-		CaptureAdvice advice = this.listenerCapture.get(id);
-		if (advice != null) {
-			return advice.returns;
+			return advice.invocationData.poll(wait, unit);
 		}
 		return null;
 	}
@@ -119,21 +114,61 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 	private static final class CaptureAdvice implements MethodInterceptor {
 
-		private final BlockingQueue<Object[]> arguments = new LinkedBlockingQueue<Object[]>();
-
-		private final BlockingQueue<Object> returns = new LinkedBlockingQueue<Object>();
+		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<InvocationData>();
 
 		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
-			Object[] args = invocation.getArguments();
-			if (args.length > 0) {
-				arguments.add(args);
+			Object result = null;
+			boolean isListenerMethod =
+					AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitListener.class) != null
+					|| AnnotationUtils.findAnnotation(invocation.getMethod(), RabbitHandler.class) != null;
+			try {
+				result = invocation.proceed();
+				if (isListenerMethod) {
+					this.invocationData.put(new InvocationData(invocation, result));
+				}
 			}
-			Object result = invocation.proceed();
-			if (args.length > 0 && result != null) {
-				this.returns.put(result);
+			catch (Throwable t) {
+				if (isListenerMethod) {
+					this.invocationData.put(new InvocationData(invocation, t));
+				}
+				throw t;
 			}
 			return result;
+		}
+
+	}
+
+	public static class InvocationData {
+
+		private final MethodInvocation invocation;
+
+		private final Object result;
+
+		private final Throwable throwable;
+
+		public InvocationData(MethodInvocation invocation, Object result) {
+			this.invocation = invocation;
+			this.result = result;
+			this.throwable = null;
+		}
+
+		public InvocationData(MethodInvocation invocation, Throwable throwable) {
+			this.invocation = invocation;
+			this.result = null;
+			this.throwable = throwable;
+		}
+
+		public Object[] getArguments() {
+			return this.invocation.getArguments();
+		}
+
+		public Object getResult() {
+			return this.result;
+		}
+
+		public Throwable getThrowable() {
+			return this.throwable;
 		}
 
 	}

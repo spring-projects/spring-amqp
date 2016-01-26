@@ -18,9 +18,9 @@ package org.springframework.amqp.rabbit.test;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
@@ -35,6 +35,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.test.RabbitListenerTestHarness.InvocationData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,30 +74,44 @@ public class ExampleRabbitListenerTest {
 	public void testTwoWay() throws Exception {
 		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue1.getName(), "foo"));
 
-		BlockingQueue<Object[]> argumentQueue = this.harness.getArgumentQueueFor("foo");
-		assertNotNull(argumentQueue);
-		Object[] args = argumentQueue.poll(10, TimeUnit.SECONDS);
-		assertThat((String) args[0], equalTo("foo"));
-		BlockingQueue<Object> resultQueue = this.harness.getResultQueueFor("foo");
-		assertNotNull(resultQueue);
-		Object result = resultQueue.poll(10, TimeUnit.SECONDS);
-		assertThat((String) result, equalTo("FOO"));
+		InvocationData invocationData = this.harness.getNextInvocationDataFor("foo", 10, TimeUnit.SECONDS);
+		assertNotNull(invocationData);
+		assertThat(invocationData.getArguments()[0], equalTo("foo"));
+		assertThat((String) invocationData.getResult(), equalTo("FOO"));
 	}
 
 	@Test
 	public void testOneWay() throws Exception {
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "bar");
 		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "baz");
+		this.rabbitTemplate.convertAndSend(this.queue2.getName(), "ex");
 
-		BlockingQueue<Object[]> argumentQueue = this.harness.getArgumentQueueFor("bar");
-		assertNotNull(argumentQueue);
-		Object[] args = argumentQueue.poll(10, TimeUnit.SECONDS);
+		InvocationData invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertNotNull(invocationData);
+		Object[] args = invocationData.getArguments();
 		assertThat((String) args[0], equalTo("bar"));
 		assertThat((String) args[1], equalTo(queue2.getName()));
 
-		args = argumentQueue.poll(10, TimeUnit.SECONDS);
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertNotNull(invocationData);
+		args = invocationData.getArguments();
 		assertThat((String) args[0], equalTo("baz"));
 		assertThat((String) args[1], equalTo(queue2.getName()));
+
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertNotNull(invocationData);
+		args = invocationData.getArguments();
+		assertThat((String) args[0], equalTo("ex"));
+		assertThat((String) args[1], equalTo(queue2.getName()));
+		assertNotNull(invocationData.getThrowable());
+		assertEquals("ex", invocationData.getThrowable().getMessage());
+
+		invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
+		assertNotNull(invocationData);
+		args = invocationData.getArguments();
+		assertThat((String) args[0], equalTo("ex"));
+		assertThat((String) args[1], equalTo(queue2.getName()));
+		assertNull(invocationData.getThrowable());
 	}
 
 	@Configuration
@@ -144,6 +159,8 @@ public class ExampleRabbitListenerTest {
 
 	public static class Listener {
 
+		private boolean failed;
+
 		@RabbitListener(id="foo", queues="#{queue1.name}")
 		public String foo(String foo) {
 			return foo.toUpperCase();
@@ -151,6 +168,11 @@ public class ExampleRabbitListenerTest {
 
 		@RabbitListener(id="bar", queues="#{queue2.name}")
 		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
+			if (!failed && foo.equals("ex")) {
+				failed = true;
+				throw new RuntimeException(foo);
+			}
+			failed = false;
 		}
 
 	}
