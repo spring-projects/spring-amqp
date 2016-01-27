@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -70,6 +70,8 @@ public class MessageProperties implements Serializable {
 	private volatile String type;
 
 	private volatile byte[] correlationId;
+
+	private volatile String correlationIdString;
 
 	private volatile String replyTo;
 
@@ -179,6 +181,14 @@ public class MessageProperties implements Serializable {
 
 	public byte[] getCorrelationId() {
 		return this.correlationId;//NOSONAR
+	}
+
+	public String getCorrelationIdString() {
+		return correlationIdString;
+	}
+
+	public void setCorrelationIdString(String correlationIdString) {
+		this.correlationIdString = correlationIdString;
 	}
 
 	public void setReplyTo(String replyTo) {
