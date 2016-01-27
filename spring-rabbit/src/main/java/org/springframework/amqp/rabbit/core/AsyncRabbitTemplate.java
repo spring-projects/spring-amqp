@@ -62,7 +62,7 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * @since 1.6
  *
  */
-public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback {
+public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback {
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
@@ -115,13 +115,12 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey,
 			String replyQueue, String replyAddress) {
 		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
-		this.template = new RabbitTemplate(connectionFactory);
-		Assert.notNull(routingKey, "'exchange' cannot be null, use \"\" for the default exchange");
-		this.template.setExchange(exchange == null ? "" : exchange);
 		Assert.notNull(routingKey, "'routingKey' cannot be null");
+		Assert.notNull(replyQueue, "'replyQueue' cannot be null");
+		this.template = new RabbitTemplate(connectionFactory);
+		this.template.setExchange(exchange == null ? "" : exchange);
 		this.template.setRoutingKey(routingKey);
 		this.container = new SimpleMessageListenerContainer(connectionFactory);
-		Assert.notNull(replyQueue, "'replyQueue' cannot be null");
 		this.container.setQueueNames(replyQueue);
 		this.container.setMessageListener(this);
 		this.container.afterPropertiesSet();
@@ -159,8 +158,8 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 */
 	public AsyncRabbitTemplate(RabbitTemplate template, SimpleMessageListenerContainer container, String replyAddress) {
 		Assert.notNull(template, "'template' cannot be null");
-		this.template = template;
 		Assert.notNull(container, "'container' cannot be null");
+		this.template = template;
 		this.container = container;
 		this.container.setMessageListener(this);
 		if (replyAddress == null) {
@@ -213,6 +212,15 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	}
 
 	/**
+	 * Set the charset to be used when converting byte[] to/from String for
+	 * correlation Ids. Default: UTF-8.
+	 * @param charset the charset.
+	 */
+	public void setCharset(Charset charset) {
+		this.charset = charset;
+	}
+
+	/**
 	 * Send a message to the default exchange with the default routing key. If the message
 	 * contains a correlationId property, it must be unique.
 	 * @param message the message.
@@ -220,15 +228,6 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 */
 	public RabbitMessageFuture sendAndReceive(Message message) {
 		return sendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message);
-	}
-
-	/**
-	 * Set the charset to be used when converting byte[] to/from String for
-	 * correlation Ids. Default: UTF-8.
-	 * @param charset the charset.
-	 */
-	public void setCharset(Charset charset) {
-		this.charset = charset;
 	}
 
 	/**
@@ -248,7 +247,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param message the message.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(Object message) {
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message) {
 		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message, null);
 	}
 
@@ -259,7 +258,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param message the message.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(String routingKey, Object message) throws AmqpException {
+	public <C> RabbitConverterFuture<C>  convertSendAndReceive(String routingKey, Object message) throws AmqpException {
 		return convertSendAndReceive(this.template.getExchange(), routingKey, message, null);
 	}
 
@@ -271,7 +270,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param message the message.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(String exchange, String routingKey, Object message)
+	public <C> RabbitConverterFuture<C>  convertSendAndReceive(String exchange, String routingKey, Object message)
 			throws AmqpException {
 		return convertSendAndReceive(exchange, routingKey, message, null);
 	}
@@ -284,7 +283,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param messagePostProcessor the post processor.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor)
+	public <C> RabbitConverterFuture<C>  convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException {
 		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message,
 				messagePostProcessor);
@@ -299,7 +298,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param messagePostProcessor the post processor.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(String routingKey, Object message,
+	public <C> RabbitConverterFuture<C>  convertSendAndReceive(String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor) throws AmqpException {
 		return convertSendAndReceive(this.template.getExchange(), routingKey, message,
 				messagePostProcessor);
@@ -336,13 +335,13 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @param messagePostProcessor the post processor.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
-	public RabbitConverterFuture convertSendAndReceive(String exchange, String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor) throws AmqpException {
+	public <C> RabbitConverterFuture<C>  convertSendAndReceive(String exchange, String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor) {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
 		}
-		CorrelationMessagePostProcessor correlationPostProcessor = new CorrelationMessagePostProcessor(
+		CorrelationMessagePostProcessor<C> correlationPostProcessor = new CorrelationMessagePostProcessor<C>(
 				messagePostProcessor, correlationData);
 		this.template.convertAndSend(exchange, routingKey, message, correlationPostProcessor, correlationData);
 		return correlationPostProcessor.getFuture();
@@ -398,8 +397,8 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 				RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
 				if (future != null) {
 					if (future instanceof AsyncRabbitTemplate.RabbitConverterFuture) {
-						C converted = (C) this.template.getMessageConverter().fromMessage(message);
-						((RabbitConverterFuture) future).set(converted);
+						Object converted = this.template.getMessageConverter().fromMessage(message);
+						((RabbitConverterFuture<Object>) future).set(converted);
 					}
 					else {
 						((RabbitMessageFuture) future).set(message);
@@ -411,10 +410,10 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 	@Override
 	public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
-		String correlationId = new String(message.getMessageProperties().getCorrelationId(), this.charset);
+		MessageProperties messageProperties = message.getMessageProperties();
+		byte[] correlationId = messageProperties.getCorrelationId();
 		if (correlationId != null) {
-			@SuppressWarnings("unchecked")
-			RabbitFuture<?> future = this.pending.remove(correlationId);
+			RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
 			if (future != null) {
 				future.setException(new AmqpMessageReturnedException("Message returned", message, replyCode, replyText,
 						exchange, routingKey));
@@ -422,7 +421,6 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void confirm(CorrelationData correlationData, boolean ack, String cause) {
 		if (logger.isDebugEnabled()) {
@@ -437,8 +435,8 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 				((SettableListenableFuture<Boolean>) future.getConfirm()).set(ack);
 			}
 			else {
-				if (logger.isWarnEnabled()) {
-					logger.warn("Confirm: " + correlationData + ", ack=" + ack
+				if (logger.isDebugEnabled()) {
+					logger.debug("Confirm: " + correlationData + ", ack=" + ack
 							+ (cause == null ? "" : (", cause: " + cause))
 							+ " no pending future - either canceled or the reply is already received");
 				}
@@ -536,7 +534,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	 * @since 1.6
 	 *
 	 */
-	public class RabbitConverterFuture extends RabbitFuture<C> {
+	public class RabbitConverterFuture<C> extends RabbitFuture<C> {
 
 		public RabbitConverterFuture(String correlationId) {
 			super(correlationId);
@@ -544,13 +542,13 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 	}
 
-	private final class CorrelationMessagePostProcessor implements MessagePostProcessor {
+	private final class CorrelationMessagePostProcessor<C> implements MessagePostProcessor {
 
 		private final MessagePostProcessor userPostProcessor;
 
 		private final CorrelationData correlationData;
 
-		private volatile RabbitConverterFuture future;
+		private volatile RabbitConverterFuture<C> future;
 
 		public CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
 				CorrelationData correlationData) {
@@ -565,7 +563,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 				messageToSend = this.userPostProcessor.postProcessMessage(message);
 			}
 			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend);
-			this.future = new RabbitConverterFuture(correlationId);
+			this.future = new RabbitConverterFuture<C>(correlationId);
 			if (this.correlationData != null && this.correlationData.getId() == null) {
 				this.correlationData.setId(correlationId);
 				future.setConfirm(new SettableListenableFuture<Boolean>());
@@ -574,7 +572,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 			return messageToSend;
 		}
 
-		private RabbitConverterFuture getFuture() {
+		private RabbitConverterFuture<C> getFuture() {
 			return this.future;
 		}
 

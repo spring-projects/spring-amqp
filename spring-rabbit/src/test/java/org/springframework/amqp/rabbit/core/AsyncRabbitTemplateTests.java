@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.AsyncRabbitTemplate.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.core.AsyncRabbitTemplate.RabbitMessageFuture;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -69,7 +71,7 @@ public class AsyncRabbitTemplateTests {
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	@Autowired
-	private AsyncRabbitTemplate<String> template;
+	private AsyncRabbitTemplate template;
 
 	@Autowired
 	private Queue requests;
@@ -139,7 +141,7 @@ public class AsyncRabbitTemplateTests {
 		this.fooMessage.getMessageProperties().setCorrelationId("foo".getBytes());
 		ListenableFuture<Message> future = this.template.sendAndReceive(this.fooMessage);
 		Message result = checkMessageResult(future, "FOO");
-		assertEquals(new String("foo"), new String(result.getMessageProperties().getCorrelationId()));
+		assertEquals("foo", new String(result.getMessageProperties().getCorrelationId()));
 	}
 
 	@Test
@@ -160,7 +162,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testConvertWithConfirm() throws Exception {
 		this.template.setEnableConfirms(true);
-		AsyncRabbitTemplate<String>.RabbitConverterFuture future = this.template.convertSendAndReceive("confirm");
+		RabbitConverterFuture<String> future = this.template.convertSendAndReceive("confirm");
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertNotNull(confirm);
 		assertTrue(confirm.get(10, TimeUnit.SECONDS));
@@ -171,7 +173,7 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testMessageWithConfirm() throws Exception {
 		this.template.setEnableConfirms(true);
-		AsyncRabbitTemplate<String>.RabbitMessageFuture future = this.template
+		RabbitMessageFuture future = this.template
 				.sendAndReceive(new SimpleMessageConverter().toMessage("confirm", new MessageProperties()));
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertNotNull(confirm);
@@ -265,9 +267,9 @@ public class AsyncRabbitTemplateTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate<String> asyncTemplate(RabbitTemplate template,
+		public AsyncRabbitTemplate asyncTemplate(RabbitTemplate template,
 				SimpleMessageListenerContainer container) {
-			return new AsyncRabbitTemplate<String>(template, container);
+			return new AsyncRabbitTemplate(template, container);
 		}
 
 		@Bean
