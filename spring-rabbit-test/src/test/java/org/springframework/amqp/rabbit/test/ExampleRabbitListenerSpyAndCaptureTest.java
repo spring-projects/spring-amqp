@@ -85,7 +85,7 @@ public class ExampleRabbitListenerSpyAndCaptureTest {
 
 		InvocationData invocationData = this.harness.getNextInvocationDataFor("foo", 10, TimeUnit.SECONDS);
 		assertNotNull(invocationData);
-		assertThat(invocationData.getArguments()[0], equalTo("foo"));
+		assertThat((String) invocationData.getArguments()[0], equalTo("foo"));
 		assertThat((String) invocationData.getResult(), equalTo("FOO"));
 	}
 
