@@ -21,6 +21,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+
+import org.springframework.amqp.rabbit.test.mockito.LambdaAnswer.ValueToReturn;
 
 /**
  * @author Gary Russell
@@ -29,15 +32,47 @@ import org.junit.Test;
  */
 public class AnswerTests {
 
+//	@Test
+//	public void testLambda() {
+//		Foo foo = spy(new Foo());
+//		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).when(foo).foo(anyString());
+//		assertEquals("FOOFOO", foo.foo("foo"));
+//		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).when(foo).foo(anyString());
+//		assertEquals("FOOfoo", foo.foo("foo"));
+//		doAnswer(new LambdaAnswer<String>(false, (i, r) ->
+//			"" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+//		assertEquals("foofoo", foo.foo("foo"));
+//	}
+
 	@Test
 	public void testLambda() {
 		Foo foo = spy(new Foo());
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).when(foo).foo(anyString());
+		doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
+
+			@Override
+			public String apply(InvocationOnMock i, String r) {
+				return r + r;
+			}
+
+		})).when(foo).foo(anyString());
 		assertEquals("FOOFOO", foo.foo("foo"));
-		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + i.getArguments()[0])).when(foo).foo(anyString());
+		doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
+
+			@Override
+			public String apply(InvocationOnMock i, String r) {
+				return r + i.getArguments()[0];
+			}
+
+		})).when(foo).foo(anyString());
 		assertEquals("FOOfoo", foo.foo("foo"));
-		doAnswer(new LambdaAnswer<String>(false, (i, r) ->
-			"" + i.getArguments()[0] + i.getArguments()[0])).when(foo).foo(anyString());
+		doAnswer(new LambdaAnswer<String>(false, new ValueToReturn<String>() {
+
+			@Override
+			public String apply(InvocationOnMock i, String r) {
+				return "" + i.getArguments()[0] + i.getArguments()[0];
+			}
+
+		})).when(foo).foo(anyString());
 		assertEquals("foofoo", foo.foo("foo"));
 	}
 

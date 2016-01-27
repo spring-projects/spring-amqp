@@ -231,11 +231,6 @@ project('spring-rabbit') {
 project('spring-rabbit-test') {
 	description = 'Spring Rabbit Test Support'
 
-	compileTestJava {
-		sourceCompatibility = 1.8
-		targetCompatibility = 1.8
-	}
-
 	dependencies {
 
 		compile project(":spring-rabbit")
