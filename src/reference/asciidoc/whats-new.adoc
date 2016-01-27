@@ -62,6 +62,11 @@ This version allows you to override this default behavior and use a temporary qu
 `useTemporaryReplyQueues` property to `true`.
 See <<direct-reply-to>> for more information.
 
+===== Message Properties and CorrelationId
+
+The `correlationId` message property can now be a `String`.
+See <<message-properties-converters>> for more information.
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported

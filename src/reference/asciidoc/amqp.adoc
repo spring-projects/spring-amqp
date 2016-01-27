@@ -1884,6 +1884,30 @@ The default properties converter will convert `BasicProperties` elements of type
 when the size is not greater than `1024` bytes. Larger `LongString` s are returned as a `DataInputStream.
 This limit can be overridden with a constructor argument.
 
+Starting with _version 1.6_, a new property `correlationIdString` has been added to `MessageProperties`.
+Previously, when converting to/from `BasicProperties` used by the rabbit client, an unnecessary `byte[] <-> String`
+conversion was performed because `MessageProperties.correlationId` is a `byte[]` but `BasicProperties` uses a
+`String`. (Utimately, the rabbitmq client uses UTF-8 to convert the String to bytes to put in the protocol message).
+
+To provide maximum backwards compatibility, a new property `correlationIdPolicy` has been adde to the
+`DefaultMessagePropertiesConverter`.
+This takes an `DefaultMessagePropertiesConverter.CorrelationIdPolicy` enum argument.
+By default it is set to `BYTES` which replicates the previous behavior.
+
+For inbound messages:
+
+- `STRING` - just the `correlationIdString` property is mapped
+- `BYTES` - just the `correlationId` property is mapped
+- `BOTH` - both properties are mapped
+
+For outbound messages:
+
+- `STRING` - just the `correlationIdString` property is mapped
+- `BYTES` - just the `correlationId` property is mapped
+- `BOTH` - Both properties will be considered, with the String property taking precedence
+
+
+
 [[post-processing]]
 ==== Modifying Messages - Compression and More
 

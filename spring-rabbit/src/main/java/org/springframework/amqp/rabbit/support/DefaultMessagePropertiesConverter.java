@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -26,6 +26,7 @@ import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
@@ -41,10 +42,15 @@ import com.rabbitmq.client.LongString;
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
 
+	public enum CorrelationIdPolicy {
+		STRING, BYTES, BOTH
+	}
+
 	private static final int DEFAULT_LONG_STRING_LIMIT = 1024;
 
 	private final int longStringLimit;
 
+	private volatile CorrelationIdPolicy correlationIdPolicy = CorrelationIdPolicy.BYTES;
 
 	/**
 	 * Construct an instance where {@link LongString}s will be returned as a
@@ -62,6 +68,18 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 */
 	public DefaultMessagePropertiesConverter(int longStringLimit) {
 		this.longStringLimit = longStringLimit;
+	}
+
+	/**
+	 * For inbound, determine whether correlationId, correlationIdString or
+	 * both are populated. For outbound, determine whether correlationIdString
+	 * or correlationId is used when mapping; if {@code CorrelationIdPolicy.BOTH}
+	 * is set for outbound, String takes priority and we fallback to bytes.
+	 * Default {@code CorrelationIdPolicy.BYTES}.
+	 * @param correlationIPolicy true to use.
+	 */
+	public void setCorrelationIdAsString(CorrelationIdPolicy correlationIPolicy) {
+		this.correlationIdPolicy = correlationIPolicy;
 	}
 
 	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
@@ -88,11 +106,17 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		target.setContentType(source.getContentType());
 		target.setContentEncoding(source.getContentEncoding());
 		String correlationId = source.getCorrelationId();
-		if (correlationId != null) {
-			try {
-				target.setCorrelationId(source.getCorrelationId().getBytes(charset));
-			} catch (UnsupportedEncodingException ex) {
-				throw new AmqpUnsupportedEncodingException(ex);
+		if (!CorrelationIdPolicy.BYTES.equals(this.correlationIdPolicy) && correlationId != null) {
+			target.setCorrelationIdString(correlationId);
+		}
+		if (!CorrelationIdPolicy.STRING.equals(this.correlationIdPolicy)) {
+			if (correlationId != null) {
+				try {
+					target.setCorrelationId(source.getCorrelationId().getBytes(charset));
+				}
+				catch (UnsupportedEncodingException ex) {
+					throw new AmqpUnsupportedEncodingException(ex);
+				}
 			}
 		}
 		String replyTo = source.getReplyTo();
@@ -110,26 +134,34 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
 		BasicProperties.Builder target = new BasicProperties.Builder();
-		target.headers(this.convertHeadersIfNecessary(source.getHeaders()));
-		target.timestamp(source.getTimestamp());
-		target.messageId(source.getMessageId());
-		target.userId(source.getUserId());
-		target.appId(source.getAppId());
-		target.clusterId(source.getClusterId());
-		target.type(source.getType());
+		target.headers(this.convertHeadersIfNecessary(source.getHeaders()))
+			.timestamp(source.getTimestamp())
+			.messageId(source.getMessageId())
+			.userId(source.getUserId())
+			.appId(source.getAppId())
+			.clusterId(source.getClusterId())
+			.type(source.getType());
 		MessageDeliveryMode deliveryMode = source.getDeliveryMode();
 		if (deliveryMode != null) {
 			target.deliveryMode(MessageDeliveryMode.toInt(deliveryMode));
 		}
-		target.expiration(source.getExpiration());
-		target.priority(source.getPriority());
-		target.contentType(source.getContentType());
-		target.contentEncoding(source.getContentEncoding());
+		target.expiration(source.getExpiration())
+			.priority(source.getPriority())
+			.contentType(source.getContentType())
+			.contentEncoding(source.getContentEncoding());
 		byte[] correlationId = source.getCorrelationId();
-		if (correlationId != null && correlationId.length > 0) {
+		String correlationIdString = source.getCorrelationIdString();
+		if (!CorrelationIdPolicy.BYTES.equals(this.correlationIdPolicy)
+				&& StringUtils.hasText(correlationIdString)) {
+			target.correlationId(correlationIdString);
+			correlationId = null;
+		}
+		if (!CorrelationIdPolicy.STRING.equals(this.correlationIdPolicy)
+				&& correlationId != null && correlationId.length > 0) {
 			try {
 				target.correlationId(new String(correlationId, charset));
-			} catch (UnsupportedEncodingException ex) {
+			}
+			catch (UnsupportedEncodingException ex) {
 				throw new AmqpUnsupportedEncodingException(ex);
 			}
 		}
