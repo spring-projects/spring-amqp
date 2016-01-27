@@ -1884,6 +1884,30 @@ The default properties converter will convert `BasicProperties` elements of type
 when the size is not greater than `1024` bytes. Larger `LongString` s are returned as a `DataInputStream.
 This limit can be overridden with a constructor argument.
 
+Starting with _version 1.6_, a new property `correlationIdString` has been added to `MessageProperties`.
+Previously, when converting to/from `BasicProperties` used by the RabbitMQ client, an unnecessary `byte[] <-> String`
+conversion was performed because `MessageProperties.correlationId` is a `byte[]` but `BasicProperties` uses a
+`String`. (Utimately, the RabbitMQ client uses UTF-8 to convert the String to bytes to put in the protocol message).
+
+To provide maximum backwards compatibility, a new property `correlationIdPolicy` has been adde to the
+`DefaultMessagePropertiesConverter`.
+This takes an `DefaultMessagePropertiesConverter.CorrelationIdPolicy` enum argument.
+By default it is set to `BYTES` which replicates the previous behavior.
+
+For inbound messages:
+
+- `STRING` - just the `correlationIdString` property is mapped
+- `BYTES` - just the `correlationId` property is mapped
+- `BOTH` - both properties are mapped
+
+For outbound messages:
+
+- `STRING` - just the `correlationIdString` property is mapped
+- `BYTES` - just the `correlationId` property is mapped
+- `BOTH` - Both properties will be considered, with the String property taking precedence
+
+
+
 [[post-processing]]
 ==== Modifying Messages - Compression and More
 
@@ -2291,7 +2315,7 @@ This functionality can only be used programmatically by invoking the `RabbitAdmi
 It is not supported for auto-declaration by the admin by defining a queue declaratively in the application context.
 
 This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to
-`false` and `exlusive`, `autoDelete` to `true`.
+`false` and `exclusive`, `autoDelete` to `true`.
 A `<rabbit:queue/>` with an empty, or missing, `name` attribute will always create an `AnonymousQueue`.
 
 See <<anonymous-queue>> to understand why `AnonymousQueue` is preferred over broker-generated queue names, as well as
@@ -2432,8 +2456,10 @@ Starting with _version 1.3_ the HeadersExchange can be configured to match on mu
 </rabbit:headers-exchange>
 ----
 
-To see how to use Java to configure the AMQP infrastructure, look at the Stock sample application, where there is the `@Configuration` class `AbstractStockRabbitConfiguration` which in turn has RabbitClientConfiguration and RabbitServerConfiguration subclasses.
-The code for AbstractStockRabbitConfiguration is shown below
+To see how to use Java to configure the AMQP infrastructure, look at the Stock sample application,
+where there is the `@Configuration` class `AbstractStockRabbitConfiguration` which in turn has
+`RabbitClientConfiguration` and `RabbitServerConfiguration` subclasses.
+The code for `AbstractStockRabbitConfiguration` is shown below
 
 [source,java]
 ----
