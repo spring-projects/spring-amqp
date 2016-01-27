@@ -340,7 +340,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 			MessagePostProcessor messagePostProcessor) throws AmqpException {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
-			correlationData = new MutableCorrelationData(null);
+			correlationData = new CorrelationData(null);
 		}
 		CorrelationMessagePostProcessor correlationPostProcessor = new CorrelationMessagePostProcessor(
 				messagePostProcessor, correlationData);
@@ -566,8 +566,8 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 			}
 			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend);
 			this.future = new RabbitConverterFuture(correlationId);
-			if (this.correlationData instanceof MutableCorrelationData) {
-				((MutableCorrelationData) correlationData).setId(correlationId);
+			if (this.correlationData != null && this.correlationData.getId() == null) {
+				this.correlationData.setId(correlationId);
 				future.setConfirm(new SettableListenableFuture<Boolean>());
 			}
 			AsyncRabbitTemplate.this.pending.put(correlationId, future);
@@ -576,22 +576,6 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 		private RabbitConverterFuture getFuture() {
 			return this.future;
-		}
-
-	}
-
-	/**
-	 * This class exists simply to increase the visibility of the id setter.
-	 */
-	private static final class MutableCorrelationData extends CorrelationData {
-
-		public MutableCorrelationData(String id) {
-			super(id);
-		}
-
-		@Override
-		protected void setId(String id) {
-			super.setId(id);
 		}
 
 	}

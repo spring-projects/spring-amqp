@@ -15,11 +15,10 @@
  */
 package org.springframework.amqp.rabbit.support;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
 /**
  * Base class for correlating publisher confirms to sent messages.
- * Use the {@link RabbitTemplate} methods that include one of
+ * Use the {@link org.springframework.amqp.rabbit.core.RabbitTemplate}
+ * methods that include one of
  * these as a parameter; when the publisher confirm is received,
  * the CorrelationData is returned with the ack/nack.
  * @author Gary Russell
@@ -38,7 +37,17 @@ public class CorrelationData {
 		return this.id;
 	}
 
-	protected void setId(String id) {
+	/**
+	 * Set the correlation id. Generally, the correlation id shouldn't be changed.
+	 * One use case, however, is when it needs to be set in a
+	 * {@link org.springframework.amqp.core.MessagePostProcessor} after a
+	 * {@link CorrelationData} with a 'null' correlation id has been passed into a
+	 * {@link org.springframework.amqp.rabbit.core.RabbitTemplate}.
+	 *
+	 * @param id the id.
+	 * @since 1.6
+	 */
+	public void setId(String id) {
 		this.id = id;
 	}
 
