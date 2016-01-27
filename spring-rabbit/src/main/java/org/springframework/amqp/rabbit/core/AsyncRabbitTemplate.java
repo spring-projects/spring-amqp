@@ -29,6 +29,7 @@ import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
@@ -387,19 +388,22 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void onMessage(Message message) {
-		String correlationId = new String(message.getMessageProperties().getCorrelationId(), this.charset);
-		if (correlationId != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("onMessage: " + message);
-			}
-			RabbitFuture<?> future = this.pending.remove(correlationId);
-			if (future != null) {
-				if (future instanceof AsyncRabbitTemplate.RabbitConverterFuture) {
-					C converted = (C) this.template.getMessageConverter().fromMessage(message);
-					((RabbitConverterFuture) future).set(converted);
+		MessageProperties messageProperties = message.getMessageProperties();
+		if (messageProperties != null) {
+			byte[] correlationId = messageProperties.getCorrelationId();
+			if (correlationId != null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("onMessage: " + message);
 				}
-				else {
-					((RabbitMessageFuture) future).set(message);
+				RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
+				if (future != null) {
+					if (future instanceof AsyncRabbitTemplate.RabbitConverterFuture) {
+						C converted = (C) this.template.getMessageConverter().fromMessage(message);
+						((RabbitConverterFuture) future).set(converted);
+					}
+					else {
+						((RabbitMessageFuture) future).set(message);
+					}
 				}
 			}
 		}
@@ -428,7 +432,7 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 		String correlationId = correlationData.getId();
 		if (correlationId != null) {
 			RabbitFuture<?> future = this.pending.get(correlationId);
-			if (future instanceof SettableListenableFuture) {
+			if (future != null) {
 				future.setNackCause(cause);
 				((SettableListenableFuture<Boolean>) future.getConfirm()).set(ack);
 			}
@@ -444,15 +448,18 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 	private String getOrSetCorrelationIdAndSetReplyTo(Message message) {
 		String correlationId;
-		byte[] currentCorrelationId = message.getMessageProperties().getCorrelationId();
+		MessageProperties messageProperties = message.getMessageProperties();
+		Assert.notNull(messageProperties, "the message properties cannot be null");
+		byte[] currentCorrelationId = messageProperties.getCorrelationId();
 		if (currentCorrelationId == null) {
 			correlationId = UUID.randomUUID().toString();
-			message.getMessageProperties().setCorrelationId(correlationId.getBytes(this.charset));
-			message.getMessageProperties().setReplyTo(this.replyAddress);
+			messageProperties.setCorrelationId(correlationId.getBytes(this.charset));
+			Assert.isNull(messageProperties.getReplyTo(), "'replyTo' property must be null");
 		}
 		else {
 			correlationId = new String(currentCorrelationId, this.charset);
 		}
+		messageProperties.setReplyTo(this.replyAddress);
 		return correlationId;
 	}
 
@@ -475,8 +482,8 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
-			boolean cancelled = super.cancel(mayInterruptIfRunning);
 			pending.remove(this.correlationId);
+			boolean cancelled = super.cancel(mayInterruptIfRunning);
 			return cancelled;
 		}
 
@@ -573,6 +580,9 @@ public class AsyncRabbitTemplate<C> implements SmartLifecycle, MessageListener, 
 
 	}
 
+	/**
+	 * This class exists simply to increase the visibility of the id setter.
+	 */
 	private static final class MutableCorrelationData extends CorrelationData {
 
 		public MutableCorrelationData(String id) {

@@ -135,6 +135,14 @@ public class AsyncRabbitTemplateTests {
 	}
 
 	@Test
+	public void testMessageCustomCorrelation() throws Exception {
+		this.fooMessage.getMessageProperties().setCorrelationId("foo".getBytes());
+		ListenableFuture<Message> future = this.template.sendAndReceive(this.fooMessage);
+		Message result = checkMessageResult(future, "FOO");
+		assertEquals(new String("foo"), new String(result.getMessageProperties().getCorrelationId()));
+	}
+
+	@Test
 	@DirtiesContext
 	public void testReturn() throws Exception {
 		this.template.setMandatory(true);
@@ -193,7 +201,7 @@ public class AsyncRabbitTemplateTests {
 		assertEquals(expected, resultRef.get());
 	}
 
-	private void checkMessageResult(ListenableFuture<Message> future, String expected) throws InterruptedException {
+	private Message checkMessageResult(ListenableFuture<Message> future, String expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Message> resultRef = new AtomicReference<Message>();
 		future.addCallback(new ListenableFutureCallback<Message>() {
@@ -212,6 +220,7 @@ public class AsyncRabbitTemplateTests {
 		});
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertEquals(expected, new String(resultRef.get().getBody()));
+		return resultRef.get();
 	}
 
 	@Configuration
