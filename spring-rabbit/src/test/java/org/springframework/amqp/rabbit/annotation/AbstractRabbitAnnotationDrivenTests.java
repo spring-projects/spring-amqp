@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.AbstractRabbitListenerEndpoint;
@@ -51,6 +50,7 @@ import com.rabbitmq.client.Channel;
 /**
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  */
 public abstract class AbstractRabbitAnnotationDrivenTests {
 
@@ -80,6 +80,9 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 
 	@Test
 	public abstract void rabbitHandlerMethodFactoryConfiguration() throws Exception;
+
+	@Test
+	public abstract void rabbitListeners();
 
 	/**
 	 * Test for {@link SampleBean} discovery. If a factory with the default name
@@ -260,17 +263,64 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		}
 	}
 
+	/**
+	 * Test for {@link RabbitListenersBean} that validates that the
+	 * {@code @RabbitListener} annotations generate one specific container per annotation.
+	 */
+	public void testRabbitListenerRepeatable(ApplicationContext context) {
+		RabbitListenerContainerTestFactory simpleFactory =
+				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
+		assertEquals(4, simpleFactory.getListenerContainers().size());
+
+		MethodRabbitListenerEndpoint first = (MethodRabbitListenerEndpoint)
+				simpleFactory.getListenerContainer("first").getEndpoint();
+		assertEquals("first", first.getId());
+		assertEquals("myQueue", first.getQueueNames().iterator().next());
+
+		MethodRabbitListenerEndpoint second = (MethodRabbitListenerEndpoint)
+				simpleFactory.getListenerContainer("second").getEndpoint();
+		assertEquals("second", second.getId());
+		assertEquals("anotherQueue", second.getQueueNames().iterator().next());
+
+		MethodRabbitListenerEndpoint third = (MethodRabbitListenerEndpoint)
+				simpleFactory.getListenerContainer("third").getEndpoint();
+		assertEquals("third", third.getId());
+		assertEquals("class1", third.getQueueNames().iterator().next());
+
+		MethodRabbitListenerEndpoint fourth = (MethodRabbitListenerEndpoint)
+				simpleFactory.getListenerContainer("fourth").getEndpoint();
+		assertEquals("fourth", fourth.getId());
+		assertEquals("class2", fourth.getQueueNames().iterator().next());
+	}
+
+	@Component
+	static class RabbitListenersBean {
+
+		@RabbitListeners({
+				@RabbitListener(id = "first", queues = "myQueue"),
+				@RabbitListener(id = "second", queues = "anotherQueue")
+		})
+		public void repeatableHandle(String msg) {
+		}
+
+	}
+
+	@Component
+	@RabbitListeners({
+		@RabbitListener(id = "third", queues = "class1"),
+		@RabbitListener(id = "fourth", queues = "class2")
+	})
+	static class ClassLevelListenersBean {
+
+		@RabbitHandler
+		public void repeatableHandle(String msg) {
+		}
+
+	}
+
 	private void assertQueues(AbstractRabbitListenerEndpoint actual, String... expectedQueues) {
 		Collection<String> actualQueues = actual.getQueueNames();
 		for (String expectedQueue : expectedQueues) {
-			assertTrue("Queue '" + expectedQueue + "' not found", actualQueues.contains(expectedQueue));
-		}
-		assertEquals("Wrong number of queues", expectedQueues.length, actualQueues.size());
-	}
-
-	private void assertQueues(AbstractRabbitListenerEndpoint actual, Queue... expectedQueues) {
-		Collection<Queue> actualQueues = actual.getQueues();
-		for (Queue expectedQueue : expectedQueues) {
 			assertTrue("Queue '" + expectedQueue + "' not found", actualQueues.contains(expectedQueue));
 		}
 		assertEquals("Wrong number of queues", expectedQueues.length, actualQueues.size());
@@ -291,4 +341,5 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 			}
 		}
 	}
+
 }

@@ -174,23 +174,20 @@ We use one of the link:#mockito-answer[Answer<?>] implementations to help with t
 
 <4> Configure the spy to invoke the `Answer`.
 
+<<<
+
 Using the capture advice:
 
 [source, java]
 ----
 @Configuration
+@ComponentScan
 @RabbitListenerTest(spy = false, capture = true)
 public class Config {
 
-    @Bean
-    public Listener listener() {
-        return new Listener();
-    }
-
-    ...
-
 }
 
+@Service
 public class Listener {
 
     private boolean failed;
@@ -222,7 +219,6 @@ public class MyTests {
 
         InvocationData invocationData =
             this.harness.getNextInvocationDataFor("foo", 0, TimeUnit.SECONDS); <2>
-        assertNotNull(invocationData);
         assertThat(invocationData.getArguments()[0], equalTo("foo"));     <3>
         assertThat((String) invocationData.getResult(), equalTo("FOO"));
     }
@@ -235,31 +231,18 @@ public class MyTests {
 
         InvocationData invocationData =
             this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS); <4>
-        assertNotNull(invocationData);
         Object[] args = invocationData.getArguments();
         assertThat((String) args[0], equalTo("bar"));
         assertThat((String) args[1], equalTo(queue2.getName()));
 
         invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
-        assertNotNull(invocationData);
         args = invocationData.getArguments();
         assertThat((String) args[0], equalTo("baz"));
-        assertThat((String) args[1], equalTo(queue2.getName()));
 
         invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
-        assertNotNull(invocationData);
         args = invocationData.getArguments();
         assertThat((String) args[0], equalTo("ex"));
-        assertThat((String) args[1], equalTo(queue2.getName()));
-        assertNotNull(invocationData.getThrowable());
         assertEquals("ex", invocationData.getThrowable().getMessage()); <5>
-
-        invocationData = this.harness.getNextInvocationDataFor("bar", 10, TimeUnit.SECONDS);
-        assertNotNull(invocationData);
-        args = invocationData.getArguments();
-        assertThat((String) args[0], equalTo("ex"));
-        assertThat((String) args[1], equalTo(queue2.getName()));
-        assertNull(invocationData.getThrowable());
     }
 
 }

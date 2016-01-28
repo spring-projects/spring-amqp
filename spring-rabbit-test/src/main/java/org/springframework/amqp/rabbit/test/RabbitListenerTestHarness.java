@@ -125,7 +125,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 					this.invocationData.put(new InvocationData(invocation, result));
 				}
 			}
-			catch (Throwable t) {
+			catch (Throwable t) { // NOSONAR - rethrown below
 				if (isListenerMethod) {
 					this.invocationData.put(new InvocationData(invocation, t));
 				}

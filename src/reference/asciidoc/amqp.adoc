@@ -1529,7 +1529,8 @@ For dynamic reply routing, the message sender should include a `reply_to` messag
 ====== Multi-Method Listeners
 
 Starting with _version 1.5.0_, the `@RabbitListener` annotation can now be specified at the class level.
-Together with the new `@RabbitHandler` annotation, this allows a single listener to invoke different methods, based on the payload type of the incoming message.
+Together with the new `@RabbitHandler` annotation, this allows a single listener to invoke different methods, based on
+the payload type of the incoming message.
 This is best described using an example:
 
 [source, java]
@@ -1562,6 +1563,17 @@ The type is checked for assignability to a single parameter that has no annotati
 Notice that the same method signatures apply as discussed in the method-level `@RabbitListener` described above.
 
 Notice that the `@SendTo` must be specified on each method (if needed); it is not supported at the class level.
+
+[[repeatable-rabbit-listener]]
+====== @Repeatable @RabbitListener
+
+Starting with _version 1.6_, the `@RabbitListener` annotation is marked with `@Repeatable`.
+This means that the annotation can appear on the same annotated element (method or class) multiple times.
+In this case, a separate listener container is created for each annotation, each of which invokes the same listener
+`@Bean`.
+Repeatable annotations can be used with Java 8 or above; when using Java 7 or earlier, the same effect can be achieved
+by using the `@RabbitListeners` "container" annotation, with an array of `@RabbitListener` annotations.
+
 
 ====== Container Management
 
