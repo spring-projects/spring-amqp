@@ -98,6 +98,22 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 		testRabbitHandlerMethodFactoryConfiguration(context);
 	}
 
+	@Override
+	@Test
+	public void rabbitListenerIsRepeatable() {
+		ApplicationContext context = new ClassPathXmlApplicationContext(
+				"annotation-driven-no-rabbit-admin-repeatable-config.xml", getClass());
+		testRabbitListenerRepeatable(context);
+	}
+
+	@Override
+	@Test
+	public void rabbitListeners() {
+		ApplicationContext context = new ClassPathXmlApplicationContext(
+				"annotation-driven-no-rabbit-admin-listeners-config.xml", getClass());
+		testRabbitListenerRepeatable(context);
+	}
+
 	static class CustomRabbitListenerConfigurer implements RabbitListenerConfigurer {
 
 		private MessageListener messageListener;

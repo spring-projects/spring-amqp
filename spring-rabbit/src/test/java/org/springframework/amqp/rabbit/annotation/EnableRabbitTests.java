@@ -155,7 +155,21 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		assertTrue("Should have been stopped " + container, container.isStopped());
 	}
 
+	@Override
+	@Test
+	public void rabbitListenerIsRepeatable() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				EnableRabbitDefaultContainerFactoryConfig.class, RabbitListenerRepeatableBean.class);
+		testRabbitListenerRepeatable(context);
+	}
 
+	@Override
+	@Test
+	public void rabbitListeners() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				EnableRabbitDefaultContainerFactoryConfig.class, RabbitListenersBean.class);
+		testRabbitListenerRepeatable(context);
+	}
 	@EnableRabbit
 	@Configuration
 	static class EnableRabbitSampleConfig {

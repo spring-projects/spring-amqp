@@ -224,6 +224,12 @@ project('spring-rabbit') {
 		}
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+		
+		compileTestJava {
+			sourceCompatibility = 1.8
+			targetCompatibility = 1.8
+		}
+		
 	}
 
 }
