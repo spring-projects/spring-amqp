@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
@@ -39,6 +40,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.util.Assert;
 
@@ -55,7 +58,8 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, InitializingBean {
+public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
+		InitializingBean {
 
 	/**
 	 * The default exchange name.
@@ -97,6 +101,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	private final ConnectionFactory connectionFactory;
 
+	private ApplicationEventPublisher applicationEventPublisher;
+
+	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
+
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
@@ -112,8 +120,22 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 		this.applicationContext = applicationContext;
 	}
 
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
+	}
+
 	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
+	}
+
+	/**
+	 * @return the last {@link DeclarationExceptionEvent} that was detected in this admin.
+	 *
+	 * @since 1.6
+	 */
+	public DeclarationExceptionEvent getLastDeclarationExceptionEvent() {
+		return lastDeclarationExceptionEvent;
 	}
 
 	public RabbitTemplate getRabbitTemplate() {
@@ -124,13 +146,18 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 
 	@Override
 	public void declareExchange(final Exchange exchange) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				declareExchanges(channel, exchange);
-				return null;
-			}
-		});
+		try {
+			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+				@Override
+				public Object doInRabbit(Channel channel) throws Exception {
+					declareExchanges(channel, exchange);
+					return null;
+				}
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowDeclarationException(exchange, "exchange", e);
+		}
 	}
 
 	@Override
@@ -168,29 +195,45 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	@Override
 	@ManagedOperation
 	public String declareQueue(final Queue queue) {
-		return this.rabbitTemplate.execute(new ChannelCallback<String>() {
-			@Override
-			public String doInRabbit(Channel channel) throws Exception {
-				DeclareOk[] declared = declareQueues(channel, queue);
-				return declared.length > 0 ? declared[0].getQueue() : null;
-			}
-		});
+		try {
+			return this.rabbitTemplate.execute(new ChannelCallback<String>() {
+				@Override
+				public String doInRabbit(Channel channel) throws Exception {
+					DeclareOk[] declared = declareQueues(channel, queue);
+					return declared.length > 0 ? declared[0].getQueue() : null;
+				}
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowDeclarationException(queue, "queue", e);
+			return null;
+		}
 	}
 
 	/**
 	 * Declares a server-named exclusive, autodelete, non-durable queue.
+	 *
+	 * @return the queue or null if an exception occurred and
+	 * {@link #setIgnoreDeclarationExceptions(boolean) ignoreDeclarationExceptions}
+	 * is true.
 	 */
 	@Override
 	@ManagedOperation
 	public Queue declareQueue() {
-		DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
-			@Override
-			public DeclareOk doInRabbit(Channel channel) throws Exception {
-				return channel.queueDeclare();
-			}
-		});
-		Queue queue = new Queue(declareOk.getQueue(), false, true, true);
-		return queue;
+		try {
+			DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
+				@Override
+				public DeclareOk doInRabbit(Channel channel) throws Exception {
+					return channel.queueDeclare();
+				}
+			});
+			Queue queue = new Queue(declareOk.getQueue(), false, true, true);
+			return queue;
+		}
+		catch (AmqpException e) {
+			logOrRethrowDeclarationException(null, "queue", e);
+			return null;
+		}
 	}
 
 	@Override
@@ -237,13 +280,18 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	@Override
 	@ManagedOperation
 	public void declareBinding(final Binding binding) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				declareBindings(channel, binding);
-				return null;
-			}
-		});
+		try {
+			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+				@Override
+				public Object doInRabbit(Channel channel) throws Exception {
+					declareBindings(channel, binding);
+					return null;
+				}
+			});
+		}
+		catch (AmqpException e) {
+			logOrRethrowDeclarationException(binding, "binding", e);
+		}
 	}
 
 	@Override
@@ -479,14 +527,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 						exchange.isAutoDelete(), exchange.getArguments());
 				}
 				catch (IOException e) {
-					if (this.ignoreDeclarationExceptions) {
-						if (logger.isWarnEnabled()) {
-							logger.warn("Failed to declare exchange:" + exchange + ", continuing...", e);
-						}
-					}
-					else {
-						throw e;
-					}
+					logOrRethrowDeclarationException(exchange, "exchange", e);
 				}
 			}
 		}
@@ -518,14 +559,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 					}
 				}
 				catch (IOException e) {
-					if (this.ignoreDeclarationExceptions) {
-						if (logger.isWarnEnabled()) {
-							logger.warn("Failed to declare queue:" + queue + ", continuing...", e);
-						}
-					}
-					else {
-						throw e;
-					}
+					logOrRethrowDeclarationException(queue, "queue", e);
 				}
 			} else if (logger.isDebugEnabled()) {
 				logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
@@ -554,15 +588,27 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 				}
 			}
 			catch (IOException e) {
-				if (this.ignoreDeclarationExceptions) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("Failed to declare binding:" + binding + ", continuing...", e);
-					}
-				}
-				else {
-					throw e;
-				}
+				logOrRethrowDeclarationException(binding, "binding", e);
 			}
+		}
+	}
+
+	private <T extends Throwable> void logOrRethrowDeclarationException(Declarable element, String elementType, T t)
+			throws T {
+		DeclarationExceptionEvent event = new DeclarationExceptionEvent(this, element, t);
+		this.lastDeclarationExceptionEvent = event;
+		if (this.applicationEventPublisher != null) {
+			this.applicationEventPublisher.publishEvent(event);
+		}
+		if (this.ignoreDeclarationExceptions) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to declare " + elementType
+						+ (element == null ? "broker-generated" : ": " + element)
+						+ ", continuing...", t);
+			}
+		}
+		else {
+			throw t;
 		}
 	}
 
@@ -613,4 +659,5 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Initiali
 	private boolean isImplicitQueueBinding(Binding binding) {
 		return isDefaultExchange(binding.getExchange()) && binding.getDestination().equals(binding.getRoutingKey());
 	}
+
 }

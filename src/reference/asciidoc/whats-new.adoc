@@ -67,6 +67,17 @@ See <<direct-reply-to>> for more information.
 The `correlationId` message property can now be a `String`.
 See <<message-properties-converters>> for more information.
 
+===== RabbitAdmin Changes
+
+====== Declaration Failures
+
+Previously, the `ignoreDeclarationFailures` flag only took effect for `IOException` on the channel (such as mis-matched
+arguments).
+It now takes effect for any exception (such as `TimeoutException`).
+In addition, a `DeclarationExceptionEvent` is now published whenever a declaration fails.
+The `RabbitAdmin` last declaration event is also available as a property `lastDeclarationExceptionEvent`.
+See <<>> for more information.
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported

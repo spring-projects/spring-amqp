@@ -2437,6 +2437,15 @@ By default, the `RabbitAdmin` will immediately stop processing all declarations 
 
 This behavior can be modified by setting the `ignore-declaration-failures` attribute to `true` on the `RabbitAdmin`.
 This option instructs the `RabbitAdmin` to log the exception, and continue declaring other elements.
+When configuring the `RabbitAdmin` using java, this property is `ignoreDeclarationFailures`.
+
+Prior to _version 1.6_, this property only took effect if an `IOException` occurred on the channel - such as when there
+is a mismatch between current and desired properties.
+Now, this property takes effect on any exception, including `TimeoutException` etc.
+
+In addition, any declaration exceptions result in the publishing of a `DeclarationExceptionEvent`, which is an
+`ApplicationEvent` that can be consumed by any `ApplicationListener` in the context.
+The event contains a reference to the admin, the element that was being declared, and the `Throwable`.
 
 [[headers-exchange]]
 Starting with _version 1.3_ the HeadersExchange can be configured to match on multiple headers; you can also specify whether any or all headers must match:
