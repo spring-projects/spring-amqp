@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.messaging.handler.annotation.support.MethodArgumentNo
 
 /**
  * @author Stephane Nicoll
+ * @author Gary Russell
  */
 public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDrivenTests {
 
@@ -96,14 +97,6 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 		thrown.expect(ListenerExecutionFailedException.class);
 		thrown.expectCause(Is.<MethodArgumentNotValidException>isA(MethodArgumentNotValidException.class));
 		testRabbitHandlerMethodFactoryConfiguration(context);
-	}
-
-	@Override
-	@Test
-	public void rabbitListenerIsRepeatable() {
-		ApplicationContext context = new ClassPathXmlApplicationContext(
-				"annotation-driven-no-rabbit-admin-repeatable-config.xml", getClass());
-		testRabbitListenerRepeatable(context);
 	}
 
 	@Override

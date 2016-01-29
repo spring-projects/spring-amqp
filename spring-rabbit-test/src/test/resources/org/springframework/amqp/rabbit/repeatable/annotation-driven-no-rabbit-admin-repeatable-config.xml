@@ -9,10 +9,14 @@
 
 	<rabbit:annotation-driven/>
 
-	<bean 
-		class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$RabbitListenerRepeatableBean"/>
+	<bean
+		class="org.springframework.amqp.rabbit.repeatable.AbstractRabbitAnnotationDrivenTests$RabbitListenerRepeatableBean"/>
 
-	<bean id="rabbitListenerContainerFactory" class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
+	<bean
+		class="org.springframework.amqp.rabbit.repeatable.AbstractRabbitAnnotationDrivenTests$ClassLevelRepeatableBean"/>
+
+	<bean id="rabbitListenerContainerFactory"
+		class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
 
 
 </beans>

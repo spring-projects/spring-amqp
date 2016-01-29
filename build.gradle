@@ -224,12 +224,7 @@ project('spring-rabbit') {
 		}
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-		
-		compileTestJava {
-			sourceCompatibility = 1.8
-			targetCompatibility = 1.8
-		}
-		
+
 	}
 
 }
@@ -249,6 +244,33 @@ project('spring-rabbit-test') {
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
 
+	}
+
+	project.tasks.withType(Test).all { t ->
+		if (System.getProperty('java.version').startsWith('1.7')) {
+
+			// exclude just the java 8 tests when building with java 7
+
+			exclude	'org/springframework/amqp/rabbit/repeatable/**',
+					'org/springframework/amqp/rabbit/test/mockito/**'
+		}
+		else if (t.name.equals('springIoJdk7Test')) {
+
+			// exclude everything here because the classes were compiled with JDK 8
+
+			exclude '**'
+		}
+	}
+
+	compileTestJava {
+		if (!System.getProperty('java.version').startsWith('1.7')) {
+			sourceCompatibility = 1.8
+			targetCompatibility = 1.8
+		}
+		else {
+			exclude	'org/springframework/amqp/rabbit/repeatable/**',
+					'org/springframework/amqp/rabbit/test/mockito/**'
+		}
 	}
 
 }

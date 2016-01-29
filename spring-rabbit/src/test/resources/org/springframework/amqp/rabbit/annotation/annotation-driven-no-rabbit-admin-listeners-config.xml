@@ -11,7 +11,10 @@
 
 	<bean class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$RabbitListenersBean"/>
 
-	<bean id="rabbitListenerContainerFactory" class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
+	<bean
+		class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$ClassLevelListenersBean"/>
 
+	<bean id="rabbitListenerContainerFactory"
+		class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
 
 </beans>

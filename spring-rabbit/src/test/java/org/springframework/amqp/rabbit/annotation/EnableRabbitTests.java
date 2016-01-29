@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import org.springframework.stereotype.Component;
 /**
  * @author Stephane Nicoll
  * @author Artem Bilan
+ * @author Gary Russell
  */
 public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
@@ -60,6 +61,8 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	@Override
 	@Test
 	public void sampleConfiguration() {
+		String property = System.getProperty("java.version");
+		System.out.println(property);
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				EnableRabbitSampleConfig.class, SampleBean.class);
 		testSampleConfiguration(context);
@@ -157,19 +160,14 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 
 	@Override
 	@Test
-	public void rabbitListenerIsRepeatable() {
+	public void rabbitListeners() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				EnableRabbitDefaultContainerFactoryConfig.class, RabbitListenerRepeatableBean.class);
+				EnableRabbitDefaultContainerFactoryConfig.class,
+				RabbitListenersBean.class,
+				ClassLevelListenersBean.class);
 		testRabbitListenerRepeatable(context);
 	}
 
-	@Override
-	@Test
-	public void rabbitListeners() {
-		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
-				EnableRabbitDefaultContainerFactoryConfig.class, RabbitListenersBean.class);
-		testRabbitListenerRepeatable(context);
-	}
 	@EnableRabbit
 	@Configuration
 	static class EnableRabbitSampleConfig {

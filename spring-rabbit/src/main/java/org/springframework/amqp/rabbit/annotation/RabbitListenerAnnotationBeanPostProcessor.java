@@ -283,9 +283,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		for (Method method : multiMethods) {
 			checkedMethods.add(checkProxy(method, bean));
 		}
-		MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
-		endpoint.setBeanFactory(this.beanFactory);
 		for (RabbitListener classLevelListener : classLevelListeners) {
+			MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
+			endpoint.setBeanFactory(this.beanFactory);
 			processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
 		}
 	}
