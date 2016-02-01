@@ -1,4 +1,8 @@
-Many of the "integration" tests here require a running RabbitMQ server - they
+= spring-rabbit
+
+This project provides the RabbitMQ implementation for the abstractions in `spring-amqp`.
+
+Many of the integration tests here require a running RabbitMQ server - they
 will be skipped if the broker is not detected.
 
 If RabbitMQ is not installed on your system, refer to the instructions for your

@@ -79,12 +79,14 @@ subprojects { subproject ->
 
 	ext {
 		cglibVersion = '3.1'
+		commonsCliVersion = '1.2'
 		commonsIoVersion = '2.4'
 		hamcrestVersion = '1.3'
 		jacksonVersion = '1.9.13'
 		jackson2Version = '2.3.2'
 		junitVersion = '4.11'
 		log4jVersion = '1.2.17'
+		log4j2Version = '2.4.1'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.6.0'
@@ -214,8 +216,6 @@ project('spring-rabbit') {
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
-		testCompile "commons-cli:commons-cli:1.2"
-
 		compile ("log4j:log4j:$log4jVersion") { dep ->
 			optional dep
 			exclude group: 'javax.jms', module: 'jms'
@@ -224,6 +224,10 @@ project('spring-rabbit') {
 		}
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+
+		compile ("org.apache.logging.log4j:log4j-core:$log4j2Version", optional)
+
+		testCompile "commons-cli:commons-cli:$commonsCliVersion"
 
 	}
 
