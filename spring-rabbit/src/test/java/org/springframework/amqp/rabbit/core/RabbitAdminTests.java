@@ -12,27 +12,36 @@
  */
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.hamcrest.Matchers;
@@ -42,6 +51,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.internal.stubbing.answers.DoesNothing;
 
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.BindingBuilder;
@@ -56,6 +66,8 @@ import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -249,6 +261,35 @@ public class RabbitAdminTests {
 		cf.destroy();
 	}
 
+	@Test
+	public void testIgnoreDeclarationExeptionsTimeout() throws Exception {
+		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(
+				com.rabbitmq.client.ConnectionFactory.class);
+		TimeoutException toBeThrown = new TimeoutException("test");
+		doThrow(toBeThrown).when(rabbitConnectionFactory).newConnection(any(ExecutorService.class));
+		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(ccf);
+		List<DeclarationExceptionEvent> events = new ArrayList<DeclarationExceptionEvent>();
+		admin.setApplicationEventPublisher(new EventPublisher(events));
+		admin.setIgnoreDeclarationExceptions(true);
+		admin.declareQueue(new AnonymousQueue());
+		admin.declareQueue();
+		admin.declareExchange(new DirectExchange("foo"));
+		admin.declareBinding(new Binding("foo", DestinationType.QUEUE, "bar", "baz", null));
+		assertThat(events.size(), equalTo(4));
+		assertThat((RabbitAdmin) events.get(0).getSource(), sameInstance(admin));
+		assertThat(events.get(0).getDeclarable(), instanceOf(AnonymousQueue.class));
+		assertSame(toBeThrown, events.get(0).getThrowable().getCause());
+		assertNull(events.get(1).getDeclarable());
+		assertSame(toBeThrown, events.get(1).getThrowable().getCause());
+		assertThat(events.get(2).getDeclarable(), instanceOf(DirectExchange.class));
+		assertSame(toBeThrown, events.get(2).getThrowable().getCause());
+		assertThat(events.get(3).getDeclarable(), instanceOf(Binding.class));
+		assertSame(toBeThrown, events.get(3).getThrowable().getCause());
+
+		assertSame(events.get(3), admin.getLastDeclarationExceptionEvent());
+	}
+
 	@Configuration
 	public static class Config {
 
@@ -313,6 +354,26 @@ public class RabbitAdminTests {
 					new Queue("q4", false, false, true),
 					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null)
 			);
+		}
+
+	}
+
+	private static final class EventPublisher implements ApplicationEventPublisher {
+
+		private final List<DeclarationExceptionEvent> events;
+
+		public EventPublisher(List<DeclarationExceptionEvent> events) {
+			this.events = events;
+		}
+
+		@Override
+		public void publishEvent(ApplicationEvent event) {
+			events.add((DeclarationExceptionEvent) event);
+		}
+
+		@Override
+		public void publishEvent(Object event) {
+
 		}
 
 	}
