@@ -78,6 +78,14 @@ In addition, a `DeclarationExceptionEvent` is now published whenever a declarati
 The `RabbitAdmin` last declaration event is also available as a property `lastDeclarationExceptionEvent`.
 See <<broker-configuration>> for more information.
 
+===== @RabbitListener Changes
+
+When using Java 8 or later, it is now possible to add multiple `@RabbitListener` annotations to `@Bean` classes or
+their methods.
+When using Java 7 or earlier, you can use the `@RabbitListeners` container annotation to provide the same
+functionality.
+See <<repeatable-rabbit-listener>> for more information.
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported

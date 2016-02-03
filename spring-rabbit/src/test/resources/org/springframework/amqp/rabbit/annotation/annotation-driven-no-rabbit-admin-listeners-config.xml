@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   http://www.springframework.org/schema/beans/spring-beans.xsd
+	   http://www.springframework.org/schema/rabbit
+	   http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<rabbit:annotation-driven/>
+
+	<bean class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$RabbitListenersBean"/>
+
+	<bean
+		class="org.springframework.amqp.rabbit.annotation.AbstractRabbitAnnotationDrivenTests$ClassLevelListenersBean"/>
+
+	<bean id="rabbitListenerContainerFactory"
+		class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
+
+</beans>

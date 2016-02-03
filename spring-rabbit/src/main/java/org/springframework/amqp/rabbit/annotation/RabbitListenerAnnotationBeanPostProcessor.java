@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@ package org.springframework.amqp.rabbit.annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -218,17 +221,17 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
-		final RabbitListener classLevelListener = AnnotationUtils.findAnnotation(targetClass, RabbitListener.class);
+		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
+		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
 		final List<Method> multiMethods = new ArrayList<Method>();
 		ReflectionUtils.doWithMethods(targetClass, new ReflectionUtils.MethodCallback() {
 
 			@Override
 			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
-				RabbitListener rabbitListener = AnnotationUtils.findAnnotation(method, RabbitListener.class);
-				if (rabbitListener != null) {
+				for (RabbitListener rabbitListener : findListenerAnnotations(method)) {
 					processAmqpListener(rabbitListener, method, bean, beanName);
 				}
-				if (classLevelListener != null) {
+				if (hasClassLevelListeners) {
 					RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
 					if (rabbitHandler != null) {
 						multiMethods.add(method);
@@ -236,21 +239,55 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 		});
-		if (classLevelListener != null) {
-			processMultiMethodListener(classLevelListener, multiMethods, bean, beanName);
+		if (hasClassLevelListeners) {
+			processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
 		}
 		return bean;
 	}
 
-	private void processMultiMethodListener(RabbitListener classLevelListener, List<Method> multiMethods, Object bean,
-			String beanName) {
+	/*
+	 * AnnotationUtils.getRepeatableAnnotations does not look at interfaces
+	 */
+	private Collection<RabbitListener> findListenerAnnotations(Class<?> clazz) {
+		Set<RabbitListener> listeners = new HashSet<RabbitListener>();
+		RabbitListener ann = AnnotationUtils.findAnnotation(clazz, RabbitListener.class);
+		if (ann != null) {
+			listeners.add(ann);
+		}
+		RabbitListeners anns = AnnotationUtils.findAnnotation(clazz, RabbitListeners.class);
+		if (anns != null) {
+			listeners.addAll(Arrays.asList(anns.value()));
+		}
+		return listeners;
+	}
+
+	/*
+	 * AnnotationUtils.getRepeatableAnnotations does not look at interfaces
+	 */
+	private Collection<RabbitListener> findListenerAnnotations(Method method) {
+		Set<RabbitListener> listeners = new HashSet<RabbitListener>();
+		RabbitListener ann = AnnotationUtils.findAnnotation(method, RabbitListener.class);
+		if (ann != null) {
+			listeners.add(ann);
+		}
+		RabbitListeners anns = AnnotationUtils.findAnnotation(method, RabbitListeners.class);
+		if (anns != null) {
+			listeners.addAll(Arrays.asList(anns.value()));
+		}
+		return listeners;
+	}
+
+	private void processMultiMethodListeners(Collection<RabbitListener> classLevelListeners, List<Method> multiMethods,
+			Object bean, String beanName) {
 		List<Method> checkedMethods = new ArrayList<Method>();
 		for (Method method : multiMethods) {
 			checkedMethods.add(checkProxy(method, bean));
 		}
-		MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
-		endpoint.setBeanFactory(this.beanFactory);
-		processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
+		for (RabbitListener classLevelListener : classLevelListeners) {
+			MultiMethodRabbitListenerEndpoint endpoint = new MultiMethodRabbitListenerEndpoint(checkedMethods, bean);
+			endpoint.setBeanFactory(this.beanFactory);
+			processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
+		}
 	}
 
 	protected void processAmqpListener(RabbitListener rabbitListener, Method method, Object bean, String beanName) {
