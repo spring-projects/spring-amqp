@@ -31,8 +31,6 @@ public class AnswerTests {
 
 	@Test
 	public void testLambda() {
-		String property = System.getProperty("java.version");
-		System.out.println(property);
 		Foo foo = spy(new Foo());
 		doAnswer(new LambdaAnswer<String>(true, (i, r) -> r + r)).when(foo).foo(anyString());
 		assertEquals("FOOFOO", foo.foo("foo"));

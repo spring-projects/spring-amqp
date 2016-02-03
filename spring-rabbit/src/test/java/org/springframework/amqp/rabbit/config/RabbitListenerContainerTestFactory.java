@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.config;
+
+import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,12 +51,15 @@ public class RabbitListenerContainerTestFactory implements RabbitListenerContain
 	@Override
 	public MessageListenerTestContainer createListenerContainer(RabbitListenerEndpoint endpoint) {
 		MessageListenerTestContainer container = new MessageListenerTestContainer(endpoint);
-		this.listenerContainers.put(endpoint.getId(), container);
 
 		// resolve the id
 		if (endpoint.getId() == null && endpoint instanceof AbstractRabbitListenerEndpoint) {
 			((AbstractRabbitListenerEndpoint) endpoint).setId("endpoint#" + counter.getAndIncrement());
 		}
+		String id = endpoint.getId();
+		assertNotNull(this.getClass().getSimpleName() + " does not support " + endpoint.getClass().getSimpleName()
+				+ " without an id", id);
+		this.listenerContainers.put(id, container);
 		return container;
 	}
 

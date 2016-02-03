@@ -61,8 +61,6 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	@Override
 	@Test
 	public void sampleConfiguration() {
-		String property = System.getProperty("java.version");
-		System.out.println(property);
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				EnableRabbitSampleConfig.class, SampleBean.class);
 		testSampleConfiguration(context);
