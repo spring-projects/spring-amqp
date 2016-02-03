@@ -1,5 +1,0 @@
-= spring-rabbit-ext
-
-This project provides extensions to `spring-rabbit`.
-
-In particular, the `log4j2 Appender` is contained here, to avoid classpath conflicts with `spring-rabbit`.

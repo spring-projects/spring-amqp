@@ -217,8 +217,6 @@ project('spring-rabbit') {
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
-		testCompile "commons-cli:commons-cli:1.2"
-
 		compile ("log4j:log4j:$log4jVersion") { dep ->
 			optional dep
 			exclude group: 'javax.jms', module: 'jms'
@@ -227,20 +225,12 @@ project('spring-rabbit') {
 		}
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
-	}
 
-}
+		compile ("org.apache.logging.log4j:log4j-core:$log4j2Version", optional)
+		compile ("org.apache.logging.log4j:log4j-jcl:$log4j2Version", optional)
 
-project('spring-rabbit-ext') {
-	description = 'Spring Rabbit Extensions'
+		testCompile "commons-cli:commons-cli:1.2"
 
-	dependencies {
-
-		compile project(":spring-rabbit")
-		compile "org.apache.logging.log4j:log4j-core:$log4j2Version"
-		compile "org.apache.logging.log4j:log4j-jcl:$log4j2Version"
-
-		testCompile project(":spring-rabbit").sourceSets.test.output
 	}
 
 }

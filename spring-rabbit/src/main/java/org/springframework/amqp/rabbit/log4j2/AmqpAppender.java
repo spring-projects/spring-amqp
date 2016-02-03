@@ -58,7 +58,7 @@ import org.springframework.amqp.rabbit.support.DeclareExchangeConnectionListener
 
 /**
  * A Log4J2 appender that publishes logging events to an AMQP Exchange.
- * <p>
+ *
  * @author Gary Russell
  *
  * @since 1.6
