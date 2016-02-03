@@ -85,6 +85,7 @@ subprojects { subproject ->
 		jackson2Version = '2.3.2'
 		junitVersion = '4.11'
 		log4jVersion = '1.2.17'
+		log4j2Version = '2.4.1'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.6.0'
@@ -111,7 +112,9 @@ subprojects { subproject ->
 		testCompile ("junit:junit:$junitVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
-		testCompile "log4j:log4j:$log4jVersion"
+		if (!(subproject.name ==~ /spring-rabbit-ext/)) {
+			testCompile "log4j:log4j:$log4jVersion"
+		}
 		testCompile "org.hamcrest:hamcrest-all:$hamcrestVersion"
 		testCompile ("org.mockito:mockito-core:$mockitoVersion") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
@@ -214,8 +217,6 @@ project('spring-rabbit') {
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
-		testCompile "commons-cli:commons-cli:1.2"
-
 		compile ("log4j:log4j:$log4jVersion") { dep ->
 			optional dep
 			exclude group: 'javax.jms', module: 'jms'
@@ -224,6 +225,12 @@ project('spring-rabbit') {
 		}
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
+
+		compile ("org.apache.logging.log4j:log4j-core:$log4j2Version", optional)
+		compile ("org.apache.logging.log4j:log4j-jcl:$log4j2Version", optional)
+
+		testCompile "commons-cli:commons-cli:1.2"
+
 	}
 
 }
