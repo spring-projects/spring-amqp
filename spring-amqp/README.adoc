@@ -1,3 +1,3 @@
 = spring-amqp
 
-This project provides the base abstractions for Spring-AMQP suporting the AMQP 0.9.1 Specification.
+This project provides the base abstractions for Spring-AMQP supporting the AMQP 0.9.1 Specification.
