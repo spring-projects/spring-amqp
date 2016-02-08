@@ -1893,10 +1893,38 @@ The `MessagePropertiesConverter` strategy interface is used to convert between t
 `BasicProperties` and Spring AMQP `MessageProperties`. The default implementation
 (`DefaultMessagePropertiesConverter`) is usually sufficient for most purposes but you can implement your own if needed.
 The default properties converter will convert `BasicProperties` elements of type `LongString` to `String` s
-when the size is not greater than `1024` bytes. Larger `LongString` s are returned as a `DataInputStream.
+when the size is not greater than `1024` bytes. Larger `LongString` s are not converted (see below).
 This limit can be overridden with a constructor argument.
 
-Starting with _version 1.6_, a new property `correlationIdString` has been added to `MessageProperties`.
+Starting with _version 1.6_, headers longer than the long string limit (default 1024) are now left as
+`LongString` s by default by the `DefaultMessagePropertiesConverter`.
+You can access the contents via the `getBytes[]`, `toString()`, or `getStream()` methods.
+
+Previously, the `DefaultMessagePropertiesConverter` "converted" such headers to a `DataInputStream` (actually it just
+referenced the `LongString`'s `DataInputStream`).
+On output, this header was not converted (except to a String, e.g. `java.io.DataInputStream@1d057a39` by calling
+`toString()` on the stream).
+
+Large incoming `LongString` headers are now correctly "converted" on output too (by default).
+
+A new constructor is provided to allow you to configure the converter to work as before:
+
+[source, java]
+----
+/**
+ * Construct an instance where LongStrings will be returned
+ * unconverted or as a java.io.DataInputStream when longer than this limit.
+ * Use this constructor with 'true' to restore pre-1.6 behavior.
+ * @param longStringLimit the limit.
+ * @param convertLongLongStrings LongString when false,
+ * DataInputStream when true.
+ * @since 1.6
+ */
+public DefaultMessagePropertiesConverter(int longStringLimit, boolean convertLongLongStrings) { ... }
+----
+
+
+Also starting with _version 1.6_, a new property `correlationIdString` has been added to `MessageProperties`.
 Previously, when converting to/from `BasicProperties` used by the RabbitMQ client, an unnecessary `byte[] <-> String`
 conversion was performed because `MessageProperties.correlationId` is a `byte[]` but `BasicProperties` uses a
 `String`. (Ultimately, the RabbitMQ client uses UTF-8 to convert the String to bytes to put in the protocol message).
@@ -1917,8 +1945,6 @@ For outbound messages:
 - `STRING` - just the `correlationIdString` property is mapped
 - `BYTES` - just the `correlationId` property is mapped
 - `BOTH` - Both properties will be considered, with the String property taking precedence
-
-
 
 [[post-processing]]
 ==== Modifying Messages - Compression and More

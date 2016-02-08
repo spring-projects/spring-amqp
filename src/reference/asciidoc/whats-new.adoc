@@ -62,9 +62,24 @@ This version allows you to override this default behavior and use a temporary qu
 `useTemporaryReplyQueues` property to `true`.
 See <<direct-reply-to>> for more information.
 
-===== Message Properties and CorrelationId
+===== Message Properties
+
+====== CorrelationId
 
 The `correlationId` message property can now be a `String`.
+See <<message-properties-converters>> for more information.
+
+====== Long String Headers
+
+Previously, the `DefaultMessagePropertiesConverter` "converted" headers longer than the long string limit (default 1024)
+to a `DataInputStream` (actually it just referenced the `LongString`'s `DataInputStream`).
+On output, this header was not converted (except to a String, e.g. `java.io.DataInputStream@1d057a39` by calling
+`toString()` on the stream).
+
+With this release, long `LongString` s are now left as `LongString` s by default; you can access the contents via
+the `getBytes[]`, `toString()`, or `getStream()` methods.
+A large incoming `LongString` is now correctly "converted" on output too.
+
 See <<message-properties-converters>> for more information.
 
 ===== RabbitAdmin Changes

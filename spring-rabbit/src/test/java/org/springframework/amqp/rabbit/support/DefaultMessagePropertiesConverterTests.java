@@ -12,6 +12,7 @@
  */
 package org.springframework.amqp.rabbit.support;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -24,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -113,20 +113,34 @@ public class DefaultMessagePropertiesConverterTests {
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put("longString", longString);
 		headers.put("string1025", LongStringHelper.asLongString(new byte[1025]));
-		headers.put("string1026", LongStringHelper.asLongString(new byte[1026]));
+		byte[] longBytes = new byte[1026];
+		longBytes[0] = 'a';
+		longBytes[1025] = 'z';
+		LongString longString1026 = LongStringHelper.asLongString(longBytes);
+		headers.put("string1026", longString1026);
 		BasicProperties source = new BasicProperties.Builder()
 				.headers(headers)
 				.build();
-		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(source, envelope,
-				"UTF-8");
-		assertThat(messageProperties.getHeaders().get("longString"), Matchers.instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1025"), Matchers.instanceOf(DataInputStream.class));
-		assertThat(messageProperties.getHeaders().get("string1026"), Matchers.instanceOf(DataInputStream.class));
-		MessagePropertiesConverter longConverter = new DefaultMessagePropertiesConverter(1025);
+		MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter(1024, true);
+		MessageProperties messageProperties = converter.toMessageProperties(source, envelope, "UTF-8");
+		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(DataInputStream.class));
+		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(DataInputStream.class));
+		MessagePropertiesConverter longConverter = new DefaultMessagePropertiesConverter(1025, true);
 		messageProperties = longConverter.toMessageProperties(source, envelope, "UTF-8");
-		assertThat(messageProperties.getHeaders().get("longString"), Matchers.instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1025"), Matchers.instanceOf(String.class));
-		assertThat(messageProperties.getHeaders().get("string1026"), Matchers.instanceOf(DataInputStream.class));	}
+		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(DataInputStream.class));
+
+		longConverter = new DefaultMessagePropertiesConverter(1025);
+		messageProperties = longConverter.toMessageProperties(source, envelope, "UTF-8");
+		assertThat(messageProperties.getHeaders().get("longString"), instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1025"), instanceOf(String.class));
+		assertThat(messageProperties.getHeaders().get("string1026"), instanceOf(LongString.class));
+
+		BasicProperties basicProperties = longConverter.fromMessageProperties(messageProperties, "UTF-8");
+		assertEquals(longString1026.toString(), basicProperties.getHeaders().get("string1026").toString());
+	}
 
 	@Test
 	public void testFromUnsupportedValue() {

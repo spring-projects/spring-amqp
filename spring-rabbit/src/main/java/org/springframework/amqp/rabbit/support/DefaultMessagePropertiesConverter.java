@@ -13,6 +13,7 @@
 
 package org.springframework.amqp.rabbit.support;
 
+import java.io.DataInputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -50,24 +51,40 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 
 	private final int longStringLimit;
 
+	private final boolean convertLongLongStrings;
+
 	private volatile CorrelationIdPolicy correlationIdPolicy = CorrelationIdPolicy.BYTES;
 
 	/**
-	 * Construct an instance where {@link LongString}s will be returned as a
-	 * {@link java.io.DataInputStream} when longer than 1024 bytes.
+	 * Construct an instance where {@link LongString}s will be returned
+	 * unconverted when longer than 1024 bytes.
 	 */
 	public DefaultMessagePropertiesConverter() {
-		this(DEFAULT_LONG_STRING_LIMIT);
+		this(DEFAULT_LONG_STRING_LIMIT, false);
 	}
 
 	/**
-	 * Construct an instance where {@link LongString}s will be returned as a
-	 * {@link java.io.DataInputStream} when longer than this limit.
+	 * Construct an instance where {@link LongString}s will be returned
+	 * unconverted when longer than this limit.
 	 * @param longStringLimit the limit.
 	 * @since 1.4.4
 	 */
 	public DefaultMessagePropertiesConverter(int longStringLimit) {
+		this(longStringLimit, false);
+	}
+
+	/**
+	 * Construct an instance where {@link LongString}s will be returned
+	 * unconverted or as a {@link java.io.DataInputStream} when longer than this limit.
+	 * Use this constructor with 'true' to restore pre-1.6 behavior.
+	 * @param longStringLimit the limit.
+	 * @param convertLongLongStrings {@link LongString} when false,
+	 * {@link DataInputStream} when true.
+	 * @since 1.6
+	 */
+	public DefaultMessagePropertiesConverter(int longStringLimit, boolean convertLongLongStrings) {
 		this.longStringLimit = longStringLimit;
+		this.convertLongLongStrings = convertLongLongStrings;
 	}
 
 	/**
@@ -217,17 +234,21 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	/**
-	 * Converts a LongString value to either a String or DataInputStream based on a length-driven threshold. If the
-	 * length is {@link #longStringLimit} bytes or less, a String will be returned, otherwise a DataInputStream is returned.
+	 * Converts a LongString value to either a String or DataInputStream based on a
+	 * length-driven threshold. If the length is {@link #longStringLimit} bytes or less, a
+	 * String will be returned, otherwise a DataInputStream is returned or the {@link LongString}
+	 * is returned unconverted if {@link #convertLongLongStrings} is true.
 	 */
 	private Object convertLongString(LongString longString, String charset) {
 		try {
 			if (longString.length() <= this.longStringLimit) {
 				return new String(longString.getBytes(), charset);
-			} else {
-				return longString.getStream();
 			}
-		} catch (Exception e) {
+			else {
+				return this.convertLongLongStrings ? longString.getStream() : longString;
+			}
+		}
+		catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
