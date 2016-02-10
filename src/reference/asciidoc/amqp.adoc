@@ -1299,6 +1299,80 @@ If you prefer XML configuration, use the `<rabbit:annotation-driven>` element.
 
 ----
 
+[[async-annotation-conversion]]
+====== Message Conversion for Annotated Methods
+
+There are two conversion steps in the pipeline before invoking the listener.
+The first uses a `MessageConverter` to convert the incoming Spring AMQP `Message` to a _spring-messaging_ `Message`.
+When the target method is invoked, the message payload is converted, if necessary, to the method parameter type.
+
+The default `MessageConverter` for the first step is a Spring AMQP `SimpleMessageConverter` that handles conversion to
+`String` and `java.io.Serializable` objects; all others remain as a `byte[]`.
+In the following discusssion, we call this the _message converter_.
+
+The default converter for the second step is a `GenericMessageConverter` which delegates to a conversion service
+(an instance of `DefaultFormattingConversionService`).
+In the following discussion, we call this the _method argument converter_.
+
+To change the _message converter_, simply add it as a property to the container factory bean:
+
+[source, java]
+----
+@Bean
+public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+    SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+    ...
+    factory.setMessageConverter(new Jackson2JsonMessageConverter());
+    ...
+    return factory;
+}
+----
+
+This configures a Jackson2 converter that expects header information to be present to guide the conversion.
+
+You can also consider a `ContentTypeDelegatingMessageConverter` which can handle conversion of different content types.
+
+In most cases, it is not necessary to customize the _method argument converter_ unless, for example, you want to use
+a custom `ConversionService`.
+
+If you wish to customize the _method argument converter_, you can do so as follows:
+
+[source, java]
+----
+@Configuration
+@EnableRabbit
+public class AppConfig implements RabbitListenerConfigurer {
+
+    ...
+
+    @Bean
+	public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+		DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+		factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+		return factory;
+	}
+
+	@Bean
+	public ConversionService myConversionService() {
+		DefaultConversionService conv = new DefaultConversionService();
+		conv.addConverter(mySpecialConverter());
+		return conv;
+	}
+
+	@Override
+	public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+		registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+	}
+
+    ...
+
+}
+----
+
+IMPORTANT: for multi-method listeners (see <<annotation-method-selection>>), the method selection is based on the
+payload of the message *after the message conversion*; the _method argument converter_ is only called after the method has
+been selected.
+
 [[async-annotation-driven-registration]]
 ====== Programmatic Endpoint Registration
 
