@@ -59,6 +59,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -67,6 +68,7 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -75,13 +77,19 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -114,7 +122,8 @@ public class EnableRabbitIntegrationTests {
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel", "test.intercepted", "test.intercepted.withReply",
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
-			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas");
+			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
+			"test.converted");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -248,6 +257,22 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	public void multiListenerJson() {
+		Bar bar = new Bar();
+		bar.field = "bar";
+		String exchange = "multi.json.exch";
+		String routingKey = "multi.json.rk";
+		assertEquals("BAR: bar", this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, bar));
+		Baz baz = new Baz();
+		baz.field = "baz";
+		assertEquals("BAZ: baz", this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, baz));
+		Qux qux = new Qux();
+		qux.field = "qux";
+		assertEquals("QUX: qux: multi.json.rk",
+				this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, qux));
+	}
+
+	@Test
 	public void endpointWithHeader() {
 		MessageProperties properties = new MessageProperties();
 		properties.setHeader("prefix", "prefix-");
@@ -336,6 +361,20 @@ public class EnableRabbitIntegrationTests {
 		assertEquals("INTERCEPT THIS",
 				this.rabbitTemplate.convertSendAndReceive("test.intercepted.withReply", "intercept this"));
 		assertTrue(this.interceptor.twoWayLatch.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testConverted() {
+		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
+				EnableRabbitConfigWithCustomConversion.class);
+		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
+		Foo1 foo1 = new Foo1();
+		foo1.setBar("bar");
+		Object returned = template.convertSendAndReceive("test.converted", foo1);
+		assertThat(returned, instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) returned).getBar());
+		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		ctx.close();
 	}
 
 	interface TxService {
@@ -646,6 +685,16 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public SimpleRabbitListenerContainerFactory simpleJsonListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			factory.setMessageConverter(new Jackson2JsonMessageConverter());
+			return factory;
+		}
+
+		@Bean
 		public String tagPrefix() {
 			return UUID.randomUUID().toString();
 		}
@@ -752,6 +801,11 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public MultiListenerJsonBean multiListenerJson() {
+			return new MultiListenerJsonBean();
+		}
+
+		@Bean
 		public PlatformTransactionManager transactionManager() {
 			return mock(PlatformTransactionManager.class);
 		}
@@ -781,6 +835,29 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitHandler
 		@SendTo("#{sendToRepliesBean}")
+		public String bar(Bar bar) {
+			return "BAR: " + bar.field;
+		}
+
+		@RabbitHandler
+		public String baz(Baz baz) {
+			return "BAZ: " + baz.field;
+		}
+
+		@RabbitHandler
+		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+			return "QUX: " + qux.field + ": " + rk;
+		}
+
+	}
+
+	@RabbitListener(bindings = @QueueBinding
+			(value = @Queue,
+			exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
+			key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory")
+	static class MultiListenerJsonBean {
+
+		@RabbitHandler
 		public String bar(Bar bar) {
 			return "BAR: " + bar.field;
 		}
@@ -830,7 +907,7 @@ public class EnableRabbitIntegrationTests {
 	@SuppressWarnings("serial")
 	static class Foo implements Serializable {
 
-		String field;
+		public String field;
 
 	}
 
@@ -846,6 +923,87 @@ public class EnableRabbitIntegrationTests {
 
 	@SuppressWarnings("serial")
 	static class Qux extends Foo implements Serializable {
+
+	}
+
+	@Configuration
+	@EnableRabbit
+	public static class EnableRabbitConfigWithCustomConversion implements RabbitListenerConfigurer {
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setMessageConverter(new Jackson2JsonMessageConverter());
+			return factory;
+		}
+
+		// Rabbit infrastructure setup
+
+		@Bean
+		public ConnectionFactory rabbitConnectionFactory() {
+			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setHost("localhost");
+			return connectionFactory;
+		}
+
+		@Bean
+		public RabbitTemplate jsonRabbitTemplate() {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
+			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+			return rabbitTemplate;
+		}
+
+		@Bean
+		public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+			DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+			factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+			return factory;
+		}
+
+		@Bean
+		public ConversionService myConversionService() {
+			DefaultConversionService conv = new DefaultConversionService();
+			conv.addConverter(foo1To2Converter());
+			return conv;
+		}
+
+		@Override
+		public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+			registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+		}
+
+		@Bean
+		public Converter<Foo1, Foo2> foo1To2Converter() {
+			return new Converter<Foo1, Foo2>() {
+
+				@SuppressWarnings("unused")
+				private boolean converted;
+
+				@Override
+				public Foo2 convert(Foo1 foo1) {
+					Foo2 foo2 = new Foo2();
+					foo2.setBar(foo1.getBar());
+					converted = true;
+					return foo2;
+				}
+
+			};
+		}
+
+		@Bean
+		public Foo2Service foo2Service() {
+			return new Foo2Service();
+		}
+
+	}
+
+	public static class Foo2Service {
+
+		@RabbitListener(queues="test.converted")
+		public Foo2 foo2(Foo2 foo2) {
+			return foo2;
+		}
 
 	}
 
