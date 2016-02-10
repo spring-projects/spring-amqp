@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.JsonMessageConverter;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.util.MimeTypeUtils;
 
 /**
  * @author Mark Fisher
@@ -98,7 +99,7 @@ public class SimpleAmqpHeaderMapperTests {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
 		Map<String, Object> headerMap = new HashMap<String, Object>();
 
-		headerMap.put(AmqpHeaders.CONTENT_TYPE, "text/html");
+		headerMap.put(AmqpHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_HTML);
 
 		MessageHeaders messageHeaders = new MessageHeaders(headerMap);
 		MessageProperties amqpProperties = new MessageProperties();
