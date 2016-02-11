@@ -286,6 +286,14 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="delayed" use="optional" type="xsd:string" default="false">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that the exchange is used to send delayed messages. Requires the
+					'delayed message exchange plugin' to be installed on the broker. Default is false.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attributeGroup ref="declarable" />
 	</xsd:complexType>
 

@@ -331,6 +331,30 @@ public class MessageProperties implements Serializable {
 		this.consumerQueue = consumerQueue;
 	}
 
+	/**
+	 * The x-delay header.
+	 * @return the delay.
+	 * @since 1.6
+	 */
+	public Integer getXDelay() {
+		Object xDelay = this.headers.get("x-delay");
+		if (xDelay instanceof Integer) {
+			return (Integer) xDelay;
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Set the x-delay header.
+	 * @param xDelay the delay.
+	 * @since 1.6
+	 */
+	public void setXDelay(Integer xDelay) {
+		this.headers.put("x-delay", xDelay);
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

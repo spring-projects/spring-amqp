@@ -250,4 +250,32 @@ public abstract class RabbitUtils {
 		}
 	}
 
+	/**
+	 * Return true if there is a {@link ShutdownSignalException} in the cause tree and its
+	 * reason is "COMMAND_INVALID" and the operation being performed was exchangeDeclare.
+	 * @param e the exception.
+	 * @return true if the exception was due to exchange declaration failed.
+	 * @since 1.6
+	 */
+	public static boolean isExchangeDeclarationFailure(Exception e) {
+		Throwable cause = e;
+		ShutdownSignalException sig = null;
+		while (cause != null && sig == null) {
+			if (cause instanceof ShutdownSignalException) {
+				sig = (ShutdownSignalException) cause;
+			}
+			cause = cause.getCause();
+		}
+		if (sig == null) {
+			return false;
+		}
+		else {
+			Method shutdownReason = sig.getReason();
+			return shutdownReason instanceof AMQP.Connection.Close
+					&& AMQP.COMMAND_INVALID == ((AMQP.Connection.Close) shutdownReason).getReplyCode()
+					&& ((AMQP.Connection.Close) shutdownReason).getClassId() == 40 // exchange
+					&& ((AMQP.Connection.Close) shutdownReason).getMethodId() == 10; // declare
+		}
+	}
+
 }

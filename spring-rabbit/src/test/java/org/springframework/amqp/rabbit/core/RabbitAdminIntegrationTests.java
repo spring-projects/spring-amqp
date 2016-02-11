@@ -14,24 +14,33 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.context.support.GenericApplicationContext;
@@ -314,7 +323,8 @@ public class RabbitAdminIntegrationTests {
 
 		try {
 			rabbitAdmin.declareBinding(binding);
-		} catch (AmqpIOException ex) {
+		}
+		catch (AmqpIOException ex) {
 			Throwable cause = ex;
 			Throwable rootCause = null;
 			while (cause != null) {
@@ -336,6 +346,52 @@ public class RabbitAdminIntegrationTests {
 		this.rabbitAdmin.deleteQueue(queue.getName());
 	}
 
+	@Test
+	public void testDeclareDelayedExchange() throws Exception {
+		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
+		exchange.setDelayed(true);
+		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, false);
+		Binding binding = new Binding(queue.getName(), DestinationType.QUEUE, exchange.getName(), queue.getName(), null);
+
+		try {
+			this.rabbitAdmin.declareExchange(exchange);
+		}
+		catch (AmqpIOException e) {
+			if (RabbitUtils.isExchangeDeclarationFailure(e)
+					&& e.getCause().getCause().getMessage().contains("invalid exchange type 'x-delayed-message'")) {
+				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
+			}
+			else {
+				throw e;
+			}
+		}
+		this.rabbitAdmin.declareQueue(queue);
+		this.rabbitAdmin.declareBinding(binding);
+
+		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
+		template.setReceiveTimeout(10000);
+		template.convertAndSend(exchange.getName(), queue.getName(), "foo", new MessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				message.getMessageProperties().setXDelay(1000);
+				return message;
+			}
+
+		});
+		MessageProperties properties = new MessageProperties();
+		properties.setXDelay(1000);
+		template.send(exchange.getName(), queue.getName(),
+				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
+		long t1 = System.currentTimeMillis();
+		assertNotNull(template.receive(queue.getName()));
+		assertNotNull(template.receive(queue.getName()));
+		assertTrue(System.currentTimeMillis() - t1 > 999);
+
+		this.rabbitAdmin.deleteQueue(queue.getName());
+		this.rabbitAdmin.deleteExchange(exchange.getName());
+	}
+
 	/**
 	 * Verify that a queue exists using the native Rabbit API to bypass all the connection and
 	 * channel caching and callbacks in Spring AMQP.
@@ -352,10 +408,13 @@ public class RabbitAdminIntegrationTests {
 		try {
 			DeclareOk result = channel.queueDeclarePassive(queue.getName());
 			return result != null;
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			return e.getCause().getMessage().contains("RESOURCE_LOCKED");
-		} finally {
+		}
+		finally {
 			connection.close();
 		}
 	}
+
 }
