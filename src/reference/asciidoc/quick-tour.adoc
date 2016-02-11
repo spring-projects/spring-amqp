@@ -43,13 +43,10 @@ Using plain, imperative Java to send and receive a message:
 [source,java]
 ----
 ConnectionFactory connectionFactory = new CachingConnectionFactory();
-
 AmqpAdmin admin = new RabbitAdmin(connectionFactory);
 admin.declareQueue(new Queue("myqueue"));
-
 AmqpTemplate template = new RabbitTemplate(connectionFactory);
 template.convertAndSend("myqueue", "foo");
-
 String foo = (String) template.receiveAndConvert("myqueue");
 ----
 
@@ -67,9 +64,7 @@ The same example as above, but externalizing the resource configuration to XML:
 ApplicationContext context =
     new GenericXmlApplicationContext("classpath:/rabbit-context.xml");
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
-
 template.convertAndSend("myqueue", "foo");
-
 String foo = (String) template.receiveAndConvert("myqueue");
 ----
 
@@ -106,22 +101,17 @@ The same example again with the external configuration in Java:
 ApplicationContext context =
     new AnnotationConfigApplicationContext(RabbitConfiguration.class);
 AmqpTemplate template = context.getBean(AmqpTemplate.class);
-
 template.convertAndSend("myqueue", "foo");
-
 String foo = (String) template.receiveAndConvert("myqueue");
-----
 
-[source,java]
-----
+........
+
 @Configuration
 public class RabbitConfiguration {
 
     @Bean
     public ConnectionFactory connectionFactory() {
-        CachingConnectionFactory connectionFactory =
-            new CachingConnectionFactory("localhost");
-        return connectionFactory;
+        return new CachingConnectionFactory("localhost");
     }
 
     @Bean

@@ -48,6 +48,7 @@ public class MessageProperties implements Serializable {
 
 	public static final String SPRING_AUTO_DECOMPRESS = "springAutoDecompress";
 
+	public static final String X_DELAY = "x-delay";
 
 	static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
@@ -106,6 +107,8 @@ public class MessageProperties implements Serializable {
 	private volatile String consumerTag;
 
 	private volatile String consumerQueue;
+
+	private volatile Integer receivedDelay;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -279,6 +282,27 @@ public class MessageProperties implements Serializable {
 		return this.receivedRoutingKey;
 	}
 
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @return the received delay.
+	 * @since 1.6
+	 * @see #getDelay()
+	 */
+	public Integer getReceivedDelay() {
+		return this.receivedDelay;
+	}
+
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @param receivedDelay the received delay.
+	 * @since 1.6
+	 */
+	public void setReceivedDelay(Integer receivedDelay) {
+		this.receivedDelay = receivedDelay;
+	}
+
 	public void setRedelivered(Boolean redelivered) {
 		this.redelivered = redelivered;
 	}
@@ -329,6 +353,36 @@ public class MessageProperties implements Serializable {
 
 	public void setConsumerQueue(String consumerQueue) {
 		this.consumerQueue = consumerQueue;
+	}
+
+	/**
+	 * The x-delay header (outbound).
+	 * @return the delay.
+	 * @since 1.6
+	 * @see #getReceivedDelay()
+	 */
+	public Integer getDelay() {
+		Object delay = this.headers.get(X_DELAY);
+		if (delay instanceof Integer) {
+			return (Integer) delay;
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Set the x-delay header.
+	 * @param delay the delay.
+	 * @since 1.6
+	 */
+	public void setDelay(Integer delay) {
+		if (delay == null || delay < 0) {
+			this.headers.remove(X_DELAY);
+		}
+		else {
+			this.headers.put(X_DELAY, delay);
+		}
 	}
 
 	@Override

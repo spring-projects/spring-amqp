@@ -105,7 +105,16 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		Map<String, Object> headers = source.getHeaders();
 		if (!CollectionUtils.isEmpty(headers)) {
 			for (Map.Entry<String, Object> entry : headers.entrySet()) {
-				target.setHeader(entry.getKey(), convertLongStringIfNecessary(entry.getValue(), charset));
+				String key = entry.getKey();
+				if (MessageProperties.X_DELAY.equals(key)) {
+					Object value = entry.getValue();
+					if (value instanceof Integer) {
+						target.setReceivedDelay((Integer) value);
+					}
+				}
+				else {
+					target.setHeader(key, convertLongStringIfNecessary(entry.getValue(), charset));
+				}
 			}
 		}
 		target.setTimestamp(source.getTimestamp());

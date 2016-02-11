@@ -2895,6 +2895,58 @@ The third creates names like `custom.gen-MRBv9sqISkuCiPfOYfpo4g`.
 
 Of course, you can provide your own naming strategy bean.
 
+[[delayed-message-exchange]]
+==== Delayed Message Exchange
+
+_Version 1.6_ introduces support for the
+https://www.rabbitmq.com/blog/2015/04/16/scheduling-messages-with-rabbitmq/[Delayed Message Exchange Plugin]
+
+NOTE: The plugin is currently marked as experimental but has been available for over a year (at the time of writing).
+If changes to the plugin make it necessary, we will add support for such changes as soon as practical.
+For that reason, this support in Spring AMQP should be considered experimental, too.
+This functionality was tested with RabbitMQ 3.6.0 and version 0.0.1 of the plugin.
+
+To use a `RabbitAdmin` to declare an exchange as delayed, simply set the `delayed` property on the exchange bean to
+true.
+The `RabbitAdmin` will use the exchange type (`Direct`, `Fanout` etc) to set the `x-delayed-type` argument and
+declare the exchange with type `x-delayed-message`.
+
+The `delayed` property (default `false`) is also available when configuring exchange beans using XML.
+
+[source, xml]
+----
+<rabbit:topic-exchange name="topic" delayed="true" />
+----
+
+To send a delayed message, it's simply a matter of setting the `x-delay` header, via the `MessageProperties`:
+
+[source, java]
+----
+MessageProperties properties = new MessageProperties();
+properties.setXDelay(15000);
+template.send(exchange, routingKey,
+        MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
+----
+
+or
+
+[source, java]
+----
+rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProcessor() {
+
+    @Override
+    public Message postProcessMessage(Message message) throws AmqpException {
+        message.getMessageProperties().setXDelay(15000);
+        return message;
+    }
+
+});
+----
+
+To check if a message was delayed, use the `getReceivedDelay()` method on the `MessageProperties`.
+It is a separate property to avoid unintended propagation to an output message generated from an input messasge.
+
+
 [[management-template]]
 ==== RabbitMQ REST API
 

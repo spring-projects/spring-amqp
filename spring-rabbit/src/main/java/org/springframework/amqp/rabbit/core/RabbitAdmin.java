@@ -16,8 +16,10 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,6 +32,7 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -523,8 +526,22 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 			if (!isDeclaringDefaultExchange(exchange)) {
 				try {
-					channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
-						exchange.isAutoDelete(), exchange.getArguments());
+					if (exchange.isDelayed()) {
+						Map<String, Object> arguments = exchange.getArguments();
+						if (arguments == null) {
+							arguments = new HashMap<String, Object>();
+						}
+						else {
+							arguments = new HashMap<String, Object>(arguments);
+						}
+						arguments.put("x-delayed-type", exchange.getType());
+						channel.exchangeDeclare(exchange.getName(), ExchangeTypes.DELAYED, exchange.isDurable(),
+								exchange.isAutoDelete(), arguments);
+					}
+					else {
+						channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
+							exchange.isAutoDelete(), exchange.getArguments());
+					}
 				}
 				catch (IOException e) {
 					logOrRethrowDeclarationException(exchange, "exchange", e);

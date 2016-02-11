@@ -50,6 +50,8 @@ public abstract class AmqpHeaders {
 
 	public static final String CORRELATION_ID = PREFIX + "correlationId";
 
+	public static final String DELAY = PREFIX + "delay";
+
 	public static final String DELIVERY_MODE = PREFIX + "deliveryMode";
 
 	public static final String DELIVERY_TAG = PREFIX + "deliveryTag";
@@ -59,6 +61,8 @@ public abstract class AmqpHeaders {
 	public static final String MESSAGE_COUNT = PREFIX + "messageCount";
 
 	public static final String MESSAGE_ID = PREFIX + "messageId";
+
+	public static final String RECEIVED_DELAY = PREFIX + "receivedDelay";
 
 	public static final String RECEIVED_EXCHANGE = PREFIX + "receivedExchange";
 

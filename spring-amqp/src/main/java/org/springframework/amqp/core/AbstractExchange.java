@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 
 	private final Map<String, Object> arguments;
 
+	private volatile boolean delayed;
+
 	/**
 	 * Construct a new Exchange for bean usage.
 	 * @param name the name of the exchange.
@@ -77,18 +79,22 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 		}
 	}
 
+	@Override
 	public abstract String getType();
 
+	@Override
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
+	@Override
 	public boolean isDurable() {
-		return durable;
+		return this.durable;
 	}
 
+	@Override
 	public boolean isAutoDelete() {
-		return autoDelete;
+		return this.autoDelete;
 	}
 
 	protected synchronized void addArgument(String argName, Object argValue) {
@@ -98,8 +104,18 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	 * Return the collection of arbitrary arguments to use when declaring an exchange.
 	 * @return the collection of arbitrary arguments to use when declaring an exchange.
 	 */
+	@Override
 	public Map<String, Object> getArguments() {
-		return arguments;
+		return this.arguments;
+	}
+
+	@Override
+	public boolean isDelayed() {
+		return this.delayed;
+	}
+
+	public void setDelayed(boolean delayed) {
+		this.delayed = delayed;
 	}
 
 	@Override

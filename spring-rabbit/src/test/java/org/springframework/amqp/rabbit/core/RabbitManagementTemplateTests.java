@@ -172,7 +172,7 @@ public class RabbitManagementTemplateTests {
 		String consumer = channel.basicConsume(queue1.getName(), false, "", false, true, null, new DefaultConsumer(channel));
 		QueueInfo qi = this.template.getClient().getQueue("/", queue1.getName());
 		int n = 0;
-		while (n++ < 100 && qi.getExclusiveConsumerTag().equals("")) {
+		while (n++ < 100 && (qi.getExclusiveConsumerTag() == null || qi.getExclusiveConsumerTag().equals(""))) {
 			Thread.sleep(100);
 			qi = this.template.getClient().getQueue("/", queue1.getName());
 		}

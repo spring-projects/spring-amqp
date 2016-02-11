@@ -57,4 +57,11 @@ public interface Exchange extends Declarable {
 	 */
 	Map<String, Object> getArguments();
 
+	/**
+	 * Is a delayed message exchange; currently requires a broker plugin.
+	 * @return true if delayed.
+	 * @since 1.6
+	 */
+	boolean isDelayed();
+
 }
