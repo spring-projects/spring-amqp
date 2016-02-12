@@ -253,6 +253,8 @@ public abstract class RabbitUtils {
 	/**
 	 * Return true if there is a {@link ShutdownSignalException} in the cause tree and its
 	 * reason is "COMMAND_INVALID" and the operation being performed was exchangeDeclare.
+	 * For example attempting to declare an exchange that is not supported by the broker or
+	 * its plugins.
 	 * @param e the exception.
 	 * @return true if the exception was due to exchange declaration failed.
 	 * @since 1.6

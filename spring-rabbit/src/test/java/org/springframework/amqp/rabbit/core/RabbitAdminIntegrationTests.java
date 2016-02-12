@@ -358,7 +358,7 @@ public class RabbitAdminIntegrationTests {
 		}
 		catch (AmqpIOException e) {
 			if (RabbitUtils.isExchangeDeclarationFailure(e)
-					&& e.getCause().getCause().getMessage().contains("invalid exchange type 'x-delayed-message'")) {
+					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
 				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
 			}
 			else {
@@ -374,18 +374,22 @@ public class RabbitAdminIntegrationTests {
 
 			@Override
 			public Message postProcessMessage(Message message) throws AmqpException {
-				message.getMessageProperties().setXDelay(1000);
+				message.getMessageProperties().setDelay(1000);
 				return message;
 			}
 
 		});
 		MessageProperties properties = new MessageProperties();
-		properties.setXDelay(1000);
+		properties.setDelay(500);
 		template.send(exchange.getName(), queue.getName(),
 				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 		long t1 = System.currentTimeMillis();
-		assertNotNull(template.receive(queue.getName()));
-		assertNotNull(template.receive(queue.getName()));
+		Message received = template.receive(queue.getName());
+		assertNotNull(received);
+		assertEquals(Integer.valueOf(500), received.getMessageProperties().getReceivedDelay());
+		received = template.receive(queue.getName());
+		assertNotNull(received);
+		assertEquals(Integer.valueOf(1000), received.getMessageProperties().getReceivedDelay());
 		assertTrue(System.currentTimeMillis() - t1 > 999);
 
 		this.rabbitAdmin.deleteQueue(queue.getName());

@@ -2899,7 +2899,7 @@ Of course, you can provide your own naming strategy bean.
 ==== Delayed Message Exchange
 
 _Version 1.6_ introduces support for the
-https://github.com/rabbitmq/rabbitmq-delayed-message-exchange[Delayed Message Exchange Plugin].
+https://www.rabbitmq.com/blog/2015/04/16/scheduling-messages-with-rabbitmq/[Delayed Message Exchange Plugin]
 
 NOTE: The plugin is currently marked as experimental but has been available for over a year (at the time of writing).
 If changes to the plugin make it necessary, we will add support for such changes as soon as practical.
@@ -2930,7 +2930,7 @@ template.send(exchange, routingKey,
 
 or
 
-[source, xml]
+[source, java]
 ----
 rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProcessor() {
 
@@ -2943,7 +2943,8 @@ rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProces
 });
 ----
 
-
+To check if a message was delayed, use the `getReceivedDelay()` method on the `MessageProperties`.
+It is a separate property to avoid unintended propagation to an output message generated from an input messasge.
 
 
 [[management-template]]

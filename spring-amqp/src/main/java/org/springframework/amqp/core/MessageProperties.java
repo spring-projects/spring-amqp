@@ -48,6 +48,7 @@ public class MessageProperties implements Serializable {
 
 	public static final String SPRING_AUTO_DECOMPRESS = "springAutoDecompress";
 
+	public static final String X_DELAY = "x-delay";
 
 	static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
@@ -106,6 +107,8 @@ public class MessageProperties implements Serializable {
 	private volatile String consumerTag;
 
 	private volatile String consumerQueue;
+
+	private volatile Integer receivedDelay;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -279,6 +282,27 @@ public class MessageProperties implements Serializable {
 		return this.receivedRoutingKey;
 	}
 
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @return the received delay.
+	 * @since 1.6
+	 * @see #getDelay()
+	 */
+	public Integer getReceivedDelay() {
+		return this.receivedDelay;
+	}
+
+	/**
+	 * When a delayed message exchange is used the x-delay header on a
+	 * received message contains the delay.
+	 * @param receivedDelay the received delay.
+	 * @since 1.6
+	 */
+	public void setReceivedDelay(Integer receivedDelay) {
+		this.receivedDelay = receivedDelay;
+	}
+
 	public void setRedelivered(Boolean redelivered) {
 		this.redelivered = redelivered;
 	}
@@ -332,12 +356,13 @@ public class MessageProperties implements Serializable {
 	}
 
 	/**
-	 * The x-delay header.
+	 * The x-delay header (outbound).
 	 * @return the delay.
 	 * @since 1.6
+	 * @see #getReceivedDelay()
 	 */
-	public Integer getXDelay() {
-		Object xDelay = this.headers.get("x-delay");
+	public Integer getDelay() {
+		Object xDelay = this.headers.get(X_DELAY);
 		if (xDelay instanceof Integer) {
 			return (Integer) xDelay;
 		}
@@ -351,8 +376,13 @@ public class MessageProperties implements Serializable {
 	 * @param xDelay the delay.
 	 * @since 1.6
 	 */
-	public void setXDelay(Integer xDelay) {
-		this.headers.put("x-delay", xDelay);
+	public void setDelay(Integer xDelay) {
+		if (xDelay == null || xDelay < 0) {
+			this.headers.remove(X_DELAY);
+		}
+		else {
+			this.headers.put(X_DELAY, xDelay);
+		}
 	}
 
 	@Override
