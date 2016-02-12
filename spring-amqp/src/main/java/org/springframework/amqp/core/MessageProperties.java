@@ -362,9 +362,9 @@ public class MessageProperties implements Serializable {
 	 * @see #getReceivedDelay()
 	 */
 	public Integer getDelay() {
-		Object xDelay = this.headers.get(X_DELAY);
-		if (xDelay instanceof Integer) {
-			return (Integer) xDelay;
+		Object delay = this.headers.get(X_DELAY);
+		if (delay instanceof Integer) {
+			return (Integer) delay;
 		}
 		else {
 			return null;
@@ -373,15 +373,15 @@ public class MessageProperties implements Serializable {
 
 	/**
 	 * Set the x-delay header.
-	 * @param xDelay the delay.
+	 * @param delay the delay.
 	 * @since 1.6
 	 */
-	public void setDelay(Integer xDelay) {
-		if (xDelay == null || xDelay < 0) {
+	public void setDelay(Integer delay) {
+		if (delay == null || delay < 0) {
 			this.headers.remove(X_DELAY);
 		}
 		else {
-			this.headers.put(X_DELAY, xDelay);
+			this.headers.put(X_DELAY, delay);
 		}
 	}
 

@@ -103,8 +103,7 @@ See <<repeatable-rabbit-listener>> for more information.
 
 ===== Delayed Message Exchange
 
-Spring AMQP now has first class support for the
-https://github.com/rabbitmq/rabbitmq-delayed-message-exchange[Delayed Message Exchange Plugin].
+Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
 See <<delayed-message-exchange>> for more information.
 
 ==== Earlier Releases

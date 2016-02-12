@@ -109,16 +109,11 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				if (MessageProperties.X_DELAY.equals(key)) {
 					Object value = entry.getValue();
 					if (value instanceof Integer) {
-						try {
-							target.setReceivedDelay((Integer) value);
-						}
-						catch (NumberFormatException e) {
-							;
-						}
+						target.setReceivedDelay((Integer) value);
 					}
 				}
 				else {
-					target.setHeader(entry.getKey(), convertLongStringIfNecessary(entry.getValue(), charset));
+					target.setHeader(key, convertLongStringIfNecessary(entry.getValue(), charset));
 				}
 			}
 		}
