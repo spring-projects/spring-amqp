@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,18 @@ import java.util.Map;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
- /**
-  * A composite {@link MessageConverter} that delegates to an actual {@link MessageConverter}
-  * based on the contentType header. Supports a default converter when no content type matches.
-  * Note: the {@link MessageProperties} requires a content type header to select a converter
-  * when used for outbound conversion, but the converter will (generally) override it to match
-  * the actual conversion.
-  *
-  * @author Eric Rizzo
-  * @author Gary Russell
-  * @since 1.4.2
-  *
-  */
+/**
+ * A composite {@link MessageConverter} that delegates to an actual {@link MessageConverter}
+ * based on the contentType header. Supports a default converter when no content type matches.
+ * Note: the {@link MessageProperties} requires a content type header to select a converter
+ * when used for outbound conversion, but the converter will (generally) override it to match
+ * the actual conversion.
+ *
+ * @author Eric Rizzo
+ * @author Gary Russell
+ * @author Artem Bilan
+ * @since 1.4.2
+ */
 public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 
 	private final Map<String, MessageConverter> delegates = new HashMap<String, MessageConverter>();
@@ -66,11 +66,41 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 		return Collections.unmodifiableMap(this.delegates);
 	}
 
+
+	/**
+	 * @param contentType the content type to check.
+	 * @param messageConverter the {@link MessageConverter} for the content type.
+	 * @deprecated in favor of {@link #addDelegate(String, MessageConverter)}
+	 */
+	@Deprecated
 	public void addDelgate(String contentType, MessageConverter messageConverter) {
+		addDelegate(contentType, messageConverter);
+	}
+
+	/**
+	 * @param contentType the content type to check.
+	 * @param messageConverter the {@link MessageConverter} for the content type.
+	 * @since 1.6
+	 */
+	public void addDelegate(String contentType, MessageConverter messageConverter) {
 		this.delegates.put(contentType, messageConverter);
 	}
 
+	/**
+	 * @param contentType the content type key to remove {@link MessageConverter} from delegates.
+	 * @return the remove {@link MessageConverter}.
+	 * @deprecated in favor of {@link #removeDelegate(String)}
+	 */
+	@Deprecated
 	public MessageConverter removeDelgate(String contentType) {
+		return removeDelegate(contentType);
+	}
+
+	/**
+	 * @param contentType the content type key to remove {@link MessageConverter} from delegates.
+	 * @return the remove {@link MessageConverter}.
+	 */
+	public MessageConverter removeDelegate(String contentType) {
 		return this.delegates.remove(contentType);
 	}
 
