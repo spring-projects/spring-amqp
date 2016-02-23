@@ -105,7 +105,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 	}
 
 	@SuppressWarnings("unchecked")
-	<T> T getSpy(String id) {
+	public <T> T getSpy(String id) {
 		return (T) this.listeners.get(id);
 	}
 
