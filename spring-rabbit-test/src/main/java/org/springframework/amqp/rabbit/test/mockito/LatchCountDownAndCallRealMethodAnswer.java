@@ -41,8 +41,8 @@ public class LatchCountDownAndCallRealMethodAnswer implements Answer<Void> {
 
 	@Override
 	public Void answer(InvocationOnMock invocation) throws Throwable {
-		this.latch.countDown();
 		invocation.callRealMethod();
+		this.latch.countDown();
 		return null;
 	}
 
