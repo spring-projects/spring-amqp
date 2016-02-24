@@ -12,10 +12,12 @@
  */
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -390,7 +392,7 @@ public class RabbitAdminIntegrationTests {
 		received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals(Integer.valueOf(1000), received.getMessageProperties().getReceivedDelay());
-		assertTrue(System.currentTimeMillis() - t1 > 999);
+		assertThat(System.currentTimeMillis() - t1, greaterThan(950L));
 
 		this.rabbitAdmin.deleteQueue(queue.getName());
 		this.rabbitAdmin.deleteExchange(exchange.getName());

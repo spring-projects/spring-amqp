@@ -36,6 +36,11 @@ starting if the problem is detected during startup.
 It will also stop the container if the problem is detected later, such as after recovering from a connection failure.
 See <<containerAttributes>> for more information.
 
+====== Listener Container Logging
+
+Now listener container provides its `beanName` into the internal `SimpleAsyncTaskExecutor` as a `threadNamePrefix`.
+It is useful for logs analysis.
+
 ===== AutoDeclare and RabbitAdmins
 
 See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use

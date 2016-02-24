@@ -129,6 +129,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
+	private volatile boolean taskExecutorSet;
+
 	private volatile int concurrentConsumers = 1;
 
 	private volatile Integer maxConcurrentConsumers;
@@ -416,6 +418,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setTaskExecutor(Executor taskExecutor) {
 		Assert.notNull(taskExecutor, "taskExecutor must not be null");
 		this.taskExecutor = taskExecutor;
+		this.taskExecutorSet = true;
 	}
 
 	/**
@@ -732,6 +735,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		checkMissingQueuesFatal();
 		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
+		}
+		if (!this.taskExecutorSet && StringUtils.hasText(this.getBeanName())) {
+			this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
+			this.taskExecutorSet = true;
 		}
 		initializeProxy();
 		if (this.transactionManager != null) {
