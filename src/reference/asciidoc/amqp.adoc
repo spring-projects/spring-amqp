@@ -527,6 +527,71 @@ To modify this behavior, inject a custom `ConditionalExceptionLogger` into the
 
 Also see <<consumer-events>>.
 
+[[runtime-cache-properties]]
+===== Runtime Cache Properties
+
+Staring with _version 1.6_, the `CachingConnectionFactory` now provides cache statistics via the `getCacheProperties()`
+method.
+These statistics can be used to tune the cache to optimize it in production.
+
+.Cache properties for CacheMode.CHANNEL
+[cols="2l,4", options="header"]
+|===
+| Property
+
+| Meaning
+
+| channelCacheSize
+
+| The currently configured maximum channels that are allowed to be idle.
+
+| localPort
+
+| The local port for the connection (if available).
+This can be used to correlate with connections/channels on the RabbitMQ Admin UI.
+
+| idleChannelsTx
+
+| The number of transactional channels that are currently idle (cached).
+
+| idleChannelsNotTx
+
+| The number of non-transactional channels that are currently idle (cached).
+
+|===
+
+.Cache properties for CacheMode.CONNECTION
+[cols="2l,4", options="header"]
+|===
+| Property
+
+| Meaning
+
+| channelCacheSize
+
+| The currently configured maximum channels that are allowed to be idle.
+
+| connectionCacheSize
+
+| The currently configured maximum connections that are allowed to be idle.
+
+| idleChannelsTx:<localPort>
+
+| The number of transactional channels that are currently idle (cached) for this connection.
+The localPort part of the property name can be used to correlate with connections/channels on the RabbitMQ Admin UI.
+
+| idleChannelsNotTx:<localPort>
+
+| The number of non-transactional channels that are currently idle (cached) for this connection.
+The localPort part of the property name can be used to correlate with connections/channels on the RabbitMQ Admin UI.
+
+|===
+
+The `cacheMode` property (`CHANNEL` or `CONNECTION` is also included).
+
+.JVisualVM Example
+image::images/cacheStats.png[align="center"]
+
 [[amqp-template]]
 ==== AmqpTemplate
 
