@@ -684,7 +684,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@ManagedAttribute
 	public Properties getCacheProperties() {
 		Properties props = new Properties();
-		props.setProperty("cachMode", this.cacheMode.name());
+		props.setProperty("cacheMode", this.cacheMode.name());
 		synchronized(connectionMonitor) {
 			props.setProperty("channelCacheSize", Integer.toString(this.channelCacheSize));
 			if (this.cacheMode.equals(CacheMode.CONNECTION)) {
@@ -698,7 +698,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (port == 0) {
 						port = ++n; // just use a unique id to avoid overwriting
 					}
-					props.put("idleChannelsTx:" + port, Integer.valueOf(entry.getValue().size()));
+					props.put("idleChannelsTx:" + port, entry.getValue().size());
 				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.openConnectionNonTransactionalChannels.entrySet()) {
@@ -706,14 +706,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (port == 0) {
 						port = ++n; // just use a unique id to avoid overwriting
 					}
-					props.put("idleChannelsNotTx:" + port, Integer.valueOf(entry.getValue().size()));
+					props.put("idleChannelsNotTx:" + port, entry.getValue().size());
 				}
 			}
 			else {
 				props.setProperty("localPort",
 						Integer.toString(this.connection == null ? 0 : this.connection.getLocalPort()));
-				props.setProperty("idleChannelsTx", Integer.toString(cachedChannelsTransactional.size()));
-				props.setProperty("idleChannelsNotTx", Integer.toString(cachedChannelsNonTransactional.size()));
+				props.setProperty("idleChannelsTx", Integer.toString(this.cachedChannelsTransactional.size()));
+				props.setProperty("idleChannelsNotTx", Integer.toString(this.cachedChannelsNonTransactional.size()));
 			}
 		}
 		return props;
@@ -721,8 +721,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public String toString() {
-		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize + ", host=" + this.getHost()
-				+ ", port=" + this.getPort() + ", active=" + active
+		return "CachingConnectionFactory [channelCacheSize=" + this.channelCacheSize + ", host=" + getHost()
+				+ ", port=" + getPort() + ", active=" + this.active
 				+ " " + super.toString() + "]";
 	}
 
