@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -29,6 +29,7 @@ import com.rabbitmq.client.Channel;
  * @author Mark Pollack
  * @author Dave Syer
  * @author Steve Powell
+ * @author Gary Russell
  */
 public class SingleConnectionFactory extends AbstractConnectionFactory {
 
@@ -200,6 +201,15 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 		public Connection getTargetConnection() {
 			return target;
+		}
+
+		@Override
+		public int getLocalPort() {
+			Connection target = this.target;
+			if (target != null) {
+				return target.getLocalPort();
+			}
+			return 0;
 		}
 
 		@Override

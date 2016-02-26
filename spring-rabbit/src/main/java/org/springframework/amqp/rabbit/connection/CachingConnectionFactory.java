@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -48,6 +50,8 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.jmx.export.annotation.ManagedAttribute;
+import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -84,6 +88,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Artem Bilan
  * @author Steve Powell
  */
+@ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
 				PublisherCallbackChannelConnectionFactory, SmartLifecycle {
@@ -676,10 +681,48 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.connection = null;
 	}
 
+	@ManagedAttribute
+	public Properties getCacheProperties() {
+		Properties props = new Properties();
+		props.setProperty("cacheMode", this.cacheMode.name());
+		synchronized(connectionMonitor) {
+			props.setProperty("channelCacheSize", Integer.toString(this.channelCacheSize));
+			if (this.cacheMode.equals(CacheMode.CONNECTION)) {
+				props.setProperty("connectionCacheSize", Integer.toString(this.connectionCacheSize));
+				props.setProperty("openConnections", Integer.toString(this.openConnections.size()));
+				props.setProperty("idleConnections", Integer.toString(this.idleConnections.size()));
+				int n = 0;
+				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
+										this.openConnectionTransactionalChannels.entrySet()) {
+					int port = entry.getKey().getLocalPort();
+					if (port == 0) {
+						port = ++n; // just use a unique id to avoid overwriting
+					}
+					props.put("idleChannelsTx:" + port, entry.getValue().size());
+				}
+				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
+										this.openConnectionNonTransactionalChannels.entrySet()) {
+					int port = entry.getKey().getLocalPort();
+					if (port == 0) {
+						port = ++n; // just use a unique id to avoid overwriting
+					}
+					props.put("idleChannelsNotTx:" + port, entry.getValue().size());
+				}
+			}
+			else {
+				props.setProperty("localPort",
+						Integer.toString(this.connection == null ? 0 : this.connection.getLocalPort()));
+				props.setProperty("idleChannelsTx", Integer.toString(this.cachedChannelsTransactional.size()));
+				props.setProperty("idleChannelsNotTx", Integer.toString(this.cachedChannelsNonTransactional.size()));
+			}
+		}
+		return props;
+	}
+
 	@Override
 	public String toString() {
-		return "CachingConnectionFactory [channelCacheSize=" + channelCacheSize + ", host=" + this.getHost()
-				+ ", port=" + this.getPort() + ", active=" + active
+		return "CachingConnectionFactory [channelCacheSize=" + this.channelCacheSize + ", host=" + getHost()
+				+ ", port=" + getPort() + ", active=" + this.active
 				+ " " + super.toString() + "]";
 	}
 
@@ -961,6 +1004,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		@Override
 		public Connection getTargetConnection() {
 			return target;
+		}
+
+		@Override
+		public int getLocalPort() {
+			Connection target = this.target;
+			if (target != null) {
+				return target.getLocalPort();
+			}
+			return 0;
 		}
 
 		@Override
