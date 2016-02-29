@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpConnectException;
@@ -59,9 +58,6 @@ import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.aop.Pointcut;
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
@@ -157,8 +153,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
-	private volatile Advice[] adviceChain = new Advice[0];
-
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
@@ -209,20 +203,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param connectionFactory the {@link ConnectionFactory}
 	 */
 	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
-		this.setConnectionFactory(connectionFactory);
-	}
-
-	/**
-	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
-	 * multiple listener executions will all be wrapped in the same advice up to that limit.
-	 * <p>
-	 * If a {@link #setTransactionManager(PlatformTransactionManager) transactionManager} is provided as well, then
-	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
-	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
-	 * @param adviceChain the advice chain to set
-	 */
-	public void setAdviceChain(Advice[] adviceChain) {
-		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
+		setConnectionFactory(connectionFactory);
 	}
 
 	/**
@@ -682,20 +663,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	private void initializeProxy() {
-		if (this.adviceChain.length == 0) {
-			return;
-		}
-		ProxyFactory factory = new ProxyFactory();
-		for (Advice advice : getAdviceChain()) {
-			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
-		}
-		factory.setProxyTargetClass(false);
-		factory.addInterface(ContainerDelegate.class);
-		factory.setTarget(this.delegate);
-		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
-	}
-
 	// -------------------------------------------------------------------------
 	// Implementation of AbstractMessageListenerContainer's template methods
 	// -------------------------------------------------------------------------
@@ -723,7 +690,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
 			this.taskExecutorSet = true;
 		}
-		initializeProxy();
+		ContainerDelegate proxy = initializeProxy(this.delegate);
+		if (proxy != null) {
+			this.proxy = proxy;
+		}
 		if (this.transactionManager != null) {
 			if (!isChannelTransacted()) {
 				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
@@ -1173,10 +1143,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	private Advice[] getAdviceChain() {
-		return this.adviceChain;
-	}
-
 	@Override
 	protected void invokeListener(Channel channel, Message message) throws Exception {
 		this.proxy.invokeListener(channel, message);
@@ -1222,12 +1188,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				+ "[concurrentConsumers=" + this.concurrentConsumers
 				+ (this.maxConcurrentConsumers != null ? ", maxConcurrentConsumers=" + this.maxConcurrentConsumers : "")
 				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
-	}
-
-	private interface ContainerDelegate {
-
-		void invokeListener(Channel channel, Message message) throws Exception;
-
 	}
 
 	private final class AsyncMessageProcessingConsumer implements Runnable {
