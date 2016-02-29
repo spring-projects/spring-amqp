@@ -20,6 +20,11 @@ Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on t
 A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.
 See <<message-listener-adapter>> for more information.
 
+===== Listener Container Changes
+
+Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
+This property only applies when using `basicGet` (e.g. from `RabbitTemplate.receive()` methods) and is now initialized to `null` for container messages.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
