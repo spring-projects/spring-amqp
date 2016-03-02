@@ -36,6 +36,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.util.Assert;
 import org.springframework.util.concurrent.ListenableFuture;
@@ -222,6 +223,14 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 */
 	public ConnectionFactory getConnectionFactory() {
 		return this.template.getConnectionFactory();
+	}
+
+	/**
+	 * @return a reference to the underlying {@link RabbitTemplate}'s
+	 * {@link MessageConverter}.
+	 */
+	public MessageConverter getMessageConverter() {
+		return this.template.getMessageConverter();
 	}
 
 	/**
