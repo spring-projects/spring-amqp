@@ -217,6 +217,14 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	}
 
 	/**
+	 * @return a reference to the underlying connection factory in the
+	 * {@link RabbitTemplate}.
+	 */
+	public ConnectionFactory getConnectionFactory() {
+		return this.template.getConnectionFactory();
+	}
+
+	/**
 	 * Send a message to the default exchange with the default routing key. If the message
 	 * contains a correlationId property, it must be unique.
 	 * @param message the message.
