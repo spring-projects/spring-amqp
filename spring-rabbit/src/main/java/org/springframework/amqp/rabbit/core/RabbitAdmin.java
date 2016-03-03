@@ -338,6 +338,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					return props;
 				}
 				catch (IllegalArgumentException e) {
+					if (logger.isDebugEnabled()) {
+						logger.error("Exception while fetching Queue properties: '" + queueName + "'", e);
+					}
 					try {
 						if (channel instanceof ChannelProxy) {
 							((ChannelProxy) channel).getTargetChannel().close();
@@ -565,6 +568,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						declareOks.add(declareOk);
 					}
 					catch (IllegalArgumentException e) {
+						if (logger.isDebugEnabled()) {
+							logger.error("Exception while declaring queue: '" + queue.getName() + "'");
+						}
 						try {
 							if (channel instanceof ChannelProxy) {
 								((ChannelProxy) channel).getTargetChannel().close();

@@ -2333,7 +2333,7 @@ public void doSomeWorkAndGetResultAsync() {
 
     ...
 
-    ListenableFuture<String> future = this.template.convertSendAndReceive("foo");
+    RabbitConverterFuture<String> future = this.template.convertSendAndReceive("foo");
     future.addCallback(new ListenableFutureCallback<String>() {
 
         @Override
@@ -2363,6 +2363,12 @@ failure, if available.
 
 IMPORTANT: The publisher confirm is discarded if it is received after the reply - since the reply implies a successful
 publish.
+
+Set the `receiveTimeout` property on the template to time out replies (it defaults to `30000` - 30 seconds).
+If a timeout occurs, the future will be completed with an `AmqpReplyTimeoutException`.
+
+The template implements `SmartLifecycle`; stopping the template while there are pending replies will cause the
+pending `Future` s to be canceled.
 
 [[remoting]]
 ===== Spring Remoting with AMQP
