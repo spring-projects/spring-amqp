@@ -19,10 +19,13 @@ package org.springframework.amqp.rabbit.core;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
@@ -162,11 +166,11 @@ public class AsyncRabbitTemplateTests {
 	@DirtiesContext
 	public void testConvertWithConfirm() throws Exception {
 		this.template.setEnableConfirms(true);
-		RabbitConverterFuture<String> future = this.template.convertSendAndReceive("confirm");
+		RabbitConverterFuture<String> future = this.template.convertSendAndReceive("sleep");
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertNotNull(confirm);
 		assertTrue(confirm.get(10, TimeUnit.SECONDS));
-		checkConverterResult(future, "CONFIRM");
+		checkConverterResult(future, "SLEEP");
 	}
 
 	@Test
@@ -174,13 +178,87 @@ public class AsyncRabbitTemplateTests {
 	public void testMessageWithConfirm() throws Exception {
 		this.template.setEnableConfirms(true);
 		RabbitMessageFuture future = this.template
-				.sendAndReceive(new SimpleMessageConverter().toMessage("confirm", new MessageProperties()));
+				.sendAndReceive(new SimpleMessageConverter().toMessage("sleep", new MessageProperties()));
 		ListenableFuture<Boolean> confirm = future.getConfirm();
 		assertNotNull(confirm);
 		assertTrue(confirm.get(10, TimeUnit.SECONDS));
-		checkMessageResult(future, "CONFIRM");
+		checkMessageResult(future, "SLEEP");
 	}
 
+	@Test
+	@DirtiesContext
+	public void testReceiveTimeout() throws Exception {
+		this.template.setReceiveTimeout(500);
+		ListenableFuture<String> future = this.template.convertSendAndReceive("noReply");
+		TheCallback callback = new TheCallback();
+		future.addCallback(callback);
+		assertEquals(1, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		try {
+			future.get(10, TimeUnit.SECONDS);
+			fail("Expected ExecutionException");
+		}
+		catch (ExecutionException e) {
+			assertThat(e.getCause(), instanceOf(AmqpReplyTimeoutException.class));
+		}
+		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertThat(callback.ex, instanceOf(AmqpReplyTimeoutException.class));
+	}
+
+	@Test
+	@DirtiesContext
+	public void testReplyAfterReceiveTimeout() throws Exception {
+		this.template.setReceiveTimeout(100);
+		RabbitConverterFuture<String> future = this.template.convertSendAndReceive("sleep");
+		TheCallback callback = new TheCallback();
+		future.addCallback(callback);
+		assertEquals(1, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		try {
+			future.get(10, TimeUnit.SECONDS);
+			fail("Expected ExecutionException");
+		}
+		catch (ExecutionException e) {
+			assertThat(e.getCause(), instanceOf(AmqpReplyTimeoutException.class));
+		}
+		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertThat(callback.ex, instanceOf(AmqpReplyTimeoutException.class));
+
+		/*
+		 * Test there's no harm if the reply is received after the timeout. This
+		 * is unlikely to happen because the future is removed from the pending
+		 * map when it times out. However, there is a small race condition where
+		 * the reply arrives at the same time as the timeout.
+		 */
+		future.set("foo");
+		assertNull(callback.result);
+	}
+
+	@Test
+	@DirtiesContext
+	public void testStopCancelled() throws Exception {
+		this.template.setReceiveTimeout(5000);
+		RabbitConverterFuture<String> future = this.template.convertSendAndReceive("noReply");
+		TheCallback callback = new TheCallback();
+		future.addCallback(callback);
+		assertEquals(1, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		this.template.stop();
+		try {
+			future.get(10, TimeUnit.SECONDS);
+			fail("Expected CancellationException");
+		}
+		catch (CancellationException e) {
+			assertEquals("AsyncRabbitTemplate was stopped while waiting for reply", future.getNackCause());
+		}
+		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertTrue(future.isCancelled());
+
+		/*
+		 * Test there's no harm if the reply is received after the cancel. This
+		 * should never happen because the container is stopped before canceling
+		 * and the future is removed from the pending map.
+		 */
+		future.set("foo");
+		assertNull(callback.result);
+	}
 
 	private void checkConverterResult(ListenableFuture<String> future, String expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -223,6 +301,24 @@ public class AsyncRabbitTemplateTests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertEquals(expected, new String(resultRef.get().getBody()));
 		return resultRef.get();
+	}
+
+	public static class TheCallback implements ListenableFutureCallback<String> {
+
+		private volatile String result;
+
+		private volatile Throwable ex;
+
+		@Override
+		public void onSuccess(String result) {
+			this.result = result;
+		}
+
+		@Override
+		public void onFailure(Throwable ex) {
+			this.ex = ex;
+		}
+
 	}
 
 	@Configuration
@@ -280,13 +376,16 @@ public class AsyncRabbitTemplateTests {
 
 				@SuppressWarnings("unused")
 				public String handleMessage(String message) {
-					if ("confirm".equals(message)) {
+					if ("sleep".equals(message)) {
 						try {
-							Thread.sleep(500); // time for confirm to be delivered
+							Thread.sleep(500); // time for confirm to be delivered, or timeout to occur
 						}
 						catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
 						}
+					}
+					else if ("noReply".equals(message)) {
+						return null;
 					}
 					return message.toUpperCase();
 				}

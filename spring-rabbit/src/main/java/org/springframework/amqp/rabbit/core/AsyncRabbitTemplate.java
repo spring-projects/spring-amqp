@@ -17,15 +17,18 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -37,7 +40,10 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
@@ -63,7 +69,10 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * @author Gary Russell
  * @since 1.6
  */
-public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback {
+public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback,
+		BeanNameAware {
+
+	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
@@ -80,11 +89,17 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 	private volatile boolean enableConfirms;
 
+	private volatile long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+
 	private int phase;
 
 	private boolean autoStartup = true;
 
 	private Charset charset = Charset.forName("UTF-8");
+
+	private String beanName;
+
+	private TaskScheduler taskScheduler;
 
 	/**
 	 * Construct an instance using the provided arguments. Replies will be
@@ -217,12 +232,41 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		this.charset = charset;
 	}
 
+	public String getBeanName() {
+		return beanName;
+	}
+
+	@Override
+	public void setBeanName(String beanName) {
+		this.beanName = beanName;
+	}
+
 	/**
 	 * @return a reference to the underlying connection factory in the
 	 * {@link RabbitTemplate}.
 	 */
 	public ConnectionFactory getConnectionFactory() {
 		return this.template.getConnectionFactory();
+	}
+
+	/**
+	 * Set the receive timeout - the future returned by the send and receive
+	 * methods will be canceled when this timeout expires. {@code <= 0} means
+	 * futures never expire. Beware that this will cause a memory leak if a
+	 * reply is not received. Default: 30000 (30 seconds).
+	 * @param receiveTimeout the timeout in milliseconds.
+	 */
+	public void setReceiveTimeout(long receiveTimeout) {
+		this.receiveTimeout = receiveTimeout;
+	}
+
+	/**
+	 * Set the task scheduler to expire timed out futures.
+	 * @param taskScheduler the task scheduler
+	 * @see #setReceiveTimeout(long)
+	 */
+	public void setTaskScheduler(TaskScheduler taskScheduler) {
+		this.taskScheduler = taskScheduler;
 	}
 
 	/**
@@ -330,7 +374,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 */
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
-		RabbitMessageFuture future = new RabbitMessageFuture(correlationId);
+		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(correlationId);
@@ -367,6 +411,12 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	@Override
 	public synchronized void start() {
 		if (!this.running) {
+			if (this.taskScheduler == null) {
+				ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+				scheduler.setThreadNamePrefix(this.beanName == null ? "asyncTemplate-" : (this.beanName + "-"));
+				scheduler.afterPropertiesSet();
+				this.taskScheduler = scheduler;
+			}
 			this.container.start();
 		}
 		this.running = true;
@@ -376,6 +426,10 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	public synchronized void stop() {
 		if (this.running) {
 			this.container.stop();
+			for (RabbitFuture<?> future : this.pending.values()) {
+				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
+				future.cancel(true);
+			}
 		}
 		this.running = false;
 	}
@@ -419,6 +473,11 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 					}
 					else {
 						((RabbitMessageFuture) future).set(message);
+					}
+				}
+				else {
+					if (logger.isWarnEnabled()) {
+						logger.warn("No pending reply - perhaps timed out: " + message);
 					}
 				}
 			}
@@ -486,16 +545,31 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 		private final String correlationId;
 
+		private final Message requestMessage;
+
+		private final ScheduledFuture<?> cancelTask;
+
 		private volatile ListenableFuture<Boolean> confirm;
 
 		private String nackCause;
 
-		public RabbitFuture(String correlationId) {
+		public RabbitFuture(String correlationId, Message requestMessage) {
 			this.correlationId = correlationId;
+			this.requestMessage = requestMessage;
+			if (receiveTimeout > 0) {
+				this.cancelTask = taskScheduler.schedule(new CancelTask(),
+						new Date(System.currentTimeMillis() + receiveTimeout));
+			}
+			else {
+				this.cancelTask = null;
+			}
 		}
 
 		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
+			if (this.cancelTask != null) {
+				this.cancelTask.cancel(true);
+			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
 			return super.cancel(mayInterruptIfRunning);
 		}
@@ -526,6 +600,16 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 			this.nackCause = nackCause;
 		}
 
+		private class CancelTask implements Runnable {
+
+			@Override
+			public void run() {
+				AsyncRabbitTemplate.this.pending.remove(correlationId);
+				setException(new AmqpReplyTimeoutException("Reply timed out", requestMessage));
+			}
+
+		}
+
 	}
 
 	/**
@@ -534,8 +618,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 */
 	public class RabbitMessageFuture extends RabbitFuture<Message> {
 
-		public RabbitMessageFuture(String correlationId) {
-			super(correlationId);
+		public RabbitMessageFuture(String correlationId, Message requestMessage) {
+			super(correlationId, requestMessage);
 		}
 
 	}
@@ -547,8 +631,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 */
 	public class RabbitConverterFuture<C> extends RabbitFuture<C> {
 
-		public RabbitConverterFuture(String correlationId) {
-			super(correlationId);
+		public RabbitConverterFuture(String correlationId, Message requestMessage) {
+			super(correlationId, requestMessage);
 		}
 
 	}
@@ -574,7 +658,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 				messageToSend = this.userPostProcessor.postProcessMessage(message);
 			}
 			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend);
-			this.future = new RabbitConverterFuture<C>(correlationId);
+			this.future = new RabbitConverterFuture<C>(correlationId, message);
 			if (this.correlationData != null && this.correlationData.getId() == null) {
 				this.correlationData.setId(correlationId);
 				future.setConfirm(new SettableListenableFuture<Boolean>());

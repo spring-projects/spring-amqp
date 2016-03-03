@@ -773,7 +773,9 @@ public class PublisherCallbackChannelImpl
 				}
 			}
 			else {
-				logger.error("No listener for seq:" + seq);
+				if (logger.isDebugEnabled()) {
+					logger.debug(this.delegate.toString() + " No listener for seq:" + seq);
+				}
 			}
 		}
 	}
