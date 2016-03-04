@@ -476,8 +476,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 					}
 				}
 				else {
-					if (logger.isDebugEnabled()) {
-						logger.debug("No pending reply - perhaps timed out");
+					if (logger.isWarnEnabled()) {
+						logger.warn("No pending reply - perhaps timed out: " + message);
 					}
 				}
 			}
