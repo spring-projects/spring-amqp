@@ -56,6 +56,7 @@ subprojects { subproject ->
 	apply plugin: 'idea'
 	apply plugin: 'project-report'
 	apply plugin: 'jacoco'
+	apply plugin: 'checkstyle'
 
 	if (project.hasProperty('platformVersion')) {
 		apply plugin: 'spring-io'
@@ -172,12 +173,16 @@ subprojects { subproject ->
 		from javadoc
 	}
 
+	checkstyle {
+		configFile = new File(rootDir, "src/checkstyle/checkstyle.xml")
+	}
+
 	artifacts {
 		archives sourcesJar
 		archives javadocJar
 	}
 
-	build.dependsOn jacocoTestReport
+	build.dependsOn jacocoTestReport, check
 
 }
 

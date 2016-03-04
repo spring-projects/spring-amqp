@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -43,6 +43,7 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 		return createMessageIds;
 	}
 
+	@Override
 	public final Message toMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
 		if (messageProperties==null) {
@@ -66,6 +67,7 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	 */
 	protected abstract Message createMessage(Object object, MessageProperties messageProperties);
 
+	@Override
 	public abstract Object fromMessage(Message message) throws MessageConversionException;
 
 }
