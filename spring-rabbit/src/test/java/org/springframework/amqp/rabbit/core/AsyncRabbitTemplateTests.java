@@ -201,6 +201,7 @@ public class AsyncRabbitTemplateTests {
 			assertThat(e.getCause(), instanceOf(AmqpReplyTimeoutException.class));
 		}
 		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertTrue(callback.latch.await(10, TimeUnit.SECONDS));
 		assertThat(callback.ex, instanceOf(AmqpReplyTimeoutException.class));
 	}
 
@@ -220,6 +221,7 @@ public class AsyncRabbitTemplateTests {
 			assertThat(e.getCause(), instanceOf(AmqpReplyTimeoutException.class));
 		}
 		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertTrue(callback.latch.await(10, TimeUnit.SECONDS));
 		assertThat(callback.ex, instanceOf(AmqpReplyTimeoutException.class));
 
 		/*
@@ -249,6 +251,7 @@ public class AsyncRabbitTemplateTests {
 			assertEquals("AsyncRabbitTemplate was stopped while waiting for reply", future.getNackCause());
 		}
 		assertEquals(0, TestUtils.getPropertyValue(this.template, "pending", Map.class).size());
+		assertTrue(callback.latch.await(10, TimeUnit.SECONDS));
 		assertTrue(future.isCancelled());
 
 		/*
@@ -305,6 +308,8 @@ public class AsyncRabbitTemplateTests {
 
 	public static class TheCallback implements ListenableFutureCallback<String> {
 
+		private final CountDownLatch latch = new CountDownLatch(1);
+
 		private volatile String result;
 
 		private volatile Throwable ex;
@@ -312,11 +317,13 @@ public class AsyncRabbitTemplateTests {
 		@Override
 		public void onSuccess(String result) {
 			this.result = result;
+			latch.countDown();
 		}
 
 		@Override
 		public void onFailure(Throwable ex) {
 			this.ex = ex;
+			latch.countDown();
 		}
 
 	}
