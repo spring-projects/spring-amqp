@@ -370,8 +370,7 @@ public class AsyncRabbitTemplateTests {
 		}
 
 		@Bean
-		public AsyncRabbitTemplate asyncTemplate(RabbitTemplate template,
-		                                         SimpleMessageListenerContainer container) {
+		public AsyncRabbitTemplate asyncTemplate(RabbitTemplate template, SimpleMessageListenerContainer container) {
 			return new AsyncRabbitTemplate(template, container);
 		}
 

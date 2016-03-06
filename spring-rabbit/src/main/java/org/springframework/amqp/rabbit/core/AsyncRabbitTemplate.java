@@ -233,7 +233,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	}
 
 	public String getBeanName() {
-		return beanName;
+		return this.beanName;
 	}
 
 	@Override
@@ -413,7 +413,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		if (!this.running) {
 			if (this.taskScheduler == null) {
 				ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-				scheduler.setThreadNamePrefix(this.beanName == null ? "asyncTemplate-" : (this.beanName + "-"));
+				scheduler.setThreadNamePrefix(getBeanName() == null ? "asyncTemplate-" : (getBeanName() + "-"));
 				scheduler.afterPropertiesSet();
 				this.taskScheduler = scheduler;
 			}
@@ -535,6 +535,11 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		}
 		messageProperties.setReplyTo(this.replyAddress);
 		return correlationId;
+	}
+
+	@Override
+	public String toString() {
+		return this.beanName == null ? super.toString() : (this.getClass().getSimpleName() + ": " + this.beanName);
 	}
 
 	/**
