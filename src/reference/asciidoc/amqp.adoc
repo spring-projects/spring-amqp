@@ -533,6 +533,8 @@ Also see <<consumer-events>>.
 Staring with _version 1.6_, the `CachingConnectionFactory` now provides cache statistics via the `getCacheProperties()`
 method.
 These statistics can be used to tune the cache to optimize it in production.
+For example, the high water marks can be used to determine whether the cache size should be increased.
+If it equals the cache size, you might want to consider increasing further.
 
 .Cache properties for CacheMode.CHANNEL
 [cols="2l,4", options="header"]
@@ -558,6 +560,14 @@ This can be used to correlate with connections/channels on the RabbitMQ Admin UI
 
 | The number of non-transactional channels that are currently idle (cached).
 
+| idleChannelsTxHighWater
+
+| The maximum number of transactional channels that have been concurrently idle (cached).
+
+| idleChannelsNotTxHighWater
+
+| The maximum number of non-transactional channels have been concurrently idle (cached).
+
 |===
 
 .Cache properties for CacheMode.CONNECTION
@@ -575,6 +585,14 @@ This can be used to correlate with connections/channels on the RabbitMQ Admin UI
 
 | The currently configured maximum connections that are allowed to be idle.
 
+| idleConnections
+
+| The number of connections that are currently idle.
+
+| idleConnectionsHighWater
+
+| The maximum number of connections that have been concurrently idle.
+
 | idleChannelsTx:<localPort>
 
 | The number of transactional channels that are currently idle (cached) for this connection.
@@ -583,6 +601,16 @@ The localPort part of the property name can be used to correlate with connection
 | idleChannelsNotTx:<localPort>
 
 | The number of non-transactional channels that are currently idle (cached) for this connection.
+The localPort part of the property name can be used to correlate with connections/channels on the RabbitMQ Admin UI.
+
+| idleChannelsTxHighWater:<localPort>
+
+| The maximum number of transactional channels that have been concurrently idle (cached).
+The localPort part of the property name can be used to correlate with connections/channels on the RabbitMQ Admin UI.
+
+| idleChannelsNotTxHighWater:<localPort>
+
+| The maximum number of non-transactional channels have been concurrently idle (cached).
 The localPort part of the property name can be used to correlate with connections/channels on the RabbitMQ Admin UI.
 
 |===
