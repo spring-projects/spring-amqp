@@ -33,7 +33,7 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 
 	private final Throwable throwable;
 
-	public DeclarationExceptionEvent(RabbitAdmin source, Declarable declarable, Throwable t) {
+	public DeclarationExceptionEvent(Object source, Declarable declarable, Throwable t) {
 		super(source);
 		this.declarable = declarable;
 		this.throwable = t;

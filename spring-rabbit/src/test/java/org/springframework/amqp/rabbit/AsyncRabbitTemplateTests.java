@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.core;
+package org.springframework.amqp.rabbit;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -36,17 +36,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
+import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitMessageFuture;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.AsyncRabbitTemplate.RabbitConverterFuture;
-import org.springframework.amqp.rabbit.core.AsyncRabbitTemplate.RabbitMessageFuture;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;

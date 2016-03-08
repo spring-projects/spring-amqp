@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp;
+package org.springframework.amqp.core;
 
-import org.springframework.amqp.core.Message;
+import org.springframework.amqp.AmqpException;
 
 /**
  * Async reply timeout.

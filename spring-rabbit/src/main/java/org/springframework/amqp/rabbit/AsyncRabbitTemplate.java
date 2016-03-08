@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.core;
+package org.springframework.amqp.rabbit;
 
 import java.nio.charset.Charset;
 import java.util.Date;
@@ -28,13 +28,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
+import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;

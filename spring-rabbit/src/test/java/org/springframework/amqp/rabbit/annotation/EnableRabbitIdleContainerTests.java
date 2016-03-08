@@ -80,7 +80,7 @@ public class EnableRabbitIdleContainerTests {
 		assertEquals("FOO", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "foo"));
 		assertTrue(this.listener.latch.await(10, TimeUnit.SECONDS));
 		assertEquals("foo", this.listener.event.getListenerId());
-		assertEquals(this.queue.getName(), this.listener.event.getQueues()[0]);
+		assertEquals(this.queue.getName(), this.listener.event.getQueueNames()[0]);
 		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
 		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive(this.queue.getName(), "bar"));
 		assertFalse(this.listener.barEventReceived);

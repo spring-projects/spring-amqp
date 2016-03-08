@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.core;
 
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 
 /**
  * A {@link ConnectionListener} that will declare a single exchange when the

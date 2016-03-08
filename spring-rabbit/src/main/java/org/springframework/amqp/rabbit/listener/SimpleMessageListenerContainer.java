@@ -1448,7 +1448,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		private void publishIdleContainerEvent(long idleTime) {
 			if (applicationEventPublisher != null) {
 				applicationEventPublisher.publishEvent(
-						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, idleTime));
+						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, idleTime, getListenerId(),
+								getQueueNames()));
 			}
 		}
 

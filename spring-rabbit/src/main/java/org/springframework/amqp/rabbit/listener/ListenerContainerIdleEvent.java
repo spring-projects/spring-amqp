@@ -31,9 +31,15 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	private final long idleTime;
 
-	public ListenerContainerIdleEvent(SimpleMessageListenerContainer source, long idleTime) {
+	private final String listenerId;
+
+	private final String[] queueNames;
+
+	public ListenerContainerIdleEvent(Object source, long idleTime, String id, String... queueNames) {
 		super(source);
 		this.idleTime = idleTime;
+		this.listenerId = id;
+		this.queueNames = queueNames;
 	}
 
 	/**
@@ -48,8 +54,8 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * The queues the container is listening to.
 	 * @return the queue names.
 	 */
-	public String[] getQueues() {
-		return ((SimpleMessageListenerContainer) getSource()).getQueueNames();
+	public String[] getQueueNames() {
+		return this.queueNames;
 	}
 
 	/**
@@ -57,13 +63,13 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the id.
 	 */
 	public String getListenerId() {
-		return ((SimpleMessageListenerContainer) getSource()).getListenerId();
+		return this.listenerId;
 	}
 
 	@Override
 	public String toString() {
 		return "ListenerContainerIdleEvent [idleTime="
-				+ ((float) this.idleTime / 1000) + "s, listenerId=" + getListenerId()
+				+ ((float) this.idleTime / 1000) + "s, listenerId=" + this.listenerId
 				+ ", container=" + getSource() + "]";
 	}
 

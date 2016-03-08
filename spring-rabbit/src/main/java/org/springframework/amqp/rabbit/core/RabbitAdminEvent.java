@@ -29,7 +29,7 @@ public class RabbitAdminEvent extends AmqpEvent {
 
 	private static final long serialVersionUID = 1L;
 
-	public RabbitAdminEvent(RabbitAdmin source) {
+	public RabbitAdminEvent(Object source) {
 		super(source);
 	}
 

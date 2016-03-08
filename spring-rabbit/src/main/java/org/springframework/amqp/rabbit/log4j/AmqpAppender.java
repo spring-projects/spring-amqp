@@ -49,9 +49,9 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.support.DeclareExchangeConnectionListener;
 
 /**
  * A Log4J appender that publishes logging events to an AMQP Exchange.
