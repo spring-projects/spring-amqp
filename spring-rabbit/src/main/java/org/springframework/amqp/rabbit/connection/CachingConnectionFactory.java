@@ -38,6 +38,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 
@@ -56,6 +57,7 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AlreadyClosedException;
@@ -112,14 +114,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private final Set<ChannelCachingConnectionProxy> openConnections = new HashSet<ChannelCachingConnectionProxy>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-			openConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+		openConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-			openConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+		openConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
 
-	private final BlockingQueue<ChannelCachingConnectionProxy> idleConnections = new LinkedBlockingQueue<ChannelCachingConnectionProxy>();
+	private final BlockingQueue<ChannelCachingConnectionProxy> idleConnections =
+			new LinkedBlockingQueue<ChannelCachingConnectionProxy>();
 
 	private final Map<Connection, Semaphore> checkoutPermits = new HashMap<Connection, Semaphore>();
+
+	private final Map<String, AtomicInteger> channelHighWaterMarks = new HashMap<String, AtomicInteger>();
+
+	private final AtomicInteger connectionHighWaterMark = new AtomicInteger();
 
 	private volatile long channelCheckoutTimeout = 0;
 
@@ -309,6 +316,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			Assert.isTrue(this.connectionCacheSize == 1,
 					"When the cache mode is 'CHANNEL', the connection cache size cannot be configured.");
 		}
+		initCacheWaterMarks();
+	}
+
+	private void initCacheWaterMarks() {
+		this.channelHighWaterMarks.put(ObjectUtils.getIdentityHexString(this.cachedChannelsNonTransactional),
+				new AtomicInteger());
+		this.channelHighWaterMarks.put(ObjectUtils.getIdentityHexString(this.cachedChannelsTransactional),
+				new AtomicInteger());
 	}
 
 	@Override
@@ -548,7 +563,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					}
 					this.openConnections.add(connection);
 					this.openConnectionNonTransactionalChannels.put(connection, new LinkedList<ChannelProxy>());
+					this.channelHighWaterMarks.put(ObjectUtils.getIdentityHexString(
+							this.openConnectionNonTransactionalChannels.get(connection)), new AtomicInteger());
 					this.openConnectionTransactionalChannels.put(connection, new LinkedList<ChannelProxy>());
+					this.channelHighWaterMarks.put(
+							ObjectUtils.getIdentityHexString(this.openConnectionTransactionalChannels.get(connection)),
+							new AtomicInteger());
 					this.checkoutPermits.put(connection, new Semaphore(this.channelCacheSize));
 				}
 				else {
@@ -594,6 +614,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			this.idleConnections.clear();
 			this.openConnectionNonTransactionalChannels.clear();
 			this.openConnectionTransactionalChannels.clear();
+			this.channelHighWaterMarks.clear();
+			initCacheWaterMarks();
+			this.connectionHighWaterMark.set(0);
 		}
 	}
 
@@ -694,6 +717,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				props.setProperty("connectionCacheSize", Integer.toString(this.connectionCacheSize));
 				props.setProperty("openConnections", Integer.toString(this.openConnections.size()));
 				props.setProperty("idleConnections", Integer.toString(this.idleConnections.size()));
+				props.setProperty("idleConnectionsHighWater",  Integer.toString(this.connectionHighWaterMark.get()));
 				int n = 0;
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.openConnectionTransactionalChannels.entrySet()) {
@@ -701,7 +725,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (port == 0) {
 						port = ++n; // just use a unique id to avoid overwriting
 					}
-					props.put("idleChannelsTx:" + port, entry.getValue().size());
+					LinkedList<ChannelProxy> channelList = entry.getValue();
+					props.put("idleChannelsTx:" + port, Integer.toString(channelList.size()));
+					props.put("idleChannelsTxHighWater:" + port, Integer.toString(
+							this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.openConnectionNonTransactionalChannels.entrySet()) {
@@ -709,7 +736,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (port == 0) {
 						port = ++n; // just use a unique id to avoid overwriting
 					}
-					props.put("idleChannelsNotTx:" + port, entry.getValue().size());
+					LinkedList<ChannelProxy> channelList = entry.getValue();
+					props.put("idleChannelsNotTx:" + port, Integer.toString(channelList.size()));
+					props.put("idleChannelsNotTxHighWater:" + port, Integer.toString(
+							this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 				}
 			}
 			else {
@@ -717,6 +747,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						Integer.toString(this.connection == null ? 0 : this.connection.getLocalPort()));
 				props.setProperty("idleChannelsTx", Integer.toString(this.cachedChannelsTransactional.size()));
 				props.setProperty("idleChannelsNotTx", Integer.toString(this.cachedChannelsNonTransactional.size()));
+				props.setProperty("idleChannelsTxHighWater", Integer.toString(this.channelHighWaterMarks
+						.get(ObjectUtils.getIdentityHexString(this.cachedChannelsTransactional)).get()));
+				props.setProperty("idleChannelsNotTxHighWater", Integer.toString(this.channelHighWaterMarks
+						.get(ObjectUtils.getIdentityHexString(this.cachedChannelsNonTransactional)).get()));
 			}
 		}
 		return props;
@@ -737,6 +771,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final LinkedList<ChannelProxy> channelList;
 
+		private final String channelListIdentity;
+
 		private final Object targetMonitor = new Object();
 
 		private final boolean transactional;
@@ -748,6 +784,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			this.theConnection = connection;
 			this.target = target;
 			this.channelList = channelList;
+			this.channelListIdentity = ObjectUtils.getIdentityHexString(channelList);
 			this.transactional = transactional;
 		}
 
@@ -868,6 +905,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					logger.trace("Returning cached Channel: " + this.target);
 				}
 				this.channelList.addLast(proxy);
+				setHighWaterMark();
+			}
+		}
+
+		private void setHighWaterMark() {
+			AtomicInteger hwm = CachingConnectionFactory.this.channelHighWaterMarks.get(this.channelListIdentity);
+			if (hwm != null) {
+				// No need for atomicity since we're sync'd on the channel list
+				int prev = hwm.get();
+				int size = this.channelList.size();
+				if (size > prev) {
+					hwm.set(size);
+				}
 			}
 		}
 
@@ -973,6 +1023,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								logger.debug("Returning connection '" + this + "' to cache");
 							}
 							idleConnections.add(this);
+							if (CachingConnectionFactory.this.connectionHighWaterMark.get() < idleConnections.size()) {
+								CachingConnectionFactory.this.connectionHighWaterMark.set(idleConnections.size());
+							}
 						}
 					}
 				}

@@ -71,9 +71,37 @@ public class CachePropertiesTests {
 		ch4.close();
 		ch5.close();
 		Properties props = this.channelCf.getCacheProperties();
-		assertEquals("10", props.getProperty("channelCacheSize"));
+		assertEquals("4", props.getProperty("channelCacheSize"));
 		assertEquals("2", props.getProperty("idleChannelsNotTx"));
 		assertEquals("3", props.getProperty("idleChannelsTx"));
+		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
+		assertEquals("3", props.getProperty("idleChannelsTxHighWater"));
+		ch1 = c1.createChannel(false);
+		ch3 = c1.createChannel(true);
+		props = this.channelCf.getCacheProperties();
+		assertEquals("1", props.getProperty("idleChannelsNotTx"));
+		assertEquals("2", props.getProperty("idleChannelsTx"));
+		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
+		assertEquals("3", props.getProperty("idleChannelsTxHighWater"));
+		ch1 = c1.createChannel(false);
+		ch2 = c1.createChannel(false);
+		ch3 = c1.createChannel(true);
+		ch4 = c1.createChannel(true);
+		ch5 = c1.createChannel(true);
+		Channel ch6 = c1.createChannel(true);
+		Channel ch7 = c1.createChannel(true); // #5
+		ch1.close();
+		ch2.close();
+		ch3.close();
+		ch4.close();
+		ch5.close();
+		ch6.close();
+		props = this.channelCf.getCacheProperties();
+		assertEquals("2", props.getProperty("idleChannelsNotTx"));
+		assertEquals("4", props.getProperty("idleChannelsTx")); // not 5
+		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater"));
+		assertEquals("4", props.getProperty("idleChannelsTxHighWater")); // not 5
+
 	}
 
 	@Test
@@ -97,6 +125,19 @@ public class CachePropertiesTests {
 		assertEquals("2", props.getProperty("openConnections"));
 		assertEquals("1", props.getProperty("idleConnections"));
 		c2.close();
+		props = this.connectionCf.getCacheProperties();
+		assertEquals("2", props.getProperty("idleConnections"));
+		assertEquals("2", props.getProperty("idleConnectionsHighWater"));
+		int c1Port = c1.getLocalPort();
+		int c2Port = c2.getLocalPort();
+		assertEquals("2", props.getProperty("idleChannelsNotTx:" + c1Port));
+		assertEquals("0", props.getProperty("idleChannelsTx:" + c1Port));
+		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater:" + c1Port));
+		assertEquals("0", props.getProperty("idleChannelsTxHighWater:" + c1Port));
+		assertEquals("1", props.getProperty("idleChannelsNotTx:" + c2Port));
+		assertEquals("2", props.getProperty("idleChannelsTx:" + c2Port));
+		assertEquals("1", props.getProperty("idleChannelsNotTxHighWater:" + c2Port));
+		assertEquals("2", props.getProperty("idleChannelsTxHighWater:" + c2Port));
 	}
 
 	@Configuration
@@ -106,7 +147,7 @@ public class CachePropertiesTests {
 		@Bean
 		public CachingConnectionFactory channelCf() {
 			CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory("localhost");
-			cachingConnectionFactory.setChannelCacheSize(10);
+			cachingConnectionFactory.setChannelCacheSize(4);
 			return cachingConnectionFactory;
 		}
 
