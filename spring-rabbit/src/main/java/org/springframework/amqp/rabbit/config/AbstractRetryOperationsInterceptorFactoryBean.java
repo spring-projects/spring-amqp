@@ -43,11 +43,11 @@ public abstract class AbstractRetryOperationsInterceptorFactoryBean implements F
 	}
 
 	protected RetryOperations getRetryOperations() {
-		return retryTemplate;
+		return this.retryTemplate;
 	}
 
 	protected MessageRecoverer getMessageRecoverer() {
-		return messageRecoverer;
+		return this.messageRecoverer;
 	}
 
 	public boolean isSingleton() {

@@ -82,7 +82,7 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 		}
 		finally {
 			if (id != null) {
-				retryContextCache.remove(id);
+				this.retryContextCache.remove(id);
 			}
 		}
 	}

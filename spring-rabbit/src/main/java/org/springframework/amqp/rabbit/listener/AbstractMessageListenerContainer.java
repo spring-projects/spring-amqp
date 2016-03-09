@@ -132,7 +132,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the acknowledgeMode
 	 */
 	public AcknowledgeMode getAcknowledgeMode() {
-		return acknowledgeMode;
+		return this.acknowledgeMode;
 	}
 
 	/**
@@ -309,7 +309,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	@Override
 	public MessageConverter getMessageConverter() {
-		return messageConverter;
+		return this.messageConverter;
 	}
 
 	/**
@@ -382,7 +382,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected final ApplicationContext getApplicationContext() {
-		return applicationContext;
+		return this.applicationContext;
 	}
 
 	@Override
@@ -422,7 +422,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public final void afterPropertiesSet() {
 		super.afterPropertiesSet();
 		Assert.state(
-				exposeListenerChannel || !getAcknowledgeMode().isManual(),
+				this.exposeListenerChannel || !getAcknowledgeMode().isManual(),
 				"You cannot acknowledge messages manually if the channel is not exposed to the listener "
 						+ "(please check your configuration and set exposeListenerChannel=true or acknowledgeMode!=MANUAL)");
 		Assert.state(
@@ -532,11 +532,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	@Override
 	public void start() {
-		if (!initialized) {
+		if (!this.initialized) {
 			synchronized (this.lifecycleMonitor) {
-				if (!initialized) {
+				if (!this.initialized) {
 					afterPropertiesSet();
-					initialized = true;
+					this.initialized = true;
 				}
 			}
 		}

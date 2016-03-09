@@ -391,7 +391,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return resolve(rabbitListener.id());
 		}
 		else {
-			return "org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#" + counter.getAndIncrement();
+			return "org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#" + this.counter.getAndIncrement();
 		}
 	}
 
@@ -569,7 +569,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		private MessageHandlerMethodFactory createDefaultMessageHandlerMethodFactory() {
 			DefaultMessageHandlerMethodFactory defaultFactory = new DefaultMessageHandlerMethodFactory();
-			defaultFactory.setBeanFactory(beanFactory);
+			defaultFactory.setBeanFactory(RabbitListenerAnnotationBeanPostProcessor.this.beanFactory);
 			defaultFactory.afterPropertiesSet();
 			return defaultFactory;
 		}

@@ -32,7 +32,7 @@ public abstract class AbstractJsonMessageConverter extends AbstractMessageConver
 	private ClassMapper classMapper = null;
 
 	public ClassMapper getClassMapper() {
-		return classMapper;
+		return this.classMapper;
 
 	}
 
@@ -52,6 +52,6 @@ public abstract class AbstractJsonMessageConverter extends AbstractMessageConver
 	}
 
     public String getDefaultCharset() {
-        return defaultCharset;
+        return this.defaultCharset;
     }
 }

@@ -69,8 +69,8 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 		protected Address getReplyToAddress(Message request) throws Exception {
 			Address replyTo = request.getMessageProperties().getReplyToAddress();
 			Address defaultReplyTo = null;
-			if (delegatingHandler != null) {
-				defaultReplyTo = delegatingHandler.getDefaultReplyTo();
+			if (MultiMethodRabbitListenerEndpoint.this.delegatingHandler != null) {
+				defaultReplyTo = MultiMethodRabbitListenerEndpoint.this.delegatingHandler.getDefaultReplyTo();
 			}
 			if (replyTo == null && defaultReplyTo == null) {
 				throw new AmqpException(

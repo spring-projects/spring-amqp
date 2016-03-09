@@ -76,15 +76,15 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	}
 
 	protected BeanFactory getBeanFactory() {
-		return beanFactory;
+		return this.beanFactory;
 	}
 
 	protected BeanExpressionResolver getResolver() {
-		return resolver;
+		return this.resolver;
 	}
 
 	protected BeanExpressionContext getBeanExpressionContext() {
-		return expressionContext;
+		return this.expressionContext;
 	}
 
 	public void setId(String id) {
@@ -112,14 +112,14 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @return the queues for this endpoint.
 	 */
 	public Collection<Queue> getQueues() {
-		return queues;
+		return this.queues;
 	}
 
 	/**
 	 * @return the queue names for this endpoint.
 	 */
 	public Collection<String> getQueueNames() {
-		return queueNames;
+		return this.queueNames;
 	}
 
 	/**
@@ -148,7 +148,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * @return the exclusive {@code boolean} flag.
 	 */
 	public boolean isExclusive() {
-		return exclusive;
+		return this.exclusive;
 	}
 
 	/**
@@ -164,7 +164,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * no priority is set.
 	 */
 	public Integer getPriority() {
-		return priority;
+		return this.priority;
 	}
 
 	/**
@@ -180,7 +180,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * none is configured.
 	 */
 	public RabbitAdmin getAdmin() {
-		return admin;
+		return this.admin;
 	}
 
 	@Override

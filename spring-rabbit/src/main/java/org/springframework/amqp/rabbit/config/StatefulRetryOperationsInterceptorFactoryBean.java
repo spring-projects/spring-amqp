@@ -78,10 +78,11 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 		retryInterceptor.setNewItemIdentifier(new NewMethodArgumentsIdentifier() {
 			public boolean isNew(Object[] args) {
 				Message message = (Message) args[1];
-				if (newMessageIdentifier == null) {
+				if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
 					return !message.getMessageProperties().isRedelivered();
-				} else {
-					return newMessageIdentifier.isNew(message);
+				}
+				else {
+					return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
 				}
 			}
 		});
@@ -105,15 +106,16 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 		retryInterceptor.setKeyGenerator(new MethodArgumentsKeyGenerator() {
 			public Object getKey(Object[] args) {
 				Message message = (Message) args[1];
-				if (messageKeyGenerator == null) {
+				if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 					String messageId = message.getMessageProperties().getMessageId();
 					if (messageId == null) {
 						throw new FatalListenerExecutionException(
 								"Illegal null id in message. Failed to manage retry for message: " + message);
 					}
 					return messageId;
-				} else {
-					return messageKeyGenerator.getKey(message);
+				}
+				else {
+					return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
 				}
 			}
 		});

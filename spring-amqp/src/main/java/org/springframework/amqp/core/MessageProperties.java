@@ -192,7 +192,7 @@ public class MessageProperties implements Serializable {
 	}
 
 	public String getCorrelationIdString() {
-		return correlationIdString;
+		return this.correlationIdString;
 	}
 
 	public void setCorrelationIdString(String correlationIdString) {
@@ -402,26 +402,26 @@ public class MessageProperties implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((appId == null) ? 0 : appId.hashCode());
-		result = prime * result + ((clusterId == null) ? 0 : clusterId.hashCode());
-		result = prime * result + ((contentEncoding == null) ? 0 : contentEncoding.hashCode());
-		result = prime * result + (int) (contentLength ^ (contentLength >>> 32));
-		result = prime * result + ((contentType == null) ? 0 : contentType.hashCode());
-		result = prime * result + Arrays.hashCode(correlationId);
-		result = prime * result + ((deliveryMode == null) ? 0 : deliveryMode.hashCode());
-		result = prime * result + (int) (deliveryTag ^ (deliveryTag >>> 32));
-		result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
-		result = prime * result + ((headers == null) ? 0 : headers.hashCode());
-		result = prime * result + ((messageCount == null) ? 0 : messageCount.hashCode());
-		result = prime * result + ((messageId == null) ? 0 : messageId.hashCode());
-		result = prime * result + ((priority == null) ? 0 : priority.hashCode());
-		result = prime * result + ((receivedExchange == null) ? 0 : receivedExchange.hashCode());
-		result = prime * result + ((receivedRoutingKey == null) ? 0 : receivedRoutingKey.hashCode());
-		result = prime * result + ((redelivered == null) ? 0 : redelivered.hashCode());
-		result = prime * result + ((replyTo == null) ? 0 : replyTo.hashCode());
-		result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
-		result = prime * result + ((type == null) ? 0 : type.hashCode());
-		result = prime * result + ((userId == null) ? 0 : userId.hashCode());
+		result = prime * result + ((this.appId == null) ? 0 : this.appId.hashCode());
+		result = prime * result + ((this.clusterId == null) ? 0 : this.clusterId.hashCode());
+		result = prime * result + ((this.contentEncoding == null) ? 0 : this.contentEncoding.hashCode());
+		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> 32));
+		result = prime * result + ((this.contentType == null) ? 0 : this.contentType.hashCode());
+		result = prime * result + Arrays.hashCode(this.correlationId);
+		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
+		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> 32));
+		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
+		result = prime * result + ((this.headers == null) ? 0 : this.headers.hashCode());
+		result = prime * result + ((this.messageCount == null) ? 0 : this.messageCount.hashCode());
+		result = prime * result + ((this.messageId == null) ? 0 : this.messageId.hashCode());
+		result = prime * result + ((this.priority == null) ? 0 : this.priority.hashCode());
+		result = prime * result + ((this.receivedExchange == null) ? 0 : this.receivedExchange.hashCode());
+		result = prime * result + ((this.receivedRoutingKey == null) ? 0 : this.receivedRoutingKey.hashCode());
+		result = prime * result + ((this.redelivered == null) ? 0 : this.redelivered.hashCode());
+		result = prime * result + ((this.replyTo == null) ? 0 : this.replyTo.hashCode());
+		result = prime * result + ((this.timestamp == null) ? 0 : this.timestamp.hashCode());
+		result = prime * result + ((this.type == null) ? 0 : this.type.hashCode());
+		result = prime * result + ((this.userId == null) ? 0 : this.userId.hashCode());
 		return result;
 	}
 
@@ -437,144 +437,144 @@ public class MessageProperties implements Serializable {
 			return false;
 		}
 		MessageProperties other = (MessageProperties) obj;
-		if (appId == null) {
+		if (this.appId == null) {
 			if (other.appId != null) {
 				return false;
 			}
 		}
-		else if (!appId.equals(other.appId)) {
+		else if (!this.appId.equals(other.appId)) {
 			return false;
 		}
-		if (clusterId == null) {
+		if (this.clusterId == null) {
 			if (other.clusterId != null) {
 				return false;
 			}
 		}
-		else if (!clusterId.equals(other.clusterId)) {
+		else if (!this.clusterId.equals(other.clusterId)) {
 			return false;
 		}
-		if (contentEncoding == null) {
+		if (this.contentEncoding == null) {
 			if (other.contentEncoding != null) {
 				return false;
 			}
 		}
-		else if (!contentEncoding.equals(other.contentEncoding)) {
+		else if (!this.contentEncoding.equals(other.contentEncoding)) {
 			return false;
 		}
-		if (contentLength != other.contentLength) {
+		if (this.contentLength != other.contentLength) {
 			return false;
 		}
-		if (contentType == null) {
+		if (this.contentType == null) {
 			if (other.contentType != null) {
 				return false;
 			}
 		}
-		else if (!contentType.equals(other.contentType)) {
+		else if (!this.contentType.equals(other.contentType)) {
 			return false;
 		}
-		if (!Arrays.equals(correlationId, other.correlationId)) {
+		if (!Arrays.equals(this.correlationId, other.correlationId)) {
 			return false;
 		}
-		if (deliveryMode != other.deliveryMode) {
+		if (this.deliveryMode != other.deliveryMode) {
 			return false;
 		}
-		if (deliveryTag != other.deliveryTag) {
+		if (this.deliveryTag != other.deliveryTag) {
 			return false;
 		}
-		if (expiration == null) {
+		if (this.expiration == null) {
 			if (other.expiration != null) {
 				return false;
 			}
 		}
-		else if (!expiration.equals(other.expiration)) {
+		else if (!this.expiration.equals(other.expiration)) {
 			return false;
 		}
-		if (headers == null) {
+		if (this.headers == null) {
 			if (other.headers != null) {
 				return false;
 			}
 		}
-		else if (!headers.equals(other.headers)) {
+		else if (!this.headers.equals(other.headers)) {
 			return false;
 		}
-		if (messageCount == null) {
+		if (this.messageCount == null) {
 			if (other.messageCount != null) {
 				return false;
 			}
 		}
-		else if (!messageCount.equals(other.messageCount)) {
+		else if (!this.messageCount.equals(other.messageCount)) {
 			return false;
 		}
-		if (messageId == null) {
+		if (this.messageId == null) {
 			if (other.messageId != null) {
 				return false;
 			}
 		}
-		else if (!messageId.equals(other.messageId)) {
+		else if (!this.messageId.equals(other.messageId)) {
 			return false;
 		}
-		if (priority == null) {
+		if (this.priority == null) {
 			if (other.priority != null) {
 				return false;
 			}
 		}
-		else if (!priority.equals(other.priority)) {
+		else if (!this.priority.equals(other.priority)) {
 			return false;
 		}
-		if (receivedExchange == null) {
+		if (this.receivedExchange == null) {
 			if (other.receivedExchange != null) {
 				return false;
 			}
 		}
-		else if (!receivedExchange.equals(other.receivedExchange)) {
+		else if (!this.receivedExchange.equals(other.receivedExchange)) {
 			return false;
 		}
-		if (receivedRoutingKey == null) {
+		if (this.receivedRoutingKey == null) {
 			if (other.receivedRoutingKey != null) {
 				return false;
 			}
 		}
-		else if (!receivedRoutingKey.equals(other.receivedRoutingKey)) {
+		else if (!this.receivedRoutingKey.equals(other.receivedRoutingKey)) {
 			return false;
 		}
-		if (redelivered == null) {
+		if (this.redelivered == null) {
 			if (other.redelivered != null) {
 				return false;
 			}
 		}
-		else if (!redelivered.equals(other.redelivered)) {
+		else if (!this.redelivered.equals(other.redelivered)) {
 			return false;
 		}
-		if (replyTo == null) {
+		if (this.replyTo == null) {
 			if (other.replyTo != null) {
 				return false;
 			}
 		}
-		else if (!replyTo.equals(other.replyTo)) {
+		else if (!this.replyTo.equals(other.replyTo)) {
 			return false;
 		}
-		if (timestamp == null) {
+		if (this.timestamp == null) {
 			if (other.timestamp != null) {
 				return false;
 			}
 		}
-		else if (!timestamp.equals(other.timestamp)) {
+		else if (!this.timestamp.equals(other.timestamp)) {
 			return false;
 		}
-		if (type == null) {
+		if (this.type == null) {
 			if (other.type != null) {
 				return false;
 			}
 		}
-		else if (!type.equals(other.type)) {
+		else if (!this.type.equals(other.type)) {
 			return false;
 		}
-		if (userId == null) {
+		if (this.userId == null) {
 			if (other.userId != null) {
 				return false;
 			}
 		}
-		else if (!userId.equals(other.userId)) {
+		else if (!this.userId.equals(other.userId)) {
 			return false;
 		}
 		return true;
@@ -582,13 +582,13 @@ public class MessageProperties implements Serializable {
 
 	@Override
 	public String toString() {
-		return "MessageProperties [headers=" + headers + ", timestamp=" + timestamp + ", messageId=" + messageId
-				+ ", userId=" + userId + ", appId=" + appId + ", clusterId=" + clusterId + ", type=" + type
-				+ ", correlationId=" + Arrays.toString(correlationId) + ", replyTo=" + replyTo + ", contentType="
-				+ contentType + ", contentEncoding=" + contentEncoding + ", contentLength=" + contentLength
-				+ ", deliveryMode=" + deliveryMode + ", expiration=" + expiration + ", priority=" + priority
-				+ ", redelivered=" + redelivered + ", receivedExchange=" + receivedExchange + ", receivedRoutingKey="
-				+ receivedRoutingKey + ", deliveryTag=" + deliveryTag + ", messageCount=" + messageCount + "]";
+		return "MessageProperties [headers=" + this.headers + ", timestamp=" + this.timestamp + ", messageId=" + this.messageId
+				+ ", userId=" + this.userId + ", appId=" + this.appId + ", clusterId=" + this.clusterId + ", type=" + this.type
+				+ ", correlationId=" + Arrays.toString(this.correlationId) + ", replyTo=" + this.replyTo + ", contentType="
+				+ this.contentType + ", contentEncoding=" + this.contentEncoding + ", contentLength=" + this.contentLength
+				+ ", deliveryMode=" + this.deliveryMode + ", expiration=" + this.expiration + ", priority=" + this.priority
+				+ ", redelivered=" + this.redelivered + ", receivedExchange=" + this.receivedExchange + ", receivedRoutingKey="
+				+ this.receivedRoutingKey + ", deliveryTag=" + this.deliveryTag + ", messageCount=" + this.messageCount + "]";
 	}
 
 }

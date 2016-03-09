@@ -111,11 +111,11 @@ public class ConsumerChannelRegistry {
 		}
 
 		private Channel getChannel() {
-			return channel;
+			return this.channel;
 		}
 
 		private ConnectionFactory getConnectionFactory() {
-			return connectionFactory;
+			return this.connectionFactory;
 		}
 	}
 }

@@ -82,8 +82,8 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 				messageProperties.setHeader(MessageProperties.SPRING_AUTO_DECOMPRESS, true);
 			}
 			byte[] compressed = zipped.toByteArray();
-			if (logger.isTraceEnabled()) {
-				logger.trace("Compressed " + message.getBody().length + " to " + compressed.length);
+			if (this.logger.isTraceEnabled()) {
+				this.logger.trace("Compressed " + message.getBody().length + " to " + compressed.length);
 			}
 			return new Message(compressed, messageProperties);
 		}

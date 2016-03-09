@@ -247,7 +247,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	private boolean generateId = false;
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -255,7 +255,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -263,7 +263,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getVirtualHost() {
-		return virtualHost;
+		return this.virtualHost;
 	}
 
 	public void setVirtualHost(String virtualHost) {
@@ -271,7 +271,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getUsername() {
-		return username;
+		return this.username;
 	}
 
 	public void setUsername(String username) {
@@ -279,7 +279,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
 	public void setPassword(String password) {
@@ -287,7 +287,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getExchangeName() {
-		return exchangeName;
+		return this.exchangeName;
 	}
 
 	public void setExchangeName(String exchangeName) {
@@ -295,7 +295,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getExchangeType() {
-		return exchangeType;
+		return this.exchangeType;
 	}
 
 	public void setExchangeType(String exchangeType) {
@@ -303,7 +303,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getRoutingKeyPattern() {
-		return routingKeyPattern;
+		return this.routingKeyPattern;
 	}
 
 	public void setRoutingKeyPattern(String routingKeyPattern) {
@@ -311,7 +311,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public boolean isDeclareExchange() {
-		return declareExchange;
+		return this.declareExchange;
 	}
 
 	public void setDeclareExchange(boolean declareExchange) {
@@ -319,7 +319,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getContentType() {
-		return contentType;
+		return this.contentType;
 	}
 
 	public void setContentType(String contentType) {
@@ -327,7 +327,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getContentEncoding() {
-		return contentEncoding;
+		return this.contentEncoding;
 	}
 
 	public void setContentEncoding(String contentEncoding) {
@@ -335,7 +335,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getApplicationId() {
-		return applicationId;
+		return this.applicationId;
 	}
 
 	public void setApplicationId(String applicationId) {
@@ -343,7 +343,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public int getSenderPoolSize() {
-		return senderPoolSize;
+		return this.senderPoolSize;
 	}
 
 	public void setSenderPoolSize(int senderPoolSize) {
@@ -351,7 +351,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public int getMaxSenderRetries() {
-		return maxSenderRetries;
+		return this.maxSenderRetries;
 	}
 
 	public void setMaxSenderRetries(int maxSenderRetries) {
@@ -359,7 +359,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public boolean isDurable() {
-		return durable;
+		return this.durable;
 	}
 
 	public void setDurable(boolean durable) {
@@ -375,7 +375,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public boolean isAutoDelete() {
-		return autoDelete;
+		return this.autoDelete;
 	}
 
 	public void setAutoDelete(boolean autoDelete) {
@@ -383,7 +383,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public boolean isGenerateId() {
-		return generateId;
+		return this.generateId;
 	}
 
 	public void setGenerateId(boolean generateId) {
@@ -391,7 +391,7 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	public String getCharset() {
-		return charset;
+		return this.charset;
 	}
 
 	public void setCharset(String charset) {
@@ -403,11 +403,11 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.routingKeyLayout = new PatternLayout(this.routingKeyPattern
 				.replaceAll("%X\\{applicationId\\}", this.applicationId));
 		this.connectionFactory = new CachingConnectionFactory();
-		this.connectionFactory.setHost(host);
-		this.connectionFactory.setPort(port);
-		this.connectionFactory.setUsername(username);
-		this.connectionFactory.setPassword(password);
-		this.connectionFactory.setVirtualHost(virtualHost);
+		this.connectionFactory.setHost(this.host);
+		this.connectionFactory.setPort(this.port);
+		this.connectionFactory.setUsername(this.username);
+		this.connectionFactory.setPassword(this.password);
+		this.connectionFactory.setVirtualHost(this.virtualHost);
 		setUpExchangeDeclaration();
 		startSenders();
 	}
@@ -421,23 +421,23 @@ public class AmqpAppender extends AppenderSkeleton {
 	}
 
 	protected void setUpExchangeDeclaration() {
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		if (declareExchange) {
+		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
+		if (this.declareExchange) {
 			Exchange x;
-			if ("topic".equals(exchangeType)) {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
+			if ("topic".equals(this.exchangeType)) {
+				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("direct".equals(exchangeType)) {
-				x = new DirectExchange(exchangeName, durable, autoDelete);
+			else if ("direct".equals(this.exchangeType)) {
+				x = new DirectExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("fanout".equals(exchangeType)) {
-				x = new FanoutExchange(exchangeName, durable, autoDelete);
+			else if ("fanout".equals(this.exchangeType)) {
+				x = new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
-			else if ("headers".equals(exchangeType)) {
-				x = new HeadersExchange(exchangeType, durable, autoDelete);
+			else if ("headers".equals(this.exchangeType)) {
+				x = new HeadersExchange(this.exchangeType, this.durable, this.autoDelete);
 			}
 			else {
-				x = new TopicExchange(exchangeName, durable, autoDelete);
+				x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
 			}
 			this.connectionFactory.addConnectionListener(new DeclareExchangeConnectionListener(x, admin));
 		}
@@ -448,8 +448,8 @@ public class AmqpAppender extends AppenderSkeleton {
 	 */
 	protected void startSenders() {
 		this.senderPool = Executors.newCachedThreadPool();
-		for (int i = 0; i < senderPoolSize; i++) {
-			senderPool.submit(new EventSender());
+		for (int i = 0; i < this.senderPoolSize; i++) {
+			this.senderPool.submit(new EventSender());
 		}
 	}
 
@@ -460,14 +460,14 @@ public class AmqpAppender extends AppenderSkeleton {
 
 	@Override
 	public void close() {
-		if (null != senderPool) {
-			senderPool.shutdownNow();
-			senderPool = null;
+		if (null != this.senderPool) {
+			this.senderPool.shutdownNow();
+			this.senderPool = null;
 		}
-		if (null != connectionFactory) {
-			connectionFactory.destroy();
+		if (null != this.connectionFactory) {
+			this.connectionFactory.destroy();
 		}
-		retryTimer.cancel();
+		this.retryTimer.cancel();
 	}
 
 	@Override
@@ -494,29 +494,29 @@ public class AmqpAppender extends AppenderSkeleton {
 		@Override
 		public void run() {
 			try {
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(AmqpAppender.this.connectionFactory);
 				while (true) {
-					final Event event = events.take();
+					final Event event = AmqpAppender.this.events.take();
 					LoggingEvent logEvent = event.getEvent();
 
 					String name = logEvent.getLogger().getName();
 					Level level = logEvent.getLevel();
 
 					MessageProperties amqpProps = new MessageProperties();
-					amqpProps.setDeliveryMode(deliveryMode);
-					amqpProps.setContentType(contentType);
-					if (null != contentEncoding) {
-						amqpProps.setContentEncoding(contentEncoding);
+					amqpProps.setDeliveryMode(AmqpAppender.this.deliveryMode);
+					amqpProps.setContentType(AmqpAppender.this.contentType);
+					if (null != AmqpAppender.this.contentEncoding) {
+						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
-					if (generateId) {
+					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());
 					}
 
 					// Set applicationId, if we're using one
-					if (null != applicationId) {
-						amqpProps.setAppId(applicationId);
+					if (null != AmqpAppender.this.applicationId) {
+						amqpProps.setAppId(AmqpAppender.this.applicationId);
 					}
 
 					// Set timestamp
@@ -542,9 +542,9 @@ public class AmqpAppender extends AppenderSkeleton {
 
 					StringBuilder msgBody;
 					String routingKey;
-					synchronized (layoutMutex) {
+					synchronized (AmqpAppender.this.layoutMutex) {
 						msgBody = new StringBuilder(layout.format(logEvent));
-						routingKey = routingKeyLayout.format(logEvent);
+						routingKey = AmqpAppender.this.routingKeyLayout.format(logEvent);
 					}
 					if (layout.ignoresThrowable() && null != logEvent.getThrowableInformation()) {
 						ThrowableInformation tinfo = logEvent.getThrowableInformation();
@@ -566,22 +566,24 @@ public class AmqpAppender extends AppenderSkeleton {
 							message = new Message(msgBody.toString().getBytes(), amqpProps);//NOSONAR (default charset)
 						}
 						message = postProcessMessageBeforeSend(message, event);
-						rabbitTemplate.send(exchangeName, routingKey, message);
+						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
 					}
 					catch (AmqpException e) {
 						int retries = event.incrementRetries();
-						if (retries < maxSenderRetries) {
+						if (retries < AmqpAppender.this.maxSenderRetries) {
 							// Schedule a retry based on the number of times I've tried to re-send this
-							retryTimer.schedule(new TimerTask() {
+							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
 								@Override
 								public void run() {
-									events.add(event);
+									AmqpAppender.this.events.add(event);
 								}
 							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
 						}
 						else {
-							errorHandler.error("Could not send log message " + logEvent.getRenderedMessage()
-									+ " after " + maxSenderRetries + " retries", e, ErrorCode.WRITE_FAILURE, logEvent);
+							errorHandler.error(
+									"Could not send log message " + logEvent.getRenderedMessage() + " after "
+											+ AmqpAppender.this.maxSenderRetries + " retries",
+									e, ErrorCode.WRITE_FAILURE, logEvent);
 						}
 					}
 				}
@@ -610,15 +612,15 @@ public class AmqpAppender extends AppenderSkeleton {
 		}
 
 		public LoggingEvent getEvent() {
-			return event;
+			return this.event;
 		}
 
 		public Map getProperties() {
-			return properties;
+			return this.properties;
 		}
 
 		public int incrementRetries() {
-			return retries.incrementAndGet();
+			return this.retries.incrementAndGet();
 		}
 
 	}

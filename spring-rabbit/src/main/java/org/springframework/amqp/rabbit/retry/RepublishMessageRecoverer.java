@@ -109,18 +109,18 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 			headers.putAll(additionalHeaders);
 		}
 
-		if (null != errorExchangeName) {
-			String routingKey = errorRoutingKey != null ? errorRoutingKey : this.prefixedOriginalRoutingKey(message);
-			this.errorTemplate.send(errorExchangeName, routingKey, message);
-			if (logger.isWarnEnabled()) {
-				logger.warn("Republishing failed message to exchange " + errorExchangeName);
+		if (null != this.errorExchangeName) {
+			String routingKey = this.errorRoutingKey != null ? this.errorRoutingKey : this.prefixedOriginalRoutingKey(message);
+			this.errorTemplate.send(this.errorExchangeName, routingKey, message);
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn("Republishing failed message to exchange " + this.errorExchangeName);
 			}
 		}
 		else {
 			final String routingKey = this.prefixedOriginalRoutingKey(message);
 			this.errorTemplate.send(routingKey, message);
-			if (logger.isWarnEnabled()) {
-				logger.warn("Republishing failed message to the template's default exchange with routing key " + routingKey);
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn("Republishing failed message to the template's default exchange with routing key " + routingKey);
 			}
 		}
 	}

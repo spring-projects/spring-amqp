@@ -95,7 +95,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
 			String contentType = properties.getContentType();
-			if (contentType != null && contentType.startsWith("text") && !ignoreContentType) {
+			if (contentType != null && contentType.startsWith("text") && !this.ignoreContentType) {
 				String encoding = properties.getContentEncoding();
 				if (encoding == null) {
 					encoding = this.defaultCharset;
@@ -106,9 +106,9 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 					throw new MessageConversionException("failed to convert text-based Message content", e);
 				}
 			} else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
-					|| ignoreContentType) {
+					|| this.ignoreContentType) {
 				try {
-					content = deserializer.deserialize(new ByteArrayInputStream(message.getBody()));
+					content = this.deserializer.deserialize(new ByteArrayInputStream(message.getBody()));
 				} catch (IOException e) {
 					throw new MessageConversionException("Could not convert message body", e);
 				}
@@ -140,7 +140,7 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 		} else {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			try {
-				serializer.serialize(object, output);
+				this.serializer.serialize(object, output);
 			} catch (IOException e) {
 				throw new MessageConversionException("Cannot convert object to bytes", e);
 			}

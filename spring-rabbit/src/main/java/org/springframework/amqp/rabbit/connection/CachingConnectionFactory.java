@@ -242,11 +242,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	public CacheMode getCacheMode() {
-		return cacheMode;
+		return this.cacheMode;
 	}
 
 	public void setCacheMode(CacheMode cacheMode) {
-		Assert.isTrue(!initialized, "'cacheMode' cannot be changed after initialization.");
+		Assert.isTrue(!this.initialized, "'cacheMode' cannot be changed after initialization.");
 		Assert.notNull(cacheMode, "'cacheMode' must not be null.");
 		this.cacheMode = cacheMode;
 	}
@@ -484,7 +484,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		else if (this.cacheMode == CacheMode.CONNECTION) {
 			if (!connection.isOpen()) {
-				synchronized(connectionMonitor) {
+				synchronized(this.connectionMonitor) {
 					this.openConnectionNonTransactionalChannels.get(connection).clear();
 					this.openConnectionTransactionalChannels.get(connection).clear();
 					connection.notifyCloseIfNecessary();
@@ -532,7 +532,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (this.connection == null) {
 					this.connection = new ChannelCachingConnectionProxy(super.createBareConnection());
 					// invoke the listener *after* this.connection is assigned
-					getConnectionListener().onCreate(connection);
+					getConnectionListener().onCreate(this.connection);
 					this.checkoutPermits.put(this.connection, new Semaphore(this.channelCacheSize));
 				}
 				return this.connection;
@@ -807,7 +807,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			else if (methodName.equals("close")) {
 				// Handle close method: don't pass the call on.
-				if (active) {
+				if (CachingConnectionFactory.this.active) {
 					synchronized (this.channelList) {
 						if (!RabbitUtils.isPhysicalCloseRequired() &&
 								(this.channelList.size() < getChannelCacheSize()
@@ -844,9 +844,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					}
 					this.target = null;
 				}
-				synchronized (targetMonitor) {
+				synchronized (this.targetMonitor) {
 					if (this.target == null) {
-						this.target = createBareChannel(theConnection, transactional);
+						this.target = createBareChannel(this.theConnection, this.transactional);
 					}
 					return method.invoke(this.target, args);
 				}
@@ -858,9 +858,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						logger.debug("Detected closed channel on exception.  Re-initializing: " + this.target);
 					}
 					this.target = null;
-					synchronized (targetMonitor) {
+					synchronized (this.targetMonitor) {
 						if (this.target == null) {
-							this.target = createBareChannel(theConnection, transactional);
+							this.target = createBareChannel(this.theConnection, this.transactional);
 						}
 					}
 				}
@@ -882,11 +882,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		 * @param proxy the channel to close
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
-			if (target == null) {
+			if (this.target == null) {
 				return;
 			}
 			if (this.target != null && !this.target.isOpen()) {
-				synchronized (targetMonitor) {
+				synchronized (this.targetMonitor) {
 					if (this.target != null && !this.target.isOpen()) {
 						if (this.target instanceof PublisherCallbackChannel) {
 							this.target.close(); // emit nacks if necessary
@@ -993,7 +993,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private Channel createBareChannel(boolean transactional) {
-			return target.createChannel(transactional);
+			return this.target.createChannel(transactional);
 		}
 
 		@Override
@@ -1003,9 +1003,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public void close() {
-			if (cacheMode == CacheMode.CONNECTION) {
-				synchronized (connectionMonitor) {
-					if (!this.target.isOpen() || idleConnections.size() >= connectionCacheSize) {
+			if (CachingConnectionFactory.this.cacheMode == CacheMode.CONNECTION) {
+				synchronized (CachingConnectionFactory.this.connectionMonitor) {
+					if (!this.target.isOpen()
+							|| CachingConnectionFactory.this.idleConnections.size() >=
+									CachingConnectionFactory.this.connectionCacheSize) {
 						if (logger.isDebugEnabled()) {
 							logger.debug("Completely closing connection '" + this + "'");
 						}
@@ -1013,18 +1015,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							RabbitUtils.closeConnection(this.target);
 						}
 						this.notifyCloseIfNecessary();
-						openConnections.remove(this);
-						openConnectionNonTransactionalChannels.remove(this);
-						openConnectionTransactionalChannels.remove(this);
+						CachingConnectionFactory.this.openConnections.remove(this);
+						CachingConnectionFactory.this.openConnectionNonTransactionalChannels.remove(this);
+						CachingConnectionFactory.this.openConnectionTransactionalChannels.remove(this);
 					}
 					else {
-						if (!idleConnections.contains(this)) {
+						if (!CachingConnectionFactory.this.idleConnections.contains(this)) {
 							if (logger.isDebugEnabled()) {
 								logger.debug("Returning connection '" + this + "' to cache");
 							}
-							idleConnections.add(this);
-							if (CachingConnectionFactory.this.connectionHighWaterMark.get() < idleConnections.size()) {
-								CachingConnectionFactory.this.connectionHighWaterMark.set(idleConnections.size());
+							CachingConnectionFactory.this.idleConnections.add(this);
+							if (CachingConnectionFactory.this.connectionHighWaterMark
+									.get() < CachingConnectionFactory.this.idleConnections.size()) {
+								CachingConnectionFactory.this.connectionHighWaterMark
+										.set(CachingConnectionFactory.this.idleConnections.size());
 							}
 						}
 					}
@@ -1034,10 +1038,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		public void destroy() {
 			if (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL) {
-				reset(cachedChannelsNonTransactional, cachedChannelsTransactional);
+				reset(CachingConnectionFactory.this.cachedChannelsNonTransactional,
+						CachingConnectionFactory.this.cachedChannelsTransactional);
 			}
 			else {
-				reset(openConnectionNonTransactionalChannels.get(this), openConnectionTransactionalChannels.get(this));
+				reset(CachingConnectionFactory.this.openConnectionNonTransactionalChannels.get(this),
+						CachingConnectionFactory.this.openConnectionTransactionalChannels.get(this));
 			}
 			if (this.target != null) {
 				RabbitUtils.closeConnection(this.target);
@@ -1054,12 +1060,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public boolean isOpen() {
-			return target != null && target.isOpen();
+			return this.target != null && this.target.isOpen();
 		}
 
 		@Override
 		public Connection getTargetConnection() {
-			return target;
+			return this.target;
 		}
 
 		@Override
@@ -1073,7 +1079,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public int hashCode() {
-			return 31 + ((target == null) ? 0 : target.hashCode());
+			return 31 + ((this.target == null) ? 0 : this.target.hashCode());
 		}
 
 		@Override
@@ -1088,11 +1094,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				return false;
 			}
 			ChannelCachingConnectionProxy other = (ChannelCachingConnectionProxy) obj;
-			if (target == null) {
+			if (this.target == null) {
 				if (other.target != null) {
 					return false;
 				}
-			} else if (!target.equals(other.target)) {
+			} else if (!this.target.equals(other.target)) {
 				return false;
 			}
 			return true;
@@ -1100,7 +1106,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public String toString() {
-			return cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated " +
+			return CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated " +
 					"Rabbit Connection: " + this.target;
 		}
 

@@ -44,7 +44,7 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	 * @return the flag value
 	 */
 	protected boolean isCreateMessageIds() {
-		return createMessageIds;
+		return this.createMessageIds;
 	}
 
 	@Override

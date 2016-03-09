@@ -33,11 +33,11 @@ public class ActiveObjectCounter<T> {
 
 	public void add(T object) {
 		CountDownLatch lock = new CountDownLatch(1);
-		locks.putIfAbsent(object, lock);
+		this.locks.putIfAbsent(object, lock);
 	}
 
 	public void release(T object) {
-		CountDownLatch remove = locks.remove(object);
+		CountDownLatch remove = this.locks.remove(object);
 		if (remove != null) {
 			remove.countDown();
 		}
@@ -47,18 +47,18 @@ public class ActiveObjectCounter<T> {
 		long t0 = System.currentTimeMillis();
 		long t1 = t0 + TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 		while (System.currentTimeMillis() <= t1) {
-			if (locks.isEmpty()) {
+			if (this.locks.isEmpty()) {
 				return true;
 			}
-			Collection<T> objects = new HashSet<T>(locks.keySet());
+			Collection<T> objects = new HashSet<T>(this.locks.keySet());
 			for (T object : objects) {
-				CountDownLatch lock = locks.get(object);
+				CountDownLatch lock = this.locks.get(object);
 				if (lock==null) {
 					continue;
 				}
 				t0 = System.currentTimeMillis();
 				if (lock.await(t1 - t0, TimeUnit.MILLISECONDS)) {
-					locks.remove(object);
+					this.locks.remove(object);
 				}
 			}
 		}
@@ -66,11 +66,11 @@ public class ActiveObjectCounter<T> {
 	}
 
 	public int getCount() {
-		return locks.size();
+		return this.locks.size();
 	}
 
 	public void reset() {
-		locks.clear();
+		this.locks.clear();
 	}
 
 }

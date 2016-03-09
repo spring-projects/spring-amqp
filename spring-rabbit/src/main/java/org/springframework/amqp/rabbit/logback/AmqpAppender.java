@@ -221,7 +221,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -229,7 +229,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -237,7 +237,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getVirtualHost() {
-		return virtualHost;
+		return this.virtualHost;
 	}
 
 	public void setVirtualHost(String virtualHost) {
@@ -245,7 +245,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getUsername() {
-		return username;
+		return this.username;
 	}
 
 	public void setUsername(String username) {
@@ -253,7 +253,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
 	public void setPassword(String password) {
@@ -261,7 +261,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getExchangeName() {
-		return exchangeName;
+		return this.exchangeName;
 	}
 
 	public void setExchangeName(String exchangeName) {
@@ -269,7 +269,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getExchangeType() {
-		return exchangeType;
+		return this.exchangeType;
 	}
 
 	public void setExchangeType(String exchangeType) {
@@ -281,7 +281,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public boolean isDeclareExchange() {
-		return declareExchange;
+		return this.declareExchange;
 	}
 
 	public void setDeclareExchange(boolean declareExchange) {
@@ -289,7 +289,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getContentType() {
-		return contentType;
+		return this.contentType;
 	}
 
 	public void setContentType(String contentType) {
@@ -297,7 +297,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getContentEncoding() {
-		return contentEncoding;
+		return this.contentEncoding;
 	}
 
 	public void setContentEncoding(String contentEncoding) {
@@ -305,7 +305,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getApplicationId() {
-		return applicationId;
+		return this.applicationId;
 	}
 
 	public void setApplicationId(String applicationId) {
@@ -313,7 +313,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public int getSenderPoolSize() {
-		return senderPoolSize;
+		return this.senderPoolSize;
 	}
 
 	public void setSenderPoolSize(int senderPoolSize) {
@@ -321,7 +321,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public int getMaxSenderRetries() {
-		return maxSenderRetries;
+		return this.maxSenderRetries;
 	}
 
 	public void setMaxSenderRetries(int maxSenderRetries) {
@@ -329,7 +329,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public boolean isDurable() {
-		return durable;
+		return this.durable;
 	}
 
 	public void setDurable(boolean durable) {
@@ -345,7 +345,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public boolean isAutoDelete() {
-		return autoDelete;
+		return this.autoDelete;
 	}
 
 	public void setAutoDelete(boolean autoDelete) {
@@ -353,7 +353,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public boolean isGenerateId() {
-		return generateId;
+		return this.generateId;
 	}
 
 	public void setGenerateId(boolean generateId) {
@@ -361,7 +361,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	public String getCharset() {
-		return charset;
+		return this.charset;
 	}
 
 	public void setCharset(String charset) {
@@ -467,23 +467,23 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		@Override
 		public void run() {
 			try {
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(AmqpAppender.this.connectionFactory);
 				while (true) {
-					final Event event = events.take();
+					final Event event = AmqpAppender.this.events.take();
 					ILoggingEvent logEvent = event.getEvent();
 
 					String name = logEvent.getLoggerName();
 					Level level = logEvent.getLevel();
 
 					MessageProperties amqpProps = new MessageProperties();
-					amqpProps.setDeliveryMode(deliveryMode);
-					amqpProps.setContentType(contentType);
-					if (null != contentEncoding) {
-						amqpProps.setContentEncoding(contentEncoding);
+					amqpProps.setDeliveryMode(AmqpAppender.this.deliveryMode);
+					amqpProps.setContentType(AmqpAppender.this.contentType);
+					if (null != AmqpAppender.this.contentEncoding) {
+						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
-					if (generateId) {
+					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());
 					}
 
@@ -498,26 +498,26 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 					for (Entry<String, String> entry : entrySet) {
 						amqpProps.setHeader(entry.getKey(), entry.getValue());
 					}
-					String[] location = locationLayout.doLayout(logEvent).split("\\|");
+					String[] location = AmqpAppender.this.locationLayout.doLayout(logEvent).split("\\|");
 					if (!"?".equals(location[0])) {
 						amqpProps.setHeader(
 								"location",
 								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
 					}
 					String msgBody;
-					String routingKey = routingKeyLayout.doLayout(logEvent);
+					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(logEvent);
 					// Set applicationId, if we're using one
-					if (applicationId != null) {
-						amqpProps.setAppId(applicationId);
+					if (AmqpAppender.this.applicationId != null) {
+						amqpProps.setAppId(AmqpAppender.this.applicationId);
 					}
 
-					if (abbreviator != null && logEvent instanceof LoggingEvent) {
-						((LoggingEvent) logEvent).setLoggerName(abbreviator.abbreviate(name));
-						msgBody = layout.doLayout(logEvent);
+					if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
+						((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
+						msgBody = AmqpAppender.this.layout.doLayout(logEvent);
 						((LoggingEvent) logEvent).setLoggerName(name);
 					}
 					else {
-						msgBody = layout.doLayout(logEvent);
+						msgBody = AmqpAppender.this.layout.doLayout(logEvent);
 					}
 
 					// Send a message
@@ -533,22 +533,22 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						}
 
 						message = postProcessMessageBeforeSend(message, event);
-						rabbitTemplate.send(exchangeName, routingKey, message);
+						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
 					}
 					catch (AmqpException e) {
 						int retries = event.incrementRetries();
-						if (retries < maxSenderRetries) {
+						if (retries < AmqpAppender.this.maxSenderRetries) {
 							// Schedule a retry based on the number of times I've tried to re-send this
-							retryTimer.schedule(new TimerTask() {
+							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
 								@Override
 								public void run() {
-									events.add(event);
+									AmqpAppender.this.events.add(event);
 								}
 							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
 						}
 						else {
 							addError("Could not send log message " + logEvent.getMessage()
-									+ " after " + maxSenderRetries + " retries", e);
+									+ " after " + AmqpAppender.this.maxSenderRetries + " retries", e);
 						}
 					}
 				}
@@ -577,15 +577,15 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		}
 
 		public ILoggingEvent getEvent() {
-			return event;
+			return this.event;
 		}
 
 		public Map<String, String> getProperties() {
-			return properties;
+			return this.properties;
 		}
 
 		public int incrementRetries() {
-			return retries.incrementAndGet();
+			return this.retries.incrementAndGet();
 		}
 
 	}

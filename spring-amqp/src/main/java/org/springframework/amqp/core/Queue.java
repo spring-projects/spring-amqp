@@ -126,8 +126,8 @@ public class Queue extends AbstractDeclarable {
 
 	@Override
 	public String toString() {
-		return "Queue [name=" + name + ", durable=" + durable + ", autoDelete=" + autoDelete + ", exclusive="
-				+ exclusive + ", arguments=" + arguments + "]";
+		return "Queue [name=" + this.name + ", durable=" + this.durable + ", autoDelete=" + this.autoDelete
+				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments + "]";
 	}
 
 }

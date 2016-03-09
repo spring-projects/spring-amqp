@@ -63,42 +63,42 @@ public class Message implements Serializable {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("(");
 		buffer.append("Body:'" + this.getBodyContentAsString() + "'");
-		if (messageProperties != null) {
-			buffer.append(" ").append(messageProperties.toString());
+		if (this.messageProperties != null) {
+			buffer.append(" ").append(this.messageProperties.toString());
 		}
 		buffer.append(")");
 		return buffer.toString();
 	}
 
 	private String getBodyContentAsString() {
-		if (body == null) {
+		if (this.body == null) {
 			return null;
 		}
 		try {
-			String contentType = (messageProperties != null) ? messageProperties.getContentType() : null;
+			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(body).toString();
+				return SerializationUtils.deserialize(this.body).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON_ALT.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_XML.equals(contentType)) {
-				return new String(body, ENCODING);
+				return new String(this.body, ENCODING);
 			}
 		}
 		catch (Exception e) {
 			// ignore
 		}
 		// Comes out as '[B@....b' (so harmless)
-		return body.toString()+"(byte["+body.length+"])";//NOSONAR
+		return this.body.toString()+"(byte["+this.body.length+"])";//NOSONAR
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + Arrays.hashCode(body);
-		result = prime * result + ((messageProperties == null) ? 0 : messageProperties.hashCode());
+		result = prime * result + Arrays.hashCode(this.body);
+		result = prime * result + ((this.messageProperties == null) ? 0 : this.messageProperties.hashCode());
 		return result;
 	}
 
@@ -114,15 +114,15 @@ public class Message implements Serializable {
 			return false;
 		}
 		Message other = (Message) obj;
-		if (!Arrays.equals(body, other.body)) {
+		if (!Arrays.equals(this.body, other.body)) {
 			return false;
 		}
-		if (messageProperties == null) {
+		if (this.messageProperties == null) {
 			if (other.messageProperties != null) {
 				return false;
 			}
 		}
-		else if (!messageProperties.equals(other.messageProperties)) {
+		else if (!this.messageProperties.equals(other.messageProperties)) {
 			return false;
 		}
 		return true;

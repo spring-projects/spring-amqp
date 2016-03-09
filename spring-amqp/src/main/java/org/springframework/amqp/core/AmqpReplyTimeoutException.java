@@ -37,12 +37,12 @@ public class AmqpReplyTimeoutException extends AmqpException {
 	}
 
 	public Message getRequestMessage() {
-		return requestMessage;
+		return this.requestMessage;
 	}
 
 	@Override
 	public String toString() {
-		return "AmqpReplyTimeoutException [" + getMessage() + ", requestMessage=" + requestMessage + "]";
+		return "AmqpReplyTimeoutException [" + getMessage() + ", requestMessage=" + this.requestMessage + "]";
 	}
 
 }
