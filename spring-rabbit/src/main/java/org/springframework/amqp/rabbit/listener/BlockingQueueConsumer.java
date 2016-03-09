@@ -233,11 +233,11 @@ public class BlockingQueueConsumer {
 	}
 
 	public Channel getChannel() {
-		return channel;
+		return this.channel;
 	}
 
 	public String getConsumerTag() {
-		return consumer.getConsumerTag();
+		return this.consumer.getConsumerTag();
 	}
 
 	/**
@@ -298,7 +298,7 @@ public class BlockingQueueConsumer {
 	}
 
 	public BackOffExecution getBackOffExecution() {
-		return backOffExecution;
+		return this.backOffExecution;
 	}
 
 	protected void basicCancel() {
@@ -330,8 +330,8 @@ public class BlockingQueueConsumer {
 	 * Check if we are in shutdown mode and if so throw an exception.
 	 */
 	private void checkShutdown() {
-		if (shutdown != null) {
-			throw Utility.fixStackTrace(shutdown);
+		if (this.shutdown != null) {
+			throw Utility.fixStackTrace(this.shutdown);
 		}
 	}
 
@@ -342,8 +342,8 @@ public class BlockingQueueConsumer {
 	 * @throws InterruptedException
 	 */
 	private Message handle(Delivery delivery) throws InterruptedException {
-		if ((delivery == null && shutdown != null)) {
-			throw shutdown;
+		if ((delivery == null && this.shutdown != null)) {
+			throw this.shutdown;
 		}
 		if (delivery == null) {
 			return null;
@@ -360,7 +360,7 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Received message: " + message);
 		}
-		deliveryTags.add(messageProperties.getDeliveryTag());
+		this.deliveryTags.add(messageProperties.getDeliveryTag());
 		return message;
 	}
 
@@ -372,7 +372,7 @@ public class BlockingQueueConsumer {
 	 */
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
 		logger.trace("Retrieving delivery for " + this);
-		return handle(queue.take());
+		return handle(this.queue.take());
 	}
 
 	/**
@@ -390,8 +390,8 @@ public class BlockingQueueConsumer {
 		if (this.missingQueues.size() > 0) {
 			checkMissingQueues();
 		}
-		Message message = handle(queue.poll(timeout, TimeUnit.MILLISECONDS));
-		if (message == null && cancelReceived.get()) {
+		Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
+		if (message == null && this.cancelReceived.get()) {
 			throw new ConsumerCancelledException();
 		}
 		return message;
@@ -456,13 +456,13 @@ public class BlockingQueueConsumer {
 			logger.debug("Starting consumer " + this);
 		}
 		try {
-			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, transactional);
-			this.channel = resourceHolder.getChannel();
+			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory, this.transactional);
+			this.channel = this.resourceHolder.getChannel();
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
 		}
-		this.consumer = new InternalConsumer(channel);
+		this.consumer = new InternalConsumer(this.channel);
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
 
@@ -477,7 +477,7 @@ public class BlockingQueueConsumer {
 				passiveDeclareRetries = 0;
 			}
 			catch (DeclarationException e) {
-				if (passiveDeclareRetries > 0 && channel.isOpen()) {
+				if (passiveDeclareRetries > 0 && this.channel.isOpen()) {
 					if (logger.isWarnEnabled()) {
 						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
 						try {
@@ -505,11 +505,11 @@ public class BlockingQueueConsumer {
 		}
 		while (passiveDeclareRetries-- > 0);
 
-		if (!acknowledgeMode.isAutoAck()) {
+		if (!this.acknowledgeMode.isAutoAck()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
 			// will send blocks of 100 messages)
 			try {
-				channel.basicQos(prefetchCount);
+				this.channel.basicQos(this.prefetchCount);
 			}
 			catch (IOException e) {
 				this.activeObjectCounter.release(this);
@@ -519,7 +519,7 @@ public class BlockingQueueConsumer {
 
 
 		try {
-			for (String queueName : queues) {
+			for (String queueName : this.queues) {
 				if (!this.missingQueues.contains(queueName)) {
 					consumeFromQueue(queueName);
 				}
@@ -583,7 +583,7 @@ public class BlockingQueueConsumer {
 
 	public void stop() {
 		this.cancelled.set(true);
-		if (consumer != null && consumer.getChannel() != null && this.consumerTags.size() > 0
+		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelReceived.get()) {
 			try {
 				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags.keySet(),
@@ -596,12 +596,12 @@ public class BlockingQueueConsumer {
 			}
 		}
 		if (logger.isDebugEnabled()) {
-			logger.debug("Closing Rabbit Channel: " + channel);
+			logger.debug("Closing Rabbit Channel: " + this.channel);
 		}
 		RabbitUtils.setPhysicalCloseRequired(true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
-		deliveryTags.clear();
-		consumer = null;
+		this.deliveryTags.clear();
+		this.consumer = null;
 	}
 
 	private class InternalConsumer extends DefaultConsumer {
@@ -628,10 +628,10 @@ public class BlockingQueueConsumer {
 					logger.debug("Received shutdown signal for consumer tag=" + consumerTag, sig);
 				}
 			}
-			shutdown = sig;
+			BlockingQueueConsumer.this.shutdown = sig;
 			// The delivery tags will be invalid if the channel shuts down
-			deliveryTags.clear();
-			activeObjectCounter.release(BlockingQueueConsumer.this);
+			BlockingQueueConsumer.this.deliveryTags.clear();
+			BlockingQueueConsumer.this.activeObjectCounter.release(BlockingQueueConsumer.this);
 		}
 
 		@Override
@@ -660,7 +660,7 @@ public class BlockingQueueConsumer {
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
 			try {
-				queue.put(new Delivery(consumerTag, envelope, properties, body));
+				BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -690,19 +690,19 @@ public class BlockingQueueConsumer {
 		}
 
 		public String getConsumerTag() {
-			return consumerTag;
+			return this.consumerTag;
 		}
 
 		public Envelope getEnvelope() {
-			return envelope;
+			return this.envelope;
 		}
 
 		public BasicProperties getProperties() {
-			return properties;
+			return this.properties;
 		}
 
 		public byte[] getBody() {
-			return body;
+			return this.body;
 		}
 	}
 
@@ -736,8 +736,8 @@ public class BlockingQueueConsumer {
 
 	@Override
 	public String toString() {
-		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + channel
-				+ ", acknowledgeMode=" + acknowledgeMode + " local queue size=" + queue.size();
+		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
+				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
 	}
 
 	/**
@@ -747,13 +747,13 @@ public class BlockingQueueConsumer {
 	 */
 	public void rollbackOnExceptionIfNecessary(Throwable ex) throws Exception {
 
-		boolean ackRequired = !acknowledgeMode.isAutoAck() && !acknowledgeMode.isManual();
+		boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 		try {
-			if (transactional) {
+			if (this.transactional) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Initiating transaction rollback on application exception: " + ex);
 				}
-				RabbitUtils.rollbackIfNecessary(channel);
+				RabbitUtils.rollbackIfNecessary(this.channel);
 			}
 			if (ackRequired) {
 				// We should always requeue if the container was stopping
@@ -769,20 +769,20 @@ public class BlockingQueueConsumer {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
 				}
-				for (Long deliveryTag : deliveryTags) {
+				for (Long deliveryTag : this.deliveryTags) {
 					// With newer RabbitMQ brokers could use basicNack here...
-					channel.basicReject(deliveryTag, shouldRequeue);
+					this.channel.basicReject(deliveryTag, shouldRequeue);
 				}
-				if (transactional) {
+				if (this.transactional) {
 					// Need to commit the reject (=nack)
-					RabbitUtils.commitIfNecessary(channel);
+					RabbitUtils.commitIfNecessary(this.channel);
 				}
 			}
 		} catch (Exception e) {
 			logger.error("Application exception overridden by rollback exception", ex);
 			throw e;
 		} finally {
-			deliveryTags.clear();
+			this.deliveryTags.clear();
 		}
 	}
 
@@ -794,38 +794,38 @@ public class BlockingQueueConsumer {
 	 */
 	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
 
-		if (deliveryTags.isEmpty()) {
+		if (this.deliveryTags.isEmpty()) {
 			return false;
 		}
 
 		try {
 
-			boolean ackRequired = !acknowledgeMode.isAutoAck() && !acknowledgeMode.isManual();
+			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 
 			if (ackRequired) {
 
-				if (transactional && !locallyTransacted) {
+				if (this.transactional && !locallyTransacted) {
 
 					// Not locally transacted but it is transacted so it
 					// could be synchronized with an external transaction
-					for (Long deliveryTag : deliveryTags) {
-						ConnectionFactoryUtils.registerDeliveryTag(connectionFactory, channel, deliveryTag);
+					for (Long deliveryTag : this.deliveryTags) {
+						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel, deliveryTag);
 					}
 
 				} else {
-					long deliveryTag = new ArrayList<Long>(deliveryTags).get(deliveryTags.size() - 1);
-					channel.basicAck(deliveryTag, true);
+					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
+					this.channel.basicAck(deliveryTag, true);
 				}
 			}
 
 			if (locallyTransacted) {
 				// For manual acks we still need to commit
-				RabbitUtils.commitIfNecessary(channel);
+				RabbitUtils.commitIfNecessary(this.channel);
 			}
 
 		}
 		finally {
-			deliveryTags.clear();
+			this.deliveryTags.clear();
 		}
 
 		return true;

@@ -54,8 +54,8 @@ public abstract class AbstractJavaTypeMapper implements InitializingBean {
 
     protected void addHeader(MessageProperties properties, String headerName,
                            Class<?> clazz) {
-        if (classIdMapping.containsKey(clazz)) {
-            properties.getHeaders().put(headerName, classIdMapping.get(clazz));
+        if (this.classIdMapping.containsKey(clazz)) {
+            properties.getHeaders().put(headerName, this.classIdMapping.get(clazz));
         }
         else {
             properties.getHeaders().put(headerName, clazz.getName());
@@ -80,17 +80,17 @@ public abstract class AbstractJavaTypeMapper implements InitializingBean {
 
     private void validateIdTypeMapping() {
         Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
-        for (Map.Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
+        for (Map.Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
             String id = entry.getKey();
             Class<?> clazz = entry.getValue();
             finalIdClassMapping.put(id, clazz);
-            classIdMapping.put(clazz, id);
+            this.classIdMapping.put(clazz, id);
         }
         this.idClassMapping = finalIdClassMapping;
     }
 
     public Map<String, Class<?>> getIdClassMapping() {
-        return Collections.unmodifiableMap(idClassMapping);
+        return Collections.unmodifiableMap(this.idClassMapping);
     }
 
     @Override

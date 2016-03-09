@@ -112,14 +112,17 @@ public final class BindingBuilder {
 			}
 
 			public Binding exists() {
-				return new Binding(destination.name, destination.type, exchange.getName(), "",
-						createMapForKeys(this.key));
+				return new Binding(HeadersExchangeMapConfigurer.this.destination.name,
+						HeadersExchangeMapConfigurer.this.destination.type,
+						HeadersExchangeMapConfigurer.this.exchange.getName(), "", createMapForKeys(this.key));
 			}
 
 			public Binding matches(Object value) {
 				Map<String, Object> map = new HashMap<String, Object>();
-				map.put(key, value);
-				return new Binding(destination.name, destination.type, exchange.getName(), "", map);
+				map.put(this.key, value);
+				return new Binding(HeadersExchangeMapConfigurer.this.destination.name,
+						HeadersExchangeMapConfigurer.this.destination.type,
+						HeadersExchangeMapConfigurer.this.exchange.getName(), "", map);
 			}
 		}
 
@@ -134,7 +137,9 @@ public final class BindingBuilder {
 			}
 
 			public Binding exist() {
-				return new Binding(destination.name, destination.type, exchange.getName(), "", this.headerMap);
+				return new Binding(HeadersExchangeMapConfigurer.this.destination.name,
+						HeadersExchangeMapConfigurer.this.destination.type,
+						HeadersExchangeMapConfigurer.this.exchange.getName(), "", this.headerMap);
 			}
 		}
 
@@ -149,7 +154,9 @@ public final class BindingBuilder {
 			}
 
 			public Binding match() {
-				return new Binding(destination.name, destination.type, exchange.getName(), "", this.headerMap);
+				return new Binding(HeadersExchangeMapConfigurer.this.destination.name,
+						HeadersExchangeMapConfigurer.this.destination.type,
+						HeadersExchangeMapConfigurer.this.exchange.getName(), "", this.headerMap);
 			}
 		}
 	}
@@ -210,13 +217,13 @@ public final class BindingBuilder {
 		}
 
 		public Binding and(Map<String, Object> map) {
-			return new Binding(configurer.destination.name, configurer.destination.type, configurer.exchange,
-					routingKey, map);
+			return new Binding(this.configurer.destination.name, this.configurer.destination.type, this.configurer.exchange,
+					this.routingKey, map);
 		}
 
 		public Binding noargs() {
-			return new Binding(configurer.destination.name, configurer.destination.type, configurer.exchange,
-					routingKey, Collections.<String, Object> emptyMap());
+			return new Binding(this.configurer.destination.name, this.configurer.destination.type, this.configurer.exchange,
+					this.routingKey, Collections.<String, Object> emptyMap());
 		}
 
 	}

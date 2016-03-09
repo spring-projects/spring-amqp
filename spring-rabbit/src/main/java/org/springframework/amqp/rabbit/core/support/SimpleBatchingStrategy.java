@@ -87,8 +87,8 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 			this.routingKey = routingKey;
 		}
 		this.currentSize += bufferUse;
-		messages.add(message);
-		if (batch == null && (messages.size() >= this.batchSize
+		this.messages.add(message);
+		if (batch == null && (this.messages.size() >= this.batchSize
 								|| this.currentSize >= this.bufferLimit)) {
 			batch = doReleaseBatch();
 		}

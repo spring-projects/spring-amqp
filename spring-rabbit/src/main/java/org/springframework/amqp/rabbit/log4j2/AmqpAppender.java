@@ -175,8 +175,8 @@ public class AmqpAppender extends AbstractAppender {
 	 * Submit the required number of senders into the pool.
 	 */
 	private void startSenders() {
-		for (int i = 0; i < manager.senderPoolSize; i++) {
-			manager.senderPool.submit(new EventSender());
+		for (int i = 0; i < this.manager.senderPoolSize; i++) {
+			this.manager.senderPool.submit(new EventSender());
 		}
 	}
 
@@ -208,7 +208,7 @@ public class AmqpAppender extends AbstractAppender {
 				RabbitTemplate rabbitTemplate = AmqpAppender.this.rabbitTemplate;
 				rabbitTemplate.setConnectionFactory(AmqpAppender.this.manager.connectionFactory);
 				while (true) {
-					final Event event = events.take();
+					final Event event = AmqpAppender.this.events.take();
 					LogEvent logEvent = event.getEvent();
 
 					String name = logEvent.getLoggerName();
@@ -321,15 +321,15 @@ public class AmqpAppender extends AbstractAppender {
 		}
 
 		public LogEvent getEvent() {
-			return event;
+			return this.event;
 		}
 
 		public Map getProperties() {
-			return properties;
+			return this.properties;
 		}
 
 		public int incrementRetries() {
-			return retries.incrementAndGet();
+			return this.retries.incrementAndGet();
 		}
 
 	}

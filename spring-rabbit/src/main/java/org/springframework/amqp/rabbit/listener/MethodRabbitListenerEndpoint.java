@@ -84,7 +84,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the messageHandlerMethodFactory
 	 */
 	protected MessageHandlerMethodFactory getMessageHandlerMethodFactory() {
-		return messageHandlerMethodFactory;
+		return this.messageHandlerMethodFactory;
 	}
 
 	@Override

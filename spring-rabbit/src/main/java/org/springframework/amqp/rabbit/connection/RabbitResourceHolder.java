@@ -96,7 +96,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	 * @return true if the resources should be released.
 	 */
 	public boolean isReleaseAfterCompletion() {
-		return releaseAfterCompletion;
+		return this.releaseAfterCompletion;
 	}
 
 	public final void addConnection(Connection connection) {
@@ -146,8 +146,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	public void commitAll() throws AmqpException {
 		try {
 			for (Channel channel : this.channels) {
-				if (deliveryTags.containsKey(channel)) {
-					for (Long deliveryTag : deliveryTags.get(channel)) {
+				if (this.deliveryTags.containsKey(channel)) {
+					for (Long deliveryTag : this.deliveryTags.get(channel)) {
 						channel.basicAck(deliveryTag, false);
 					}
 				}
@@ -192,8 +192,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				logger.debug("Rolling back messages to channel: " + channel);
 			}
 			RabbitUtils.rollbackIfNecessary(channel);
-			if (deliveryTags.containsKey(channel)) {
-				for (Long deliveryTag : deliveryTags.get(channel)) {
+			if (this.deliveryTags.containsKey(channel)) {
+				for (Long deliveryTag : this.deliveryTags.get(channel)) {
 					try {
 						channel.basicReject(deliveryTag, true);
 					} catch (IOException ex) {

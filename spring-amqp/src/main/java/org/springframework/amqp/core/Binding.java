@@ -76,12 +76,13 @@ public class Binding extends AbstractDeclarable {
 	}
 
 	public boolean isDestinationQueue() {
-		return DestinationType.QUEUE.equals(destinationType);
+		return DestinationType.QUEUE.equals(this.destinationType);
 	}
 
 	@Override
 	public String toString() {
-		return "Binding [destination=" + destination + ", exchange=" + exchange + ", routingKey=" + routingKey + "]";
+		return "Binding [destination=" + this.destination + ", exchange=" + this.exchange + ", routingKey="
+					+ this.routingKey + "]";
 	}
 
 }

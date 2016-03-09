@@ -627,7 +627,7 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public Channel getDelegate() {
-		return delegate;
+		return this.delegate;
 	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -640,8 +640,8 @@ public class PublisherCallbackChannelImpl
 			this.delegate.close();
 		}
 		catch (AlreadyClosedException e) {
-			if (logger.isTraceEnabled()) {
-				logger.trace(this.delegate + " is already closed");
+			if (this.logger.isTraceEnabled()) {
+				this.logger.trace(this.delegate + " is already closed");
 			}
 		}
 		generateNacksForPendingAcks("Channel closed by application");
@@ -652,15 +652,15 @@ public class PublisherCallbackChannelImpl
 			Listener listener = entry.getKey();
 			for (Entry<Long, PendingConfirm> confirmEntry : entry.getValue().entrySet()) {
 				confirmEntry.getValue().setCause(cause);
-				if (logger.isDebugEnabled()) {
-					logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug(this.toString() + " PC:Nack:(close):" + confirmEntry.getKey());
 				}
 				processAck(confirmEntry.getKey(), false, false, false);
 			}
 			listener.revoke(this);
 		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("PendingConfirms cleared");
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("PendingConfirms cleared");
 		}
 		this.pendingConfirms.clear();
 		this.listenerForSeq.clear();
@@ -680,8 +680,8 @@ public class PublisherCallbackChannelImpl
 		}
 		if (this.listeners.putIfAbsent(listener.getUUID(), listener) == null) {
 			this.pendingConfirms.put(listener, new ConcurrentSkipListMap<Long, PendingConfirm>());
-			if (logger.isDebugEnabled()) {
-				logger.debug("Added listener " + listener);
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Added listener " + listener);
 			}
 		}
 	}
@@ -714,8 +714,8 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void handleAck(long seq, boolean multiple)
 			throws IOException {
-		if (logger.isDebugEnabled()) {
-			logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
 		}
 		this.processAck(seq, true, multiple, true);
 	}
@@ -723,8 +723,8 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void handleNack(long seq, boolean multiple)
 			throws IOException {
-		if (logger.isDebugEnabled()) {
-			logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
 		}
 		this.processAck(seq, false, multiple, true);
 	}
@@ -774,8 +774,8 @@ public class PublisherCallbackChannelImpl
 				}
 			}
 			else {
-				if (logger.isDebugEnabled()) {
-					logger.debug(this.delegate.toString() + " No listener for seq:" + seq);
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug(this.delegate.toString() + " No listener for seq:" + seq);
 				}
 			}
 		}
@@ -784,14 +784,14 @@ public class PublisherCallbackChannelImpl
 	private void doHandleConfirm(boolean ack, Listener listener, PendingConfirm pendingConfirm) {
 		try {
 			if (listener.isConfirmListener()) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Sending confirm " + pendingConfirm);
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Sending confirm " + pendingConfirm);
 				}
 				listener.handleConfirm(pendingConfirm, ack);
 			}
 		}
 		catch (Exception e) {
-			logger.error("Exception delivering confirm", e);
+			this.logger.error("Exception delivering confirm", e);
 		}
 	}
 
@@ -817,8 +817,8 @@ public class PublisherCallbackChannelImpl
 		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("No Listener for returned message");
+			if (this.logger.isWarnEnabled()) {
+				this.logger.warn("No Listener for returned message");
 			}
 		}
 		else {

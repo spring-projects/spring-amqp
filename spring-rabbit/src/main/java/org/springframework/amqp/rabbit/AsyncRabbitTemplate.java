@@ -463,8 +463,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		if (messageProperties != null) {
 			byte[] correlationId = messageProperties.getCorrelationId();
 			if (correlationId != null) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("onMessage: " + message);
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("onMessage: " + message);
 				}
 				RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
 				if (future != null) {
@@ -477,8 +477,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 					}
 				}
 				else {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No pending reply - perhaps timed out: " + message);
+					if (this.logger.isWarnEnabled()) {
+						this.logger.warn("No pending reply - perhaps timed out: " + message);
 					}
 				}
 			}
@@ -500,8 +500,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 	@Override
 	public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Confirm: " + correlationData + ", ack=" + ack
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Confirm: " + correlationData + ", ack=" + ack
 					+ (cause == null ? "" : (", cause: " + cause)));
 		}
 		String correlationId = correlationData.getId();
@@ -512,8 +512,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 				((SettableListenableFuture<Boolean>) future.getConfirm()).set(ack);
 			}
 			else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Confirm: " + correlationData + ", ack=" + ack
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Confirm: " + correlationData + ", ack=" + ack
 							+ (cause == null ? "" : (", cause: " + cause))
 							+ " no pending future - either canceled or the reply is already received");
 				}
@@ -562,9 +562,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		public RabbitFuture(String correlationId, Message requestMessage) {
 			this.correlationId = correlationId;
 			this.requestMessage = requestMessage;
-			if (receiveTimeout > 0) {
-				this.cancelTask = taskScheduler.schedule(new CancelTask(),
-						new Date(System.currentTimeMillis() + receiveTimeout));
+			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
+				this.cancelTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new CancelTask(),
+						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
 			}
 			else {
 				this.cancelTask = null;
@@ -586,7 +586,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		 * @return the future.
 		 */
 		public ListenableFuture<Boolean> getConfirm() {
-			return confirm;
+			return this.confirm;
 		}
 
 		void setConfirm(ListenableFuture<Boolean> confirm) {
@@ -599,7 +599,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		 * @return the cause.
 		 */
 		public String getNackCause() {
-			return nackCause;
+			return this.nackCause;
 		}
 
 		void setNackCause(String nackCause) {
@@ -610,8 +610,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 			@Override
 			public void run() {
-				AsyncRabbitTemplate.this.pending.remove(correlationId);
-				setException(new AmqpReplyTimeoutException("Reply timed out", requestMessage));
+				AsyncRabbitTemplate.this.pending.remove(RabbitFuture.this.correlationId);
+				setException(new AmqpReplyTimeoutException("Reply timed out", RabbitFuture.this.requestMessage));
 			}
 
 		}
@@ -667,7 +667,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 			this.future = new RabbitConverterFuture<C>(correlationId, message);
 			if (this.correlationData != null && this.correlationData.getId() == null) {
 				this.correlationData.setId(correlationId);
-				future.setConfirm(new SettableListenableFuture<Boolean>());
+				this.future.setConfirm(new SettableListenableFuture<Boolean>());
 			}
 			AsyncRabbitTemplate.this.pending.put(correlationId, this.future);
 			return messageToSend;

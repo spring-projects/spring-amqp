@@ -29,13 +29,13 @@ public class CompositeConnectionListener implements ConnectionListener {
 	private List<ConnectionListener> delegates = new CopyOnWriteArrayList<ConnectionListener>();
 
 	public void onCreate(Connection connection) {
-		for (ConnectionListener delegate : delegates) {
+		for (ConnectionListener delegate : this.delegates) {
 			delegate.onCreate(connection);
 		}
 	}
 
 	public void onClose(Connection connection) {
-		for (ConnectionListener delegate : delegates) {
+		for (ConnectionListener delegate : this.delegates) {
 			delegate.onClose(connection);
 		}
 	}

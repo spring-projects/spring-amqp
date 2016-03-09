@@ -71,14 +71,14 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 	public Binding getObject() throws Exception {
 		String destination;
 		DestinationType destinationType;
-		if (destinationQueue != null) {
-			destination = destinationQueue.getName();
+		if (this.destinationQueue != null) {
+			destination = this.destinationQueue.getName();
 			destinationType = DestinationType.QUEUE;
 		} else {
-			destination = destinationExchange.getName();
+			destination = this.destinationExchange.getName();
 			destinationType = DestinationType.EXCHANGE;
 		}
-		Binding binding = new Binding(destination, destinationType, exchange, routingKey, arguments);
+		Binding binding = new Binding(destination, destinationType, this.exchange, this.routingKey, this.arguments);
 		if (this.shouldDeclare != null) {
 			binding.setShouldDeclare(this.shouldDeclare);
 		}

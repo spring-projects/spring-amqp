@@ -671,9 +671,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
-				doSend(channel, exchange, routingKey, message,
-						returnCallback != null
-								&& mandatoryExpression.getValue(evaluationContext, message, Boolean.class),
+				doSend(channel, exchange, routingKey, message, RabbitTemplate.this.returnCallback != null
+						&& RabbitTemplate.this.mandatoryExpression.getValue(
+								RabbitTemplate.this.evaluationContext, message, Boolean.class),
 						correlationData);
 				return null;
 			}
@@ -942,7 +942,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				Message receiveMessage = null;
 				boolean channelLocallyTransacted = isChannelLocallyTransacted(channel);
 
-				if (receiveTimeout == 0) {
+				if (RabbitTemplate.this.receiveTimeout == 0) {
 					GetResponse response = channel.basicGet(queueName, !channelTransacted);
 					// Response can be null in the case that there is no message on the queue.
 					if (response != null) {
@@ -962,11 +962,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				else {
 					QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
 					Delivery delivery;
-					if (receiveTimeout < 0) {
+					if (RabbitTemplate.this.receiveTimeout < 0) {
 						delivery = consumer.nextDelivery();
 					}
 					else {
-						delivery = consumer.nextDelivery(receiveTimeout);
+						delivery = consumer.nextDelivery(RabbitTemplate.this.receiveTimeout);
 					}
 					channel.basicCancel(consumer.getConsumerTag());
 					if (delivery != null) {
@@ -1035,8 +1035,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 								replyTo.getExchangeName(),
 								replyTo.getRoutingKey(),
 								replyMessage,
-								returnCallback != null
-										&& mandatoryExpression.getValue(evaluationContext, replyMessage, Boolean.class),
+								RabbitTemplate.this.returnCallback != null && RabbitTemplate.this.mandatoryExpression
+										.getValue(RabbitTemplate.this.evaluationContext, replyMessage, Boolean.class),
 								null);
 					}
 					else if (channelLocallyTransacted) {
@@ -1190,7 +1190,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
-				String messageTag = String.valueOf(messageTagProvider.incrementAndGet());
+				String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
 				RabbitTemplate.this.replyHolder.put(messageTag, pendingReply);
 
 				Assert.isNull(message.getMessageProperties().getReplyTo(),
@@ -1211,8 +1211,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					@Override
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
 											   byte[] body) throws IOException {
-						MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
-								properties, envelope, encoding);
+						MessageProperties messageProperties = RabbitTemplate.this.messagePropertiesConverter
+								.toMessageProperties(properties, envelope, RabbitTemplate.this.encoding);
 						Message reply = new Message(body, messageProperties);
 						if (logger.isTraceEnabled()) {
 							logger.trace("Message received " + reply);
@@ -1247,7 +1247,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
-				String messageTag = String.valueOf(messageTagProvider.incrementAndGet());
+				String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
 				RabbitTemplate.this.replyHolder.put(messageTag, pendingReply);
 				// Save any existing replyTo and correlation data
 				String savedReplyTo = message.getMessageProperties().getReplyTo();
@@ -1300,7 +1300,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final CorrelationData correlationData, Channel channel, final PendingReply pendingReply, String messageTag)
 			throws Exception {
 		Message reply;
-		boolean mandatory = this.mandatoryExpression.getValue(evaluationContext, message, Boolean.class);
+		boolean mandatory = this.mandatoryExpression.getValue(this.evaluationContext, message, Boolean.class);
 		if (mandatory && this.returnCallback == null) {
 			message.getMessageProperties().getHeaders().put(RETURN_CORRELATION_KEY, messageTag);
 		}
@@ -1413,7 +1413,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
-				.fromMessageProperties(messageProperties, encoding);
+				.fromMessageProperties(messageProperties, this.encoding);
 		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, messageToUse.getBody());
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
@@ -1574,7 +1574,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		if (returnCallback != null) {
 			properties.getHeaders().remove(PublisherCallbackChannel.RETURN_CORRELATION_KEY);
-			MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
+			MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 					properties, null, this.encoding);
 			Message returnedMessage = new Message(body, messageProperties);
 			returnCallback.returnedMessage(returnedMessage,
@@ -1704,7 +1704,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		private final BlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
 
 		public String getSavedReplyTo() {
-			return savedReplyTo;
+			return this.savedReplyTo;
 		}
 
 		public void setSavedReplyTo(String savedReplyTo) {
@@ -1712,7 +1712,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 
 		public String getSavedCorrelation() {
-			return savedCorrelation;
+			return this.savedCorrelation;
 		}
 
 		public void setSavedCorrelation(String savedCorrelation) {

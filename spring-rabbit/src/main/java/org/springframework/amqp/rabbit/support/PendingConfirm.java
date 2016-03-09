@@ -48,14 +48,14 @@ public class PendingConfirm {
 	 * @return The correlation data.
 	 */
 	public CorrelationData getCorrelationData() {
-		return correlationData;
+		return this.correlationData;
 	}
 
 	/**
 	 * @return The time the message was sent.
 	 */
 	public long getTimestamp() {
-		return timestamp;
+		return this.timestamp;
 	}
 
 	/**
@@ -72,12 +72,12 @@ public class PendingConfirm {
 	 * @since 1.4
 	 */
 	public String getCause() {
-		return cause;
+		return this.cause;
 	}
 
 	@Override
 	public String toString() {
-		return "PendingConfirm [correlationData=" + correlationData + (this.cause == null ? "" : " cause=" + cause) + "]";
+		return "PendingConfirm [correlationData=" + this.correlationData + (this.cause == null ? "" : " cause=" + this.cause) + "]";
 	}
 
 }

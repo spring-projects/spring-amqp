@@ -51,31 +51,32 @@ public class AmqpMessageReturnedException extends AmqpException {
 	}
 
 	public Message getReturnedMessage() {
-		return returnedMessage;
+		return this.returnedMessage;
 	}
 
 	public int getReplyCode() {
-		return replyCode;
+		return this.replyCode;
 	}
 
 	public String getReplyText() {
-		return replyText;
+		return this.replyText;
 	}
 
 	public String getExchange() {
-		return exchange;
+		return this.exchange;
 	}
 
 	public String getRoutingKey() {
-		return routingKey;
+		return this.routingKey;
 	}
 
 	@Override
 	public String toString() {
 		return "AmqpMessageReturnedException: "
 				+ getMessage()
-				+ "[returnedMessage=" + returnedMessage + ", replyCode=" + replyCode
-				+ ", replyText=" + replyText + ", exchange=" + exchange + ", routingKey=" + routingKey + "]";
+				+ "[returnedMessage=" + this.returnedMessage + ", replyCode=" + this.replyCode
+				+ ", replyText=" + this.replyText + ", exchange=" + this.exchange + ", routingKey=" + this.routingKey
+				+ "]";
 	}
 
 }

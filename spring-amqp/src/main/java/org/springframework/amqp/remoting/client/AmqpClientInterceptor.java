@@ -55,10 +55,10 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 		Object rawResult;
 		if (getRoutingKey() == null) {
 			// Use the template's default routing key
-			rawResult = amqpTemplate.convertSendAndReceive(remoteInvocation);
+			rawResult = this.amqpTemplate.convertSendAndReceive(remoteInvocation);
 		}
 		else {
-			rawResult = amqpTemplate.convertSendAndReceive(routingKey, remoteInvocation);
+			rawResult = this.amqpTemplate.convertSendAndReceive(this.routingKey, remoteInvocation);
 		}
 
 		if (rawResult == null) {
@@ -79,7 +79,7 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	}
 
 	public AmqpTemplate getAmqpTemplate() {
-		return amqpTemplate;
+		return this.amqpTemplate;
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	}
 
 	public String getRoutingKey() {
-		return routingKey;
+		return this.routingKey;
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 	}
 
 	public RemoteInvocationFactory getRemoteInvocationFactory() {
-		return remoteInvocationFactory;
+		return this.remoteInvocationFactory;
 	}
 
 	/**

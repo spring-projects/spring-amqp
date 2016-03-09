@@ -44,21 +44,21 @@ public class MessageBatch {
 	 * @return the exchange
 	 */
 	public String getExchange() {
-		return exchange;
+		return this.exchange;
 	}
 
 	/**
 	 * @return the routingKey
 	 */
 	public String getRoutingKey() {
-		return routingKey;
+		return this.routingKey;
 	}
 
 	/**
 	 * @return the message
 	 */
 	public Message getMessage() {
-		return message;
+		return this.message;
 	}
 
 }

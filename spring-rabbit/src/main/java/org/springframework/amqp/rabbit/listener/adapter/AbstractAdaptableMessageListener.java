@@ -171,7 +171,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @see #onMessage(Message)
 	 */
 	protected void handleListenerException(Throwable ex) {
-		logger.error("Listener execution failed", ex);
+		this.logger.error("Listener execution failed", ex);
 	}
 
 	/**
@@ -200,8 +200,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	protected void handleResult(Object result, Message request, Channel channel) throws Exception {
 		if (channel != null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Listener method returned result [" + result + "] - generating response message for it");
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Listener method returned result [" + result + "] - generating response message for it");
 			}
 			try {
 				Message response = buildMessage(channel, result);
@@ -213,8 +213,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 				throw new ReplyFailureException("Failed to send reply with payload '" + result + "'", ex);
 			}
 		}
-		else if (logger.isWarnEnabled()) {
-			logger.warn("Listener method returned result [" + result
+		else if (this.logger.isWarnEnabled()) {
+			this.logger.warn("Listener method returned result [" + result
 					+ "]: not generating response message for it because of no Rabbit Channel given");
 		}
 	}
@@ -315,10 +315,10 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 		postProcessChannel(channel, message);
 
 		try {
-			logger.debug("Publishing response to exchange = [" + replyTo.getExchangeName() + "], routingKey = ["
+			this.logger.debug("Publishing response to exchange = [" + replyTo.getExchangeName() + "], routingKey = ["
 					+ replyTo.getRoutingKey() + "]");
 			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
-					this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), encoding),
+					this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), this.encoding),
 					message.getBody());
 		}
 		catch (Exception ex) {

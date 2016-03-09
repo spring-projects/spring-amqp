@@ -105,7 +105,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.4.4.
 	 */
 	protected boolean isUseSSL() {
-		return useSSL;
+		return this.useSSL;
 	}
 
 	/**
@@ -122,7 +122,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.4.4
 	 */
 	protected String getSslAlgorithm() {
-		return sslAlgorithm;
+		return this.sslAlgorithm;
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @since 1.4.4
 	 */
 	protected Resource getSslPropertiesLocation() {
-		return sslPropertiesLocation;
+		return this.sslPropertiesLocation;
 	}
 
 	/**
