@@ -651,8 +651,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 		private volatile RabbitConverterFuture<C> future;
 
-		public CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
-		                                       CorrelationData correlationData) {
+		private CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
+				CorrelationData correlationData) {
 			this.userPostProcessor = userPostProcessor;
 			this.correlationData = correlationData;
 		}

@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.amqp.event.AmqpEvent;
 
 /**
@@ -33,13 +36,13 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	private final String listenerId;
 
-	private final String[] queueNames;
+	private final List<String> queueNames;
 
 	public ListenerContainerIdleEvent(Object source, long idleTime, String id, String... queueNames) {
 		super(source);
 		this.idleTime = idleTime;
 		this.listenerId = id;
-		this.queueNames = queueNames;
+		this.queueNames = Arrays.asList(queueNames);
 	}
 
 	/**
@@ -55,7 +58,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the queue names.
 	 */
 	public String[] getQueueNames() {
-		return this.queueNames;
+		return this.queueNames.toArray(new String[this.queueNames.size()]);
 	}
 
 	/**
