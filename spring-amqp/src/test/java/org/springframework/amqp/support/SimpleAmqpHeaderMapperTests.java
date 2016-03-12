@@ -122,7 +122,7 @@ public class SimpleAmqpHeaderMapperTests {
 		amqpProperties.setContentType("test.contentType");
 		byte[] testCorrelationId = new byte[] {1, 2, 3};
 		amqpProperties.setCorrelationId(testCorrelationId);
-		amqpProperties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+		amqpProperties.setReceivedDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
 		amqpProperties.setDeliveryTag(1234L);
 		amqpProperties.setExpiration("test.expiration");
 		amqpProperties.setMessageCount(42);
@@ -148,7 +148,7 @@ public class SimpleAmqpHeaderMapperTests {
 		assertEquals(99L, headerMap.get(AmqpHeaders.CONTENT_LENGTH));
 		assertEquals("test.contentType", headerMap.get(AmqpHeaders.CONTENT_TYPE));
 		assertEquals(testCorrelationId, headerMap.get(AmqpHeaders.CORRELATION_ID));
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, headerMap.get(AmqpHeaders.DELIVERY_MODE));
+		assertEquals(MessageDeliveryMode.NON_PERSISTENT, headerMap.get(AmqpHeaders.RECEIVED_DELIVERY_MODE));
 		assertEquals(1234L, headerMap.get(AmqpHeaders.DELIVERY_TAG));
 		assertEquals("test.expiration", headerMap.get(AmqpHeaders.EXPIRATION));
 		assertEquals(42, headerMap.get(AmqpHeaders.MESSAGE_COUNT));

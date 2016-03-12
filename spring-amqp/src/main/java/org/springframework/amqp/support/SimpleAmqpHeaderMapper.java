@@ -185,9 +185,9 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			if (correlationId != null && correlationId.length > 0) {
 				headers.put(AmqpHeaders.CORRELATION_ID, correlationId);
 			}
-			MessageDeliveryMode deliveryMode = amqpMessageProperties.getDeliveryMode();
-			if (deliveryMode != null) {
-				headers.put(AmqpHeaders.DELIVERY_MODE, deliveryMode);
+			MessageDeliveryMode receivedDeliveryMode = amqpMessageProperties.getReceivedDeliveryMode();
+			if (receivedDeliveryMode != null) {
+				headers.put(AmqpHeaders.RECEIVED_DELIVERY_MODE, receivedDeliveryMode);
 			}
 			long deliveryTag = amqpMessageProperties.getDeliveryTag();
 			if (deliveryTag > 0) {

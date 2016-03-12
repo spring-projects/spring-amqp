@@ -1527,6 +1527,8 @@ The `com.rabbitmq.client.Channel` on which the message was received
 The `org.springframework.messaging.Message` representing the incoming AMQP message.
 Note that this message holds both the custom and the standard headers (as defined by `AmqpHeaders`).
 
+NOTE: Starting with _version 1.6_, the inbound `deliveryMode` header is now available in the header with name
+`AmqpHeaders.RECEIVED_DELIVERY_MODE` instead of `AmqpHeaders.DELIVERY_MODE`.
 
 `@Header`-annotated method arguments to extract a specific header value, including standard AMQP headers.
 
@@ -2121,6 +2123,11 @@ For outbound messages:
 - `STRING` - just the `correlationIdString` property is mapped
 - `BYTES` - just the `correlationId` property is mapped
 - `BOTH` - Both properties will be considered, with the String property taking precedence
+
+Also starting with _version 1.6_, the inbound `deliveryMode` header is no longer mapped to
+`MessageProperties.deliveryMode`, it is mapped to `MessageProperties.receivedDeliveryMode` instead.
+This is to avoid unexpected propagation of this property if the same `MessageProperties` object is used for an
+outbound message.
 
 [[post-processing]]
 ==== Modifying Messages - Compression and More

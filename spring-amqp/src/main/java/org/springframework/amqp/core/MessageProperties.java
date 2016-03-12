@@ -113,6 +113,8 @@ public class MessageProperties implements Serializable {
 
 	private volatile Integer receivedDelay;
 
+	private volatile MessageDeliveryMode receivedDeliveryMode;
+
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
 	}
@@ -248,6 +250,14 @@ public class MessageProperties implements Serializable {
 
 	public MessageDeliveryMode getDeliveryMode() {
 		return this.deliveryMode;
+	}
+
+	public MessageDeliveryMode getReceivedDeliveryMode() {
+		return this.receivedDeliveryMode;
+	}
+
+	public void setReceivedDeliveryMode(MessageDeliveryMode receivedDeliveryMode) {
+		this.receivedDeliveryMode = receivedDeliveryMode;
 	}
 
 	// why not a Date or long?
