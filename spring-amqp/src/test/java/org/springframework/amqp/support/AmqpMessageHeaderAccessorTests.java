@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.support;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.util.Date;
 import java.util.Map;
 
@@ -29,10 +32,9 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeType;
 
-import static org.junit.Assert.*;
-
 /**
  * @author Stephane Nicoll
+ * @author Gary Russell
  */
 public class AmqpMessageHeaderAccessorTests {
 
@@ -51,7 +53,7 @@ public class AmqpMessageHeaderAccessorTests {
 		properties.setContentLength(200L);
 		properties.setContentType("text/plain");
 		properties.setCorrelationId(correlationId);
-		properties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+		properties.setReceivedDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
 		properties.setDeliveryTag(555L);
 		properties.setExpiration("expiration-1234");
 		properties.setMessageCount(42);
@@ -77,7 +79,7 @@ public class AmqpMessageHeaderAccessorTests {
 		assertEquals(Long.valueOf(200), headerAccessor.getContentLength());
 		assertEquals(MimeType.valueOf("text/plain"), headerAccessor.getContentType());
 		assertEquals(correlationId, headerAccessor.getCorrelationId());
-		assertEquals(MessageDeliveryMode.NON_PERSISTENT, headerAccessor.getDeliveryMode());
+		assertEquals(MessageDeliveryMode.NON_PERSISTENT, headerAccessor.getReceivedDeliveryMode());
 		assertEquals(Long.valueOf(555), headerAccessor.getDeliveryTag());
 		assertEquals("expiration-1234", headerAccessor.getExpiration());
 		assertEquals(Integer.valueOf(42), headerAccessor.getMessageCount());

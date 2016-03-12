@@ -32,6 +32,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -220,6 +221,18 @@ public class DefaultMessagePropertiesConverterTests {
 		messageProperties = this.messagePropertiesConverter.toMessageProperties(basicProps, null, "UTF-8");
 		assertNull(messageProperties.getCorrelationIdString());
 		assertEquals("bar", new String(messageProperties.getCorrelationId()));
+	}
+
+	@Test
+	public void testInboundDeliveryMode() {
+		DefaultMessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
+		MessageProperties props = new MessageProperties();
+		props.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+		BasicProperties bProps = converter.fromMessageProperties(props, "UTF-8");
+		assertEquals(MessageDeliveryMode.toInt(MessageDeliveryMode.NON_PERSISTENT), bProps.getDeliveryMode().intValue());
+		props = converter.toMessageProperties(bProps, null, "UTF-8");
+		assertEquals(MessageDeliveryMode.NON_PERSISTENT, props.getReceivedDeliveryMode());
+		assertNull(props.getDeliveryMode());
 	}
 
 }

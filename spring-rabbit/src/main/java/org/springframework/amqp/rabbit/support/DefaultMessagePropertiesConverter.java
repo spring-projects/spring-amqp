@@ -126,10 +126,11 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		target.setAppId(source.getAppId());
 		target.setClusterId(source.getClusterId());
 		target.setType(source.getType());
-		Integer deliverMode = source.getDeliveryMode();
-		if (deliverMode != null) {
-			target.setDeliveryMode(MessageDeliveryMode.fromInt(deliverMode));
+		Integer deliveryMode = source.getDeliveryMode();
+		if (deliveryMode != null) {
+			target.setReceivedDeliveryMode(MessageDeliveryMode.fromInt(deliveryMode));
 		}
+		target.setDeliveryMode(null);
 		target.setExpiration(source.getExpiration());
 		target.setPriority(source.getPriority());
 		target.setContentType(source.getContentType());
