@@ -26,6 +26,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -292,7 +293,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container2.stop();
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(logger).info(captor.capture());
+		verify(logger, atLeastOnce()).info(captor.capture());
 		assertThat(captor.getAllValues(), contains(containsString("exclusive")));
 		ArgumentCaptor<ListenerContainerConsumerFailedEvent> eventCaptor = ArgumentCaptor
 				.forClass(ListenerContainerConsumerFailedEvent.class);
