@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
@@ -31,15 +32,17 @@ import org.springframework.remoting.rmi.CodebaseAwareObjectInputStream;
 import org.springframework.util.ClassUtils;
 
 /**
- * Implementation of {@link MessageConverter} that can work with Strings, Serializable instances,
- * or byte arrays. The {@link #toMessage(Object, MessageProperties)} method simply checks the
- * type of the provided instance while the {@link #fromMessage(Message)} method relies upon the
- * {@link MessageProperties#getContentType() content-type} of the provided Message.
+ * Implementation of {@link MessageConverter} that can work with Strings, Serializable
+ * instances, or byte arrays. The {@link #toMessage(Object, MessageProperties)} method
+ * simply checks the type of the provided instance while the {@link #fromMessage(Message)}
+ * method relies upon the {@link MessageProperties#getContentType() content-type} of the
+ * provided Message.
  *
  * @author Mark Fisher
  * @author Oleg Zhurakousky
+ * @author Gary Russell
  */
-public class SimpleMessageConverter extends AbstractMessageConverter implements BeanClassLoaderAware {
+public class SimpleMessageConverter extends WhiteListDeserializingMessageConverter implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -105,10 +108,12 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
 				try {
 					content = SerializationUtils.deserialize(createObjectInputStream(new ByteArrayInputStream(message.getBody()), this.codebaseUrl));
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					throw new MessageConversionException(
 							"failed to convert serialized Message content", e);
-				} catch (IllegalArgumentException e) {
+				}
+				catch (IllegalArgumentException e) {
 					throw new MessageConversionException(
 							"failed to convert serialized Message content", e);
 				}
@@ -144,7 +149,8 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 		else if (object instanceof Serializable) {
 			try {
 				bytes = SerializationUtils.serialize(object);
-			} catch (IllegalArgumentException e) {
+			}
+			catch (IllegalArgumentException e) {
 				throw new MessageConversionException(
 						"failed to convert to serialized Message content", e);
 			}
@@ -166,7 +172,16 @@ public class SimpleMessageConverter extends AbstractMessageConverter implements 
 	 * @see org.springframework.remoting.rmi.CodebaseAwareObjectInputStream
 	 */
 	protected ObjectInputStream createObjectInputStream(InputStream is, String codebaseUrl) throws IOException {
-		return new CodebaseAwareObjectInputStream(is, this.beanClassLoader, codebaseUrl);
+		return new CodebaseAwareObjectInputStream(is, this.beanClassLoader, codebaseUrl) {
+
+			@Override
+			protected Class<?> resolveClass(ObjectStreamClass classDesc) throws IOException, ClassNotFoundException {
+				Class<?> clazz = super.resolveClass(classDesc);
+				checkWhiteList(clazz);
+				return clazz;
+			}
+
+		};
 	}
 
 }
