@@ -128,6 +128,13 @@ See <<delayed-message-exchange>> for more information.
 The `CachingConnectionFactory` now provides cache properties at runtime and over JMX.
 See <<runtime-cache-properties>> for more information.
 
+===== Java Deserialization
+
+A "white list" of allowable classes can now be configured when using Java deserialization.
+It is important to consider creating a white list if you accept messages with serialized java objects from
+untrusted sources.
+See <<java-deserialization>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

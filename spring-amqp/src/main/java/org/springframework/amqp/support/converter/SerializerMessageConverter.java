@@ -19,24 +19,36 @@ package org.springframework.amqp.support.converter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectStreamClass;
 import java.io.UnsupportedEncodingException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.core.ConfigurableObjectInputStream;
+import org.springframework.core.NestedIOException;
 import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.DefaultSerializer;
 import org.springframework.core.serializer.Deserializer;
 import org.springframework.core.serializer.Serializer;
 
 /**
- * Implementation of {@link MessageConverter} that can work with Strings or native objects of any kind via the
- * {@link Serializer} and {@link Deserializer} abstractions in Spring. The {@link #toMessage(Object, MessageProperties)}
- * method simply checks the type of the provided instance while the {@link #fromMessage(Message)} method relies upon the
+ * Implementation of {@link MessageConverter} that can work with Strings or native objects
+ * of any kind via the {@link Serializer} and {@link Deserializer} abstractions in Spring.
+ * The {@link #toMessage(Object, MessageProperties)} method simply checks the type of the
+ * provided instance while the {@link #fromMessage(Message)} method relies upon the
  * {@link MessageProperties#getContentType() content-type} of the provided Message.
+ * <p>
+ * If a {@link DefaultDeserializer} is configured (default),
+ * the {@link #setWhiteListPatterns(java.util.List) white list patterns} will be applied
+ * (if configured); for all other deserializers, the deserializer is responsible for
+ * checking classes, if necessary.
  *
  * @author Dave Syer
+ * @author Gary Russell
  */
-public class SerializerMessageConverter extends AbstractMessageConverter {
+public class SerializerMessageConverter extends WhiteListDeserializingMessageConverter {
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -102,14 +114,23 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 				}
 				try {
 					content = new String(message.getBody(), encoding);
-				} catch (UnsupportedEncodingException e) {
+				}
+				catch (UnsupportedEncodingException e) {
 					throw new MessageConversionException("failed to convert text-based Message content", e);
 				}
-			} else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
-					|| this.ignoreContentType) {
+			}
+			else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
+					|| ignoreContentType) {
 				try {
-					content = this.deserializer.deserialize(new ByteArrayInputStream(message.getBody()));
-				} catch (IOException e) {
+					ByteArrayInputStream inputStream = new ByteArrayInputStream(message.getBody());
+					if (this.deserializer.getClass().equals(DefaultDeserializer.class) ){
+						content = deserialize(inputStream, this.deserializer);
+					}
+					else {
+						content = deserializer.deserialize(inputStream);
+					}
+				}
+				catch (IOException e) {
 					throw new MessageConversionException("Could not convert message body", e);
 				}
 			}
@@ -120,11 +141,40 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 		return content;
 	}
 
+	private Object deserialize(ByteArrayInputStream inputStream, Deserializer<Object> deserializer)
+			throws IOException {
+		ClassLoader classLoader = null;
+		try {
+			classLoader = (ClassLoader) new DirectFieldAccessor(deserializer).getPropertyValue("classLoader");
+		}
+		catch (Exception e) {
+			// no-op
+		}
+		try {
+			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream, classLoader) {
+
+				@Override
+				protected Class<?> resolveClass(ObjectStreamClass classDesc)
+						throws IOException, ClassNotFoundException {
+					Class<?> clazz = super.resolveClass(classDesc);
+					checkWhiteList(clazz);
+					return clazz;
+				}
+
+			};
+			return objectInputStream.readObject();
+		}
+		catch (ClassNotFoundException ex) {
+			throw new NestedIOException("Failed to deserialize object type", ex);
+		}
+	}
+
 	/**
 	 * Creates an AMQP Message from the provided Object.
 	 */
 	@Override
-	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
+	protected Message createMessage(Object object, MessageProperties messageProperties)
+			throws MessageConversionException {
 		byte[] bytes = null;
 		if (object instanceof String) {
 			try {
@@ -134,14 +184,17 @@ public class SerializerMessageConverter extends AbstractMessageConverter {
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 			messageProperties.setContentEncoding(this.defaultCharset);
-		} else if (object instanceof byte[]) {
+		}
+		else if (object instanceof byte[]) {
 			bytes = (byte[]) object;
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_BYTES);
-		} else {
+		}
+		else {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			try {
-				this.serializer.serialize(object, output);
-			} catch (IOException e) {
+				serializer.serialize(object, output);
+			}
+			catch (IOException e) {
 				throw new MessageConversionException("Cannot convert object to bytes", e);
 			}
 			bytes = output.toByteArray();
