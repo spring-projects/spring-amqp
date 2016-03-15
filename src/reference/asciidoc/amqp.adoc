@@ -1721,11 +1721,21 @@ In the next two sections, we'll explore some alternatives for passing rich domai
 
 For all other content-types, the `SimpleMessageConverter` will return the Message body content directly as a byte array.
 
+See <<java-deserialization>> for important information.
+
 ====== Converting To a Message
 
 When converting to a Message from an arbitrary Java Object, the `SimpleMessageConverter` likewise deals with byte arrays, Strings, and Serializable instances.
 It will convert each of these to bytes (in the case of byte arrays, there is nothing to convert), and it will set the content-type property accordingly.
 If the Object to be converted does not match one of those types, the Message body will be null.
+
+[[serializer-message-converter]]
+===== SerializerMessageConverter
+
+This converter is similar to the `SimpleMessageConverter` except it can be configured with other Spring Framework
+`Serializer` and `Deserializer` implementations for `application/x-java-serialized-object` conversions.
+
+See <<java-deserialization>> for important information.
 
 ===== JsonMessageConverter and Jackson2JsonMessageConverter
 
@@ -1823,6 +1833,29 @@ By default, it will delegate to a `SimpleMessageConverter` if there is no `conte
     </property>
 </bean>
 ----
+
+[[java-deserialization]]
+===== Java Deserialization
+
+[IMPORTANT]
+====
+There is a possible vulnerability when deserializing java objects from untrusted sources.
+
+If you accept messages from untrusted sources with a `content-type` `application/x-java-serialized-object`, you should
+consider configuring which packages/classes are allowed to be deserialized.
+This applies to both the `SimpleMessageConverter` and `SerializerMessageConverter` when it is configured to use a
+`DefaultDeserializer` - either implicitly, or via configuration.
+
+By default, the white list is empty, meaning all classes will be deserialized.
+
+You can set a list of patterns, such as `foo.*`, `foo.bar.Baz` or `*.MySafeClass`.
+
+The patterns will be checked in order until a match is found.
+If there is no match, a `SecurityException` is thrown.
+
+Set the patterns using the `whiteListPatterns` property on these converters.
+
+====
 
 [[message-properties-converters]]
 ===== Message Properties Converters

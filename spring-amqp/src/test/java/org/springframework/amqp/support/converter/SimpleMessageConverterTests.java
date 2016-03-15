@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,17 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
 import org.junit.Test;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.util.Assert;
 
 /**
  * @author Mark Fisher
+ * @author Gary Russell
  */
-public class SimpleMessageConverterTests {
+public class SimpleMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
 
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
@@ -137,26 +137,6 @@ public class SimpleMessageConverterTests {
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
 		assertEquals(testBean, deserializedObject);
-	}
-
-
-	@SuppressWarnings("serial")
-	private static class TestBean implements Serializable {
-
-		private final String text;
-
-		TestBean(String text) {
-			Assert.notNull(text, "text must not be null");
-			this.text = text;
-		}
-
-		public boolean equals(Object other) {
-			return (other instanceof TestBean && this.text.equals(((TestBean) other).text));
-		}
-
-		public int hashCode() {
-			return this.text.hashCode();
-		}
 	}
 
 }
