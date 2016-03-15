@@ -85,7 +85,7 @@ public class DelegatingInvocableHandler {
 	 * @return the bean
 	 */
 	public Object getBean() {
-		return bean;
+		return this.bean;
 	}
 
 	/**

@@ -71,8 +71,8 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	}
 
 	private String fromClass(Class<?> classOfObjectToConvert) {
-		if (classIdMapping.containsKey(classOfObjectToConvert)) {
-			return classIdMapping.get(classOfObjectToConvert);
+		if (this.classIdMapping.containsKey(classOfObjectToConvert)) {
+			return this.classIdMapping.get(classOfObjectToConvert);
 		}
 		if (Map.class.isAssignableFrom(classOfObjectToConvert)) {
 			return DEFAULT_HASHTABLE_TYPE_ID;
@@ -82,7 +82,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private Class<?> toClass(String classId) {
 		if (this.idClassMapping.containsKey(classId)) {
-			return idClassMapping.get(classId);
+			return this.idClassMapping.get(classId);
 		}
 		if (classId.equals(DEFAULT_HASHTABLE_TYPE_ID)) {
 			return this.defaultHashtableClass;
@@ -105,11 +105,11 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private void validateIdTypeMapping() {
 		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
-		for (Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
+		for (Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
 			String id = entry.getKey();
 			Class<?> clazz = entry.getValue();
 			finalIdClassMapping.put(id, clazz);
-			classIdMapping.put(clazz, id);
+			this.classIdMapping.put(clazz, id);
 		}
 		this.idClassMapping = finalIdClassMapping;
 	}

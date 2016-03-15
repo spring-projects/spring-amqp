@@ -205,7 +205,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 					((DisposableBean) listenerContainer).destroy();
 				}
 				catch (Exception ex) {
-					logger.warn("Failed to destroy message listener container", ex);
+					this.logger.warn("Failed to destroy message listener container", ex);
 				}
 			}
 		}

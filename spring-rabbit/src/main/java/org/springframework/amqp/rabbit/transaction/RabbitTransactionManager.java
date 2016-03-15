@@ -106,7 +106,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	 * @return the connectionFactory
 	 */
 	public ConnectionFactory getConnectionFactory() {
-		return connectionFactory;
+		return this.connectionFactory;
 	}
 
 	/**

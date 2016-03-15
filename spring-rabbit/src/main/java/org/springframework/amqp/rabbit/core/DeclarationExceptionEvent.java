@@ -43,19 +43,19 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 	 * @return the declarable - if null, we were declaring a broker-named queue.
 	 */
 	public Declarable getDeclarable() {
-		return declarable;
+		return this.declarable;
 	}
 
 	/**
 	 * @return the throwable.
 	 */
 	public Throwable getThrowable() {
-		return throwable;
+		return this.throwable;
 	}
 
 	@Override
 	public String toString() {
-		return "DeclarationExceptionEvent [declarable=" + declarable + ", throwable=" + throwable + ", source="
+		return "DeclarationExceptionEvent [declarable=" + this.declarable + ", throwable=" + this.throwable + ", source="
 				+ getSource() + "]";
 	}
 

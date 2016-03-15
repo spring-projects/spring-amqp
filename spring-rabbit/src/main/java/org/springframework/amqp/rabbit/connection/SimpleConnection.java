@@ -46,7 +46,7 @@ public class SimpleConnection implements Connection {
 	@Override
 	public Channel createChannel(boolean transactional) {
 		try {
-			Channel channel = delegate.createChannel();
+			Channel channel = this.delegate.createChannel();
 			if (transactional) {
 				// Just created so we want to start the transaction
 				channel.txSelect();
@@ -61,7 +61,7 @@ public class SimpleConnection implements Connection {
 	public void close() {
 		try {
 			// let the physical close time out if necessary
-			delegate.close(closeTimeout);
+			this.delegate.close(this.closeTimeout);
 		} catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
@@ -69,8 +69,8 @@ public class SimpleConnection implements Connection {
 
 	@Override
 	public boolean isOpen() {
-		return delegate != null
-				&& (delegate.isOpen() || this.delegate.getClass().getSimpleName().contains("AutorecoveringConnection"));
+		return this.delegate != null
+				&& (this.delegate.isOpen() || this.delegate.getClass().getSimpleName().contains("AutorecoveringConnection"));
 	}
 
 
@@ -86,7 +86,7 @@ public class SimpleConnection implements Connection {
 	public String toString() {
 		return "SimpleConnection@"
 				+ ObjectUtils.getIdentityHexString(this)
-				+ " [delegate=" + delegate + ", localPort= " + getLocalPort() + "]";
+				+ " [delegate=" + this.delegate + ", localPort= " + getLocalPort() + "]";
 	}
 
 }

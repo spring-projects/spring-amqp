@@ -275,8 +275,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 						if (uri != null) {
 							return nodeConnectionFactory(queue, node, uri);
 						}
-						if (logger.isDebugEnabled()) {
-							logger.debug("No match for node: " + node);
+						if (this.logger.isDebugEnabled()) {
+							this.logger.debug("No match for node: " + node);
 						}
 					}
 				}
@@ -285,11 +285,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				}
 			}
 			catch (Exception e) {
-				logger.warn("Failed to determine queue location for: " + queue + " at: " +
+				this.logger.warn("Failed to determine queue location for: " + queue + " at: " +
 						adminUri + ": " + e.getMessage());
 			}
 		}
-		logger.warn("Failed to determine queue location for: " + queue + ", using default connection factory");
+		this.logger.warn("Failed to determine queue location for: " + queue + ", using default connection factory");
 		return null;
 	}
 
@@ -309,14 +309,14 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 
 	private synchronized ConnectionFactory nodeConnectionFactory(String queue, String node, String address)
 			throws Exception {
-		if (logger.isInfoEnabled()) {
-			logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
+		if (this.logger.isInfoEnabled()) {
+			this.logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
 		}
 		ConnectionFactory cf = this.nodeFactories.get(node);
 		if (cf == null) {
 			cf = createConnectionFactory(address, node);
-			if (logger.isInfoEnabled()) {
-				logger.info("Created new connection factory: " + cf);
+			if (this.logger.isInfoEnabled()) {
+				this.logger.info("Created new connection factory: " + cf);
 			}
 			this.nodeFactories.put(node, cf);
 		}

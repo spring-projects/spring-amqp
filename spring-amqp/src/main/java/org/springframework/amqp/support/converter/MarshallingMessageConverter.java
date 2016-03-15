@@ -138,12 +138,12 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		try {
-			if (contentType != null) {
-				messageProperties.setContentType(contentType);
+			if (this.contentType != null) {
+				messageProperties.setContentType(this.contentType);
 			}
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			StreamResult streamResult = new StreamResult(bos);
-			marshaller.marshal(object, streamResult);
+			this.marshaller.marshal(object, streamResult);
 			return new Message(bos.toByteArray(), messageProperties);
 		}
 		catch (XmlMappingException ex) {
@@ -162,7 +162,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(message.getBody());
 			StreamSource source = new StreamSource(bis);
-			return unmarshaller.unmarshal(source);
+			return this.unmarshaller.unmarshal(source);
 		}
 		catch (IOException ex) {
 			throw new MessageConversionException("Could not access message content: " + message, ex);

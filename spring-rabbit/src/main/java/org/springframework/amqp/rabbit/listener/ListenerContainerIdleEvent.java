@@ -50,7 +50,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the time in milliseconds.
 	 */
 	public long getIdleTime() {
-		return idleTime;
+		return this.idleTime;
 	}
 
 	/**

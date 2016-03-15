@@ -55,7 +55,7 @@ public class ListenerExecutionFailedException extends AmqpException {
 	}
 
 	public Message getFailedMessage() {
-		return failedMessage;
+		return this.failedMessage;
 	}
 
 }

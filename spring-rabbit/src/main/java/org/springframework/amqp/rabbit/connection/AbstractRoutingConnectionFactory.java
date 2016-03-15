@@ -89,7 +89,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	public boolean isLenientFallback() {
-		return lenientFallback;
+		return this.lenientFallback;
 	}
 
 	@Override
@@ -183,7 +183,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 
 	@Override
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
-		return targetConnectionFactories.get(key);
+		return this.targetConnectionFactories.get(key);
 	}
 
 	/**
@@ -192,7 +192,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * @param connectionFactory the {@link ConnectionFactory}
 	 */
 	protected void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
-		targetConnectionFactories.put(key, connectionFactory);
+		this.targetConnectionFactories.put(key, connectionFactory);
 		for(ConnectionListener listener : this.connectionListeners) {
 			connectionFactory.addConnectionListener(listener);
 		}
@@ -204,7 +204,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 * @return the {@link ConnectionFactory} that was removed
 	 */
 	protected ConnectionFactory removeTargetConnectionFactory(Object key) {
-		return targetConnectionFactories.remove(key);
+		return this.targetConnectionFactories.remove(key);
 	}
 
 	/**

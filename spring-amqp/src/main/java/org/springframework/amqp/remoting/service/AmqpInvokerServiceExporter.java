@@ -68,7 +68,7 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 			throw new AmqpRejectAndDontRequeueException("No replyToAddress in inbound AMQP Message");
 		}
 
-		Object invocationRaw = messageConverter.fromMessage(message);
+		Object invocationRaw = this.messageConverter.fromMessage(message);
 
 		RemoteInvocationResult remoteInvocationResult;
 		if (invocationRaw == null || !(invocationRaw instanceof RemoteInvocation)) {
@@ -83,13 +83,13 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 	}
 
 	private void send(Object object, Address replyToAddress) {
-		Message message = messageConverter.toMessage(object, new MessageProperties());
+		Message message = this.messageConverter.toMessage(object, new MessageProperties());
 
 		getAmqpTemplate().send(replyToAddress.getExchangeName(), replyToAddress.getRoutingKey(), message);
 	}
 
 	public AmqpTemplate getAmqpTemplate() {
-		return amqpTemplate;
+		return this.amqpTemplate;
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 	}
 
 	public MessageConverter getMessageConverter() {
-		return messageConverter;
+		return this.messageConverter;
 	}
 
 	/**

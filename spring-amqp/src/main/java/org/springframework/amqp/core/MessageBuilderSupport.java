@@ -155,7 +155,7 @@ public abstract class MessageBuilderSupport<T> {
 	 */
 
 	public MessageBuilderSupport<T> setHeaderIfAbsent(String key, Object value) {
-		if (properties.getHeaders().get(key) == null) {
+		if (this.properties.getHeaders().get(key) == null) {
 			this.properties.setHeader(key, value);
 		}
 		return this;
