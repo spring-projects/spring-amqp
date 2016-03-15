@@ -60,6 +60,10 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 
 	private volatile boolean ignoreContentType = false;
 
+	private volatile ClassLoader defaultDeserializerClassLoader;
+
+	private volatile boolean usingDefaultDeserializer = true;
+
 	/**
 	 * Flag to signal that the content type should be ignored and the deserializer used irrespective if it is a text
 	 * message. Defaults to false, in which case the default encoding is used to convert a text message to a String.
@@ -96,6 +100,19 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 	 */
 	public void setDeserializer(Deserializer<Object> deserializer) {
 		this.deserializer = deserializer;
+		if (this.deserializer.getClass().equals(DefaultDeserializer.class)) {
+			try {
+				this.defaultDeserializerClassLoader = (ClassLoader) new DirectFieldAccessor(deserializer)
+						.getPropertyValue("classLoader");
+			}
+			catch (Exception e) {
+				// no-op
+			}
+			this.usingDefaultDeserializer = true;
+		}
+		else {
+			this.usingDefaultDeserializer = false;
+		}
 	}
 
 	/**
@@ -120,14 +137,14 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 				}
 			}
 			else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
-					|| ignoreContentType) {
+					|| this.ignoreContentType) {
 				try {
 					ByteArrayInputStream inputStream = new ByteArrayInputStream(message.getBody());
-					if (this.deserializer.getClass().equals(DefaultDeserializer.class) ){
+					if (this.usingDefaultDeserializer) {
 						content = deserialize(inputStream, this.deserializer);
 					}
 					else {
-						content = deserializer.deserialize(inputStream);
+						content = this.deserializer.deserialize(inputStream);
 					}
 				}
 				catch (IOException e) {
@@ -143,15 +160,9 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 
 	private Object deserialize(ByteArrayInputStream inputStream, Deserializer<Object> deserializer)
 			throws IOException {
-		ClassLoader classLoader = null;
 		try {
-			classLoader = (ClassLoader) new DirectFieldAccessor(deserializer).getPropertyValue("classLoader");
-		}
-		catch (Exception e) {
-			// no-op
-		}
-		try {
-			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream, classLoader) {
+			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream,
+					this.defaultDeserializerClassLoader) {
 
 				@Override
 				protected Class<?> resolveClass(ObjectStreamClass classDesc)
@@ -192,7 +203,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 		else {
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			try {
-				serializer.serialize(object, output);
+				this.serializer.serialize(object, output);
 			}
 			catch (IOException e) {
 				throw new MessageConversionException("Cannot convert object to bytes", e);

@@ -17,6 +17,10 @@
 package org.springframework.amqp.support.converter;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,6 +31,9 @@ import org.junit.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.core.serializer.DefaultDeserializer;
+import org.springframework.core.serializer.Deserializer;
 
 /**
  * @author Mark Fisher
@@ -138,6 +145,19 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
 		assertEquals(testBean, deserializedObject);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testDefaultDeserializerClassLoader() {
+		SerializerMessageConverter converter = new SerializerMessageConverter();
+		ClassLoader loader = mock(ClassLoader.class);
+		Deserializer<Object> deserializer = new DefaultDeserializer(loader);
+		converter.setDeserializer(deserializer);
+		assertSame(loader, TestUtils.getPropertyValue(converter, "defaultDeserializerClassLoader"));
+		assertTrue(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class));
+		converter.setDeserializer(mock(Deserializer.class));
+		assertFalse(TestUtils.getPropertyValue(converter, "usingDefaultDeserializer", Boolean.class));
 	}
 
 }

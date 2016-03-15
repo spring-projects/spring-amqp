@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public abstract class WhiteListDeserializingMessageConverter extends AbstractMes
 	}
 
 	protected void checkWhiteList(Class<?> clazz) throws IOException {
-		if (whiteListPatterns.isEmpty()) {
+		if (this.whiteListPatterns.isEmpty()) {
 			return;
 		}
 		if (clazz.isArray() || clazz.isPrimitive() || clazz.equals(String.class)
