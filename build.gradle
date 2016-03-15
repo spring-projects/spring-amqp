@@ -178,7 +178,6 @@ subprojects { subproject ->
 
 	checkstyle {
 		configFile = new File(rootDir, "src/checkstyle/checkstyle.xml")
-		// ignoreFailures = true
 	}
 
 	artifacts {

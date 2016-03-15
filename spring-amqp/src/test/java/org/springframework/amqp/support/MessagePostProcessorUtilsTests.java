@@ -56,11 +56,14 @@ public class MessagePostProcessorUtilsTests {
 		assertEquals(2, ((POMPP) mpp).getOrder());
 		mpp = iterator.next();
 		assertThat(mpp, Matchers.instanceOf(POMPP.class));
-		assertEquals(6, ((POMPP) mpp).getOrder());mpp = iterator.next();
+		assertEquals(6, ((POMPP) mpp).getOrder());
+		mpp = iterator.next();
 		assertThat(mpp, Matchers.instanceOf(OMPP.class));
-		assertEquals(1, ((OMPP) mpp).getOrder());mpp = iterator.next();
+		assertEquals(1, ((OMPP) mpp).getOrder());
+		mpp = iterator.next();
 		assertThat(mpp, Matchers.instanceOf(OMPP.class));
-		assertEquals(3, ((OMPP) mpp).getOrder());mpp = iterator.next();
+		assertEquals(3, ((OMPP) mpp).getOrder());
+		mpp = iterator.next();
 		assertThat(mpp, Matchers.instanceOf(MPP.class));
 	}
 
