@@ -186,7 +186,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
-		byte[] bytes = null;
+		byte[] bytes;
 		if (object instanceof String) {
 			try {
 				bytes = ((String) object).getBytes(this.defaultCharset);

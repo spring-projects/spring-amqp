@@ -272,7 +272,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	protected final Connection createBareConnection() {
 		try {
-			Connection connection = null;
+			Connection connection;
 			if (this.addresses != null) {
 				connection = new SimpleConnection(this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses),
 									this.closeTimeout);

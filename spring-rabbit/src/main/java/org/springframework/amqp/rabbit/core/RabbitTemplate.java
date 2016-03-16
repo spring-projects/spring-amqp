@@ -684,7 +684,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (expression != null && getConnectionFactory() instanceof AbstractRoutingConnectionFactory) {
 			AbstractRoutingConnectionFactory routingConnectionFactory =
 					(AbstractRoutingConnectionFactory) getConnectionFactory();
-			Object lookupKey = null;
+			Object lookupKey;
 			if (rootObject != null) {
 				lookupKey = this.sendConnectionFactorySelectorExpression.getValue(this.evaluationContext, rootObject);
 			}

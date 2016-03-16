@@ -490,11 +490,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						autoDelete);
 				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
 				queues.add(queueName);
-				Exchange exchange = null;
+				Exchange exchange;
 				org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 				String exchangeName = (String) resolveExpression(bindingExchange.value());
 				String exchangeType = bindingExchange.type();
-				Binding actualBinding = null;
+				Binding actualBinding;
 				Object key = resolveExpression(binding.key());
 				if (!(key instanceof String)) {
 					throw new BeanInitializationException("key must resolved to a String, not: " + key.getClass().toString());
