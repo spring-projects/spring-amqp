@@ -23,11 +23,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -38,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Dave Syer
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Gary Russell
  */
 public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
@@ -47,8 +47,9 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
 	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
+	private boolean typeMapperSet;
+
 	public Jackson2JsonMessageConverter() {
-		super();
 		initializeJsonObjectMapper();
 	}
 
@@ -58,18 +59,55 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
 	public void setJavaTypeMapper(Jackson2JavaTypeMapper javaTypeMapper) {
 		this.javaTypeMapper = javaTypeMapper;
+		this.typeMapperSet = true;
 	}
 
 	/**
 	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
 	 * alternative to injecting a mapper is to extend this class and override
 	 * {@link #initializeJsonObjectMapper()}.
-	 *
-	 * @param jsonObjectMapper
-	 *            the object mapper to set
+	 * @param jsonObjectMapper the object mapper to set
 	 */
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
 		this.jsonObjectMapper = jsonObjectMapper;
+	}
+
+	/**
+	 * @return the precedence.
+	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
+	 * @since 1.6.
+	 */
+	public Jackson2JavaTypeMapper.TypePrecedence getTypePrecedence() {
+		return this.javaTypeMapper.getTypePrecedence();
+	}
+
+	/**
+	 * Set the precedence for evaluating type information in message properties.
+	 * When using {@code @RabbitListener} at the method level, the framework attempts
+	 * to determine the target type for payload conversion from the method signature.
+	 * If so, this type is provided in the
+	 * {@link MessageProperties#getInferredArgumentType() inferredArgumentType}
+	 * message property.
+	 * <p> By default, if the type is concrete (not abstract, not an interface), this will
+	 * be used ahead of type information provided in the {@code __TypeId__} and
+	 * associated headers provided by the sender.
+	 * <p> If you wish to force the use of the  {@code __TypeId__} and associated headers
+	 * (such as when the actual type is a subclass of the method argument type),
+	 * set the precedence to {@link TypePrecedence#TYPE_ID}.
+	 * @param typePrecedence the precedence.
+	 * @since 1.6
+	 * @see DefaultJackson2JavaTypeMapper#setTypePrecedence(TypePrecedence)
+	 */
+	public void setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence typePrecedence) {
+		if (this.typeMapperSet) {
+			throw new IllegalStateException("When providing your own type mapper, you should set the precedence on it");
+		}
+		if (this.javaTypeMapper instanceof DefaultJackson2JavaTypeMapper) {
+			((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTypePrecedence(typePrecedence);
+		}
+		else {
+			throw new IllegalStateException("Type precedence is available with the DefaultJackson2JavaTypeMapper");
+		}
 	}
 
 	/**
@@ -122,25 +160,20 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		return content;
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding,
-			JavaType targetJavaType) throws JsonParseException,
-			JsonMappingException, IOException {
+	private Object convertBytesToObject(byte[] body, String encoding, JavaType targetJavaType) throws IOException {
 		String contentAsString = new String(body, encoding);
 		return this.jsonObjectMapper.readValue(contentAsString, targetJavaType);
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding,
-			Class<?> targetClass) throws JsonParseException,
-			JsonMappingException, IOException {
+	private Object convertBytesToObject(byte[] body, String encoding, Class<?> targetClass) throws IOException {
 		String contentAsString = new String(body, encoding);
 		return this.jsonObjectMapper.readValue(contentAsString, this.jsonObjectMapper.constructType(targetClass));
 	}
 
 	@Override
-	protected Message createMessage(Object objectToConvert,
-			MessageProperties messageProperties)
+	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
 			throws MessageConversionException {
-		byte[] bytes = null;
+		byte[] bytes;
 		try {
 			String jsonString = this.jsonObjectMapper
 					.writeValueAsString(objectToConvert);
@@ -152,9 +185,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
 		messageProperties.setContentEncoding(getDefaultCharset());
-		if (bytes != null) {
-			messageProperties.setContentLength(bytes.length);
-		}
+		messageProperties.setContentLength(bytes.length);
 
 		if (getClassMapper() == null) {
 			getJavaTypeMapper().fromJavaType(this.jsonObjectMapper.constructType(objectToConvert.getClass()),
@@ -168,6 +199,6 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 
 		return new Message(bytes, messageProperties);
-
 	}
+
 }
