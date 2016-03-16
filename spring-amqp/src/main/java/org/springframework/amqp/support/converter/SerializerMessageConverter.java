@@ -141,7 +141,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 				try {
 					ByteArrayInputStream inputStream = new ByteArrayInputStream(message.getBody());
 					if (this.usingDefaultDeserializer) {
-						content = deserialize(inputStream, this.deserializer);
+						content = deserialize(inputStream);
 					}
 					else {
 						content = this.deserializer.deserialize(inputStream);
@@ -158,8 +158,7 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 		return content;
 	}
 
-	private Object deserialize(ByteArrayInputStream inputStream, Deserializer<Object> deserializer)
-			throws IOException {
+	private Object deserialize(ByteArrayInputStream inputStream) throws IOException {
 		try {
 			ObjectInputStream objectInputStream = new ConfigurableObjectInputStream(inputStream,
 					this.defaultDeserializerClassLoader) {
