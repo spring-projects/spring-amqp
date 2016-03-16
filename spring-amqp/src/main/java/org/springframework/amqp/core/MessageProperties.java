@@ -17,6 +17,8 @@
 package org.springframework.amqp.core;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -114,6 +116,12 @@ public class MessageProperties implements Serializable {
 	private volatile Integer receivedDelay;
 
 	private volatile MessageDeliveryMode receivedDeliveryMode;
+
+	private volatile transient Type inferredArgumentType;
+
+	private volatile transient Method targetMethod;
+
+	private volatile transient Object targetBean;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -396,6 +404,62 @@ public class MessageProperties implements Serializable {
 		else {
 			this.headers.put(X_DELAY, delay);
 		}
+	}
+
+	/**
+	 * The inferred target argument type when using a method-level
+	 * {@code @RabbitListener}.
+	 * @return the type.
+	 * @since 1.6
+	 */
+	public Type getInferredArgumentType() {
+		return this.inferredArgumentType;
+	}
+
+	/**
+	 * Set the inferred target argument type when using a method-level
+	 * {@code @RabbitListener}
+	 * @param inferredArgumentType the type.
+	 * @since 1.6
+	 */
+	public void setInferredArgumentType(Type inferredArgumentType) {
+		this.inferredArgumentType = inferredArgumentType;
+	}
+
+	/**
+	 * The target method when using a method-level {@code @RabbitListener}.
+	 * @return the method.
+	 * @since 1.6
+	 */
+	public Method getTargetMethod() {
+		return this.targetMethod;
+	}
+
+	/**
+	 * Set the target method when using a method-level {@code @RabbitListener}.
+	 * @param targetMethod the target method.
+	 * @since 1.6
+	 */
+	public void setTargetMethod(Method targetMethod) {
+		this.targetMethod = targetMethod;
+	}
+
+	/**
+	 * The target bean when using {@code @RabbitListener}
+	 * @return the bean.
+	 * @since 1.6
+	 */
+	public Object getTargetBean() {
+		return this.targetBean;
+	}
+
+	/**
+	 * Set the target bean when using {@code @RabbitListener}
+	 * @param targetBean the bean.
+	 * @since 1.6
+	 */
+	public void setTargetBean(Object targetBean) {
+		this.targetBean = targetBean;
 	}
 
 	@Override

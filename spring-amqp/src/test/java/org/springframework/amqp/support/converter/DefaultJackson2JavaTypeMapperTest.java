@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.junit.Test;
@@ -43,208 +44,209 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author James Carr
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Gary Russell
  */
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultJackson2JavaTypeMapperTest {
-   @Spy
-   DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
-   private final MessageProperties properties = new MessageProperties();
+	@Spy
+	DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
-   @SuppressWarnings("rawtypes")
-   private final Class<ArrayList> containerClass = ArrayList.class;
+	private final MessageProperties properties = new MessageProperties();
 
-   @SuppressWarnings("rawtypes")
-   private final Class<HashMap> mapClass = HashMap.class;
+	@SuppressWarnings("rawtypes")
+	private final Class<ArrayList> containerClass = ArrayList.class;
 
-   @Test
-   public void shouldThrowAnExceptionWhenClassIdNotPresent() {
-      try {
-         javaTypeMapper.toJavaType(properties);
-      }
-      catch (MessageConversionException e) {
-         String classIdFieldName = javaTypeMapper.getClassIdFieldName();
-         assertThat(e.getMessage(), containsString("Could not resolve " + classIdFieldName + " in header"));
-         return;
-      }
-      fail();
-   }
+	@SuppressWarnings("rawtypes")
+	private final Class<HashMap> mapClass = HashMap.class;
 
-   @Test
-   public void shouldLookInTheClassIdFieldNameToFindTheClassName() {
-      properties.getHeaders().put("type", "java.lang.String");
-      given(javaTypeMapper.getClassIdFieldName()).willReturn("type");
+	@Test
+	public void getAMapWhenClassIdNotPresent() {
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
+		assertEquals(LinkedHashMap.class, javaType.getRawClass());
+	}
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+	@Test
+	public void shouldLookInTheClassIdFieldNameToFindTheClassName() {
+		properties.getHeaders().put("type", "java.lang.String");
+		given(javaTypeMapper.getClassIdFieldName()).willReturn("type");
 
-      assertThat(javaType, equalTo(TypeFactory.defaultInstance().constructType(String.class)));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void shouldUseTheClassProvidedByTheLookupMapIfPresent() {
-      properties.getHeaders().put("__TypeId__", "trade");
-      javaTypeMapper.setIdClassMapping(map("trade", SimpleTrade.class));
+		assertThat(javaType, equalTo(TypeFactory.defaultInstance().constructType(String.class)));
+	}
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+	@Test
+	public void shouldUseTheClassProvidedByTheLookupMapIfPresent() {
+		properties.getHeaders().put("__TypeId__", "trade");
+		javaTypeMapper.setIdClassMapping(map("trade", SimpleTrade.class));
 
-      assertEquals(javaType, TypeFactory.defaultInstance().constructType(SimpleTrade.class));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void fromJavaTypeShouldPopulateWithJavaTypeNameByDefault() {
-      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
+		assertEquals(javaType, TypeFactory.defaultInstance().constructType(SimpleTrade.class));
+	}
 
-      String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
-      assertThat(className, equalTo(SimpleTrade.class.getName()));
-   }
+	@Test
+	public void fromJavaTypeShouldPopulateWithJavaTypeNameByDefault() {
+		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
 
-   @Test
-   public void shouldUseSpecialNameForClassIfPresent() throws Exception {
-      javaTypeMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
-      javaTypeMapper.afterPropertiesSet();
+		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
+		assertThat(className, equalTo(SimpleTrade.class.getName()));
+	}
 
-      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
+	@Test
+	public void shouldUseSpecialNameForClassIfPresent() throws Exception {
+		javaTypeMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
+		javaTypeMapper.afterPropertiesSet();
 
-      String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
-      assertThat(className, equalTo("daytrade"));
-   }
+		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
 
-   @Test
-   public void shouldThrowAnExceptionWhenContentClassIdIsNotPresentWhenClassIdIsContainerType() {
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), ArrayList.class.getName());
+		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
+		assertThat(className, equalTo("daytrade"));
+	}
 
-      try {
-         javaTypeMapper.toJavaType(properties);
-      }
-      catch (MessageConversionException e) {
-         String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
-         assertThat(e.getMessage(), containsString("Could not resolve " + contentClassIdFieldName + " in header"));
-         return;
-      }
-      fail();
-   }
+	@Test
+	public void shouldThrowAnExceptionWhenContentClassIdIsNotPresentWhenClassIdIsContainerType() {
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), ArrayList.class.getName());
 
-   @Test
-   public void shouldLookInTheContentClassIdFieldNameToFindTheContainerClassIDWhenClassIdIsContainerType() {
-      properties.getHeaders().put("contentType", "java.lang.String");
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), ArrayList.class.getName());
-      given(javaTypeMapper.getContentClassIdFieldName()).willReturn("contentType");
+		try {
+			javaTypeMapper.toJavaType(properties);
+		}
+		catch (MessageConversionException e) {
+			String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
+			assertThat(e.getMessage(), containsString("Could not resolve " + contentClassIdFieldName + " in header"));
+			return;
+		}
+		fail();
+	}
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+	@Test
+	public void shouldLookInTheContentClassIdFieldNameToFindTheContainerClassIDWhenClassIdIsContainerType() {
+		properties.getHeaders().put("contentType", "java.lang.String");
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), ArrayList.class.getName());
+		given(javaTypeMapper.getContentClassIdFieldName()).willReturn("contentType");
 
-      assertThat((CollectionType)javaType, equalTo(TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, String.class)));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void shouldUseTheContentClassProvidedByTheLookupMapIfPresent() {
+		assertThat((CollectionType) javaType,
+				equalTo(TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, String.class)));
+	}
 
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), containerClass.getName());
-      properties.getHeaders().put("__ContentTypeId__", "trade");
+	@Test
+	public void shouldUseTheContentClassProvidedByTheLookupMapIfPresent() {
 
-      Map<String, Class<?>> map = map("trade", SimpleTrade.class);
-      map.put(javaTypeMapper.getClassIdFieldName(), containerClass);
-      javaTypeMapper.setIdClassMapping(map);
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), containerClass.getName());
+		properties.getHeaders().put("__ContentTypeId__", "trade");
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+		Map<String, Class<?>> map = map("trade", SimpleTrade.class);
+		map.put(javaTypeMapper.getClassIdFieldName(), containerClass);
+		javaTypeMapper.setIdClassMapping(map);
 
-      assertThat((CollectionType)javaType, equalTo(TypeFactory.defaultInstance().constructCollectionType(containerClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class))));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void fromJavaTypeShouldPopulateWithContentTypeJavaTypeNameByDefault() {
+		assertThat((CollectionType) javaType,
+				equalTo(TypeFactory.defaultInstance().constructCollectionType(containerClass,
+						TypeFactory.defaultInstance().constructType(SimpleTrade.class))));
+	}
 
-      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructCollectionType(containerClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class)),
-                                  properties);
+	@Test
+	public void fromJavaTypeShouldPopulateWithContentTypeJavaTypeNameByDefault() {
 
-      String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
-      String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
+		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructCollectionType(containerClass,
+				TypeFactory.defaultInstance().constructType(SimpleTrade.class)), properties);
 
-      assertThat(className, equalTo(ArrayList.class.getName()));
-      assertThat(contentClassName, equalTo(SimpleTrade.class.getName()));
-   }
+		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
+		String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
 
-   @Test
-   public void shouldThrowAnExceptionWhenKeyClassIdIsNotPresentWhenClassIdIsAMap() {
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), HashMap.class.getName());
-      properties.getHeaders().put(javaTypeMapper.getKeyClassIdFieldName(), String.class.getName());
+		assertThat(className, equalTo(ArrayList.class.getName()));
+		assertThat(contentClassName, equalTo(SimpleTrade.class.getName()));
+	}
 
-      try {
-         javaTypeMapper.toJavaType(properties);
-      }
-      catch (MessageConversionException e) {
-         String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
-         assertThat(e.getMessage(), containsString("Could not resolve " + contentClassIdFieldName + " in header"));
-         return;
-      }
-      fail();
-   }
+	@Test
+	public void shouldThrowAnExceptionWhenKeyClassIdIsNotPresentWhenClassIdIsAMap() {
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), HashMap.class.getName());
+		properties.getHeaders().put(javaTypeMapper.getKeyClassIdFieldName(), String.class.getName());
 
-   @Test
-   public void shouldLookInTheValueClassIdFieldNameToFindTheValueClassIDWhenClassIdIsAMap() {
-      properties.getHeaders().put("keyType", "java.lang.Integer");
-      properties.getHeaders().put(javaTypeMapper.getContentClassIdFieldName(), "java.lang.String");
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), HashMap.class.getName());
-      given(javaTypeMapper.getKeyClassIdFieldName()).willReturn("keyType");
+		try {
+			javaTypeMapper.toJavaType(properties);
+		}
+		catch (MessageConversionException e) {
+			String contentClassIdFieldName = javaTypeMapper.getContentClassIdFieldName();
+			assertThat(e.getMessage(), containsString("Could not resolve " + contentClassIdFieldName + " in header"));
+			return;
+		}
+		fail();
+	}
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+	@Test
+	public void shouldLookInTheValueClassIdFieldNameToFindTheValueClassIDWhenClassIdIsAMap() {
+		properties.getHeaders().put("keyType", "java.lang.Integer");
+		properties.getHeaders().put(javaTypeMapper.getContentClassIdFieldName(), "java.lang.String");
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), HashMap.class.getName());
+		given(javaTypeMapper.getKeyClassIdFieldName()).willReturn("keyType");
 
-      assertThat((MapType)javaType, equalTo(TypeFactory.defaultInstance().constructMapType(HashMap.class, Integer.class, String.class)));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void shouldUseTheKeyClassProvidedByTheLookupMapIfPresent() {
-      properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), mapClass.getName());
-      properties.getHeaders().put(javaTypeMapper.getContentClassIdFieldName(), "java.lang.String");
-      properties.getHeaders().put("__KeyTypeId__", "trade");
+		assertThat((MapType) javaType,
+				equalTo(TypeFactory.defaultInstance().constructMapType(HashMap.class, Integer.class, String.class)));
+	}
 
-      Map<String, Class<?>> map = map("trade", SimpleTrade.class);
-      map.put(javaTypeMapper.getClassIdFieldName(), mapClass);
-      map.put(javaTypeMapper.getContentClassIdFieldName(), String.class);
-      javaTypeMapper.setIdClassMapping(map);
+	@Test
+	public void shouldUseTheKeyClassProvidedByTheLookupMapIfPresent() {
+		properties.getHeaders().put(javaTypeMapper.getClassIdFieldName(), mapClass.getName());
+		properties.getHeaders().put(javaTypeMapper.getContentClassIdFieldName(), "java.lang.String");
+		properties.getHeaders().put("__KeyTypeId__", "trade");
 
-      JavaType javaType = javaTypeMapper.toJavaType(properties);
+		Map<String, Class<?>> map = map("trade", SimpleTrade.class);
+		map.put(javaTypeMapper.getClassIdFieldName(), mapClass);
+		map.put(javaTypeMapper.getContentClassIdFieldName(), String.class);
+		javaTypeMapper.setIdClassMapping(map);
 
-      assertThat((MapType)javaType,
-                 equalTo(TypeFactory.defaultInstance().constructMapType(mapClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class),
-                                                                        TypeFactory.defaultInstance().constructType(String.class))));
-   }
+		JavaType javaType = javaTypeMapper.toJavaType(properties);
 
-   @Test
-   public void fromJavaTypeShouldPopulateWithKeyTypeAndContentJavaTypeNameByDefault() {
+		assertThat((MapType) javaType,
+				equalTo(TypeFactory.defaultInstance().constructMapType(mapClass,
+						TypeFactory.defaultInstance().constructType(SimpleTrade.class),
+						TypeFactory.defaultInstance().constructType(String.class))));
+	}
 
-      javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructMapType(mapClass, TypeFactory.defaultInstance().constructType(SimpleTrade.class),
-                                                                                 TypeFactory.defaultInstance().constructType(String.class)), properties);
+	@Test
+	public void fromJavaTypeShouldPopulateWithKeyTypeAndContentJavaTypeNameByDefault() {
 
-      String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
-      String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
-      String keyClassName = (String) properties.getHeaders().get(javaTypeMapper.getKeyClassIdFieldName());
+		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructMapType(mapClass,
+				TypeFactory.defaultInstance().constructType(SimpleTrade.class),
+				TypeFactory.defaultInstance().constructType(String.class)), properties);
 
-      assertThat(className, equalTo(HashMap.class.getName()));
-      assertThat(contentClassName, equalTo(String.class.getName()));
-      assertThat(keyClassName, equalTo(SimpleTrade.class.getName()));
-   }
+		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
+		String contentClassName = (String) properties.getHeaders().get(javaTypeMapper.getContentClassIdFieldName());
+		String keyClassName = (String) properties.getHeaders().get(javaTypeMapper.getKeyClassIdFieldName());
 
-   @Test
-   public void fromClassShouldPopulateWithJavaTypeNameByDefault() {
-      javaTypeMapper.fromClass(SimpleTrade.class, properties);
+		assertThat(className, equalTo(HashMap.class.getName()));
+		assertThat(contentClassName, equalTo(String.class.getName()));
+		assertThat(keyClassName, equalTo(SimpleTrade.class.getName()));
+	}
 
-      String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
-      assertThat(className, equalTo(SimpleTrade.class.getName()));
-   }
+	@Test
+	public void fromClassShouldPopulateWithJavaTypeNameByDefault() {
+		javaTypeMapper.fromClass(SimpleTrade.class, properties);
 
-   @Test
-   public void toClassShouldUseTheClassProvidedByTheLookupMapIfPresent() {
-      properties.getHeaders().put("__TypeId__", "trade");
-      javaTypeMapper.setIdClassMapping(map("trade", SimpleTrade.class));
+		String className = (String) properties.getHeaders().get(javaTypeMapper.getClassIdFieldName());
+		assertThat(className, equalTo(SimpleTrade.class.getName()));
+	}
 
-      Class<?> clazz = javaTypeMapper.toClass(properties);
+	@Test
+	public void toClassShouldUseTheClassProvidedByTheLookupMapIfPresent() {
+		properties.getHeaders().put("__TypeId__", "trade");
+		javaTypeMapper.setIdClassMapping(map("trade", SimpleTrade.class));
 
-      assertEquals(SimpleTrade.class, clazz);
-   }
+		Class<?> clazz = javaTypeMapper.toClass(properties);
 
-   private Map<String, Class<?>> map(String string, Class<?> clazz) {
-      Map<String, Class<?>> map = new HashMap<String, Class<?>>();
-      map.put(string, clazz);
-      return map;
-   }
+		assertEquals(SimpleTrade.class, clazz);
+	}
+
+	private Map<String, Class<?>> map(String string, Class<?> clazz) {
+		Map<String, Class<?>> map = new HashMap<String, Class<?>>();
+		map.put(string, clazz);
+		return map;
+	}
 }

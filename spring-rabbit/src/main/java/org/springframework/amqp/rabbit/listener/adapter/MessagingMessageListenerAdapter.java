@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,20 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
+import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -50,8 +56,16 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	private HandlerAdapter handlerMethod;
 
-	private final MessagingMessageConverterAdapter messagingMessageConverter = new MessagingMessageConverterAdapter();
+	private final MessagingMessageConverterAdapter messagingMessageConverter;
 
+
+	public MessagingMessageListenerAdapter() {
+		this(null, null);
+	}
+
+	public MessagingMessageListenerAdapter(Object bean, Method method) {
+		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method);
+	}
 
 	/**
 	 * Set the {@link HandlerAdapter} to use to invoke the method
@@ -164,13 +178,79 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	/**
 	 * Delegates payload extraction to
 	 * {@link #extractMessage(org.springframework.amqp.core.Message message)}
-	 * to enforce backward compatibility.
+	 * to enforce backward compatibility. Uses this listener adapter's converter instead of
+	 * the one configured in the converter adapter.
+	 * If the inbound message has no type information and the configured message converter
+	 * supports it, we attempt to infer the conversion type from the method signature.
 	 */
 	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
 
+		private final Object bean;
+
+		private final Method method;
+
+		private final Type inferredArgumentType;
+
+		public MessagingMessageConverterAdapter(Object bean, Method method) {
+			this.bean = bean;
+			this.method = method;
+			this.inferredArgumentType = determineInferredType();
+		}
+
 		@Override
 		protected Object extractPayload(org.springframework.amqp.core.Message message) {
+			MessageProperties messageProperties = message.getMessageProperties();
+			if (this.bean != null) {
+				messageProperties.setTargetBean(this.bean);
+			}
+			if (this.method != null) {
+				messageProperties.setTargetMethod(this.method);
+				if (this.inferredArgumentType != null) {
+					message.getMessageProperties().setInferredArgumentType(this.inferredArgumentType);
+				}
+			}
 			return extractMessage(message);
+		}
+
+		private Type determineInferredType() {
+			if (this.method == null) {
+				return null;
+			}
+			Annotation[][] parameterAnnotations = this.method.getParameterAnnotations();
+			// Single param; no annotation or @Payload
+			Type genericParameterType = null;
+			if (parameterAnnotations.length == 1) {
+				MethodParameter methodParameter = new MethodParameter(this.method, 0);
+				if (methodParameter.getParameterAnnotations().length == 0
+						|| methodParameter.hasParameterAnnotation(Payload.class)) {
+					genericParameterType = methodParameter.getGenericParameterType();
+				}
+			}
+			if (genericParameterType == null) {
+				for (int i = 0; i < parameterAnnotations.length; i++) {
+					MethodParameter methodParameter = new MethodParameter(this.method, i);
+					/*
+					 * We're looking for a single non-annotated parameter, or one annotated with
+					 * @Payload.
+					 * We ignore parameters with type Message because they are not involved with
+					 * conversion.
+					 */
+					if (!methodParameter.getParameterType().equals(org.springframework.amqp.core.Message.class)
+							&& (methodParameter.getParameterAnnotations().length == 0
+							|| methodParameter.hasParameterAnnotation(Payload.class))) {
+						if (genericParameterType == null) {
+							genericParameterType = methodParameter.getGenericParameterType();
+						}
+						else {
+							if (logger.isDebugEnabled()) {
+								logger.debug("Cannot determine target type for " + this.method);
+							}
+							return null;
+						}
+					}
+				}
+			}
+			return genericParameterType;
 		}
 
 	}

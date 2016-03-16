@@ -50,8 +50,10 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -68,6 +70,7 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.AopUtils;
@@ -123,7 +126,8 @@ public class EnableRabbitIntegrationTests {
 			"test.sendTo.spel", "test.sendTo.reply.spel", "test.intercepted", "test.intercepted.withReply",
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
-			"test.converted");
+			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
+			"test.converted.args2", "test.converted.message");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -262,7 +266,8 @@ public class EnableRabbitIntegrationTests {
 		bar.field = "bar";
 		String exchange = "multi.json.exch";
 		String routingKey = "multi.json.rk";
-		assertEquals("BAR: bar", this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, bar));
+		assertEquals("BAR: barMultiListenerJsonBean",
+				this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, bar));
 		Baz baz = new Baz();
 		baz.field = "baz";
 		assertEquals("BAZ: baz", this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, baz));
@@ -374,6 +379,47 @@ public class EnableRabbitIntegrationTests {
 		assertThat(returned, instanceOf(Foo2.class));
 		assertEquals("bar", ((Foo2) returned).getBar());
 		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+
+		// No type info in message
+		template.setMessageConverter(new SimpleMessageConverter());
+		MessagePostProcessor messagePostProcessor = new MessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				message.getMessageProperties().setContentType("application/json");
+				return message;
+			}
+
+		};
+		returned = template.convertSendAndReceive("", "test.converted", "{ \"bar\" : \"baz\" }", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("{\"bar\":\"baz\"}", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.list", "[ { \"bar\" : \"baz\" } ]",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("{\"bar\":\"BAZZZZ\"}", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.array", "[ { \"bar\" : \"baz\" } ]",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("{\"bar\":\"BAZZxx\"}", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args1", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"bar=baztest.converted.args1\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args2", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"bar=baztest.converted.args2\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.message", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"bar=bazfoo2MessageFoo2Service\"", new String((byte[]) returned));
+
 		ctx.close();
 	}
 
@@ -553,6 +599,12 @@ public class EnableRabbitIntegrationTests {
 		public void setBar(String bar) {
 			this.bar = bar;
 		}
+
+		@Override
+		public String toString() {
+			return "bar=" + this.bar;
+		}
+
 
 	}
 
@@ -858,8 +910,8 @@ public class EnableRabbitIntegrationTests {
 	static class MultiListenerJsonBean {
 
 		@RabbitHandler
-		public String bar(Bar bar) {
-			return "BAR: " + bar.field;
+		public String bar(Bar bar, Message message) {
+			return "BAR: " + bar.field + message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}
 
 		@RabbitHandler
@@ -1003,6 +1055,36 @@ public class EnableRabbitIntegrationTests {
 		@RabbitListener(queues="test.converted")
 		public Foo2 foo2(Foo2 foo2) {
 			return foo2;
+		}
+
+		@RabbitListener(queues="test.converted.list")
+		public Foo2 foo2(List<Foo2> foo2s) {
+			Foo2 foo2 = foo2s.get(0);
+			foo2.setBar("BAZZZZ");
+			return foo2;
+		}
+
+		@RabbitListener(queues="test.converted.array")
+		public Foo2 foo2(Foo2[] foo2s) {
+			Foo2 foo2 = foo2s[0];
+			foo2.setBar("BAZZxx");
+			return foo2;
+		}
+
+		@RabbitListener(queues="test.converted.args1")
+		public String foo2(Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
+			return foo2 + queue;
+		}
+
+		@RabbitListener(queues="test.converted.args2")
+		public String foo2a(@Payload Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
+			return foo2 + queue;
+		}
+
+		@RabbitListener(queues="test.converted.message")
+		public String foo2Message(@Payload Foo2 foo2, Message message) {
+			return foo2.toString() + message.getMessageProperties().getTargetMethod().getName()
+					+ message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}
 
 	}

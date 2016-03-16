@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.util.LinkedHashMap;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.ClassUtils;
 
@@ -29,49 +31,55 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author Gary Russell
  */
-public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper, ClassMapper {
+public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
+		implements Jackson2JavaTypeMapper, ClassMapper {
+
+	private static final JavaType STRING_TYPE = TypeFactory.defaultInstance().constructType(String.class);
+
+	private static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
 
 	@Override
 	public JavaType toJavaType(MessageProperties properties) {
-		JavaType classType = getClassIdType(retrieveHeader(properties,
-				getClassIdFieldName()));
-		if (!classType.isContainerType() || classType.isArrayType()) {
-			return classType;
+		String typeIdHeader = retrieveHeaderAsString(properties, getClassIdFieldName());
+		if (typeIdHeader != null) {
+
+			JavaType classType = getClassIdType(typeIdHeader);
+			if (!classType.isContainerType() || classType.isArrayType()) {
+				return classType;
+			}
+
+			JavaType contentClassType = getClassIdType(retrieveHeader(properties, getContentClassIdFieldName()));
+			if (classType.getKeyType() == null) {
+				return CollectionType.construct(classType.getRawClass(), contentClassType);
+			}
+
+			JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
+			return MapType.construct(classType.getRawClass(), keyClassType, contentClassType);
 		}
 
-		JavaType contentClassType = getClassIdType(retrieveHeader(properties,
-				getContentClassIdFieldName()));
-		if (classType.getKeyType() == null) {
-			return CollectionType.construct(
-                    classType.getRawClass(),
-                    contentClassType);
+		if (properties.getInferredArgumentType() != null) {
+			return TypeFactory.defaultInstance().constructType(properties.getInferredArgumentType());
 		}
 
-		JavaType keyClassType = getClassIdType(retrieveHeader(properties,
-				getKeyClassIdFieldName()));
-		return MapType.construct(
-                classType.getRawClass(), keyClassType,
-                contentClassType);
-
+		return MapType.construct(LinkedHashMap.class, STRING_TYPE, OBJECT_TYPE);
 	}
 
 	private JavaType getClassIdType(String classId) {
 		if (getIdClassMapping().containsKey(classId)) {
-            return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
+			return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
 		}
 
 		try {
-			return TypeFactory.defaultInstance().constructType(ClassUtils.forName(classId, getClass()
-					.getClassLoader()));
-		} catch (ClassNotFoundException e) {
-			throw new MessageConversionException(
-					"failed to resolve class name. Class not found [" + classId
-							+ "]", e);
-		} catch (LinkageError e) {
-			throw new MessageConversionException(
-					"failed to resolve class name. Linkage error [" + classId
-							+ "]", e);
+			return TypeFactory.defaultInstance()
+					.constructType(ClassUtils.forName(classId, getClass().getClassLoader()));
+		}
+		catch (ClassNotFoundException e) {
+			throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);
+		}
+		catch (LinkageError e) {
+			throw new MessageConversionException("failed to resolve class name. Linkage error [" + classId + "]", e);
 		}
 	}
 
@@ -80,13 +88,11 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 		addHeader(properties, getClassIdFieldName(), javaType.getRawClass());
 
 		if (javaType.isContainerType() && !javaType.isArrayType()) {
-			addHeader(properties, getContentClassIdFieldName(), javaType
-					.getContentType().getRawClass());
+			addHeader(properties, getContentClassIdFieldName(), javaType.getContentType().getRawClass());
 		}
 
 		if (javaType.getKeyType() != null) {
-			addHeader(properties, getKeyClassIdFieldName(), javaType
-					.getKeyType().getRawClass());
+			addHeader(properties, getKeyClassIdFieldName(), javaType.getKeyType().getRawClass());
 		}
 	}
 

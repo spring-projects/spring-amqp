@@ -59,11 +59,15 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 
 	@Override
 	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return new MultiMethodMessageListenerAdapter();
+		return new MultiMethodMessageListenerAdapter(getBean());
 	}
 
 
 	private final class MultiMethodMessageListenerAdapter extends MessagingMessageListenerAdapter {
+
+		public MultiMethodMessageListenerAdapter(Object bean) {
+			super(bean, null);
+		}
 
 		@Override
 		protected Address getReplyToAddress(Message request) throws Exception {

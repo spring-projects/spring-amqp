@@ -16,12 +16,17 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +41,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 
-
 /**
  * @author Mark Pollack
  * @author Dave Syer
@@ -50,13 +54,14 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 public class Jackson2JsonMessageConverterTests {
 
 	private Jackson2JsonMessageConverter converter;
+
 	private SimpleTrade trade;
 
 	@Autowired
 	private Jackson2JsonMessageConverter jsonConverterWithDefaultType;
 
 	@Before
-	public void before(){
+	public void before() {
 		converter = new Jackson2JsonMessageConverter();
 		trade = new SimpleTrade();
 		trade.setAccountName("Acct1");
@@ -69,222 +74,266 @@ public class Jackson2JsonMessageConverterTests {
 		trade.setUserName("Joe Trader");
 
 	}
-   @Test
-   public void simpleTrade() {
-      Message message = converter.toMessage(trade, new MessageProperties());
 
-      SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-      assertEquals(trade, marshalledTrade);
-   }
+	@Test
+	public void simpleTrade() {
+		Message message = converter.toMessage(trade, new MessageProperties());
 
-   @Test
-   public void simpleTradeOverrideMapper() {
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.setSerializerFactory(BeanSerializerFactory.instance);
-      converter.setJsonObjectMapper(mapper);
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertEquals(trade, marshalledTrade);
+	}
 
-      Message message = converter.toMessage(trade, new MessageProperties());
+	@Test
+	public void simpleTradeOverrideMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializerFactory(BeanSerializerFactory.instance);
+		converter.setJsonObjectMapper(mapper);
 
-      SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-      assertEquals(trade, marshalledTrade);
-   }
+		Message message = converter.toMessage(trade, new MessageProperties());
 
-   @Test
-   public void nestedBean() {
-      Bar bar = new Bar();
-      bar.getFoo().setName("spam");
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertEquals(trade, marshalledTrade);
+	}
 
-      Message message = converter.toMessage(bar, new MessageProperties());
+	@Test
+	public void nestedBean() {
+		Bar bar = new Bar();
+		bar.getFoo().setName("spam");
 
-      Bar marshalled = (Bar) converter.fromMessage(message);
-      assertEquals(bar, marshalled);
-   }
+		Message message = converter.toMessage(bar, new MessageProperties());
 
-   @Test
-   @SuppressWarnings("unchecked")
-   public void hashtable() {
-      Hashtable<String, String> hashtable = new Hashtable<String, String>();
-      hashtable.put("TICKER", "VMW");
-      hashtable.put("PRICE", "103.2");
+		Bar marshalled = (Bar) converter.fromMessage(message);
+		assertEquals(bar, marshalled);
+	}
 
-      Message message = converter.toMessage(hashtable, new MessageProperties());
-      Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
+	@Test
+	@SuppressWarnings("unchecked")
+	public void hashtable() {
+		Hashtable<String, String> hashtable = new Hashtable<String, String>();
+		hashtable.put("TICKER", "VMW");
+		hashtable.put("PRICE", "103.2");
 
-      assertEquals("VMW", marhsalledHashtable.get("TICKER"));
-      assertEquals("103.2", marhsalledHashtable.get("PRICE"));
-   }
+		Message message = converter.toMessage(hashtable, new MessageProperties());
+		Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
 
-   @Test
-   public void shouldUseClassMapperWhenProvided() {
-      Message message = converter.toMessage(trade, new MessageProperties());
+		assertEquals("VMW", marhsalledHashtable.get("TICKER"));
+		assertEquals("103.2", marhsalledHashtable.get("PRICE"));
+	}
 
-      converter.setClassMapper(new DefaultClassMapper());
-      converter.setJavaTypeMapper(null);
+	@Test
+	public void shouldUseClassMapperWhenProvided() {
+		Message message = converter.toMessage(trade, new MessageProperties());
 
-      SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-      assertEquals(trade, marshalledTrade);
-   }
+		converter.setClassMapper(new DefaultClassMapper());
+		converter.setJavaTypeMapper(null);
 
-   @Test
-   public void shouldUseClassMapperWhenProvidedOutbound() {
-      converter.setClassMapper(new DefaultClassMapper());
-      converter.setJavaTypeMapper(null);
-      Message message = converter.toMessage(trade, new MessageProperties());
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertEquals(trade, marshalledTrade);
+	}
 
-      SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-      assertEquals(trade, marshalledTrade);
-   }
+	@Test
+	public void shouldUseClassMapperWhenProvidedOutbound() {
+		converter.setClassMapper(new DefaultClassMapper());
+		converter.setJavaTypeMapper(null);
+		Message message = converter.toMessage(trade, new MessageProperties());
+
+		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
+		assertEquals(trade, marshalledTrade);
+	}
 
 	@Test
 	public void testAmqp330StringArray() {
-		String[] testData = {"test"};
+		String[] testData = { "test" };
 		Message message = converter.toMessage(testData, new MessageProperties());
 		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
 	}
 
 	@Test
 	public void testAmqp330ObjectArray() {
-		SimpleTrade[] testData = {trade};
+		SimpleTrade[] testData = { trade };
 		Message message = converter.toMessage(testData, new MessageProperties());
 		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
 	}
 
+	@Test
+	public void testDefaultType() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+		JsonMessageConverter converter = new JsonMessageConverter();
+		DefaultClassMapper classMapper = new DefaultClassMapper();
+		classMapper.setDefaultType(Foo.class);
+		converter.setClassMapper(classMapper);
+		Object foo = converter.fromMessage(message);
+		assertTrue(foo instanceof Foo);
+	}
 
 	@Test
-   public void testDefaultType() {
-	   byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
-	   MessageProperties messageProperties = new MessageProperties();
-	   messageProperties.setContentType("application/json");
-	   Message message = new Message(bytes, messageProperties);
-	   JsonMessageConverter converter = new JsonMessageConverter();
-	   DefaultClassMapper classMapper = new DefaultClassMapper();
-	   classMapper.setDefaultType(Foo.class);
-	   converter.setClassMapper(classMapper);
-	   Object foo = converter.fromMessage(message);
-	   assertTrue(foo instanceof Foo);
-   }
+	public void testDefaultTypeConfig() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+		Object foo = jsonConverterWithDefaultType.fromMessage(message);
+		assertTrue(foo instanceof Foo);
+	}
 
-   @Test
-   public void testDefaultTypeConfig() {
-	   byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
-	   MessageProperties messageProperties = new MessageProperties();
-	   messageProperties.setContentType("application/json");
-	   Message message = new Message(bytes, messageProperties);
-	   Object foo = jsonConverterWithDefaultType.fromMessage(message);
-	   assertTrue(foo instanceof Foo);
-   }
+	@Test
+	public void testNoJsonContentType() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		Message message = new Message(bytes, messageProperties);
+		Object foo = jsonConverterWithDefaultType.fromMessage(message);
+		assertEquals(new String(bytes), new String((byte[]) foo));
+	}
 
-   @Test
-   public void testNoJsonContentType() {
-	   byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
-	   MessageProperties messageProperties = new MessageProperties();
-	   Message message = new Message(bytes, messageProperties);
-	   Object foo = jsonConverterWithDefaultType.fromMessage(message);
-	   assertEquals(new String(bytes), new String((byte[]) foo));
-   }
+	@Test
+	public void testNoTypeInfo() {
+		byte[] bytes = "{\"name\" : { \"foo\" : \"bar\" } }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		Message message = new Message(bytes, messageProperties);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo, instanceOf(LinkedHashMap.class));
+		@SuppressWarnings("unchecked")
+		Map<String, Object> map = (Map<String, Object>) foo;
+		assertThat(map.get("name"), instanceOf(LinkedHashMap.class));
+	}
 
-   public static class Foo {
-      private String name = "foo";
+	@Test
+	public void testInferredTypeInfo() {
+		byte[] bytes = "{\"name\" : \"foo\" }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		messageProperties.setInferredArgumentType(Foo.class);
+		Message message = new Message(bytes, messageProperties);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo, instanceOf(Foo.class));
+	}
 
-      public String getName() {
-         return name;
-      }
+	@Test
+	public void testInferredGenericTypeInfo() throws Exception {
+		byte[] bytes = "[ {\"name\" : \"foo\" } ]".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		messageProperties
+				.setInferredArgumentType(Bar.class.getMethod("setFoos", List.class).getGenericParameterTypes()[0]);
+		Message message = new Message(bytes, messageProperties);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo, instanceOf(List.class));
+		assertThat(((List<?>) foo).get(0), instanceOf(Foo.class));
+	}
 
-      public void setName(String name) {
-         this.name = name;
-      }
+	public static class Foo {
 
-      @Override
-      public int hashCode() {
-         final int prime = 31;
-         int result = 1;
-         result = prime * result + ((name == null) ? 0 : name.hashCode());
-         return result;
-      }
+		private String name = "foo";
 
-      @Override
-      public boolean equals(Object obj) {
-         if (this == obj) {
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			Foo other = (Foo) obj;
+			if (name == null) {
+				if (other.name != null) {
+					return false;
+				}
+			}
+			else if (!name.equals(other.name)) {
+				return false;
+			}
 			return true;
 		}
-         if (obj == null) {
-			return false;
+	}
+
+	public static class Bar {
+
+		private String name = "bar";
+
+		private Foo foo = new Foo();
+
+		public Foo getFoo() {
+			return foo;
 		}
-         if (getClass() != obj.getClass()) {
-			return false;
+
+		public void setFoo(Foo foo) {
+			this.foo = foo;
 		}
-         Foo other = (Foo) obj;
-         if (name == null) {
-            if (other.name != null) {
+
+		public void setFoos(List<Foo> foos) {
+			this.foo = foos.get(0);
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((foo == null) ? 0 : foo.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
 				return false;
 			}
-         }
-         else if (!name.equals(other.name)) {
-			return false;
-		}
-         return true;
-      }
-   }
-
-   public static class Bar {
-      private String name = "bar";
-      private Foo foo = new Foo();
-
-      public Foo getFoo() {
-         return foo;
-      }
-
-      public void setFoo(Foo foo) {
-         this.foo = foo;
-      }
-
-      public String getName() {
-         return name;
-      }
-
-      public void setName(String name) {
-         this.name = name;
-      }
-
-      @Override
-      public int hashCode() {
-         final int prime = 31;
-         int result = 1;
-         result = prime * result + ((foo == null) ? 0 : foo.hashCode());
-         result = prime * result + ((name == null) ? 0 : name.hashCode());
-         return result;
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-         if (this == obj) {
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			Bar other = (Bar) obj;
+			if (foo == null) {
+				if (other.foo != null) {
+					return false;
+				}
+			}
+			else if (!foo.equals(other.foo)) {
+				return false;
+			}
+			if (name == null) {
+				if (other.name != null) {
+					return false;
+				}
+			}
+			else if (!name.equals(other.name)) {
+				return false;
+			}
 			return true;
 		}
-         if (obj == null) {
-			return false;
-		}
-         if (getClass() != obj.getClass()) {
-			return false;
-		}
-         Bar other = (Bar) obj;
-         if (foo == null) {
-            if (other.foo != null) {
-				return false;
-			}
-         }
-         else if (!foo.equals(other.foo)) {
-			return false;
-		}
-         if (name == null) {
-            if (other.name != null) {
-				return false;
-			}
-         }
-         else if (!name.equals(other.name)) {
-			return false;
-		}
-         return true;
-      }
-   }
+	}
 
 }

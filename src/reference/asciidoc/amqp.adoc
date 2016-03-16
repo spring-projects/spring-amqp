@@ -1428,6 +1428,16 @@ You can also consider a `ContentTypeDelegatingMessageConverter` which can handle
 In most cases, it is not necessary to customize the _method argument converter_ unless, for example, you want to use
 a custom `ConversionService`.
 
+In versions prior to _1.6_, the type information to convert the JSON had to be provided in message headers, or a
+custom `ClassMapper` was required.
+Starting with _version 1.6_, if there are no type information headers, the type can be inferred from the target
+method arguments.
+
+NOTE: This type inference only works for `@RabbitListener` at the method level.
+
+See <<json-message-converter>> for more information.
+
+
 If you wish to customize the _method argument converter_, you can do so as follows:
 
 [source, java]
@@ -1977,25 +1987,17 @@ This converter is similar to the `SimpleMessageConverter` except it can be confi
 
 See <<java-deserialization>> for important information.
 
-===== JsonMessageConverter and Jackson2JsonMessageConverter
+[[json-message-converter]]
+===== Jackson2JsonMessageConverter
+
+====== Converting to a Message
 
 As mentioned in the previous section, relying on Java serialization is generally not recommended.
-One rather common alternative that is more flexible and portable across different languages and platforms is JSON (JavaScript Object Notation).
-Two implementations are available and can be configured on any `RabbitTemplate` instance to override its usage of the `SimpleMessageConverter` default.
-The `JsonMessageConverter` which uses the `org.codehaus.jackson` 1.x library and `Jackson2JsonMessageConverter` which uses the `com.fasterxml.jackson` 2.x library.
-
-[source,xml]
-----
-<bean class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-    <property name="connectionFactory" ref="rabbitConnectionFactory"/>
-    <property name="messageConverter">
-        <bean class="org.springframework.amqp.support.converter.JsonMessageConverter">
-            <!-- if necessary, override the DefaultClassMapper -->
-            <property name="classMapper" ref="customClassMapper"/>
-        </bean>
-    </property>
-</bean>
-----
+One rather common alternative that is more flexible and portable across different languages and platforms is JSON
+(JavaScript Object Notation).
+The converter can be configured on any `RabbitTemplate` instance to override its usage of the `SimpleMessageConverter`
+default.
+The `Jackson2JsonMessageConverter` uses the `com.fasterxml.jackson` 2.x library.
 
 [source,xml]
 ----
@@ -2010,21 +2012,10 @@ The `JsonMessageConverter` which uses the `org.codehaus.jackson` 1.x library and
 </bean>
 ----
 
-As shown above, the `JsonMessageConverter` and `Jackson2JsonMessageConverter` uses a `DefaultClassMapper` by default.
+As shown above, `Jackson2JsonMessageConverter` uses a `DefaultClassMapper` by default.
 Type information is added to (and retrieved from) the `MessageProperties`.
-If an inbound message does not contain type information in the `MessageProperties`, but you know the expected type, you can configure a static type using the `defaultType` property
-
-[source,xml]
-----
-<bean id="jsonConverterWithDefaultType"
-      class="o.s.amqp.support.converter.JsonMessageConverter">
-    <property name="classMapper">
-        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
-            <property name="defaultType" value="foo.PurchaseOrder"/>
-        </bean>
-    </property>
-</bean>
-----
+If an inbound message does not contain type information in the `MessageProperties`, but you know the expected type, you
+can configure a static type using the `defaultType` property
 
 [source,xml]
 ----
@@ -2037,6 +2028,44 @@ If an inbound message does not contain type information in the `MessagePropertie
     </property>
 </bean>
 ----
+
+====== Converting from a Message
+
+Inbound messages are converted to objects according to the type information added to headers by the sending system.
+
+In versions prior to _1.6_, if type information is not present, conversion would fail.
+Starting with _version 1.6_, if type information is missing, the converter will convert the JSON to a
+`LinkedHashMap<String, Object>`, where the values might also be nested maps.
+
+Also, starting with _version 1.6_, when using `@RabbitListener` annotations (on methods), the inferred type information
+is added to the `MessageProperties`; this allows the converter to convert to the argument type of the target method.
+This only applies if there is one parameter with no annotations or a single parameter with the `@Payload` annotation.
+
+[source, java]
+----
+@RabbitListener
+public void foo(Foo foo) {...}
+
+@RabbitListener
+public void foo(@Payload Foo foo, @Header("amqp_consumerQueue") String queue) {...}
+
+@RabbitListener
+public void foo(Foo foo, String bar) {...}
+----
+
+In the first two cases above the converter will attempt to convert to the `Foo` type.
+The third example is invalid because we can't determine which argument should receive the message payload.
+
+You can, however, create a custom converter and use the `targetMethod` message property to decide which type to convert
+the JSON to.
+
+[NOTE]
+====
+This type inference can only be achieved when the `@RabbitListener` annotation is declared at the method level.
+With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` methdod to invoke.
+For this reason, the infrastructure provides the `targetObject` message property which can be used by a custom
+converter to determine the type.
+====
 
 ===== MarshallingMessageConverter
 

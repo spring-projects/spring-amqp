@@ -135,6 +135,12 @@ It is important to consider creating a white list if you accept messages with se
 untrusted sources.
 See <<java-deserialization>> for more information.
 
+===== JSON MessageConverter
+
+Improvements to the JSON message converter now allow the consumption of messages that don't have type information
+in message headers.
+See <<async-annotation-conversion>> and <<json-message-converter>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
