@@ -316,7 +316,7 @@ public abstract class NamespaceUtils {
 			parserContext.getReaderContext().error("One of '" + valueElementName + "' or '"
 					+ expressionElementName + "' is required", element);
 		}
-		BeanDefinition expressionDef = null;
+		BeanDefinition expressionDef;
 		if (hasAttributeValue) {
 			expressionDef = new RootBeanDefinition(LiteralExpression.class);
 			expressionDef.getConstructorArgumentValues().addGenericArgumentValue(valueElementValue);
