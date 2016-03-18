@@ -518,7 +518,7 @@ public class SimpleMessageListenerContainerTests {
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 
 		waitForConsumersToStop(consumers);
-		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
+		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
 		assertEquals(1, openConnections.size());
 	}
 

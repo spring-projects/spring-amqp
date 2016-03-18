@@ -96,6 +96,7 @@ public class CachePropertiesTests {
 		ch4.close();
 		ch5.close();
 		ch6.close();
+		ch7.close();
 		props = this.channelCf.getCacheProperties();
 		assertEquals("2", props.getProperty("idleChannelsNotTx"));
 		assertEquals("4", props.getProperty("idleChannelsTx")); // not 5
@@ -122,7 +123,7 @@ public class CachePropertiesTests {
 		Properties props = this.connectionCf.getCacheProperties();
 		assertEquals("10", props.getProperty("channelCacheSize"));
 		assertEquals("5", props.getProperty("connectionCacheSize"));
-		assertEquals("2", props.getProperty("openConnections"));
+		assertEquals("2", props.getProperty("allocatedConnections"));
 		assertEquals("1", props.getProperty("idleConnections"));
 		c2.close();
 		props = this.connectionCf.getCacheProperties();

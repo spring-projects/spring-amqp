@@ -117,13 +117,14 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class);
+		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(6, openConnections.size());
 		for (Connection connection : connections) {
 			connection.close();
 		}
 		assertEquals(5, openConnections.size());
-		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections", BlockingQueue.class);
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
+				BlockingQueue.class);
 		assertEquals(5, idleConnections.size());
 		connections.clear();
 		connections.add(connectionFactory.createConnection());
@@ -178,7 +179,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class);
+		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(2, openConnections.size());
 		assertNotSame(connections.get(0), connections.get(1));
 		List<Channel> channels = new ArrayList<Channel>();
@@ -189,11 +190,13 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(1).createChannel(true));
 		}
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory, "openConnectionNonTransactionalChannels", Map.class);
+		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
+				"allocatedConnectionNonTransactionalChannels", Map.class);
 		assertEquals(0, cachedChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedChannels.get(connections.get(1)).size());
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory, "openConnectionTransactionalChannels", Map.class);
+		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
+				"allocatedConnectionTransactionalChannels", Map.class);
 		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
 		for (Channel channel : channels) {
