@@ -96,6 +96,7 @@ public class CachePropertiesTests {
 		ch4.close();
 		ch5.close();
 		ch6.close();
+		ch7.close();
 		props = this.channelCf.getCacheProperties();
 		assertEquals("2", props.getProperty("idleChannelsNotTx"));
 		assertEquals("4", props.getProperty("idleChannelsTx")); // not 5

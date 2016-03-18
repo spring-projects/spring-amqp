@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -117,19 +116,21 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class);
-		assertEquals(6, openConnections.size());
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		assertEquals(6, allocatedConnections.size());
 		for (Connection connection : connections) {
 			connection.close();
 		}
-		assertEquals(5, openConnections.size());
-		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections", BlockingQueue.class);
-		assertEquals(5, idleConnections.size());
+		assertEquals(6, allocatedConnections.size());
+		assertEquals("5", connectionFactory.getCacheProperties().get("openConnections"));
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
+				BlockingQueue.class);
+		assertEquals(6, idleConnections.size());
 		connections.clear();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		assertEquals(5, openConnections.size());
-		assertEquals(3, idleConnections.size());
+		assertEquals(6, allocatedConnections.size());
+		assertEquals(4, idleConnections.size());
 		for (Connection connection : connections) {
 			connection.close();
 		}
@@ -178,8 +179,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> openConnections = TestUtils.getPropertyValue(connectionFactory, "openConnections", Set.class);
-		assertEquals(2, openConnections.size());
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		assertEquals(2, allocatedConnections.size());
 		assertNotSame(connections.get(0), connections.get(1));
 		List<Channel> channels = new ArrayList<Channel>();
 		for (int i = 0; i < 5; i++) {
@@ -189,11 +190,13 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(1).createChannel(true));
 		}
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory, "openConnectionNonTransactionalChannels", Map.class);
+		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
+				"allocatedConnectionNonTransactionalChannels", Map.class);
 		assertEquals(0, cachedChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedChannels.get(connections.get(1)).size());
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory, "openConnectionTransactionalChannels", Map.class);
+		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
+				"allocatedConnectionTransactionalChannels", Map.class);
 		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
 		for (Channel channel : channels) {
@@ -220,20 +223,23 @@ public class CachingConnectionFactoryIntegrationTests {
 			connection.close();
 		}
 		assertEquals(3, cachedChannels.get(connections.get(0)).size());
-		assertNull(cachedChannels.get(connections.get(1)));
+		assertEquals(0, cachedChannels.get(connections.get(1)).size());
 		assertEquals(3, cachedTxChannels.get(connections.get(0)).size());
-		assertNull(cachedTxChannels.get(connections.get(1)));
+		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
 
-		assertEquals(1, openConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
 
 		Connection connection = connectionFactory.createConnection();
 		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target", Connection.class);
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
-		assertEquals(1, openConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
 		channel.close();
 		connection.close();
-		assertEquals(1, openConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
 	}
 
 	@Test

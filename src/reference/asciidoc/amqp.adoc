@@ -197,7 +197,16 @@ Starting with _version 1.3_, the `CachingConnectionFactory` can be configured to
 In this case, each call to `createConnection()` creates a new connection (or retrieves an idle one from the cache).
 Closing a connection returns it to the cache (if the cache size has not been reached).
 Channels created on such connections are cached too.
-The use of separate connections might be useful in some environments, such as consuming from an HA cluster, in conjunction with a load balancer, to connect to different cluster members.
+The use of separate connections might be useful in some environments, such as consuming from an HA cluster, in
+conjunction with a load balancer, to connect to different cluster members.
+Set the `cacheMode` to `CacheMode.CONNECTION`.
+
+NOTE: This does not limit the number of connections, it specifies how many idle open connections are allowed.
+
+Starting with _version 1.5.5_, a new property `connectionLimit` is provided.
+When this is set, it limits the total number of connections allowed.
+When set, if the limit is reached, the `channelCheckoutTimeLimit` is used to wait for a connection to become idle.
+If the time is exceeded, an `AmqpTimeoutException` is thrown.
 
 [IMPORTANT]
 ======
@@ -576,6 +585,10 @@ This can be used to correlate with connections/channels on the RabbitMQ Admin UI
 | Property
 
 | Meaning
+
+| openConnections
+
+| The number of connection objects representing connections to brokers.
 
 | channelCacheSize
 
