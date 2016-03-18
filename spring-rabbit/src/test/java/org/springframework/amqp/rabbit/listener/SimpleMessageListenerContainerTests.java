@@ -515,8 +515,9 @@ public class SimpleMessageListenerContainerTests {
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 
 		waitForConsumersToStop(consumers);
-		Set<?> openConnections = TestUtils.getPropertyValue(ccf, "openConnections", Set.class);
-		assertEquals(1, openConnections.size());
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(ccf, "allocatedConnections", Set.class);
+		assertEquals(2, allocatedConnections.size());
+		assertEquals("1", countOpenConnections(allocatedConnections));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -636,6 +637,17 @@ public class SimpleMessageListenerContainerTests {
 			Thread.sleep(10);
 		}
 		assertFalse(stillUp);
+	}
+
+	@SuppressWarnings("unchecked")
+	private String countOpenConnections(Set<?> allocatedConnections) {
+		int n = 0;
+		for (Connection connection : (Set<Connection>) allocatedConnections) {
+			if (connection.isOpen()) {
+				n++;
+			}
+		}
+		return Integer.toBinaryString(n);
 	}
 
 	@SuppressWarnings("serial")

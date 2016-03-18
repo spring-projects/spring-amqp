@@ -18,6 +18,8 @@ Now, an empty `addresses` String is treated the same as a `null`, and the host/p
 
 ====== URI Constructor
 
+====== Queue Definitions
+
 The `CachingConnectionFactory` has an additional constructor, with a `URI` parameter, to configure the broker connection.
 
 ====== Connection Reset
@@ -181,11 +183,16 @@ It is important to consider creating a white list if you accept messages with se
 untrusted sources.
 See <<java-deserialization>> for more information.
 
-====== Default Error Handler
+===== Default Error Handler
 
 The default error handler (`ConditionalRejectingErrorHandler`) now considers irrecoverable `@RabbitListener`
 exceptions as fatal.
 See <<exception-handling>> for more information.
+
+===== Caching Connection Factory
+
+When using `CacheMode.CONNECTION`, you can now limit the total number of connections allowed.
+See <<connections>> for more information.
 
 ==== Changes in 1.4 Since 1.3
 
