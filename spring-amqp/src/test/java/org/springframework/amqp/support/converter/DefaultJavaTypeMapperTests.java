@@ -101,7 +101,6 @@ public class DefaultJavaTypeMapperTests {
 	@Test
 	public void shouldUseSpecialNameForClassIfPresent() throws Exception {
 		javaTypeMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
-		javaTypeMapper.afterPropertiesSet();
 
 		javaTypeMapper.fromJavaType(TypeFactory.defaultInstance().constructType(SimpleTrade.class), properties);
 

@@ -743,6 +743,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
+			factory.setReceiveTimeout(10L);
 			return factory;
 		}
 
@@ -760,6 +761,7 @@ public class EnableRabbitIntegrationTests {
 			classMapper.setIdClassMapping(idClassMapping);
 			messageConverter.setClassMapper(classMapper);
 			factory.setMessageConverter(messageConverter);
+			factory.setReceiveTimeout(10L);
 			return factory;
 		}
 
@@ -770,6 +772,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setMessageConverter(new Jackson2JsonMessageConverter());
+			factory.setReceiveTimeout(10L);
 			return factory;
 		}
 
@@ -1014,6 +1017,7 @@ public class EnableRabbitIntegrationTests {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setMessageConverter(jsonConverter());
+			factory.setReceiveTimeout(10L);
 			return factory;
 		}
 
