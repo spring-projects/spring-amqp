@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -217,17 +219,59 @@ public class Jackson2JsonMessageConverterTests {
 		byte[] bytes = "[ {\"name\" : \"foo\" } ]".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
-		messageProperties
-				.setInferredArgumentType(Bar.class.getMethod("setFoos", List.class).getGenericParameterTypes()[0]);
+		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() {}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo, instanceOf(List.class));
 		assertThat(((List<?>) foo).get(0), instanceOf(Foo.class));
 	}
 
+	@Test
+	public void testInferredGenericMap1() {
+		byte[] bytes = "{\"qux\" : [ { \"foo\" : { \"name\" : \"bar\" } } ] }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		messageProperties.setInferredArgumentType(
+				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {}).getType());
+		Message message = new Message(bytes, messageProperties);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo, instanceOf(LinkedHashMap.class));
+		@SuppressWarnings("unchecked")
+		Map<String, Object> map = (Map<String, Object>) foo;
+		assertThat(map.get("qux"), instanceOf(List.class));
+		Object row = ((List<?>) map.get("qux")).get(0);
+		assertThat(row, instanceOf(Bar.class));
+		assertThat(((Bar) row).getFoo(), equalTo(new Foo("bar")));
+	}
+
+	@Test
+	public void testInferredGenericMap2() {
+		byte[] bytes = "{\"qux\" : { \"baz\" : { \"foo\" : { \"name\" : \"bar\" } } } }".getBytes();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setContentType("application/json");
+		messageProperties.setInferredArgumentType(
+				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() {}).getType());
+		Message message = new Message(bytes, messageProperties);
+		Object foo = this.converter.fromMessage(message);
+		assertThat(foo, instanceOf(LinkedHashMap.class));
+		@SuppressWarnings("unchecked")
+		Map<String, Object> map = (Map<String, Object>) foo;
+		assertThat(map.get("qux"), instanceOf(Map.class));
+		Object value = ((Map<?, ?>) map.get("qux")).get("baz");
+		assertThat(value, instanceOf(Bar.class));
+		assertThat(((Bar) value).getFoo(), equalTo(new Foo("bar")));
+	}
+
 	public static class Foo {
 
 		private String name = "foo";
+
+		public Foo() {
+		}
+
+		public Foo(String name) {
+			this.name = name;
+		}
 
 		public String getName() {
 			return name;
@@ -281,10 +325,6 @@ public class Jackson2JsonMessageConverterTests {
 
 		public void setFoo(Foo foo) {
 			this.foo = foo;
-		}
-
-		public void setFoos(List<Foo> foos) {
-			this.foo = foos.get(0);
 		}
 
 		public String getName() {

@@ -69,6 +69,7 @@ import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
+import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -127,7 +128,7 @@ public class EnableRabbitIntegrationTests {
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
-			"test.converted.args2", "test.converted.message");
+			"test.converted.args2", "test.converted.message", "test.notconverted.message");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -375,10 +376,13 @@ public class EnableRabbitIntegrationTests {
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		Foo1 foo1 = new Foo1();
 		foo1.setBar("bar");
+		Jackson2JsonMessageConverter converter = ctx.getBean(Jackson2JsonMessageConverter.class);
+		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
 		Object returned = template.convertSendAndReceive("test.converted", foo1);
 		assertThat(returned, instanceOf(Foo2.class));
 		assertEquals("bar", ((Foo2) returned).getBar());
 		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		converter.setTypePrecedence(TypePrecedence.INFERRED);
 
 		// No type info in message
 		template.setMessageConverter(new SimpleMessageConverter());
@@ -419,6 +423,11 @@ public class EnableRabbitIntegrationTests {
 				messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
 		assertEquals("\"bar=bazfoo2MessageFoo2Service\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.message", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"foo\"", new String((byte[]) returned));
 
 		ctx.close();
 	}
@@ -986,7 +995,7 @@ public class EnableRabbitIntegrationTests {
 		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
 			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 			factory.setConnectionFactory(rabbitConnectionFactory());
-			factory.setMessageConverter(new Jackson2JsonMessageConverter());
+			factory.setMessageConverter(jsonConverter());
 			return factory;
 		}
 
@@ -1002,8 +1011,13 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public RabbitTemplate jsonRabbitTemplate() {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
-			rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+			rabbitTemplate.setMessageConverter(jsonConverter());
 			return rabbitTemplate;
+		}
+
+		@Bean
+		public Jackson2JsonMessageConverter jsonConverter() {
+			return new Jackson2JsonMessageConverter();
 		}
 
 		@Bean
@@ -1087,6 +1101,10 @@ public class EnableRabbitIntegrationTests {
 					+ message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}
 
+		@RabbitListener(queues="test.notconverted.message")
+		public String justMessage(Message message) {
+		    return "foo";
+		}
 	}
 
 }

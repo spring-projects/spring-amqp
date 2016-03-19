@@ -40,9 +40,54 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 
 	private static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
 
+	private volatile TypePrecedence typePrecedence = TypePrecedence.INFERRED;
+
+	/**
+	 * @return the precedence.
+	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
+	 * @since 1.6.
+	 */
+	@Override
+	public TypePrecedence getTypePrecedence() {
+		return this.typePrecedence;
+	}
+
+	/**
+	 * Set the precedence for evaluating type information in message properties.
+	 * When using {@code @RabbitListener} at the method level, the framework attempts
+	 * to determine the target type for payload conversion from the method signature.
+	 * If so, this type is provided in the
+	 * {@link MessageProperties#getInferredArgumentType() inferredArgumentType}
+	 * message property.
+	 * <p>
+	 * By default, if the type is concrete (not abstract, not an interface), this will
+	 * be used ahead of type information provided in the {@code __TypeId__} and
+	 * associated headers provided by the sender.
+	 * <p>
+	 * If you wish to force the use of the  {@code __TypeId__} and associated headers
+	 * (such as when the actual type is a subclass of the method argument type),
+	 * set the precedence to {@link Jackson2JavaTypeMapper.TypePrecedence#TYPE_ID}.
+	 *
+	 * @param typePrecedence the precedence.
+	 * @since 1.6
+	 */
+	public void setTypePrecedence(TypePrecedence typePrecedence) {
+		this.typePrecedence = typePrecedence;
+	}
+
 	@Override
 	public JavaType toJavaType(MessageProperties properties) {
+		boolean hasInferredTypeHeader = hasInferredTypeHeader(properties);
+		if (hasInferredTypeHeader && this.typePrecedence.equals(TypePrecedence.INFERRED)) {
+			JavaType targetType = fromInferredTypeHeader(properties);
+			if ((!targetType.isAbstract() && !targetType.isInterface())
+					|| targetType.getRawClass().getPackage().getName().startsWith("java.util")) {
+				return targetType;
+			}
+		}
+
 		String typeIdHeader = retrieveHeaderAsString(properties, getClassIdFieldName());
+
 		if (typeIdHeader != null) {
 
 			JavaType classType = getClassIdType(typeIdHeader);
@@ -59,8 +104,8 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 			return MapType.construct(classType.getRawClass(), keyClassType, contentClassType);
 		}
 
-		if (properties.getInferredArgumentType() != null) {
-			return TypeFactory.defaultInstance().constructType(properties.getInferredArgumentType());
+		if (hasInferredTypeHeader) {
+			return fromInferredTypeHeader(properties);
 		}
 
 		return MapType.construct(LinkedHashMap.class, STRING_TYPE, OBJECT_TYPE);

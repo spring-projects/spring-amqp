@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.beans.factory.InitializingBean;
+
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 
 /**
  * @author Mark Pollack
@@ -29,14 +31,15 @@ import org.springframework.beans.factory.InitializingBean;
  * @author Andreas Asplund
  * @author Gary Russell
  */
-public abstract class AbstractJavaTypeMapper implements InitializingBean {
+public abstract class AbstractJavaTypeMapper {
+
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 
 	public static final String DEFAULT_CONTENT_CLASSID_FIELD_NAME = "__ContentTypeId__";
 
 	public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
 
-	private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+	private final Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 
 	private final Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
@@ -53,7 +56,8 @@ public abstract class AbstractJavaTypeMapper implements InitializingBean {
 	}
 
 	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
-		this.idClassMapping = idClassMapping;
+		this.idClassMapping.putAll(idClassMapping);
+		createReverseMap();
 	}
 
 	protected void addHeader(MessageProperties properties, String headerName, Class<?> clazz) {
@@ -84,24 +88,34 @@ public abstract class AbstractJavaTypeMapper implements InitializingBean {
 		return classId;
 	}
 
-	private void validateIdTypeMapping() {
-		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
+	private void createReverseMap() {
+		this.classIdMapping.clear();
 		for (Map.Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
 			String id = entry.getKey();
 			Class<?> clazz = entry.getValue();
-			finalIdClassMapping.put(id, clazz);
 			this.classIdMapping.put(clazz, id);
 		}
-		this.idClassMapping = finalIdClassMapping;
 	}
 
 	public Map<String, Class<?>> getIdClassMapping() {
 		return Collections.unmodifiableMap(this.idClassMapping);
 	}
 
-	@Override
+	/**
+	 * @throws Exception an exception.
+	 * @deprecated - no longer necessary.
+	 */
+	@Deprecated
 	public void afterPropertiesSet() throws Exception {
-		validateIdTypeMapping();
+	}
+
+	protected boolean hasInferredTypeHeader(MessageProperties properties) {
+		boolean hasInferredTypeHeader = properties.getInferredArgumentType() != null;
+		return hasInferredTypeHeader;
+	}
+
+	protected JavaType fromInferredTypeHeader(MessageProperties properties) {
+		return TypeFactory.defaultInstance().constructType(properties.getInferredArgumentType());
 	}
 
 }

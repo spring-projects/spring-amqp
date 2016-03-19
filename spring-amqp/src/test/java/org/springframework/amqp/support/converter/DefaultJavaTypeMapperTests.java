@@ -25,9 +25,12 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.codehaus.jackson.map.type.CollectionType;
+import org.codehaus.jackson.map.type.MapType;
+import org.codehaus.jackson.map.type.TypeFactory;
+import org.codehaus.jackson.type.JavaType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Spy;
@@ -35,22 +38,16 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.springframework.amqp.core.MessageProperties;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
 /**
  * @author James Carr
  * @author Sam Nelson
- * @author Andreas Asplund
  * @author Gary Russell
  */
 
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultJackson2JavaTypeMapperTest {
+public class DefaultJavaTypeMapperTests {
 	@Spy
-	DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+	DefaultJavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
 
 	private final MessageProperties properties = new MessageProperties();
 
@@ -61,9 +58,16 @@ public class DefaultJackson2JavaTypeMapperTest {
 	private final Class<HashMap> mapClass = HashMap.class;
 
 	@Test
-	public void getAMapWhenClassIdNotPresent() {
-		JavaType javaType = javaTypeMapper.toJavaType(properties);
-		assertEquals(LinkedHashMap.class, javaType.getRawClass());
+	public void shouldThrowAnExceptionWhenClassIdNotPresent() {
+		try {
+			javaTypeMapper.toJavaType(properties);
+		}
+		catch (MessageConversionException e) {
+			String classIdFieldName = javaTypeMapper.getClassIdFieldName();
+			assertThat(e.getMessage(), containsString("Could not resolve " + classIdFieldName + " in header"));
+			return;
+		}
+		fail();
 	}
 
 	@Test

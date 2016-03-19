@@ -191,7 +191,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private final Type inferredArgumentType;
 
-		public MessagingMessageConverterAdapter(Object bean, Method method) {
+		private MessagingMessageConverterAdapter(Object bean, Method method) {
 			this.bean = bean;
 			this.method = method;
 			this.inferredArgumentType = determineInferredType();
@@ -217,16 +217,17 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				return null;
 			}
 			Annotation[][] parameterAnnotations = this.method.getParameterAnnotations();
-			// Single param; no annotation or @Payload
 			Type genericParameterType = null;
 			if (parameterAnnotations.length == 1) {
+				// Single parameter; no annotation or @Payload, not Message
 				MethodParameter methodParameter = new MethodParameter(this.method, 0);
-				if (methodParameter.getParameterAnnotations().length == 0
-						|| methodParameter.hasParameterAnnotation(Payload.class)) {
+				if (!methodParameter.getParameterType().equals(org.springframework.amqp.core.Message.class)
+						&& (methodParameter.getParameterAnnotations().length == 0
+						|| methodParameter.hasParameterAnnotation(Payload.class))) {
 					genericParameterType = methodParameter.getGenericParameterType();
 				}
 			}
-			if (genericParameterType == null) {
+			if (genericParameterType == null && parameterAnnotations.length > 1) {
 				for (int i = 0; i < parameterAnnotations.length; i++) {
 					MethodParameter methodParameter = new MethodParameter(this.method, i);
 					/*

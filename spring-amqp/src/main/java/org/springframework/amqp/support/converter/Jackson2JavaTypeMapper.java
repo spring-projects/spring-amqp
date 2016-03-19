@@ -21,18 +21,25 @@ import org.springframework.amqp.core.MessageProperties;
 import com.fasterxml.jackson.databind.JavaType;
 
 /**
- * Strategy for setting metadata on messages such that one can create the class that needs to be instantiated when
- * receiving a message.
+ * Strategy for setting metadata on messages such that one can create the class that needs
+ * to be instantiated when receiving a message.
  *
  * @author Mark Pollack
  * @author James Carr
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Gary Russell
  */
 public interface Jackson2JavaTypeMapper extends ClassMapper {
 
-   void fromJavaType(JavaType javaType, MessageProperties properties);
+	public enum TypePrecedence {
+		INFERRED, TYPE_ID
+	}
 
-   JavaType toJavaType(MessageProperties properties);
+	void fromJavaType(JavaType javaType, MessageProperties properties);
+
+	JavaType toJavaType(MessageProperties properties);
+
+	TypePrecedence getTypePrecedence();
 
 }
