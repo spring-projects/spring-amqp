@@ -19,6 +19,7 @@ package org.springframework.amqp.support.converter;
 import java.util.LinkedHashMap;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.JavaType;
@@ -72,6 +73,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	 * @since 1.6
 	 */
 	public void setTypePrecedence(TypePrecedence typePrecedence) {
+		Assert.notNull(typePrecedence, "'typePrecedence' cannot be null");
 		this.typePrecedence = typePrecedence;
 	}
 

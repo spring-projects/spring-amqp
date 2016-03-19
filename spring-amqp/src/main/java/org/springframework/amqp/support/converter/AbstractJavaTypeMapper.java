@@ -110,8 +110,7 @@ public abstract class AbstractJavaTypeMapper {
 	}
 
 	protected boolean hasInferredTypeHeader(MessageProperties properties) {
-		boolean hasInferredTypeHeader = properties.getInferredArgumentType() != null;
-		return hasInferredTypeHeader;
+		return properties.getInferredArgumentType() != null;
 	}
 
 	protected JavaType fromInferredTypeHeader(MessageProperties properties) {
