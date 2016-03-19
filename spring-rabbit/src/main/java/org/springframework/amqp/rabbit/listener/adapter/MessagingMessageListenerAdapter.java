@@ -221,7 +221,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			if (parameterAnnotations.length == 1) {
 				// Single parameter; no annotation or @Payload, not Message
 				MethodParameter methodParameter = new MethodParameter(this.method, 0);
-				if (!methodParameter.getParameterType().equals(org.springframework.amqp.core.Message.class)
+				if (notPostConversionType(methodParameter)
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
 					genericParameterType = methodParameter.getGenericParameterType();
@@ -236,7 +236,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					 * We ignore parameters with type Message because they are not involved with
 					 * conversion.
 					 */
-					if (!methodParameter.getParameterType().equals(org.springframework.amqp.core.Message.class)
+					if (notPostConversionType(methodParameter)
 							&& (methodParameter.getParameterAnnotations().length == 0
 							|| methodParameter.hasParameterAnnotation(Payload.class))) {
 						if (genericParameterType == null) {
@@ -252,6 +252,17 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 				}
 			}
 			return genericParameterType;
+		}
+
+		/*
+		 * Don't consider parameter types that are available after conversion.
+		 * Message, Message<?> and Channel.
+		 */
+		private boolean notPostConversionType(MethodParameter methodParameter) {
+			Class<?> parameterType = methodParameter.getParameterType();
+			return !parameterType.equals(org.springframework.amqp.core.Message.class)
+					&& !parameterType.equals(Channel.class)
+					&& !parameterType.equals(Message.class);
 		}
 
 	}

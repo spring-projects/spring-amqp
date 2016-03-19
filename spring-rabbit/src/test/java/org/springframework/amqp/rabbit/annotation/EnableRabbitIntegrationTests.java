@@ -107,6 +107,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
 
+import com.rabbitmq.client.Channel;
+
 /**
  *
  * @author Stephane Nicoll
@@ -128,7 +130,8 @@ public class EnableRabbitIntegrationTests {
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
-			"test.converted.args2", "test.converted.message", "test.notconverted.message");
+			"test.converted.args2", "test.converted.message", "test.notconverted.message",
+			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -427,7 +430,22 @@ public class EnableRabbitIntegrationTests {
 		returned = template.convertSendAndReceive("", "test.notconverted.message", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"foo\"", new String((byte[]) returned));
+		assertEquals("\"fooMessage\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.channel", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"barAndChannel\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagechannel", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"bar=bazMessageAndChannel\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"GenericMessage\"", new String((byte[]) returned));
 
 		ctx.close();
 	}
@@ -1103,8 +1121,24 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues="test.notconverted.message")
 		public String justMessage(Message message) {
-		    return "foo";
+			return "foo" + message.getClass().getSimpleName();
 		}
+
+		@RabbitListener(queues="test.notconverted.channel")
+		public String justChannel(Channel channel) {
+			return "barAndChannel";
+		}
+
+		@RabbitListener(queues="test.notconverted.messagechannel")
+		public String messageChannel(Foo2 foo2, Message message, Channel channel) {
+			return foo2 + message.getClass().getSimpleName() + "AndChannel";
+		}
+
+		@RabbitListener(queues="test.notconverted.messagingmessage")
+		public String messagingMessage(org.springframework.messaging.Message<?> message) {
+			return message.getClass().getSimpleName();
+		}
+
 	}
 
 }
