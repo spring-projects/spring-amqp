@@ -131,7 +131,8 @@ public class EnableRabbitIntegrationTests {
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
-			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage");
+			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
+			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -445,7 +446,17 @@ public class EnableRabbitIntegrationTests {
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"GenericMessage\"", new String((byte[]) returned));
+		assertEquals("\"GenericMessageLinkedHashMap\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.foomessage", "{ \"bar\" : \"baz\" }",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"GenericMessageFoo2\"", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
+				"{ \"bar\" : \"baz\" }", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("\"GenericMessageLinkedHashMap\"", new String((byte[]) returned));
 
 		ctx.close();
 	}
@@ -1140,7 +1151,19 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues="test.notconverted.messagingmessage")
 		public String messagingMessage(org.springframework.messaging.Message<?> message) {
-			return message.getClass().getSimpleName();
+			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
+		}
+
+		@RabbitListener(queues="test.converted.foomessage")
+		public String messagingMessage(org.springframework.messaging.Message<Foo2> message,
+				@Header(value = "", required = false) String h) {
+			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
+		}
+
+		@RabbitListener(queues="test.notconverted.messagingmessagenotgeneric")
+		public String messagingMessage(@SuppressWarnings("rawtypes") org.springframework.messaging.Message message,
+				@Header(value = "", required = false) Integer h) {
+			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
 		}
 
 	}

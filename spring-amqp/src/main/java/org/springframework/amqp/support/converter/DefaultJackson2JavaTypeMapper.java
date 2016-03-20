@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.support.converter;
 
-import java.util.LinkedHashMap;
-
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -36,10 +34,6 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  */
 public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 		implements Jackson2JavaTypeMapper, ClassMapper {
-
-	private static final JavaType STRING_TYPE = TypeFactory.defaultInstance().constructType(String.class);
-
-	private static final JavaType OBJECT_TYPE = TypeFactory.defaultInstance().constructType(Object.class);
 
 	private volatile TypePrecedence typePrecedence = TypePrecedence.INFERRED;
 
@@ -111,7 +105,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 			return fromInferredTypeHeader(properties);
 		}
 
-		return MapType.construct(LinkedHashMap.class, STRING_TYPE, OBJECT_TYPE);
+		return TypeFactory.defaultInstance().constructType(Object.class);
 	}
 
 	private JavaType getClassIdType(String classId) {

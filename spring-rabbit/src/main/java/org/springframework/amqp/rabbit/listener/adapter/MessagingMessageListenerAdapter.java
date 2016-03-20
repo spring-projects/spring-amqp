@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.listener.adapter;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -194,6 +196,9 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			this.bean = bean;
 			this.method = method;
 			this.inferredArgumentType = determineInferredType();
+			if (logger.isDebugEnabled() && this.inferredArgumentType != null) {
+				logger.debug("Inferred argument type for " + method.toString() + " is " + this.inferredArgumentType);
+			}
 		}
 
 		@Override
@@ -224,16 +229,24 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
 					 * We ignore parameters with type Message because they are not involved with conversion.
 					 */
-				if (notPostConversionType(methodParameter)
+				if (eligibleParameter(methodParameter)
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
 					if (genericParameterType == null) {
 						genericParameterType = methodParameter.getGenericParameterType();
+						if (genericParameterType instanceof ParameterizedType) {
+							ParameterizedType parameterizedType = (ParameterizedType) genericParameterType;
+							if (parameterizedType.getRawType().equals(Message.class)) {
+								genericParameterType = ((ParameterizedType) genericParameterType)
+									.getActualTypeArguments()[0];
+							}
+						}
 					}
 					else {
 						if (MessagingMessageListenerAdapter.this.logger.isDebugEnabled()) {
 							MessagingMessageListenerAdapter.this.logger
-									.debug("An ambiguity with parameters for target payload for method " + this.method);
+									.debug("Ambiguous parameters for target payload for method " + this.method
+											+ "; no inferred type header added");
 						}
 						return null;
 					}
@@ -247,11 +260,24 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		 * Don't consider parameter types that are available after conversion.
 		 * Message, Message<?> and Channel.
 		 */
-		private boolean notPostConversionType(MethodParameter methodParameter) {
-			Class<?> parameterType = methodParameter.getParameterType();
-			return !parameterType.equals(org.springframework.amqp.core.Message.class)
-					&& !parameterType.equals(Channel.class)
-					&& !parameterType.equals(Message.class);
+		private boolean eligibleParameter(MethodParameter methodParameter) {
+			Type parameterType = methodParameter.getGenericParameterType();
+			if (parameterType.equals(Channel.class)
+					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
+				return false;
+			}
+			if (parameterType instanceof ParameterizedType) {
+				ParameterizedType parameterizedType = (ParameterizedType) parameterType;
+				if (parameterizedType.getRawType().equals(Message.class)) {
+					if(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType) {
+						return false;
+					}
+					else {
+						return true;
+					}
+				}
+			}
+			return !parameterType.equals(Message.class); // could be Message without a generic type
 		}
 
 	}

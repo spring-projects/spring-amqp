@@ -2036,8 +2036,8 @@ can configure a static type using the `defaultType` property
 Inbound messages are converted to objects according to the type information added to headers by the sending system.
 
 In versions prior to _1.6_, if type information is not present, conversion would fail.
-Starting with _version 1.6_, if type information is missing, the converter will convert the JSON to a
-`LinkedHashMap<String, Object>`, where the values might also be nested maps.
+Starting with _version 1.6_, if type information is missing, the converter will convert the JSON using Jackson
+defaults (usually a map).
 
 Also, starting with _version 1.6_, when using `@RabbitListener` annotations (on methods), the inferred type information
 is added to the `MessageProperties`; this allows the converter to convert to the argument type of the target method.
@@ -2069,14 +2069,21 @@ public void foo(Foo foo) {...}
 public void foo(@Payload Foo foo, @Header("amqp_consumerQueue") String queue) {...}
 
 @RabbitListener
-public void foo(Foo foo, Message message) {...}
+public void foo(Foo foo, o.s.amqp.core.Message message) {...}
+
+@RabbitListener
+public void foo(Foo foo, o.s.messaging.Message<Foo> message) {...}
 
 @RabbitListener
 public void foo(Foo foo, String bar) {...}
+
+@RabbitListener
+public void foo(Foo foo, o.s.messaging.Message<?> message) {...}
 ----
 
-In the first three cases above the converter will attempt to convert to the `Foo` type.
-The third example is invalid because we can't determine which argument should receive the message payload.
+In the first four cases above the converter will attempt to convert to the `Foo` type.
+The fifth example is invalid because we can't determine which argument should receive the message payload.
+With the sixth example, the Jackson defaults will apply due to the generic type being a `WildcardType`.
 
 You can, however, create a custom converter and use the `targetMethod` message property to decide which type to convert
 the JSON to.

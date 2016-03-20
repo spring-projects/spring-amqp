@@ -25,7 +25,6 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.junit.Test;
@@ -61,9 +60,9 @@ public class DefaultJackson2JavaTypeMapperTests {
 	private final Class<HashMap> mapClass = HashMap.class;
 
 	@Test
-	public void getAMapWhenClassIdNotPresent() {
+	public void getAnObjectWhenClassIdNotPresent() {
 		JavaType javaType = javaTypeMapper.toJavaType(properties);
-		assertEquals(LinkedHashMap.class, javaType.getRawClass());
+		assertEquals(Object.class, javaType.getRawClass());
 	}
 
 	@Test
