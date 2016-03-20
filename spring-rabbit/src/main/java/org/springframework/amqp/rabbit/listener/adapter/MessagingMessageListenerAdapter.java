@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
@@ -206,7 +205,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			if (this.method != null) {
 				messageProperties.setTargetMethod(this.method);
 				if (this.inferredArgumentType != null) {
-					message.getMessageProperties().setInferredArgumentType(this.inferredArgumentType);
+					messageProperties.setInferredArgumentType(this.inferredArgumentType);
 				}
 			}
 			return extractMessage(message);
@@ -216,41 +215,31 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			if (this.method == null) {
 				return null;
 			}
-			Annotation[][] parameterAnnotations = this.method.getParameterAnnotations();
+
 			Type genericParameterType = null;
-			if (parameterAnnotations.length == 1) {
-				// Single parameter; no annotation or @Payload, not Message
-				MethodParameter methodParameter = new MethodParameter(this.method, 0);
+
+			for (int i = 0; i < this.method.getParameterCount(); i++) {
+				MethodParameter methodParameter = new MethodParameter(this.method, i);
+					/*
+					 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
+					 * We ignore parameters with type Message because they are not involved with conversion.
+					 */
 				if (notPostConversionType(methodParameter)
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
-					genericParameterType = methodParameter.getGenericParameterType();
-				}
-			}
-			if (genericParameterType == null && parameterAnnotations.length > 1) {
-				for (int i = 0; i < parameterAnnotations.length; i++) {
-					MethodParameter methodParameter = new MethodParameter(this.method, i);
-					/*
-					 * We're looking for a single non-annotated parameter, or one annotated with
-					 * @Payload.
-					 * We ignore parameters with type Message because they are not involved with
-					 * conversion.
-					 */
-					if (notPostConversionType(methodParameter)
-							&& (methodParameter.getParameterAnnotations().length == 0
-							|| methodParameter.hasParameterAnnotation(Payload.class))) {
-						if (genericParameterType == null) {
-							genericParameterType = methodParameter.getGenericParameterType();
+					if (genericParameterType == null) {
+						genericParameterType = methodParameter.getGenericParameterType();
+					}
+					else {
+						if (MessagingMessageListenerAdapter.this.logger.isDebugEnabled()) {
+							MessagingMessageListenerAdapter.this.logger
+									.debug("An ambiguity with parameters for target payload for method " + this.method);
 						}
-						else {
-							if (logger.isDebugEnabled()) {
-								logger.debug("Cannot determine target type for " + this.method);
-							}
-							return null;
-						}
+						return null;
 					}
 				}
 			}
+
 			return genericParameterType;
 		}
 

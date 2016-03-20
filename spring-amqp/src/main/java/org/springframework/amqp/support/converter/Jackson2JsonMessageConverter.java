@@ -25,10 +25,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -68,9 +66,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
 	 * alternative to injecting a mapper is to extend this class and override
 	 * {@link #initializeJsonObjectMapper()}.
-	 *
-	 * @param jsonObjectMapper
-	 *            the object mapper to set
+	 * @param jsonObjectMapper the object mapper to set
 	 */
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
 		this.jsonObjectMapper = jsonObjectMapper;
@@ -92,17 +88,15 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	 * If so, this type is provided in the
 	 * {@link MessageProperties#getInferredArgumentType() inferredArgumentType}
 	 * message property.
-	 * <p>
-	 * By default, if the type is concrete (not abstract, not an interface), this will
+	 * <p> By default, if the type is concrete (not abstract, not an interface), this will
 	 * be used ahead of type information provided in the {@code __TypeId__} and
 	 * associated headers provided by the sender.
-	 * <p>
-	 * If you wish to force the use of the  {@code __TypeId__} and associated headers
+	 * <p> If you wish to force the use of the  {@code __TypeId__} and associated headers
 	 * (such as when the actual type is a subclass of the method argument type),
 	 * set the precedence to {@link TypePrecedence#TYPE_ID}.
-	 *
 	 * @param typePrecedence the precedence.
 	 * @since 1.6
+	 * @see DefaultJackson2JavaTypeMapper#setTypePrecedence(TypePrecedence)
 	 */
 	public void setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence typePrecedence) {
 		if (this.typeMapperSet) {
@@ -166,25 +160,20 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		return content;
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding,
-			JavaType targetJavaType) throws JsonParseException,
-			JsonMappingException, IOException {
+	private Object convertBytesToObject(byte[] body, String encoding, JavaType targetJavaType) throws IOException {
 		String contentAsString = new String(body, encoding);
 		return this.jsonObjectMapper.readValue(contentAsString, targetJavaType);
 	}
 
-	private Object convertBytesToObject(byte[] body, String encoding,
-			Class<?> targetClass) throws JsonParseException,
-			JsonMappingException, IOException {
+	private Object convertBytesToObject(byte[] body, String encoding, Class<?> targetClass) throws IOException {
 		String contentAsString = new String(body, encoding);
 		return this.jsonObjectMapper.readValue(contentAsString, this.jsonObjectMapper.constructType(targetClass));
 	}
 
 	@Override
-	protected Message createMessage(Object objectToConvert,
-			MessageProperties messageProperties)
+	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
 			throws MessageConversionException {
-		byte[] bytes = null;
+		byte[] bytes;
 		try {
 			String jsonString = this.jsonObjectMapper
 					.writeValueAsString(objectToConvert);
@@ -196,9 +185,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 		messageProperties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
 		messageProperties.setContentEncoding(getDefaultCharset());
-		if (bytes != null) {
-			messageProperties.setContentLength(bytes.length);
-		}
+		messageProperties.setContentLength(bytes.length);
 
 		if (getClassMapper() == null) {
 			getJavaTypeMapper().fromJavaType(this.jsonObjectMapper.constructType(objectToConvert.getClass()),
@@ -212,6 +199,6 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 
 		return new Message(bytes, messageProperties);
-
 	}
+
 }

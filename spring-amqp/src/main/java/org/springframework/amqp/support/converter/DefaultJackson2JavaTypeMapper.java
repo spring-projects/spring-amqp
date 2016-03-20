@@ -44,6 +44,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	private volatile TypePrecedence typePrecedence = TypePrecedence.INFERRED;
 
 	/**
+	 * Return the precedence.
 	 * @return the precedence.
 	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
 	 * @since 1.6.
