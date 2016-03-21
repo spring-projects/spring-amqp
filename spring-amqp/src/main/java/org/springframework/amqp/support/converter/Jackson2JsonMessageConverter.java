@@ -96,7 +96,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	 * set the precedence to {@link TypePrecedence#TYPE_ID}.
 	 * @param typePrecedence the precedence.
 	 * @since 1.6
-	 * @see DefaultJackson2JavaTypeMapper#setTypePrecedence(TypePrecedence)
+	 * @see DefaultJackson2JavaTypeMapper#setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
 	 */
 	public void setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence typePrecedence) {
 		if (this.typeMapperSet) {
