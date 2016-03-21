@@ -181,6 +181,11 @@ It is important to consider creating a white list if you accept messages with se
 untrusted sources.
 See <<java-deserialization>> for more information.
 
+====== Default Error Handler
+
+The default error handler (`ConditionalRejectingErrorHandler`) now considers irrecoverable `@RabbitListener`
+exceptions as fatal.
+See <<exception-handling>> for more information.
 
 ==== Changes in 1.4 Since 1.3
 

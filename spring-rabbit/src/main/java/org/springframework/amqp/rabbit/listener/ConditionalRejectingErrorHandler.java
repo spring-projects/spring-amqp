@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
 import org.apache.commons.logging.Log;
@@ -21,6 +22,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
+import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 import org.springframework.util.ErrorHandler;
 
 /**
@@ -63,8 +66,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 	@Override
 	public void handleError(Throwable t) {
-		if (logger.isWarnEnabled()) {
-			logger.warn("Execution of Rabbit message listener failed.", t);
+		if (this.logger.isWarnEnabled()) {
+			this.logger.warn("Execution of Rabbit message listener failed.", t);
 		}
 		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", t);
@@ -91,15 +94,23 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		@Override
 		public boolean isFatal(Throwable t) {
 			if (t instanceof ListenerExecutionFailedException
-					&& t.getCause() instanceof MessageConversionException) {
-				if (logger.isWarnEnabled()) {
-					logger.warn("Fatal message conversion error; message rejected; "
+					&& causeIsFatal(t.getCause())) {
+				if (ConditionalRejectingErrorHandler.this.logger.isWarnEnabled()) {
+					ConditionalRejectingErrorHandler.this.logger.warn(
+							"Fatal message conversion error; message rejected; "
 							+ "it will be dropped or routed to a dead letter exchange, if so configured: "
-							+ ((ListenerExecutionFailedException) t).getFailedMessage(), t);
+							+ ((ListenerExecutionFailedException) t).getFailedMessage());
 				}
 				return true;
 			}
 			return false;
+		}
+
+		protected boolean causeIsFatal(Throwable cause) {
+			return cause instanceof MessageConversionException
+					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
+					|| cause instanceof MethodArgumentNotValidException
+					|| cause instanceof MethodArgumentTypeMismatchException;
 		}
 
 	}
