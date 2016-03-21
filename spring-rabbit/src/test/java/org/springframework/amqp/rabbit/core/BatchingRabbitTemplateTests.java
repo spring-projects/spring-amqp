@@ -28,7 +28,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.OutputStream;
@@ -335,7 +334,7 @@ public class BatchingRabbitTemplateTests {
 			Thread.sleep(1000);
 			ArgumentCaptor<Object> arg1 = ArgumentCaptor.forClass(Object.class);
 			ArgumentCaptor<Throwable> arg2 = ArgumentCaptor.forClass(Throwable.class);
-			verify(logger, times(2)).warn(arg1.capture(), arg2.capture()); // CRE logs 2 WARNs ensure the message was rejected
+			verify(logger).warn(arg1.capture(), arg2.capture()); // CRE logs 2 WARNs ensure the message was rejected
 			assertThat(arg2.getValue().getMessage(), containsString("Bad batched message received"));
 		}
 		finally {
