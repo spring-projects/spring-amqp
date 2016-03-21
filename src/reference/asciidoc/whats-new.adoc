@@ -41,6 +41,13 @@ See <<containerAttributes>> for more information.
 Now listener container provides its `beanName` into the internal `SimpleAsyncTaskExecutor` as a `threadNamePrefix`.
 It is useful for logs analysis.
 
+====== Default Error Handler
+
+The default error handler (`ConditionalRejectingErrorHandler`) now considers irrecoverable `@RabbitListener`
+exceptions as fatal.
+See <<exception-handling>> for more information.
+
+
 ===== AutoDeclare and RabbitAdmins
 
 See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
