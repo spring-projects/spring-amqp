@@ -59,7 +59,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	private final MessagingMessageConverterAdapter messagingMessageConverter;
 
-
 	public MessagingMessageListenerAdapter() {
 		this(null, null);
 	}
@@ -97,7 +96,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		return this.messagingMessageConverter;
 	}
 
-
 	@Override
 	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception {
 		Message<?> message = toMessagingMessage(amqpMessage);
@@ -106,7 +104,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		Object result = invokeHandler(amqpMessage, channel, message);
 		if (result != null) {
-			handleResult(result, amqpMessage, channel);
+			handleResult(result, amqpMessage, channel, message);
 		}
 		else {
 			logger.trace("No result object given - no result to handle");

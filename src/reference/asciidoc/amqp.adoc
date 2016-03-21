@@ -1706,6 +1706,30 @@ the form `exchange/routingKey` as discussed above.
 The expression is evaluated once, during context initialization.
 For dynamic reply routing, the message sender should include a `reply_to` message property.
 
+NOTE: The expression is evaluated once, during initialization.
+
+Starting with _version 1.6_, the `@SendTo` can be a SpEL expression that is evaluated at runtime against the request
+and reply:
+
+[source, java]
+----
+@RabbitListener(queues = "test.sendTo.spel")
+@SendTo("SpEL:'some.reply.queue.with.' + result.queueName")
+public Bar capitalizeWithSendToSpel(Foo foo) {
+    return processTheFooAndReturnABar(foo);
+}
+----
+
+The runtime nature of the SpEL expression is indicated with the `SpEL:` prefix.
+The evaluation context `#root` object for the expression has two properties:
+
+- `request` - the `o.s.amqp.core.Message` request object.
+- `source` - the `o.s.messaging.Message<?>` after conversion.
+- `result` - the method result.
+
+The context has a map property accessor, a standard type converter and a bean resolver, allowing other beans in the
+context to be referenced (e.g. `@someBeanName.determineReplyQ(request, result)`).
+
 [[annotation-method-selection]]
 ====== Multi-Method Listeners
 

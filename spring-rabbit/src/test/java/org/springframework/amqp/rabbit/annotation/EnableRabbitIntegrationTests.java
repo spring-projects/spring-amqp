@@ -126,7 +126,9 @@ public class EnableRabbitIntegrationTests {
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
-			"test.sendTo.spel", "test.sendTo.reply.spel", "test.intercepted", "test.intercepted.withReply",
+			"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
+			"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
+			"test.intercepted", "test.intercepted.withReply",
 			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
@@ -280,6 +282,11 @@ public class EnableRabbitIntegrationTests {
 		qux.field = "qux";
 		assertEquals("QUX: qux: multi.json.rk",
 				this.jsonRabbitTemplate.convertSendAndReceive(exchange, routingKey, qux));
+
+		// SpEL replyTo
+		this.jsonRabbitTemplate.convertAndSend(exchange, routingKey, bar);
+		this.jsonRabbitTemplate.setReceiveTimeout(10000);
+		assertEquals("BAR: barMultiListenerJsonBean", this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel"));
 	}
 
 	@Test
@@ -335,6 +342,24 @@ public class EnableRabbitIntegrationTests {
 		assertTrue(n < 100);
 		assertNotNull(result);
 		assertEquals("BARbar", result);
+	}
+
+	@Test
+	public void simpleEndpointWithSendToSpelRuntime() throws InterruptedException {
+		rabbitTemplate.convertAndSend("test.sendTo.runtimespel", "spel");
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.runtimespel");
+		assertNotNull(result);
+		assertEquals("runtimespel", result);
+	}
+
+	@Test
+	public void simpleEndpointWithSendToSpelRuntimeMessagingMessage() throws InterruptedException {
+		rabbitTemplate.convertAndSend("test.sendTo.runtimespelsource", "spel");
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.runtimespelsource.reply");
+		assertNotNull(result);
+		assertEquals("sourceEval", result);
 	}
 
 	@Test
@@ -593,6 +618,18 @@ public class EnableRabbitIntegrationTests {
 		@SendTo("#{spelReplyTo}")
 		public String capitalizeAndSendToSpel(String foo) {
 			return foo.toUpperCase() + foo;
+		}
+
+		@RabbitListener(queues = "test.sendTo.runtimespel")
+		@SendTo("SpEL:'test.sendTo.reply.' + result")
+		public String capitalizeAndSendToSpelRuntime(String foo) {
+			return "runtime" + foo;
+		}
+
+		@RabbitListener(queues = "test.sendTo.runtimespelsource")
+		@SendTo("SpEL:source.headers['amqp_consumerQueue'] + '.reply'")
+		public String capitalizeAndSendToSpelRuntimeSource(String foo) {
+			return "sourceEval";
 		}
 
 		@RabbitListener(queues = "test.invalidPojo")
@@ -914,6 +951,16 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public org.springframework.amqp.core.Queue sendToRepliesSpEL() {
+			return new org.springframework.amqp.core.Queue(sendToRepliesSpELBean(), false, false, true);
+		}
+
+		@Bean
+		public String sendToRepliesSpELBean() {
+			return "sendTo.replies.spel";
+		}
+
+		@Bean
 		public String sendToRepliesBean() {
 			return "sendTo.replies";
 		}
@@ -951,6 +998,7 @@ public class EnableRabbitIntegrationTests {
 	static class MultiListenerJsonBean {
 
 		@RabbitHandler
+		@SendTo("SpEL:@sendToRepliesSpELBean")
 		public String bar(Bar bar, Message message) {
 			return "BAR: " + bar.field + message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}

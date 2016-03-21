@@ -20,9 +20,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.core.Address;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.adapter.DelegatingInvocableHandler;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
@@ -54,37 +51,6 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 		this.delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods, getBean(), getResolver(),
 				getBeanExpressionContext());
 		return new HandlerAdapter(this.delegatingHandler);
-	}
-
-
-	@Override
-	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return new MultiMethodMessageListenerAdapter(getBean());
-	}
-
-
-	private final class MultiMethodMessageListenerAdapter extends MessagingMessageListenerAdapter {
-
-		public MultiMethodMessageListenerAdapter(Object bean) {
-			super(bean, null);
-		}
-
-		@Override
-		protected Address getReplyToAddress(Message request) throws Exception {
-			Address replyTo = request.getMessageProperties().getReplyToAddress();
-			Address defaultReplyTo = null;
-			if (MultiMethodRabbitListenerEndpoint.this.delegatingHandler != null) {
-				defaultReplyTo = MultiMethodRabbitListenerEndpoint.this.delegatingHandler.getDefaultReplyTo();
-			}
-			if (replyTo == null && defaultReplyTo == null) {
-				throw new AmqpException(
-						"Cannot determine ReplyTo message property value: " +
-								"Request message does not contain reply-to property, " +
-								"and no @SendTo annotation found.");
-			}
-			return replyTo == null ? defaultReplyTo : replyTo;
-		}
-
 	}
 
 }
