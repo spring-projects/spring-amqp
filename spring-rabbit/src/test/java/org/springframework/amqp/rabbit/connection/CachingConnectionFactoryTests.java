@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -271,6 +272,58 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		verify(mockConnection, never()).close();
 		verify(mockChannel1, never()).close();
+
+		ccf.destroy();
+	}
+
+	@Test
+	public void testConnectionLimit() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		final CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setCacheMode(CacheMode.CONNECTION);
+		ccf.setConnectionCacheSize(1);
+		ccf.setConnectionLimit(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con1 = ccf.createConnection();
+
+		try {
+			ccf.createConnection();
+			fail("Exception expected");
+		}
+		catch (AmqpTimeoutException e) {}
+
+		// should be ignored, and added to cache
+		con1.close();
+
+		Connection con2 = ccf.createConnection();
+		assertSame(con1, con2);
+
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		final AtomicReference<Connection> connection = new AtomicReference<Connection>();
+		ccf.setChannelCheckoutTimeout(30000);
+		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
+			@Override
+			public void run() {
+				latch1.countDown();
+				connection.set(ccf.createConnection());
+				latch2.countDown();
+			}
+
+		});
+
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		Thread.sleep(100);
+		con2.close();
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertSame(con2, connection.get());
 
 		ccf.destroy();
 	}
@@ -829,8 +882,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(1, idleConnections.size());
 		channel3.close();
 		con3.close();
-		assertEquals(1, allocatedConnections.size());
-		assertEquals(1, idleConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals(2, idleConnections.size());
+		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 		/*
 		 *  Cache size is 1; con3 (mock1) should have been a real close.
 		 *  con2 (mock2) should still be in the cache.
@@ -853,15 +907,17 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verifyConnectionIs(mockConnections.get(2), con3);
 		assertNotNull(createNotification.get());
 		assertSame(mockConnections.get(2), createNotification.getAndSet(null));
-		assertEquals(1, allocatedConnections.size());
-		assertEquals(0, idleConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals(1, idleConnections.size());
+		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 		channel3 = con3.createChannel(false);
 		verifyChannelIs(mockChannels.get(2), channel3);
 		channel3.close();
 		con3.close();
 		assertNull(closedNotification.get());
-		assertEquals(1, allocatedConnections.size());
-		assertEquals(1, idleConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals(2, idleConnections.size());
+		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 
 		/*
 		 * Now a closed cached connection when creating a channel
@@ -869,8 +925,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		con3 = ccf.createConnection();
 		verifyConnectionIs(mockConnections.get(2), con3);
 		assertNull(createNotification.get());
-		assertEquals(1, allocatedConnections.size());
-		assertEquals(0, idleConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals(1, idleConnections.size());
 		when(mockConnections.get(2).isOpen()).thenReturn(false);
 		channel3 = con3.createChannel(false);
 		assertNotNull(closedNotification.getAndSet(null));
@@ -880,8 +936,9 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel3.close();
 		con3.close();
 		assertNull(closedNotification.get());
-		assertEquals(1, allocatedConnections.size());
-		assertEquals(1, idleConnections.size());
+		assertEquals(2, allocatedConnections.size());
+		assertEquals(2, idleConnections.size());
+		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 
 		// destroy
 		ccf.destroy();
@@ -1170,10 +1227,12 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		conn4.close();
 		assertEquals(3, allocatedConnections.size());
 		assertEquals(3, idleConnections.size());
+		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 
 		ccf.destroy();
-		assertEquals(0, allocatedConnections.size());
-		assertEquals(0, idleConnections.size());
+		assertEquals(3, allocatedConnections.size());
+		assertEquals(3, idleConnections.size());
+		assertEquals("0", ccf.getCacheProperties().get("openConnections"));
 	}
 
 	private void verifyConnectionIs(com.rabbitmq.client.Connection mockConnection, Object con) {

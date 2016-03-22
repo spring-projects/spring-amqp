@@ -139,6 +139,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile int connectionCacheSize = 1;
 
+	private volatile int connectionLimit = Integer.MAX_VALUE;
+
 	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
 
 	private final LinkedList<ChannelProxy> cachedChannelsTransactional = new LinkedList<ChannelProxy>();
@@ -266,6 +268,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.connectionCacheSize = connectionCacheSize;
 	}
 
+	/**
+	 * Set the connection limit when using cache mode CONNECTION. When the limit is
+	 * reached and there are no idle connections, the
+	 * {@link #setChannelCheckoutTimeout(long) channelCheckoutTimeLimit} is used to wait
+	 * for a connection to become idle.
+	 * @param connectionLimit the limit.
+	 * @since 1.5.5
+	 */
+	public void setConnectionLimit(int connectionLimit) {
+		Assert.isTrue(connectionLimit >= 1, "Connection limit must be 1 or higher.");
+		this.connectionLimit = connectionLimit;
+	}
+
 	@Override
 	public boolean isPublisherConfirms() {
 		return this.publisherConfirms;
@@ -290,7 +305,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * connection rather than a simple cache size. Note that changing the {@link #channelCacheSize}
 	 * does not affect the limit on existing connection(s), invoke {@link #destroy()} to cause a
 	 * new connection to be created with the new limit.
+	 * <p>
+	 * Since 1.5.5, also applies to getting a connection when the cache mode is CONNECTION.
 	 * @param channelCheckoutTimeout the timeout in milliseconds; default 0 (channel limiting not enabled).
+	 * @see #setConnectionLimit(int)
 	 * @since 1.4.2
 	 */
 	public void setChannelCheckoutTimeout(long channelCheckoutTimeout) {
@@ -370,8 +388,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (!checkoutPermits.tryAcquire(this.channelCheckoutTimeout, TimeUnit.MILLISECONDS)) {
 						throw new AmqpTimeoutException("No available channels");
 					}
-					logger.error(
+					if (logger.isDebugEnabled()) {
+						logger.debug(
 							"Acquired permit for " + connection + ", remaining:" + checkoutPermits.availablePermits());
+					}
 				}
 				catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -392,13 +412,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					: this.allocatedConnectionNonTransactionalChannels.get(connection);
 		}
 		if (channelList == null) {
-			channelList = new LinkedList<ChannelProxy>();
-			if (transactional) {
-				this.allocatedConnectionTransactionalChannels.put(connection, channelList);
-			}
-			else {
-				this.allocatedConnectionNonTransactionalChannels.put(connection, channelList);
-			}
+			throw new IllegalStateException("No channel list for connection " + connection);
 		}
 		ChannelProxy channel = null;
 		if (connection.isOpen()) {
@@ -493,7 +507,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					this.allocatedConnectionNonTransactionalChannels.get(connection).clear();
 					this.allocatedConnectionTransactionalChannels.get(connection).clear();
 					connection.notifyCloseIfNecessary();
-					refreshProxyConnnection(connection);
+					refreshProxyConnection(connection);
 				}
 			}
 			return doCreateBareChannel(connection, transactional);
@@ -538,30 +552,25 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				return this.connection;
 			}
 			else if (this.cacheMode == CacheMode.CONNECTION) {
-				ChannelCachingConnectionProxy connection = null;
-				ChannelCachingConnectionProxy lastIdle = this.idleConnections.peekLast();
-				while (connection == null) {
-					connection = this.idleConnections.poll();
-					if (connection != null) {
-						if (!connection.isOpen()) {
-							if (logger.isDebugEnabled()) {
-								logger.debug("Skipping closed connection '" + connection + "'");
-							}
-							connection.notifyCloseIfNecessary();
-							this.idleConnections.addLast(connection);
-							if (connection.equals(lastIdle)) {
-								// all of the idle connections are closed.
-								connection = this.idleConnections.poll();
-								break;
-							}
-							connection = null;
+				ChannelCachingConnectionProxy connection = findIdleConnection();
+				long now = System.currentTimeMillis();
+				while (connection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
+					if (countOpenConnections() >= this.connectionLimit) {
+						try {
+							this.connectionMonitor.wait(this.channelCheckoutTimeout);
+							connection = findIdleConnection();
 						}
-					}
-					else {
-						break;
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							throw new AmqpException("Interrupted while waiting for a connection", e);
+						}
 					}
 				}
 				if (connection == null) {
+					if (countOpenConnections() >= this.connectionLimit
+							&& System.currentTimeMillis() - now >= this.channelCheckoutTimeout) {
+						throw new AmqpTimeoutException("Timed out attempting to get a connection");
+					}
 					connection = new ChannelCachingConnectionProxy(super.createBareConnection());
 					if (logger.isDebugEnabled()) {
 						logger.debug("Adding new connection '" + connection + "'");
@@ -579,7 +588,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				}
 				else if (!connection.isOpen()) {
 					try {
-						refreshProxyConnnection(connection);
+						refreshProxyConnection(connection);
 					}
 					catch (Exception e) {
 						this.idleConnections.addLast(connection);
@@ -596,7 +605,39 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return null;
 	}
 
-	private void refreshProxyConnnection(ChannelCachingConnectionProxy connection) {
+	/*
+	 * Iterate over the idle connections looking for an open one. If there are no idle,
+	 * return null, if there are no open idle, return the first closed idle so it can
+	 * be reopened.
+	 */
+	private ChannelCachingConnectionProxy findIdleConnection() {
+		ChannelCachingConnectionProxy connection = null;
+		ChannelCachingConnectionProxy lastIdle = this.idleConnections.peekLast();
+		while (connection == null) {
+			connection = this.idleConnections.poll();
+			if (connection != null) {
+				if (!connection.isOpen()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Skipping closed connection '" + connection + "'");
+					}
+					connection.notifyCloseIfNecessary();
+					this.idleConnections.addLast(connection);
+					if (connection.equals(lastIdle)) {
+						// all of the idle connections are closed.
+						connection = this.idleConnections.poll();
+						break;
+					}
+					connection = null;
+				}
+			}
+			else {
+				break;
+			}
+		}
+		return connection;
+	}
+
+	private void refreshProxyConnection(ChannelCachingConnectionProxy connection) {
 		connection.destroy();
 		connection.notifyCloseIfNecessary();
 		connection.target = super.createBareConnection();
@@ -632,12 +673,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			for (ChannelCachingConnectionProxy connection : this.allocatedConnections) {
 				connection.destroy();
 			}
-			this.allocatedConnections.clear();
-			this.idleConnections.clear();
-			this.allocatedConnectionNonTransactionalChannels.clear();
-			this.allocatedConnectionTransactionalChannels.clear();
-			this.channelHighWaterMarks.clear();
-			initCacheWaterMarks();
+			for (AtomicInteger count : this.channelHighWaterMarks.values()) {
+				count.set(0);
+			}
 			this.connectionHighWaterMark.set(0);
 		}
 	}
@@ -701,29 +739,27 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	protected void reset(List<ChannelProxy> channels, List<ChannelProxy> txChannels) {
 		this.active = false;
-		if (this.cacheMode == CacheMode.CHANNEL) {
-			synchronized (channels) {
-				for (ChannelProxy channel : channels) {
-					try {
-						channel.close();
-					}
-					catch (Exception ex) {
-						logger.trace("Could not close cached Rabbit Channel", ex);
-					}
+		synchronized (channels) {
+			for (ChannelProxy channel : channels) {
+				try {
+					channel.close();
 				}
-				channels.clear();
-			}
-			synchronized (txChannels) {
-				for (ChannelProxy channel : txChannels) {
-					try {
-						channel.close();
-					}
-					catch (Exception ex) {
-						logger.trace("Could not close cached Rabbit Channel", ex);
-					}
+				catch (Exception ex) {
+					logger.trace("Could not close cached Rabbit Channel", ex);
 				}
-				txChannels.clear();
 			}
+			channels.clear();
+		}
+		synchronized (txChannels) {
+			for (ChannelProxy channel : txChannels) {
+				try {
+					channel.close();
+				}
+				catch (Exception ex) {
+					logger.trace("Could not close cached Rabbit Channel", ex);
+				}
+			}
+			txChannels.clear();
 		}
 		this.active = true;
 	}
@@ -736,31 +772,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			props.setProperty("channelCacheSize", Integer.toString(this.channelCacheSize));
 			if (this.cacheMode.equals(CacheMode.CONNECTION)) {
 				props.setProperty("connectionCacheSize", Integer.toString(this.connectionCacheSize));
-				props.setProperty("allocatedConnections", Integer.toString(this.allocatedConnections.size()));
+				props.setProperty("openConnections", Integer.toString(countOpenConnections()));
 				props.setProperty("idleConnections", Integer.toString(this.idleConnections.size()));
 				props.setProperty("idleConnectionsHighWater",  Integer.toString(this.connectionHighWaterMark.get()));
-				int n = 0;
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.allocatedConnectionTransactionalChannels.entrySet()) {
 					int port = entry.getKey().getLocalPort();
-					if (port == 0) {
-						port = ++n; // just use a unique id to avoid overwriting
+					if (port > 0 && entry.getKey().isOpen()) {
+						LinkedList<ChannelProxy> channelList = entry.getValue();
+						props.put("idleChannelsTx:" + port, Integer.toString(channelList.size()));
+						props.put("idleChannelsTxHighWater:" + port, Integer.toString(
+								this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 					}
-					LinkedList<ChannelProxy> channelList = entry.getValue();
-					props.put("idleChannelsTx:" + port, Integer.toString(channelList.size()));
-					props.put("idleChannelsTxHighWater:" + port, Integer.toString(
-							this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.allocatedConnectionNonTransactionalChannels.entrySet()) {
 					int port = entry.getKey().getLocalPort();
-					if (port == 0) {
-						port = ++n; // just use a unique id to avoid overwriting
+					if (port > 0 && entry.getKey().isOpen()) {
+						LinkedList<ChannelProxy> channelList = entry.getValue();
+						props.put("idleChannelsNotTx:" + port, Integer.toString(channelList.size()));
+						props.put("idleChannelsNotTxHighWater:" + port, Integer.toString(
+								this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 					}
-					LinkedList<ChannelProxy> channelList = entry.getValue();
-					props.put("idleChannelsNotTx:" + port, Integer.toString(channelList.size()));
-					props.put("idleChannelsNotTxHighWater:" + port, Integer.toString(
-							this.channelHighWaterMarks.get(ObjectUtils.getIdentityHexString(channelList)).get()));
 				}
 			}
 			else {
@@ -775,6 +808,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		return props;
+	}
+
+	private int countOpenConnections() {
+		int n = 0;
+		for (ChannelCachingConnectionProxy proxy : this.allocatedConnections) {
+			if (proxy.isOpen()) {
+				n++;
+			}
+		}
+		return n;
 	}
 
 	@Override
@@ -1031,35 +1074,40 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		public void close() {
 			if (CachingConnectionFactory.this.cacheMode == CacheMode.CONNECTION) {
 				synchronized (CachingConnectionFactory.this.connectionMonitor) {
-					if (!this.target.isOpen()
-							|| CachingConnectionFactory.this.idleConnections.size() >=
-									CachingConnectionFactory.this.connectionCacheSize) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Completely closing connection '" + this + "'");
-						}
-						if (this.target.isOpen()) {
-							RabbitUtils.closeConnection(this.target);
-						}
-						this.notifyCloseIfNecessary();
-						CachingConnectionFactory.this.allocatedConnections.remove(this);
-						CachingConnectionFactory.this.allocatedConnectionNonTransactionalChannels.remove(this);
-						CachingConnectionFactory.this.allocatedConnectionTransactionalChannels.remove(this);
-					}
-					else {
-						if (!CachingConnectionFactory.this.idleConnections.contains(this)) {
+					/*
+					 * Only connectionCacheSize open idle connections are allowed.
+					 */
+					if (!CachingConnectionFactory.this.idleConnections.contains(this)) {
+						if (!this.target.isOpen()
+								|| countOpenIdleConnections() >= CachingConnectionFactory.this.connectionCacheSize) {
 							if (logger.isDebugEnabled()) {
-								logger.debug("Returning connection '" + this + "' to cache");
+								logger.debug("Completely closing connection '" + this + "'");
 							}
-							CachingConnectionFactory.this.idleConnections.add(this);
-							if (CachingConnectionFactory.this.connectionHighWaterMark
-									.get() < CachingConnectionFactory.this.idleConnections.size()) {
-								CachingConnectionFactory.this.connectionHighWaterMark
-										.set(CachingConnectionFactory.this.idleConnections.size());
-							}
+							destroy();
 						}
+						if (logger.isDebugEnabled()) {
+							logger.debug("Returning connection '" + this + "' to cache");
+						}
+						CachingConnectionFactory.this.idleConnections.add(this);
+						if (CachingConnectionFactory.this.connectionHighWaterMark
+								.get() < CachingConnectionFactory.this.idleConnections.size()) {
+							CachingConnectionFactory.this.connectionHighWaterMark
+									.set(CachingConnectionFactory.this.idleConnections.size());
+						}
+						CachingConnectionFactory.this.connectionMonitor.notifyAll();
 					}
 				}
 			}
+		}
+
+		private int countOpenIdleConnections() {
+			int n = 0;
+			for (ChannelCachingConnectionProxy proxy : CachingConnectionFactory.this.idleConnections) {
+				if (proxy.isOpen()) {
+					n++;
+				}
+			}
+			return n;
 		}
 
 		public void destroy() {

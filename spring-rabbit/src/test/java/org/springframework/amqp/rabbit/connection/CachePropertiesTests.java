@@ -123,7 +123,7 @@ public class CachePropertiesTests {
 		Properties props = this.connectionCf.getCacheProperties();
 		assertEquals("10", props.getProperty("channelCacheSize"));
 		assertEquals("5", props.getProperty("connectionCacheSize"));
-		assertEquals("2", props.getProperty("allocatedConnections"));
+		assertEquals("2", props.getProperty("openConnections"));
 		assertEquals("1", props.getProperty("idleConnections"));
 		c2.close();
 		props = this.connectionCf.getCacheProperties();
