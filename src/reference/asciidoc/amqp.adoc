@@ -1665,7 +1665,8 @@ public Message<OrderStatus> processOrder(Order order) {
 }
 ----
 
-The `@SendTo` value is assumed as a reply `exchange` and `routingKey` pair following the pattern `exchange/routingKey`, where one of those parts can be omitted.
+The `@SendTo` value is assumed as a reply `exchange` and `routingKey` pair following the pattern `exchange/routingKey`,
+where one of those parts can be omitted.
 The valid values are:
 
 `foo/bar` - the replyTo exchange and routingKey.
@@ -1685,7 +1686,7 @@ Also `@SendTo` can be used without a `value` attribute.
 This case is equal to an empty sendTo pattern.
 `@SendTo` is only used if the inbound message does not have a `replyToAddress` property.
 
-Starting with _version 1.5_, the `@SendTo` value can be a SpEL Expression, for example...
+Starting with _version 1.5_, the `@SendTo` value can be a bean initialization SpEL Expression, for example...
 
 [source, java]
 ----
@@ -1703,10 +1704,11 @@ public String spelReplyTo() {
 
 The expression must evaluate to a `String`, which can be a simple queue name (sent to the default exchange) or with
 the form `exchange/routingKey` as discussed above.
-The expression is evaluated once, during context initialization.
-For dynamic reply routing, the message sender should include a `reply_to` message property.
 
-NOTE: The expression is evaluated once, during initialization.
+NOTE: The `#{...}` expression is evaluated once, during initialization.
+
+For dynamic reply routing, the message sender should include a `reply_to` message property or use the alternate
+runtime SpEL expression described below.
 
 Starting with _version 1.6_, the `@SendTo` can be a SpEL expression that is evaluated at runtime against the request
 and reply:
@@ -1714,14 +1716,14 @@ and reply:
 [source, java]
 ----
 @RabbitListener(queues = "test.sendTo.spel")
-@SendTo("SpEL:'some.reply.queue.with.' + result.queueName")
+@SendTo("!{'some.reply.queue.with.' + result.queueName}")
 public Bar capitalizeWithSendToSpel(Foo foo) {
     return processTheFooAndReturnABar(foo);
 }
 ----
 
-The runtime nature of the SpEL expression is indicated with the `SpEL:` prefix.
-The evaluation context `#root` object for the expression has two properties:
+The runtime nature of the SpEL expression is indicated with the `!{...}` prefix.
+The evaluation context `#root` object for the expression has three properties:
 
 - `request` - the `o.s.amqp.core.Message` request object.
 - `source` - the `o.s.messaging.Message<?>` after conversion.
@@ -1729,6 +1731,11 @@ The evaluation context `#root` object for the expression has two properties:
 
 The context has a map property accessor, a standard type converter and a bean resolver, allowing other beans in the
 context to be referenced (e.g. `@someBeanName.determineReplyQ(request, result)`).
+
+In summary, `#{...}` is evaluated once during initialization, with the `#root` object being the application context;
+beans are referenced by their names.
+`!{...}` is evaluated at runtime for each message with the root object having the properties above and beans are
+referenced with their names, prefixed by `@`.
 
 [[annotation-method-selection]]
 ====== Multi-Method Listeners

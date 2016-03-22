@@ -32,6 +32,10 @@ import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.common.TemplateParserContext;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -50,13 +54,17 @@ import org.springframework.util.Assert;
  */
 public class DelegatingInvocableHandler {
 
+	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+
+	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
+
 	private final List<InvocableHandlerMethod> handlers;
 
 	private final ConcurrentMap<Class<?>, InvocableHandlerMethod> cachedHandlers =
 			new ConcurrentHashMap<Class<?>, InvocableHandlerMethod>();
 
-	private final Map<InvocableHandlerMethod, String> handlerSendTo =
-			new HashMap<InvocableHandlerMethod, String>();
+	private final Map<InvocableHandlerMethod, Expression> handlerSendTo =
+			new HashMap<InvocableHandlerMethod, Expression>();
 
 	private final Object bean;
 
@@ -99,7 +107,7 @@ public class DelegatingInvocableHandler {
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
 		Object result = handler.invoke(message, providedArgs);
 		if (message.getHeaders().get(AmqpHeaders.REPLY_TO) == null) {
-			String replyTo = this.handlerSendTo.get(handler);
+			Expression replyTo = this.handlerSendTo.get(handler);
 			if (replyTo != null) {
 				result = new MessagingMessageListenerAdapter.ResultHolder(result, replyTo);
 			}
@@ -136,7 +144,7 @@ public class DelegatingInvocableHandler {
 			replyTo = extractSendTo(this.getBean().getClass().getSimpleName(), ann);
 		}
 		if (replyTo != null) {
-			this.handlerSendTo.put(handler, replyTo);
+			this.handlerSendTo.put(handler, PARSER.parseExpression(replyTo, PARSER_CONTEXT));
 		}
 	}
 

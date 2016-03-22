@@ -621,13 +621,13 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queues = "test.sendTo.runtimespel")
-		@SendTo("SpEL:'test.sendTo.reply.' + result")
+		@SendTo("!{'test.sendTo.reply.' + result}")
 		public String capitalizeAndSendToSpelRuntime(String foo) {
 			return "runtime" + foo;
 		}
 
 		@RabbitListener(queues = "test.sendTo.runtimespelsource")
-		@SendTo("SpEL:source.headers['amqp_consumerQueue'] + '.reply'")
+		@SendTo("!{source.headers['amqp_consumerQueue'] + '.reply'}")
 		public String capitalizeAndSendToSpelRuntimeSource(String foo) {
 			return "sourceEval";
 		}
@@ -998,7 +998,7 @@ public class EnableRabbitIntegrationTests {
 	static class MultiListenerJsonBean {
 
 		@RabbitHandler
-		@SendTo("SpEL:@sendToRepliesSpELBean")
+		@SendTo("!{@sendToRepliesSpELBean}")
 		public String bar(Bar bar, Message message) {
 			return "BAR: " + bar.field + message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}

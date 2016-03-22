@@ -16,9 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -38,6 +35,8 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.Expression;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
@@ -63,10 +62,10 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
+	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
+
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
-
-	private final ConcurrentMap<String, Expression> responseExpressions = new ConcurrentHashMap<String, Expression>();
 
 	private final StandardEvaluationContext evalContext = new StandardEvaluationContext();
 
@@ -137,8 +136,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @since 1.6
 	 */
 	public void setResponseAddress(String defaultReplyTo) {
-		if (defaultReplyTo.startsWith("SpEL:")) {
-			this.responseExpression = PARSER.parseExpression(defaultReplyTo.substring(5));
+		if (defaultReplyTo.startsWith(PARSER_CONTEXT.getExpressionPrefix())) {
+			this.responseExpression = PARSER.parseExpression(defaultReplyTo, PARSER_CONTEXT);
 		}
 		else {
 			this.responseAddress = new Address(defaultReplyTo);
@@ -365,18 +364,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 				this.responseAddress = new Address(this.responseExchange, this.responseRoutingKey);
 			}
 			if (result instanceof ResultHolder) {
-				ResultHolder rHolder = (ResultHolder) result;
-				if (rHolder.sendTo.startsWith("SpEL:")) {
-					Expression expression = this.responseExpressions.get(rHolder.sendTo);
-					if (expression == null) {
-						expression = PARSER.parseExpression(rHolder.sendTo.substring(5));
-						this.responseExpressions.putIfAbsent(rHolder.sendTo, expression);
-					}
-					replyTo = evaluateReplyTo(request, source, result, expression);
-				}
-				else {
-					replyTo = new Address(rHolder.sendTo);
-				}
+				replyTo = evaluateReplyTo(request, source, result, ((ResultHolder) result).sendTo);
 			}
 			else if (this.responseExpression != null) {
 				replyTo = evaluateReplyTo(request, source, result, this.responseExpression);
@@ -454,9 +442,9 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 		final Object result;
 
-		final String sendTo;
+		final Expression sendTo;
 
-		public ResultHolder(Object result, String sendTo) {
+		public ResultHolder(Object result, Expression sendTo) {
 			this.result = result;
 			this.sendTo = sendTo;
 		}
