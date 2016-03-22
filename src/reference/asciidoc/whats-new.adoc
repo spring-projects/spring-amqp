@@ -119,11 +119,19 @@ See <<broker-configuration>> for more information.
 
 ===== @RabbitListener Changes
 
+====== Multiple Containers per Bean
+
 When using Java 8 or later, it is now possible to add multiple `@RabbitListener` annotations to `@Bean` classes or
 their methods.
 When using Java 7 or earlier, you can use the `@RabbitListeners` container annotation to provide the same
 functionality.
 See <<repeatable-rabbit-listener>> for more information.
+
+====== @SendTo SpEL Expressions
+
+`@SendTo` for routing replies with no `replyTo` property can now be SpEL expressions evaluated against the
+request/reply.
+See <<async-annotation-driven-reply>> for more information.
 
 ===== Delayed Message Exchange
 

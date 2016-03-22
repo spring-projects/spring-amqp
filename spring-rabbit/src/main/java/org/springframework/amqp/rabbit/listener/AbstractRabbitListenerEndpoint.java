@@ -32,6 +32,8 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.expression.BeanFactoryResolver;
+import org.springframework.expression.BeanResolver;
 import org.springframework.util.Assert;
 
 /**
@@ -63,8 +65,9 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private BeanExpressionContext expressionContext;
 
-	private String group;
+	private BeanResolver beanResolver;
 
+	private String group;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -73,6 +76,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
 			this.expressionContext = new BeanExpressionContext((ConfigurableListableBeanFactory) beanFactory, null);
 		}
+		this.beanResolver = new BeanFactoryResolver(beanFactory);
 	}
 
 	protected BeanFactory getBeanFactory() {
@@ -81,6 +85,10 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	protected BeanExpressionResolver getResolver() {
 		return this.resolver;
+	}
+
+	protected BeanResolver getBeanResolver() {
+		return this.beanResolver;
 	}
 
 	protected BeanExpressionContext getBeanExpressionContext() {
