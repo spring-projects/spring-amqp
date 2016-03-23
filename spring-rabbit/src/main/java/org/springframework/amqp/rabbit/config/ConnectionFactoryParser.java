@@ -61,6 +61,10 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String THREAD_FACTORY = "thread-factory";
 
+	private static final String FACTORY_TIMEOUT = "factory-timeout";
+
+	private static final String CONNECTION_LIMIT = "connection-limit";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return CachingConnectionFactory.class;
@@ -100,6 +104,8 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CACHE_MODE);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_CACHE_SIZE_ATTRIBUTE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, THREAD_FACTORY, "connectionThreadFactory");
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, FACTORY_TIMEOUT, "channelCheckoutTimeout");
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_LIMIT);
 
 	}
 

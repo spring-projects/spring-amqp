@@ -1310,6 +1310,7 @@
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
 	Cache size for channels.  More channels can be used by clients, but in excess of this number they will not be cached.
+	Also see 'factory-timeout'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1374,7 +1375,7 @@
 					<xsd:documentation><![CDATA[
 	When 'CHANNEL', channels are cached within a single connection (default); when 'CONNECTION',
 	connections and their channels are cached. CONNECTION might be suitable for a listener
-	container.
+	container. Also see 'factory-timeout'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 				<xsd:simpleType>
@@ -1386,6 +1387,28 @@
 					<xsd:documentation><![CDATA[
 	The size of the cache when cache-mode is 'CONNECTION'.
 	More connections can be used by clients, but in excess of this number they will not be cached.
+	This represents the maximum number of open, idle, connections.
+	'channel-cache-size' channels are allowed within each connection.
+	Also see 'factory-timeout'.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="factory-timeout" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When set to a value other than zero (the default), it turns the cache into a bounded cache instead of allowing
+	unlimited channels (see 'channel-cache-size'). In addition, this timeout is used to obtain a connection if a
+	'connection-limit' has been set and all are in use. This attribute sets the 'channelCheckoutTimeout' on the
+	'CachingConnectionFactory'. Unit: milliseconds.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-limit" use="optional">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The maximum number of connections allowed when cache-mode is 'CONNECTION'.
+	When the limit is reached, threads requesting a connection will wait for up to 'factory-timeout'
+	to get a connection, otherwise an exception is thrown. Default is infinity.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>

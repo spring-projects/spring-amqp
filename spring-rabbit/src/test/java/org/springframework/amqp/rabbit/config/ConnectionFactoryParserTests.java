@@ -66,6 +66,8 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(123, TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.requestedHeartbeat"));
 		assertEquals(789,  TestUtils.getPropertyValue(connectionFactory, "rabbitConnectionFactory.connectionTimeout"));
 		assertEquals(CachingConnectionFactory.CacheMode.CHANNEL, connectionFactory.getCacheMode());
+		assertEquals(234L, TestUtils.getPropertyValue(connectionFactory, "channelCheckoutTimeout"));
+		assertEquals(456,  TestUtils.getPropertyValue(connectionFactory, "connectionLimit"));
 	}
 
 	@Test
