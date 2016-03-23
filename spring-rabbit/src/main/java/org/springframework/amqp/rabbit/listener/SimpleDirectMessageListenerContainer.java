@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
@@ -21,12 +22,10 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -44,8 +43,8 @@ import com.rabbitmq.client.Envelope;
  * listener directly on the rabbit client consumer thread. There is no txSize property -
  * each message is acked (or nacked) individually.
  * <p>
- * This should be considered experimental at this time; a fully-functional listener container
- * based on this is planned for the 2.0 release.
+ * This should be considered experimental at this time; a fully-functional listener
+ * container based on this is planned for the 2.0 release.
  * <p>
  * TODO: declare queues; advice chain; error handler; AmqpRejectAndDontRequeueException;
  * listener container factory; ...
@@ -125,14 +124,14 @@ public class SimpleDirectMessageListenerContainer extends AbstractMessageListene
 			public void run() {
 				while (!initialized) {
 					try {
-						for (int i = 0; i < consumersPerQueue; i++) {
+						for (int i = 0; i < SimpleDirectMessageListenerContainer.this.consumersPerQueue; i++) {
 							for (String queue : getQueueNames()) {
 								Connection connection = getConnectionFactory().createConnection();
 								Channel channel = connection.createChannel(false);
-								channel.basicQos(prefetch);
+								channel.basicQos(SimpleDirectMessageListenerContainer.this.prefetch);
 								RabbitUtils.setPhysicalCloseRequired(true);
 								SimpleConsumer consumer = new SimpleConsumer(channel, queue);
-								consumers.add(consumer);
+								SimpleDirectMessageListenerContainer.this.consumers.add(consumer);
 								channel.basicConsume(queue, consumer);
 							}
 						}
@@ -177,42 +176,36 @@ public class SimpleDirectMessageListenerContainer extends AbstractMessageListene
 
 		private final String queue;
 
-		public SimpleConsumer(Channel channel, String queue) {
+		private final boolean ackRequired;
+
+		private SimpleConsumer(Channel channel, String queue) {
 			super(channel);
 			this.queue = queue;
+			this.ackRequired = !getAcknowledgeMode().isAutoAck() && !getAcknowledgeMode().isManual();
 		}
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope,
 				BasicProperties properties, byte[] body) throws IOException {
-			MessageProperties messageProperties = messagePropertiesConverter.toMessageProperties(
-					properties, envelope, "UTF-8");
+			MessageProperties messageProperties = SimpleDirectMessageListenerContainer.this.messagePropertiesConverter
+					.toMessageProperties(properties, envelope, "UTF-8");
 			messageProperties.setMessageCount(0);
 			messageProperties.setConsumerTag(consumerTag);
-			messageProperties.setConsumerQueue(queue);
+			messageProperties.setConsumerQueue(this.queue);
 			Message message = new Message(body, messageProperties);
 			try {
-				invokeListener(message, getChannel());
-				getChannel().basicAck(envelope.getDeliveryTag(), false);
+				invokeListener(getChannel(), message);
+				if (this.ackRequired) {
+					getChannel().basicAck(envelope.getDeliveryTag(), false);
+				}
 			}
 			catch (Exception e) {
-				getChannel().basicNack(envelope.getDeliveryTag(), false, requeueRejected);
+				if (this.ackRequired) {
+					getChannel().basicNack(envelope.getDeliveryTag(), false,
+							SimpleDirectMessageListenerContainer.this.requeueRejected);
+				}
 			}
 		}
-
-		private void invokeListener(Message message, Channel channel) throws Exception {
-			Object messageListener = getMessageListener();
-			if (messageListener instanceof ChannelAwareMessageListener) {
-				((ChannelAwareMessageListener) messageListener).onMessage(message, channel);
-			}
-			else if (messageListener instanceof MessageListener) {
-					((MessageListener) messageListener).onMessage(message);
-			}
-			else {
-				throw new IllegalStateException();
-			}
-		}
-
 	}
 
 }
