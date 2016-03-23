@@ -330,7 +330,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		class MockChannel extends PublisherCallbackChannelImpl {
 
-			public MockChannel(Channel delegate) {
+			MockChannel(Channel delegate) {
 				super(delegate);
 			}
 
@@ -382,7 +382,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		class MockChannel extends PublisherCallbackChannelImpl {
 
-			public MockChannel(Channel delegate) {
+			MockChannel(Channel delegate) {
 				super(delegate);
 			}
 

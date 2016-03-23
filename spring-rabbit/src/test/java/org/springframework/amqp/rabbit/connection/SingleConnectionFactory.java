@@ -168,7 +168,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 
 		private volatile Connection target;
 
-		public SharedConnectionProxy(Connection target) {
+		SharedConnectionProxy(Connection target) {
 			this.target = target;
 		}
 

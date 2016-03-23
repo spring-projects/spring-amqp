@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -510,7 +510,7 @@ public class EnableRabbitIntegrationTests {
 	public interface MyServiceInterface {
 
 		@RabbitListener(queues = "test.inheritance")
-		public String testAnnotationInheritance(String foo);
+		String testAnnotationInheritance(String foo);
 
 	}
 
@@ -527,7 +527,7 @@ public class EnableRabbitIntegrationTests {
 	public interface MyServiceInterface2 {
 
 		@RabbitHandler
-		public String testAnnotationInheritance(String foo);
+		String testAnnotationInheritance(String foo);
 
 	}
 

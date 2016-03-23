@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.JavaType;
  */
 public interface Jackson2JavaTypeMapper extends ClassMapper {
 
-	public enum TypePrecedence {
+	enum TypePrecedence {
 		INFERRED, TYPE_ID
 	}
 

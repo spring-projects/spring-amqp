@@ -366,7 +366,7 @@ public class RabbitAdminTests {
 
 		private final List<DeclarationExceptionEvent> events;
 
-		public EventPublisher(List<DeclarationExceptionEvent> events) {
+		EventPublisher(List<DeclarationExceptionEvent> events) {
 			this.events = events;
 		}
 

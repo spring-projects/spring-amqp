@@ -276,7 +276,7 @@ public class RetryInterceptorBuilderSupportTests {
 	}
 
 
-	static interface Foo {
+	interface Foo {
 
 		void onMessage(String s, Message message);
 	}

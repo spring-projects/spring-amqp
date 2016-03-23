@@ -170,7 +170,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 		private final CountDownLatch latch;
 
-		public PojoListener(CountDownLatch latch) {
+		PojoListener(CountDownLatch latch) {
 			this.latch = latch;
 		}
 
