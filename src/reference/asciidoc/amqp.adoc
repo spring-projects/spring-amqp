@@ -2345,7 +2345,12 @@ However, a single reply queue can be configured on the template, which can be mo
 and also allows you to set arguments on that queue.
 In this case, however, you must also provide a <reply-listener/> sub element.
 This element provides a listener container for the reply queue, with the template being the listener.
-All of the <<containerAttributes>> attributes allowed on a <listener-container/> are allowed on the element, except for connection-factory and message-converter, which are inherited from the template's configuration.
+All of the <<containerAttributes>> attributes allowed on a <listener-container/> are allowed on the element, except for
+connection-factory and message-converter, which are inherited from the template's configuration.
+
+IMPORTANT: If you run multiple instances of your application or use multiple `RabbitTemplate` s, you *MUST* use a
+unique reply queue for each - RabbitMQ has no capability to select messages from a queue so, if they all use the same
+queue, each instance would compete for replies and not necessarily receive their own.
 
 [source,xml]
 ----
@@ -2359,9 +2364,11 @@ All of the <<containerAttributes>> attributes allowed on a <listener-container/>
 
 While the container and template share a connection factory, they do not share a channel and therefore requests and replies are not performed within the same transaction (if transactional).
 
-NOTE: Prior to _version 1.5.0_, the `reply-address` attribute was not available, replies were always routed using the default exchange and the `reply-queue` name as the routing key.
+NOTE: Prior to _version 1.5.0_, the `reply-address` attribute was not available, replies were always routed using the
+default exchange and the `reply-queue` name as the routing key.
 This is still the default but you can now specify the new `reply-address` attribute.
-The `reply-address` can contain an address with the form `<exchange>/<routingKey>` and the reply will be routed to the specified *exchange* and routed to a queue bound with the *routing key*.
+The `reply-address` can contain an address with the form `<exchange>/<routingKey>` and the reply will be routed to the
+specified *exchange* and routed to a queue bound with the *routing key*.
 The `reply-address` has precedence over `reply-queue`. The `<reply-listener>` must be configured as a separate
 `<listener-container>` component, when only `reply-address` is in use, anyway `reply-address` and `reply-queue`
 (or `queues` attribute on the `<listener-container>`) must refer to the same queue logically.
