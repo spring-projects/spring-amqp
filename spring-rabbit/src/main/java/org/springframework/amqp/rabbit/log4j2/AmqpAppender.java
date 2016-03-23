@@ -449,7 +449,7 @@ public class AmqpAppender extends AbstractAppender {
 			super(name);
 		}
 
-		private final void activateOptions() {
+		private void activateOptions() {
 			this.routingKeyLayout = PatternLayout.createLayout(this.routingKeyPattern
 					.replaceAll("%X\\{applicationId\\}", this.applicationId),
 					null, null, null, Charset.forName(this.charset), false, true, null, null);

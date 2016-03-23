@@ -101,7 +101,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		LOW(1), HIGH(5);
 		private final int value;
 
-		private Concurrency(int value) {
+		Concurrency(int value) {
 			this.value = value;
 		}
 
@@ -114,7 +114,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		LOW(1), MEDIUM(20), HIGH(500);
 		private final int value;
 
-		private MessageCount(int value) {
+		MessageCount(int value) {
 			this.value = value;
 		}
 

@@ -249,7 +249,7 @@ public class RabbitTemplateIntegrationTests {
 
 		class MockChannel extends PublisherCallbackChannelImpl {
 
-			public MockChannel(Channel delegate) {
+			MockChannel(Channel delegate) {
 				super(delegate);
 			}
 
@@ -1594,7 +1594,7 @@ public class RabbitTemplateIntegrationTests {
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
 
-		public PlannedException() {
+		PlannedException() {
 			super("Planned");
 		}
 	}

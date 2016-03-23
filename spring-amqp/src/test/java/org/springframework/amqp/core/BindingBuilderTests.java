@@ -54,7 +54,7 @@ public class BindingBuilderTests {
 	@Test
 	public void customBinding() {
 		class CustomExchange extends AbstractExchange {
-			public CustomExchange(String name) {
+			CustomExchange(String name) {
 				super(name);
 			}
 

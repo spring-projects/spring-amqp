@@ -139,7 +139,7 @@ public class MessageListenerAdapterTests {
 		assertEquals("handle", this.simpleService.called);
 	}
 
-	public static interface Service {
+	public interface Service {
 
 		String handle(String input);
 

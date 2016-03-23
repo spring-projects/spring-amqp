@@ -153,7 +153,7 @@ public class RabbitTransactionManagerIntegrationTests {
 
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
-		public PlannedException() {
+		PlannedException() {
 			super("Planned");
 		}
 	}
