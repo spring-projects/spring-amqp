@@ -1799,6 +1799,55 @@ In this case, a separate listener container is created for each annotation, each
 Repeatable annotations can be used with Java 8 or above; when using Java 7 or earlier, the same effect can be achieved
 by using the `@RabbitListeners` "container" annotation, with an array of `@RabbitListener` annotations.
 
+====== Proxy @RabbitListener
+
+If your service is intended to be proxied (e.g. in case of `@Transactional`) you should follow with the rule, when
+at least parameter annotations must be present on the interface method.
+It is by default with the JDK Dynamic proxy.
+However with the generic interface and its particular implementation, e.g.:
+
+[source, java]
+----
+interface TxService<P> {
+
+   String handle(P payload, String header);
+
+}
+
+static class TxServiceImpl implements TxService<Foo> {
+
+    @Override
+    public String handle(Foo foo, String rk) {
+         ...
+    }
+
+}
+----
+
+you are forced to switch to the CGLIB target class proxy.
+For example in case of transaction management it is
+an annotation option - `@EnableTransactionManagement(proxyTargetClass = true)`,
+because it isn't possible to determine the interface method to infer parameters.
+And in this case all annotations have to move to the target method in the implementation:
+
+[source, java]
+----
+static class TxServiceImpl implements TxService<Foo> {
+
+    @Override
+    @Transactional
+    @RabbitListener(bindings = @QueueBinding(
+    		value = @Queue(),
+    		exchange = @Exchange(value = "auto.exch.test", autoDelete = "true"),
+    		key = "auto.rk.test")
+    )
+    public String handle(@Payload Foo foo, @Header("amqp_receivedRoutingKey") String rk) {
+        ...
+    }
+
+}
+----
+
 
 ====== Container Management
 
