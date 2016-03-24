@@ -235,7 +235,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					}
 				}
 			}
-		});
+		}, ReflectionUtils.USER_DECLARED_METHODS);
 		if (classLevelListener != null) {
 			processMultiMethodListener(classLevelListener, multiMethods, bean, beanName);
 		}
