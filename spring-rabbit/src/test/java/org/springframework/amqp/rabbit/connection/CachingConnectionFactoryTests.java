@@ -483,6 +483,58 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
+	public void testReleaseWithForcedPhysicalClose() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1);
+		when(mockConnection1.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection1.isOpen()).thenReturn(true);
+
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con = ccf.createConnection();
+
+		Channel channel1 = con.createChannel(false);
+		assertEquals(0,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+		channel1.close();
+		con.close();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		channel1 = con.createChannel(false);
+		RabbitUtils.setPhysicalCloseRequired(true);
+		assertEquals(0,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		channel1.close();
+		RabbitUtils.setPhysicalCloseRequired(false);
+		con.close();
+		verify(mockConnection1, never()).close();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		ccf.destroy();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+	}
+
+	@Test
 	public void testCacheSizeExceededAfterClose() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
