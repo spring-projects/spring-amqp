@@ -46,6 +46,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -335,7 +336,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		testCheckoutsWithRefreshedConnectionGuts(CacheMode.CONNECTION);
 	}
 
-	public void testCheckoutsWithRefreshedConnectionGuts(CacheMode mode) throws Exception {
+	private void testCheckoutsWithRefreshedConnectionGuts(CacheMode mode) throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
@@ -381,8 +382,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Connection con = ccf.createConnection();
 
 		Channel channel1 = con.createChannel(false);
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 		channel1.close();
 		con.close();
+
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 
 		when(mockConnection1.isOpen()).thenReturn(false);
 		when(mockChannel1.isOpen()).thenReturn(false);
@@ -403,7 +411,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		verify(mockConnection2, never()).close();
 
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
 		ccf.destroy();
+
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 
 	}
 
@@ -461,6 +477,105 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		verify(mockChannel1, never()).close();
 
 		ccf.destroy();
+	}
+
+	@Test
+	public void testReleaseWithForcedPhysicalClose() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1);
+		when(mockConnection1.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection1.isOpen()).thenReturn(true);
+
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con = ccf.createConnection();
+
+		Channel channel1 = con.createChannel(false);
+		assertEquals(0,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+		channel1.close();
+		con.close();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		channel1 = con.createChannel(false);
+		RabbitUtils.setPhysicalCloseRequired(true);
+		assertEquals(0,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		channel1.close();
+		RabbitUtils.setPhysicalCloseRequired(false);
+		con.close();
+		verify(mockChannel1).close();
+		verify(mockConnection1, never()).close();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		ccf.destroy();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+	}
+
+	@Test
+	public void testDoubleLogicalClose() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1);
+		when(mockConnection1.createChannel()).thenReturn(mockChannel1);
+		when(mockConnection1.isOpen()).thenReturn(true);
+
+		when(mockChannel1.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con = ccf.createConnection();
+
+		Channel channel1 = con.createChannel(false);
+		assertEquals(0,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+		channel1.close();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		channel1.close(); // double close of proxy
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
+		con.close();
+		verify(mockChannel1, never()).close();
+		verify(mockConnection1, never()).close();
+
+		ccf.destroy();
+
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
 	}
 
 	@Test
