@@ -49,6 +49,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -338,7 +339,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		testCheckoutsWithRefreshedConnectionGuts(CacheMode.CONNECTION);
 	}
 
-	public void testCheckoutsWithRefreshedConnectionGuts(CacheMode mode) throws Exception {
+	private void testCheckoutsWithRefreshedConnectionGuts(CacheMode mode) throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
@@ -384,8 +385,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Connection con = ccf.createConnection();
 
 		Channel channel1 = con.createChannel(false);
+		assertEquals(1,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 		channel1.close();
 		con.close();
+
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 
 		when(mockConnection1.isOpen()).thenReturn(false);
 		when(mockChannel1.isOpen()).thenReturn(false);
@@ -406,7 +414,15 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		verify(mockConnection2, never()).close();
 
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
+
 		ccf.destroy();
+
+		assertEquals(2,
+				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
+					.availablePermits());
 
 	}
 
@@ -635,7 +651,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		// After destroy we can get a new connection
 		Connection con1 = ccf.createConnection();
-		assertNotSame(con, targetDelegate(con1));
+		assertNotSame(conDelegate, targetDelegate(con1));
 
 		// This will return a proxy that surpresses calls to close
 		Channel channel3 = con.createChannel(false);

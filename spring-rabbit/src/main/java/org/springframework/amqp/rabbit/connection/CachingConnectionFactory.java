@@ -886,7 +886,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 				// If we get here, we're supposed to shut down.
 				physicalClose();
-				releasePermit();
+				/*
+				 *  Only release a permit if this is a normal close; if the channel is
+				 *  in the list, it means we're closing a cached channel (for which a permit
+				 *  has already been released).
+				 */
+				if (!this.channelList.contains(proxy)) {
+					releasePermit();
+				}
 				return null;
 			}
 			else if (methodName.equals("getTargetChannel")) {
@@ -937,8 +944,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				Semaphore checkoutPermits = CachingConnectionFactory.this.checkoutPermits.get(this.theConnection);
 				if (checkoutPermits != null) {
 					checkoutPermits.release();
-					logger.error("Released permit for " + this.theConnection + ", remaining:"
+					if (logger.isDebugEnabled()) {
+						logger.debug("Released permit for " + this.theConnection + ", remaining:"
 							+ checkoutPermits.availablePermits());
+					}
 				}
 				else {
 					logger.error("LEAKAGE: No permits map entry for " + this.theConnection);
