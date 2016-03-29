@@ -876,9 +876,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						if (!RabbitUtils.isPhysicalCloseRequired() &&
 								(this.channelList.size() < getChannelCacheSize()
 										|| this.channelList.contains(proxy))) {
+							releasePermitIfNecessary(proxy);
 							logicalClose((ChannelProxy) proxy);
-							// Remain open in the channel list.
-							releasePermit();
 							return null;
 						}
 					}
@@ -886,14 +885,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 				// If we get here, we're supposed to shut down.
 				physicalClose();
-				/*
-				 *  Only release a permit if this is a normal close; if the channel is
-				 *  in the list, it means we're closing a cached channel (for which a permit
-				 *  has already been released).
-				 */
-				if (!this.channelList.contains(proxy)) {
-					releasePermit();
-				}
+				releasePermitIfNecessary(proxy);
 				return null;
 			}
 			else if (methodName.equals("getTargetChannel")) {
@@ -939,8 +931,18 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void releasePermit() {
+		private void releasePermitIfNecessary(Object proxy) {
 			if (CachingConnectionFactory.this.channelCheckoutTimeout > 0) {
+				/*
+				 *  Only release a permit if this is a normal close; if the channel is
+				 *  in the list, it means we're closing a cached channel (for which a permit
+				 *  has already been released).
+				 */
+				synchronized(this.channelList) {
+					if (this.channelList.contains(proxy)) {
+						return;
+					}
+				}
 				Semaphore checkoutPermits = CachingConnectionFactory.this.checkoutPermits.get(this.theConnection);
 				if (checkoutPermits != null) {
 					checkoutPermits.release();
