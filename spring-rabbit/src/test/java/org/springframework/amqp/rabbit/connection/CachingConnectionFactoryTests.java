@@ -520,6 +520,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel1.close();
 		RabbitUtils.setPhysicalCloseRequired(false);
 		con.close();
+		verify(mockChannel1).close();
 		verify(mockConnection1, never()).close();
 
 		assertEquals(1,
