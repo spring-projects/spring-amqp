@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -61,7 +62,9 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
+import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -169,6 +172,9 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private ListenerInterceptor interceptor;
 
+	@Autowired
+	private RabbitListenerEndpointRegistry registry;
+
 	/**
 	 * Defer queue deletion until after the context has been stopped by the
 	 * {@link DirtiesContext}.
@@ -210,6 +216,16 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoDeclareAnon() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.rk", "foo"));
+	}
+
+	@Test
+	public void autoStart() {
+		MessageListenerContainer listenerContainer = this.registry.getListenerContainer("notStarted");
+		assertNotNull(listenerContainer);
+		assertFalse(listenerContainer.isRunning());
+		this.registry.start();
+		assertTrue(listenerContainer.isRunning());
+		listenerContainer.stop();
 	}
 
 	@Test
@@ -647,6 +663,15 @@ public class EnableRabbitIntegrationTests {
 			latch.countDown();
 		}
 
+		@RabbitListener(id="notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
+			bindings = @QueueBinding(
+				value = @Queue(autoDelete = "true", exclusive="true", durable="true"),
+				exchange = @Exchange(value = "auto.start", autoDelete = "true"),
+				key = "auto.start")
+		)
+		public void handleWithAutoStartFalse(String foo) {
+		}
+
 	}
 
 	public static class Foo1 {
@@ -792,6 +817,15 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setReceiveTimeout(10L);
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitAutoStartFalseListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setReceiveTimeout(10L);
+			factory.setAutoStartup(false);
 			return factory;
 		}
 
