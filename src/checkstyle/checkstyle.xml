@@ -45,8 +45,8 @@
 		<module name="InterfaceIsType" />
 		<module name="HideUtilityClassConstructor" />
 <!-- 		<module name="MutableException" /> -->
-<!-- 		<module name="InnerTypeLast" /> -->
-<!-- 		<module name="OneTopLevelClass" /> -->
+		<module name="InnerTypeLast" />
+		<module name="OneTopLevelClass" />
 
 		<!-- Coding -->
 <!-- 		<module name="CovariantEquals" /> -->

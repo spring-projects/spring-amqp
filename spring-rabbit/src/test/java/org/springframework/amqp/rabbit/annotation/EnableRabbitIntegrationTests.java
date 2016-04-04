@@ -175,25 +175,6 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private RabbitListenerEndpointRegistry registry;
 
-	/**
-	 * Defer queue deletion until after the context has been stopped by the
-	 * {@link DirtiesContext}.
-	 *
-	 */
-	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
-
-		@Override
-		public void afterTestClass(TestContext testContext) throws Exception {
-			brokerRunning.removeTestQueues();
-		}
-
-		@Override
-		public int getOrder() {
-			return Ordered.HIGHEST_PRECEDENCE;
-		}
-
-	}
-
 	@Test
 	public void autoDeclare() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
@@ -1246,6 +1227,25 @@ public class EnableRabbitIntegrationTests {
 		public String messagingMessage(@SuppressWarnings("rawtypes") org.springframework.messaging.Message message,
 				@Header(value = "", required = false) Integer h) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
+		}
+
+	}
+
+	/**
+	 * Defer queue deletion until after the context has been stopped by the
+	 * {@link DirtiesContext}.
+	 *
+	 */
+	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
+
+		@Override
+		public void afterTestClass(TestContext testContext) throws Exception {
+			brokerRunning.removeTestQueues();
+		}
+
+		@Override
+		public int getOrder() {
+			return Ordered.HIGHEST_PRECEDENCE;
 		}
 
 	}

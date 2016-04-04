@@ -852,6 +852,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * @param e The Exception.
+	 * @param message The failed message.
+	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
+	 * {@link ListenerExecutionFailedException} and return.
+	 */
+	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
+		if (!(e instanceof ListenerExecutionFailedException)) {
+			// Wrap exception to ListenerExecutionFailedException.
+			return new ListenerExecutionFailedException("Listener threw exception", e, message);
+		}
+		return e;
+	}
+
+	/**
 	 * Exception that indicates that the initial setup of this container's shared Rabbit Connection failed. This is
 	 * indicating to invokers that they need to establish the shared Connection themselves on first access.
 	 */
@@ -867,17 +881,4 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	/**
-	 * @param e The Exception.
-	 * @param message The failed message.
-	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
-	 * {@link ListenerExecutionFailedException} and return.
-	 */
-	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
-		if (!(e instanceof ListenerExecutionFailedException)) {
-			// Wrap exception to ListenerExecutionFailedException.
-			return new ListenerExecutionFailedException("Listener threw exception", e, message);
-		}
-		return e;
-	}
 }

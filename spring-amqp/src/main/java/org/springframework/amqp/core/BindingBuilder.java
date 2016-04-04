@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 public final class BindingBuilder {
 
@@ -42,6 +43,14 @@ public final class BindingBuilder {
 
 	public static DestinationConfigurer bind(Exchange exchange) {
 		return new DestinationConfigurer(exchange.getName(), DestinationType.EXCHANGE);
+	}
+
+	private static Map<String, Object> createMapForKeys(String... keys) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (String key : keys) {
+			map.put(key, null);
+		}
+		return map;
 	}
 
 	public static final class DestinationConfigurer {
@@ -252,14 +261,6 @@ public final class BindingBuilder {
 			return new Binding(destination.name, destination.type, exchange, destination.name,
 					Collections.<String, Object> emptyMap());
 		}
-	}
-
-	private static Map<String, Object> createMapForKeys(String... keys) {
-		Map<String, Object> map = new HashMap<String, Object>();
-		for (String key : keys) {
-			map.put(key, null);
-		}
-		return map;
 	}
 
 }

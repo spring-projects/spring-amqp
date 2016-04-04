@@ -183,10 +183,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile ApplicationEventPublisher applicationEventPublisher;
 
-	public interface ContainerDelegate {
-		void invokeListener(Channel channel, Message message) throws Exception;
-	}
-
 	private final ContainerDelegate delegate = new ContainerDelegate() {
 		@Override
 		public void invokeListener(Channel channel, Message message) throws Exception {
@@ -1197,12 +1193,56 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
+	protected void invokeListener(Channel channel, Message message) throws Exception {
+		this.proxy.invokeListener(channel, message);
+	}
+
+	/**
+	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval}
+	 * or {@link #setRecoveryBackOff(BackOff)} to give the container a
+	 * chance to recover from consumer startup failure, e.g. if the broker is down.
+	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
+	 * @throws Exception if the shared connection still can't be established
+	 */
+	protected void handleStartupFailure(BackOffExecution backOffExecution) throws Exception {
+		long recoveryInterval = backOffExecution.nextBackOff();
+		if (BackOffExecution.STOP == recoveryInterval) {
+			synchronized (this) {
+				if (isActive()) {
+					logger.warn("stopping container - restart recovery attempts exhausted");
+					stop();
+				}
+			}
+			return;
+		}
+		try {
+			if (logger.isDebugEnabled() && isActive()) {
+				logger.debug("Recovering consumer in " + recoveryInterval + " ms.");
+			}
+			long timeout = System.currentTimeMillis() + recoveryInterval;
+			while (isActive() && System.currentTimeMillis() < timeout) {
+				Thread.sleep(200);
+			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
+		}
+	}
+
+	@Override
 	public String toString() {
 		return "SimpleMessageListenerContainer "
 				+ (getBeanName() != null ? "(" + getBeanName() + ") " : "")
 				+ "[concurrentConsumers=" + this.concurrentConsumers
 				+ (this.maxConcurrentConsumers != null ? ", maxConcurrentConsumers=" + this.maxConcurrentConsumers : "")
 				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
+	}
+
+	public interface ContainerDelegate {
+
+		void invokeListener(Channel channel, Message message) throws Exception;
+
 	}
 
 	private final class AsyncMessageProcessingConsumer implements Runnable {
@@ -1456,44 +1496,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-	}
-
-	@Override
-	protected void invokeListener(Channel channel, Message message) throws Exception {
-		this.proxy.invokeListener(channel, message);
-	}
-
-	/**
-	 * Wait for a period determined by the {@link #setRecoveryInterval(long) recoveryInterval}
-	 * or {@link #setRecoveryBackOff(BackOff)} to give the container a
-	 * chance to recover from consumer startup failure, e.g. if the broker is down.
-	 * @param backOffExecution the BackOffExecution to get the {@code recoveryInterval}
-	 * @throws Exception if the shared connection still can't be established
-	 */
-	protected void handleStartupFailure(BackOffExecution backOffExecution) throws Exception {
-		long recoveryInterval = backOffExecution.nextBackOff();
-		if (BackOffExecution.STOP == recoveryInterval) {
-			synchronized (this) {
-				if (isActive()) {
-					logger.warn("stopping container - restart recovery attempts exhausted");
-					stop();
-				}
-			}
-			return;
-		}
-		try {
-			if (logger.isDebugEnabled() && isActive()) {
-				logger.debug("Recovering consumer in " + recoveryInterval + " ms.");
-			}
-			long timeout = System.currentTimeMillis() + recoveryInterval;
-			while (isActive() && System.currentTimeMillis() < timeout) {
-				Thread.sleep(200);
-			}
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Unrecoverable interruption on consumer restart");
-		}
 	}
 
 	@SuppressWarnings("serial")
