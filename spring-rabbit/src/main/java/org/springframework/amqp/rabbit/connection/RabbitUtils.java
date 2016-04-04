@@ -53,7 +53,8 @@ public abstract class RabbitUtils {
 		if (connection != null) {
 			try {
 				connection.close();
-			} catch (Exception ex) {
+			}
+			catch (Exception ex) {
 				logger.debug("Ignoring Connection exception - assuming already closed: " + ex.getMessage(), ex);
 			}
 		}
@@ -91,7 +92,8 @@ public abstract class RabbitUtils {
 		Assert.notNull(channel, "Channel must not be null");
 		try {
 			channel.txCommit();
-		} catch (IOException ex) {
+		}
+		catch (IOException ex) {
 			throw new AmqpIOException(ex);
 		}
 	}
@@ -100,7 +102,8 @@ public abstract class RabbitUtils {
 		Assert.notNull(channel, "Channel must not be null");
 		try {
 			channel.txRollback();
-		} catch (IOException ex) {
+		}
+		catch (IOException ex) {
 			throw new AmqpIOException(ex);
 		}
 	}
@@ -124,7 +127,8 @@ public abstract class RabbitUtils {
 			 * If not transactional then we are auto-acking (at least as of 1.0.0.M2) so there is nothing to recover.
 			 * Messages are going to be lost in general.
 			 */
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
 	}
@@ -137,7 +141,8 @@ public abstract class RabbitUtils {
 	public static void declareTransactional(Channel channel) {
 		try {
 			channel.txSelect();
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}

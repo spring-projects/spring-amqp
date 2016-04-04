@@ -64,7 +64,8 @@ public final class SerializationUtils {
 		}
 		try {
 			return deserialize(new ObjectInputStream(new ByteArrayInputStream(bytes)));
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new IllegalArgumentException("Could not deserialize object", e);
 		}
 	}

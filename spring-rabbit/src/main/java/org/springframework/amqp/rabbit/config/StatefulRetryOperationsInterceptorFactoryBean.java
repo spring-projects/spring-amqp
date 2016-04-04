@@ -93,7 +93,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				Message message = (Message) args[1];
 				if (messageRecoverer == null) {
 					logger.warn("Message dropped on recovery: " + message, cause);
-				} else {
+				}
+				else {
 					messageRecoverer.recover(message, cause);
 				}
 				// This is actually a normal outcome. It means the recovery was successful, but we don't want to consume

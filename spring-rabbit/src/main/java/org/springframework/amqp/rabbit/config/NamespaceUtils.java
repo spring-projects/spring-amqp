@@ -143,7 +143,8 @@ public abstract class NamespaceUtils {
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgValue(new TypedStringValue(value));
-		} else {
+		}
+		else {
 			builder.addConstructorArgValue(defaultValue);
 		}
 	}

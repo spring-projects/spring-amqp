@@ -156,7 +156,8 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 				txObject.getResourceHolder().setTimeoutInSeconds(timeout);
 			}
 			TransactionSynchronizationManager.bindResource(getConnectionFactory(), txObject.getResourceHolder());
-		} catch (AmqpException ex) {
+		}
+		catch (AmqpException ex) {
 			if (resourceHolder != null) {
 				ConnectionFactoryUtils.releaseResources(resourceHolder);
 			}

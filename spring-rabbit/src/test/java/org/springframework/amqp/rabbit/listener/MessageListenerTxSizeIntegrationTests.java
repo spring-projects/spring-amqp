@@ -166,7 +166,8 @@ public class MessageListenerTxSizeIntegrationTests {
 				logger.debug("Received: " + value);
 				if (count.get()==null) {
 					count.set(1);
-				} else {
+				}
+				else {
 					count.set(count.get()+1);
 				}
 				if (count.get()==txSize && fail) {
@@ -174,7 +175,8 @@ public class MessageListenerTxSizeIntegrationTests {
 					count.set(0);
 					throw new RuntimeException("Planned");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

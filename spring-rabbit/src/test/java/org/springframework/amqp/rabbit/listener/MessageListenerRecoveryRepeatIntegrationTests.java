@@ -189,7 +189,8 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 				// channel.abort();
 				// throw new RuntimeException("Planned");
 				throw new FatalListenerExecutionException("Planned");
-			} else {
+			}
+			else {
 				latch.countDown();
 			}
 		}

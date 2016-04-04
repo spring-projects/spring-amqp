@@ -74,7 +74,8 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		if (this.destinationQueue != null) {
 			destination = this.destinationQueue.getName();
 			destinationType = DestinationType.QUEUE;
-		} else {
+		}
+		else {
 			destination = this.destinationExchange.getName();
 			destinationType = DestinationType.EXCHANGE;
 		}

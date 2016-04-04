@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ package org.springframework.amqp.core;
  * passing into AMQP APIs.
  *
  * @author Mark Pollack
+ * @author Gary Russell
  *
  */
 public enum MessageDeliveryMode {
@@ -31,29 +32,23 @@ public enum MessageDeliveryMode {
 
 	public static int toInt(MessageDeliveryMode mode) {
 		switch (mode) {
-		case NON_PERSISTENT: {
+		case NON_PERSISTENT:
 			return 1;
-		}
-		case PERSISTENT: {
+		case PERSISTENT:
 			return 2;
-		}
-		default: {
+		default:
 			return -1;
-		}
 		}
 	}
 
 	public static MessageDeliveryMode fromInt(int modeAsNumber) {
 		switch (modeAsNumber) {
-		case 1: {
+		case 1:
 			return NON_PERSISTENT;
-		}
-		case 2: {
+		case 2:
 			return PERSISTENT;
-		}
-		default: {
+		default:
 			return null;
-		}
 		}
 	}
 

@@ -184,7 +184,8 @@ public class MessageListenerContainerRetryIntegrationTests {
 		AbstractRetryOperationsInterceptorFactoryBean factory;
 		if (stateful) {
 			factory = new StatefulRetryOperationsInterceptorFactoryBean();
-		} else {
+		}
+		else {
 			factory = new StatelessRetryOperationsInterceptorFactoryBean();
 		}
 		factory.setMessageRecoverer(new MessageRecoverer() {
@@ -250,7 +251,8 @@ public class MessageListenerContainerRetryIntegrationTests {
 					while (container.getActiveConsumerCount() > 0) {
 						try {
 							Thread.sleep(100L);
-						} catch (InterruptedException e) {
+						}
+						catch (InterruptedException e) {
 							latch.countDown();
 							Thread.currentThread().interrupt();
 							return;
@@ -272,7 +274,8 @@ public class MessageListenerContainerRetryIntegrationTests {
 			// All failed messages recovered
 			assertEquals(null, template.receiveAndConvert(queue.getName()));
 
-		} finally {
+		}
+		finally {
 			container.shutdown();
 			((DisposableBean) template.getConnectionFactory()).destroy();
 

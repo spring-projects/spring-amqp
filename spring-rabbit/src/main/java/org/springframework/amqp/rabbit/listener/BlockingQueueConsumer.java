@@ -642,10 +642,12 @@ public class BlockingQueueConsumer {
 					RabbitUtils.commitIfNecessary(this.channel);
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Application exception overridden by rollback exception", ex);
 			throw e;
-		} finally {
+		}
+		finally {
 			this.deliveryTags.clear();
 		}
 	}
@@ -676,7 +678,8 @@ public class BlockingQueueConsumer {
 						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel, deliveryTag);
 					}
 
-				} else {
+				}
+				else {
 					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 					this.channel.basicAck(deliveryTag, true);
 				}

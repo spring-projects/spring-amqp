@@ -39,6 +39,7 @@ import org.springframework.retry.support.RetryTemplate;
  * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback)
  *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {
@@ -60,7 +61,8 @@ public class StatelessRetryOperationsInterceptorFactoryBean extends AbstractRetr
 				Message message = (Message) args[1];
 				if (messageRecoverer == null) {
 					logger.warn("Message dropped on recovery: " + message, cause);
-				} else {
+				}
+				else {
 					messageRecoverer.recover(message, cause);
 				}
 				return null;

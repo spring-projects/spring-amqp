@@ -470,7 +470,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				this.lifecycleMonitor.notifyAll();
 			}
 			doInitialize();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
 	}
@@ -488,9 +489,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		// Shut down the invokers.
 		try {
 			doShutdown();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			synchronized (this.lifecycleMonitor) {
 				this.running = false;
 				this.lifecycleMonitor.notifyAll();
@@ -545,7 +548,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				logger.debug("Starting Rabbit listener container.");
 			}
 			doStart();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
 	}
@@ -572,9 +576,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void stop() {
 		try {
 			doStop();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			synchronized (this.lifecycleMonitor) {
 				this.running = false;
 				this.lifecycleMonitor.notifyAll();
@@ -844,7 +850,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			// Regular case: failed while active.
 			// Invoke ErrorHandler if available.
 			invokeErrorHandler(ex);
-		} else {
+		}
+		else {
 			// Rare case: listener thread failed after container shutdown.
 			// Log at debug level, to avoid spamming the shutdown log.
 			logger.debug("Listener exception after container shutdown", ex);

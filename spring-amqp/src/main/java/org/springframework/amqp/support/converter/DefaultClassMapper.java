@@ -89,10 +89,12 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		}
 		try {
 			return ClassUtils.forName(classId, getClass().getClassLoader());
-		} catch (ClassNotFoundException e) {
+		}
+		catch (ClassNotFoundException e) {
 			throw new MessageConversionException(
 					"failed to resolve class name [" + classId + "]", e);
-		} catch (LinkageError e) {
+		}
+		catch (LinkageError e) {
 			throw new MessageConversionException(
 					"failed to resolve class name [" + classId + "]", e);
 		}

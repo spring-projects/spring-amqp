@@ -153,7 +153,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				}
 				channel.txCommit();
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new AmqpException("failed to commit RabbitMQ transaction", e);
 		}
 	}
@@ -196,7 +197,8 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				for (Long deliveryTag : this.deliveryTags.get(channel)) {
 					try {
 						channel.basicReject(deliveryTag, true);
-					} catch (IOException ex) {
+					}
+					catch (IOException ex) {
 						throw new AmqpIOException(ex);
 					}
 				}

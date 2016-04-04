@@ -346,7 +346,8 @@ public class CachingConnectionFactoryIntegrationTests {
 				}
 			});
 			fail("Expected AmqpIOException");
-		} catch (AmqpIOException e) {
+		}
+		catch (AmqpIOException e) {
 			// expected
 		}
 		template.convertAndSend(route, "message");

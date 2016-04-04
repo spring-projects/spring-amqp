@@ -812,8 +812,7 @@ public class PublisherCallbackChannelImpl
 			String exchange,
 			String routingKey,
 			AMQP.BasicProperties properties,
-			byte[] body) throws IOException
-	{
+			byte[] body) throws IOException {
 		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {

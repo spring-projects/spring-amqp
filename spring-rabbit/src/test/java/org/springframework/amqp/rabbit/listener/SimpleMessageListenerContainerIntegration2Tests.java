@@ -539,7 +539,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

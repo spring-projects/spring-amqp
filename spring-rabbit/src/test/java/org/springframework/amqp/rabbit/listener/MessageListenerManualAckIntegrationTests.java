@@ -158,7 +158,8 @@ public class MessageListenerManualAckIntegrationTests {
 			try {
 				logger.debug("Acking: " + value);
 				channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

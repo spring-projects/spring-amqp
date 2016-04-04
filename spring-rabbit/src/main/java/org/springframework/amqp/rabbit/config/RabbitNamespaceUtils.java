@@ -281,17 +281,21 @@ public final class RabbitNamespaceUtils {
 		if (StringUtils.hasText(acknowledge)) {
 			if (ACKNOWLEDGE_AUTO.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.AUTO;
-			} else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
+			}
+			else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.MANUAL;
-			} else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
+			}
+			else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.NONE;
-			} else {
+			}
+			else {
 				parserContext.getReaderContext().error(
 						"Invalid listener container 'acknowledge' setting [" + acknowledge
 								+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
 			}
 			return acknowledgeMode;
-		} else {
+		}
+		else {
 			return null;
 		}
 	}

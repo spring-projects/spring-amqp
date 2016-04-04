@@ -525,7 +525,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 					// intentional error (causes exception on connection thread):
 					throw new RuntimeException("Planned");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -548,7 +549,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			if (failed.compareAndSet(false, true)) {
 				// intentional error (causes exception on connection thread):
 				channel.abort();
-			} else {
+			}
+			else {
 				latch.countDown();
 			}
 		}
@@ -574,7 +576,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			if (failed.compareAndSet(false, true)) {
 				// intentional error (causes exception on connection thread):
 				connection.close();
-			} else {
+			}
+			else {
 				latch.countDown();
 			}
 		}

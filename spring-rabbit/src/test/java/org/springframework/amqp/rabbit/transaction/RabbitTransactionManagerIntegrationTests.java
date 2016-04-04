@@ -107,7 +107,8 @@ public class RabbitTransactionManagerIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (PlannedException e) {
+		}
+		catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -144,7 +145,8 @@ public class RabbitTransactionManagerIntegrationTests {
 				}
 			});
 			fail("Expected PlannedException");
-		} catch (PlannedException e) {
+		}
+		catch (PlannedException e) {
 			// Expected
 		}
 		String result = (String) template.receiveAndConvert(ROUTE);

@@ -247,7 +247,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 		if (acknowledgeMode.isTransactionAllowed()) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));
-		} else {
+		}
+		else {
 			assertNull(template.receiveAndConvert(queue.getName()));
 		}
 	}
@@ -297,7 +298,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -330,7 +332,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -363,7 +366,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

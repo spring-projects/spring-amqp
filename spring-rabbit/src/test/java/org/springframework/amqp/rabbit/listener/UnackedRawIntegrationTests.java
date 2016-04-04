@@ -61,7 +61,8 @@ public class UnackedRawIntegrationTests {
 
 		try {
 			noTxChannel.queueDelete("test.queue");
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			noTxChannel = conn.createChannel();
 		}
 		noTxChannel.queueDeclare("test.queue", true, false, false, null);
@@ -73,14 +74,16 @@ public class UnackedRawIntegrationTests {
 		if (txChannel != null) {
 			try {
 				txChannel.close();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 		if (noTxChannel != null) {
 			try {
 				noTxChannel.close();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
