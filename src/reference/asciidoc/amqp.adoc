@@ -1345,7 +1345,7 @@ public class MyService {
   }
 
   @RabbitListener(bindings = @QueueBinding(
-        value = @Queue(),
+        value = @Queue,
         exchange = @Exchange(value = "auto.exch"),
         key = "invoiceRoutingKey")
   )
@@ -1356,7 +1356,8 @@ public class MyService {
 }
 ----
 
-In the first example, a queue `myQueue` will be declared automatically (durable) together with the exchange, if needed, and bound to the exchange with the routing key.
+In the first example, a queue `myQueue` will be declared automatically (durable) together with the exchange, if needed,
+and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 

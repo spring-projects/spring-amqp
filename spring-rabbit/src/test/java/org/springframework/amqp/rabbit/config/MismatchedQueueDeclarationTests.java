@@ -68,7 +68,8 @@ public class MismatchedQueueDeclarationTests {
 		((DisposableBean) connectionFactory).destroy();
 	}
 
-	@Test @Ignore
+	@Test
+	@Ignore
 	public void testAdminFailsWithMismatchedQueue() throws Exception {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
 		context.setConfigLocation("org/springframework/amqp/rabbit/config/MismatchedQueueDeclarationTests-context.xml");

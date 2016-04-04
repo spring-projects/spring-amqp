@@ -19,15 +19,15 @@
 	<module name="TreeWalker">
 
 		<!-- Annotations -->
-<!-- 		<module name="AnnotationUseStyle"> -->
-<!-- 			<property name="elementStyle" value="compact" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="MissingOverride" /> -->
-<!-- 		<module name="PackageAnnotation" /> -->
-<!-- 		<module name="AnnotationLocation"> -->
-<!-- 			<property name="allowSamelineSingleParameterlessAnnotation" -->
-<!-- 				value="false" /> -->
-<!-- 		</module> -->
+		<module name="AnnotationUseStyle">
+			<property name="elementStyle" value="compact" />
+		</module>
+		<module name="MissingOverride" />
+		<module name="PackageAnnotation" />
+		<module name="AnnotationLocation">
+			<property name="allowSamelineSingleParameterlessAnnotation"
+				value="false" />
+		</module>
 
 		<!-- Block Checks -->
 <!-- 		<module name="EmptyBlock"> -->

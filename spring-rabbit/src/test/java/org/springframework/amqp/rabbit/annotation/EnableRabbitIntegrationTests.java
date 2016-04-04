@@ -494,7 +494,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Override
 		@RabbitListener(bindings = @QueueBinding(
-				value = @Queue(),
+				value = @Queue,
 				exchange = @Exchange(value = "auto.exch.tx", autoDelete = "true"),
 				key = "auto.rk.tx")
 		)
@@ -558,7 +558,7 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = {
 				@QueueBinding(
-					value = @Queue(),
+					value = @Queue,
 					exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 					key = "auto.anon.rk")}
 		)

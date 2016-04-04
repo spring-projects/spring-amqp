@@ -37,7 +37,8 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 public class SSLConnectionTests {
 
-	@Test @Ignore
+	@Test
+	@Ignore
 	public void test() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setUseSSL(true);

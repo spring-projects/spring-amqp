@@ -30,7 +30,8 @@ import org.springframework.util.StopWatch;
  */
 public class SimpleBatchStrategyTests {
 
-	@Test @Ignore
+	@Test
+	@Ignore
 	public void testBatchingPerf() { // used to compare ByteBuffer Vs. System.arrayCopy()
 		StopWatch watch = new StopWatch();
 		byte[] bbBuff = new byte[10000];
