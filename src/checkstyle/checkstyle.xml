@@ -118,10 +118,12 @@
 <!-- 		</module> -->
 
 		<!-- Miscellaneous -->
-<!-- 		<module name="CommentsIndentation" /> -->
-<!-- 		<module name="UpperEll" /> -->
-<!-- 		<module name="ArrayTypeStyle" /> -->
-<!-- 		<module name="OuterTypeFilename" /> -->
+		<module name="CommentsIndentation">
+			<property name="tokens" value="BLOCK_COMMENT_BEGIN" />
+		</module>
+		<module name="UpperEll" />
+		<module name="ArrayTypeStyle" />
+		<module name="OuterTypeFilename" />
 
 		<!-- Modifiers -->
  		<module name="RedundantModifier" />
@@ -147,11 +149,11 @@
 <!-- 				value="Please use AssertJ imports." /> -->
 <!-- 			<property name="ignoreComments" value="true" /> -->
 <!-- 		</module> -->
-<!-- 		<module name="Regexp"> -->
-<!-- 			<property name="format" value="[ \t]+$" /> -->
-<!-- 			<property name="illegalPattern" value="true" /> -->
-<!-- 			<property name="message" value="Trailing whitespace" /> -->
-<!-- 		</module> -->
+		<module name="Regexp">
+			<property name="format" value="[ \t]+$" />
+			<property name="illegalPattern" value="true" />
+			<property name="message" value="Trailing whitespace" />
+		</module>
 
 		<!-- Whitespace -->
 <!-- 		<module name="GenericWhitespace" /> -->

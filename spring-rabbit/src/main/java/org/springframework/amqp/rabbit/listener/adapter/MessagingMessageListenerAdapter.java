@@ -223,10 +223,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 			for (int i = 0; i < this.method.getParameterTypes().length; i++) {
 				MethodParameter methodParameter = new MethodParameter(this.method, i);
-					/*
-					 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
-					 * We ignore parameters with type Message because they are not involved with conversion.
-					 */
+				/*
+				 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
+				 * We ignore parameters with type Message because they are not involved with conversion.
+				 */
 				if (isEligibleParameter(methodParameter)
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
