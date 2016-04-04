@@ -104,7 +104,10 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		this.password = password;
 		this.useSSL = useSSL;
 		this.sslPropertiesLocation = sslPropertiesLocation;
-		this.keyStore = this.trustStore = this.keyStorePassPhrase = this.trustStorePassPhrase = null;
+		this.keyStore = null;
+		this.trustStore = null;
+		this.keyStorePassPhrase = null;
+		this.trustStorePassPhrase = null;
 	}
 
 	/**
@@ -169,7 +172,10 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		this.password = password;
 		this.useSSL = useSSL;
 		this.sslPropertiesLocation = sslPropertiesLocation;
-		this.keyStore = this.trustStore = this.keyStorePassPhrase = this.trustStorePassPhrase = null;
+		this.keyStore = null;
+		this.trustStore = null;
+		this.keyStorePassPhrase = null;
+		this.trustStorePassPhrase = null;
 	}
 
 	/**

@@ -463,10 +463,11 @@ public class BatchingRabbitTemplateTests {
 	}
 
 	private Message receive(BatchingRabbitTemplate template) throws InterruptedException {
-		Message message = null;
+		Message message = template.receive(ROUTE);
 		int n = 0;
-		while (n++ < 200 && (message = template.receive(ROUTE)) == null) {
+		while (n++ < 200 && message == null) {
 			Thread.sleep(50);
+			message = template.receive(ROUTE);
 		}
 		assertNotNull(message);
 		return message;

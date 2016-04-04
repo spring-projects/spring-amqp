@@ -101,19 +101,24 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 	}
 
 	private void assertMessageCountEquals(long wanted) throws InterruptedException {
-		long messageCount;
+		long messageCount = determineMessageCount();
 		int n = 0;
-		while ((messageCount = this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
+		while (messageCount < wanted && n++ < 100) {
+			Thread.sleep(100);
+			messageCount = determineMessageCount();
+		}
+		assertEquals(wanted, messageCount);
+	}
+
+	private Long determineMessageCount() {
+		return this.templateWithConfirmsEnabled.execute(new ChannelCallback<Long>() {
 
 			@Override
 			public Long doInRabbit(Channel channel) throws Exception {
 				return channel.messageCount(ROUTE);
 			}
 
-		})) < wanted && n++ < 100) {
-			Thread.sleep(100);
-		};
-		assertEquals(wanted, messageCount);
+		});
 	}
 
 }

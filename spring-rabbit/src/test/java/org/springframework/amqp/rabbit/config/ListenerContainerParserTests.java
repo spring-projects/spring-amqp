@@ -187,12 +187,12 @@ public class ListenerContainerParserTests {
 	@Test
 	public void testIncompatibleTxAtts() {
 		try {
-			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();;
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();
 			fail("Parse exception exptected");
 		}
 		catch (BeanDefinitionParsingException e) {
 			assertTrue(e.getMessage().startsWith(
-					"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
+				"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
 		}
 	}
 

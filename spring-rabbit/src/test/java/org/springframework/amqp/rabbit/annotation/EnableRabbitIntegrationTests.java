@@ -316,27 +316,21 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	@DirtiesContext
 	public void simpleEndpointWithSendTo() throws InterruptedException {
 		rabbitTemplate.convertAndSend("test.sendTo", "bar");
-		int n = 0;
-		Object result = null;
-		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply")) == null && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertTrue(n < 100);
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply");
 		assertNotNull(result);
 		assertEquals("BAR", result);
 	}
 
 	@Test
+	@DirtiesContext
 	public void simpleEndpointWithSendToSpel() throws InterruptedException {
 		rabbitTemplate.convertAndSend("test.sendTo.spel", "bar");
-		int n = 0;
-		Object result = null;
-		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel")) == null && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertTrue(n < 100);
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel");
 		assertNotNull(result);
 		assertEquals("BARbar", result);
 	}

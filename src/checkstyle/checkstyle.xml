@@ -44,15 +44,15 @@
 		<module name="FinalClass" />
 		<module name="InterfaceIsType" />
 		<module name="HideUtilityClassConstructor" />
-<!-- 		<module name="MutableException" /> -->
+		<module name="MutableException" />
 		<module name="InnerTypeLast" />
 		<module name="OneTopLevelClass" />
 
 		<!-- Coding -->
-<!-- 		<module name="CovariantEquals" /> -->
-<!-- 		<module name="EmptyStatement" /> -->
-<!-- 		<module name="EqualsHashCode" /> -->
-<!-- 		<module name="InnerAssignment" /> -->
+		<module name="CovariantEquals" />
+		<module name="EmptyStatement" />
+		<module name="EqualsHashCode" />
+		<module name="InnerAssignment" />
 <!-- 		<module name="SimplifyBooleanExpression" /> -->
 <!-- 		<module name="SimplifyBooleanReturn" /> -->
 <!-- 		<module name="StringLiteralEquality" /> -->
