@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.springframework.amqp.rabbit.test.MessageTestUtils.createTextMessage;
 
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -29,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
@@ -77,7 +77,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	public void exceptionInListener() {
-		org.springframework.amqp.core.Message message = createTextMessage("foo");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("fail", String.class);
 
@@ -96,7 +96,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	public void exceptionInInvocation() {
-		org.springframework.amqp.core.Message message = createTextMessage("foo");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("foo");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("wrongParam", Integer.class);
 
@@ -117,7 +117,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	public void genericMessageTest1() throws Exception {
-		org.springframework.amqp.core.Message message = createTextMessage("\"foo\"");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("\"foo\"");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withGenericMessageAnyType", Message.class);
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());
@@ -134,7 +134,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	public void genericMessageTest2() throws Exception {
-		org.springframework.amqp.core.Message message = createTextMessage("{ \"foo\" : \"bar\" }");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("{ \"foo\" : \"bar\" }");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withGenericMessageFooType", Message.class);
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());
@@ -146,7 +146,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	@Test
 	public void genericMessageTest3() throws Exception {
-		org.springframework.amqp.core.Message message = createTextMessage("{ \"foo\" : \"bar\" }");
+		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage("{ \"foo\" : \"bar\" }");
 		Channel channel = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("withNonGenericMessage", Message.class);
 		listener.setMessageConverter(new Jackson2JsonMessageConverter());

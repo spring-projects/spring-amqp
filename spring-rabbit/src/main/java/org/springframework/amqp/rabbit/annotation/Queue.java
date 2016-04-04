@@ -16,9 +16,8 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -29,7 +28,7 @@ import java.lang.annotation.Target;
  *
  */
 @Target({})
-@Retention(RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Queue {
 
 	/**

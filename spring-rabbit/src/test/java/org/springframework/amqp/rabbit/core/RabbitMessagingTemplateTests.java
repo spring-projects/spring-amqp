@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,18 @@
  */
 
 package org.springframework.amqp.rabbit.core;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.Writer;
 import java.util.HashMap;
@@ -39,11 +51,9 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.support.MessageBuilder;
 
-import static org.junit.Assert.*;
-import static org.mockito.BDDMockito.*;
-
 /**
  * @author Stephane Nicoll
+ * @author Gary Russell
  */
 public class RabbitMessagingTemplateTests {
 
@@ -406,8 +416,12 @@ public class RabbitMessagingTemplateTests {
 	}
 
 
-	private static org.springframework.amqp.core.Message anyAmqpMessage() {return any(org.springframework.amqp.core.Message.class);}
+	private static org.springframework.amqp.core.Message anyAmqpMessage() {
+		return any(org.springframework.amqp.core.Message.class);
+	}
 
-	private static MessageProperties anyMessageProperties() {return any(MessageProperties.class);}
+	private static MessageProperties anyMessageProperties() {
+		return any(MessageProperties.class);
+	}
 
 }
