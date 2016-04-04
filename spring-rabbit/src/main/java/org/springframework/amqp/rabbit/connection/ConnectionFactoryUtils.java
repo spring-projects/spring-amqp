@@ -250,7 +250,7 @@ public class ConnectionFactoryUtils {
 	 * JtaTransactionManager transaction).
 	 * @see org.springframework.transaction.jta.JtaTransactionManager
 	 */
-	private static class RabbitResourceSynchronization extends
+	private static final class RabbitResourceSynchronization extends
 			ResourceHolderSynchronization<RabbitResourceHolder, Object> {
 
 		private final boolean locallyTransacted;

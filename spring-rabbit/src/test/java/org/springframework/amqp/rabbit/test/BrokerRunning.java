@@ -65,7 +65,7 @@ import com.rabbitmq.http.client.Client;
  * @author Gary Russell
  *
  */
-public class BrokerRunning extends TestWatcher {
+public final class BrokerRunning extends TestWatcher {
 
 	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
 

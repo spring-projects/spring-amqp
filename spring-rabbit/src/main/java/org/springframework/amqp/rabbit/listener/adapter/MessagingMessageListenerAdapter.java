@@ -182,7 +182,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * If the inbound message has no type information and the configured message converter
 	 * supports it, we attempt to infer the conversion type from the method signature.
 	 */
-	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
+	private final class MessagingMessageConverterAdapter extends MessagingMessageConverter {
 
 		private final Object bean;
 

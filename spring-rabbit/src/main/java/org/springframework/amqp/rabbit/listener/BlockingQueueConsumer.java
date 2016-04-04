@@ -604,7 +604,7 @@ public class BlockingQueueConsumer {
 		this.consumer = null;
 	}
 
-	private class InternalConsumer extends DefaultConsumer {
+	private final class InternalConsumer extends DefaultConsumer {
 
 		private InternalConsumer(Channel channel) {
 			super(channel);
@@ -707,7 +707,7 @@ public class BlockingQueueConsumer {
 	}
 
 	@SuppressWarnings("serial")
-	private static class DeclarationException extends AmqpException {
+	private static final class DeclarationException extends AmqpException {
 
 		private DeclarationException() {
 			super("Failed to declare queue(s):");

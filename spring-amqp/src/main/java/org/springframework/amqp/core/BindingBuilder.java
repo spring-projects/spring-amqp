@@ -40,7 +40,7 @@ public final class BindingBuilder {
 		return new DestinationConfigurer(exchange.getName(), DestinationType.EXCHANGE);
 	}
 
-	public static class DestinationConfigurer {
+	public static final class DestinationConfigurer {
 
 		protected final String name;
 		protected final DestinationType type;
@@ -71,7 +71,7 @@ public final class BindingBuilder {
 		}
 	}
 
-	public static class HeadersExchangeMapConfigurer {
+	public static final class HeadersExchangeMapConfigurer {
 
 		protected final DestinationConfigurer destination;
 
@@ -102,7 +102,7 @@ public final class BindingBuilder {
 			return new HeadersExchangeMapBindingCreator(headerValues, true);
 		}
 
-		public class HeadersExchangeSingleValueBindingCreator {
+		public final class HeadersExchangeSingleValueBindingCreator {
 
 			private final String key;
 
@@ -126,7 +126,7 @@ public final class BindingBuilder {
 			}
 		}
 
-		public class HeadersExchangeKeysBindingCreator {
+		public final class HeadersExchangeKeysBindingCreator {
 
 			private final Map<String, Object> headerMap;
 
@@ -143,7 +143,7 @@ public final class BindingBuilder {
 			}
 		}
 
-		public class HeadersExchangeMapBindingCreator {
+		public final class HeadersExchangeMapBindingCreator {
 
 			private final Map<String, Object> headerMap;
 
@@ -173,7 +173,7 @@ public final class BindingBuilder {
 		}
 	}
 
-	public static class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
+	public static final class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
 		private TopicExchangeRoutingKeyConfigurer(DestinationConfigurer destination, TopicExchange exchange) {
 			super(destination, exchange.getName());
@@ -190,7 +190,7 @@ public final class BindingBuilder {
 		}
 	}
 
-	public static class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
+	public static final class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
 		private GenericExchangeRoutingKeyConfigurer(DestinationConfigurer destination, Exchange exchange) {
 			super(destination, exchange.getName());
@@ -228,7 +228,7 @@ public final class BindingBuilder {
 
 	}
 
-	public static class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
+	public static final class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
 
 		private DirectExchangeRoutingKeyConfigurer(DestinationConfigurer destination, DirectExchange exchange) {
 			super(destination, exchange.getName());

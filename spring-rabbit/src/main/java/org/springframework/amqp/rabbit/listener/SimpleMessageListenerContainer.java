@@ -1205,7 +1205,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
 	}
 
-	private class AsyncMessageProcessingConsumer implements Runnable {
+	private final class AsyncMessageProcessingConsumer implements Runnable {
 
 		private final BlockingQueueConsumer consumer;
 
@@ -1497,7 +1497,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@SuppressWarnings("serial")
-	private static class WrappedTransactionException extends RuntimeException {
+	private static final class WrappedTransactionException extends RuntimeException {
 
 		private WrappedTransactionException(Throwable cause) {
 			super(cause);

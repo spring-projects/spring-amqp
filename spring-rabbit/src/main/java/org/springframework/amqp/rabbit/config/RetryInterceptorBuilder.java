@@ -203,7 +203,7 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 	private RetryInterceptorBuilder() {
 	}
 
-	public static class StatefulRetryInterceptorBuilder extends RetryInterceptorBuilder<StatefulRetryOperationsInterceptor> {
+	public static final class StatefulRetryInterceptorBuilder extends RetryInterceptorBuilder<StatefulRetryOperationsInterceptor> {
 
 		private final StatefulRetryOperationsInterceptorFactoryBean factoryBean =
 				new StatefulRetryOperationsInterceptorFactoryBean();
@@ -289,7 +289,7 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 	}
 
 
-	public static class StatelessRetryInterceptorBuilder extends RetryInterceptorBuilder<RetryOperationsInterceptor> {
+	public static final class StatelessRetryInterceptorBuilder extends RetryInterceptorBuilder<RetryOperationsInterceptor> {
 
 		private final StatelessRetryOperationsInterceptorFactoryBean factoryBean =
 				new StatelessRetryOperationsInterceptorFactoryBean();

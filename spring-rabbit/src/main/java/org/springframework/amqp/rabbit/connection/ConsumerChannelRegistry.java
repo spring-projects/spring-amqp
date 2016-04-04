@@ -99,7 +99,7 @@ public class ConsumerChannelRegistry {
 		return channel;
 	}
 
-	private static class ChannelHolder {
+	private static final class ChannelHolder {
 
 		private final Channel channel;
 

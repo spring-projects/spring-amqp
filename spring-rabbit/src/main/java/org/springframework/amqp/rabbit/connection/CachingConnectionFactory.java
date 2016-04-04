@@ -827,7 +827,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				+ " " + super.toString() + "]";
 	}
 
-	private class CachedChannelInvocationHandler implements InvocationHandler {
+	private final class CachedChannelInvocationHandler implements InvocationHandler {
 
 		private final ChannelCachingConnectionProxy theConnection;
 
@@ -1062,7 +1062,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	}
 
-	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy {
+	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy { // NOSONAR - final (tests spy)
 
 		private volatile Connection target;
 

@@ -282,7 +282,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	}
 
 
-	private static class AggregatingCallback implements Runnable {
+	private static final class AggregatingCallback implements Runnable {
 
 		private final AtomicInteger count;
 
