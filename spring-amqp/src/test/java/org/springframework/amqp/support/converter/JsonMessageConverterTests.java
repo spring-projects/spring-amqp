@@ -53,7 +53,7 @@ public class JsonMessageConverterTests {
 	private JsonMessageConverter jsonConverterWithDefaultType;
 
 	@Before
-	public void before(){
+	public void before() {
 		converter = new JsonMessageConverter();
 		trade = new SimpleTrade();
 		trade.setAccountName("Acct1");

@@ -204,7 +204,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 
 	private Map<String, Object> convertHeadersIfNecessary(Map<String, Object> headers) {
 		if (CollectionUtils.isEmpty(headers)) {
-			return Collections.<String, Object> emptyMap();
+			return Collections.<String, Object>emptyMap();
 		}
 		Map<String, Object> writableHeaders = new HashMap<String, Object>();
 		for (Map.Entry<String, Object> entry : headers.entrySet()) {

@@ -143,7 +143,8 @@ public abstract class NamespaceUtils {
 		String value = element.getAttribute(attributeName);
 		if (StringUtils.hasText(value)) {
 			builder.addConstructorArgValue(new TypedStringValue(value));
-		} else {
+		}
+		else {
 			builder.addConstructorArgValue(defaultValue);
 		}
 	}
@@ -268,7 +269,7 @@ public abstract class NamespaceUtils {
 		}
 
 		String ref = element.getAttribute(REF_ATTRIBUTE);
-		Assert.isTrue(!StringUtils.hasText(ref) || innerComponentDefinition == null,//NOSONAR
+		Assert.isTrue(!StringUtils.hasText(ref) || innerComponentDefinition == null, //NOSONAR
 				"Ambiguous definition. Inner bean "
 						+ (innerComponentDefinition == null ? innerComponentDefinition : innerComponentDefinition
 								.getBeanDefinition().getBeanClassName()) + " declaration and \"ref\" " + ref
@@ -307,12 +308,12 @@ public abstract class NamespaceUtils {
 		boolean hasAttributeValue = StringUtils.hasText(valueElementValue);
 		boolean hasAttributeExpression = StringUtils.hasText(expressionElementValue);
 
-		if (hasAttributeValue && hasAttributeExpression){
+		if (hasAttributeValue && hasAttributeExpression) {
 			parserContext.getReaderContext().error("Only one of '" + valueElementName + "' or '"
 					+ expressionElementName + "' is allowed", element);
 		}
 
-		if (oneRequired && (!hasAttributeValue && !hasAttributeExpression)){
+		if (oneRequired && (!hasAttributeValue && !hasAttributeExpression)) {
 			parserContext.getReaderContext().error("One of '" + valueElementName + "' or '"
 					+ expressionElementName + "' is required", element);
 		}
@@ -333,7 +334,7 @@ public abstract class NamespaceUtils {
 
 		String expressionElementValue = element.getAttribute(expressionElementName);
 
-		if (StringUtils.hasText(expressionElementValue)){
+		if (StringUtils.hasText(expressionElementValue)) {
 			BeanDefinitionBuilder expressionDefBuilder =
 					BeanDefinitionBuilder.genericBeanDefinition(ExpressionFactoryBean.class);
 			expressionDefBuilder.addConstructorArgValue(expressionElementValue);

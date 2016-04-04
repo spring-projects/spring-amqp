@@ -141,7 +141,7 @@ public class EnableRabbitIdleContainerTests {
 
 		private boolean barEventReceived;
 
-		@RabbitListener(id="foo", queues="#{queue.name}")
+		@RabbitListener(id = "foo", queues = "#{queue.name}")
 		public String listenFoo(String foo) {
 			logger.info("foo: " + foo);
 			return foo.toUpperCase();
@@ -157,7 +157,7 @@ public class EnableRabbitIdleContainerTests {
 			this.latch.countDown();
 		}
 
-		@RabbitListener(id="bar", queues="#{queue.name}")
+		@RabbitListener(id = "bar", queues = "#{queue.name}")
 		public String listenBar(String bar) {
 			logger.info("bar: " + bar);
 			return bar.toUpperCase();

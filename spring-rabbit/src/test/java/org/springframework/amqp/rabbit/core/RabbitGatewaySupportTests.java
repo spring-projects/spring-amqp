@@ -65,5 +65,5 @@ public class RabbitGatewaySupportTests {
 		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitTemplate());
 		assertEquals("initGateway called", test.size(), 1);
 	}
-	
+
 }

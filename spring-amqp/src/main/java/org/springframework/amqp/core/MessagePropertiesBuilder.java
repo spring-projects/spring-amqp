@@ -23,7 +23,7 @@ package org.springframework.amqp.core;
  * @since 1.3
  *
  */
-public class MessagePropertiesBuilder extends MessageBuilderSupport<MessageProperties> {
+public final class MessagePropertiesBuilder extends MessageBuilderSupport<MessageProperties> {
 
 	/**
 	 * Returns a builder with an initial set of properties.

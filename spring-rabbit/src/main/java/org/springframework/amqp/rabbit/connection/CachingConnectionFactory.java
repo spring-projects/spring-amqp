@@ -365,7 +365,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		this.closeExceptionLogger.log(logger, "Channel shutdown" ,cause);
+		this.closeExceptionLogger.log(logger, "Channel shutdown", cause);
 	}
 
 	@Override
@@ -503,7 +503,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		else if (this.cacheMode == CacheMode.CONNECTION) {
 			if (!connection.isOpen()) {
-				synchronized(this.connectionMonitor) {
+				synchronized (this.connectionMonitor) {
 					this.allocatedConnectionNonTransactionalChannels.get(connection).clear();
 					this.allocatedConnectionTransactionalChannels.get(connection).clear();
 					connection.notifyCloseIfNecessary();
@@ -768,7 +768,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public Properties getCacheProperties() {
 		Properties props = new Properties();
 		props.setProperty("cacheMode", this.cacheMode.name());
-		synchronized(this.connectionMonitor) {
+		synchronized (this.connectionMonitor) {
 			props.setProperty("channelCacheSize", Integer.toString(this.channelCacheSize));
 			if (this.cacheMode.equals(CacheMode.CONNECTION)) {
 				props.setProperty("connectionCacheSize", Integer.toString(this.connectionCacheSize));
@@ -827,7 +827,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				+ " " + super.toString() + "]";
 	}
 
-	private class CachedChannelInvocationHandler implements InvocationHandler {
+	private final class CachedChannelInvocationHandler implements InvocationHandler {
 
 		private final ChannelCachingConnectionProxy theConnection;
 
@@ -938,7 +938,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				 *  in the list, it means we're closing a cached channel (for which a permit
 				 *  has already been released).
 				 */
-				synchronized(this.channelList) {
+				synchronized (this.channelList) {
 					if (this.channelList.contains(proxy)) {
 						return;
 					}
@@ -1031,16 +1031,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
 							}
-							catch (Exception e) {}
+							catch (Exception e) { }
 							finally {
 								try {
 									if (channel.isOpen()) {
 										channel.close();
 									}
 								}
-								catch (IOException e) {}
-								catch (AlreadyClosedException e) {}
-								catch (TimeoutException e) {}
+								catch (IOException e) { }
+								catch (AlreadyClosedException e) { }
+								catch (TimeoutException e) { }
 							}
 						}
 
@@ -1062,7 +1062,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	}
 
-	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy {
+	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy { // NOSONAR - final (tests spy)
 
 		private volatile Connection target;
 

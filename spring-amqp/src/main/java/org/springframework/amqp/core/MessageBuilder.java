@@ -91,7 +91,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 		return new MessageBuilder(Arrays.copyOf(body, body.length), message.getMessageProperties());
 	}
 
-	private MessageBuilder(byte[] body) {//NOSONAR
+	private MessageBuilder(byte[] body) { //NOSONAR
 		this.body = body;
 	}
 
@@ -99,7 +99,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 		this(message.getBody(), message.getMessageProperties());
 	}
 
-	private MessageBuilder(byte[] body, MessageProperties properties) {//NOSONAR
+	private MessageBuilder(byte[] body, MessageProperties properties) { //NOSONAR
 		this.body = body;
 		this.copyProperties(properties);
 	}

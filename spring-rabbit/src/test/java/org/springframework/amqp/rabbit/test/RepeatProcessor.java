@@ -91,11 +91,13 @@ public class RepeatProcessor implements MethodRule {
 						for (int i = 0; i < repeats; i++) {
 							try {
 								base.evaluate();
-							} catch (Throwable t) {
+							}
+							catch (Throwable t) {
 								throw new IllegalStateException("Failed on iteration: " + i + " of " + repeats + " (started at 0)", t);
 							}
 						}
-					} finally {
+					}
+					finally {
 						finalizeIfNecessary(target);
 					}
 				}
@@ -114,7 +116,8 @@ public class RepeatProcessor implements MethodRule {
 							public Boolean call() {
 								try {
 									base.evaluate();
-								} catch (Throwable t) {
+								}
+								catch (Throwable t) {
 									throw new IllegalStateException("Failed on iteration: " + count, t);
 								}
 								return true;
@@ -125,7 +128,8 @@ public class RepeatProcessor implements MethodRule {
 						Future<Boolean> future = completionService.take();
 						assertTrue("Null result from completer", future.get());
 					}
-				} finally {
+				}
+				finally {
 					executor.shutdownNow();
 					finalizeIfNecessary(target);
 				}
@@ -145,11 +149,13 @@ public class RepeatProcessor implements MethodRule {
 						public void evaluate() {
 						}
 					}, afters, target).evaluate();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
 				}
 			}
-		} finally {
+		}
+		finally {
 			finalizing = false;
 		}
 	}
@@ -165,7 +171,8 @@ public class RepeatProcessor implements MethodRule {
 					public void evaluate() {
 					}
 				}, befores, target).evaluate();
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				Assert.assertThat(e, CoreMatchers.not(CoreMatchers.anything()));
 			}
 			initialized = true;

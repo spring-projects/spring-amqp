@@ -182,7 +182,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * If the inbound message has no type information and the configured message converter
 	 * supports it, we attempt to infer the conversion type from the method signature.
 	 */
-	private class MessagingMessageConverterAdapter extends MessagingMessageConverter {
+	private final class MessagingMessageConverterAdapter extends MessagingMessageConverter {
 
 		private final Object bean;
 
@@ -223,11 +223,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 			for (int i = 0; i < this.method.getParameterTypes().length; i++) {
 				MethodParameter methodParameter = new MethodParameter(this.method, i);
-					/*
-					 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
-					 * We ignore parameters with type Message because they are not involved with conversion.
-					 */
-				if (eligibleParameter(methodParameter)
+				/*
+				 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
+				 * We ignore parameters with type Message because they are not involved with conversion.
+				 */
+				if (isEligibleParameter(methodParameter)
 						&& (methodParameter.getParameterAnnotations().length == 0
 						|| methodParameter.hasParameterAnnotation(Payload.class))) {
 					if (genericParameterType == null) {
@@ -258,7 +258,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		 * Don't consider parameter types that are available after conversion.
 		 * Message, Message<?> and Channel.
 		 */
-		private boolean eligibleParameter(MethodParameter methodParameter) {
+		private boolean isEligibleParameter(MethodParameter methodParameter) {
 			Type parameterType = methodParameter.getGenericParameterType();
 			if (parameterType.equals(Channel.class)
 					|| parameterType.equals(org.springframework.amqp.core.Message.class)) {
@@ -267,12 +267,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			if (parameterType instanceof ParameterizedType) {
 				ParameterizedType parameterizedType = (ParameterizedType) parameterType;
 				if (parameterizedType.getRawType().equals(Message.class)) {
-					if(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType) {
-						return false;
-					}
-					else {
-						return true;
-					}
+					return !(parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
 				}
 			}
 			return !parameterType.equals(Message.class); // could be Message without a generic type

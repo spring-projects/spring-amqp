@@ -97,18 +97,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		assertEquals(1, simpleFactory.getListenerContainers().size());
 	}
 
-	@Component
-	static class SampleBean {
-
-		@RabbitListener(queues = "myQueue")
-		public void defaultHandle(String msg) {
-		}
-
-		@RabbitListener(containerFactory = "simpleFactory", queues = "myQueue")
-		public void simpleHandle(String msg) {
-		}
-	}
-
 	/**
 	 * Test for {@link FullBean} discovery. In this case, no default is set because
 	 * all endpoints provide a default registry. This shows that the default factory
@@ -145,27 +133,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		}
 	}
 
-	@Component
-	static class FullBean {
-
-		@RabbitListener(id = "listener1", containerFactory = "simpleFactory", queues = {"queue1", "queue2"},
-				exclusive = true, priority = "34", admin = "rabbitAdmin")
-		public void fullHandle(String msg) {
-
-		}
-	}
-
-	@Component
-	static class FullConfigurableBean {
-
-		@RabbitListener(id = "${rabbit.listener.id}", containerFactory = "${rabbit.listener.containerFactory}",
-				queues = {"${rabbit.listener.queue}", "queue2"}, exclusive = true,
-				priority = "${rabbit.listener.priority}", admin = "${rabbit.listener.admin}")
-		public void fullHandle(String msg) {
-
-		}
-	}
-
 	/**
 	 * Test for {@link CustomBean} and an manually endpoint registered
 	 * with "myCustomEndpointId". The custom endpoint does not provide
@@ -195,14 +162,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 				customRegistry.getListenerContainer("myCustomEndpointId"));
 	}
 
-	@Component
-	static class CustomBean {
-
-		@RabbitListener(id = "listenerId", containerFactory = "customFactory", queues = "myQueue")
-		public void customHandle(String msg) {
-		}
-	}
-
 	/**
 	 * Test for {@link DefaultBean} that does not define the container
 	 * factory to use as a default is registered with an explicit
@@ -222,13 +181,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		assertEquals(1, defaultFactory.getListenerContainers().size());
-	}
-
-	static class DefaultBean {
-
-		@RabbitListener(queues = "myQueue")
-		public void handleIt(String msg) {
-		}
 	}
 
 	/**
@@ -253,14 +205,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		Message amqpMessage = new Message("failValidation".getBytes(), properties);
 
 		listener.onMessage(amqpMessage, mock(Channel.class));
-	}
-
-	@Component
-	static class ValidationBean {
-
-		@RabbitListener(containerFactory = "defaultFactory", queues = "myQueue")
-		public void defaultHandle(@Validated String msg) {
-		}
 	}
 
 	/**
@@ -293,6 +237,70 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		assertEquals("class2", fourth.getQueueNames().iterator().next());
 	}
 
+	private void assertQueues(AbstractRabbitListenerEndpoint actual, String... expectedQueues) {
+		Collection<String> actualQueues = actual.getQueueNames();
+		for (String expectedQueue : expectedQueues) {
+			assertTrue("Queue '" + expectedQueue + "' not found", actualQueues.contains(expectedQueue));
+		}
+		assertEquals("Wrong number of queues", expectedQueues.length, actualQueues.size());
+	}
+
+	@Component
+	static class SampleBean {
+
+		@RabbitListener(queues = "myQueue")
+		public void defaultHandle(String msg) {
+		}
+
+		@RabbitListener(containerFactory = "simpleFactory", queues = "myQueue")
+		public void simpleHandle(String msg) {
+		}
+	}
+
+	@Component
+	static class FullBean {
+
+		@RabbitListener(id = "listener1", containerFactory = "simpleFactory", queues = {"queue1", "queue2"},
+				exclusive = true, priority = "34", admin = "rabbitAdmin")
+		public void fullHandle(String msg) {
+
+		}
+	}
+
+	@Component
+	static class FullConfigurableBean {
+
+		@RabbitListener(id = "${rabbit.listener.id}", containerFactory = "${rabbit.listener.containerFactory}",
+				queues = {"${rabbit.listener.queue}", "queue2"}, exclusive = true,
+				priority = "${rabbit.listener.priority}", admin = "${rabbit.listener.admin}")
+		public void fullHandle(String msg) {
+
+		}
+	}
+
+	@Component
+	static class CustomBean {
+
+		@RabbitListener(id = "listenerId", containerFactory = "customFactory", queues = "myQueue")
+		public void customHandle(String msg) {
+		}
+	}
+
+	static class DefaultBean {
+
+		@RabbitListener(queues = "myQueue")
+		public void handleIt(String msg) {
+		}
+	}
+
+	@Component
+	static class ValidationBean {
+
+		@RabbitListener(containerFactory = "defaultFactory", queues = "myQueue")
+		public void defaultHandle(@Validated String msg) {
+		}
+	}
+
 	@Component
 	static class RabbitListenersBean {
 
@@ -316,14 +324,6 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		public void repeatableHandle(String msg) {
 		}
 
-	}
-
-	private void assertQueues(AbstractRabbitListenerEndpoint actual, String... expectedQueues) {
-		Collection<String> actualQueues = actual.getQueueNames();
-		for (String expectedQueue : expectedQueues) {
-			assertTrue("Queue '" + expectedQueue + "' not found", actualQueues.contains(expectedQueue));
-		}
-		assertEquals("Wrong number of queues", expectedQueues.length, actualQueues.size());
 	}
 
 	static class TestValidator implements Validator {

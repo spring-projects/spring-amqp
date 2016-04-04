@@ -80,7 +80,7 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -178,7 +178,7 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -281,7 +281,7 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {

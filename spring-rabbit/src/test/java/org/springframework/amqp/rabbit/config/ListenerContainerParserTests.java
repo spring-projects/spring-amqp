@@ -77,7 +77,7 @@ public class ListenerContainerParserTests {
 		assertEquals(beanFactory.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
 		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
 		Queue queue = beanFactory.getBean("bar", Queue.class);
-		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
+		assertEquals("[foo, " + queue.getName() + "]", Arrays.asList(container.getQueueNames()).toString());
 		assertEquals(5, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		assertEquals(6, ReflectionTestUtils.getField(container, "maxConcurrentConsumers"));
 		assertEquals(1234L, ReflectionTestUtils.getField(container, "startConsumerMinInterval"));
@@ -111,7 +111,7 @@ public class ListenerContainerParserTests {
 	public void testParseWithQueues() throws Exception {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container2", SimpleMessageListenerContainer.class);
 		Queue queue = beanFactory.getBean("bar", Queue.class);
-		assertEquals("[foo, "+queue.getName()+"]", Arrays.asList(container.getQueueNames()).toString());
+		assertEquals("[foo, " + queue.getName() + "]", Arrays.asList(container.getQueueNames()).toString());
 		assertTrue(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
 		assertFalse(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
 	}
@@ -187,12 +187,12 @@ public class ListenerContainerParserTests {
 	@Test
 	public void testIncompatibleTxAtts() {
 		try {
-			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();;
+			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();
 			fail("Parse exception exptected");
 		}
 		catch (BeanDefinitionParsingException e) {
 			assertTrue(e.getMessage().startsWith(
-					"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
+				"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
 		}
 	}
 

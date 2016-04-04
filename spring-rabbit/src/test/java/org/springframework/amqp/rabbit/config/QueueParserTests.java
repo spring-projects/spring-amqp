@@ -182,7 +182,7 @@ public class QueueParserTests {
 		assertFalse(queue.shouldDeclare());
 	}
 
-	@Test(expected=BeanDefinitionStoreException.class)
+	@Test(expected = BeanDefinitionStoreException.class)
 	public void testIllegalAnonymousQueue() throws Exception {
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);

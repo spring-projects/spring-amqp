@@ -236,7 +236,8 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 				if (other.target != null) {
 					return false;
 				}
-			} else if (!target.equals(other.target)) {
+			}
+			else if (!target.equals(other.target)) {
 				return false;
 			}
 			return true;

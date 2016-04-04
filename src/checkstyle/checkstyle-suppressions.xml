@@ -6,4 +6,5 @@
 	<suppress files="package-info\.java" checks=".*" />
 	<suppress files="[\\/]test[\\/]" checks="RequireThis" />
 	<suppress files="[\\/]test[\\/]" checks="Javadoc*" />
+	<suppress files="CachingConnectionFactory" checks="FinalClass" /> <!-- Tests spy -->
 </suppressions>

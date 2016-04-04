@@ -219,7 +219,7 @@ public class Jackson2JsonMessageConverterTests {
 		byte[] bytes = "[ {\"name\" : \"foo\" } ]".getBytes();
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
-		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() {}).getType());
+		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo, instanceOf(List.class));
@@ -232,7 +232,7 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		messageProperties.setInferredArgumentType(
-				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {}).getType());
+				(new ParameterizedTypeReference<Map<String, List<Bar>>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo, instanceOf(LinkedHashMap.class));
@@ -250,7 +250,7 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		messageProperties.setInferredArgumentType(
-				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() {}).getType());
+				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
 		assertThat(foo, instanceOf(LinkedHashMap.class));

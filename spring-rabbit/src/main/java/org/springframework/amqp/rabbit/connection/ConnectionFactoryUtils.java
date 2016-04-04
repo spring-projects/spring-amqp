@@ -41,7 +41,11 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class ConnectionFactoryUtils {
+public final class ConnectionFactoryUtils {
+
+	private ConnectionFactoryUtils() {
+		super();
+	}
 
 	/**
 	 * Determine whether the given RabbitMQ Channel is transactional, that is, bound to the current thread by Spring's
@@ -126,7 +130,7 @@ public class ConnectionFactoryUtils {
 		if (resourceHolderToUse == null) {
 			resourceHolderToUse = new RabbitResourceHolder();
 		}
-		Connection connection = resourceFactory.getConnection(resourceHolderToUse);//NOSONAR
+		Connection connection = resourceFactory.getConnection(resourceHolderToUse); //NOSONAR
 		Channel channel = null;
 		try {
 			/*
@@ -152,7 +156,7 @@ public class ConnectionFactoryUtils {
 
 		}
 		catch (IOException ex) {
-			RabbitUtils.closeChannel(channel);//NOSONAR
+			RabbitUtils.closeChannel(channel); //NOSONAR
 			RabbitUtils.closeConnection(connection);
 			throw new AmqpIOException(ex);
 		}
@@ -250,7 +254,7 @@ public class ConnectionFactoryUtils {
 	 * JtaTransactionManager transaction).
 	 * @see org.springframework.transaction.jta.JtaTransactionManager
 	 */
-	private static class RabbitResourceSynchronization extends
+	private static final class RabbitResourceSynchronization extends
 			ResourceHolderSynchronization<RabbitResourceHolder, Object> {
 
 		private final boolean locallyTransacted;

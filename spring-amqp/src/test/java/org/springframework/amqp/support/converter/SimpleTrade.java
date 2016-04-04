@@ -135,7 +135,8 @@ public class SimpleTrade {
 			if (other.accountName != null) {
 				return false;
 			}
-		} else if (!accountName.equals(other.accountName)) {
+		}
+		else if (!accountName.equals(other.accountName)) {
 			return false;
 		}
 		if (buyRequest != other.buyRequest) {
@@ -145,14 +146,16 @@ public class SimpleTrade {
 			if (other.orderType != null) {
 				return false;
 			}
-		} else if (!orderType.equals(other.orderType)) {
+		}
+		else if (!orderType.equals(other.orderType)) {
 			return false;
 		}
 		if (price == null) {
 			if (other.price != null) {
 				return false;
 			}
-		} else if (!price.equals(other.price)) {
+		}
+		else if (!price.equals(other.price)) {
 			return false;
 		}
 		if (quantity != other.quantity) {
@@ -162,21 +165,24 @@ public class SimpleTrade {
 			if (other.requestId != null) {
 				return false;
 			}
-		} else if (!requestId.equals(other.requestId)) {
+		}
+		else if (!requestId.equals(other.requestId)) {
 			return false;
 		}
 		if (ticker == null) {
 			if (other.ticker != null) {
 				return false;
 			}
-		} else if (!ticker.equals(other.ticker)) {
+		}
+		else if (!ticker.equals(other.ticker)) {
 			return false;
 		}
 		if (userName == null) {
 			if (other.userName != null) {
 				return false;
 			}
-		} else if (!userName.equals(other.userName)) {
+		}
+		else if (!userName.equals(other.userName)) {
 			return false;
 		}
 		return true;

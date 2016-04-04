@@ -358,7 +358,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				logger.debug("Message in pojo: " + value);
 				Thread.sleep(100L);
 				throw exception;
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -380,11 +381,13 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				logger.debug("Message in listener: " + value);
 				try {
 					Thread.sleep(100L);
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e) {
 					// Ignore this exception
 				}
 				throw exception;
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -406,11 +409,13 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 				logger.debug("Message in channel aware listener: " + value);
 				try {
 					Thread.sleep(100L);
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e) {
 					// Ignore this exception
 				}
 				throw exception;
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

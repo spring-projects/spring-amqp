@@ -52,7 +52,8 @@ public class SimpleConnection implements Connection {
 				channel.txSelect();
 			}
 			return channel;
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}
@@ -62,7 +63,8 @@ public class SimpleConnection implements Connection {
 		try {
 			// let the physical close time out if necessary
 			this.delegate.close(this.closeTimeout);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
 		}
 	}

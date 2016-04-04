@@ -469,11 +469,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(new Answer<Object>(){
+		doAnswer(new Answer<Object>() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
-			}}).when(mockChannel).getNextPublishSeqNo();
+			} }).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setPublisherConfirms(true);
@@ -514,7 +514,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(new Answer<Object>(){
+		doAnswer(new Answer<Object>() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
@@ -561,7 +561,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(new Answer<Object>(){
+		doAnswer(new Answer<Object>() {
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
@@ -887,7 +887,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		ExecutorService exec = Executors.newSingleThreadExecutor();
 		final AtomicInteger sent = new AtomicInteger();
-		doAnswer(new Answer<Boolean>(){
+		doAnswer(new Answer<Boolean>() {
 
 			@Override
 			public Boolean answer(InvocationOnMock invocation) throws Throwable {
@@ -903,7 +903,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 					try {
 						template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 					}
-					catch (AmqpException e) {}
+					catch (AmqpException e) { }
 				}
 				sentAll.countDown();
 			}

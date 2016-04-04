@@ -528,7 +528,7 @@ public class AmqpAppender extends AppenderSkeleton {
 					@SuppressWarnings("rawtypes")
 					Map props = event.getProperties();
 					@SuppressWarnings("unchecked")
-					Set<Entry<?,?>> entrySet = props.entrySet();
+					Set<Entry<?, ?>> entrySet = props.entrySet();
 					for (Entry<?, ?> entry : entrySet) {
 						amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
 					}
@@ -560,10 +560,10 @@ public class AmqpAppender extends AppenderSkeleton {
 							try {
 								message = new Message(msgBody.toString().getBytes(AmqpAppender.this.charset), amqpProps);
 							}
-							catch (UnsupportedEncodingException e) {/* fall back to default */}
+							catch (UnsupportedEncodingException e) { /* fall back to default */ }
 						}
 						if (message == null) {
-							message = new Message(msgBody.toString().getBytes(), amqpProps);//NOSONAR (default charset)
+							message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)
 						}
 						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);

@@ -19,52 +19,52 @@
 	<module name="TreeWalker">
 
 		<!-- Annotations -->
-<!-- 		<module name="AnnotationUseStyle"> -->
-<!-- 			<property name="elementStyle" value="compact" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="MissingOverride" /> -->
-<!-- 		<module name="PackageAnnotation" /> -->
-<!-- 		<module name="AnnotationLocation"> -->
-<!-- 			<property name="allowSamelineSingleParameterlessAnnotation" -->
-<!-- 				value="false" /> -->
-<!-- 		</module> -->
+		<module name="AnnotationUseStyle">
+			<property name="elementStyle" value="compact" />
+		</module>
+		<module name="MissingOverride" />
+		<module name="PackageAnnotation" />
+		<module name="AnnotationLocation">
+			<property name="allowSamelineSingleParameterlessAnnotation"
+				value="false" />
+		</module>
 
 		<!-- Block Checks -->
-<!-- 		<module name="EmptyBlock"> -->
-<!-- 			<property name="option" value="text" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="LeftCurly" /> -->
-<!-- 		<module name="RightCurly"> -->
-<!-- 			<property name="option" value="alone" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="NeedBraces" /> -->
-<!-- 		<module name="AvoidNestedBlocks" /> -->
+		<module name="EmptyBlock">
+			<property name="option" value="text" />
+		</module>
+		<module name="LeftCurly" />
+		<module name="RightCurly">
+			<property name="option" value="alone" />
+		</module>
+		<module name="NeedBraces" />
+		<module name="AvoidNestedBlocks" />
 
 		<!-- Class Design -->
-<!-- 		<module name="FinalClass" /> -->
-<!-- 		<module name="InterfaceIsType" /> -->
-<!-- 		<module name="HideUtilityClassConstructor" /> -->
-<!-- 		<module name="MutableException" /> -->
-<!-- 		<module name="InnerTypeLast" /> -->
-<!-- 		<module name="OneTopLevelClass" /> -->
+		<module name="FinalClass" />
+		<module name="InterfaceIsType" />
+		<module name="HideUtilityClassConstructor" />
+		<module name="MutableException" />
+		<module name="InnerTypeLast" />
+		<module name="OneTopLevelClass" />
 
 		<!-- Coding -->
-<!-- 		<module name="CovariantEquals" /> -->
-<!-- 		<module name="EmptyStatement" /> -->
-<!-- 		<module name="EqualsHashCode" /> -->
-<!-- 		<module name="InnerAssignment" /> -->
-<!-- 		<module name="SimplifyBooleanExpression" /> -->
-<!-- 		<module name="SimplifyBooleanReturn" /> -->
-<!-- 		<module name="StringLiteralEquality" /> -->
-<!-- 		<module name="NestedForDepth"> -->
-<!-- 			<property name="max" value="3" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="NestedIfDepth"> -->
-<!-- 			<property name="max" value="3" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="NestedTryDepth"> -->
-<!-- 			<property name="max" value="3" /> -->
-<!-- 		</module> -->
+		<module name="CovariantEquals" />
+		<module name="EmptyStatement" />
+		<module name="EqualsHashCode" />
+		<module name="InnerAssignment" />
+		<module name="SimplifyBooleanExpression" />
+		<module name="SimplifyBooleanReturn" />
+		<module name="StringLiteralEquality" />
+		<module name="NestedForDepth">
+			<property name="max" value="3" />
+		</module>
+		<module name="NestedIfDepth">
+			<property name="max" value="4" />
+		</module>
+		<module name="NestedTryDepth">
+			<property name="max" value="3" />
+		</module>
 		<module name="MultipleVariableDeclarations" />
 		<module name="RequireThis">
 			<property name="checkMethods" value="false" />
@@ -72,23 +72,23 @@
 		<module name="OneStatementPerLine" />
 
 		<!-- Imports -->
-<!-- 		<module name="AvoidStarImport" /> -->
-<!-- 		<module name="AvoidStaticImport"> -->
-<!-- 			<property name="excludes" -->
-<!-- 				value="org.assertj.core.api.Assertions.*, org.junit.Assert.*, org.junit.Assume.*, org.junit.internal.matchers.ThrowableMessageMatcher.*, org.hamcrest.CoreMatchers.*, org.hamcrest.Matchers.*, org.springframework.boot.configurationprocessor.ConfigurationMetadataMatchers.*, org.springframework.boot.configurationprocessor.TestCompiler.*, org.mockito.Mockito.*, org.mockito.BDDMockito.*, org.mockito.Matchers.*, org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*, org.springframework.test.web.servlet.result.MockMvcResultMatchers.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*, org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*, org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo" /> -->
-<!-- 		</module> -->
-<!-- 		<module name="IllegalImport" /> -->
-<!-- 		<module name="RedundantImport" /> -->
+		<module name="AvoidStarImport" />
+		<module name="AvoidStaticImport">
+			<property name="excludes"
+				value="org.assertj.core.api.Assertions.*, org.junit.Assert.*, org.junit.Assume.*, org.junit.internal.matchers.ThrowableMessageMatcher.*, org.hamcrest.CoreMatchers.*, org.hamcrest.Matchers.*, org.springframework.boot.configurationprocessor.ConfigurationMetadataMatchers.*, org.springframework.boot.configurationprocessor.TestCompiler.*, org.mockito.Mockito.*, org.mockito.BDDMockito.*, org.mockito.Matchers.*, org.mockito.AdditionalMatchers.*, org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*, org.springframework.test.web.servlet.result.MockMvcResultMatchers.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*, org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*, org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo, org.springframework.amqp.rabbit.test.RabbitMatchers.*" />
+		</module>
+		<module name="IllegalImport" />
+		<module name="RedundantImport" />
 		<module name="UnusedImports">
 			<property name="processJavadoc" value="true" />
 		</module>
-<!-- 		<module name="ImportOrder"> -->
-<!-- 			<property name="groups" value="java,/^javax?\./,*,org.springframework" /> -->
-<!-- 			<property name="ordered" value="true" /> -->
-<!-- 			<property name="separated" value="true" /> -->
-<!-- 			<property name="option" value="bottom" /> -->
-<!-- 			<property name="sortStaticImportsAlphabetically" value="true" /> -->
-<!-- 		</module> -->
+		<module name="ImportOrder">
+			<property name="groups" value="java,/^javax?\./,org,org.springframework,*" />
+			<property name="ordered" value="true" />
+			<property name="separated" value="true" />
+			<property name="option" value="top" />
+			<property name="sortStaticImportsAlphabetically" value="true" />
+		</module>
 
 		<!-- Javadoc Comments -->
 <!-- 		<module name="JavadocType"> -->
@@ -118,10 +118,12 @@
 <!-- 		</module> -->
 
 		<!-- Miscellaneous -->
-<!-- 		<module name="CommentsIndentation" /> -->
-<!-- 		<module name="UpperEll" /> -->
-<!-- 		<module name="ArrayTypeStyle" /> -->
-<!-- 		<module name="OuterTypeFilename" /> -->
+		<module name="CommentsIndentation">
+			<property name="tokens" value="BLOCK_COMMENT_BEGIN" />
+		</module>
+		<module name="UpperEll" />
+		<module name="ArrayTypeStyle" />
+		<module name="OuterTypeFilename" />
 
 		<!-- Modifiers -->
  		<module name="RedundantModifier" />
@@ -147,23 +149,23 @@
 <!-- 				value="Please use AssertJ imports." /> -->
 <!-- 			<property name="ignoreComments" value="true" /> -->
 <!-- 		</module> -->
-<!-- 		<module name="Regexp"> -->
-<!-- 			<property name="format" value="[ \t]+$" /> -->
-<!-- 			<property name="illegalPattern" value="true" /> -->
-<!-- 			<property name="message" value="Trailing whitespace" /> -->
-<!-- 		</module> -->
+		<module name="Regexp">
+			<property name="format" value="[ \t]+$" />
+			<property name="illegalPattern" value="true" />
+			<property name="message" value="Trailing whitespace" />
+		</module>
 
 		<!-- Whitespace -->
-<!-- 		<module name="GenericWhitespace" /> -->
-<!-- 		<module name="MethodParamPad" /> -->
-<!-- 		<module name="NoWhitespaceAfter" > -->
-<!-- 			<property name="tokens" value="BNOT, DEC, DOT, INC, LNOT, UNARY_MINUS, UNARY_PLUS, ARRAY_DECLARATOR"/> -->
-<!-- 		</module> -->
-<!-- 		<module name="NoWhitespaceBefore" /> -->
-<!-- 		<module name="ParenPad" /> -->
-<!-- 		<module name="TypecastParenPad" /> -->
-<!-- 		<module name="WhitespaceAfter" /> -->
-<!-- 		<module name="WhitespaceAround" /> -->
+		<module name="GenericWhitespace" />
+		<module name="MethodParamPad" />
+		<module name="NoWhitespaceAfter" >
+			<property name="tokens" value="BNOT, DEC, DOT, INC, LNOT, UNARY_MINUS, UNARY_PLUS, ARRAY_DECLARATOR"/>
+		</module>
+		<module name="NoWhitespaceBefore" />
+		<module name="ParenPad" />
+		<module name="TypecastParenPad" />
+		<module name="WhitespaceAfter" />
+		<module name="WhitespaceAround" />
 
  	</module>
 </module>

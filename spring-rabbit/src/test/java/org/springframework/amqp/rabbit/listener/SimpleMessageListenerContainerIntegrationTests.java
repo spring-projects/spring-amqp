@@ -114,19 +114,19 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Parameters
 	public static List<Object[]> getParameters() {
-		return Arrays.asList( //
-				params(0, 1, 1, AcknowledgeMode.AUTO), //
-				params(1, 1, 1, AcknowledgeMode.NONE), //
-				params(2, 4, 1, AcknowledgeMode.AUTO), //
-				extern(3, 4, 1, AcknowledgeMode.AUTO), //
-				params(4, 4, 1, AcknowledgeMode.AUTO, false), //
-				params(5, 2, 2, AcknowledgeMode.AUTO), //
-				params(6, 2, 2, AcknowledgeMode.NONE), //
-				params(7, 20, 4, AcknowledgeMode.AUTO), //
-				params(8, 20, 4, AcknowledgeMode.NONE), //
-				params(9, 300, 4, AcknowledgeMode.AUTO), //
-				params(10, 300, 4, AcknowledgeMode.NONE), //
-				params(11, 300, 4, AcknowledgeMode.AUTO, 10) //
+		return Arrays.asList(
+				params(0, 1, 1, AcknowledgeMode.AUTO),
+				params(1, 1, 1, AcknowledgeMode.NONE),
+				params(2, 4, 1, AcknowledgeMode.AUTO),
+				extern(3, 4, 1, AcknowledgeMode.AUTO),
+				params(4, 4, 1, AcknowledgeMode.AUTO, false),
+				params(5, 2, 2, AcknowledgeMode.AUTO),
+				params(6, 2, 2, AcknowledgeMode.NONE),
+				params(7, 20, 4, AcknowledgeMode.AUTO),
+				params(8, 20, 4, AcknowledgeMode.NONE),
+				params(9, 300, 4, AcknowledgeMode.AUTO),
+				params(10, 300, 4, AcknowledgeMode.NONE),
+				params(11, 300, 4, AcknowledgeMode.AUTO, 10)
 				);
 	}
 
@@ -247,7 +247,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 		if (acknowledgeMode.isTransactionAllowed()) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));
-		} else {
+		}
+		else {
 			assertNull(template.receiveAndConvert(queue.getName()));
 		}
 	}
@@ -297,7 +298,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -330,7 +332,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}
@@ -363,7 +366,8 @@ public class SimpleMessageListenerContainerIntegrationTests {
 				if (fail) {
 					throw new RuntimeException("Planned failure");
 				}
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

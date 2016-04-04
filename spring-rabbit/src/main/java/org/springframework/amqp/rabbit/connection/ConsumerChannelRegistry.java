@@ -32,11 +32,15 @@ import com.rabbitmq.client.Channel;
  * @since 1.2
  *
  */
-public class ConsumerChannelRegistry {
+public final class ConsumerChannelRegistry {
 
 	private static final Log logger = LogFactory.getLog(ConsumerChannelRegistry.class);
 
 	private static final ThreadLocal<ChannelHolder> consumerChannel = new ThreadLocal<ChannelHolder>();
+
+	private ConsumerChannelRegistry() {
+		super();
+	}
 
 	/**
 	 * If a listener container is configured to use a RabbitTransactionManager, the
@@ -99,7 +103,7 @@ public class ConsumerChannelRegistry {
 		return channel;
 	}
 
-	private static class ChannelHolder {
+	private static final class ChannelHolder {
 
 		private final Channel channel;
 

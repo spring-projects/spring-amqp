@@ -189,7 +189,8 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 		if (object instanceof String) {
 			try {
 				bytes = ((String) object).getBytes(this.defaultCharset);
-			} catch (UnsupportedEncodingException e) {
+			}
+			catch (UnsupportedEncodingException e) {
 				throw new MessageConversionException("failed to convert Message content", e);
 			}
 			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);

@@ -18,11 +18,12 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.Map;
 
+import org.w3c.dom.Element;
+
 import org.springframework.beans.factory.config.MapFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.w3c.dom.Element;
 
 /**
  * @author Gary Russell

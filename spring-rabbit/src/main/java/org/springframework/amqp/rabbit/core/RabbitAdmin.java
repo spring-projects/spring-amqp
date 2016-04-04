@@ -178,7 +178,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 				try {
 					channel.exchangeDelete(exchangeName);
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					return false;
 				}
 				return true;
@@ -250,7 +251,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			public Boolean doInRabbit(Channel channel) throws Exception {
 				try {
 					channel.queueDelete(queueName);
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					return false;
 				}
 				return true;
@@ -313,7 +315,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 					channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 							binding.getArguments());
-				} else {
+				}
+				else {
 					channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 							binding.getArguments());
 				}
@@ -588,7 +591,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				catch (IOException e) {
 					logOrRethrowDeclarationException(queue, "queue", e);
 				}
-			} else if (this.logger.isDebugEnabled()) {
+			}
+			else if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
 			}
 		}
@@ -609,7 +613,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						channel.queueBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 								binding.getArguments());
 					}
-				} else {
+				}
+				else {
 					channel.exchangeBind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
 							binding.getArguments());
 				}

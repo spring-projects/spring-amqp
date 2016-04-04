@@ -101,7 +101,8 @@ public class RabbitBindingIntegrationTests {
 					result = getResult(consumer);
 					assertEquals("message", result);
 
-				} finally {
+				}
+				finally {
 					consumer.getChannel().basicCancel(tag);
 				}
 
@@ -141,7 +142,8 @@ public class RabbitBindingIntegrationTests {
 					result = getResult(consumer);
 					assertEquals("message", result);
 
-				} finally {
+				}
+				finally {
 					consumer.getChannel().basicCancel(tag);
 				}
 
@@ -216,7 +218,8 @@ public class RabbitBindingIntegrationTests {
 					template.convertAndSend("foo", "message");
 					String result = getResult(consumer);
 					assertEquals(null, result);
-				} finally {
+				}
+				finally {
 					consumer.stop();
 				}
 
@@ -237,7 +240,8 @@ public class RabbitBindingIntegrationTests {
 					template.convertAndSend("foo.end", "message");
 					String result = getResult(consumer);
 					assertEquals("message", result);
-				} finally {
+				}
+				finally {
 					consumer.stop();
 				}
 
@@ -270,7 +274,8 @@ public class RabbitBindingIntegrationTests {
 					template.convertAndSend("message");
 					String result = getResult(consumer);
 					assertEquals("message", result);
-				} finally {
+				}
+				finally {
 					consumer.stop();
 				}
 
@@ -309,4 +314,5 @@ public class RabbitBindingIntegrationTests {
 		}
 		return (String) new SimpleMessageConverter().fromMessage(response);
 	}
+
 }

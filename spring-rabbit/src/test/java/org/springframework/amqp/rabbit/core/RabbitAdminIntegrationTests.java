@@ -96,7 +96,7 @@ public class RabbitAdminIntegrationTests {
 		if (context != null) {
 			context.close();
 		}
-		if (connectionFactory!=null) {
+		if (connectionFactory != null) {
 			connectionFactory.destroy();
 		}
 	}
@@ -124,7 +124,8 @@ public class RabbitAdminIntegrationTests {
 		new RabbitAdmin(connectionFactory1).declareQueue(queue);
 		try {
 			new RabbitAdmin(connectionFactory2).declareQueue(queue);
-		} finally {
+		}
+		finally {
 			// Need to release the connection so the exclusive queue is deleted
 			connectionFactory1.destroy();
 			connectionFactory2.destroy();
@@ -304,7 +305,8 @@ public class RabbitAdminIntegrationTests {
 
 		try {
 			rabbitAdmin.declareBinding(binding);
-		} catch (AmqpIOException ex) {
+		}
+		catch (AmqpIOException ex) {
 			Throwable cause = ex;
 			Throwable rootCause = null;
 			while (cause != null) {

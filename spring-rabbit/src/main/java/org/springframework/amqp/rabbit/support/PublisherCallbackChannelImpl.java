@@ -101,7 +101,7 @@ public class PublisherCallbackChannelImpl
 	private final ConcurrentMap<String, Listener> listeners = new ConcurrentHashMap<String, Listener>();
 
 	private final Map<Listener, SortedMap<Long, PendingConfirm>> pendingConfirms
-		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long,PendingConfirm>>();
+		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long, PendingConfirm>>();
 
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 
@@ -111,7 +111,7 @@ public class PublisherCallbackChannelImpl
 
 		if (!conditionalMethodsChecked) {
 			// The following reflection is required to maintain compatibility with pre 3.6.x clients.
-			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback(){
+			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback() {
 
 				@Override
 				public void doWith(java.lang.reflect.Method method)
@@ -812,8 +812,7 @@ public class PublisherCallbackChannelImpl
 			String exchange,
 			String routingKey,
 			AMQP.BasicProperties properties,
-			byte[] body) throws IOException
-	{
+			byte[] body) throws IOException {
 		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {

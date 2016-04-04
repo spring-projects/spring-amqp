@@ -404,7 +404,7 @@ public class BlockingQueueConsumer {
 	private void checkMissingQueues() {
 		long now = System.currentTimeMillis();
 		if (now - this.retryDeclarationInterval > this.lastRetryDeclaration) {
-			synchronized(this.missingQueues) {
+			synchronized (this.missingQueues) {
 				Iterator<String> iterator = this.missingQueues.iterator();
 				while (iterator.hasNext()) {
 					boolean available = true;
@@ -604,7 +604,108 @@ public class BlockingQueueConsumer {
 		this.consumer = null;
 	}
 
-	private class InternalConsumer extends DefaultConsumer {
+	/**
+	 * Perform a rollback, handling rollback exceptions properly.
+	 * @param ex the thrown application exception or error
+	 * @throws Exception in case of a rollback error
+	 */
+	public void rollbackOnExceptionIfNecessary(Throwable ex) throws Exception {
+
+		boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
+		try {
+			if (this.transactional) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Initiating transaction rollback on application exception: " + ex);
+				}
+				RabbitUtils.rollbackIfNecessary(this.channel);
+			}
+			if (ackRequired) {
+				// We should always requeue if the container was stopping
+				boolean shouldRequeue = this.defaultRequeuRejected ||
+						ex instanceof MessageRejectedWhileStoppingException;
+				Throwable t = ex;
+				while (shouldRequeue && t != null) {
+					if (t instanceof AmqpRejectAndDontRequeueException) {
+						shouldRequeue = false;
+					}
+					t = t.getCause();
+				}
+				if (logger.isDebugEnabled()) {
+					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
+				}
+				for (Long deliveryTag : this.deliveryTags) {
+					// With newer RabbitMQ brokers could use basicNack here...
+					this.channel.basicReject(deliveryTag, shouldRequeue);
+				}
+				if (this.transactional) {
+					// Need to commit the reject (=nack)
+					RabbitUtils.commitIfNecessary(this.channel);
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Application exception overridden by rollback exception", ex);
+			throw e;
+		}
+		finally {
+			this.deliveryTags.clear();
+		}
+	}
+
+	/**
+	 * Perform a commit or message acknowledgement, as appropriate.
+	 * @param locallyTransacted Whether the channel is locally transacted.
+	 * @throws IOException Any IOException.
+	 * @return true if at least one delivery tag exists.
+	 */
+	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
+
+		if (this.deliveryTags.isEmpty()) {
+			return false;
+		}
+
+		try {
+
+			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
+
+			if (ackRequired) {
+
+				if (this.transactional && !locallyTransacted) {
+
+					// Not locally transacted but it is transacted so it
+					// could be synchronized with an external transaction
+					for (Long deliveryTag : this.deliveryTags) {
+						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel, deliveryTag);
+					}
+
+				}
+				else {
+					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
+					this.channel.basicAck(deliveryTag, true);
+				}
+			}
+
+			if (locallyTransacted) {
+				// For manual acks we still need to commit
+				RabbitUtils.commitIfNecessary(this.channel);
+			}
+
+		}
+		finally {
+			this.deliveryTags.clear();
+		}
+
+		return true;
+
+	}
+
+	@Override
+	public String toString() {
+		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
+				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
+	}
+
+	private final class InternalConsumer extends DefaultConsumer {
 
 		private InternalConsumer(Channel channel) {
 			super(channel);
@@ -648,7 +749,7 @@ public class BlockingQueueConsumer {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			synchronized(BlockingQueueConsumer.this.consumerTags) {
+			synchronized (BlockingQueueConsumer.this.consumerTags) {
 				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
 			}
 		}
@@ -682,7 +783,7 @@ public class BlockingQueueConsumer {
 
 		private final byte[] body;
 
-		Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {//NOSONAR
+		Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) { //NOSONAR
 			this.consumerTag = consumerTag;
 			this.envelope = envelope;
 			this.properties = properties;
@@ -707,7 +808,7 @@ public class BlockingQueueConsumer {
 	}
 
 	@SuppressWarnings("serial")
-	private static class DeclarationException extends AmqpException {
+	private static final class DeclarationException extends AmqpException {
 
 		private DeclarationException() {
 			super("Failed to declare queue(s):");
@@ -731,104 +832,6 @@ public class BlockingQueueConsumer {
 		public String getMessage() {
 			return super.getMessage() + this.failedQueues.toString();
 		}
-
-	}
-
-	@Override
-	public String toString() {
-		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
-				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
-	}
-
-	/**
-	 * Perform a rollback, handling rollback exceptions properly.
-	 * @param ex the thrown application exception or error
-	 * @throws Exception in case of a rollback error
-	 */
-	public void rollbackOnExceptionIfNecessary(Throwable ex) throws Exception {
-
-		boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
-		try {
-			if (this.transactional) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Initiating transaction rollback on application exception: " + ex);
-				}
-				RabbitUtils.rollbackIfNecessary(this.channel);
-			}
-			if (ackRequired) {
-				// We should always requeue if the container was stopping
-				boolean shouldRequeue = this.defaultRequeuRejected ||
-						ex instanceof MessageRejectedWhileStoppingException;
-				Throwable t = ex;
-				while (shouldRequeue && t != null) {
-					if (t instanceof AmqpRejectAndDontRequeueException) {
-						shouldRequeue = false;
-					}
-					t = t.getCause();
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
-				}
-				for (Long deliveryTag : this.deliveryTags) {
-					// With newer RabbitMQ brokers could use basicNack here...
-					this.channel.basicReject(deliveryTag, shouldRequeue);
-				}
-				if (this.transactional) {
-					// Need to commit the reject (=nack)
-					RabbitUtils.commitIfNecessary(this.channel);
-				}
-			}
-		} catch (Exception e) {
-			logger.error("Application exception overridden by rollback exception", ex);
-			throw e;
-		} finally {
-			this.deliveryTags.clear();
-		}
-	}
-
-	/**
-	 * Perform a commit or message acknowledgement, as appropriate.
-	 * @param locallyTransacted Whether the channel is locally transacted.
-	 * @throws IOException Any IOException.
-	 * @return true if at least one delivery tag exists.
-	 */
-	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
-
-		if (this.deliveryTags.isEmpty()) {
-			return false;
-		}
-
-		try {
-
-			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
-
-			if (ackRequired) {
-
-				if (this.transactional && !locallyTransacted) {
-
-					// Not locally transacted but it is transacted so it
-					// could be synchronized with an external transaction
-					for (Long deliveryTag : this.deliveryTags) {
-						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel, deliveryTag);
-					}
-
-				} else {
-					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
-					this.channel.basicAck(deliveryTag, true);
-				}
-			}
-
-			if (locallyTransacted) {
-				// For manual acks we still need to commit
-				RabbitUtils.commitIfNecessary(this.channel);
-			}
-
-		}
-		finally {
-			this.deliveryTags.clear();
-		}
-
-		return true;
 
 	}
 

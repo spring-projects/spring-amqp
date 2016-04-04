@@ -551,7 +551,8 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			try {
 				logger.debug(value + count.getAndIncrement());
 				Thread.sleep(10);
-			} finally {
+			}
+			finally {
 				latch.countDown();
 			}
 		}

@@ -60,7 +60,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @since 1.3
  */
 
-@ContextConfiguration(classes=FixedReplyQueueConfig.class)
+@ContextConfiguration(classes = FixedReplyQueueConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
 public class JavaConfigFixedReplyQueueTests {

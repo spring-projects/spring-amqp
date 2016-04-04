@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
  * @since 1.0.1
  *
  */
-public class RabbitNamespaceUtils {
+public final class RabbitNamespaceUtils {
 
 	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
 
@@ -98,6 +98,11 @@ public class RabbitNamespaceUtils {
 	private static final String CONSUMER_TAG_STRATEGY = "consumer-tag-strategy";
 
 	private static final String IDLE_EVENT_INTERVAL = "idle-event-interval";
+
+
+	private RabbitNamespaceUtils() {
+		super();
+	}
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);
@@ -276,17 +281,21 @@ public class RabbitNamespaceUtils {
 		if (StringUtils.hasText(acknowledge)) {
 			if (ACKNOWLEDGE_AUTO.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.AUTO;
-			} else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
+			}
+			else if (ACKNOWLEDGE_MANUAL.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.MANUAL;
-			} else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
+			}
+			else if (ACKNOWLEDGE_NONE.equals(acknowledge)) {
 				acknowledgeMode = AcknowledgeMode.NONE;
-			} else {
+			}
+			else {
 				parserContext.getReaderContext().error(
 						"Invalid listener container 'acknowledge' setting [" + acknowledge
 								+ "]: only \"auto\", \"manual\", and \"none\" supported.", ele);
 			}
 			return acknowledgeMode;
-		} else {
+		}
+		else {
 			return null;
 		}
 	}

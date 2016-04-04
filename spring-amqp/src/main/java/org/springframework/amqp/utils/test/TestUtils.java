@@ -27,7 +27,11 @@ import org.springframework.util.Assert;
  * @author Gary Russell
  * @since 1.2
  */
-public class TestUtils {
+public final class TestUtils {
+
+	private TestUtils() {
+		super();
+	}
 
 	/**
 	 * Uses nested {@link DirectFieldAccessor}s to obtain a property using dotted notation to traverse fields; e.g.

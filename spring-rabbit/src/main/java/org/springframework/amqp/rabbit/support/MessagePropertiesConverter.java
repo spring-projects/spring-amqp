@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2011 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.springframework.amqp.rabbit.support;
 
 import org.springframework.amqp.core.MessageProperties;
 
-import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.Envelope;
 
 /**
  * Strategy interface for converting between Spring AMQP {@link MessageProperties}

@@ -191,7 +191,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		String[] queueNames = new String[queues.length];
-		for (int i = 0; i< queues.length; i++) {
+		for (int i = 0; i < queues.length; i++) {
 			queueNames[i] = queues[i].getName();
 		}
 		this.addQueueNames(queueNames);
@@ -218,7 +218,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		String[] queueNames = new String[queues.length];
-		for (int i = 0; i< queues.length; i++) {
+		for (int i = 0; i < queues.length; i++) {
 			queueNames[i] = queues[i].getName();
 		}
 		return this.removeQueueNames(queueNames);
@@ -470,7 +470,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				this.lifecycleMonitor.notifyAll();
 			}
 			doInitialize();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
 	}
@@ -488,9 +489,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		// Shut down the invokers.
 		try {
 			doShutdown();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			synchronized (this.lifecycleMonitor) {
 				this.running = false;
 				this.lifecycleMonitor.notifyAll();
@@ -545,7 +548,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				logger.debug("Starting Rabbit listener container.");
 			}
 			doStart();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
 		}
 	}
@@ -572,9 +576,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void stop() {
 		try {
 			doStop();
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
-		} finally {
+		}
+		finally {
 			synchronized (this.lifecycleMonitor) {
 				this.running = false;
 				this.lifecycleMonitor.notifyAll();
@@ -844,11 +850,26 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			// Regular case: failed while active.
 			// Invoke ErrorHandler if available.
 			invokeErrorHandler(ex);
-		} else {
+		}
+		else {
 			// Rare case: listener thread failed after container shutdown.
 			// Log at debug level, to avoid spamming the shutdown log.
 			logger.debug("Listener exception after container shutdown", ex);
 		}
+	}
+
+	/**
+	 * @param e The Exception.
+	 * @param message The failed message.
+	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
+	 * {@link ListenerExecutionFailedException} and return.
+	 */
+	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
+		if (!(e instanceof ListenerExecutionFailedException)) {
+			// Wrap exception to ListenerExecutionFailedException.
+			return new ListenerExecutionFailedException("Listener threw exception", e, message);
+		}
+		return e;
 	}
 
 	/**
@@ -867,17 +888,4 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	/**
-	 * @param e The Exception.
-	 * @param message The failed message.
-	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
-	 * {@link ListenerExecutionFailedException} and return.
-	 */
-	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
-		if (!(e instanceof ListenerExecutionFailedException)) {
-			// Wrap exception to ListenerExecutionFailedException.
-			return new ListenerExecutionFailedException("Listener threw exception", e, message);
-		}
-		return e;
-	}
 }

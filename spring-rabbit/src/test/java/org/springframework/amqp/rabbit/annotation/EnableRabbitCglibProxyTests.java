@@ -121,7 +121,7 @@ public class EnableRabbitCglibProxyTests {
 		@Override
 		@Transactional
 		@RabbitListener(bindings = @QueueBinding(
-				value = @Queue(),
+				value = @Queue,
 				exchange = @Exchange(value = "auto.exch.test", autoDelete = "true"),
 				key = "auto.rk.test")
 		)

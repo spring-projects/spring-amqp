@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2010 the original author or authors.
+ * Copyright 2006-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,13 @@ import java.io.ObjectOutputStream;
  * Static utility to help with serialization.
  *
  * @author Dave Syer
+ * @author Gary Russell
  */
-public class SerializationUtils {
+public final class SerializationUtils {
+
+	private SerializationUtils() {
+		super();
+	}
 
 	/**
 	 * Serialize the object provided.
@@ -59,7 +64,8 @@ public class SerializationUtils {
 		}
 		try {
 			return deserialize(new ObjectInputStream(new ByteArrayInputStream(bytes)));
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new IllegalArgumentException("Could not deserialize object", e);
 		}
 	}

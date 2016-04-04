@@ -193,7 +193,7 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	 */
 	protected void addTargetConnectionFactory(Object key, ConnectionFactory connectionFactory) {
 		this.targetConnectionFactories.put(key, connectionFactory);
-		for(ConnectionListener listener : this.connectionListeners) {
+		for (ConnectionListener listener : this.connectionListeners) {
 			connectionFactory.addConnectionListener(listener);
 		}
 	}

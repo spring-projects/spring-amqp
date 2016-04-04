@@ -316,7 +316,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?,?>>();
+		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?, ?>>();
 		doAnswer(new Answer<Object>() {
 
 			@Override
@@ -336,10 +336,11 @@ public class SimpleMessageListenerContainerTests {
 			public void onMessage(Message message) {
 			}
 		});
-		container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
+		container.setConsumerArguments(Collections.<String, Object>singletonMap("x-priority", Integer.valueOf(10)));
 		container.afterPropertiesSet();
 		container.start();
-		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
+		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class),
+				any(Consumer.class));
 		assertTrue(args.get() != null);
 		assertEquals(10, args.get().get("x-priority"));
 		consumer.get().handleCancelOk("foo");

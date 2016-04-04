@@ -300,7 +300,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			InetAddress localMachine = InetAddress.getLocalHost();
 			temp = localMachine.getHostName();
 			this.logger.debug("Using hostname [" + temp + "] for hostname.");
-		} catch (UnknownHostException e) {
+		}
+		catch (UnknownHostException e) {
 			this.logger.warn("Could not get host name, using 'localhost' as default value", e);
 			temp = "localhost";
 		}

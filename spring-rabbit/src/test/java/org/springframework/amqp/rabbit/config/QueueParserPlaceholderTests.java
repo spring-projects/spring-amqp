@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import org.junit.After;
 import org.junit.Before;
+
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
@@ -36,8 +37,8 @@ public class QueueParserPlaceholderTests extends QueueParserTests {
 
 	@After
 	public void closeBeanFactory() throws Exception {
-		if (beanFactory!=null) {
-			((ConfigurableApplicationContext)beanFactory).close();
+		if (beanFactory != null) {
+			((ConfigurableApplicationContext) beanFactory).close();
 		}
 	}
 

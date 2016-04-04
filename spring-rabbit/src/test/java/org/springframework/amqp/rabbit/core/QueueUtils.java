@@ -19,7 +19,11 @@ package org.springframework.amqp.rabbit.core;
 import com.rabbitmq.client.AMQP.Queue;
 import com.rabbitmq.client.Channel;
 
-public class QueueUtils {
+public final class QueueUtils {
+
+	private QueueUtils() {
+		super();
+	}
 
 	static void declareTestQueue(RabbitTemplate template, final String routingKey) {
 		// declare and bind queue

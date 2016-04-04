@@ -45,13 +45,13 @@ public class Message implements Serializable {
 
 	private final byte[] body;
 
-	public Message(byte[] body, MessageProperties messageProperties) {//NOSONAR
-		this.body = body;//NOSONAR
+	public Message(byte[] body, MessageProperties messageProperties) { //NOSONAR
+		this.body = body; //NOSONAR
 		this.messageProperties = messageProperties;
 	}
 
 	public byte[] getBody() {
-		return this.body;//NOSONAR
+		return this.body; //NOSONAR
 	}
 
 	public MessageProperties getMessageProperties() {
@@ -90,7 +90,7 @@ public class Message implements Serializable {
 			// ignore
 		}
 		// Comes out as '[B@....b' (so harmless)
-		return this.body.toString()+"(byte["+this.body.length+"])";//NOSONAR
+		return this.body.toString() + "(byte[" + this.body.length + "])"; //NOSONAR
 	}
 
 	@Override

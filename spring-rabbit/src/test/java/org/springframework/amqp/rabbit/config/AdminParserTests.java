@@ -81,7 +81,8 @@ public final class AdminParserTests {
 		RabbitAdmin admin;
 		if (StringUtils.hasText(adminBeanName)) {
 			admin = beanFactory.getBean(adminBeanName, RabbitAdmin.class);
-		} else {
+		}
+		else {
 			admin = beanFactory.getBean(RabbitAdmin.class);
 		}
 		assertEquals(expectedAutoStartup, admin.isAutoStartup());
@@ -109,7 +110,8 @@ public final class AdminParserTests {
 			if (!validContext) {
 				fail("Context " + resource + " failed to load");
 			}
-		} catch (BeanDefinitionParsingException e) {
+		}
+		catch (BeanDefinitionParsingException e) {
 			if (validContext) {
 				// Context expected to be valid - throw an exception up
 				throw e;

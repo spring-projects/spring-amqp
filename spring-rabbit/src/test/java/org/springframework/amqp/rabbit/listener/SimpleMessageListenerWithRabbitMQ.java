@@ -36,9 +36,14 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.DirectFieldAccessor;
 
-public class SimpleMessageListenerWithRabbitMQ {
+public final class SimpleMessageListenerWithRabbitMQ {
 
 	private static Log logger = LogFactory.getLog(SimpleMessageListenerWithRabbitMQ.class);
+
+
+	private SimpleMessageListenerWithRabbitMQ() {
+		super();
+	}
 
 
 	public static void main(String[] args) throws InterruptedException {
@@ -59,7 +64,7 @@ public class SimpleMessageListenerWithRabbitMQ {
 		container.setTxSize(500);
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setConcurrentConsumers(20);
-		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(),messageConverter));
+		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(), messageConverter));
 		container.start();
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -68,8 +73,8 @@ public class SimpleMessageListenerWithRabbitMQ {
 
 		Thread.sleep(10000);
 		int n = 0;
-		while(true){
-			for(int i=1; i<=200;i++){
+		while (true) {
+			for (int i = 1; i <= 200; i++) {
 
 				template.send("foo", "", new Message("foo # ID: id".replace("#", String.valueOf(i)).replace("id", java.util.UUID.randomUUID().toString()).getBytes(), messageProperties));
 
@@ -105,7 +110,7 @@ public class SimpleMessageListenerWithRabbitMQ {
 
 
 
-	private static class SimpleAdapter{
+	private static class SimpleAdapter {
 
 		@SuppressWarnings("unused")
 		public void handleMessage(String input) {

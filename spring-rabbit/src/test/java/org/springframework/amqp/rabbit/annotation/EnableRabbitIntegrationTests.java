@@ -175,25 +175,6 @@ public class EnableRabbitIntegrationTests {
 	@Autowired
 	private RabbitListenerEndpointRegistry registry;
 
-	/**
-	 * Defer queue deletion until after the context has been stopped by the
-	 * {@link DirtiesContext}.
-	 *
-	 */
-	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
-
-		@Override
-		public void afterTestClass(TestContext testContext) throws Exception {
-			brokerRunning.removeTestQueues();
-		}
-
-		@Override
-		public int getOrder() {
-			return Ordered.HIGHEST_PRECEDENCE;
-		}
-
-	}
-
 	@Test
 	public void autoDeclare() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
@@ -335,27 +316,21 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	@DirtiesContext
 	public void simpleEndpointWithSendTo() throws InterruptedException {
 		rabbitTemplate.convertAndSend("test.sendTo", "bar");
-		int n = 0;
-		Object result = null;
-		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply")) == null && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertTrue(n < 100);
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply");
 		assertNotNull(result);
 		assertEquals("BAR", result);
 	}
 
 	@Test
+	@DirtiesContext
 	public void simpleEndpointWithSendToSpel() throws InterruptedException {
 		rabbitTemplate.convertAndSend("test.sendTo.spel", "bar");
-		int n = 0;
-		Object result = null;
-		while ((result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel")) == null && n++ < 100) {
-			Thread.sleep(100);
-		}
-		assertTrue(n < 100);
+		rabbitTemplate.setReceiveTimeout(10000);
+		Object result = rabbitTemplate.receiveAndConvert("test.sendTo.reply.spel");
 		assertNotNull(result);
 		assertEquals("BARbar", result);
 	}
@@ -513,7 +488,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Override
 		@RabbitListener(bindings = @QueueBinding(
-				value = @Queue(),
+				value = @Queue,
 				exchange = @Exchange(value = "auto.exch.tx", autoDelete = "true"),
 				key = "auto.rk.tx")
 		)
@@ -569,7 +544,7 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = @QueueBinding(
 				value = @Queue(value = "auto.declare.fanout", autoDelete = "true"),
-				exchange = @Exchange(value = "auto.exch.fanout", autoDelete = "true", type="fanout"))
+				exchange = @Exchange(value = "auto.exch.fanout", autoDelete = "true", type = "fanout"))
 		)
 		public String handleWithFanout(String foo) {
 			return foo.toUpperCase() + foo.toUpperCase();
@@ -577,7 +552,7 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = {
 				@QueueBinding(
-					value = @Queue(),
+					value = @Queue,
 					exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 					key = "auto.anon.rk")}
 		)
@@ -586,7 +561,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(bindings = @QueueBinding(
-				value = @Queue(autoDelete = "true", exclusive="true", durable="true"),
+				value = @Queue(autoDelete = "true", exclusive = "true", durable = "true"),
 				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 				key = "auto.anon.atts.rk")
 		)
@@ -657,15 +632,15 @@ public class EnableRabbitIntegrationTests {
 
 		private final CountDownLatch latch = new CountDownLatch(1);
 
-		@RabbitListener(queues = "differentTypes", containerFactory="jsonListenerContainerFactory")
+		@RabbitListener(queues = "differentTypes", containerFactory = "jsonListenerContainerFactory")
 		public void handleDifferent(Foo2 foo) {
 			foos.add(foo);
 			latch.countDown();
 		}
 
-		@RabbitListener(id="notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
+		@RabbitListener(id = "notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
 			bindings = @QueueBinding(
-				value = @Queue(autoDelete = "true", exclusive="true", durable="true"),
+				value = @Queue(autoDelete = "true", exclusive = "true", durable = "true"),
 				exchange = @Exchange(value = "auto.start", autoDelete = "true"),
 				key = "auto.start")
 		)
@@ -710,11 +685,11 @@ public class EnableRabbitIntegrationTests {
 
 	public static class ProxiedListener {
 
-		@RabbitListener(queues="test.intercepted")
+		@RabbitListener(queues = "test.intercepted")
 		public void listen(String foo) {
 		}
 
-		@RabbitListener(queues="test.intercepted.withReply")
+		@RabbitListener(queues = "test.intercepted.withReply")
 		public String listenAndReply(String foo) {
 			return foo.toUpperCase();
 		}
@@ -1181,71 +1156,90 @@ public class EnableRabbitIntegrationTests {
 
 	public static class Foo2Service {
 
-		@RabbitListener(queues="test.converted")
+		@RabbitListener(queues = "test.converted")
 		public Foo2 foo2(Foo2 foo2) {
 			return foo2;
 		}
 
-		@RabbitListener(queues="test.converted.list")
+		@RabbitListener(queues = "test.converted.list")
 		public Foo2 foo2(List<Foo2> foo2s) {
 			Foo2 foo2 = foo2s.get(0);
 			foo2.setBar("BAZZZZ");
 			return foo2;
 		}
 
-		@RabbitListener(queues="test.converted.array")
+		@RabbitListener(queues = "test.converted.array")
 		public Foo2 foo2(Foo2[] foo2s) {
 			Foo2 foo2 = foo2s[0];
 			foo2.setBar("BAZZxx");
 			return foo2;
 		}
 
-		@RabbitListener(queues="test.converted.args1")
+		@RabbitListener(queues = "test.converted.args1")
 		public String foo2(Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
 			return foo2 + queue;
 		}
 
-		@RabbitListener(queues="test.converted.args2")
+		@RabbitListener(queues = "test.converted.args2")
 		public String foo2a(@Payload Foo2 foo2, @Header("amqp_consumerQueue") String queue) {
 			return foo2 + queue;
 		}
 
-		@RabbitListener(queues="test.converted.message")
+		@RabbitListener(queues = "test.converted.message")
 		public String foo2Message(@Payload Foo2 foo2, Message message) {
 			return foo2.toString() + message.getMessageProperties().getTargetMethod().getName()
 					+ message.getMessageProperties().getTargetBean().getClass().getSimpleName();
 		}
 
-		@RabbitListener(queues="test.notconverted.message")
+		@RabbitListener(queues = "test.notconverted.message")
 		public String justMessage(Message message) {
 			return "foo" + message.getClass().getSimpleName();
 		}
 
-		@RabbitListener(queues="test.notconverted.channel")
+		@RabbitListener(queues = "test.notconverted.channel")
 		public String justChannel(Channel channel) {
 			return "barAndChannel";
 		}
 
-		@RabbitListener(queues="test.notconverted.messagechannel")
+		@RabbitListener(queues = "test.notconverted.messagechannel")
 		public String messageChannel(Foo2 foo2, Message message, Channel channel) {
 			return foo2 + message.getClass().getSimpleName() + "AndChannel";
 		}
 
-		@RabbitListener(queues="test.notconverted.messagingmessage")
+		@RabbitListener(queues = "test.notconverted.messagingmessage")
 		public String messagingMessage(org.springframework.messaging.Message<?> message) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
 		}
 
-		@RabbitListener(queues="test.converted.foomessage")
+		@RabbitListener(queues = "test.converted.foomessage")
 		public String messagingMessage(org.springframework.messaging.Message<Foo2> message,
 				@Header(value = "", required = false) String h) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
 		}
 
-		@RabbitListener(queues="test.notconverted.messagingmessagenotgeneric")
+		@RabbitListener(queues = "test.notconverted.messagingmessagenotgeneric")
 		public String messagingMessage(@SuppressWarnings("rawtypes") org.springframework.messaging.Message message,
 				@Header(value = "", required = false) Integer h) {
 			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
+		}
+
+	}
+
+	/**
+	 * Defer queue deletion until after the context has been stopped by the
+	 * {@link DirtiesContext}.
+	 *
+	 */
+	public static class DeleteQueuesExecutionListener extends AbstractTestExecutionListener {
+
+		@Override
+		public void afterTestClass(TestContext testContext) throws Exception {
+			brokerRunning.removeTestQueues();
+		}
+
+		@Override
+		public int getOrder() {
+			return Ordered.HIGHEST_PRECEDENCE;
 		}
 
 	}
