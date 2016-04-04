@@ -365,7 +365,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		this.closeExceptionLogger.log(logger, "Channel shutdown" ,cause);
+		this.closeExceptionLogger.log(logger, "Channel shutdown", cause);
 	}
 
 	@Override

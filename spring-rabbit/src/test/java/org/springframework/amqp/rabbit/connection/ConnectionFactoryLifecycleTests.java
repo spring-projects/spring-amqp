@@ -86,7 +86,7 @@ public class ConnectionFactoryLifecycleTests {
 
 		private volatile boolean running;
 
-		public MyLifecycle (ConnectionFactory cf) {
+		public MyLifecycle(ConnectionFactory cf) {
 			this.admin = new RabbitAdmin(cf);
 		}
 
