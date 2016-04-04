@@ -175,7 +175,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				logger.debug("Could not close synchronized Rabbit Channel after transaction", ex);
 			}
 		}
-		for (Connection con : this.connections) {//NOSONAR
+		for (Connection con : this.connections) { //NOSONAR
 			RabbitUtils.closeConnection(con);
 		}
 		this.connections.clear();

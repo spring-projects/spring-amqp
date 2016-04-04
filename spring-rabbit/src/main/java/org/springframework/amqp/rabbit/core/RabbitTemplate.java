@@ -1169,7 +1169,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message,
 			CorrelationData correlationData) {
 		if (!this.evaluatedFastReplyTo) {
-			synchronized(this) {
+			synchronized (this) {
 				if (!this.evaluatedFastReplyTo) {
 					evaluateFastReplyTo();
 				}
@@ -1231,7 +1231,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					try {
 						channel.basicCancel(consumerTag);
 					}
-					catch (Exception e) {}
+					catch (Exception e) { }
 				}
 				return reply;
 			}

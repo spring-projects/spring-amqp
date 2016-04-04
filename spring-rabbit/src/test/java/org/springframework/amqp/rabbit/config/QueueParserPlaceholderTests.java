@@ -37,7 +37,7 @@ public class QueueParserPlaceholderTests extends QueueParserTests {
 
 	@After
 	public void closeBeanFactory() throws Exception {
-		if (beanFactory!=null) {
+		if (beanFactory != null) {
 			((ConfigurableApplicationContext) beanFactory).close();
 		}
 	}

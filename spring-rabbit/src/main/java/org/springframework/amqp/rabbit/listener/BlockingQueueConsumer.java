@@ -404,7 +404,7 @@ public class BlockingQueueConsumer {
 	private void checkMissingQueues() {
 		long now = System.currentTimeMillis();
 		if (now - this.retryDeclarationInterval > this.lastRetryDeclaration) {
-			synchronized(this.missingQueues) {
+			synchronized (this.missingQueues) {
 				Iterator<String> iterator = this.missingQueues.iterator();
 				while (iterator.hasNext()) {
 					boolean available = true;
@@ -749,7 +749,7 @@ public class BlockingQueueConsumer {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			synchronized(BlockingQueueConsumer.this.consumerTags) {
+			synchronized (BlockingQueueConsumer.this.consumerTags) {
 				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
 			}
 		}
@@ -783,7 +783,7 @@ public class BlockingQueueConsumer {
 
 		private final byte[] body;
 
-		Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {//NOSONAR
+		Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) { //NOSONAR
 			this.consumerTag = consumerTag;
 			this.envelope = envelope;
 			this.properties = properties;

@@ -560,7 +560,7 @@ public class AmqpAppender extends AppenderSkeleton {
 							try {
 								message = new Message(msgBody.toString().getBytes(AmqpAppender.this.charset), amqpProps);
 							}
-							catch (UnsupportedEncodingException e) {/* fall back to default */}
+							catch (UnsupportedEncodingException e) { /* fall back to default */ }
 						}
 						if (message == null) {
 							message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)

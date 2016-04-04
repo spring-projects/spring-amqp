@@ -73,8 +73,8 @@ public final class SimpleMessageListenerWithRabbitMQ {
 
 		Thread.sleep(10000);
 		int n = 0;
-		while(true){
-			for(int i=1; i<=200; i++){
+		while (true) {
+			for (int i = 1; i <= 200; i++) {
 
 				template.send("foo", "", new Message("foo # ID: id".replace("#", String.valueOf(i)).replace("id", java.util.UUID.randomUUID().toString()).getBytes(), messageProperties));
 
@@ -110,7 +110,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 
 
 
-	private static class SimpleAdapter{
+	private static class SimpleAdapter {
 
 		@SuppressWarnings("unused")
 		public void handleMessage(String input) {

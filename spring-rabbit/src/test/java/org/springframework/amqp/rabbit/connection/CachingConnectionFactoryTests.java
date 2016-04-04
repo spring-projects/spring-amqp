@@ -255,7 +255,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			con.createChannel(false);
 			fail("Exception expected");
 		}
-		catch (AmqpTimeoutException e) {}
+		catch (AmqpTimeoutException e) { }
 
 		// should be ignored, and added last into channel cache.
 		channel1.close();
@@ -297,7 +297,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			ccf.createConnection();
 			fail("Exception expected");
 		}
-		catch (AmqpTimeoutException e) {}
+		catch (AmqpTimeoutException e) { }
 
 		// should be ignored, and added to cache
 		con1.close();
@@ -908,7 +908,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				new AtomicReference<com.rabbitmq.client.Connection>();
 		final AtomicReference<com.rabbitmq.client.Connection> closedNotification =
 				new AtomicReference<com.rabbitmq.client.Connection>();
-		ccf.setConnectionListeners(Collections.singletonList(new ConnectionListener(){
+		ccf.setConnectionListeners(Collections.singletonList(new ConnectionListener() {
 
 			@Override
 			public void onCreate(Connection connection) {
@@ -1112,7 +1112,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				new AtomicReference<com.rabbitmq.client.Connection>();
 		final AtomicReference<com.rabbitmq.client.Connection> closedNotification =
 				new AtomicReference<com.rabbitmq.client.Connection>();
-		ccf.setConnectionListeners(Collections.singletonList(new ConnectionListener(){
+		ccf.setConnectionListeners(Collections.singletonList(new ConnectionListener() {
 
 			@Override
 			public void onCreate(Connection connection) {

@@ -164,13 +164,13 @@ public class MessageListenerTxSizeIntegrationTests {
 			String value = new String(message.getBody());
 			try {
 				logger.debug("Received: " + value);
-				if (count.get()==null) {
+				if (count.get() == null) {
 					count.set(1);
 				}
 				else {
-					count.set(count.get()+1);
+					count.set(count.get() + 1);
 				}
-				if (count.get()==txSize && fail) {
+				if (count.get() == txSize && fail) {
 					logger.debug("Failing: " + value);
 					count.set(0);
 					throw new RuntimeException("Planned");

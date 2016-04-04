@@ -50,12 +50,12 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	@Override
 	public final Message toMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
-		if (messageProperties==null) {
+		if (messageProperties == null) {
 			messageProperties = new MessageProperties();
 		}
 		Message message = createMessage(object, messageProperties);
 		messageProperties = message.getMessageProperties();
-		if (this.createMessageIds && messageProperties.getMessageId()==null) {
+		if (this.createMessageIds && messageProperties.getMessageId() == null) {
 			messageProperties.setMessageId(UUID.randomUUID().toString());
 		}
 		return message;

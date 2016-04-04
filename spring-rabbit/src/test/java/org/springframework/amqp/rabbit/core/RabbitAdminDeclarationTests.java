@@ -310,7 +310,7 @@ public class RabbitAdminDeclarationTests {
 			queue.setAdminsThatShouldDeclare(null, admin1);
 			fail("Expected Exception");
 		}
-		catch (IllegalArgumentException e) {}
+		catch (IllegalArgumentException e) { }
 	}
 
 	@Configuration

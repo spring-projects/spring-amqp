@@ -272,7 +272,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			Assert.isTrue(concurrentConsumers <= this.maxConcurrentConsumers,
 					"'concurrentConsumers' cannot be more than 'maxConcurrentConsumers'");
 		}
-		synchronized(this.consumersMonitor) {
+		synchronized (this.consumersMonitor) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Changing consumers from " + this.concurrentConsumers + " to " + concurrentConsumers);
 			}
@@ -474,7 +474,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	public void setConsumerArguments(Map<String, Object> args) {
-		synchronized(this.consumersMonitor) {
+		synchronized (this.consumersMonitor) {
 			this.consumerArgs.clear();
 			this.consumerArgs.putAll(args);
 		}
@@ -877,7 +877,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean isActive(BlockingQueueConsumer consumer) {
 		Boolean consumerActive;
-		synchronized(this.consumersMonitor) {
+		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
 				Boolean active = this.consumers.get(consumer);
 				consumerActive = active != null && active;
@@ -933,7 +933,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (AmqpConnectException e) {
 				logger.info("Broker not available; cannot check queue declarations");
 			}
-			catch (AmqpIOException e){
+			catch (AmqpIOException e) {
 				if (RabbitUtils.isMismatchedQueueArgs(e)) {
 					throw new FatalListenerStartupException("Mismatched queues", e);
 				}
@@ -977,7 +977,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void considerAddingAConsumer() {
-		synchronized(this.consumersMonitor) {
+		synchronized (this.consumersMonitor) {
 			if (this.consumers != null
 					&& this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
 				long now = System.currentTimeMillis();
@@ -1144,7 +1144,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								catch (RuntimeException e) {
 									throw e;
 								}
-								catch (Throwable e) {//NOSONAR
+								catch (Throwable e) { //NOSONAR
 									// ok to catch Throwable here because we re-throw it below
 									throw new WrappedTransactionException(e);
 								}
@@ -1177,7 +1177,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (ImmediateAcknowledgeAmqpException e) {
 				break;
 			}
-			catch (Throwable ex) {//NOSONAR
+			catch (Throwable ex) { //NOSONAR
 				consumer.rollbackOnExceptionIfNecessary(ex);
 				throw ex;
 			}
@@ -1303,7 +1303,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				catch (FatalListenerStartupException ex) {
 					throw ex;
 				}
-				catch (Throwable t) {//NOSONAR
+				catch (Throwable t) { //NOSONAR
 					this.start.countDown();
 					handleStartupFailure(this.consumer.getBackOffExecution());
 					throw t;
@@ -1420,12 +1420,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					this.logConsumerException(e);
 				}
 			}
-			catch (Error e) {//NOSONAR
+			catch (Error e) { //NOSONAR
 				// ok to catch Error - we're aborting so will stop
 				logger.error("Consumer thread error, thread abort.", e);
 				aborted = true;
 			}
-			catch (Throwable t) {//NOSONAR
+			catch (Throwable t) { //NOSONAR
 				// by now, it must be an exception
 				if (isActive()) {
 					this.logConsumerException(t);

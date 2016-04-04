@@ -111,7 +111,7 @@ public class PublisherCallbackChannelImpl
 
 		if (!conditionalMethodsChecked) {
 			// The following reflection is required to maintain compatibility with pre 3.6.x clients.
-			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback(){
+			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback() {
 
 				@Override
 				public void doWith(java.lang.reflect.Method method)

@@ -85,7 +85,7 @@ public class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -192,7 +192,7 @@ public class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -301,7 +301,7 @@ public class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -403,7 +403,7 @@ public class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {
@@ -506,7 +506,7 @@ public class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		doAnswer(new Answer<Channel>(){
+		doAnswer(new Answer<Channel>() {
 			boolean done;
 			@Override
 			public Channel answer(InvocationOnMock invocation) throws Throwable {

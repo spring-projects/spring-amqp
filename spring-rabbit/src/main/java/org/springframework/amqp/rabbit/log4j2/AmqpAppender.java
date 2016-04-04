@@ -268,7 +268,7 @@ public class AmqpAppender extends AbstractAppender {
 								message = new Message(msgBody.toString().getBytes(AmqpAppender.this.manager.charset),
 										amqpProps);
 							}
-							catch (UnsupportedEncodingException e) {/* fall back to default */}
+							catch (UnsupportedEncodingException e) { /* fall back to default */ }
 						}
 						if (message == null) {
 							message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)

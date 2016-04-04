@@ -162,12 +162,12 @@ public class ExampleRabbitListenerCaptureTest {
 
 		private boolean failed;
 
-		@RabbitListener(id="foo", queues="#{queue1.name}")
+		@RabbitListener(id = "foo", queues = "#{queue1.name}")
 		public String foo(String foo) {
 			return foo.toUpperCase();
 		}
 
-		@RabbitListener(id="bar", queues="#{queue2.name}")
+		@RabbitListener(id = "bar", queues = "#{queue2.name}")
 		public void foo(@Payload String foo, @Header("amqp_receivedRoutingKey") String rk) {
 			if (!failed && foo.equals("ex")) {
 				failed = true;

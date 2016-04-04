@@ -51,7 +51,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @since 1.3.6
  */
 
-@ContextConfiguration(classes=FixedReplyQueueDeadLetterConfig.class)
+@ContextConfiguration(classes = FixedReplyQueueDeadLetterConfig.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
 public class FixedReplyQueueDeadLetterTests {

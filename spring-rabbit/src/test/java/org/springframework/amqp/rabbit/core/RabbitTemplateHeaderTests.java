@@ -102,7 +102,7 @@ public class RabbitTemplateHeaderTests {
 				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 				template.onMessage(replyMessage);
 				return null;
-			}}
+			} }
 		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
@@ -153,7 +153,7 @@ public class RabbitTemplateHeaderTests {
 				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 				template.onMessage(replyMessage);
 				return null;
-			}}
+			} }
 		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
@@ -209,7 +209,7 @@ public class RabbitTemplateHeaderTests {
 				}
 				template.onMessage(replyMessage);
 				return null;
-			}}
+			} }
 		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
@@ -260,7 +260,7 @@ public class RabbitTemplateHeaderTests {
 				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 				template.onMessage(replyMessage);
 				return null;
-			}}
+			} }
 		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);
@@ -318,7 +318,7 @@ public class RabbitTemplateHeaderTests {
 				}
 				template.onMessage(replyMessage);
 				return null;
-			}}
+			} }
 		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
 				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
 		Message reply = template.sendAndReceive(message);

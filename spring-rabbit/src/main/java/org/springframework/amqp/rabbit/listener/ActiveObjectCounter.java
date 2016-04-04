@@ -53,7 +53,7 @@ public class ActiveObjectCounter<T> {
 			Collection<T> objects = new HashSet<T>(this.locks.keySet());
 			for (T object : objects) {
 				CountDownLatch lock = this.locks.get(object);
-				if (lock==null) {
+				if (lock == null) {
 					continue;
 				}
 				t0 = System.currentTimeMillis();

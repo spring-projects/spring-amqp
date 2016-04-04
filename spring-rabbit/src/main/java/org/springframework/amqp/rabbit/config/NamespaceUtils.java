@@ -308,12 +308,12 @@ public abstract class NamespaceUtils {
 		boolean hasAttributeValue = StringUtils.hasText(valueElementValue);
 		boolean hasAttributeExpression = StringUtils.hasText(expressionElementValue);
 
-		if (hasAttributeValue && hasAttributeExpression){
+		if (hasAttributeValue && hasAttributeExpression) {
 			parserContext.getReaderContext().error("Only one of '" + valueElementName + "' or '"
 					+ expressionElementName + "' is allowed", element);
 		}
 
-		if (oneRequired && (!hasAttributeValue && !hasAttributeExpression)){
+		if (oneRequired && (!hasAttributeValue && !hasAttributeExpression)) {
 			parserContext.getReaderContext().error("One of '" + valueElementName + "' or '"
 					+ expressionElementName + "' is required", element);
 		}
@@ -334,7 +334,7 @@ public abstract class NamespaceUtils {
 
 		String expressionElementValue = element.getAttribute(expressionElementName);
 
-		if (StringUtils.hasText(expressionElementValue)){
+		if (StringUtils.hasText(expressionElementValue)) {
 			BeanDefinitionBuilder expressionDefBuilder =
 					BeanDefinitionBuilder.genericBeanDefinition(ExpressionFactoryBean.class);
 			expressionDefBuilder.addConstructorArgValue(expressionElementValue);

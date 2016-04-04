@@ -191,7 +191,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		factory.setMessageRecoverer(new MessageRecoverer() {
 			@Override
 			public void recover(Message message, Throwable cause) {
-				logger.info("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString()+"], message: " +message);
+				logger.info("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString() + "], message: " + message);
 				latch.countDown();
 			}
 		});
@@ -293,10 +293,10 @@ public class MessageListenerContainerRetryIntegrationTests {
 		}
 
 		public void handleMessage(int value) throws Exception {
-			logger.debug("Handling: ["+value+ "], fails:" + count);
+			logger.debug("Handling: [" + value + "], fails:" + count);
 			if (value % failFrequency == 0) {
 				count.getAndIncrement();
-				logger.debug("Failing: ["+value+ "], fails:" + count);
+				logger.debug("Failing: [" + value + "], fails:" + count);
 				throw new RuntimeException("Planned");
 			}
 		}

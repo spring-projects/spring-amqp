@@ -96,7 +96,7 @@ public class RabbitAdminIntegrationTests {
 		if (context != null) {
 			context.close();
 		}
-		if (connectionFactory!=null) {
+		if (connectionFactory != null) {
 			connectionFactory.destroy();
 		}
 	}

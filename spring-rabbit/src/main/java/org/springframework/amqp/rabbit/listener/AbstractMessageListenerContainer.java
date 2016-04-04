@@ -191,7 +191,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		String[] queueNames = new String[queues.length];
-		for (int i = 0; i< queues.length; i++) {
+		for (int i = 0; i < queues.length; i++) {
 			queueNames[i] = queues[i].getName();
 		}
 		this.addQueueNames(queueNames);
@@ -218,7 +218,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		String[] queueNames = new String[queues.length];
-		for (int i = 0; i< queues.length; i++) {
+		for (int i = 0; i < queues.length; i++) {
 			queueNames[i] = queues[i].getName();
 		}
 		return this.removeQueueNames(queueNames);
