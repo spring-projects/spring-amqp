@@ -336,10 +336,11 @@ public class SimpleMessageListenerContainerTests {
 			public void onMessage(Message message) {
 			}
 		});
-		container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
+		container.setConsumerArguments(Collections.<String, Object>singletonMap("x-priority", Integer.valueOf(10)));
 		container.afterPropertiesSet();
 		container.start();
-		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
+		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class),
+				any(Consumer.class));
 		assertTrue(args.get() != null);
 		assertEquals(10, args.get().get("x-priority"));
 		consumer.get().handleCancelOk("foo");

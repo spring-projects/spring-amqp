@@ -143,7 +143,7 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWitCustomRetryPolicyTraverseCause() {
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
 				.retryPolicy(new SimpleRetryPolicy(15, Collections
-						.<Class<? extends Throwable>, Boolean> singletonMap(Exception.class, true), true))
+						.<Class<? extends Throwable>, Boolean>singletonMap(Exception.class, true), true))
 				.build();
 		assertEquals(15, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));
 	}

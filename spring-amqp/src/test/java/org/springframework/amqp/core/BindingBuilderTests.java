@@ -67,7 +67,7 @@ public class BindingBuilderTests {
 				bind(new Queue("q")).//
 				to(new CustomExchange("f")).//
 				with("r").//
-				and(Collections.<String, Object> singletonMap("k", new Object()));
+				and(Collections.<String, Object>singletonMap("k", new Object()));
 		assertNotNull(binding);
 	}
 
