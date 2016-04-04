@@ -53,8 +53,8 @@
 		<module name="EmptyStatement" />
 		<module name="EqualsHashCode" />
 		<module name="InnerAssignment" />
-<!-- 		<module name="SimplifyBooleanExpression" /> -->
-<!-- 		<module name="SimplifyBooleanReturn" /> -->
+		<module name="SimplifyBooleanExpression" />
+		<module name="SimplifyBooleanReturn" />
 <!-- 		<module name="StringLiteralEquality" /> -->
 <!-- 		<module name="NestedForDepth"> -->
 <!-- 			<property name="max" value="3" /> -->
