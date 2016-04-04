@@ -1,11 +1,12 @@
-task fixWhiteAfter << {
+task fixWhiteAround << {
 	fileTree("${buildDir}/reports/checkstyle").include('*.xml').each { report ->
 		def xml = new XmlParser(false, false).parse(report)
 		xml.file.each { f ->
 			def errors = f.error
 			def thisErrors = []
 			errors.each { error ->
-				if (error.@source == 'com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck') {
+				if (error.@source == 'com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck' ||
+					error.@source == 'com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck') {
 					thisErrors.add(error)
 				}
 			}
