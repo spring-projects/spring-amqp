@@ -64,7 +64,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		container.setTxSize(500);
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		container.setConcurrentConsumers(20);
-		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(),messageConverter));
+		container.setMessageListener(new MessageListenerAdapter(new SimpleAdapter(), messageConverter));
 		container.start();
 
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -74,7 +74,7 @@ public final class SimpleMessageListenerWithRabbitMQ {
 		Thread.sleep(10000);
 		int n = 0;
 		while(true){
-			for(int i=1; i<=200;i++){
+			for(int i=1; i<=200; i++){
 
 				template.send("foo", "", new Message("foo # ID: id".replace("#", String.valueOf(i)).replace("id", java.util.UUID.randomUUID().toString()).getBytes(), messageProperties));
 

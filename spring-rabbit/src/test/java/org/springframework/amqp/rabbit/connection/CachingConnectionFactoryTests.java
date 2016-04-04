@@ -778,7 +778,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				called.incrementAndGet();
 			}
 		}));
-		((CachingConnectionFactory)connectionFactory).setChannelCacheSize(1);
+		((CachingConnectionFactory) connectionFactory).setChannelCacheSize(1);
 
 		Connection con = connectionFactory.createConnection();
 		Channel channel = con.createChannel(false);
@@ -830,7 +830,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				closed.set(connection);
 			}
 		});
-		((CachingConnectionFactory)connectionFactory).setChannelCacheSize(1);
+		((CachingConnectionFactory) connectionFactory).setChannelCacheSize(1);
 
 		Connection con = connectionFactory.createConnection();
 		Channel channel = con.createChannel(false);
@@ -1409,7 +1409,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		InOrder order = inOrder(mock);
 		order.verify(mock).setUri(uri);
-		order.verify(mock).newConnection((ExecutorService)null);
+		order.verify(mock).newConnection((ExecutorService) null);
 		verifyNoMoreInteractions(mock);
 	}
 

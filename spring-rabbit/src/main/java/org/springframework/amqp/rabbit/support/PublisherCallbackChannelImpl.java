@@ -101,7 +101,7 @@ public class PublisherCallbackChannelImpl
 	private final ConcurrentMap<String, Listener> listeners = new ConcurrentHashMap<String, Listener>();
 
 	private final Map<Listener, SortedMap<Long, PendingConfirm>> pendingConfirms
-		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long,PendingConfirm>>();
+		= new ConcurrentHashMap<PublisherCallbackChannel.Listener, SortedMap<Long, PendingConfirm>>();
 
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 

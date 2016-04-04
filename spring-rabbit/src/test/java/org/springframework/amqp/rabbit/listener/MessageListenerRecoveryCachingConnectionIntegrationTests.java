@@ -423,7 +423,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend("nonexistent", "foo" + i);
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Map<?,?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
+		Map<?, ?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
 		assertEquals(1, consumers.size());
 		Object consumer = consumers.keySet().iterator().next();
 

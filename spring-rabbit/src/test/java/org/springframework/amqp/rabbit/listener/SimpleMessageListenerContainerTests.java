@@ -316,7 +316,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?,?>>();
+		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?, ?>>();
 		doAnswer(new Answer<Object>() {
 
 			@Override

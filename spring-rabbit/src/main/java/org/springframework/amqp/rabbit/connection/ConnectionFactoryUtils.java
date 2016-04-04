@@ -130,7 +130,7 @@ public final class ConnectionFactoryUtils {
 		if (resourceHolderToUse == null) {
 			resourceHolderToUse = new RabbitResourceHolder();
 		}
-		Connection connection = resourceFactory.getConnection(resourceHolderToUse);//NOSONAR
+		Connection connection = resourceFactory.getConnection(resourceHolderToUse); //NOSONAR
 		Channel channel = null;
 		try {
 			/*
@@ -156,7 +156,7 @@ public final class ConnectionFactoryUtils {
 
 		}
 		catch (IOException ex) {
-			RabbitUtils.closeChannel(channel);//NOSONAR
+			RabbitUtils.closeChannel(channel); //NOSONAR
 			RabbitUtils.closeConnection(connection);
 			throw new AmqpIOException(ex);
 		}

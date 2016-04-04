@@ -1268,7 +1268,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		private FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			this.start.await(60000L, TimeUnit.MILLISECONDS);//NOSONAR - ignore return value
+			this.start.await(60000L, TimeUnit.MILLISECONDS); //NOSONAR - ignore return value
 			return this.startupException;
 		}
 

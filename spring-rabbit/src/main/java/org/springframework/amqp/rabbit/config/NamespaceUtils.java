@@ -269,7 +269,7 @@ public abstract class NamespaceUtils {
 		}
 
 		String ref = element.getAttribute(REF_ATTRIBUTE);
-		Assert.isTrue(!StringUtils.hasText(ref) || innerComponentDefinition == null,//NOSONAR
+		Assert.isTrue(!StringUtils.hasText(ref) || innerComponentDefinition == null, //NOSONAR
 				"Ambiguous definition. Inner bean "
 						+ (innerComponentDefinition == null ? innerComponentDefinition : innerComponentDefinition
 								.getBeanDefinition().getBeanClassName()) + " declaration and \"ref\" " + ref

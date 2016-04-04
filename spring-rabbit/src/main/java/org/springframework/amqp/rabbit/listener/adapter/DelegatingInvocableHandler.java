@@ -126,7 +126,7 @@ public class DelegatingInvocableHandler {
 			if (handler == null) {
 				throw new AmqpException("No method found for " + payloadClass);
 			}
-			this.cachedHandlers.putIfAbsent(payloadClass, handler);//NOSONAR
+			this.cachedHandlers.putIfAbsent(payloadClass, handler); //NOSONAR
 			setupReplyTo(handler);
 		}
 		return handler;
@@ -222,7 +222,7 @@ public class DelegatingInvocableHandler {
 	 */
 	public String getMethodNameFor(Object payload) {
 		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
-		return handlerForPayload == null ? "no match" : handlerForPayload.getMethod().toGenericString();//NOSONAR
+		return handlerForPayload == null ? "no match" : handlerForPayload.getMethod().toGenericString(); //NOSONAR
 	}
 
 }

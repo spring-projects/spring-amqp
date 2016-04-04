@@ -44,7 +44,7 @@ public class AnonymousQueue extends Queue {
 	 * Construct a queue with a UUID name with the supplied arguments.
 	 * @param arguments the arguments.
 	 */
-	public AnonymousQueue(Map<String,Object> arguments) {
+	public AnonymousQueue(Map<String, Object> arguments) {
 		super(UUID.randomUUID().toString(),  false, true, true, arguments);
 	}
 

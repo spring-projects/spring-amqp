@@ -63,8 +63,8 @@ public class RabbitExceptionTranslatorTests {
 				instanceOf(AmqpUnsupportedEncodingException.class));
 
 		assertThat(RabbitExceptionTranslator.convertRabbitAccessException(new Exception() {
-			private static final long serialVersionUID = 1L;}),
-				instanceOf(UncategorizedAmqpException.class));
+				private static final long serialVersionUID = 1L;
+			}), instanceOf(UncategorizedAmqpException.class));
 
 	}
 
