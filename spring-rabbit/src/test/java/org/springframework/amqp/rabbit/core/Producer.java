@@ -20,7 +20,11 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 
-public class Producer {
+public final class Producer {
+
+	private Producer() {
+		super();
+	}
 
 	/**
 	 * @param args

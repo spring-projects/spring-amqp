@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
  * @since 1.0.1
  *
  */
-public class RabbitNamespaceUtils {
+public final class RabbitNamespaceUtils {
 
 	private static final String CONNECTION_FACTORY_ATTRIBUTE = "connection-factory";
 
@@ -98,6 +98,11 @@ public class RabbitNamespaceUtils {
 	private static final String CONSUMER_TAG_STRATEGY = "consumer-tag-strategy";
 
 	private static final String IDLE_EVENT_INTERVAL = "idle-event-interval";
+
+
+	private RabbitNamespaceUtils() {
+		super();
+	}
 
 	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
 		RootBeanDefinition containerDef = new RootBeanDefinition(SimpleMessageListenerContainer.class);

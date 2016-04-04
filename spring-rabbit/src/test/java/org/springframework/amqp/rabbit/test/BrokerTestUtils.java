@@ -25,9 +25,13 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
  * @author Gary Russell
  *
  */
-public class BrokerTestUtils {
+public final class BrokerTestUtils {
 
 	public static final int DEFAULT_PORT = 5672;
+
+	private BrokerTestUtils() {
+		super();
+	}
 
 	/**
 	 * The port that the broker is listening on (e.g. as input for a {@link ConnectionFactory}).

@@ -41,7 +41,11 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class ConnectionFactoryUtils {
+public final class ConnectionFactoryUtils {
+
+	private ConnectionFactoryUtils() {
+		super();
+	}
 
 	/**
 	 * Determine whether the given RabbitMQ Channel is transactional, that is, bound to the current thread by Spring's

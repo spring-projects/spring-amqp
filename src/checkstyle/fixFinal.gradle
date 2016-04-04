@@ -33,7 +33,7 @@ task fixFinal << {
 
 					if (onNextLine || error && ln == (error.@line as int)) {
 						onNextLine = false
-						if (line.contains('@SuppressWarning')) {
+						if (line.contains('@SuppressWarning') || line.contains('@Deprecated')) {
 							onNextLine = true;
 						}
 						else {

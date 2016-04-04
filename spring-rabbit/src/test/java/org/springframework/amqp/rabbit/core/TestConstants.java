@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.core;
 /**
  * Exchange, queue, and routing key constants for the testing code.
  */
-public class TestConstants {
+public final class TestConstants {
 
 	public static String EXCHANGE_NAME = "";
 
@@ -28,5 +28,9 @@ public class TestConstants {
 	public static String ROUTING_KEY = "foo";
 
 	public static int NUM_MESSAGES = 500;
+
+	private TestConstants() {
+		super();
+	}
 
 }

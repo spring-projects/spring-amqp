@@ -22,13 +22,17 @@ package org.springframework.amqp.core;
  *
  */
 @Deprecated
-public class AddressUtils {
+public final class AddressUtils {
 
 	/**
 	 * @deprecated Use the constant in {@link Address#AMQ_RABBITMQ_REPLY_TO}.
 	 */
 	@Deprecated
 	public static final String AMQ_RABBITMQ_REPLY_TO = Address.AMQ_RABBITMQ_REPLY_TO;
+
+	private AddressUtils() {
+		super();
+	}
 
 	/**
 	 * Decodes the reply-to {@link Address} into exchange/key.

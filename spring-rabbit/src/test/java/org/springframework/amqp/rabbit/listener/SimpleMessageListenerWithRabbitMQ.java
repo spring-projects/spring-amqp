@@ -36,9 +36,14 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.DirectFieldAccessor;
 
-public class SimpleMessageListenerWithRabbitMQ {
+public final class SimpleMessageListenerWithRabbitMQ {
 
 	private static Log logger = LogFactory.getLog(SimpleMessageListenerWithRabbitMQ.class);
+
+
+	private SimpleMessageListenerWithRabbitMQ() {
+		super();
+	}
 
 
 	public static void main(String[] args) throws InterruptedException {
