@@ -474,8 +474,7 @@ task depsZip(type: Zip, dependsOn: distZip) { zipTask ->
 	}
 }
 
-task build(dependsOn: assemble) {
-}
+tasks.build.dependsOn assemble
 
 artifacts {
 	archives distZip
@@ -487,3 +486,4 @@ task dist(dependsOn: assemble) {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
+
