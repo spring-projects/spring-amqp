@@ -1,5 +1,5 @@
 ext {
-	headerTemplate = new File('src/checkstyle/checkstyle-header.txt')
+	headerTemplate = file("${rootDir}/src/checkstyle/checkstyle-header.txt")
 			.text
 			.replaceAll(/\^\\Q|\\E\$|\^\$|\^\.\*\$/, '')
 			.replaceFirst(/\\E20\\d\\d\(\\-20\\d\\d\)\?\\Q/, '{year}')
