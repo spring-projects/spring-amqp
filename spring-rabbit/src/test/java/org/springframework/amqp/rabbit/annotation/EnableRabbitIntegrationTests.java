@@ -28,6 +28,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,6 +57,7 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
@@ -174,6 +179,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private RabbitListenerEndpointRegistry registry;
+
+	@Autowired
+	private MetaListener metaListener;
 
 	@Test
 	public void autoDeclare() {
@@ -475,6 +483,12 @@ public class EnableRabbitIntegrationTests {
 		assertEquals("\"GenericMessageLinkedHashMap\"", new String((byte[]) returned));
 
 		ctx.close();
+	}
+
+	@Test
+	public void testMeta() throws Exception {
+		rabbitTemplate.convertSendAndReceive("test.metaFanout", "", "foo");
+		assertTrue(this.metaListener.latch.await(10, TimeUnit.SECONDS));
 	}
 
 	interface TxService {
@@ -974,6 +988,11 @@ public class EnableRabbitIntegrationTests {
 			return "sendTo.replies";
 		}
 
+		@Bean
+		public MetaListener meta() {
+			return new MetaListener();
+		}
+
 	}
 
 	@RabbitListener(bindings = @QueueBinding
@@ -1058,6 +1077,30 @@ public class EnableRabbitIntegrationTests {
 	static class Foo implements Serializable {
 
 		public String field;
+
+	}
+
+	@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+	@Retention(RetentionPolicy.RUNTIME)
+	@RabbitListener(bindings = @QueueBinding(
+			value = @Queue,
+			exchange = @Exchange(value = "test.metaFanout", type = ExchangeTypes.FANOUT, autoDelete = "true")))
+	public @interface MyAnonFanoutListener {
+	}
+
+	public static class MetaListener {
+
+		private final CountDownLatch latch = new CountDownLatch(2);
+
+		@MyAnonFanoutListener
+		public void handle1(String foo) {
+			latch.countDown();
+		}
+
+		@MyAnonFanoutListener
+		public void handle2(String foo) {
+			latch.countDown();
+		}
 
 	}
 
@@ -1234,7 +1277,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Override
 		public void afterTestClass(TestContext testContext) throws Exception {
-			brokerRunning.removeTestQueues();
+			brokerRunning.removeTestQueues("sendTo.replies", "sendTo.replies.spel");
 		}
 
 		@Override

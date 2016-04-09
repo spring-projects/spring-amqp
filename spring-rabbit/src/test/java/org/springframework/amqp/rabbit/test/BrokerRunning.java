@@ -253,12 +253,17 @@ public final class BrokerRunning extends TestWatcher {
 		return DEFAULT_QUEUE_NAME.equals(queue);
 	}
 
-	public void removeTestQueues() {
+	public void removeTestQueues(String... additionalQueues) {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		for (Queue queue : this.queues) {
 			admin.deleteQueue(queue.getName());
+		}
+		if (additionalQueues != null) {
+			for (String queueName : additionalQueues) {
+				admin.deleteQueue(queueName);
+			}
 		}
 		connectionFactory.destroy();
 	}

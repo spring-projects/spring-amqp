@@ -1327,7 +1327,8 @@ The idea of the example above is that, whenever a message is available on the `o
 The annotated endpoint infrastructure creates a message listener container behind the scenes for each annotated method, using a `RabbitListenerContainerFactory`.
 
 In the example above, `myQueue` must already exist and be bound to some exchange.
-Starting with _version 1.5.0_, the queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
+Starting with _version 1.5.0_, the queue can be declared and bound automatically, as long as a `RabbitAdmin` exists
+in the application context.
 
 [source,java]
 ----
@@ -1361,8 +1362,49 @@ and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 
+Only DIRECT, FANOUT and TOPIC exchange types are supported with this mechanism; in addition, queue arguments cannot
+be specified.
+Use normal `@Bean` definitions for other exchange types, and when more advanced configuration is required.
+
+[[meta-annotation-driven]]
+====== Meta-Annotations
+
+Sometimes you may want to use the same configuration for multiple listeners.
+To reduce the boilerplate configuration, you can use meta-annotations to create your own listener annotation:
+
+[source, java]
+----
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue,
+        exchange = @Exchange(value = "metaFanout", type = ExchangeTypes.FANOUT)))
+public @interface MyAnonFanoutListener {
+}
+
+public class MetaListener {
+
+    @MyAnonFanoutListener
+    public void handle1(String foo) {
+        ...
+    }
+
+    @MyAnonFanoutListener
+    public void handle2(String foo) {
+        ...
+    }
+
+}
+----
+
+In this example, each listener created by the `@MyAnonFanoutListener` annotation will bind an anonymous, auto-delete
+queue to the fanout exchange `metaFanout`.
+The meta-annotation mechanism is simple in that attributes on the user-defined annotation are *not* examined - so
+you can't override settings from the meta-annotation.
+Use normal `@Bean` definitions when more advanced configuration is required.
+
 [[async-annotation-driven-enable]]
-====== Enable listener endpoint annotations
+====== Enable Listener Endpoint Annotations
 
 To enable support for `@RabbitListener` annotations add `@EnableRabbit` to one of your `@Configuration` classes.
 
