@@ -1361,8 +1361,42 @@ and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 
+[[meta-annotation-driven]]
+====== Meta-Annotations
+
+Sometimes you may want to use the same configuration for multiple listeners.
+To reduce the boilerplate configuration, you can use meta-annotations to create your own listener annotation:
+
+[source, java]
+----
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue,
+        exchange = @Exchange(value = "metaFanout", type = ExchangeTypes.FANOUT)))
+public @interface MyAnonFanoutListener {
+}
+
+public class MetaListener {
+
+    @MyAnonFanoutListener
+    public void handle1(String foo) {
+        ...
+    }
+
+    @MyAnonFanoutListener
+    public void handle2(String foo) {
+        ...
+    }
+
+}
+----
+
+In this example, each listener created by the `@MyAnonFanoutListener` annotation will bind an anonymous, auto-delete
+queue to the fanout exchange `metaFanout`.
+
 [[async-annotation-driven-enable]]
-====== Enable listener endpoint annotations
+====== Enable Listener Endpoint Annotations
 
 To enable support for `@RabbitListener` annotations add `@EnableRabbit` to one of your `@Configuration` classes.
 
