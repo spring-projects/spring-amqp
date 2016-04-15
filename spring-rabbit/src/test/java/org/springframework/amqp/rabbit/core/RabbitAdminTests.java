@@ -1,15 +1,19 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
@@ -33,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.apache.commons.logging.Log;
 import org.hamcrest.Matchers;
@@ -55,11 +60,13 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.Channel;
@@ -227,6 +234,7 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e2");
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
+		assertNull(admin.getQueueProperties(ctx.getBean(Config.class).protypeQueueName));
 		ctx.close();
 	}
 
@@ -251,6 +259,8 @@ public class RabbitAdminTests {
 
 	@Configuration
 	public static class Config {
+
+		public String protypeQueueName = UUID.randomUUID().toString();
 
 		@Bean
 		public ConnectionFactory cf() {
@@ -295,6 +305,14 @@ public class RabbitAdminTests {
 			return Arrays.asList(
 					new Queue("q2", false, false, true),
 					new Queue("q3", false, false, true)
+			);
+		}
+
+		@Bean
+		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+		public List<Queue> prototypes() {
+			return Arrays.asList(
+					new Queue(this.protypeQueueName, false, false, true)
 			);
 		}
 
