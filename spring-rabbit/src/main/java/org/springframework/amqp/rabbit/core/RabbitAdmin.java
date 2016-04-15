@@ -448,12 +448,16 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 
 		this.logger.debug("Initializing declarations");
-		Collection<Exchange> contextExchanges = new LinkedList<Exchange>(this.applicationContext.getBeansOfType(Exchange.class).values());
-		Collection<Queue> contextQueues = new LinkedList<Queue>(this.applicationContext.getBeansOfType(Queue.class).values());
-		Collection<Binding> contextBindings = new LinkedList<Binding>(this.applicationContext.getBeansOfType(Binding.class).values());
+		Collection<Exchange> contextExchanges = new LinkedList<Exchange>(
+				this.applicationContext.getBeansOfType(Exchange.class).values());
+		Collection<Queue> contextQueues = new LinkedList<Queue>(
+				this.applicationContext.getBeansOfType(Queue.class).values());
+		Collection<Binding> contextBindings = new LinkedList<Binding>(
+				this.applicationContext.getBeansOfType(Binding.class).values());
 
 		@SuppressWarnings("rawtypes")
-		Collection<Collection> collections = this.applicationContext.getBeansOfType(Collection.class).values();
+		Collection<Collection> collections = this.applicationContext.getBeansOfType(Collection.class, false, false)
+					.values();
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {

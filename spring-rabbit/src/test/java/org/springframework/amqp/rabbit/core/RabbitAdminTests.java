@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
@@ -69,6 +70,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -76,6 +78,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.Channel;
@@ -243,6 +246,7 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e2");
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
+		assertNull(admin.getQueueProperties(ctx.getBean(Config.class).protypeQueueName));
 		ctx.close();
 	}
 
@@ -297,6 +301,8 @@ public class RabbitAdminTests {
 	@Configuration
 	public static class Config {
 
+		public String protypeQueueName = UUID.randomUUID().toString();
+
 		@Bean
 		public ConnectionFactory cf() {
 			return new CachingConnectionFactory("localhost");
@@ -340,6 +346,14 @@ public class RabbitAdminTests {
 			return Arrays.asList(
 					new Queue("q2", false, false, true),
 					new Queue("q3", false, false, true)
+			);
+		}
+
+		@Bean
+		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+		public List<Queue> prototypes() {
+			return Arrays.asList(
+					new Queue(this.protypeQueueName, false, false, true)
 			);
 		}
 
