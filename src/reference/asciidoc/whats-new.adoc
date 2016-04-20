@@ -159,6 +159,12 @@ Improvements to the JSON message converter now allow the consumption of messages
 in message headers.
 See <<async-annotation-conversion>> and <<json-message-converter>> for more information.
 
+===== Logging Appenders
+
+A log4j2 appender has been added, and the appenders can now be configured with an `addresses` property to connect
+to a broker cluster.
+See <<logging>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
