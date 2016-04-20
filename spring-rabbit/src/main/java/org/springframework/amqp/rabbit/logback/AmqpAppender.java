@@ -155,6 +155,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	private AbstractConnectionFactory connectionFactory;
 
 	/**
+	 * A comma-delimited list of broker addresses: host:port[,host:port]*
+	 * @since 1.5.6
+	 */
+	private String addresses;
+
+	/**
 	 * RabbitMQ host to connect to.
 	 */
 	private String host = "localhost";
@@ -234,6 +240,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public void setAddresses(String addresses) {
+		this.addresses = addresses;
+	}
+
+	public String getAddresses() {
+		return this.addresses;
 	}
 
 	public String getVirtualHost() {
@@ -388,6 +402,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.connectionFactory = new CachingConnectionFactory();
 		this.connectionFactory.setHost(this.host);
 		this.connectionFactory.setPort(this.port);
+		if (this.addresses != null) {
+			this.connectionFactory.setAddresses(this.addresses);
+		}
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);

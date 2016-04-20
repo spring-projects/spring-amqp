@@ -61,6 +61,7 @@ import org.springframework.amqp.rabbit.support.DeclareExchangeConnectionListener
  *   #-------------------------------
  *   log4j.appender.amqp.host=localhost
  *   log4j.appender.amqp.port=5672
+ *   #log4j.appender.amqp.addresses=foo:5672,bar:5673 - overrides host and port if present
  *   log4j.appender.amqp.username=guest
  *   log4j.appender.amqp.password=guest
  *   log4j.appender.amqp.virtualHost=/
@@ -186,6 +187,12 @@ public class AmqpAppender extends AppenderSkeleton {
 	private AbstractConnectionFactory connectionFactory;
 
 	/**
+	 * A comma-delimited list of broker addresses: host:port[,host:port]*.
+	 * @since 1.5.6
+	 */
+	private String addresses;
+
+	/**
 	 * RabbitMQ host to connect to.
 	 */
 	private String host = "localhost";
@@ -257,6 +264,14 @@ public class AmqpAppender extends AppenderSkeleton {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public void setAddresses(String addresses) {
+		this.addresses = addresses;
+	}
+
+	public String getAddresses() {
+		return this.addresses;
 	}
 
 	public String getVirtualHost() {
@@ -400,11 +415,14 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.routingKeyLayout = new PatternLayout(this.routingKeyPattern
 				.replaceAll("%X\\{applicationId\\}", this.applicationId));
 		this.connectionFactory = new CachingConnectionFactory();
-		this.connectionFactory.setHost(host);
-		this.connectionFactory.setPort(port);
-		this.connectionFactory.setUsername(username);
-		this.connectionFactory.setPassword(password);
-		this.connectionFactory.setVirtualHost(virtualHost);
+		this.connectionFactory.setHost(this.host);
+		this.connectionFactory.setPort(this.port);
+		if (this.addresses != null) {
+			this.connectionFactory.setAddresses(this.addresses);
+		}
+		this.connectionFactory.setUsername(this.username);
+		this.connectionFactory.setPassword(this.password);
+		this.connectionFactory.setVirtualHost(this.virtualHost);
 		setUpExchangeDeclaration();
 		startSenders();
 	}
