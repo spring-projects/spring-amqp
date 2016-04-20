@@ -24,6 +24,8 @@ This part also includes a chapter about the <<sample-apps,sample applications>>.
 
 include::amqp.adoc[]
 
+include::logging.adoc[]
+
 include::sample-apps.adoc[]
 
 include::testing.adoc[]

@@ -75,6 +75,7 @@ public class AmqpAppenderTests {
 				.getPropertyValue(logger, "context.configuration.appenders", Map.class).get("rabbitmq");
 		Object manager = TestUtils.getPropertyValue(appender, "manager");
 //		<RabbitMQ name="rabbitmq"
+//				addresses="localhost:5672"
 //				host="localhost" port="5672" user="guest" password="guest" virtualHost="/"
 //				exchange="log4j2Test" exchangeType="fanout" declareExchange="true" durable="true" autoDelete="false"
 //				applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
@@ -82,6 +83,7 @@ public class AmqpAppenderTests {
 //				charset="UTF-8"
 //				senderPoolSize="3" maxSenderRetries="5">
 //		</RabbitMQ>
+		assertEquals("localhost:5672", TestUtils.getPropertyValue(manager, "addresses"));
 		assertEquals("localhost", TestUtils.getPropertyValue(manager, "host"));
 		assertEquals(5672, TestUtils.getPropertyValue(manager, "port"));
 		assertEquals("guest", TestUtils.getPropertyValue(manager, "username"));

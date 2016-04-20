@@ -121,6 +121,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
 			@PluginAttribute("host") String host,
 			@PluginAttribute("port") int port,
+			@PluginAttribute("addresses") String addresses,
 			@PluginAttribute("user") String user,
 			@PluginAttribute("password") String password,
 			@PluginAttribute("virtualHost") String virtualHost,
@@ -148,6 +149,7 @@ public class AmqpAppender extends AbstractAppender {
 		AmqpManager manager = new AmqpManager(name);
 		manager.host = host;
 		manager.port = port;
+		manager.addresses = addresses;
 		manager.username = user;
 		manager.password = password;
 		manager.virtualHost = virtualHost;
@@ -382,6 +384,12 @@ public class AmqpAppender extends AbstractAppender {
 		private String host = "localhost";
 
 		/**
+		 * A comma-delimited list of broker addresses: host:port[,host:port]*.
+		 * @since 1.6
+		 */
+		private String addresses;
+
+		/**
 		 * RabbitMQ virtual host to connect to.
 		 */
 		private String virtualHost = "/";
@@ -456,6 +464,9 @@ public class AmqpAppender extends AbstractAppender {
 			this.connectionFactory = new CachingConnectionFactory();
 			this.connectionFactory.setHost(this.host);
 			this.connectionFactory.setPort(this.port);
+			if (this.addresses != null) {
+				this.connectionFactory.setAddresses(this.addresses);
+			}
 			this.connectionFactory.setUsername(this.username);
 			this.connectionFactory.setPassword(this.password);
 			this.connectionFactory.setVirtualHost(this.virtualHost);
