@@ -1362,9 +1362,36 @@ and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 
-Only DIRECT, FANOUT and TOPIC exchange types are supported with this mechanism; in addition, queue arguments cannot
-be specified.
-Use normal `@Bean` definitions for other exchange types, and when more advanced configuration is required.
+Only DIRECT, FANOUT, TOPIC and HEADERS, exchange types are supported with this mechanism.
+Use normal `@Bean` definitions when more advanced configuration is required.
+
+Starting with _version 1.6_, you can now specify arguments within `@QueueBinding` annotations for queues, exchanges
+and bindings. For example:
+
+[source, java]
+----
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(value = "auto.headers", autoDelete = "true",
+                        arguments = @Argument(name = "x-message-ttl", value = "10000",
+                                                type = "java.lang.Integer")),
+        exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+        arguments = {
+                @Argument(name = "x-match", value = "all"),
+                @Argument(name = "foo", value = "bar"),
+                @Argument(name = "baz")
+        })
+)
+public String handleWithHeadersExchange(String foo) {
+    ...
+}
+----
+
+Notice that the `x-message-ttl` argument is set to 10 seconds for the queue.
+Since the argument type is not `String`, we have to specify its type; in this case `Integer`.
+As with all such declarations, if the queue exists already, the arguments must match those on the queue.
+For the header exchange, we set the binding arguments to match messages that have the header `foo` set to `bar` and
+the header `baz` must be present with any value.
+The `x-match` argument means both conditions must be satisfied.
 
 [[meta-annotation-driven]]
 ====== Meta-Annotations

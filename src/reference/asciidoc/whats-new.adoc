@@ -136,6 +136,12 @@ See <<repeatable-rabbit-listener>> for more information.
 request/reply.
 See <<async-annotation-driven-reply>> for more information.
 
+====== @QueueBinding Improvements
+
+You can now specify arguments for queues, exchanges and bindings in `@QueueBinding` annotations.
+Header exchanges are now supported by `@QueueBinding`.
+See <<async-annotation-driven>> for more information.
+
 ===== Delayed Message Exchange
 
 Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.

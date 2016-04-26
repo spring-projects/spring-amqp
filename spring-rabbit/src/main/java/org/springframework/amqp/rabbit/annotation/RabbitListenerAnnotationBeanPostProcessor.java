@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
@@ -45,6 +47,7 @@ import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanInitializationException;
@@ -59,10 +62,12 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -96,19 +101,22 @@ import org.springframework.util.StringUtils;
  * @see MethodRabbitListenerEndpoint
  */
 public class RabbitListenerAnnotationBeanPostProcessor
-		implements BeanPostProcessor, Ordered, BeanFactoryAware, SmartInitializingSingleton {
+		implements BeanPostProcessor, Ordered, BeanFactoryAware, BeanClassLoaderAware, SmartInitializingSingleton {
 
 	/**
 	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
 	 */
 	static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
 
+	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
 	private String containerFactoryBeanName = DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME;
 
 	private BeanFactory beanFactory;
+
+	private ClassLoader beanClassLoader;
 
 	private final RabbitHandlerMethodFactoryAdapter messageHandlerMethodFactory =
 			new RabbitHandlerMethodFactoryAdapter();
@@ -174,6 +182,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.beanClassLoader = classLoader;
+	}
 
 	@Override
 	public void afterSingletonsInstantiated() {
@@ -487,7 +499,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				Queue queue = new Queue(queueName,
 						resolveExpressionAsBoolean(bindingQueue.durable()),
 						exclusive,
-						autoDelete);
+						autoDelete,
+						resolveArguments(bindingQueue.arguments()));
 				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
 				queues.add(queueName);
 				Exchange exchange;
@@ -497,35 +510,98 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				Binding actualBinding;
 				Object key = resolveExpression(binding.key());
 				if (!(key instanceof String)) {
-					throw new BeanInitializationException("key must resolved to a String, not: " + key.getClass().toString());
+					throw new BeanInitializationException(
+							"key must resolved to a String, not: " + key.getClass().toString());
 				}
  				String resolvedKey = (String) key;
 				if (exchangeType.equals(ExchangeTypes.DIRECT)) {
 					exchange = new DirectExchange(exchangeName,
 							resolveExpressionAsBoolean(bindingExchange.durable()),
-							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
-					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey, null);
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()),
+							resolveArguments(bindingExchange.arguments()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey,
+							resolveArguments(binding.arguments()));
 				}
 				else if (exchangeType.equals(ExchangeTypes.FANOUT)) {
 					exchange = new FanoutExchange(exchangeName,
 							resolveExpressionAsBoolean(bindingExchange.durable()),
-							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
-					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, "", null);
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()),
+							resolveArguments(bindingExchange.arguments()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, "",
+							resolveArguments(binding.arguments()));
 				}
 				else if (exchangeType.equals(ExchangeTypes.TOPIC)) {
 					exchange = new TopicExchange(exchangeName,
 							resolveExpressionAsBoolean(bindingExchange.durable()),
-							resolveExpressionAsBoolean(bindingExchange.autoDelete()));
-					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey, null);
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()),
+							resolveArguments(bindingExchange.arguments()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey,
+							resolveArguments(binding.arguments()));
+				}
+				else if (exchangeType.equals(ExchangeTypes.HEADERS)) {
+					exchange = new HeadersExchange(exchangeName,
+							resolveExpressionAsBoolean(bindingExchange.durable()),
+							resolveExpressionAsBoolean(bindingExchange.autoDelete()),
+							resolveArguments(bindingExchange.arguments()));
+					actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, resolvedKey,
+							resolveArguments(binding.arguments()));
 				}
 				else {
 					throw new BeanInitializationException("Unexpected exchange type: " + exchangeType);
 				}
-				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment, exchange);
-				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment, actualBinding);
+				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
+						exchange);
+				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
+						actualBinding);
 			}
 		}
 		return queues.toArray(new String[queues.size()]);
+	}
+
+	private Map<String, Object> resolveArguments(Argument[] arguments) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		for (Argument arg : arguments) {
+			String key = resolve(arg.name());
+			if (StringUtils.hasText(key)) {
+				Object value = resolve(arg.value());
+				Object type = resolve(arg.type());
+				Class<?> typeClass;
+				String typeName;
+				if (type instanceof Class) {
+					typeClass = (Class<?>) type;
+					typeName = typeClass.getName();
+				}
+				else {
+					Assert.isTrue(type instanceof String, "type must resolve to a Class or String");
+					typeName = (String) type;
+					try {
+						typeClass = ClassUtils.forName(typeName, this.beanClassLoader);
+					}
+					catch (Exception e) {
+						throw new IllegalStateException("Could not load class", e);
+					}
+				}
+				if (value.getClass().getName().equals(typeName)) {
+					if (typeClass.equals(String.class) && !StringUtils.hasText((String) value)) {
+						map.put(key, null);
+					}
+					else {
+						map.put(key, value);
+					}
+				}
+				else {
+					Assert.isTrue(value instanceof String, "value must resolve to a String for type conversion");
+					String valueString = (String) value;
+					if (StringUtils.hasText(valueString)) {
+						map.put(key, PARSER.parseExpression(valueString).getValue(typeClass));
+					}
+					else {
+						map.put(key, null);
+					}
+				}
+			}
+		}
+		return map.size() < 1 ? null : map;
 	}
 
 	private boolean resolveExpressionAsBoolean(String value) {
