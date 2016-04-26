@@ -51,4 +51,10 @@ public @interface Queue {
 	 */
 	String autoDelete() default "";
 
+	/**
+	 * @return the arguments to apply when declaring this queue.
+	 * @since 1.6
+	 */
+	Argument[] arguments() default {};
+
 }
