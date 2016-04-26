@@ -40,6 +40,7 @@ The Spring AMQP project applies core Spring concepts to the development of AMQP-
 {% capture main_content %}
 
 The project consists of two parts; `spring-amqp` is the base abstraction, and `spring-rabbit` is the [RabbitMQ](http://www.rabbitmq.com) implementation.
+
 ## Features
 
 * Listener container for asynchronous processing of inbound messages
@@ -47,12 +48,13 @@ The project consists of two parts; `spring-amqp` is the base abstraction, and `s
 * RabbitAdmin for automatically declaring queues, exchanges and bindings
 
 <span id="quick-start"></span>
+
 ## Quick Start
 
 {% include download_widget.md %}
 
 
-####just Java...
+### Just Java...
 
 ````java
 public static void main(final String... args) throws Exception {
@@ -88,7 +90,8 @@ public static void main(final String... args) throws Exception {
 	container.stop();
 }
 ````
-####Or, the Spring way...
+
+### Or, the Spring way...
 
 ````java
 public static void main(final String... args) throws Exception {
