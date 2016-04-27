@@ -491,6 +491,31 @@ public class EnableRabbitIntegrationTests {
 		assertTrue(this.metaListener.latch.await(10, TimeUnit.SECONDS));
 	}
 
+	@Test
+	public void testHeadersExchange() throws Exception {
+		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.headers", "", "foo",
+				new MessagePostProcessor() {
+
+					@Override
+					public Message postProcessMessage(Message message) throws AmqpException {
+						message.getMessageProperties().getHeaders().put("foo", "bar");
+						message.getMessageProperties().getHeaders().put("baz", "qux");
+						return message;
+					}
+
+				}));
+		assertEquals("BAR", rabbitTemplate.convertSendAndReceive("auto.headers", "", "bar",
+				new MessagePostProcessor() {
+
+					@Override
+					public Message postProcessMessage(Message message) throws AmqpException {
+						message.getMessageProperties().getHeaders().put("baz", "fiz");
+						return message;
+					}
+
+				}));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -659,6 +684,35 @@ public class EnableRabbitIntegrationTests {
 				key = "auto.start")
 		)
 		public void handleWithAutoStartFalse(String foo) {
+		}
+
+		@RabbitListener(bindings = {
+				@QueueBinding(
+					value = @Queue(value = "auto.headers1", autoDelete = "true",
+									arguments = @Argument(name = "x-message-ttl", value = "10000",
+															type = "java.lang.Integer")),
+					exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+					arguments = {
+							@Argument(name = "x-match", value = "all"),
+							@Argument(name = "foo", value = "bar"),
+							@Argument(name = "baz")
+					}
+				),
+				@QueueBinding(
+					value = @Queue(value = "auto.headers2", autoDelete = "true",
+									arguments = @Argument(name = "x-message-ttl", value = "10000",
+															type = "#{T(java.lang.Integer)}")),
+					exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+					arguments = {
+							@Argument(name = "x-match", value = "any"),
+							@Argument(name = "foo", value = "bax"),
+							@Argument(name = "#{'baz'}", value = "#{'fiz'}")
+					}
+				)
+			}
+		)
+		public String handleWithHeadersExchange(String foo) {
+			return foo.toUpperCase();
 		}
 
 	}

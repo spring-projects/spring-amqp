@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,44 +20,33 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.amqp.core.ExchangeTypes;
-
 /**
- * An exchange to which to bind a {@code RabbitListener} queue.
+ * Represents an argument used when declaring queues etc within a
+ * {@code QueueBinding}.
  *
  * @author Gary Russell
- * @since 1.5
+ * @since 1.6
  *
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Exchange {
+public @interface Argument {
 
 	/**
-	 * @return the exchange name.
+	 * @return the argument name.
 	 */
-	String value();
+	String name();
 
 	/**
-	 * The exchange type - only DIRECT, FANOUT TOPIC, and HEADERS exchanges are supported.
-	 * @return the exchange type.
+	 * The argument value, an empty string is translated to {@code null} for example
+	 * to represent a present header test for a headers exchange.
+	 * @return the argument value.
 	 */
-	String type() default ExchangeTypes.DIRECT;
+	String value() default "";
 
 	/**
-	 * @return true if the exchange is to be declared as durable.
+	 * @return the type of the argument value.
 	 */
-	String durable() default "false";
-
-	/**
-	 * @return true if the exchange is to be declared as auto-delete.
-	 */
-	String autoDelete() default "false";
-
-	/**
-	 * @return the arguments to apply when declaring this exchange.
-	 * @since 1.6
-	 */
-	Argument[] arguments() default {};
+	String type() default "java.lang.String";
 
 }

@@ -47,4 +47,10 @@ public @interface QueueBinding {
 	 */
 	String key() default "";
 
+	/**
+	 * @return the arguments to apply when declaring this binding
+	 * @since 1.6
+	 */
+	Argument[] arguments() default {};
+
 }
