@@ -545,7 +545,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private Map<String, Object> resolveArguments(Argument[] arguments) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		for (Argument arg : arguments) {
-			String key = resolveExpressionAsString(arg.name(), "@Annotation.name");
+			String key = resolveExpressionAsString(arg.name(), "@Argument.name");
 			if (StringUtils.hasText(key)) {
 				Object value = resolveExpression(arg.value());
 				Object type = resolveExpression(arg.type());
@@ -575,17 +575,17 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					}
 				}
 				else {
-					if (value instanceof String && StringUtils.hasText((String) value)) {
+					if (value instanceof String && !StringUtils.hasText((String) value)) {
+						map.put(key, null);
+					}
+					else {
 						if (CONVERSION_SERVICE.canConvert(value.getClass(), typeClass)) {
 							map.put(key, CONVERSION_SERVICE.convert(value, typeClass));
 						}
 						else {
-							throw new IllegalStateException("Cannot convert from " + value.getClass()
+							throw new IllegalStateException("Cannot convert from " + value.getClass().getName()
 								+ " to " + typeClass);
 						}
-					}
-					else {
-						map.put(key, null);
 					}
 				}
 			}
