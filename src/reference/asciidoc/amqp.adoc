@@ -1393,6 +1393,14 @@ For the header exchange, we set the binding arguments to match messages that hav
 the header `baz` must be present with any value.
 The `x-match` argument means both conditions must be satisfied.
 
+The argument name, value, and type can be property placeholders (`${...}`) or SpEL expressions (`#{...}`).
+The `name` must resolve to a `String`; the expression for `type` must resolve to a `Class` or the fully-qualified name of
+a class.
+The `value` must resolve to something that can be converted by the `DefaultConversionService` to the type (such as
+the `x-message-ttl` in the above example).
+
+If a name resolves to `null` or an empty `String`, that `@Argument` is ignored.
+
 [[meta-annotation-driven]]
 ====== Meta-Annotations
 
