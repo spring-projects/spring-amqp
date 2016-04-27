@@ -545,7 +545,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private Map<String, Object> resolveArguments(Argument[] arguments) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		for (Argument arg : arguments) {
-			String key = resolveExpressionAsString(arg.name(), "name");
+			String key = resolveExpressionAsString(arg.name(), "@Annotation.name");
 			if (StringUtils.hasText(key)) {
 				Object value = resolveExpression(arg.value());
 				Object type = resolveExpression(arg.type());
@@ -556,7 +556,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					typeName = typeClass.getName();
 				}
 				else {
-					Assert.isTrue(type instanceof String, "type must resolve to a Class or String");
+					Assert.isTrue(type instanceof String, "Type must resolve to a Class or String, but resolved to ["
+							+ type.getClass().getName() + "]");
 					typeName = (String) type;
 					try {
 						typeClass = ClassUtils.forName(typeName, this.beanClassLoader);
@@ -574,14 +575,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					}
 				}
 				else {
-					Assert.isTrue(value instanceof String, "value must resolve to a String for type conversion");
-					String valueString = (String) value;
-					if (StringUtils.hasText(valueString)) {
-						if (CONVERSION_SERVICE.canConvert(String.class, typeClass)) {
-							map.put(key, CONVERSION_SERVICE.convert(valueString, typeClass));
+					if (value instanceof String && StringUtils.hasText((String) value)) {
+						if (CONVERSION_SERVICE.canConvert(value.getClass(), typeClass)) {
+							map.put(key, CONVERSION_SERVICE.convert(value, typeClass));
 						}
 						else {
-							throw new IllegalStateException("Cannot convert from String to " + typeClass);
+							throw new IllegalStateException("Cannot convert from " + value.getClass()
+								+ " to " + typeClass);
 						}
 					}
 					else {
@@ -617,7 +617,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return (String) resolved;
 		}
 		else {
-			throw new IllegalStateException("'" + attribute + "' must resolve to a String");
+			throw new IllegalStateException("The [" + attribute + "] must resolve to a String. "
+					+ "Resolved to [" + resolved.getClass() + "] for [" + value + "]");
 		}
 	}
 
