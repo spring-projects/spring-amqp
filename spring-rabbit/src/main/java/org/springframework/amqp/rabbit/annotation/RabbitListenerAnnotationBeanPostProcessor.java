@@ -590,8 +590,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 			else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("@Argument ignored because the name resolved to an empty String");
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("@Argument ignored because the name resolved to an empty String");
 				}
 			}
 		}
