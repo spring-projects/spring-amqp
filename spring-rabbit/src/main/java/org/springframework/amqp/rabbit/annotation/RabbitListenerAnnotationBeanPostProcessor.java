@@ -28,6 +28,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
@@ -62,7 +65,8 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -108,7 +112,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 */
 	static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
 
-	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+	private static final ConversionService CONVERSION_SERVICE = new DefaultConversionService();
+
+	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
@@ -450,28 +456,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 	}
 
-	private Object resolveExpression(String value) {
-		String resolvedValue = resolve(value);
-
-		if (!(resolvedValue.startsWith("#{") && value.endsWith("}"))) {
-			return resolvedValue;
-		}
-
-		return this.resolver.evaluate(resolvedValue, this.expressionContext);
-	}
-
-	/**
-	 * Resolve the specified value if possible.
-	 *
-	 * @see ConfigurableBeanFactory#resolveEmbeddedValue
-	 */
-	private String resolve(String value) {
-		if (this.beanFactory != null && this.beanFactory instanceof ConfigurableBeanFactory) {
-			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
-		}
-		return value;
-	}
-
 	private String[] registerBeansForDeclaration(RabbitListener rabbitListener) {
 		List<String> queues = new ArrayList<String>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
@@ -561,10 +545,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private Map<String, Object> resolveArguments(Argument[] arguments) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		for (Argument arg : arguments) {
-			String key = resolve(arg.name());
+			String key = resolveExpressionAsString(arg.name(), "name");
 			if (StringUtils.hasText(key)) {
-				Object value = resolve(arg.value());
-				Object type = resolve(arg.type());
+				Object value = resolveExpression(arg.value());
+				Object type = resolveExpression(arg.type());
 				Class<?> typeClass;
 				String typeName;
 				if (type instanceof Class) {
@@ -593,11 +577,21 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					Assert.isTrue(value instanceof String, "value must resolve to a String for type conversion");
 					String valueString = (String) value;
 					if (StringUtils.hasText(valueString)) {
-						map.put(key, PARSER.parseExpression(valueString).getValue(typeClass));
+						if (CONVERSION_SERVICE.canConvert(String.class, typeClass)) {
+							map.put(key, CONVERSION_SERVICE.convert(valueString, typeClass));
+						}
+						else {
+							throw new IllegalStateException("Cannot convert from String to " + typeClass);
+						}
 					}
 					else {
 						map.put(key, null);
 					}
+				}
+			}
+			else {
+				if (logger.isDebugEnabled()) {
+					logger.debug("@Argument ignored because the name resolved to an empty String");
 				}
 			}
 		}
@@ -615,6 +609,38 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		else {
 			return false;
 		}
+	}
+
+	private String resolveExpressionAsString(String value, String attribute) {
+		Object resolved = resolveExpression(value);
+		if (resolved instanceof String) {
+			return (String) resolved;
+		}
+		else {
+			throw new IllegalStateException("'" + attribute + "' must resolve to a String");
+		}
+	}
+
+	private Object resolveExpression(String value) {
+		String resolvedValue = resolve(value);
+
+		if (!(resolvedValue.startsWith("#{") && value.endsWith("}"))) {
+			return resolvedValue;
+		}
+
+		return this.resolver.evaluate(resolvedValue, this.expressionContext);
+	}
+
+	/**
+	 * Resolve the specified value if possible.
+	 *
+	 * @see ConfigurableBeanFactory#resolveEmbeddedValue
+	 */
+	private String resolve(String value) {
+		if (this.beanFactory != null && this.beanFactory instanceof ConfigurableBeanFactory) {
+			return ((ConfigurableBeanFactory) this.beanFactory).resolveEmbeddedValue(value);
+		}
+		return value;
 	}
 
 	/**

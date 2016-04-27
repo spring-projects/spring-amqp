@@ -35,7 +35,7 @@ public @interface Argument {
 	/**
 	 * @return the argument name.
 	 */
-	String name() default "";
+	String name();
 
 	/**
 	 * The argument value, an empty string is translated to {@code null} for example
