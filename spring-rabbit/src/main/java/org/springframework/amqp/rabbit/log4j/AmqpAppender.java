@@ -618,11 +618,11 @@ public class AmqpAppender extends AppenderSkeleton {
 	@SuppressWarnings("rawtypes")
 	protected static class Event {
 
-		final LoggingEvent event;
+		private final LoggingEvent event;
 
-		final Map properties;
+		private final Map properties;
 
-		final AtomicInteger retries = new AtomicInteger(0);
+		private final AtomicInteger retries = new AtomicInteger(0);
 
 		public Event(LoggingEvent event, Map properties) {
 			this.event = event;

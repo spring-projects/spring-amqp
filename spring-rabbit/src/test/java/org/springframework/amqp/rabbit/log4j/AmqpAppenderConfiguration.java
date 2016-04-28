@@ -41,11 +41,11 @@ public class AmqpAppenderConfiguration {
 		// DOMConfigurator.configure(AmqpAppenderTests.class.getResource("/log4j.xml"));
 	}
 
-	static final String QUEUE = "amqp.appender.test";
+	private static final String QUEUE = "amqp.appender.test";
 
-	static final String EXCHANGE = "logs";
+	private static final String EXCHANGE = "logs";
 
-	static final String ROUTING_KEY = "AmqpAppenderTest.#";
+	private static final String ROUTING_KEY = "AmqpAppenderTest.#";
 
 	@Bean
 	public SingleConnectionFactory connectionFactory() {

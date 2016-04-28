@@ -110,7 +110,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	/**
 	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
 	 */
-	static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
+	public static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
 
 	private static final ConversionService CONVERSION_SERVICE = new DefaultConversionService();
 

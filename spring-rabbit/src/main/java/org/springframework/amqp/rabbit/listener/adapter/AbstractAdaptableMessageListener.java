@@ -440,9 +440,9 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	public static final class ResultHolder {
 
-		final Object result;
+		private final Object result;
 
-		final Expression sendTo;
+		private final Expression sendTo;
 
 		public ResultHolder(Object result, Expression sendTo) {
 			this.result = result;

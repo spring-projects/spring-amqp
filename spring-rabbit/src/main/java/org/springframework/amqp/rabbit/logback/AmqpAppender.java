@@ -581,11 +581,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	protected static class Event {
 
-		final ILoggingEvent event;
+		private final ILoggingEvent event;
 
-		final Map<String, String> properties;
+		private final Map<String, String> properties;
 
-		final AtomicInteger retries = new AtomicInteger(0);
+		private final AtomicInteger retries = new AtomicInteger(0);
 
 		public Event(ILoggingEvent event) {
 			this.event = event;
