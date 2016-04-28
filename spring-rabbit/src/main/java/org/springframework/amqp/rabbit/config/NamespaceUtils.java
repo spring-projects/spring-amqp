@@ -48,10 +48,10 @@ import org.springframework.util.xml.DomUtils;
  */
 public abstract class NamespaceUtils {
 
-	static final String BASE_PACKAGE = "org.springframework.amqp.core.rabbit.config";
-	static final String REF_ATTRIBUTE = "ref";
-	static final String METHOD_ATTRIBUTE = "method";
-	static final String ORDER = "order";
+	public static final String BASE_PACKAGE = "org.springframework.amqp.core.rabbit.config";
+	public static final String REF_ATTRIBUTE = "ref";
+	public static final String METHOD_ATTRIBUTE = "method";
+	public static final String ORDER = "order";
 
 	/**
 	 * Populates the specified bean definition property with the value of the attribute whose name is provided if that

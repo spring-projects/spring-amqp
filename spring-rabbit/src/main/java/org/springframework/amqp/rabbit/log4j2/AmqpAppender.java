@@ -311,11 +311,11 @@ public class AmqpAppender extends AbstractAppender {
 	@SuppressWarnings("rawtypes")
 	protected static class Event {
 
-		final LogEvent event;
+		private final LogEvent event;
 
-		final Map properties;
+		private final Map properties;
 
-		final AtomicInteger retries = new AtomicInteger(0);
+		private final AtomicInteger retries = new AtomicInteger(0);
 
 		public Event(LogEvent event, Map properties) {
 			this.event = event;
