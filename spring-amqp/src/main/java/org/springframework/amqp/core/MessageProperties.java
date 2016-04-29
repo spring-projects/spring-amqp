@@ -55,9 +55,9 @@ public class MessageProperties implements Serializable {
 
 	public static final String X_DELAY = "x-delay";
 
-	protected static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
+	public static final String DEFAULT_CONTENT_TYPE = CONTENT_TYPE_BYTES;
 
-	protected static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
+	public static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
 	public static final Integer DEFAULT_PRIORITY = Integer.valueOf(0);
 
