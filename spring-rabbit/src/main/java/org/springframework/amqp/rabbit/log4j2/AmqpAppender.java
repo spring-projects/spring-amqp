@@ -195,7 +195,6 @@ public class AmqpAppender extends AbstractAppender {
 	 * @param message The message.
 	 * @param event The event.
 	 * @return The modified message.
-	 * @since 1.4
 	 */
 	public Message postProcessMessageBeforeSend(Message message, Event event) {
 		return message;
@@ -387,7 +386,6 @@ public class AmqpAppender extends AbstractAppender {
 
 		/**
 		 * A comma-delimited list of broker addresses: host:port[,host:port]*.
-		 * @since 1.6
 		 */
 		private String addresses;
 
