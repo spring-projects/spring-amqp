@@ -526,8 +526,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
 				exchange);
-		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
-				actualBinding);
+		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(
+				exchangeName + "." + queueName + ++this.increment, actualBinding);
 	}
 
 	private Exchange directExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
