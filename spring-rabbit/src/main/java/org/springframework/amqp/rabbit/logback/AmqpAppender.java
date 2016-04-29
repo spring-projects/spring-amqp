@@ -408,11 +408,21 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);
+		updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
 		setUpExchangeDeclaration();
 		this.senderPool = Executors.newCachedThreadPool();
 		for (int i = 0; i < this.senderPoolSize; i++) {
 			this.senderPool.submit(new EventSender());
 		}
+	}
+
+	/**
+	 * Subclasses can override this method to add properties to the connection client
+	 * properties.
+	 * @param clientProperties the client properties.
+	 * @since 1.5.6
+	 */
+	protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
 	}
 
 	@Override

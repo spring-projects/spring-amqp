@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -33,6 +34,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.log4j.AmqpAppenderConfiguration;
@@ -116,6 +118,7 @@ public class AmqpAppenderIntegrationTests {
 		assertThat(location, instanceOf(String.class));
 		assertThat((String) location,
 				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()"));
+		assertEquals("bar", messageProperties.getHeaders().get("foo"));
 	}
 
 	@Test
@@ -132,6 +135,31 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(0xe0, body[body.length - 5 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
+	}
+
+	public static class EnhancedAppender extends AmqpAppender {
+
+		private String foo;
+
+		@Override
+		public Message postProcessMessageBeforeSend(Message message, Event event) {
+			message.getMessageProperties().setHeader("foo", this.foo);
+			return message;
+		}
+
+		public String getFoo() {
+			return this.foo;
+		}
+
+		public void setFoo(String foo) {
+			this.foo = foo;
+		}
+
+		@Override
+		protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+			clientProperties.put("foo", "bar");
+		}
+
 	}
 
 }

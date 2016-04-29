@@ -7,7 +7,7 @@
 		</encoder>
 	</appender>
 
-	<appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+	<appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests$EnhancedAppender">
 		<layout>
 			<pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
 		</layout>
@@ -20,6 +20,7 @@
 		<durable>false</durable>
 		<deliveryMode>NON_PERSISTENT</deliveryMode>
 		<declareExchange>true</declareExchange>
+		<foo>bar</foo>
 	</appender>
 
 	<logger name="org.springframework.amqp.rabbit.logback" level="DEBUG" additivity="false">

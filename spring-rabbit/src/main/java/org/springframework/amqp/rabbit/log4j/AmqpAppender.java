@@ -426,8 +426,18 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);
+		updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
 		setUpExchangeDeclaration();
 		startSenders();
+	}
+
+	/**
+	 * Subclasses can override this method to add properties to the connection client
+	 * properties.
+	 * @param clientProperties the client properties.
+	 * @since 1.5.6
+	 */
+	protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
 	}
 
 	/**

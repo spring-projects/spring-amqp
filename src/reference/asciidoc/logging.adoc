@@ -181,3 +181,41 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
+
+==== Customizing the Messages
+
+With the log4j and logback appenders, the appenders can be subclassed, allowing you to modify the client connection
+properties before the connection is established:
+
+.Customizing the Client Connection Properties
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+
+    @Override
+    protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+        clientProperties.put("foo", "bar");
+    }
+
+}
+----
+
+These properties appear on the RabbitMQ Admin UI when viewing the connection.
+
+With log4j2, subclasses are not supported, due to the way log4j2 uses static factory methods.
+
+Instead, you can specifiy custom client properties in the logback.xml like so:
+
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq"
+        ...
+        clientConnectionProperties="foo:bar,baz:qux"
+        ...
+    </RabbitMQ>
+</Appenders>
+----
+
+i.e. a comma-delimited list of `key:value` pairs.

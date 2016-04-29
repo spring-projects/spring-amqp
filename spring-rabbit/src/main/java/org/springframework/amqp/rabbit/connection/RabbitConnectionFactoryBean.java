@@ -375,6 +375,15 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.connectionFactory.setExceptionHandler(exceptionHandler);
 	}
 
+	/**
+	 * Add custom properties to the connection factory's clientProperties.
+	 * @param properties the properties to add.
+	 * @since 1.5.6
+	 */
+	public void setCustomClientProperties(Map<String, Object> properties) {
+		this.connectionFactory.getClientProperties().putAll(properties);
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;

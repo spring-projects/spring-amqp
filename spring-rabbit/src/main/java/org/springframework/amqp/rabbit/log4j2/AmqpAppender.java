@@ -138,6 +138,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("autoDelete") boolean autoDelete,
 			@PluginAttribute("contentType") String contentType,
 			@PluginAttribute("contentEncoding") String contentEncoding,
+			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("charset") String charset) {
 		if (name == null) {
 			LogFactory.getLog("log4j2AppenderErrors").error("No name for AmqpAppender");
@@ -166,6 +167,7 @@ public class AmqpAppender extends AbstractAppender {
 		manager.autoDelete = autoDelete;
 		manager.contentType = contentType;
 		manager.contentEncoding = contentEncoding;
+		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
 		manager.activateOptions();
@@ -425,6 +427,12 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean declareExchange = false;
 
 		/**
+		 * Additional client connection properties added to the rabbit connection, with the form
+		 * {@code prop:name[,prop:name]...}.
+		 */
+		private String clientConnectionProperties;
+
+		/**
 		 * charset to use when converting String to byte[], default null (system default charset used).
 		 * If the charset is unsupported on the current platform, we fall back to using
 		 * the system charset.
@@ -452,7 +460,6 @@ public class AmqpAppender extends AbstractAppender {
 		 */
 		private final Timer retryTimer = new Timer("log-event-retry-delay", true);
 
-
 		protected AmqpManager(String name) {
 			super(name);
 		}
@@ -470,8 +477,25 @@ public class AmqpAppender extends AbstractAppender {
 			this.connectionFactory.setUsername(this.username);
 			this.connectionFactory.setPassword(this.password);
 			this.connectionFactory.setVirtualHost(this.virtualHost);
+			if (this.clientConnectionProperties != null) {
+				updateClientConnectionProperties();
+			}
 			setUpExchangeDeclaration();
 			this.senderPool = Executors.newCachedThreadPool();
+		}
+
+		private void updateClientConnectionProperties() {
+			String[] props = this.clientConnectionProperties.split(",");
+			if (props.length > 0) {
+				Map<String, Object> clientProps = this.connectionFactory.getRabbitConnectionFactory()
+						.getClientProperties();
+				for (String prop : props) {
+					String[] aProp = prop.split(":");
+					if (aProp.length == 2) {
+						clientProps.put(aProp[0].trim(), aProp[1].trim());
+					}
+				}
+			}
 		}
 
 		@Override

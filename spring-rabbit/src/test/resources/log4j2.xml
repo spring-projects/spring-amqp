@@ -11,6 +11,7 @@
 			applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
 			contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
 			charset="UTF-8"
+			clientConnectionProperties="foo:bar,baz:qux"
 			senderPoolSize="3" maxSenderRetries="5">
 		</RabbitMQ>
 	</Appenders>
