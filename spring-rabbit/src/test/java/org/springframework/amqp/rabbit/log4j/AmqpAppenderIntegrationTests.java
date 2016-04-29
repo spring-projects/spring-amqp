@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -202,6 +203,13 @@ public class AmqpAppenderIntegrationTests {
 
 		public void setFoo(String foo) {
 			this.foo = foo;
+		}
+
+		@Override
+		protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+			assertEquals("bar", clientProperties.get("foo"));
+			assertEquals("qux", clientProperties.get("baz"));
+			clientProperties.put("foo", this.foo.toUpperCase());
 		}
 
 	}

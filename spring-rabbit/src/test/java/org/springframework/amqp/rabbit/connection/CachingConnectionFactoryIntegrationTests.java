@@ -89,6 +89,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
+		connectionFactory.getRabbitConnectionFactory().getClientProperties().put("foo", "bar");
 	}
 
 	@After
@@ -96,6 +97,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
 			new RabbitAdmin(this.connectionFactory).deleteQueue(CF_INTEGRATION_TEST_QUEUE);
 		}
+		assertEquals("bar", connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo"));
 		connectionFactory.destroy();
 	}
 
