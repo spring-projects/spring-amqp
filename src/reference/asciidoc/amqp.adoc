@@ -342,7 +342,7 @@ For convenience, a factory bean is provided to assist in configuring the connect
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>
 ----
 
-===== Configuring SSL
+===== RabbitConnectionFactoryBean and Configuring SSL
 
 Starting with _version 1.4_, a convenient `RabbitConnectionFactoryBean` is provided to enable convenient configuration of SSL properties on the underlying client connection factory, using dependency injection.
 Other setters simply delegate to the underlying factory.
@@ -634,6 +634,19 @@ The `cacheMode` property (`CHANNEL` or `CONNECTION` is also included).
 
 .JVisualVM Example
 image::images/cacheStats.png[align="center"]
+
+[[custom-client-props]]
+==== Adding Custom Client Connection Properties
+
+The `CachingConnectionFactory` now allows you to access the underlying connection factory to allow, for example,
+setting custom client properties:
+
+[source, java]
+----
+connectionFactory.getRabbitConnectionFactory().getClientProperties().put("foo", "bar");
+----
+
+These properties appear in the RabbitMQ Admin UI when viewing the connection.
 
 [[amqp-template]]
 ==== AmqpTemplate
