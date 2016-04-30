@@ -460,42 +460,46 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		List<String> queues = new ArrayList<String>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			for (QueueBinding binding : rabbitListener.bindings()) {
-				org.springframework.amqp.rabbit.annotation.Queue bindingQueue = binding.value();
-				String queueName = (String) resolveExpression(bindingQueue.value());
-				boolean exclusive = false;
-				boolean autoDelete = false;
-				if (!StringUtils.hasText(queueName)) {
-					queueName = UUID.randomUUID().toString();
-					// default exclusive/autodelete to true when anonymous
-					if (!StringUtils.hasText(bindingQueue.exclusive())
-							|| resolveExpressionAsBoolean(bindingQueue.exclusive())) {
-						exclusive = true;
-					}
-					if (!StringUtils.hasText(bindingQueue.autoDelete())
-							|| resolveExpressionAsBoolean(bindingQueue.autoDelete())) {
-						autoDelete = true;
-					}
-				}
-				else {
-					exclusive = resolveExpressionAsBoolean(bindingQueue.exclusive());
-					autoDelete = resolveExpressionAsBoolean(bindingQueue.autoDelete());
-				}
-				Queue queue = new Queue(queueName,
-						resolveExpressionAsBoolean(bindingQueue.durable()),
-						exclusive,
-						autoDelete,
-						resolveArguments(bindingQueue.arguments()));
-				((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
+				String queueName = declareQueue(binding);
 				queues.add(queueName);
-				org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
-				declareExchangeAndBinding(binding, queueName, bindingExchange);
+				declareExchangeAndBinding(binding, queueName);
 			}
 		}
 		return queues.toArray(new String[queues.size()]);
 	}
 
-	private void declareExchangeAndBinding(QueueBinding binding, String queueName,
-			org.springframework.amqp.rabbit.annotation.Exchange bindingExchange) {
+	private String declareQueue(QueueBinding binding) {
+		org.springframework.amqp.rabbit.annotation.Queue bindingQueue = binding.value();
+		String queueName = (String) resolveExpression(bindingQueue.value());
+		boolean exclusive = false;
+		boolean autoDelete = false;
+		if (!StringUtils.hasText(queueName)) {
+			queueName = UUID.randomUUID().toString();
+			// default exclusive/autodelete to true when anonymous
+			if (!StringUtils.hasText(bindingQueue.exclusive())
+					|| resolveExpressionAsBoolean(bindingQueue.exclusive())) {
+				exclusive = true;
+			}
+			if (!StringUtils.hasText(bindingQueue.autoDelete())
+					|| resolveExpressionAsBoolean(bindingQueue.autoDelete())) {
+				autoDelete = true;
+			}
+		}
+		else {
+			exclusive = resolveExpressionAsBoolean(bindingQueue.exclusive());
+			autoDelete = resolveExpressionAsBoolean(bindingQueue.autoDelete());
+		}
+		Queue queue = new Queue(queueName,
+				resolveExpressionAsBoolean(bindingQueue.durable()),
+				exclusive,
+				autoDelete,
+				resolveArguments(bindingQueue.arguments()));
+		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
+		return queueName;
+	}
+
+	private void declareExchangeAndBinding(QueueBinding binding, String queueName) {
+		org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
 		String exchangeType = resolveExpressionAsString(bindingExchange.type(), "@Exchange.type");
 		String routingKey = resolveExpressionAsString(binding.key(), "@QueueBinding.key");
