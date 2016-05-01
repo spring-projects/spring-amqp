@@ -590,28 +590,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						throw new IllegalStateException("Could not load class", e);
 					}
 				}
-				if (value.getClass().getName().equals(typeName)) {
-					if (typeClass.equals(String.class) && !StringUtils.hasText((String) value)) {
-						map.put(key, null);
-					}
-					else {
-						map.put(key, value);
-					}
-				}
-				else {
-					if (value instanceof String && !StringUtils.hasText((String) value)) {
-						map.put(key, null);
-					}
-					else {
-						if (CONVERSION_SERVICE.canConvert(value.getClass(), typeClass)) {
-							map.put(key, CONVERSION_SERVICE.convert(value, typeClass));
-						}
-						else {
-							throw new IllegalStateException("Cannot convert from " + value.getClass().getName()
-								+ " to " + typeName);
-						}
-					}
-				}
+				addToMap(map, key, value, typeClass, typeName);
 			}
 			else {
 				if (this.logger.isDebugEnabled()) {
@@ -620,6 +599,31 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 		return map.size() < 1 ? null : map;
+	}
+
+	private void addToMap(Map<String, Object> map, String key, Object value, Class<?> typeClass, String typeName) {
+		if (value.getClass().getName().equals(typeName)) {
+			if (typeClass.equals(String.class) && !StringUtils.hasText((String) value)) {
+				map.put(key, null);
+			}
+			else {
+				map.put(key, value);
+			}
+		}
+		else {
+			if (value instanceof String && !StringUtils.hasText((String) value)) {
+				map.put(key, null);
+			}
+			else {
+				if (CONVERSION_SERVICE.canConvert(value.getClass(), typeClass)) {
+					map.put(key, CONVERSION_SERVICE.convert(value, typeClass));
+				}
+				else {
+					throw new IllegalStateException("Cannot convert from " + value.getClass().getName()
+						+ " to " + typeName);
+				}
+			}
+		}
 	}
 
 	private boolean resolveExpressionAsBoolean(String value) {
