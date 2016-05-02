@@ -16,8 +16,11 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import java.util.Collections;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,8 +46,10 @@ public class SSLConnectionTests {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setUseSSL(true);
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
+		fb.setClientProperties(Collections.<String, Object>singletonMap("foo", "bar"));
 		fb.afterPropertiesSet();
 		ConnectionFactory cf = fb.getObject();
+		assertEquals("bar", cf.getClientProperties().get("foo"));
 		Connection conn = cf.newConnection();
 		Channel chan = conn.createChannel();
 		chan.close();

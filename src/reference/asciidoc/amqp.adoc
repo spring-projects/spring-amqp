@@ -342,7 +342,7 @@ For convenience, a factory bean is provided to assist in configuring the connect
       id="connectionFactory" connection-factory="rabbitConnectionFactory"/>
 ----
 
-===== Configuring SSL
+===== RabbitConnectionFactoryBean and Configuring SSL
 
 Starting with _version 1.4_, a convenient `RabbitConnectionFactoryBean` is provided to enable convenient configuration of SSL properties on the underlying client connection factory, using dependency injection.
 Other setters simply delegate to the underlying factory.
@@ -384,6 +384,10 @@ Typically this properties file will be secured by the operating system with the 
 Starting with Spring AMQP _version 1.5_, these properties can be set directly on the factory bean.
 If both discrete properties and `sslPropertiesLocation` is provided, properties in the latter will override the
 discrete values.
+
+Starting with _version 1.5.6_, the factory bean exposes a property `customClientProperties` which allows you to add
+properties to connections.
+These properties appear on the RabbitMQ Admin UI when viewing connections.
 
 [[routing-connection-factory]]
 ===== Routing Connection Factory
@@ -634,6 +638,19 @@ The `cacheMode` property (`CHANNEL` or `CONNECTION` is also included).
 
 .JVisualVM Example
 image::images/cacheStats.png[align="center"]
+
+[[custom-client-props]]
+==== Adding Custom Client Connection Properties
+
+The `CachingConnectionFactory` now allows you to access the underlying connection factory to allow, for example,
+setting custom client properties:
+
+[source, java]
+----
+connectionFactory.getRabbitConnectionFactory().getClientProperties().put("foo", "bar");
+----
+
+These properties appear in the RabbitMQ Admin UI when viewing the connection.
 
 [[amqp-template]]
 ==== AmqpTemplate

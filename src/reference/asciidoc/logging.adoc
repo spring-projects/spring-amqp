@@ -181,3 +181,74 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 }
 ----
+
+==== Customizing the Client Properties
+
+===== Simple String Properties
+
+Each appender supports adding client properties to the RabbitMQ connection.
+
+.log4j
+[source, text]
+----
+log4j.appender.amqp.clientConnectionProperties=foo:bar,baz:qux
+----
+
+.logback
+[source, xml]
+----
+<appender name="AMQP" ...>
+    ...
+    <clientConnectionProperties>foo:bar,baz:qux</clientConnectionProperties>
+    ...
+</appender>
+----
+
+.log4j2
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq"
+        ...
+        clientConnectionProperties="foo:bar,baz:qux"
+        ...
+    </RabbitMQ>
+</Appenders>
+----
+
+The properties are a comma-delimited list of `key:value` pairs; keys and values cannot contain commas or colons.
+
+These properties appear on the RabbitMQ Admin UI when viewing the connection.
+
+===== Advanced Technique for Log4j and Logback
+
+With the log4j and logback appenders, the appenders can be subclassed, allowing you to modify the client connection
+properties before the connection is established:
+
+.Customizing the Client Connection Properties
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+
+    private String foo;
+
+    @Override
+    protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+        clientProperties.put("foo", this.foo);
+    }
+
+    public void setFoo(String foo) {
+        this.foo = foo;
+    }
+
+}
+----
+
+For log4j2, add `log4j.appender.amqp.foo=bar` to log4j.properties to set the property.
+For logback, add `<foo>bar</foo>` to logback.xml.
+
+Of course, for simple String properties like this example, the previous technique can be used; subclasses allow
+richer properties (such as adding a `Map` or numeric property).
+
+With log4j2, subclasses are not supported, due to the way log4j2 uses static factory methods.

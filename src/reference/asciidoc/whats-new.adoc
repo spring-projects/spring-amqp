@@ -147,10 +147,23 @@ See <<async-annotation-driven>> for more information.
 Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
 See <<delayed-message-exchange>> for more information.
 
-===== CachingConnectionFactory Cache Statistics
+===== CachingConnectionFactory Changes
+
+====== CachingConnectionFactory Cache Statistics
 
 The `CachingConnectionFactory` now provides cache properties at runtime and over JMX.
 See <<runtime-cache-properties>> for more information.
+
+====== Access the Underlying RabbitMQ Connection Factory
+
+A new getter has been added to provide access to the underlying factory.
+This can be used, for example, to add custom connection properties.
+See <<custom-client-props>> for more information.
+
+===== RabbitConnectionFactoryBean
+
+The factory bean now exposes a property to add client connection properties to connections made by the resulting
+factory.
 
 ===== Java Deserialization
 
@@ -167,8 +180,15 @@ See <<async-annotation-conversion>> and <<json-message-converter>> for more info
 
 ===== Logging Appenders
 
+====== Log4j2
+
 A log4j2 appender has been added, and the appenders can now be configured with an `addresses` property to connect
 to a broker cluster.
+
+====== Client Connection Properties
+
+You can now add custom client connection properties to RabbitMQ connections.
+
 See <<logging>> for more information.
 
 ==== Earlier Releases

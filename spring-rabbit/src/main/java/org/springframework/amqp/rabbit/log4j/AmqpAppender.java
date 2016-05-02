@@ -52,6 +52,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.LogAppenderUtils;
 
 /**
  * A Log4J appender that publishes logging events to an AMQP Exchange.
@@ -188,6 +189,12 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * RabbitMQ ConnectionFactory.
 	 */
 	private AbstractConnectionFactory connectionFactory;
+
+	/**
+	 * Additional client connection properties added to the rabbit connection, with the form
+	 * {@code key:value[,key:value]...}.
+	 */
+	private String clientConnectionProperties;
 
 	/**
 	 * A comma-delimited list of broker addresses: host:port[,host:port]*.
@@ -413,6 +420,16 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.charset = charset;
 	}
 
+	/**
+	 * Set additional client connection properties to be added to the rabbit connection,
+	 * with the form {@code key:value[,key:value]...}.
+	 * @param clientConnectionProperties the properties.
+	 * @since 1.5.6
+	 */
+	public void setClientConnectionProperties(String clientConnectionProperties) {
+		this.clientConnectionProperties = clientConnectionProperties;
+	}
+
 	@Override
 	public void activateOptions() {
 		this.routingKeyLayout = new PatternLayout(this.routingKeyPattern
@@ -426,8 +443,19 @@ public class AmqpAppender extends AppenderSkeleton {
 		this.connectionFactory.setUsername(this.username);
 		this.connectionFactory.setPassword(this.password);
 		this.connectionFactory.setVirtualHost(this.virtualHost);
+		LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory, this.clientConnectionProperties);
+		updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
 		setUpExchangeDeclaration();
 		startSenders();
+	}
+
+	/**
+	 * Subclasses can override this method to add properties to the connection client
+	 * properties.
+	 * @param clientProperties the client properties.
+	 * @since 1.5.6
+	 */
+	protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
 	}
 
 	/**
