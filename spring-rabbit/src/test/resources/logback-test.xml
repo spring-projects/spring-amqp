@@ -20,6 +20,7 @@
 		<durable>false</durable>
 		<deliveryMode>NON_PERSISTENT</deliveryMode>
 		<declareExchange>true</declareExchange>
+		<clientConnectionProperties>foo:bar,baz:qux</clientConnectionProperties>
 		<foo>bar</foo>
 	</appender>
 

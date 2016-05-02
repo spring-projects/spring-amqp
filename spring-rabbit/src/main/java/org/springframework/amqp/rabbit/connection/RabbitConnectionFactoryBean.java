@@ -320,11 +320,12 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	/**
+	 * Add custom client properties.
 	 * @param clientProperties the client properties.
 	 * @see com.rabbitmq.client.ConnectionFactory#setClientProperties(java.util.Map)
 	 */
 	public void setClientProperties(Map<String, Object> clientProperties) {
-		this.connectionFactory.setClientProperties(clientProperties);
+		this.connectionFactory.getClientProperties().putAll(clientProperties);
 	}
 
 	/**
@@ -373,15 +374,6 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setExceptionHandler(ExceptionHandler exceptionHandler) {
 		this.connectionFactory.setExceptionHandler(exceptionHandler);
-	}
-
-	/**
-	 * Add custom properties to the connection factory's clientProperties.
-	 * @param properties the properties to add.
-	 * @since 1.5.6
-	 */
-	public void setCustomClientProperties(Map<String, Object> properties) {
-		this.connectionFactory.getClientProperties().putAll(properties);
 	}
 
 	@Override

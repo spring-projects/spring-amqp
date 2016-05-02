@@ -80,6 +80,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	/**
 	 * Return a reference to the underlying Rabbit Connection factory.
 	 * @return the connection factory.
+	 * @since 1.5.6
 	 */
 	public com.rabbitmq.client.ConnectionFactory getRabbitConnectionFactory() {
 		return this.rabbitConnectionFactory;

@@ -210,7 +210,9 @@ public class AmqpAppenderIntegrationTests {
 
 		@Override
 		protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
-			clientProperties.put("foo", "bar");
+			assertEquals("bar", clientProperties.get("foo"));
+			assertEquals("qux", clientProperties.get("baz"));
+			clientProperties.put("foo", this.foo.toUpperCase());
 		}
 
 	}

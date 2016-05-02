@@ -58,6 +58,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.support.LogAppenderUtils;
 
 /**
  * A Log4j 2 appender that publishes logging events to an AMQP Exchange.
@@ -425,8 +426,8 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean declareExchange = false;
 
 		/**
-		 * Additional client connection properties added to the rabbit connection, with the form
-		 * {@code prop:name[,prop:name]...}.
+		 * Additional client connection properties to be added to the rabbit connection,
+		 * with the form {@code key:value[,key:value]...}.
 		 */
 		private String clientConnectionProperties;
 
@@ -476,24 +477,11 @@ public class AmqpAppender extends AbstractAppender {
 			this.connectionFactory.setPassword(this.password);
 			this.connectionFactory.setVirtualHost(this.virtualHost);
 			if (this.clientConnectionProperties != null) {
-				updateClientConnectionProperties();
+				LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory,
+						this.clientConnectionProperties);
 			}
 			setUpExchangeDeclaration();
 			this.senderPool = Executors.newCachedThreadPool();
-		}
-
-		private void updateClientConnectionProperties() {
-			String[] props = this.clientConnectionProperties.split(",");
-			if (props.length > 0) {
-				Map<String, Object> clientProps = this.connectionFactory.getRabbitConnectionFactory()
-						.getClientProperties();
-				for (String prop : props) {
-					String[] aProp = prop.split(":");
-					if (aProp.length == 2) {
-						clientProps.put(aProp[0].trim(), aProp[1].trim());
-					}
-				}
-			}
 		}
 
 		@Override
