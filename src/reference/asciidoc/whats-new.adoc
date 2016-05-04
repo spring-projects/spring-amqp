@@ -160,6 +160,11 @@ A new getter has been added to provide access to the underlying factory.
 This can be used, for example, to add custom connection properties.
 See <<custom-client-props>> for more information.
 
+====== Channel Cache
+
+The default channel cache size has been increased from 1 to 25.
+See <<connections>> for more information.
+
 ===== RabbitConnectionFactoryBean
 
 The factory bean now exposes a property to add client connection properties to connections made by the resulting

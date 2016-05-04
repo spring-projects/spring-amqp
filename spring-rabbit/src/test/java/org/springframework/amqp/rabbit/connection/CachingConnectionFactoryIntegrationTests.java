@@ -142,6 +142,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	public void testCachedConnectionsChannelLimit() throws Exception {
 		connectionFactory.setCacheMode(CacheMode.CONNECTION);
 		connectionFactory.setConnectionCacheSize(2);
+		connectionFactory.setChannelCacheSize(1);
 		connectionFactory.setChannelCheckoutTimeout(10);
 		connectionFactory.setExecutor(Executors.newCachedThreadPool());
 		List<Connection> connections = new ArrayList<Connection>();
