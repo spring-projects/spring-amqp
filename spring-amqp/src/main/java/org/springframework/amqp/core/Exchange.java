@@ -21,6 +21,7 @@ import java.util.Map;
 /**
  * @author Mark Fisher
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public interface Exchange extends Declarable {
 
@@ -66,5 +67,12 @@ public interface Exchange extends Declarable {
 	 * @since 1.6
 	 */
 	boolean isDelayed();
+
+	/**
+	 * Is an exchange internal; e.g. can't be directly published to by a client.
+	 * @return true if internal.
+	 * @since 1.6
+	 */
+	boolean isInternal();
 
 }

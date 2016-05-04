@@ -26,6 +26,7 @@ import java.util.Map;
  *
  * @author Mark Pollack
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @see AmqpAdmin
  */
@@ -40,6 +41,8 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	private final Map<String, Object> arguments;
 
 	private volatile boolean delayed;
+
+	private boolean internal;
 
 	/**
 	 * Construct a new Exchange for bean usage.
@@ -116,6 +119,15 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 
 	public void setDelayed(boolean delayed) {
 		this.delayed = delayed;
+	}
+
+	@Override
+	public boolean isInternal() {
+		return this.internal;
+	}
+
+	public void setInternal(boolean internal) {
+		this.internal = internal;
 	}
 
 	@Override

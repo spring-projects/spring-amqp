@@ -294,6 +294,14 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="internal" type="xsd:string" default="false">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+					Flag indicating that the exchange is internal for Broker purposes.
+					E.g. can't be directly published to by a client. Default is false.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attributeGroup ref="declarable" />
 	</xsd:complexType>
 
