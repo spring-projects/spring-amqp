@@ -223,6 +223,14 @@ It is important to understand that the cache size is (by default) not a limit, b
 With a cache size of, say, 10, any number of channels can actually be in use.
 If more than 10 channels are being used and they are all returned to the cache, 10 will go in the cache; the remainder will be physically closed.
 
+Starting with _version 1.6_, the default channel cache size has been increased from 1 to 25.
+In high volume, multi-threaded, environments, a small cache means that channels are created and closed at a high rate.
+Increasing the default cache size will avoid this overhead.
+You should monitor the channels in use via the RabbitMQ Admin UI and consider increasing the cache size further if you
+see many channels being created and closed.
+The cache will only grow on-demand (to suit the concurrency requirements of the application) so this change will not
+impact existing low-volume applications.
+
 Starting with _version 1.4.2_, the `CachingConnectionFactory` has a property `channelCheckoutTimeout`.
 When this property is greater than zero, the `channelCacheSize` becomes a limit on the number of channels that can be created on a connection.
 If the limit is reached, calling threads will block until a channel is available or this timeout is reached, in which case a `AmqpTimeoutException` is thrown.

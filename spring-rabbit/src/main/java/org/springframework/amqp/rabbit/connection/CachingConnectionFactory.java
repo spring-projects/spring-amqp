@@ -98,6 +98,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
 				PublisherCallbackChannelConnectionFactory, SmartLifecycle {
 
+	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+
 	private final ChannelCachingConnectionProxy connection = new ChannelCachingConnectionProxy(null);
 
 	public enum CacheMode {
@@ -135,7 +137,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile CacheMode cacheMode = CacheMode.CHANNEL;
 
-	private volatile int channelCacheSize = 1;
+	private volatile int channelCacheSize = DEFAULT_CHANNEL_CACHE_SIZE;
 
 	private volatile int connectionCacheSize = 1;
 

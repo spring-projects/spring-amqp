@@ -62,12 +62,6 @@ subprojects { subproject ->
 	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
 
-	apply from:   "${rootDir}/src/checkstyle/fixHeaders.gradle"
-	apply from:   "${rootDir}/src/checkstyle/fixThis.gradle"
-	apply from:   "${rootDir}/src/checkstyle/fixModifiers.gradle"
-	apply from:   "${rootDir}/src/checkstyle/fixFinal.gradle"
-	apply from:   "${rootDir}/src/checkstyle/fixWhiteAround.gradle"
-
 	if (project.hasProperty('platformVersion')) {
 		apply plugin: 'spring-io'
 
@@ -133,7 +127,7 @@ subprojects { subproject ->
 	}
 
 	// enable all compiler warnings; individual projects may customize further
-	ext.xLintArg = '-Xlint:all,-options'
+	ext.xLintArg = '-Xlint:all,-options,-processing'
 	[compileJava, compileTestJava]*.options*.compilerArgs = [xLintArg]
 
 	task checkTestConfigs << {
