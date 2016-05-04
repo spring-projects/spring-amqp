@@ -39,7 +39,7 @@
 		<rabbit:exchange-arguments ref="myRefArguments"/>
 	</direct-exchange>
 
-	<rabbit:topic-exchange name="topic" declared-by="admin1" delayed="true" />
+	<rabbit:topic-exchange name="topic" declared-by="admin1" delayed="true" internal="true"/>
 
 	<rabbit:fanout-exchange name="fanout" declared-by="admin2" />
 

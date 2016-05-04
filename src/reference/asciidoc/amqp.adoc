@@ -2763,7 +2763,7 @@ If the message has no `replyToAddress` property, the message will be rejected an
 NOTE: By default, if the request message cannot be delivered, the calling thread will eventually timeout and a
 `RemoteProxyFailureException` will be thrown.
 The timeout is 5 seconds by default, and can be modified by setting the `replyTimeout` property on the
-`RabbbitTemplate`.
+`RabbitTemplate`.
 Starting with _version 1.5_, setting the `mandatory` property to true, and enabling returns on the connection
 factory (see <<cf-pub-conf-ret>>), the calling thread will throw an `AmqpMessageReturnedException`.
 See <<reply-timeout>> for more information.
@@ -2961,7 +2961,7 @@ In addition, any declaration exceptions result in the publishing of a `Declarati
 The event contains a reference to the admin, the element that was being declared, and the `Throwable`.
 
 [[headers-exchange]]
-Starting with _version 1.3_ the HeadersExchange can be configured to match on multiple headers; you can also specify whether any or all headers must match:
+Starting with _version 1.3_ the `HeadersExchange` can be configured to match on multiple headers; you can also specify whether any or all headers must match:
 
 [source,xml]
 ----
@@ -2977,6 +2977,12 @@ Starting with _version 1.3_ the HeadersExchange can be configured to match on mu
 	</rabbit:bindings>
 </rabbit:headers-exchange>
 ----
+
+Starting with _version 1.6_ `Exchanges` can be configured with an `internal` flag (default to `false`) and such an
+`Exchange` will be properly configured on Broker via `RabbitAdmin`.
+If the `internal` flag is `true` for an exchange RabbitMQ will not allow clients to use the exchange.
+This is useful for things like a dead letter exchange, when the exchange may not be used directly by publishers,
+but only when bound to other exchanges.
 
 To see how to use Java to configure the AMQP infrastructure, look at the Stock sample application,
 where there is the `@Configuration` class `AbstractStockRabbitConfiguration` which in turn has

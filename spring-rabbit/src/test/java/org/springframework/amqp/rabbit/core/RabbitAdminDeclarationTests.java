@@ -16,12 +16,15 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +83,7 @@ public class RabbitAdminDeclarationTests {
 				listener.set((ConnectionListener) invocation.getArguments()[0]);
 				return null;
 			}
+
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		GenericApplicationContext context = new GenericApplicationContext();
@@ -96,7 +100,7 @@ public class RabbitAdminDeclarationTests {
 		listener.get().onCreate(conn);
 
 		verify(channel).queueDeclare("foo", true, false, false, null);
-		verify(channel).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(channel).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
 		verify(channel).queueBind("foo", "bar", "foo", null);
 	}
 
@@ -104,7 +108,6 @@ public class RabbitAdminDeclarationTests {
 	public void testNoDeclareWithCachedConnections() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 
-		final List<com.rabbitmq.client.Connection> mockConnections = new ArrayList<com.rabbitmq.client.Connection>();
 		final List<Channel> mockChannels = new ArrayList<Channel>();
 
 		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
@@ -114,6 +117,7 @@ public class RabbitAdminDeclarationTests {
 				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
 				doAnswer(new Answer<Channel>() {
 					private int channelNumber;
+
 					@Override
 					public Channel answer(InvocationOnMock invocation) throws Throwable {
 						Channel channel = mock(Channel.class);
@@ -123,11 +127,11 @@ public class RabbitAdminDeclarationTests {
 						mockChannels.add(channel);
 						return channel;
 					}
+
 				}).when(connection).createChannel();
 				int connectionNumber = ++this.connectionNumber;
 				when(connection.toString()).thenReturn("mockConnection" + connectionNumber);
 				when(connection.isOpen()).thenReturn(true);
-				mockConnections.add(connection);
 				return connection;
 			}
 		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
@@ -184,7 +188,7 @@ public class RabbitAdminDeclarationTests {
 		listener.get().onCreate(conn);
 
 		verify(channel).queueDeclare("foo", true, false, false, null);
-		verify(channel).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(channel).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
 		verify(channel).queueBind("foo", "bar", "foo", null);
 	}
 
@@ -224,7 +228,7 @@ public class RabbitAdminDeclarationTests {
 		listener.get().onCreate(conn);
 
 		verify(channel, times(0)).queueDeclare("foo", true, false, false, null);
-		verify(channel, times(0)).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(channel, times(0)).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
 		verify(channel, times(0)).queueBind("foo", "bar", "foo", null);
 	}
 
@@ -263,7 +267,7 @@ public class RabbitAdminDeclarationTests {
 		listener.get().onCreate(conn);
 
 		verify(channel, times(0)).queueDeclare("foo", true, false, false, null);
-		verify(channel, times(0)).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(channel, times(0)).exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
 		verify(channel, times(0)).queueBind("foo", "bar", "foo", null);
 	}
 
@@ -272,12 +276,13 @@ public class RabbitAdminDeclarationTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
 		Config.listener1.onCreate(Config.conn1);
 		verify(Config.channel1).queueDeclare("foo", true, false, false, null);
-		verify(Config.channel1).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(Config.channel1).exchangeDeclare("bar", "direct", true, false, true, new HashMap<String, Object>());
 		verify(Config.channel1).queueBind("foo", "bar", "foo", null);
 
 		Config.listener2.onCreate(Config.conn2);
 		verify(Config.channel2, times(0)).queueDeclare("foo", true, false, false, null);
-		verify(Config.channel2, times(0)).exchangeDeclare("bar", "direct", true, false, new HashMap<String, Object>());
+		verify(Config.channel2, never())
+				.exchangeDeclare("bar", "direct", true, false, false, new HashMap<String, Object>());
 		verify(Config.channel2, times(0)).queueBind("foo", "bar", "foo", null);
 		context.close();
 	}
@@ -310,7 +315,9 @@ public class RabbitAdminDeclarationTests {
 			queue.setAdminsThatShouldDeclare(null, admin1);
 			fail("Expected Exception");
 		}
-		catch (IllegalArgumentException e) { }
+		catch (IllegalArgumentException e) {
+			assertThat(e.getMessage(), containsString("'admins' cannot contain null elements"));
+		}
 	}
 
 	@Configuration
@@ -333,7 +340,8 @@ public class RabbitAdminDeclarationTests {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn1);
 			when(conn1.createChannel(false)).thenReturn(channel1);
-			when(channel1.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+			when(channel1.queueDeclare("foo", true, false, false, null))
+					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(new Answer<Object>() {
 
 				@Override
@@ -341,6 +349,7 @@ public class RabbitAdminDeclarationTests {
 					listener1 = (ConnectionListener) invocation.getArguments()[0];
 					return null;
 				}
+
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;
 		}
@@ -350,7 +359,8 @@ public class RabbitAdminDeclarationTests {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			when(connectionFactory.createConnection()).thenReturn(conn2);
 			when(conn2.createChannel(false)).thenReturn(channel2);
-			when(channel2.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+			when(channel2.queueDeclare("foo", true, false, false, null))
+					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(new Answer<Object>() {
 
 				@Override
@@ -358,6 +368,7 @@ public class RabbitAdminDeclarationTests {
 					listener2 = (ConnectionListener) invocation.getArguments()[0];
 					return null;
 				}
+
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;
 		}
@@ -387,6 +398,7 @@ public class RabbitAdminDeclarationTests {
 		public Exchange exchange() throws IOException {
 			DirectExchange exchange = new DirectExchange("bar");
 			exchange.setAdminsThatShouldDeclare(admin1());
+			exchange.setInternal(true);
 			return exchange;
 		}
 

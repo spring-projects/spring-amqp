@@ -550,11 +550,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						}
 						arguments.put("x-delayed-type", exchange.getType());
 						channel.exchangeDeclare(exchange.getName(), ExchangeTypes.DELAYED, exchange.isDurable(),
-								exchange.isAutoDelete(), arguments);
+								exchange.isAutoDelete(), exchange.isInternal(), arguments);
 					}
 					else {
 						channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
-							exchange.isAutoDelete(), exchange.getArguments());
+							exchange.isAutoDelete(), exchange.isInternal(), exchange.getArguments());
 					}
 				}
 				catch (IOException e) {
