@@ -64,7 +64,8 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertFalse(exchange.shouldDeclare());
 		assertEquals(2, exchange.getDeclaringAdmins().size());
-		Binding binding = beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
+		Binding binding =
+				beanFactory.getBean("org.springframework.amqp.rabbit.config.BindingFactoryBean#0", Binding.class);
 		assertFalse(binding.shouldDeclare());
 		assertEquals(2, binding.getDeclaringAdmins().size());
 
@@ -94,6 +95,7 @@ public final class ExchangeParserTests {
 		assertFalse(exchange.isAutoDelete());
 		assertTrue(exchange.shouldDeclare());
 		assertTrue(exchange.isDelayed());
+		assertTrue(exchange.isInternal());
 		assertEquals(1, exchange.getDeclaringAdmins().size());
 
 	}

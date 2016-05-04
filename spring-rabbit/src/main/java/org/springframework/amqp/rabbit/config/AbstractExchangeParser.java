@@ -73,6 +73,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		NamespaceUtils.addConstructorArgBooleanValueIfAttributeDefined(builder, element, AUTO_DELETE_ATTRIBUTE,
 				false);
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, DELAYED_ATTRIBUTE);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, "internal");
 
 		this.parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
 

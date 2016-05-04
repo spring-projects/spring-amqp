@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -248,6 +249,18 @@ public class RabbitAdminIntegrationTests {
 	@Test
 	public void testDeleteExchangeWithDefaultExchange() throws Exception {
 		boolean result = rabbitAdmin.deleteExchange(RabbitAdmin.DEFAULT_EXCHANGE_NAME);
+
+		assertTrue(result);
+	}
+
+	@Test
+	public void testDeleteExchangeWithInternalOption() throws Exception {
+		String exchangeName = "test.exchange.internal";
+		AbstractExchange exchange = new DirectExchange(exchangeName);
+		exchange.setInternal(true);
+		rabbitAdmin.declareExchange(exchange);
+
+		boolean result = rabbitAdmin.deleteExchange(exchangeName);
 
 		assertTrue(result);
 	}

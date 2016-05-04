@@ -147,6 +147,12 @@ See <<async-annotation-driven>> for more information.
 Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
 See <<delayed-message-exchange>> for more information.
 
+===== Exchange internal flag
+
+Any `Exchange` definitions can now be marked as `internal` and the `RabbitAdmin` will pass the value to the broker when
+declaring the exchange.
+See <<broker-configuration>> for more information.
+
 ===== CachingConnectionFactory Changes
 
 ====== CachingConnectionFactory Cache Statistics
