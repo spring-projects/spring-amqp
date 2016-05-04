@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -40,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -293,8 +293,8 @@ public class RabbitAdminDeclarationTests {
 				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull(Map.class));
 		verify(Config.channel2, never())
 				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
-								anyBoolean(), Matchers.<Map<String, Object>> any());
-		verify(Config.channel2, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), any(Map.class));
+								anyBoolean(), anyMap());
+		verify(Config.channel2, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), anyMap());
 		context.close();
 	}
 
