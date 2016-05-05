@@ -171,6 +171,9 @@ See <<custom-client-props>> for more information.
 The default channel cache size has been increased from 1 to 25.
 See <<connections>> for more information.
 
+In addition, the `SimpleMessageListenerContainer` no longer adjusts the cache size to be at least as large as the number
+of `concurrentConsumers` - this was superfluous, since the container consumer channels are never cached.
+
 ===== RabbitConnectionFactoryBean
 
 The factory bean now exposes a property to add client connection properties to connections made by the resulting
