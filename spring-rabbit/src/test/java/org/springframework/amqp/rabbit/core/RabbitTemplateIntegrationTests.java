@@ -107,15 +107,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.interceptor.TransactionAttribute;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -1538,38 +1534,6 @@ public class RabbitTemplateIntegrationTests {
 			@Override
 			public Void doInTransaction(final TransactionStatus status) {
 
-				// Emulate Global TX with the mock non-new TransactionStatus
-				new TransactionInterceptor() {
-
-					{
-						prepareTransactionInfo(null, null, null, null);
-					}
-
-					@Override
-					protected TransactionInfo prepareTransactionInfo(PlatformTransactionManager tm,
-					                                                 TransactionAttribute txAttr,
-					                                                 String joinpointIdentification,
-					                                                 TransactionStatus status) {
-						TransactionInfo txInfo = new TransactionInfo(tm, txAttr, joinpointIdentification);
-						txInfo.newTransactionStatus(new SimpleTransactionStatus(false));
-
-						final ThreadLocal<TransactionInfo> transactionInfoHolder =
-								(ThreadLocal<TransactionInfo>) TestUtils.getPropertyValue(this,
-										"transactionInfoHolder");
-						assertNotNull(transactionInfoHolder);
-						transactionInfoHolder.set(txInfo);
-						TransactionSynchronizationManager.registerSynchronization(
-								new TransactionSynchronizationAdapter() {
-
-									@Override
-									public void afterCompletion(int status) {
-										transactionInfoHolder.remove();
-									}
-								});
-						return txInfo;
-					}
-
-				};
 				template.convertAndSend(ROUTE, "message");
 
 				if (rollback) {
