@@ -44,8 +44,6 @@ import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -686,15 +684,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having an "
 						+ "external transaction manager. Either use a different AcknowledgeMode or make sure " +
 						"the transactionManager is null.");
-
-		if (this.getConnectionFactory() instanceof CachingConnectionFactory) {
-			CachingConnectionFactory cf = (CachingConnectionFactory) getConnectionFactory();
-			if (cf.getCacheMode() == CacheMode.CHANNEL && cf.getChannelCacheSize() < this.concurrentConsumers) {
-				cf.setChannelCacheSize(this.concurrentConsumers);
-				logger.warn("CachingConnectionFactory's channelCacheSize can not be less than the number " +
-						"of concurrentConsumers so it was reset to match: "	+ this.concurrentConsumers);
-			}
-		}
 
 	}
 

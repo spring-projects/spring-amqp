@@ -191,7 +191,8 @@ As you can imagine, the connection instance provides a `createChannel` method.
 The `CachingConnectionFactory` implementation supports caching of those channels, and it maintains separate caches for channels based on whether they are transactional or not.
 When creating an instance of `CachingConnectionFactory`, the 'hostname' can be provided via the constructor.
 The 'username' and 'password' properties should be provided as well.
-If you would like to configure the size of the channel cache (the default is 1), you could call the `setChannelCacheSize()` method here as well.
+If you would like to configure the size of the channel cache (the default is 25), you could call the
+`setChannelCacheSize()` method here as well.
 
 Starting with _version 1.3_, the `CachingConnectionFactory` can be configured to cache connections as well as just channels.
 In this case, each call to `createConnection()` creates a new connection (or retrieves an idle one from the cache).
@@ -274,7 +275,7 @@ A `ConnectionFactory` can be created quickly and conveniently using the rabbit n
 
 In most cases this will be preferable since the framework can choose the best defaults for you.
 The created instance will be a `CachingConnectionFactory`.
-Keep in mind that the default cache size for channels is 1.
+Keep in mind that the default cache size for channels is 25.
 If you want more channels to be cached set a larger value via the 'channelCacheSize' property.
 In XML it would look like this:
 
@@ -285,7 +286,7 @@ In XML it would look like this:
     <constructor-arg value="somehost"/>
     <property name="username" value="guest"/>
     <property name="password" value="guest"/>
-    <property name="channelCacheSize" value="25"/>
+    <property name="channelCacheSize" value="50"/>
 </bean>
 ----
 
@@ -294,7 +295,7 @@ And with the namespace you can just add the 'channel-cache-size' attribute:
 [source,xml]
 ----
 <rabbit:connection-factory
-    id="connectionFactory" channel-cache-size="25"/>
+    id="connectionFactory" channel-cache-size="50"/>
 ----
 
 The default cache mode is CHANNEL, but you can configure it to cache connections instead; in this case, we use `connection-cache-size`:
@@ -792,7 +793,10 @@ NOTE: When a rabbit template send operation completes, the channel is closed; th
 When the cache is full, the framework defers the close for up to 5 seconds, in order to allow time for the confirms/returns to be received.
 When using confirms, the channel will be closed when the last confirm is received.
 When using only returns, the channel will remain open for the full 5 seconds.
-It is generally recommended to set the connection factory's `channelCacheSize` to a large enough value so that the channel on which a message is published is returned to the cache instead of being closed.
+It is generally recommended to set the connection factory's `channelCacheSize` to a large enough value so that the
+channel on which a message is published is returned to the cache instead of being closed.
+You can monitor channel usage using the RabbitMQ management plugin; if you see channels being opened/closed rapidly you
+should consider increasing the cache size to reduce overhead on the server.
 
 [[template-messaging]]
 ===== Messaging integration
