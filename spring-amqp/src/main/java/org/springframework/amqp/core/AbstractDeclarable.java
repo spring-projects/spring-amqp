@@ -36,6 +36,8 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
 
+	protected boolean ignoreDeclarationExceptions;
+
 	@Override
 	public boolean shouldDeclare() {
 		return this.shouldDeclare;
@@ -53,6 +55,20 @@ public abstract class AbstractDeclarable implements Declarable {
 	@Override
 	public Collection<?> getDeclaringAdmins() {
 		return Collections.unmodifiableCollection(this.declaringAdmins);
+	}
+
+	@Override
+	public boolean isIgnoreDeclarationExceptions() {
+		return this.ignoreDeclarationExceptions;
+	}
+
+	/**
+	 * Set to true to ignore exceptions such as mismatched properties when declaring.
+	 * @param ignoreDeclarationExceptions the ignoreDeclarationExceptions.
+	 * @since 1.6
+	 */
+	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
+		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
 	}
 
 	/**
@@ -76,4 +92,5 @@ public abstract class AbstractDeclarable implements Declarable {
 		}
 		this.declaringAdmins = declaringAdmins;
 	}
+
 }

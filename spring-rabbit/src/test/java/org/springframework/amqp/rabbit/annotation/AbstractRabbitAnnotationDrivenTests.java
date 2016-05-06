@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,13 +89,28 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 	 * Test for {@link SampleBean} discovery. If a factory with the default name
 	 * is set, an endpoint will use it automatically
 	 */
-	public void testSampleConfiguration(ApplicationContext context) {
+	public void testSampleConfiguration(ApplicationContext context, int expectedDefaultContainers) {
 		RabbitListenerContainerTestFactory defaultFactory =
 				context.getBean("rabbitListenerContainerFactory", RabbitListenerContainerTestFactory.class);
 		RabbitListenerContainerTestFactory simpleFactory =
 				context.getBean("simpleFactory", RabbitListenerContainerTestFactory.class);
-		assertEquals(1, defaultFactory.getListenerContainers().size());
+		assertEquals(expectedDefaultContainers, defaultFactory.getListenerContainers().size());
 		assertEquals(1, simpleFactory.getListenerContainers().size());
+		Map<String, org.springframework.amqp.core.Queue> queues = context
+				.getBeansOfType(org.springframework.amqp.core.Queue.class);
+		for (org.springframework.amqp.core.Queue queue : queues.values()) {
+			assertTrue(queue.isIgnoreDeclarationExceptions());
+		}
+		Map<String, org.springframework.amqp.core.Exchange> exchanges = context
+				.getBeansOfType(org.springframework.amqp.core.Exchange.class);
+		for (org.springframework.amqp.core.Exchange exchange : exchanges.values()) {
+			assertTrue(exchange.isIgnoreDeclarationExceptions());
+		}
+		Map<String, org.springframework.amqp.core.Binding> bindings = context
+				.getBeansOfType(org.springframework.amqp.core.Binding.class);
+		for (org.springframework.amqp.core.Binding binding : bindings.values()) {
+			assertTrue(binding.isIgnoreDeclarationExceptions());
+		}
 	}
 
 	/**

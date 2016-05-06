@@ -48,6 +48,12 @@ public @interface QueueBinding {
 	String key() default "";
 
 	/**
+	 * @return true if the declaration exceptions should be ignored.
+	 * @since 1.6
+	 */
+	String ignoreDeclarationExceptions() default "false";
+
+	/**
 	 * @return the arguments to apply when declaring this binding
 	 * @since 1.6
 	 */

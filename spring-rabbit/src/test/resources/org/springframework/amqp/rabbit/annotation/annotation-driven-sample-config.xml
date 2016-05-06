@@ -15,5 +15,12 @@
 		  class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
 	<bean id="simpleFactory" class="org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory"/>
 
+	<rabbit:queue id="foo" ignore-declaration-exceptions="true" />
+
+	<rabbit:direct-exchange name="bar" ignore-declaration-exceptions="true">
+		<rabbit:bindings>
+			<rabbit:binding queue="foo" key="baz" ignore-declaration-exceptions="true" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange>
 
 </beans>

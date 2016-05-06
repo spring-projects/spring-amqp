@@ -57,6 +57,7 @@ import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -715,6 +716,27 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(bindings = {
+				@QueueBinding(
+					value = @Queue,
+					exchange = @Exchange(value = "auto.internal", autoDelete = "true", internal = "true"),
+					key = "auto.internal.rk")}
+		)
+		public String handleWithInternalExchange(String foo) {
+			return foo.toUpperCase();
+		}
+
+		@RabbitListener(bindings = {
+				@QueueBinding(
+					value = @Queue,
+					exchange = @Exchange(value = "auto.internal", autoDelete = "true",
+								ignoreDeclarationExceptions = "true"),
+					key = "auto.internal.rk")}
+		)
+		public String handleWithInternalExchangeIgnore(String foo) {
+			return foo.toUpperCase();
+		}
+
 	}
 
 	public static class Foo1 {
@@ -1045,6 +1067,13 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public MetaListener meta() {
 			return new MetaListener();
+		}
+
+		@Bean
+		public DirectExchange internal() {
+			DirectExchange directExchange = new DirectExchange("auto.internal", false, true);
+			directExchange.setInternal(true);
+			return directExchange;
 		}
 
 	}

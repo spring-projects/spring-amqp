@@ -55,6 +55,17 @@ public @interface Exchange {
 	String autoDelete() default "false";
 
 	/**
+	 * @return true if the exchange is to be declared as internal.
+	 */
+	String internal() default "false";
+
+	/**
+	 * @return true if the declaration exceptions should be ignored.
+	 * @since 1.6
+	 */
+	String ignoreDeclarationExceptions() default "false";
+
+	/**
 	 * @return the arguments to apply when declaring this exchange.
 	 * @since 1.6
 	 */

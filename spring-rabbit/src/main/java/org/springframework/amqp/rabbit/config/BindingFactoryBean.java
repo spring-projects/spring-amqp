@@ -33,11 +33,19 @@ import org.springframework.beans.factory.FactoryBean;
 public class BindingFactoryBean implements FactoryBean<Binding> {
 
 	private Map<String, Object> arguments;
+
 	private String routingKey = "";
+
 	private String exchange;
+
 	private Queue destinationQueue;
+
 	private Exchange destinationExchange;
+
 	private Boolean shouldDeclare;
+
+	private Boolean ignoreDeclarationExceptions;
+
 	private AmqpAdmin[] adminsThatShouldDeclare;
 
 	public void setArguments(Map<String, Object> arguments) {
@@ -64,6 +72,10 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		this.shouldDeclare = shouldDeclare;
 	}
 
+	public void setIgnoreDeclarationExceptions(Boolean ignoreDeclarationExceptions) {
+		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
+	}
+
 	public void setAdminsThatShouldDeclare(AmqpAdmin... adminsThatShouldDeclare) {
 		this.adminsThatShouldDeclare = adminsThatShouldDeclare;
 	}
@@ -82,6 +94,9 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		Binding binding = new Binding(destination, destinationType, this.exchange, this.routingKey, this.arguments);
 		if (this.shouldDeclare != null) {
 			binding.setShouldDeclare(this.shouldDeclare);
+		}
+		if (this.ignoreDeclarationExceptions != null) {
+			binding.setIgnoreDeclarationExceptions(this.ignoreDeclarationExceptions);
 		}
 		if (this.adminsThatShouldDeclare != null) {
 			binding.setAdminsThatShouldDeclare((Object[]) this.adminsThatShouldDeclare);

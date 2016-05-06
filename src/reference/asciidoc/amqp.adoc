@@ -1363,7 +1363,7 @@ public class MyService {
 
   @RabbitListener(bindings = @QueueBinding(
         value = @Queue(value = "myQueue", durable = "true"),
-        exchange = @Exchange(value = "auto.exch"),
+        exchange = @Exchange(value = "auto.exch", ignoreDeclarationExceptions = "true"),
         key = "orderRoutingKey")
   )
   public void processOrder(String data) {
@@ -1389,6 +1389,10 @@ Multiple `QueueBinding` entries can be provided, allowing the listener to listen
 
 Only DIRECT, FANOUT, TOPIC and HEADERS, exchange types are supported with this mechanism.
 Use normal `@Bean` definitions when more advanced configuration is required.
+
+Notice `ignoreDeclarationExceptions` on the exchange in the first example.
+This allows, for example, binding to an existing exchange that might have different settings (such as `internal`).
+By default the properties of an existing exchange must match.
 
 Starting with _version 1.6_, you can now specify arguments within `@QueueBinding` annotations for queues, exchanges
 and bindings. For example:
@@ -2952,9 +2956,11 @@ For example, if a `queue` already exists with no `time to live` argument, and yo
 
 By default, the `RabbitAdmin` will immediately stop processing all declarations when any exception occurs; this could cause downstream issues - such as a *listener container* failing to initialize because another queue (defined after the one in error) is not declared.
 
-This behavior can be modified by setting the `ignore-declaration-failures` attribute to `true` on the `RabbitAdmin`.
+This behavior can be modified by setting the `ignore-declaration-exceptions` attribute to `true` on the `RabbitAdmin`.
 This option instructs the `RabbitAdmin` to log the exception, and continue declaring other elements.
-When configuring the `RabbitAdmin` using java, this property is `ignoreDeclarationFailures`.
+When configuring the `RabbitAdmin` using java, this property is `ignoreDeclarationExceptions`.
+This is a global setting which applies to all elements, queues, exchanges and bindings have a similar property which
+applies to just those elements.
 
 Prior to _version 1.6_, this property only took effect if an `IOException` occurred on the channel - such as when there
 is a mismatch between current and desired properties.

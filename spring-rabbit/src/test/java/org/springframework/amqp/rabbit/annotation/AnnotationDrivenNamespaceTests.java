@@ -40,7 +40,7 @@ public class AnnotationDrivenNamespaceTests extends AbstractRabbitAnnotationDriv
 	public void sampleConfiguration() {
 		ApplicationContext context = new ClassPathXmlApplicationContext(
 				"annotation-driven-sample-config.xml", getClass());
-		testSampleConfiguration(context);
+		testSampleConfiguration(context, 1);
 	}
 
 	@Override

@@ -63,7 +63,7 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 	public void sampleConfiguration() {
 		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
 				EnableRabbitSampleConfig.class, SampleBean.class);
-		testSampleConfiguration(context);
+		testSampleConfiguration(context, 2);
 	}
 
 	@Override
@@ -179,6 +179,24 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public RabbitListenerContainerTestFactory simpleFactory() {
 			return new RabbitListenerContainerTestFactory();
 		}
+
+		@Bean
+		public Listener listener() {
+			return new Listener();
+		}
+
+		static class Listener {
+
+			@RabbitListener(bindings =
+					@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true"),
+								exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true"),
+								key = "baz", ignoreDeclarationExceptions = "true"))
+			public void handle(String foo) {
+				// empty
+			}
+
+		}
+
 	}
 
 	@EnableRabbit

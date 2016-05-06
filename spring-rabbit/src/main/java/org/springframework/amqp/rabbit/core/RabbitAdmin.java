@@ -636,7 +636,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher.publishEvent(event);
 		}
-		if (this.ignoreDeclarationExceptions) {
+		if (this.ignoreDeclarationExceptions || element.isIgnoreDeclarationExceptions()) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("Failed to declare " + elementType
 						+ (element == null ? "broker-generated" : ": " + element)

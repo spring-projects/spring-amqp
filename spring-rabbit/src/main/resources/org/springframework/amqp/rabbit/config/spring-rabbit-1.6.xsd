@@ -396,6 +396,15 @@
 				</xsd:appinfo>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="ignore-declaration-exceptions">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Specifies whether exceptions encountered while declraring this element should be ignored.
+	If 'false', the equivalent setting on the rabbit admin applies.
+	Default value is 'false'.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:element name="binding-arguments" type="mapType">
@@ -994,7 +1003,9 @@
 					<xsd:documentation><![CDATA[
 	If automatic declaration is enabled (see 'auto-startup'), if this is set to 'true', exceptions will
 	be logged (WARNings) but declaration of other elements will continue. If false, declarations will
-	cease when an exception occurs. Default value is 'false'.
+	cease when an exception occurs.
+	This is a global setting; it is also available on individual elements.
+	Default value is 'false'.
 					]]></xsd:documentation>
 				</xsd:annotation>
 				<xsd:simpleType>
@@ -1459,6 +1470,15 @@
 	declare this element (lazily, when a connection is established with the broker).
 	If not specified, or empty, then all auto-startup RabbitAdmins will declare the element.
 	Default value is all RabbitAdmins.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="ignore-declaration-exceptions">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	Specifies whether exceptions encountered while declraring this element should be ignored.
+	If 'false', the equivalent setting on the rabbit admin applies.
+	Default value is 'false'.
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>

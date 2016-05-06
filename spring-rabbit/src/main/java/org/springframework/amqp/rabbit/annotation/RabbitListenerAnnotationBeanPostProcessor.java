@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.core.AbstractDeclarable;
+import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
@@ -494,6 +496,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				exclusive,
 				autoDelete,
 				resolveArguments(bindingQueue.arguments()));
+		queue.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingQueue.ignoreDeclarationExceptions()));
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
 		return queueName;
 	}
@@ -528,6 +531,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		else {
 			throw new BeanInitializationException("Unexpected exchange type: " + exchangeType);
 		}
+		AbstractExchange abstractExchange = (AbstractExchange) exchange;
+		abstractExchange.setInternal(resolveExpressionAsBoolean(bindingExchange.internal()));
+		abstractExchange.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingExchange.ignoreDeclarationExceptions()));
+		((AbstractDeclarable) actualBinding)
+				.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(binding.ignoreDeclarationExceptions()));
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
 				exchange);
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(

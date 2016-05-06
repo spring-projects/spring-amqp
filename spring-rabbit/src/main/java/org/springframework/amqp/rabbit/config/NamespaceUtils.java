@@ -294,6 +294,7 @@ public abstract class NamespaceUtils {
 			}
 			builder.addPropertyValue("adminsThatShouldDeclare", adminBeanRefs);
 		}
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, "ignore-declaration-exceptions");
 	}
 
 	public static BeanDefinition createExpressionDefinitionFromValueOrExpression(String valueElementName,

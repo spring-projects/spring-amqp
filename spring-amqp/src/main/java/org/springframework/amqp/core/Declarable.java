@@ -42,4 +42,12 @@ public interface Declarable {
 	 * @return the collection.
 	 */
 	Collection<?> getDeclaringAdmins();
+
+	/**
+	 * Should ignore exceptions (such as mismatched args) when declaring.
+	 * @return true if should ignore.
+	 * @since 1.6
+	 */
+	boolean isIgnoreDeclarationExceptions();
+
 }
