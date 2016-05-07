@@ -36,7 +36,7 @@ public abstract class AbstractDeclarable implements Declarable {
 
 	private volatile Collection<Object> declaringAdmins = new ArrayList<Object>();
 
-	protected boolean ignoreDeclarationExceptions;
+	private boolean ignoreDeclarationExceptions;
 
 	@Override
 	public boolean shouldDeclare() {
