@@ -2070,10 +2070,6 @@ The events have 4 properties:
 ----
 public class Listener {
 
-    private final CountDownLatch latch = new CountDownLatch(2);
-
-    private volatile ListenerContainerIdleEvent event;
-
     @RabbitListener(id="foo", queues="#{queue.name}")
     public String listen(String foo) {
         return foo.toUpperCase();
@@ -2089,6 +2085,10 @@ public class Listener {
 
 IMPORTANT: Event listeners will see events for all containers; so, in the example above, we narrow the events received
 based on the listener ID.
+
+CAUTION: If you wish to use the idle event to stop the lister container, you should not call `container.stop()` on the
+thread that calls the listener - it will cause delays and unnecessary log messages.
+Instead, you should hand off the event to a different thread that can then stop the container.
 
 [[message-converters]]
 ==== Message Converters
