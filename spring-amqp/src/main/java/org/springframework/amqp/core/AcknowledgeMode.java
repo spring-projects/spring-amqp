@@ -39,7 +39,7 @@ public enum AcknowledgeMode {
 	 * Auto - the container will issue the ack/nack based on whether
 	 * the listener returns normally, or throws an exception.
 	 * <p><em>Do not confuse with RabbitMQ {@code autoAck} which is
-	 * represented by {@link #NONE} here.
+	 * represented by {@link #NONE} here<em>.
 	 */
 	AUTO;
 
