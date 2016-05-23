@@ -149,6 +149,9 @@ public class RabbitTemplateIntegrationTests {
 
 	private static final Queue REPLY_QUEUE = new Queue("test.reply.queue");
 
+	@Rule
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
+
 	private RabbitTemplate template;
 
 	@Autowired
@@ -175,9 +178,6 @@ public class RabbitTemplateIntegrationTests {
 		((DisposableBean) template.getConnectionFactory()).destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
 
 	@Test
 	public void testReceiveNonBlocking() throws Exception {
@@ -1221,6 +1221,7 @@ public class RabbitTemplateIntegrationTests {
 		this.template.setRoutingKey(ROUTE);
 		this.template.setReplyAddress(REPLY_QUEUE.getName());
 		this.template.setReplyTimeout(10000);
+		this.template.setReceiveTimeout(10000);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(this.template.getConnectionFactory());
