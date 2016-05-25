@@ -182,6 +182,11 @@ public abstract class AbstractRoutingConnectionFactory implements ConnectionFact
 	}
 
 	@Override
+	public String getUsername() {
+		return this.determineTargetConnectionFactory().getUsername();
+	}
+
+	@Override
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		return this.targetConnectionFactories.get(key);
 	}

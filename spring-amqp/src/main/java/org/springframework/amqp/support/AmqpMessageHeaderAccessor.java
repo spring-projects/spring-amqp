@@ -134,6 +134,10 @@ public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		return (String) getHeader(AmqpHeaders.RECEIVED_ROUTING_KEY);
 	}
 
+	public String getReceivedUserId() {
+		return (String) getHeader(AmqpHeaders.RECEIVED_USER_ID);
+	}
+
 	public Boolean getRedelivered() {
 		return (Boolean) getHeader(AmqpHeaders.REDELIVERED);
 	}

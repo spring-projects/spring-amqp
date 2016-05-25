@@ -86,6 +86,15 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return this.rabbitConnectionFactory;
 	}
 
+	/**
+	 * Return the user name from the unerlying rabbit connection factory.
+	 * @return the user name.
+	 * @since 1.6
+	 */
+	@Override
+	public String getUsername() {
+		return this.rabbitConnectionFactory.getUsername();
+	}
 
 	public void setUsername(String username) {
 		this.rabbitConnectionFactory.setUsername(username);

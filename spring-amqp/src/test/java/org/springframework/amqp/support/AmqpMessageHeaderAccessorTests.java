@@ -91,7 +91,7 @@ public class AmqpMessageHeaderAccessorTests {
 		assertEquals("reply-to-1234", headerAccessor.getReplyTo());
 		assertEquals(Long.valueOf(timestamp.getTime()), headerAccessor.getTimestamp());
 		assertEquals("type-1234", headerAccessor.getType());
-		assertEquals("user-id-1234", headerAccessor.getUserId());
+		assertEquals("user-id-1234", headerAccessor.getReceivedUserId());
 
 		// Making sure replyChannel is not mixed with replyTo
 		assertNull(headerAccessor.getReplyChannel());
