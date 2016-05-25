@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -99,6 +100,7 @@ import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -169,8 +171,13 @@ public class RabbitTemplateIntegrationTests {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactory.setPublisherReturns(true);
-		template = new RabbitTemplate(connectionFactory);
-		template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
+		this.template = new RabbitTemplate(connectionFactory);
+		this.template.setSendConnectionFactorySelectorExpression(new LiteralExpression("foo"));
+		BeanFactory bf = mock(BeanFactory.class);
+		ConnectionFactory cf = mock(ConnectionFactory.class);
+		when(cf.getUsername()).thenReturn("guest");
+		when(bf.getBean("cf")).thenReturn(cf);
+		this.template.setBeanFactory(bf);
 	}
 
 	@After
@@ -186,6 +193,7 @@ public class RabbitTemplateIntegrationTests {
 		String out = (String) this.template.receiveAndConvert(ROUTE);
 		while (n++ < 100 && out == null) {
 			Thread.sleep(100);
+			out = (String) this.template.receiveAndConvert(ROUTE);
 		}
 		assertNotNull(out);
 		assertEquals("nonblock", out);
@@ -277,10 +285,12 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testReceiveBlocking() throws Exception {
+		this.template.setUserIdExpressionString("@cf.username");
 		this.template.convertAndSend(ROUTE, "block");
-		String out = (String) this.template.receiveAndConvert(ROUTE, 10000);
-		assertNotNull(out);
-		assertEquals("block", out);
+		Message received = this.template.receive(ROUTE, 10000);
+		assertNotNull(received);
+		assertEquals("block", new String(received.getBody()));
+		assertThat(received.getMessageProperties().getReceivedUserId(), equalTo("guest"));
 		this.template.setReceiveTimeout(0);
 		assertNull(this.template.receive(ROUTE));
 	}

@@ -122,7 +122,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		}
 		target.setTimestamp(source.getTimestamp());
 		target.setMessageId(source.getMessageId());
-		target.setUserId(source.getUserId());
+		target.setReceivedUserId(source.getUserId());
 		target.setAppId(source.getAppId());
 		target.setClusterId(source.getClusterId());
 		target.setType(source.getType());

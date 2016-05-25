@@ -71,6 +71,8 @@ public abstract class AmqpHeaders {
 
 	public static final String RECEIVED_ROUTING_KEY = PREFIX + "receivedRoutingKey";
 
+	public static final String RECEIVED_USER_ID = PREFIX + "receivedUserId";
+
 	public static final String REDELIVERED = PREFIX + "redelivered";
 
 	public static final String REPLY_TO = PREFIX + "replyTo";

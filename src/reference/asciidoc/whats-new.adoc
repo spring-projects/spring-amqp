@@ -77,6 +77,9 @@ This version allows you to override this default behavior and use a temporary qu
 `useTemporaryReplyQueues` property to `true`.
 See <<direct-reply-to>> for more information.
 
+The `RabbitTemplate` now supports a `user-id-expression` (`userIdExpression` when using Java configuration).
+See https://www.rabbitmq.com/validated-user-id.html[Validated User-ID RabbitMQ documentation] and <<template-user-id>> for more information.
+
 ===== Message Properties
 
 ====== CorrelationId
@@ -99,13 +102,25 @@ See <<message-properties-converters>> for more information.
 
 ====== Inbound Delivery Mode
 
-The `deliveryMode` header is no longer mapped to the `MessageProperties.deliveryMode`; this is to avoid unintended
+The `deliveryMode` property is no longer mapped to the `MessageProperties.deliveryMode`; this is to avoid unintended
 propagation if the the same `MessageProperties` object is used to send an outbound message.
 Instead, the inbound `deliveryMode` header is mapped to `MessageProperties.receivedDeliveryMode`.
 
 See <<message-properties-converters>> for more information.
 
 When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_DELIVERY_MODE`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+====== Inbound User ID
+
+The `user_id` property is no longer mapped to the `MessageProperties.userId`; this is to avoid unintended
+propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `userId` header is mapped to `MessageProperties.receivedUserId`.
+
+See <<message-properties-converters>> for more information.
+
+When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_USER_ID`.
 
 See <<async-annotation-driven-enable-signature>> for more information.
 

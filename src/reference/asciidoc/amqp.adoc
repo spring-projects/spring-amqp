@@ -805,6 +805,24 @@ Starting with _version 1.4_ `RabbitMessagingTemplate`, built on top of `RabbitTe
 `org.springframework.messaging.Message`.
 This allows you to create the message to send in generic manner.
 
+[[template-user-id]]
+===== Validated User Id
+
+Starting with _version 1.6_, the template now supports a `user-id-expression` (`userIdExpression` when using Java configuration).
+If a message is sent, the user id property is set (if not already set) after evaluating this expression.
+The root object for the evaluation is the message to be sent.
+
+Examples:
+
+[source, xml]
+----
+<rabbit:template ... user-id-expression="'guest'" />
+
+<rabbit:template ... user-id-expression="@myConnectionFactory.username" />
+----
+
+The first example is a literal expression; the second obtains the `username` property from a connection factory bean in the application context.
+
 [[sending-messages]]
 ==== Sending messages
 
@@ -2411,10 +2429,9 @@ For outbound messages:
 - `BYTES` - just the `correlationId` property is mapped
 - `BOTH` - Both properties will be considered, with the String property taking precedence
 
-Also starting with _version 1.6_, the inbound `deliveryMode` header is no longer mapped to
-`MessageProperties.deliveryMode`, it is mapped to `MessageProperties.receivedDeliveryMode` instead.
-This is to avoid unexpected propagation of this property if the same `MessageProperties` object is used for an
-outbound message.
+Also starting with _version 1.6_, the inbound `deliveryMode` property is no longer mapped to `MessageProperties.deliveryMode`, it is mapped to `MessageProperties.receivedDeliveryMode` instead.
+Also, the inbound `userId` property is no longer mapped to `MessageProperties.userId`, it is mapped to `MessageProperties.receivedUserId` instead.
+These changes are to avoid unexpected propagation of these properties if the same `MessageProperties` object is used for an outbound message.
 
 [[post-processing]]
 ==== Modifying Messages - Compression and More

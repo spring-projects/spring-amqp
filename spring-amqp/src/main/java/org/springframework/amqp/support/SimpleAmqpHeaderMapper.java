@@ -239,7 +239,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			}
 			String userId = amqpMessageProperties.getUserId();
 			if (StringUtils.hasText(userId)) {
-				headers.put(AmqpHeaders.USER_ID, userId);
+				headers.put(AmqpHeaders.RECEIVED_USER_ID, userId);
 			}
 			String consumerTag = amqpMessageProperties.getConsumerTag();
 			if (StringUtils.hasText(consumerTag)) {

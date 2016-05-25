@@ -147,6 +147,12 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 					receiveConnectionFactorySelectorExpression);
 		}
 
+		BeanDefinition userIdExpression = NamespaceUtils.createExpressionDefIfAttributeDefined("user-id-expression",
+				element);
+		if (userIdExpression != null) {
+			builder.addPropertyValue("userIdExpression", userIdExpression);
+		}
+
 		BeanDefinition replyContainer = null;
 		Element childElement = null;
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);
