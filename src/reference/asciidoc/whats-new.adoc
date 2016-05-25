@@ -77,6 +77,9 @@ This version allows you to override this default behavior and use a temporary qu
 `useTemporaryReplyQueues` property to `true`.
 See <<direct-reply-to>> for more information.
 
+The `RabbitTemplate` now supports a `user-id-expression` (`userIdExpression` when using Java configuration).
+See https://www.rabbitmq.com/validated-user-id.html[Validated User-ID RabbitMQ documentation] and <<template-user-id>> for more information.
+
 ===== Message Properties
 
 ====== CorrelationId
