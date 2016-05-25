@@ -101,6 +101,8 @@ public class MessageProperties implements Serializable {
 
 	private volatile String receivedRoutingKey;
 
+	private volatile String receivedUserId;
+
 	private volatile long deliveryTag;
 
 	private volatile boolean deliveryTagSet;
@@ -161,6 +163,19 @@ public class MessageProperties implements Serializable {
 	// qpid 1.0 .NET: getUserId is byte[]
 	public String getUserId() {
 		return this.userId;
+	}
+
+	/**
+	 * Return the user id from an incoming message.
+	 * @return the user id.
+	 * @since 1.6
+	 */
+	public String getReceivedUserId() {
+		return this.receivedUserId;
+	}
+
+	public void setReceivedUserId(String receivedUserId) {
+		this.receivedUserId = receivedUserId;
 	}
 
 	public void setAppId(String appId) {

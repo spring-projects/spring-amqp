@@ -237,6 +237,11 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	}
 
 	@Override
+	public String getUsername() {
+		return this.username;
+	}
+
+	@Override
 	public void addConnectionListener(ConnectionListener listener) {
 		this.defaultConnectionFactory.addConnectionListener(listener);
 	}

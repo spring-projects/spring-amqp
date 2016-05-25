@@ -26,6 +26,7 @@ import org.springframework.amqp.AmqpException;
  *
  * @author Mark Fisher
  * @author Dave Syer
+ * @author Gary Russell
  */
 public interface ConnectionFactory {
 
@@ -36,6 +37,8 @@ public interface ConnectionFactory {
 	int getPort();
 
 	String getVirtualHost();
+
+	String getUsername();
 
 	void addConnectionListener(ConnectionListener listener);
 

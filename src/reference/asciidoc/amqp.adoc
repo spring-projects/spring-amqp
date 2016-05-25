@@ -2411,10 +2411,9 @@ For outbound messages:
 - `BYTES` - just the `correlationId` property is mapped
 - `BOTH` - Both properties will be considered, with the String property taking precedence
 
-Also starting with _version 1.6_, the inbound `deliveryMode` header is no longer mapped to
-`MessageProperties.deliveryMode`, it is mapped to `MessageProperties.receivedDeliveryMode` instead.
-This is to avoid unexpected propagation of this property if the same `MessageProperties` object is used for an
-outbound message.
+Also starting with _version 1.6_, the inbound `deliveryMode` property is no longer mapped to `MessageProperties.deliveryMode`, it is mapped to `MessageProperties.receivedDeliveryMode` instead.
+Also, the inbound `userId` property is no longer mapped to `MessageProperties.userId`, it is mapped to `MessageProperties.receivedUserId` instead.
+These changes are to avoid unexpected propagation of these properties if the same `MessageProperties` object is used for an outbound message.
 
 [[post-processing]]
 ==== Modifying Messages - Compression and More

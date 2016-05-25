@@ -99,13 +99,25 @@ See <<message-properties-converters>> for more information.
 
 ====== Inbound Delivery Mode
 
-The `deliveryMode` header is no longer mapped to the `MessageProperties.deliveryMode`; this is to avoid unintended
+The `deliveryMode` property is no longer mapped to the `MessageProperties.deliveryMode`; this is to avoid unintended
 propagation if the the same `MessageProperties` object is used to send an outbound message.
 Instead, the inbound `deliveryMode` header is mapped to `MessageProperties.receivedDeliveryMode`.
 
 See <<message-properties-converters>> for more information.
 
 When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_DELIVERY_MODE`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+====== Inbound User ID
+
+The `user_id` property is no longer mapped to the `MessageProperties.userId`; this is to avoid unintended
+propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `userId` header is mapped to `MessageProperties.receivedUserId`.
+
+See <<message-properties-converters>> for more information.
+
+When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_USER_ID`.
 
 See <<async-annotation-driven-enable-signature>> for more information.
 

@@ -103,6 +103,8 @@ public final class TemplateParserTests {
 		assertEquals("bar", accessor.getPropertyValue("queue"));
 		assertEquals("spam", accessor.getPropertyValue("routingKey"));
 		assertTrue(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
+		assertEquals("@connectionFactory.username",
+				TestUtils.getPropertyValue(template, "userIdExpression.expression"));
 	}
 
 	@Test

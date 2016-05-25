@@ -71,6 +71,7 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryCallback;
@@ -140,6 +141,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
+	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+
 	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels =
 			new ConcurrentHashMap<Channel, RabbitTemplate>();
 
@@ -208,6 +211,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private volatile Collection<MessagePostProcessor> afterReceivePostProcessors;
 
 	private volatile boolean isListener;
+
+	private volatile Expression userIdExpression;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -549,6 +554,30 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public void setUseTemporaryReplyQueues(boolean value) {
 		this.useTemporaryReplyQueues = value;
+	}
+
+	/**
+	 * Set an expression to be evaluated to set the userId message property if it
+	 * evaluates to a non-null value and the property is not already set in the
+	 * message to be sent.
+	 * See https://www.rabbitmq.com/validated-user-id.html
+	 * @param userIdExpression the expression.
+	 * @since 1.6
+	 */
+	public void setUserIdExpression(Expression userIdExpression) {
+		this.userIdExpression = userIdExpression;
+	}
+
+	/**
+	 * Set an expression to be evaluated to set the userId message property if it
+	 * evaluates to a non-null value and the property is not already set in the
+	 * message to be sent.
+	 * See https://www.rabbitmq.com/validated-user-id.html
+	 * @param userIdExpression the expression.
+	 * @since 1.6
+	 */
+	public void setUserIdExpressionString(String userIdExpressionString) {
+		this.userIdExpression = PARSER.parseExpression(userIdExpressionString);
 	}
 
 	/**
@@ -1388,19 +1417,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	protected void doSend(Channel channel, String exchange, String routingKey, Message message,
 			boolean mandatory, CorrelationData correlationData) throws Exception {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
-		}
-
 		if (exchange == null) {
 			// try to send to configured exchange
 			exchange = this.exchange;
 		}
-
 		if (routingKey == null) {
 			// try to send to configured routing key
 			routingKey = this.routingKey;
 		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
+		}
+
 		setupConfirm(channel, correlationData);
 		Message messageToUse = message;
 		MessageProperties messageProperties = messageToUse.getMessageProperties();
@@ -1410,6 +1438,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
 				messageToUse = processor.postProcessMessage(messageToUse);
+			}
+		}
+		if (this.userIdExpression != null && messageProperties.getUserId() == null) {
+			String userId = this.userIdExpression.getValue(this.evaluationContext, messageToUse, String.class);
+			if (userId != null) {
+				messageProperties.setUserId(userId);
 			}
 		}
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter

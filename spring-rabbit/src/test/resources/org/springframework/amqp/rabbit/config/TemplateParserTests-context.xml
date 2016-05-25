@@ -13,7 +13,8 @@
 					 use-temporary-reply-queues="true"
 					 receive-timeout="123"
 					 retry-template="retrier"
-					 recovery-callback="recoverer"/>
+					 recovery-callback="recoverer"
+					 user-id-expression="@connectionFactory.username" />
 
 	<rabbit:connection-factory id="connectionFactory"/>
 
