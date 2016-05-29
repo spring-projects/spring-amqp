@@ -38,6 +38,7 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 
@@ -165,9 +166,14 @@ public class RabbitManagementTemplateTests {
 	public void testSpecificQueue() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Map<String, Object> args = Collections.<String, Object>singletonMap("foo", "bar");
-		Queue queue1 = new Queue(UUID.randomUUID().toString(), false, false, true, args);
+		Queue queue1 = QueueBuilder.nonDurable(UUID.randomUUID().toString())
+				.autoDelete()
+				.withArguments(args)
+				.build();
 		admin.declareQueue(queue1);
-		Queue queue2 = new Queue(UUID.randomUUID().toString(), true, false, false, args);
+		Queue queue2 = QueueBuilder.durable(UUID.randomUUID().toString())
+				.withArguments(args)
+				.build();
 		admin.declareQueue(queue2);
 		Channel channel = this.connectionFactory.createConnection().createChannel(false);
 		String consumer = channel.basicConsume(queue1.getName(), false, "", false, true, null, new DefaultConsumer(channel));
