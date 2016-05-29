@@ -31,7 +31,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +54,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -215,9 +215,10 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.setMessageListener(messageListener);
 
 		RabbitAdmin admin = new RabbitAdmin(template.getConnectionFactory());
-		Map<String, Object> args = new HashMap<String, Object>();
-		args.put("x-dead-letter-exchange", "test.DLE");
-		Queue queue = new Queue("", false, false, true, args);
+		Queue queue = QueueBuilder.nonDurable("")
+				.autoDelete()
+				.withArgument("x-dead-letter-exchange", "test.DLE")
+				.build();
 		String testQueueName = admin.declareQueue(queue);
 		// Create a DeadLetterExchange and bind a queue to it with the original routing key
 		DirectExchange dle = new DirectExchange("test.DLE", false, true);
