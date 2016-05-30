@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
 
 package org.springframework.amqp.core;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Builds a Spring AMQP Queue using a fluent API.
  *
  * @author Maciej Walkowiak
- * @since 1.6.0
+ * @since 1.6
  *
  */
-public final class QueueBuilder {
+public final class QueueBuilder extends AbstractBuilder {
+
+	private static final AnonymousQueue.NamingStrategy namingStrategy = new AnonymousQueue.Base64UrlNamingStrategy();
 
 	private final String name;
 
@@ -36,23 +37,36 @@ public final class QueueBuilder {
 
 	private boolean autoDelete;
 
-	private Map<String, Object> arguments;
-
 	/**
-	 * Creates builder for durable queue.
-	 *
-	 * @param name the name of the queue.
-	 * @return The Builder.
+	 * Creates a builder for a durable queue with a generated
+	 * unique name - spring.gen-<random>.
+	 * @return the QueueBuilder instance.
 	 */
-	public static QueueBuilder durable(String name) {
-		return new QueueBuilder(name).durable();
+	public static QueueBuilder durable() {
+		return durable(namingStrategy.generateName());
 	}
 
 	/**
-	 * Creates builder for non-durable (transient) queue.
-	 *
+	 * Creates a builder for a non-durable (transient) queue.
+	 * @return the QueueBuilder instance.
+	 */
+	public static QueueBuilder nonDurable() {
+		return new QueueBuilder(namingStrategy.generateName());
+	}
+
+	/**
+	 * Creates a builder for a durable queue.
 	 * @param name the name of the queue.
-	 * @return The Builder.
+	 * @return the QueueBuilder instance.
+	 */
+	public static QueueBuilder durable(String name) {
+		return new QueueBuilder(name).setDurable();
+	}
+
+	/**
+	 * Creates a builder for a non-durable (transient) queue.
+	 * @param name the name of the queue.
+	 * @return the QueueBuilder instance.
 	 */
 	public static QueueBuilder nonDurable(final String name) {
 		return new QueueBuilder(name);
@@ -62,18 +76,14 @@ public final class QueueBuilder {
 		this.name = name;
 	}
 
-	/**
-	 * The final queue will be durable.
-	 * @return The Builder.
-	 */
-	public QueueBuilder durable() {
+	private QueueBuilder setDurable() {
 		this.durable = true;
 		return this;
 	}
 
 	/**
 	 * The final queue will be exclusive.
-	 * @return The Builder.
+	 * @return the QueueBuilder instance.
 	 */
 	public QueueBuilder exclusive() {
 		this.exclusive = true;
@@ -82,7 +92,7 @@ public final class QueueBuilder {
 
 	/**
 	 * The final queue will auto delete.
-	 * @return The Builder.
+	 * @return the QueueBuilder instance.
 	 */
 	public QueueBuilder autoDelete() {
 		this.autoDelete = true;
@@ -91,39 +101,31 @@ public final class QueueBuilder {
 
 	/**
 	 * The final queue will contain argument used to declare a queue.
-	 *
 	 * @param key argument name
 	 * @param value argument value
-	 * @return The Builder.
+	 * @return the QueueBuilder instance.
 	 */
 	public QueueBuilder withArgument(String key, Object value) {
-		this.getOrCreateArguments().put(key, value);
+		getOrCreateArguments().put(key, value);
 		return this;
 	}
 
 	/**
 	 * The final queue will contain arguments used to declare a queue.
-	 *
-	 * @param arguments arguments map
-	 * @return The Builder.
+	 * @param arguments the arguments map
+	 * @return the QueueBuilder instance.
 	 */
 	public QueueBuilder withArguments(Map<String, Object> arguments) {
-		this.getOrCreateArguments().putAll(arguments);
+		getOrCreateArguments().putAll(arguments);
 		return this;
-	}
-
-	private Map<String, Object> getOrCreateArguments() {
-		if (this.arguments == null) {
-			this.arguments = new HashMap<String, Object>();
-		}
-		return this.arguments;
 	}
 
 	/**
 	 * Builds a final queue.
-	 * @return The Queue.
+	 * @return the Queue instance.
 	 */
 	public Queue build() {
-		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, this.arguments);
+		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, getArguments());
 	}
+
 }

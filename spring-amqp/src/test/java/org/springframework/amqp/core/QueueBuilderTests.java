@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,4 +87,5 @@ public class QueueBuilderTests {
 		assertThat(queue.getArguments(), hasEntry("key1", (Object) "value1"));
 		assertThat(queue.getArguments(), hasEntry("key2", (Object) "value2"));
 	}
+
 }
