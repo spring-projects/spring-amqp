@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
 
 package org.springframework.amqp.core;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Builds a Spring AMQP Queue using a fluent API.
  *
  * @author Maciej Walkowiak
- * @since 1.6.0
+ * @since 1.6
  *
  */
-public final class QueueBuilder {
+public final class QueueBuilder extends AbstractBuilder {
+
+	private static final AnonymousQueue.NamingStrategy namingStrategy = new AnonymousQueue.Base64UrlNamingStrategy();
 
 	private final String name;
 
@@ -36,20 +37,39 @@ public final class QueueBuilder {
 
 	private boolean autoDelete;
 
-	private Map<String, Object> arguments;
+	/**
+	 * Creates a builder for a durable queue with a generated
+	 * unique name - spring.gen-<random>.
+	 *
+	 * @param name the name of the queue.
+	 * @return The Builder.
+	 */
+	public static QueueBuilder durable() {
+		return durable(namingStrategy.generateName());
+	}
 
 	/**
-	 * Creates builder for durable queue.
+	 * Creates a builder for a non-durable (transient) queue.
+	 *
+	 * @param name the name of the queue.
+	 * @return The Builder.
+	 */
+	public static QueueBuilder nonDurable() {
+		return new QueueBuilder(namingStrategy.generateName());
+	}
+
+	/**
+	 * Creates a builder for a durable queue.
 	 *
 	 * @param name the name of the queue.
 	 * @return The Builder.
 	 */
 	public static QueueBuilder durable(String name) {
-		return new QueueBuilder(name).durable();
+		return new QueueBuilder(name).setDurable();
 	}
 
 	/**
-	 * Creates builder for non-durable (transient) queue.
+	 * Creates a builder for a non-durable (transient) queue.
 	 *
 	 * @param name the name of the queue.
 	 * @return The Builder.
@@ -66,7 +86,7 @@ public final class QueueBuilder {
 	 * The final queue will be durable.
 	 * @return The Builder.
 	 */
-	public QueueBuilder durable() {
+	private QueueBuilder setDurable() {
 		this.durable = true;
 		return this;
 	}
@@ -112,18 +132,12 @@ public final class QueueBuilder {
 		return this;
 	}
 
-	private Map<String, Object> getOrCreateArguments() {
-		if (this.arguments == null) {
-			this.arguments = new HashMap<String, Object>();
-		}
-		return this.arguments;
-	}
-
 	/**
 	 * Builds a final queue.
 	 * @return The Queue.
 	 */
 	public Queue build() {
-		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, this.arguments);
+		return new Queue(this.name, this.durable, this.exclusive, this.autoDelete, getArguments());
 	}
+
 }

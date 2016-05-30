@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.core.build;
+package org.springframework.amqp.core.builder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

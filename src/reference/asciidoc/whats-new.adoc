@@ -8,6 +8,11 @@
 A new testing support library is now provided.
 See <<testing>> for more information.
 
+===== Builder
+
+Builders are now available providing a fluent API for configuring `Queue` and `Exchange` objects.
+See <<builder-api>> for more information.
+
 ===== Namespace Changes
 
 ====== Connection Factory
