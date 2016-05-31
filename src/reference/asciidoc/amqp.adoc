@@ -3105,6 +3105,35 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 
 The client is declaring another queue via the declareQueue() method on the AmqpAdmin, and it binds that queue to the market data exchange with a routing pattern that is externalized in a properties file.
 
+
+[[builder-api]]
+===== Builder API for Queues and Exchanges
+
+_Version 1.6_ introduces a convenient fluent API for configuring `Queue` and `Exchange` objects when using Java configuration:
+
+[source, java]
+----
+@Bean
+public Queue queue() {
+    return QueueBuilder.nonDurable("foo")
+        .autoDelete()
+        .exclusive()
+        .withArgument("foo", "bar")
+        .build();
+}
+
+@Bean
+public Exchange exchange() {
+  return ExchangeBuilder.directExchange("foo")
+      .autoDelete()
+      .internal()
+      .withArgument("foo", "bar")
+      .build();
+}
+----
+
+See the javadocs for `org.springframework.amqp.core.QueueBuilder` and `org.springframework.amqp.core.ExchangeBuilder` for more information.
+
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, Bindings
 
