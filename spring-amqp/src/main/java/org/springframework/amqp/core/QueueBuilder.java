@@ -39,7 +39,7 @@ public final class QueueBuilder extends AbstractBuilder {
 
 	/**
 	 * Creates a builder for a durable queue with a generated
-	 * unique name - spring.gen-<random>.
+	 * unique name - {@code spring.gen-<random>}.
 	 * @return the QueueBuilder instance.
 	 */
 	public static QueueBuilder durable() {
