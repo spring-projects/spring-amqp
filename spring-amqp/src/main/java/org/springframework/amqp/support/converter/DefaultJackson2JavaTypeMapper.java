@@ -115,7 +115,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 
 		try {
 			return TypeFactory.defaultInstance()
-					.constructType(ClassUtils.forName(classId, getClass().getClassLoader()));
+					.constructType(ClassUtils.forName(classId, getClassLoader()));
 		}
 		catch (ClassNotFoundException e) {
 			throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);

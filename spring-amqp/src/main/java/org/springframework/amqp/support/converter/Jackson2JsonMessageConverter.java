@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
@@ -107,6 +108,14 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 		else {
 			throw new IllegalStateException("Type precedence is available with the DefaultJackson2JavaTypeMapper");
+		}
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		super.setBeanClassLoader(classLoader);
+		if (!this.typeMapperSet) {
+			((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setBeanClassLoader(classLoader);
 		}
 	}
 

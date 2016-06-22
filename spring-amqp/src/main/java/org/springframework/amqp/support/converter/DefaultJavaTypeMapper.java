@@ -65,8 +65,7 @@ public class DefaultJavaTypeMapper extends AbstractJavaTypeMapper implements Jav
 		}
 
 		try {
-			return TypeFactory.defaultInstance().constructType(ClassUtils.forName(classId, getClass()
-					.getClassLoader()));
+			return TypeFactory.defaultInstance().constructType(ClassUtils.forName(classId, getClassLoader()));
 		}
 		catch (ClassNotFoundException e) {
 			throw new MessageConversionException(
