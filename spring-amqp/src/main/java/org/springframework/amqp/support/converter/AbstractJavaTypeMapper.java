@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -31,7 +33,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Andreas Asplund
  * @author Gary Russell
  */
-public abstract class AbstractJavaTypeMapper {
+public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 
 	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 
@@ -42,6 +44,8 @@ public abstract class AbstractJavaTypeMapper {
 	private final Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 
 	private final Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
+
+	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	public String getClassIdFieldName() {
 		return DEFAULT_CLASSID_FIELD_NAME;
@@ -58,6 +62,15 @@ public abstract class AbstractJavaTypeMapper {
 	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
 		this.idClassMapping.putAll(idClassMapping);
 		createReverseMap();
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	protected ClassLoader getClassLoader() {
+		return this.classLoader;
 	}
 
 	protected void addHeader(MessageProperties properties, String headerName, Class<?> clazz) {

@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.support.converter;
 
+import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.util.ClassUtils;
+
 /**
  *
  * @author Mark Pollack
@@ -23,13 +26,18 @@ package org.springframework.amqp.support.converter;
  * @author Dave Syer
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Artem Bilan
  */
-public abstract class AbstractJsonMessageConverter extends AbstractMessageConverter {
+public abstract class AbstractJsonMessageConverter extends AbstractMessageConverter
+		implements BeanClassLoaderAware {
+
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
 	private volatile String defaultCharset = DEFAULT_CHARSET;
 
 	private ClassMapper classMapper = null;
+
+	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
 	public ClassMapper getClassMapper() {
 		return this.classMapper;
@@ -51,7 +59,17 @@ public abstract class AbstractJsonMessageConverter extends AbstractMessageConver
 				: DEFAULT_CHARSET;
 	}
 
-    public String getDefaultCharset() {
-        return this.defaultCharset;
-    }
+	public String getDefaultCharset() {
+		return this.defaultCharset;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	protected ClassLoader getClassLoader() {
+		return this.classLoader;
+	}
+
 }
