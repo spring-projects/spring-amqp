@@ -662,8 +662,9 @@ public class MessageProperties implements Serializable {
 	@Override
 	public String toString() {
 		return "MessageProperties [headers=" + this.headers + ", timestamp=" + this.timestamp + ", messageId=" + this.messageId
-				+ ", userId=" + this.userId + ", appId=" + this.appId + ", clusterId=" + this.clusterId + ", type=" + this.type
-				+ ", correlationId=" + Arrays.toString(this.correlationId) + ", replyTo=" + this.replyTo + ", contentType="
+				+ ", userId=" + this.userId + ", appId=" + this.appId + ", clusterId=" + this.clusterId
+				+ ", type=" + this.type + ", correlationId=" + Arrays.toString(this.correlationId)
+				+ ", correlationIdString=" + this.correlationIdString + ", replyTo=" + this.replyTo + ", contentType="
 				+ this.contentType + ", contentEncoding=" + this.contentEncoding + ", contentLength=" + this.contentLength
 				+ ", deliveryMode=" + this.deliveryMode + ", expiration=" + this.expiration + ", priority=" + this.priority
 				+ ", redelivered=" + this.redelivered + ", receivedExchange=" + this.receivedExchange + ", receivedRoutingKey="
