@@ -30,6 +30,8 @@ import java.util.Map;
  * @author Mark Fisher
  * @author Mark Pollack
  * @author Gary Russell
+ * @author Dmitry Chernyshov
+ * @author Artem Bilan
  */
 public class MessageProperties implements Serializable {
 
@@ -59,7 +61,7 @@ public class MessageProperties implements Serializable {
 
 	public static final MessageDeliveryMode DEFAULT_DELIVERY_MODE = MessageDeliveryMode.PERSISTENT;
 
-	public static final Integer DEFAULT_PRIORITY = Integer.valueOf(0);
+	public static final Integer DEFAULT_PRIORITY = 0;
 
 	private final Map<String, Object> headers = new HashMap<String, Object>();
 
@@ -490,7 +492,7 @@ public class MessageProperties implements Serializable {
 		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
 		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> 32));
 		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
-		result = prime * result + ((this.headers == null) ? 0 : this.headers.hashCode());
+		result = prime * result + this.headers.hashCode();
 		result = prime * result + ((this.messageCount == null) ? 0 : this.messageCount.hashCode());
 		result = prime * result + ((this.messageId == null) ? 0 : this.messageId.hashCode());
 		result = prime * result + ((this.priority == null) ? 0 : this.priority.hashCode());
@@ -568,12 +570,7 @@ public class MessageProperties implements Serializable {
 		else if (!this.expiration.equals(other.expiration)) {
 			return false;
 		}
-		if (this.headers == null) {
-			if (other.headers != null) {
-				return false;
-			}
-		}
-		else if (!this.headers.equals(other.headers)) {
+		if (!this.headers.equals(other.headers)) {
 			return false;
 		}
 		if (this.messageCount == null) {
@@ -661,13 +658,33 @@ public class MessageProperties implements Serializable {
 
 	@Override
 	public String toString() {
-		return "MessageProperties [headers=" + this.headers + ", timestamp=" + this.timestamp + ", messageId=" + this.messageId
-				+ ", userId=" + this.userId + ", appId=" + this.appId + ", clusterId=" + this.clusterId + ", type=" + this.type
-				+ ", correlationId=" + Arrays.toString(this.correlationId) + ", replyTo=" + this.replyTo + ", contentType="
-				+ this.contentType + ", contentEncoding=" + this.contentEncoding + ", contentLength=" + this.contentLength
-				+ ", deliveryMode=" + this.deliveryMode + ", expiration=" + this.expiration + ", priority=" + this.priority
-				+ ", redelivered=" + this.redelivered + ", receivedExchange=" + this.receivedExchange + ", receivedRoutingKey="
-				+ this.receivedRoutingKey + ", deliveryTag=" + this.deliveryTag + ", messageCount=" + this.messageCount + "]";
+		return "MessageProperties [headers=" + this.headers +
+				", timestamp=" + this.timestamp +
+				", messageId=" + this.messageId +
+				", userId=" + this.userId +
+				", receivedUserId=" + this.receivedUserId +
+				", appId=" + this.appId +
+				", clusterId=" + this.clusterId +
+				", type=" + this.type +
+				", correlationId=" + Arrays.toString(this.correlationId) +
+				", correlationIdString=" + this.correlationIdString +
+				", replyTo=" + this.replyTo +
+				", contentType=" + this.contentType +
+				", contentEncoding=" + this.contentEncoding +
+				", contentLength=" + this.contentLength +
+				", deliveryMode=" + this.deliveryMode +
+				", receivedDeliveryMode=" + this.receivedDeliveryMode +
+				", expiration=" + this.expiration +
+				", priority=" + this.priority +
+				", redelivered=" + this.redelivered +
+				", receivedExchange=" + this.receivedExchange +
+				", receivedRoutingKey=" + this.receivedRoutingKey +
+				", receivedDelay=" + this.receivedDelay +
+				", deliveryTag=" + this.deliveryTag +
+				", messageCount=" + this.messageCount +
+				", consumerTag=" + this.consumerTag +
+				", consumerQueue=" + this.consumerQueue +
+				"]";
 	}
 
 }
