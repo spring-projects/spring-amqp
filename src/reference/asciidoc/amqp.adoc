@@ -420,14 +420,14 @@ For convenience, Spring AMQP provides the `SimpleRoutingConnectionFactory`, whic
 ----
 public class MyService {
 
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
-	public void service(String vHost, String payload) {
-		SimpleResourceHolder.bind(rabbitTemplate.getConnectionFactory(), vHost);
-		rabbitTemplate.convertAndSend(payload);
-		SimpleResourceHolder.unbind(rabbitTemplate.getConnectionFactory());
-	}
+    public void service(String vHost, String payload) {
+        SimpleResourceHolder.bind(rabbitTemplate.getConnectionFactory(), vHost);
+        rabbitTemplate.convertAndSend(payload);
+        SimpleResourceHolder.unbind(rabbitTemplate.getConnectionFactory());
+    }
 
 }
 ----
@@ -691,13 +691,13 @@ Using the XML namespace:
 <rabbit:template id="template" connection-factory="connectionFactory" retry-template="retryTemplate"/>
 
 <bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
-	<property name="backOffPolicy">
-		<bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
-			<property name="initialInterval" value="500" />
-			<property name="multiplier" value="10.0" />
-			<property name="maxInterval" value="10000" />
-		</bean>
-	</property>
+    <property name="backOffPolicy">
+        <bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+            <property name="initialInterval" value="500" />
+            <property name="multiplier" value="10.0" />
+            <property name="maxInterval" value="10000" />
+        </bean>
+    </property>
 </bean>
 ----
 
@@ -707,15 +707,15 @@ Using `@Configuration`:
 ----
 @Bean
 public AmqpTemplate rabbitTemplate();
-		RabbitTemplate template = new RabbitTemplate(connectionFactory());
-		RetryTemplate retryTemplate = new RetryTemplate();
-		ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-		backOffPolicy.setInitialInterval(500);
-		backOffPolicy.setMultiplier(10.0);
-		backOffPolicy.setMaxInterval(10000);
-		retryTemplate.setBackOffPolicy(backOffPolicy);
-		template.setRetryTemplate(retryTemplate);
-		return template;
+    RabbitTemplate template = new RabbitTemplate(connectionFactory());
+    RetryTemplate retryTemplate = new RetryTemplate();
+    ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+    backOffPolicy.setInitialInterval(500);
+    backOffPolicy.setMultiplier(10.0);
+    backOffPolicy.setMaxInterval(10000);
+    retryTemplate.setBackOffPolicy(backOffPolicy);
+    template.setRetryTemplate(retryTemplate);
+    return template;
 }
 ----
 
@@ -903,10 +903,10 @@ Starting with _version 1.3_, a message builder API is provided by the `MessageBu
 [source,java]
 ----
 Message message = MessageBuilder.withBody("foo".getBytes())
-	.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
-	.setMessageId("123")
-	.setHeader("bar", "baz")
-	.build();
+    .setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
+    .setMessageId("123")
+    .setHeader("bar", "baz")
+    .build();
 ----
 
 or
@@ -914,17 +914,16 @@ or
 [source,java]
 ----
 MessageProperties props = MessagePropertiesBuilder.newInstance()
-	.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
-	.setMessageId("123")
-	.setHeader("bar", "baz")
-	.build();
+    .setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN)
+    .setMessageId("123")
+    .setHeader("bar", "baz")
+    .build();
 Message message = MessageBuilder.withBody("foo".getBytes())
-	.andProperties(props)
-	.build();
-
+    .andProperties(props)
+    .build();
 ----
 
-Each of the properties defined on the http://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/core/MessageProperties.html[MessageProperies] can be set.
+Each of the properties defined on the http://docs.spring.io/spring-amqp/docs/latest-ga/api/org/springframework/amqp/core/MessageProperties.html[MessageProperties] can be set.
 Other methods include `setHeader(String key, String value)`, `removeHeader(String key)`, `removeHeaders()`, and `copyProperties(MessageProperties properties)`.
 Each property setting method has a `set*IfAbsent()` variant.
 In the cases where a default initial value exists, the method is named `set*IfAbsentOrDefault()`.
@@ -1276,17 +1275,17 @@ You can also use conditional declaration (<<conditional-declaration>>) together 
 <rabbit:queue id="otherAnon" declared-by="containerAdmin" />
 
 <rabbit:direct-exchange name="otherExchange" auto-delete="true" declared-by="containerAdmin">
-	<rabbit:bindings>
-		<rabbit:binding queue="otherAnon" key="otherAnon" />
-	</rabbit:bindings>
+    <rabbit:bindings>
+        <rabbit:binding queue="otherAnon" key="otherAnon" />
+    </rabbit:bindings>
 </rabbit:direct-exchange>
 
 <rabbit:listener-container id="container2" auto-startup="false">
-	<rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
+    <rabbit:listener id="listener2" ref="foo" queues="otherAnon" admin="containerAdmin" />
 </rabbit:listener-container>
 
 <rabbit:admin id="containerAdmin" connection-factory="rabbitConnectionFactory"
-	auto-startup="false" />
+    auto-startup="false" />
 ----
 
 In this case, the queue and exchange are declared by `containerAdmin` which has `auto-startup="false"` so the elements are not declared during context initialization.
@@ -1589,22 +1588,22 @@ public class AppConfig implements RabbitListenerConfigurer {
     ...
 
     @Bean
-	public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
-    	DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
-    	factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
-    	return factory;
+    public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+        DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+        factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+        return factory;
     }
 
     @Bean
     public ConversionService myConversionService() {
-    	DefaultConversionService conv = new DefaultConversionService();
-    	conv.addConverter(mySpecialConverter());
-    	return conv;
+        DefaultConversionService conv = new DefaultConversionService();
+        conv.addConverter(mySpecialConverter());
+        return conv;
     }
 
     @Override
     public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
-    	registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+        registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
     }
 
     ...
@@ -1624,8 +1623,6 @@ The infrastructure allows you to configure endpoints programmatically in additio
 
 [source,java]
 ----
-
-
 @Configuration
 @EnableRabbit
 public class AppConfig implements RabbitListenerConfigurer {
@@ -1654,8 +1651,6 @@ Let’s rewrite it to inject the `Order` with a custom header:
 
 [source,java]
 ----
-
-
 @Component
 public class MyService {
 
@@ -1778,7 +1773,6 @@ Assuming our `processOrder` method should now return an `OrderStatus`, it is pos
 
 [source,java]
 ----
-
 @RabbitListener(destination = "myQueue")
 @SendTo("status")
 public OrderStatus processOrder(Order order) {
@@ -2305,7 +2299,7 @@ the JSON to.
 [NOTE]
 ====
 This type inference can only be achieved when the `@RabbitListener` annotation is declared at the method level.
-With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` methdod to invoke.
+With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` method to invoke.
 For this reason, the infrastructure provides the `targetObject` message property which can be used by a custom
 converter to determine the type.
 ====
@@ -2314,7 +2308,7 @@ converter to determine the type.
 
 Yet another option is the `MarshallingMessageConverter`.
 It delegates to the Spring OXM library's implementations of the `Marshaller` and `Unmarshaller` strategy interfaces.
-You can read more about that library http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/oxm.html[here].
+You can read more about that library http://docs.spring.io/spring/docs/current/spring-framework-reference/html/oxm.html[here].
 In terms of configuration, it's most common to provide the constructor argument only since most implementations of `Marshaller` will also implement `Unmarshaller`.
 
 [source,xml]
@@ -2880,7 +2874,7 @@ The RabbitMQ implementation of this interface is RabbitAdmin which when configur
 ----
 
 When the `CachingConnectionFactory` cache mode is `CHANNEL` (the default), the `RabbitAdmin` implementation does automatic lazy declaration of `Queues`, `Exchanges` and `Bindings` declared in the same `ApplicationContext`.
-These components will be declared as son as a `Connection` is opened to the broker.
+These components will be declared as s0on as a `Connection` is opened to the broker.
 There are some namespace features that make this very convenient, e.g.
 in the Stocks sample application we have:
 
@@ -2919,7 +2913,7 @@ This allows you to refer to the queue (for example in a binding) by an id that i
 It also allows standard Spring features such as property placeholders, and SpEL expressions for the queue name; these features are not available when using the name as the bean identifier.
 
 Queues can be configured with additional arguments, for example, 'x-message-ttl' or 'x-ha-policy'.
-Using the namespace support, they are provided in the form of a Map of argument name/argument value pairs, using the <rabbit:queue-arguments> element.
+Using the namespace support, they are provided in the form of a Map of argument name/argument value pairs, using the `<rabbit:queue-arguments>` element.
 
 [source,xml]
 ----
@@ -2993,15 +2987,15 @@ Starting with _version 1.3_ the `HeadersExchange` can be configured to match on 
 [source,xml]
 ----
 <rabbit:headers-exchange name="headers-test">
-	<rabbit:bindings>
-		<rabbit:binding queue="bucket">
-			<rabbit:binding-arguments>
-				<entry key="foo" value="bar"/>
-				<entry key="baz" value="qux"/>
-				<entry key="x-match" value="all"/>
-			</rabbit:binding-arguments>
-		</rabbit:binding>
-	</rabbit:bindings>
+    <rabbit:bindings>
+        <rabbit:binding queue="bucket">
+            <rabbit:binding-arguments>
+                <entry key="foo" value="bar"/>
+                <entry key="baz" value="qux"/>
+                <entry key="x-match" value="all"/>
+            </rabbit:binding-arguments>
+        </rabbit:binding>
+    </rabbit:bindings>
 </rabbit:headers-exchange>
 ----
 
@@ -3067,12 +3061,12 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
 }
 ----
 
-This is the end of the whole inheritance chain of @Configuration classes.
+This is the end of the whole inheritance chain of `@Configuration` classes.
 The end result is the the TopicExchange and Queue will be declared to the broker upon application startup.
 There is no binding of the TopicExchange to a queue in the server configuration, as that is done in the client application.
 The stock request queue however is automatically bound to the AMQP default exchange - this behavior is defined by the specification.
 
-The client @Configuration class is a little more interesting and is shown below.
+The client `@Configuration` class is a little more interesting and is shown below.
 
 [source,java]
 ----
@@ -3103,7 +3097,7 @@ public class RabbitClientConfiguration extends AbstractStockAppRabbitConfigurati
 }
 ----
 
-The client is declaring another queue via the declareQueue() method on the AmqpAdmin, and it binds that queue to the market data exchange with a routing pattern that is externalized in a properties file.
+The client is declaring another queue via the `declareQueue()` method on the `AmqpAdmin`, and it binds that queue to the market data exchange with a routing pattern that is externalized in a properties file.
 
 
 [[builder-api]]
@@ -3253,37 +3247,37 @@ In this example, the components will be declared by `admin1` but not `admin2`:
 ----
 @Bean
 public RabbitAdmin admin() {
-	RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
-	rabbitAdmin.afterPropertiesSet();
-	return rabbitAdmin;
+    RabbitAdmin rabbitAdmin = new RabbitAdmin(cf1());
+    rabbitAdmin.afterPropertiesSet();
+    return rabbitAdmin;
 }
 
 @Bean
 public RabbitAdmin admin2() {
-	RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
-	rabbitAdmin.afterPropertiesSet();
-	return rabbitAdmin;
+    RabbitAdmin rabbitAdmin = new RabbitAdmin(cf2());
+    rabbitAdmin.afterPropertiesSet();
+    return rabbitAdmin;
 }
 
 @Bean
 public Queue queue() {
-	Queue queue = new Queue("foo");
-	queue.setAdminsThatShouldDeclare(admin());
-	return queue;
+    Queue queue = new Queue("foo");
+    queue.setAdminsThatShouldDeclare(admin());
+    return queue;
 }
 
 @Bean
 public Exchange exchange() {
-	DirectExchange exchange = new DirectExchange("bar");
-	exchange.setAdminsThatShouldDeclare(admin());
-	return exchange;
+    DirectExchange exchange = new DirectExchange("bar");
+    exchange.setAdminsThatShouldDeclare(admin());
+    return exchange;
 }
 
 @Bean
 public Binding binding() {
-	Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
-	binding.setAdminsThatShouldDeclare(admin());
-	return binding;
+    Binding binding = new Binding("foo", DestinationType.QUEUE, exchange().getName(), "foo", null);
+    binding.setAdminsThatShouldDeclare(admin());
+    return binding;
 }
 ----
 
@@ -3407,7 +3401,7 @@ rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProces
 ----
 
 To check if a message was delayed, use the `getReceivedDelay()` method on the `MessageProperties`.
-It is a separate property to avoid unintended propagation to an output message generated from an input messasge.
+It is a separate property to avoid unintended propagation to an output message generated from an input message.
 
 
 [[management-template]]
@@ -3424,47 +3418,47 @@ The following operations are available on the `RabbitManagementTemplate`:
 ----
 public interface AmqpManagementOperations {
 
-	void addExchange(Exchange exchange);
+    void addExchange(Exchange exchange);
 
-	void addExchange(String vhost, Exchange exchange);
+    void addExchange(String vhost, Exchange exchange);
 
-	void purgeQueue(Queue queue);
+    void purgeQueue(Queue queue);
 
-	void purgeQueue(String vhost, Queue queue);
+    void purgeQueue(String vhost, Queue queue);
 
-	void deleteQueue(Queue queue);
+    void deleteQueue(Queue queue);
 
-	void deleteQueue(String vhost, Queue queue);
+    void deleteQueue(String vhost, Queue queue);
 
-	Queue getQueue(String name);
+    Queue getQueue(String name);
 
-	Queue getQueue(String vhost, String name);
+    Queue getQueue(String vhost, String name);
 
-	List<Queue> getQueues();
+    List<Queue> getQueues();
 
-	List<Queue> getQueues(String vhost);
+    List<Queue> getQueues(String vhost);
 
-	void addQueue(Queue queue);
+    void addQueue(Queue queue);
 
-	void addQueue(String vhost, Queue queue);
+    void addQueue(String vhost, Queue queue);
 
-	void deleteExchange(Exchange exchange);
+    void deleteExchange(Exchange exchange);
 
-	void deleteExchange(String vhost, Exchange exchange);
+    void deleteExchange(String vhost, Exchange exchange);
 
-	Exchange getExchange(String name);
+    Exchange getExchange(String name);
 
-	Exchange getExchange(String vhost, String name);
+    Exchange getExchange(String vhost, String name);
 
-	List<Exchange> getExchanges();
+    List<Exchange> getExchanges();
 
-	List<Exchange> getExchanges(String vhost);
+    List<Exchange> getExchanges(String vhost);
 
-	List<Binding> getBindings();
+    List<Binding> getBindings();
 
-	List<Binding> getBindings(String vhost);
+    List<Binding> getBindings(String vhost);
 
-	List<Binding> getBindingsForExchange(String vhost, String exchange);
+    List<Binding> getBindingsForExchange(String vhost, String exchange);
 
 }
 ----
@@ -3624,9 +3618,7 @@ There are quite a few options for configuring a `SimpleMessageListenerContainer`
 
 The table below shows the container property names and their equivalent attribute names (in parentheses) when using the namespace to configure a `<rabbit:listener-container/>`.
 
-Some
-    properties are not exposed by the namespace; indicated by `N/A`for
-    the attribute.
+Some properties are not exposed by the namespace; indicated by `N/A` for the attribute.
 
 .Configuration options for a message listener container
 [cols="2l,4", options="header"]
@@ -3776,7 +3768,7 @@ Default 10.
 | connectionFactory
 (connection-factory)
 
-| A reference to the connectionFactory; when configuring using the XML namespace, the default referenced bean name is "rabbitConnectionFactory".
+| A reference to the `ConnectionFactory`; when configuring using the XML namespace, the default referenced bean name is "rabbitConnectionFactory".
 
 | defaultRequeueRejected
 (requeue-rejected)
@@ -4019,7 +4011,7 @@ NOTE: Queues declared this way must have fixed names; either explicitly declared
 Anonymous queues are non-durable, exclusive, and auto-delete.
 
 IMPORTANT: Automatic declaration is only performed when the `CachingConnectionFactory` cache mode is `CHANNEL` (the default).
-This limitation exists because exlusive and auto-delete queues are bound to the connection.
+This limitation exists because exclusive and auto-delete queues are bound to the connection.
 
 [[retry]]
 ===== Failures in Synchronous Operations and Options for Retry
