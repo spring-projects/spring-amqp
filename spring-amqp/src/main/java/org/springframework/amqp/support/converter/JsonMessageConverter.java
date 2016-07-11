@@ -37,6 +37,7 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Dave Syer
  * @author Sam Nelson
  * @author Andreas Asplund
+ * @author Artem Bilan
  */
 public class JsonMessageConverter extends AbstractJsonMessageConverter {
 
@@ -45,6 +46,8 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 	private ObjectMapper jsonObjectMapper = new ObjectMapper();
 
 	private JavaTypeMapper javaTypeMapper = new DefaultJavaTypeMapper();
+
+	private boolean typeMapperSet;
 
 	public JsonMessageConverter() {
 		super();
@@ -57,6 +60,7 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 
 	public void setJavaTypeMapper(JavaTypeMapper javaTypeMapper) {
 		this.javaTypeMapper = javaTypeMapper;
+		this.typeMapperSet = true;
 	}
 
 	/**
@@ -69,6 +73,14 @@ public class JsonMessageConverter extends AbstractJsonMessageConverter {
 	 */
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
 		this.jsonObjectMapper = jsonObjectMapper;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		super.setBeanClassLoader(classLoader);
+		if (!this.typeMapperSet) {
+			((DefaultJavaTypeMapper) this.javaTypeMapper).setBeanClassLoader(classLoader);
+		}
 	}
 
 	/**
