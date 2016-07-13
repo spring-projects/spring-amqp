@@ -97,8 +97,6 @@ public class BlockingQueueConsumer {
 
 	private InternalConsumer consumer;
 
-	private final AtomicBoolean cancelled = new AtomicBoolean(false);
-
 	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
 
 	private final AcknowledgeMode acknowledgeMode;
@@ -318,12 +316,14 @@ public class BlockingQueueConsumer {
 				break;
 			}
 		}
-		this.consumerTags.clear();
-		this.cancelled.set(true);
 	}
 
 	protected boolean hasDelivery() {
 		return !this.queue.isEmpty();
+	}
+
+	protected boolean cancelled() {
+		return this.cancelReceived.get();
 	}
 
 	/**
@@ -339,7 +339,6 @@ public class BlockingQueueConsumer {
 	 * If this is a non-POISON non-null delivery simply return it.
 	 * If this is POISON we are in shutdown mode, throw
 	 * shutdown. If delivery is null, we may be in shutdown mode. Check and see.
-	 * @throws InterruptedException
 	 */
 	private Message handle(Delivery delivery) throws InterruptedException {
 		if ((delivery == null && this.shutdown != null)) {
@@ -582,7 +581,6 @@ public class BlockingQueueConsumer {
 	}
 
 	public void stop() {
-		this.cancelled.set(true);
 		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelReceived.get()) {
 			try {
@@ -749,22 +747,30 @@ public class BlockingQueueConsumer {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			synchronized (BlockingQueueConsumer.this.consumerTags) {
-				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			}
+			BlockingQueueConsumer.this.cancelReceived.set(true);
+			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
 		}
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
+			long deliveryTag = envelope.getDeliveryTag();
+			if (cancelled()) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Rejecting delivery '" + deliveryTag + "' for " + BlockingQueueConsumer.this);
+				}
+				BlockingQueueConsumer.this.channel.basicReject(deliveryTag, true);
 			}
-			try {
-				BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+			else {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Storing delivery '" + deliveryTag + "' for " + BlockingQueueConsumer.this);
+				}
+				try {
+					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 
