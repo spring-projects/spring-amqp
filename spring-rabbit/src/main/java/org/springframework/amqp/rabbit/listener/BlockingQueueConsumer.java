@@ -97,7 +97,11 @@ public class BlockingQueueConsumer {
 
 	private InternalConsumer consumer;
 
-	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
+	/**
+	 * The flag indicating that consumer has been cancelled from all queues
+	 * via {@code handleCancelOk} callback replies.
+	 */
+	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
 	private final AcknowledgeMode acknowledgeMode;
 
@@ -323,7 +327,7 @@ public class BlockingQueueConsumer {
 	}
 
 	protected boolean cancelled() {
-		return this.cancelReceived.get();
+		return this.cancelled.get();
 	}
 
 	/**
@@ -390,7 +394,7 @@ public class BlockingQueueConsumer {
 			checkMissingQueues();
 		}
 		Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
-		if (message == null && this.cancelReceived.get()) {
+		if (message == null && this.cancelled.get()) {
 			throw new ConsumerCancelledException();
 		}
 		return message;
@@ -582,7 +586,7 @@ public class BlockingQueueConsumer {
 
 	public void stop() {
 		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
-				&& !this.cancelReceived.get()) {
+				&& !this.cancelled.get()) {
 			try {
 				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags.keySet(),
 						this.transactional);
@@ -739,7 +743,7 @@ public class BlockingQueueConsumer {
 				logger.warn("Cancel received for " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
 			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			BlockingQueueConsumer.this.cancelReceived.set(true);
+			basicCancel();
 		}
 
 		@Override
@@ -747,30 +751,23 @@ public class BlockingQueueConsumer {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
 			}
-			BlockingQueueConsumer.this.cancelReceived.set(true);
 			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
+			if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
+				BlockingQueueConsumer.this.cancelled.set(true);
+			}
 		}
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
-			long deliveryTag = envelope.getDeliveryTag();
-			if (cancelled()) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rejecting delivery '" + deliveryTag + "' for " + BlockingQueueConsumer.this);
-				}
-				BlockingQueueConsumer.this.channel.basicReject(deliveryTag, true);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
-			else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Storing delivery '" + deliveryTag + "' for " + BlockingQueueConsumer.this);
-				}
-				try {
-					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
+			try {
+				BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 
