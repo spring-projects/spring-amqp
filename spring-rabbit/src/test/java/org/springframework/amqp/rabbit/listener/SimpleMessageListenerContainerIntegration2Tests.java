@@ -154,6 +154,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	public void testDeleteOneQueue() throws Exception {
 		CountDownLatch latch = new CountDownLatch(20);
 		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		container.setFailedDeclarationRetryInterval(100);
 		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
 		container.setApplicationEventPublisher(publisher);
 		for (int i = 0; i < 10; i++) {

@@ -97,9 +97,11 @@ public class BlockingQueueConsumer {
 
 	private InternalConsumer consumer;
 
+	/**
+	 * The flag indicating that consumer has been cancelled from all queues
+	 * via {@code handleCancelOk} callback replies.
+	 */
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
-
-	private final AtomicBoolean cancelReceived = new AtomicBoolean(false);
 
 	private final AcknowledgeMode acknowledgeMode;
 
@@ -132,6 +134,10 @@ public class BlockingQueueConsumer {
 	private ConsumerTagStrategy tagStrategy;
 
 	private BackOffExecution backOffExecution;
+
+	private long shutdownTimeout;
+
+	private volatile long abortStarted;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -249,6 +255,10 @@ public class BlockingQueueConsumer {
 	public final void setQuiesce(long shutdownTimeout) {
 	}
 
+	public void setShutdownTimeout(long shutdownTimeout) {
+		this.shutdownTimeout = shutdownTimeout;
+	}
+
 	/**
 	 * Set the number of retries after passive queue declaration fails.
 	 * @param declarationRetries The number of retries, default 3.
@@ -318,12 +328,16 @@ public class BlockingQueueConsumer {
 				break;
 			}
 		}
-		this.consumerTags.clear();
-		this.cancelled.set(true);
+		this.abortStarted = System.currentTimeMillis();
 	}
 
 	protected boolean hasDelivery() {
 		return !this.queue.isEmpty();
+	}
+
+	protected boolean cancelled() {
+		return this.cancelled.get() || (this.abortStarted > 0 &&
+				this.abortStarted + this.shutdownTimeout > System.currentTimeMillis());
 	}
 
 	/**
@@ -339,7 +353,6 @@ public class BlockingQueueConsumer {
 	 * If this is a non-POISON non-null delivery simply return it.
 	 * If this is POISON we are in shutdown mode, throw
 	 * shutdown. If delivery is null, we may be in shutdown mode. Check and see.
-	 * @throws InterruptedException
 	 */
 	private Message handle(Delivery delivery) throws InterruptedException {
 		if ((delivery == null && this.shutdown != null)) {
@@ -391,7 +404,7 @@ public class BlockingQueueConsumer {
 			checkMissingQueues();
 		}
 		Message message = handle(this.queue.poll(timeout, TimeUnit.MILLISECONDS));
-		if (message == null && this.cancelReceived.get()) {
+		if (message == null && this.cancelled.get()) {
 			throw new ConsumerCancelledException();
 		}
 		return message;
@@ -582,9 +595,8 @@ public class BlockingQueueConsumer {
 	}
 
 	public void stop() {
-		this.cancelled.set(true);
 		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
-				&& !this.cancelReceived.get()) {
+				&& !this.cancelled.get()) {
 			try {
 				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags.keySet(),
 						this.transactional);
@@ -602,6 +614,7 @@ public class BlockingQueueConsumer {
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 		this.deliveryTags.clear();
 		this.consumer = null;
+		this.queue.clear(); // in case we still have a client thread blocked
 	}
 
 	/**
@@ -738,19 +751,29 @@ public class BlockingQueueConsumer {
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			if (logger.isWarnEnabled()) {
-				logger.warn("Cancel received for " + consumerTag + "; " + BlockingQueueConsumer.this);
+				logger.warn("Cancel received for " + consumerTag + " ("
+						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
+						+ "); " + BlockingQueueConsumer.this);
 			}
 			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			BlockingQueueConsumer.this.cancelReceived.set(true);
+			if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
+				BlockingQueueConsumer.this.cancelled.set(true);
+			}
+			else {
+				basicCancel();
+			}
 		}
 
 		@Override
 		public void handleCancelOk(String consumerTag) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Received cancellation notice for tag " + consumerTag + "; " + BlockingQueueConsumer.this);
+				logger.debug("Received cancelOk for tag " + consumerTag + " ("
+						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
+						+ "); " + BlockingQueueConsumer.this);
 			}
-			synchronized (BlockingQueueConsumer.this.consumerTags) {
-				BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
+			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
+			if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
+				BlockingQueueConsumer.this.cancelled.set(true);
 			}
 		}
 
@@ -761,7 +784,13 @@ public class BlockingQueueConsumer {
 				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
 			}
 			try {
-				BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+				if (BlockingQueueConsumer.this.abortStarted > 0) {
+					BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
+							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS);
+				}
+				else {
+					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+				}
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

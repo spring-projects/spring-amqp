@@ -46,8 +46,12 @@ import org.springframework.context.annotation.Configuration;
  */
 public class ContainerInitializationTests {
 
+	private static final String TEST_MISMATCH = "test.mismatch";
+
+	private static final String TEST_MISMATCH2 = "test.mismatch2";
+
 	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("test.mismatch");
+	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(TEST_MISMATCH, TEST_MISMATCH2);
 
 	@After
 	public void tearDown() {
@@ -84,8 +88,23 @@ public class ContainerInitializationTests {
 	public void testMismatchedQueueDuringRestart() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config2.class);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
-		admin.deleteQueue("test.mismatch");
-		admin.declareQueue(new Queue("test.mismatch", false, false, true));
+		admin.deleteQueue(TEST_MISMATCH);
+		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
+		int n = 0;
+		while (n++ < 100 && container.isRunning()) {
+			Thread.sleep(100);
+		}
+		assertFalse(container.isRunning());
+		context.close();
+	}
+
+	@Test
+	public void testMismatchedQueueDuringRestartMultiQueue() throws Exception {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config3.class);
+		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
+		admin.deleteQueue(TEST_MISMATCH);
+		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
 		while (n++ < 100 && container.isRunning()) {
@@ -106,7 +125,7 @@ public class ContainerInitializationTests {
 		@Bean
 		public SimpleMessageListenerContainer container() {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-			container.setQueueNames("test.mismatch");
+			container.setQueueNames(TEST_MISMATCH);
 			container.setMessageListener(new MessageListenerAdapter(new Object() {
 
 				@SuppressWarnings("unused")
@@ -120,7 +139,7 @@ public class ContainerInitializationTests {
 
 		@Bean
 		public Queue queue() {
-			return new Queue("test.mismatch", false, false, true); // mismatched
+			return new Queue(TEST_MISMATCH, false, false, true); // mismatched
 		}
 
 	}
@@ -141,7 +160,25 @@ public class ContainerInitializationTests {
 		@Override
 		@Bean
 		public Queue queue() {
-			return new Queue("test.mismatch", true, false, false);
+			return new Queue(TEST_MISMATCH, true, false, false);
+		}
+
+	}
+
+	@Configuration
+	static class Config3 extends Config2 {
+
+
+		@Override
+		public SimpleMessageListenerContainer container() {
+			SimpleMessageListenerContainer container = super.container();
+			container.setQueueNames(TEST_MISMATCH, TEST_MISMATCH2);
+			return container;
+		}
+
+		@Bean
+		public Queue queue2() {
+			return new Queue(TEST_MISMATCH2, true, false, false);
 		}
 
 	}

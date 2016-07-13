@@ -1040,6 +1040,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			consumer.setTagStrategy(this.consumerTagStrategy);
 		}
 		consumer.setBackOffExecution(this.recoveryBackOff.start());
+		consumer.setShutdownTimeout(this.shutdownTimeout);
 		return consumer;
 	}
 
@@ -1306,7 +1307,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					ConsumerChannelRegistry.registerConsumerChannel(this.consumer.getChannel(), getConnectionFactory());
 				}
 
-				while (isActive(this.consumer) || this.consumer.hasDelivery()) {
+				while (isActive(this.consumer) || this.consumer.hasDelivery() || !this.consumer.cancelled()) {
 					try {
 						boolean receivedOk = receiveAndExecute(this.consumer); // At least one message received
 						if (SimpleMessageListenerContainer.this.maxConcurrentConsumers != null) {
