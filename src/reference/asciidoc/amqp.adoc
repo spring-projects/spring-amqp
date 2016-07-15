@@ -2268,6 +2268,10 @@ The property is actually on the converter's `DefaultJackson2JavaTypeMapper` but 
 for convenience.
 If you inject a custom type mapper, you should set the property on the mapper instead.
 
+NOTE: When converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant (the logic `contentType.contains("json")` is used).
+Otherwise, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is - as a `byte[]``.
+So, to meet the `Jackson2JsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property, e.g. as `application/json`, `text/x-json` or simply use the `Jackson2JsonMessageConverter`, which will set the header automatically.
+
 [source, java]
 ----
 @RabbitListener

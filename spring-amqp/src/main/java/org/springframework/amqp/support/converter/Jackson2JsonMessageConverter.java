@@ -159,8 +159,10 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 				}
 			}
 			else {
-				log.warn("Could not convert incoming message with content-type ["
-						+ contentType + "]");
+				if (log.isWarnEnabled()) {
+					log.warn("Could not convert incoming message with content-type ["
+							+ contentType + "]");
+				}
 			}
 		}
 		if (content == null) {
