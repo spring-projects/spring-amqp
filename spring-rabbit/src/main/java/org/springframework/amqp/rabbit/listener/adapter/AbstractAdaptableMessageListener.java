@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -50,6 +51,8 @@ import com.rabbitmq.client.Channel;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4
  * @see MessageListener
  * @see ChannelAwareMessageListener
@@ -192,14 +195,12 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	/**
 	 * Rabbit {@link MessageListener} entry point.
 	 * <p>
-	 * Delegates the message to the target listener method, with appropriate conversion of the message argument. In case
-	 * of an exception, the {@link #handleListenerException(Throwable)} method will be invoked.
+	 * Delegates the message to the target listener method, with appropriate conversion of the message argument.
 	 * <p>
 	 * <b>Note:</b> Does not support sending response messages based on result objects returned from listener methods.
 	 * Use the {@link ChannelAwareMessageListener} entry point (typically through a Spring message listener container)
 	 * for handling result objects as well.
 	 * @param message the incoming Rabbit message
-	 * @see #handleListenerException
 	 * @see #onMessage(Message, com.rabbitmq.client.Channel)
 	 */
 	@Override
@@ -207,8 +208,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 		try {
 			onMessage(message, null);
 		}
-		catch (Exception ex) {
-			handleListenerException(ex);
+		catch (Exception e) {
+			throw new ListenerExecutionFailedException("Listener threw exception", e, message);
 		}
 	}
 
@@ -216,11 +217,9 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * Handle the given exception that arose during listener execution.
 	 * The default implementation logs the exception at error level.
 	 * <p>
-	 * This method only applies when using a Rabbit {@link MessageListener}. With
-	 * {@link ChannelAwareMessageListener}, exceptions get handled by the
-	 * caller instead.
+	 * Can be used by inheritors from overridden {@link #onMessage(Message)}
+	 * or {@link #onMessage(Message, com.rabbitmq.client.Channel)}
 	 * @param ex the exception to handle
-	 * @see #onMessage(Message)
 	 */
 	protected void handleListenerException(Throwable ex) {
 		this.logger.error("Listener execution failed", ex);

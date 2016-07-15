@@ -49,15 +49,7 @@ public class MessageListenerAdapterTests {
 	public void init() {
 		this.messageProperties = new MessageProperties();
 		this.messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
-		this.adapter = new MessageListenerAdapter() {
-			@Override
-			protected void handleListenerException(Throwable ex) {
-				if (ex instanceof RuntimeException) {
-					throw (RuntimeException) ex;
-				}
-				throw new IllegalStateException(ex);
-			};
-		};
+		this.adapter = new MessageListenerAdapter();
 		this.adapter.setMessageConverter(new SimpleMessageConverter());
 	}
 
