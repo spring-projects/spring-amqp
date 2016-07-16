@@ -785,8 +785,10 @@ public class BlockingQueueConsumer {
 			}
 			try {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
-					BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
-							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS);
+					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
+							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
+						// ignore - we're aborting anyway
+					}
 				}
 				else {
 					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
