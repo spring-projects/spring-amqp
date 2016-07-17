@@ -787,7 +787,7 @@ public class BlockingQueueConsumer {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
-						// ignore - we're aborting anyway
+						// NOSONAR - ignore - we're aborting anyway
 					}
 				}
 				else {
