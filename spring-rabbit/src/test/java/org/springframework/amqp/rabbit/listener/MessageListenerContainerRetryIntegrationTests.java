@@ -59,6 +59,7 @@ import org.springframework.test.annotation.Repeat;
  * @author Dave Syer
  * @author Gary Russell
  * @author Gunnar Hillert
+ * @author Artem Bilan
  *
  * @since 1.0
  *
@@ -77,15 +78,14 @@ public class MessageListenerContainerRetryIntegrationTests {
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
-	public Log4jLevelAdjuster traceLevels = new Log4jLevelAdjuster(Level.ERROR, StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
+	public Log4jLevelAdjuster traceLevels = new Log4jLevelAdjuster(Level.ERROR,
+			StatefulRetryOperationsInterceptorFactoryBean.class, MessageListenerContainerRetryIntegrationTests.class);
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
 
 	@Rule
 	public RepeatProcessor repeats = new RepeatProcessor();
-
-	private RabbitTemplate template;
 
 	private RetryTemplate retryTemplate;
 
@@ -151,7 +151,6 @@ public class MessageListenerContainerRetryIntegrationTests {
 		this.retryTemplate = new RetryTemplate();
 		this.retryTemplate.setRetryContextCache(new MapRetryContextCache(1));
 		// The container should have shutdown, so there are now no active consumers
-		exception.handleAssertionErrors();
 		exception.expectMessage("expected:<1> but was:<0>");
 		doTestStatefulRetry(messageCount, txSize, failFrequency, concurrentConsumers);
 
@@ -191,7 +190,8 @@ public class MessageListenerContainerRetryIntegrationTests {
 		factory.setMessageRecoverer(new MessageRecoverer() {
 			@Override
 			public void recover(Message message, Throwable cause) {
-				logger.info("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString() + "], message: " + message);
+				logger.warn("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString() +
+						"], message: " + message);
 				latch.countDown();
 			}
 		});
@@ -199,8 +199,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 			retryTemplate = new RetryTemplate();
 		}
 		factory.setRetryOperations(retryTemplate);
-		Advice retryInterceptor = factory.getObject();
-		return retryInterceptor;
+		return factory.getObject();
 	}
 
 	private void doTestStatefulRetry(int messageCount, int txSize, int failFrequency, int concurrentConsumers)
@@ -218,9 +217,9 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 		int failedMessageCount = messageCount / failFrequency + (messageCount % failFrequency == 0 ? 0 : 1);
 
-		template = createTemplate(concurrentConsumers);
+		RabbitTemplate template = createTemplate(concurrentConsumers);
 		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue.getName(), new Integer(i));
+			template.convertAndSend(queue.getName(), i);
 		}
 
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
@@ -284,11 +283,13 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 	}
 
-	public static class PojoListener {
+	private static class PojoListener {
+
 		private final AtomicInteger count = new AtomicInteger();
+
 		private final int failFrequency;
 
-		public PojoListener(int failFrequency) {
+		PojoListener(int failFrequency) {
 			this.failFrequency = failFrequency;
 		}
 
@@ -304,6 +305,7 @@ public class MessageListenerContainerRetryIntegrationTests {
 		public int getCount() {
 			return count.get();
 		}
+
 	}
 
 }
