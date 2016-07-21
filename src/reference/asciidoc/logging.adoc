@@ -70,6 +70,42 @@ Retries are delayed like: `N ^ log(N)`, where `N` is the retry number.
 | guest
 | RabbitMQ password for this user.
 
+| useSsl
+| false
+| Use SSL for the RabbitMQ connection. See <<_rabbitconnectionfactorybean_and_configuring_ssl>>
+
+| sslAlgorithm
+| null
+| The SSL algorithm to use.
+
+| sslPropertiesLocation
+| null
+| Location of the SSL properties file.
+
+| keyStore
+| null
+| Location of the keystore.
+
+| keyStorePassphrase
+| null
+| Passphrase for the keystore.
+
+| keyStoreType
+| JKS
+| The keystore type.
+
+| trustStore
+| null
+| Location of the truststore.
+
+| trustStorePassphrase
+| null
+| Passphrase for the truststore.
+
+| trustStoreType
+| JKS
+| The truststore type.
+
 | contentType
 | text/plain
 | `content-type` property of log messages.
@@ -104,7 +140,8 @@ If the charset is unsupported on the current platform, we fall back to using the
 | false
 | Used to determine whether the `messageId` property is set to a unique value.
 
-| clientConnectionProperties
+| clientConnection
+Properties
 | null
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
@@ -173,12 +210,6 @@ public class MyEnhancedAppender extends AmqpAppender {
 
 Each appender supports adding client properties to the RabbitMQ connection.
 
-.log4j
-[source, text]
-----
-log4j.appender.amqp.clientConnectionProperties=foo:bar,baz:qux
-----
-
 .logback
 [source, xml]
 ----
@@ -206,9 +237,9 @@ The properties are a comma-delimited list of `key:value` pairs; keys and values 
 
 These properties appear on the RabbitMQ Admin UI when viewing the connection.
 
-===== Advanced Technique for Log4j and Logback
+===== Advanced Technique for Logback
 
-With the log4j and logback appenders, the appenders can be subclassed, allowing you to modify the client connection
+The Logback appender can be subclassed, allowing you to modify the client connection
 properties before the connection is established:
 
 .Customizing the Client Connection Properties
@@ -230,8 +261,7 @@ public class MyEnhancedAppender extends AmqpAppender {
 }
 ----
 
-For log4j2, add `log4j.appender.amqp.foo=bar` to log4j.properties to set the property.
-For logback, add `<foo>bar</foo>` to logback.xml.
+Then add `<foo>bar</foo>` to logback.xml.
 
 Of course, for simple String properties like this example, the previous technique can be used; subclasses allow
 richer properties (such as adding a `Map` or numeric property).

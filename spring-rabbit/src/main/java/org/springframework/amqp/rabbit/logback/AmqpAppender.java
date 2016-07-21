@@ -40,10 +40,13 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.LogAppenderUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
@@ -53,10 +56,13 @@ import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
 
+import com.rabbitmq.client.ConnectionFactory;
+
 /**
  * A Lockback appender that publishes logging events to an AMQP Exchange.
  * <p>
  * A fully-configured AmqpAppender, with every option set to their defaults, would look like this:
+ *
  * <pre class="code">
  * {@code
  * <appender name="AMQP" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
@@ -76,6 +82,7 @@ import ch.qos.logback.core.Layout;
  *
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Stephen Oakey
  * @since 1.4
  */
 public class AmqpAppender extends AppenderBase<ILoggingEvent> {
@@ -163,6 +170,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * A comma-delimited list of broker addresses: host:port[,host:port]*
+	 *
 	 * @since 1.5.6
 	 */
 	private String addresses;
@@ -191,6 +199,51 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * RabbitMQ password for this user.
 	 */
 	private String password = "guest";
+
+	/**
+	 * Use an SSL connection.
+	 */
+	private boolean useSsl;
+
+	/**
+	 * The SSL algorithm to use.
+	 */
+	private String sslAlgorithm;
+
+	/**
+	 * Location of resource containing keystore and truststore information.
+	 */
+	private String sslPropertiesLocation;
+
+	/**
+	 * Keystore location.
+	 */
+	private String keyStore;
+
+	/**
+	 * Keystore passphrase.
+	 */
+	private String keyStorePassphrase;
+
+	/**
+	 * Keystore type.
+	 */
+	private String keyStoreType = "JKS";
+
+	/**
+	 * Truststore location.
+	 */
+	private String trustStore;
+
+	/**
+	 * Truststore passphrase.
+	 */
+	private String trustStorePassphrase;
+
+	/**
+	 * Truststore type.
+	 */
+	private String trustStoreType = "JKS";
 
 	/**
 	 * Default content-type of log messages.
@@ -279,6 +332,78 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public boolean isUseSsl() {
+		return this.useSsl;
+	}
+
+	public void setUseSsl(boolean ssl) {
+		this.useSsl = ssl;
+	}
+
+	public String getSslAlgorithm() {
+		return this.sslAlgorithm;
+	}
+
+	public void setSslAlgorithm(String sslAlgorithm) {
+		this.sslAlgorithm = sslAlgorithm;
+	}
+
+	public String getSslPropertiesLocation() {
+		return this.sslPropertiesLocation;
+	}
+
+	public void setSslPropertiesLocation(String sslPropertiesLocation) {
+		this.sslPropertiesLocation = sslPropertiesLocation;
+	}
+
+	public String getKeyStore() {
+		return this.keyStore;
+	}
+
+	public void setKeyStore(String keyStore) {
+		this.keyStore = keyStore;
+	}
+
+	public String getKeyStorePassphrase() {
+		return this.keyStorePassphrase;
+	}
+
+	public void setKeyStorePassphrase(String keyStorePassphrase) {
+		this.keyStorePassphrase = keyStorePassphrase;
+	}
+
+	public String getKeyStoreType() {
+		return this.keyStoreType;
+	}
+
+	public void setKeyStoreType(String keyStoreType) {
+		this.keyStoreType = keyStoreType;
+	}
+
+	public String getTrustStore() {
+		return this.trustStore;
+	}
+
+	public void setTrustStore(String trustStore) {
+		this.trustStore = trustStore;
+	}
+
+	public String getTrustStorePassphrase() {
+		return this.trustStorePassphrase;
+	}
+
+	public void setTrustStorePassphrase(String trustStorePassphrase) {
+		this.trustStorePassphrase = trustStorePassphrase;
+	}
+
+	public String getTrustStoreType() {
+		return this.trustStoreType;
+	}
+
+	public void setTrustStoreType(String trustStoreType) {
+		this.trustStoreType = trustStoreType;
 	}
 
 	public String getExchangeName() {
@@ -400,6 +525,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Set additional client connection properties to be added to the rabbit connection,
 	 * with the form {@code key:value[,key:value]...}.
+	 *
 	 * @param clientConnectionProperties the properties.
 	 * @since 1.5.6
 	 */
@@ -409,34 +535,84 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	@Override
 	public void start() {
-		super.start();
-		this.routingKeyLayout.setPattern(this.routingKeyLayout.getPattern()
-				.replaceAll("%property\\{applicationId\\}", this.applicationId));
-		this.routingKeyLayout.setContext(getContext());
-		this.routingKeyLayout.start();
-		this.locationLayout.setContext(getContext());
-		this.locationLayout.start();
-		this.connectionFactory = new CachingConnectionFactory();
-		this.connectionFactory.setHost(this.host);
-		this.connectionFactory.setPort(this.port);
-		if (this.addresses != null) {
-			this.connectionFactory.setAddresses(this.addresses);
+		ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
+		if (rabbitConnectionFactory != null) {
+			super.start();
+			this.routingKeyLayout.setPattern(this.routingKeyLayout.getPattern()
+					.replaceAll("%property\\{applicationId\\}", this.applicationId));
+			this.routingKeyLayout.setContext(getContext());
+			this.routingKeyLayout.start();
+			this.locationLayout.setContext(getContext());
+			this.locationLayout.start();
+			this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+			if (this.addresses != null) {
+				this.connectionFactory.setAddresses(this.addresses);
+			}
+			LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory, this.clientConnectionProperties);
+			updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
+			setUpExchangeDeclaration();
+			this.senderPool = Executors.newCachedThreadPool();
+			for (int i = 0; i < this.senderPoolSize; i++) {
+				this.senderPool.submit(new EventSender());
+			}
 		}
-		this.connectionFactory.setUsername(this.username);
-		this.connectionFactory.setPassword(this.password);
-		this.connectionFactory.setVirtualHost(this.virtualHost);
-		LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory, this.clientConnectionProperties);
-		updateConnectionClientProperties(this.connectionFactory.getRabbitConnectionFactory().getClientProperties());
-		setUpExchangeDeclaration();
-		this.senderPool = Executors.newCachedThreadPool();
-		for (int i = 0; i < this.senderPoolSize; i++) {
-			this.senderPool.submit(new EventSender());
+	}
+
+	/**
+	 * Create the {@link ConnectionFactory}.
+	 *
+	 * @return a {@link ConnectionFactory}.
+	 */
+	protected ConnectionFactory createRabbitConnectionFactory() {
+		RabbitConnectionFactoryBean factoryBean = new RabbitConnectionFactoryBean();
+		configureRabbitConnectionFactory(factoryBean);
+		try {
+			factoryBean.afterPropertiesSet();
+			return factoryBean.getObject();
+		}
+		catch (Exception e) {
+			addError("Failed to create customized Rabbit ConnectionFactory.", e);
+			return null;
+		}
+	}
+
+	/**
+	 * Configure the {@link RabbitConnectionFactoryBean}. Sub-classes may override to
+	 * customize the configuration of the bean.
+	 *
+	 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
+	 */
+	protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
+		factoryBean.setHost(this.host);
+		factoryBean.setPort(this.port);
+		factoryBean.setUsername(this.username);
+		factoryBean.setPassword(this.password);
+		factoryBean.setVirtualHost(this.virtualHost);
+		if (this.useSsl) {
+			factoryBean.setUseSSL(true);
+			if (this.sslAlgorithm != null) {
+				factoryBean.setSslAlgorithm(this.sslAlgorithm);
+			}
+			if (this.sslPropertiesLocation != null) {
+				PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+				Resource sslPropertiesResource = resolver.getResource(this.sslPropertiesLocation);
+				factoryBean.setSslPropertiesLocation(sslPropertiesResource);
+			}
+			else {
+				factoryBean.setKeyStore(this.keyStore);
+				factoryBean.setKeyStorePassphrase(this.keyStorePassphrase);
+				factoryBean.setKeyStoreType(this.keyStoreType);
+				factoryBean.setTrustStore(this.trustStore);
+				factoryBean.setTrustStorePassphrase(this.trustStorePassphrase);
+				factoryBean.setTrustStoreType(this.trustStoreType);
+			}
 		}
 	}
 
 	/**
 	 * Subclasses can override this method to add properties to the connection client
 	 * properties.
+	 *
 	 * @param clientProperties the client properties.
 	 * @since 1.5.6
 	 */
@@ -495,6 +671,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	/**
 	 * Subclasses may modify the final message before sending.
+	 *
 	 * @param message The message.
 	 * @param event The event.
 	 * @return The modified message.
