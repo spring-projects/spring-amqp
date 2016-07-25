@@ -817,6 +817,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		final AtomicReference<Connection> created = new AtomicReference<Connection>();
 		final AtomicReference<Connection> closed = new AtomicReference<Connection>();
+		final AtomicInteger timesClosed = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		connectionFactory.addConnectionListener(new ConnectionListener() {
 
@@ -828,6 +829,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			@Override
 			public void onClose(Connection connection) {
 				closed.set(connection);
+				timesClosed.getAndAdd(1);
 			}
 		});
 		((CachingConnectionFactory) connectionFactory).setChannelCacheSize(1);
@@ -850,6 +852,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		when(mockChannel.isOpen()).thenReturn(false); // force a connection refresh
 		channel.basicCancel("foo");
 		channel.close();
+		assertEquals(1, timesClosed.get());
 
 		Connection notSame = connectionFactory.createConnection();
 		assertNotSame(conDelegate, targetDelegate(notSame));
@@ -859,6 +862,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		connectionFactory.destroy();
 		verify(mockConnection2, atLeastOnce()).close(anyInt());
 		assertSame(notSame, closed.get());
+		assertEquals(2, timesClosed.get());
 
 		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
 	}
