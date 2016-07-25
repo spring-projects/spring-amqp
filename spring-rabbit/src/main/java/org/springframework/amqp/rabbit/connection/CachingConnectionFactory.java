@@ -526,6 +526,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					if (!this.checkoutPermits.containsKey(this.connection)) {
 						this.checkoutPermits.put(this.connection, new Semaphore(this.channelCacheSize));
 					}
+					this.connection.closeNotified.set(false);
 					getConnectionListener().onCreate(this.connection);
 				}
 				return this.connection;
