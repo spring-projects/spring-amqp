@@ -69,17 +69,17 @@ public class SSLConnectionTests {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
 		fb.afterPropertiesSet();
-		try{
+		try {
 			fb.setUpSSL();
 			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
 			fail("setupSSL should fail");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			assertEquals("foo", fb.getKeyStoreType());
 			assertEquals("bar", fb.getTrustStoreType());
 		}
-		
 	}
-	
+
 	@Test
 	public void testTypeSettersNoProps() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
@@ -88,7 +88,7 @@ public class SSLConnectionTests {
 		assertEquals("alice", fb.getKeyStoreType());
 		assertEquals("bob", fb.getTrustStoreType());
 	}
-	
+
 	@Test
 	public void testTypeSettersOverrideProps() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
@@ -96,11 +96,12 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.setKeyStoreType("alice");
 		fb.setTrustStoreType("bob");
-		try{
+		try {
 			fb.setUpSSL();
 			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
 			fail("setupSSL should fail");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			assertEquals("alice", fb.getKeyStoreType());
 			assertEquals("bob", fb.getTrustStoreType());
 		}
