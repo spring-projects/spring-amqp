@@ -36,6 +36,7 @@ import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Gary Russell
+ * @author Heath Abelson
  * @since 1.4.4
  *
  */
@@ -58,6 +59,29 @@ public class SSLConnectionTests {
 	}
 
 	@Test
+	public void testAlgNoProps() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSslAlgorithm("TLSv1.2");
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol("TLSv1.2");
+	}
+
+	@Test
+	public void testNoAlgNoProps() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol();
+	}
+
+	@Test
 	public void testTypeDefault() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		assertEquals("PKCS12", fb.getKeyStoreType());
@@ -71,7 +95,8 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		try {
 			fb.setUpSSL();
-			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
+			//Here we make sure the exception is thrown because setUpSSL() will fail.
+			// But we only care about having it load the props
 			fail("setupSSL should fail");
 		}
 		catch (Exception e) {
@@ -98,36 +123,14 @@ public class SSLConnectionTests {
 		fb.setTrustStoreType("bob");
 		try {
 			fb.setUpSSL();
-			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
+			// Here we make sure the exception is thrown because setUpSSL() will fail.
+			//But we only care about having it load the props
 			fail("setupSSL should fail");
 		}
 		catch (Exception e) {
 			assertEquals("alice", fb.getKeyStoreType());
 			assertEquals("bob", fb.getTrustStoreType());
 		}
-	}
-
-	@Test
-	public void testAlgNoProps() throws Exception {
-		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
-		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
-		fb.setUseSSL(true);
-		fb.setSslAlgorithm("TLSv1.2");
-		fb.afterPropertiesSet();
-		fb.getObject();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
-	}
-
-	@Test
-	public void testNoAlgNoProps() throws Exception {
-		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
-		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
-		fb.setUseSSL(true);
-		fb.afterPropertiesSet();
-		fb.getObject();
-		verify(rabbitCf).useSslProtocol();
 	}
 
 }
