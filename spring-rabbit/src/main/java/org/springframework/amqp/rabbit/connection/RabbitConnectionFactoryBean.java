@@ -57,6 +57,7 @@ import com.rabbitmq.client.SocketConfigurator;
  * Override {@link #setUpSSL()} to take complete control over setting up SSL.
  *
  * @author Gary Russell
+ * @author Heath Abelson
  *
  * @since 1.4
  */
@@ -70,7 +71,15 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_PASS_PHRASE = "trustStore.passPhrase";
 
+	private static final String KEY_STORE_TYPE = "keyStore.type";
+
+	private static final String TRUST_STORE_TYPE = "trustStore.type";
+
 	private static final String TLS_V1_1 = "TLSv1.1";
+
+	private static final String KEY_STORE_DEFAULT_TYPE = "PKCS12";
+
+	private static final String TRUST_STORE_DEFAULT_TYPE = "JKS";
 
 	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
 
@@ -87,6 +96,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private volatile String keyStorePassphrase;
 
 	private volatile String trustStorePassphrase;
+
+	private volatile String keyStoreType;
+
+	private volatile String trustStoreType;
 
 	private volatile String sslAlgorithm = TLS_V1_1;
 
@@ -223,6 +236,64 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setTrustStorePassphrase(String trustStorePassphrase) {
 		this.trustStorePassphrase = trustStorePassphrase;
+	}
+
+	/**
+	 * Get the key store type - this defaults to PKCS12 if not overridden by
+	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setKeyStoreType}
+	 * @return the key store type.
+	 * @since 1.6.2
+	 */
+	protected String getKeyStoreType() {
+		if (this.keyStoreType == null && this.sslProperties.getProperty(KEY_STORE_TYPE) == null) {
+			return KEY_STORE_DEFAULT_TYPE;
+		}
+		else if (this.keyStoreType != null) {
+			return this.keyStoreType;
+		}
+		else {
+			return this.sslProperties.getProperty(KEY_STORE_TYPE);
+		}
+	}
+
+	/**
+	 * Set the key store type - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param keyStoreType the key store type.
+	 * @see java.security.KeyStore#getInstance(String)
+	 * @since 1.6.2
+	 */
+	public void setKeyStoreType(String keyStoreType) {
+		this.keyStoreType = keyStoreType;
+	}
+
+	/**
+	 * Get the trust store type - this defaults to JKS if not overridden by
+	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setTrustStoreType}
+	 * @return the trust store type.
+	 * @since 1.6.2
+	 */
+	protected String getTrustStoreType() {
+		if (this.trustStoreType == null && this.sslProperties.getProperty(TRUST_STORE_TYPE) == null) {
+			return TRUST_STORE_DEFAULT_TYPE;
+		}
+		else if (this.trustStoreType != null) {
+			return this.trustStoreType;
+		}
+		else {
+			return this.sslProperties.getProperty(TRUST_STORE_TYPE);
+		}
+	}
+
+	/**
+	 * Set the trust store type - overrides
+	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * @param trustStoreType the trust store type.
+	 * @see java.security.KeyStore#getInstance(String)
+	 * @since 1.6.2
+	 */
+	public void setTrustStoreType(String trustStoreType) {
+		this.trustStoreType = trustStoreType;
 	}
 
 	/**
@@ -417,18 +488,20 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			Assert.state(StringUtils.hasText(keyStorePassword), KEY_STORE_PASS_PHRASE + " property required");
 			String trustStorePassword = getTrustStorePassphrase();
 			Assert.state(StringUtils.hasText(trustStorePassword), TRUST_STORE_PASS_PHRASE + " property required");
+			String keyStoreType = getKeyStoreType();
+			String trustStoreType = getTrustStoreType();
 			Resource keyStore = resolver.getResource(keyStoreName);
 			Resource trustStore = resolver.getResource(trustStoreName);
 			char[] keyPassphrase = keyStorePassword.toCharArray();
 			char[] trustPassphrase = trustStorePassword.toCharArray();
 
-			KeyStore ks = KeyStore.getInstance("PKCS12");
+			KeyStore ks = KeyStore.getInstance(keyStoreType);
 			ks.load(keyStore.getInputStream(), keyPassphrase);
 
 			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 			kmf.init(ks, keyPassphrase);
 
-			KeyStore tks = KeyStore.getInstance("JKS");
+			KeyStore tks = KeyStore.getInstance(trustStoreType);
 			tks.load(trustStore.getInputStream(), trustPassphrase);
 
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
