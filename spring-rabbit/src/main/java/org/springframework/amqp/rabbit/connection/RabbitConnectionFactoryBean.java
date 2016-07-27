@@ -145,6 +145,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <li>trustStore=file:/secret/trustStore</li>
 	 * <li>keyStore.passPhrase=secret</li>
 	 * <li>trustStore.passPhrase=secret</li>
+	 * <li>keyStore.type=PKCS12</li>
+	 * <li>trustStore.type=JKS</li>
 	 * </ul>
 	 * <p>
 	 * If this is provided, its properties (if present) will override the explicitly
