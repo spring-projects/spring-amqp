@@ -243,7 +243,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * Get the key store type - this defaults to PKCS12 if not overridden by
 	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setKeyStoreType}
 	 * @return the key store type.
-	 * @since ?
+	 * @since 1.6.2
 	 */
 	protected String getKeyStoreType() {
 		if (this.keyStoreType == null && this.sslProperties.getProperty(KEY_STORE_TYPE) == null) {
@@ -262,7 +262,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
 	 * @param keyStoreType the key store type.
 	 * @see java.security.KeyStore#getInstance(String)
-	 * @since ?
+	 * @since 1.6.2
 	 */
 	public void setKeyStoreType(String keyStoreType) {
 		this.keyStoreType = keyStoreType;
@@ -272,7 +272,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * Get the key store type - this defaults to JKS if not overridden by
 	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setTrustStoreType}
 	 * @return the trust store type.
-	 * @since ?
+	 * @since 1.6.2
 	 */
 	protected String getTrustStoreType() {
 		if (this.trustStoreType == null && this.sslProperties.getProperty(TRUST_STORE_TYPE) == null) {
@@ -291,7 +291,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
 	 * @param trustStoreType the trust store type.
 	 * @see java.security.KeyStore#getInstance(String)
-	 * @since ?
+	 * @since 1.6.2
 	 */
 	public void setTrustStoreType(String trustStoreType) {
 		this.trustStoreType = trustStoreType;
