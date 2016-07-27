@@ -57,6 +57,7 @@ import com.rabbitmq.client.SocketConfigurator;
  * Override {@link #setUpSSL()} to take complete control over setting up SSL.
  *
  * @author Gary Russell
+ * @author Heath Abelson
  *
  * @since 1.4
  */

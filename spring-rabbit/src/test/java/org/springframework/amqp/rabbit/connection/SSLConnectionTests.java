@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -54,6 +55,55 @@ public class SSLConnectionTests {
 		Channel chan = conn.createChannel();
 		chan.close();
 		conn.close();
+	}
+
+	@Test
+	public void testTypeDefault() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		assertEquals("PKCS12", fb.getKeyStoreType());
+		assertEquals("JKS", fb.getTrustStoreType());
+	}
+
+	@Test
+	public void testTypeProps() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
+		fb.afterPropertiesSet();
+		try{
+			fb.setUpSSL();
+			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
+			fail("setupSSL should fail");
+		} catch (Exception e) {
+			assertEquals("foo", fb.getKeyStoreType());
+			assertEquals("bar", fb.getTrustStoreType());
+		}
+		
+	}
+	
+	@Test
+	public void testTypeSettersNoProps() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		fb.setKeyStoreType("alice");
+		fb.setTrustStoreType("bob");
+		assertEquals("alice", fb.getKeyStoreType());
+		assertEquals("bob", fb.getTrustStoreType());
+	}
+	
+	@Test
+	public void testTypeSettersOverrideProps() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		fb.setSslPropertiesLocation(new ClassPathResource("ssl.properties"));
+		fb.afterPropertiesSet();
+		fb.setKeyStoreType("alice");
+		fb.setTrustStoreType("bob");
+		try{
+			fb.setUpSSL();
+			// Here we make sure the exception is thrown because setUpSSL() will fail. But we only care about having it load the props
+			fail("setupSSL should fail");
+		} catch (Exception e) {
+			assertEquals("alice", fb.getKeyStoreType());
+			assertEquals("bob", fb.getTrustStoreType());
+		}
 	}
 
 	@Test
