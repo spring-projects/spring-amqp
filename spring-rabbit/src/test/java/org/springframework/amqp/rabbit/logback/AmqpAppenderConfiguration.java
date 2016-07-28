@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.log4j;
+package org.springframework.amqp.rabbit.logback;
 
 import javax.annotation.PreDestroy;
 
@@ -36,10 +36,6 @@ import org.springframework.context.annotation.Scope;
  */
 @Configuration
 public class AmqpAppenderConfiguration {
-
-	static {
-		// DOMConfigurator.configure(AmqpAppenderTests.class.getResource("/log4j.xml"));
-	}
 
 	private static final String QUEUE = "amqp.appender.test";
 
