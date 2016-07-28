@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.log4j;
+package org.springframework.amqp.rabbit.logback;
 
 import java.util.concurrent.CountDownLatch;
 

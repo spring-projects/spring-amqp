@@ -3,7 +3,6 @@
 
 The framework provides logging appenders for several popular logging subsystems:
 
-- log4j (since Spring AMQP _version 1.1_)
 - logback (since Spring AMQP _version 1.4_)
 - log4j2 (since Spring AMQP _version 1.6_)
 
@@ -110,24 +109,6 @@ If the charset is unsupported on the current platform, we fall back to using the
 | A comma-delimited list of `key:value` pairs for custom client properties to the RabbitMQ connection.
 
 |===
-
-==== Log4j Appender
-
-.Example log4j.properties Snippet
-[source, text]
-----
-log4j.appender.amqp.addresses=foo:5672,bar:5672
-log4j.appender.amqp=org.springframework.amqp.rabbit.log4j.AmqpAppender
-log4j.appender.amqp.applicationId=myApplication
-log4j.appender.amqp.routingKeyPattern=%X{applicationId}.%c.%p
-log4j.appender.amqp.layout=org.apache.log4j.PatternLayout
-log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - <%m>%n
-log4j.appender.amqp.generateId=true
-log4j.appender.amqp.charset=UTF-8
-log4j.appender.amqp.durable=false
-log4j.appender.amqp.deliveryMode=NON_PERSISTENT
-log4j.appender.amqp.declareExchange=true
-----
 
 ==== Log4j2 Appender
 
