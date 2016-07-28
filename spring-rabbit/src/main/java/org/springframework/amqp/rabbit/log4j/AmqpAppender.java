@@ -109,10 +109,14 @@ import org.springframework.amqp.rabbit.support.LogAppenderUtils;
  *   log4j.appender.amqp.layout.ConversionPattern=%d %p %t [%c] - &lt;%m&gt;%n
  * </pre>
  *
+ * @deprecated in favor of Apache Log4j 2
+ * (following Apache's EOL declaration for log4j 1.x)
+ *
  * @author Jon Brisbin
  * @author Gary Russell
  * @author Artem Bilan
  */
+@Deprecated
 public class AmqpAppender extends AppenderSkeleton {
 
 	/**

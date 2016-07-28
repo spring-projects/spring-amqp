@@ -3,7 +3,7 @@
 
 The framework provides logging appenders for several popular logging subsystems:
 
-- log4j (since Spring AMQP _version 1.1_)
+- log4j (since Spring AMQP _version 1.1_) (deprecated)
 - logback (since Spring AMQP _version 1.4_)
 - log4j2 (since Spring AMQP _version 1.6_)
 
@@ -128,6 +128,8 @@ log4j.appender.amqp.durable=false
 log4j.appender.amqp.deliveryMode=NON_PERSISTENT
 log4j.appender.amqp.declareExchange=true
 ----
+
+NOTE: This appender is deprecated and will be removed in _version 2.0_.
 
 ==== Log4j2 Appender
 

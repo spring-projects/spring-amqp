@@ -9,6 +9,7 @@
 .gradle
 .project
 .settings
+.checkstyle
 bin
 build
 .DS_Store

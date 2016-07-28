@@ -60,8 +60,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @author Artem Bilan
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "org.springframework.amqp.rabbit.log4j" }, loader = AnnotationConfigContextLoader.class)
+@ContextConfiguration(locations = { "org.springframework.amqp.rabbit.log4j" },
+		loader = AnnotationConfigContextLoader.class)
 @DirtiesContext
+@SuppressWarnings("deprecation")
 public class AmqpAppenderIntegrationTests {
 
 	@Rule
@@ -173,7 +175,8 @@ public class AmqpAppenderIntegrationTests {
 		assertNotNull(testListener.getId());
 
 		//This code parses an XML and ends up with exception without the general fix for AMQP-363
-		DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(testListener.getMessage().getBody()));
+		DocumentBuilderFactory.newInstance().newDocumentBuilder()
+				.parse(new ByteArrayInputStream(testListener.getMessage().getBody()));
 		listenerContainer.destroy();
 	}
 
