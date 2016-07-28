@@ -22,8 +22,9 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
@@ -34,6 +35,7 @@ import org.junit.runners.model.Statement;
  * where we don't want to generate a large log in a tight inner loop.
  *
  * @author Dave Syer
+ * @author Artem Bilan
  *
  */
 public class Log4jLevelAdjuster implements MethodRule {
@@ -57,7 +59,7 @@ public class Log4jLevelAdjuster implements MethodRule {
 				Map<Class<?>, Level> oldLevels = new HashMap<Class<?>, Level>();
 				for (Class<?> cls : classes) {
 					oldLevels.put(cls, LogManager.getLogger(cls).getLevel());
-					LogManager.getLogger(cls).setLevel(level);
+					((Logger) LogManager.getLogger(cls)).setLevel(level);
 				}
 				try {
 					base.evaluate();
@@ -65,7 +67,7 @@ public class Log4jLevelAdjuster implements MethodRule {
 				finally {
 					logger.debug("Restoring log level setting for: " + Arrays.asList(classes));
 					for (Class<?> cls : classes) {
-						LogManager.getLogger(cls).setLevel(oldLevels.get(cls));
+						((Logger) LogManager.getLogger(cls)).setLevel(oldLevels.get(cls));
 					}
 				}
 			}

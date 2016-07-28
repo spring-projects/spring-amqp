@@ -25,7 +25,7 @@ import static org.junit.Assert.fail;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
