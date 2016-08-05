@@ -214,7 +214,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param connectionFactory the {@link ConnectionFactory}
 	 */
 	public SimpleMessageListenerContainer(ConnectionFactory connectionFactory) {
-		this.setConnectionFactory(connectionFactory);
+		setConnectionFactory(connectionFactory);
 	}
 
 	/**
