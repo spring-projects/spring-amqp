@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration packages="org.springframework.amqp.rabbit.log4j2">
+	<Appenders>
+		<Console name="STDOUT" target="SYSTEM_OUT">
+			<PatternLayout pattern="%m%n" />
+		</Console>
+		<RabbitMQ name="rabbitmq"
+			addresses="localhost:5672"
+			host="localhost" port="5672" user="guest" password="guest" virtualHost="/"
+			exchange="log4j2Test" exchangeType="fanout" declareExchange="true" durable="true" autoDelete="false"
+			applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
+			contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
+			charset="UTF-8"
+			clientConnectionProperties="foo:bar,baz:qux"
+			senderPoolSize="3" maxSenderRetries="5">
+		</RabbitMQ>
+	</Appenders>
+	<Loggers>
+		<Logger name="foo" level="info">
+			<AppenderRef ref="rabbitmq" />
+		</Logger>
+		<Root>
+			<AppenderRef ref="STDOUT" />
+		</Root>
+	</Loggers>
+</Configuration>

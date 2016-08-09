@@ -21,10 +21,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,6 +44,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.log4j2.AmqpAppender;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * @author Gary Russell
@@ -49,6 +55,22 @@ public class AmqpAppenderTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
+
+	private static final LoggerContext LOGGER_CONTEXT = (LoggerContext) LogManager.getContext(false);
+
+	private static final URI ORIGINAL_LOGGER_CONFIG = LOGGER_CONTEXT.getConfigLocation();
+
+	@BeforeClass
+	public static void setup() throws IOException {
+		LOGGER_CONTEXT.setConfigLocation(new ClassPathResource("log4j2-amqp-appender.xml").getURI());
+		LOGGER_CONTEXT.reconfigure();
+	}
+
+	@AfterClass
+	public static void teardown() {
+		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
+		LOGGER_CONTEXT.reconfigure();
+	}
 
 	@Test
 	public void test() {
