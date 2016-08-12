@@ -667,6 +667,17 @@ public class PublisherCallbackChannelImpl
 		this.listeners.clear();
 	}
 
+    @Override
+    public synchronized int getPendingConfirmsCount(Listener listener) {
+        SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+        if (pendingConfirmsForListener == null) {
+            return 0;
+        }
+        else {
+            return pendingConfirmsForListener.entrySet().size();
+        }
+    }
+
 	/**
 	 * Add the listener and return the internal map of pending confirmations for that listener.
 	 * @param listener the listener.

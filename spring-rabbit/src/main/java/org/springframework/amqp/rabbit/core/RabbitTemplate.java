@@ -623,6 +623,20 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return unconfirmed.size() > 0 ? unconfirmed : null;
 	}
 
+    /**
+     * Gets unconfirmed messages count.
+     * @return The count of the messages that are not confirmed yet by RabbitMQ.
+     * @since 2.0
+     */
+    public int getUnconfirmedCount() {
+        synchronized (this.publisherConfirmChannels) {
+	        return this.publisherConfirmChannels.keySet()
+			        .stream()
+			        .mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
+			        .sum();
+        }
+    }
+
 	private void evaluateFastReplyTo() {
 		this.usingFastReplyTo = useDirectReplyTo();
 		this.evaluatedFastReplyTo = true;
