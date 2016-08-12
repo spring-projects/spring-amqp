@@ -369,7 +369,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		Thread.sleep(5);
+		assertEquals(1, template.getUnconfirmedCount());
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
+		assertEquals(0, template.getUnconfirmedCount());
 		assertEquals(1, unconfirmed.size());
 		assertEquals("abc", unconfirmed.iterator().next().getId());
 		assertFalse(confirmed.get());
@@ -439,8 +441,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc")); // channel y
 		threadLatch.countDown();
 		assertTrue(threadSentLatch.await(5, TimeUnit.SECONDS));
+		assertEquals(2, template.getUnconfirmedCount());
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(-1);
 		assertEquals(2, unconfirmed.size());
+		assertEquals(0, template.getUnconfirmedCount());
 		Set<String> ids = new HashSet<String>();
 		Iterator<CorrelationData> iterator = unconfirmed.iterator();
 		ids.add(iterator.next().getId());
@@ -490,13 +494,18 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 		Thread.sleep(100);
 		template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("def"));
+		assertEquals(2, template.getUnconfirmedCount());
 		Collection<CorrelationData> unconfirmed = template.getUnconfirmed(50);
+		assertEquals(1, template.getUnconfirmedCount());
 		assertEquals(1, unconfirmed.size());
 		assertEquals("abc", unconfirmed.iterator().next().getId());
 		assertFalse(confirmed.get());
 		Thread.sleep(100);
+		assertEquals(1, template.getUnconfirmedCount());
+		assertEquals(1, unconfirmed.size());
 		unconfirmed = template.getUnconfirmed(50);
 		assertEquals(1, unconfirmed.size());
+		assertEquals(0, template.getUnconfirmedCount());
 		assertEquals("def", unconfirmed.iterator().next().getId());
 		assertFalse(confirmed.get());
 	}
