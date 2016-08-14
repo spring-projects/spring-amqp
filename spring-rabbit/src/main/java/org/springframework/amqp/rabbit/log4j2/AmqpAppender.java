@@ -193,9 +193,11 @@ public class AmqpAppender extends AbstractAppender {
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
-		manager.activateOptions();
-		appender.startSenders();
-		return appender;
+		if (manager.activateOptions()) {
+			appender.startSenders();
+			return appender;
+		}
+		return null;
 	}
 
 	/**
