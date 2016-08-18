@@ -9,6 +9,12 @@ This appender is no longer available due to the end-of-life of log4j.
 See <<logging>> for information about the available log appenders.
 
 
+===== RabbitTemplate Changes
+
+IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an existing transaction if it ran on a transactional listener container thread.
+This was a serious bug; however, users might have relied on this behavior.
+Starting with _version 1.6.3_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

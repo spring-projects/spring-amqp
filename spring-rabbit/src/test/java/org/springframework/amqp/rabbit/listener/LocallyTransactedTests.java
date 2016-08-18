@@ -25,6 +25,8 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +64,7 @@ import com.rabbitmq.client.Envelope;
 public class LocallyTransactedTests {
 
 	/**
-	 * Verifies that an up-stack RabbitTemplate uses the listener's
+	 * Verifies that an up-stack transactional RabbitTemplate uses the listener's
 	 * channel (MessageListener).
 	 */
 	@SuppressWarnings("unchecked")
@@ -144,7 +146,7 @@ public class LocallyTransactedTests {
 			throw e;
 		}
 
-		verify(mockConnection, Mockito.times(1)).createChannel();
+		verify(mockConnection, times(1)).createChannel();
 		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(onlyChannel).txCommit();
 		verify(onlyChannel).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
@@ -154,6 +156,116 @@ public class LocallyTransactedTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
 		assertEquals(0, channels.size());
+
+		container.stop();
+
+	}
+
+	/**
+	 * Verifies that an up-stack non-transactional RabbitTemplate does not use the
+	 * listener's channel (MessageListener).
+	 */
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testSeparateTx() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		Channel channel1 = mock(Channel.class);
+		when(channel1.isOpen()).thenReturn(true);
+		Channel channel2 = mock(Channel.class);
+		when(channel2.isOpen()).thenReturn(true);
+
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+
+		doAnswer(new Answer<Channel>() {
+
+			int n;
+
+			@Override
+			public Channel answer(InvocationOnMock invocation) throws Throwable {
+				n++;
+				if (n == 1) {
+					return channel1;
+				}
+				else if (n == 2) {
+					return channel2;
+				}
+				else {
+					tooManyChannels.set(new Exception("More than two channels requested"));
+					return channel2;
+				}
+			}
+		}).when(mockConnection).createChannel();
+
+		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+
+		doAnswer(new Answer<String>() {
+
+			@Override
+			public String answer(InvocationOnMock invocation) throws Throwable {
+				consumer.set((Consumer) invocation.getArguments()[6]);
+				return "consumerTag";
+			}
+
+		}).when(channel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+				any(Consumer.class));
+
+		final CountDownLatch commitLatch = new CountDownLatch(1);
+		doAnswer(new Answer<String>() {
+
+			@Override
+			public String answer(InvocationOnMock invocation) throws Throwable {
+				commitLatch.countDown();
+				return null;
+			}
+
+		}).when(channel1).txCommit();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		container.setMessageListener(new MessageListener() {
+			@Override
+			public void onMessage(Message message) {
+				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+				rabbitTemplate.setChannelTransacted(false);
+				// should NOT use same channel as container
+				rabbitTemplate.convertAndSend("foo", "bar", "baz");
+				latch.countDown();
+			}
+		});
+		container.setQueueNames("queue");
+		container.setChannelTransacted(true);
+		container.setShutdownTimeout(100);
+		container.afterPropertiesSet();
+		container.start();
+
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		Exception e = tooManyChannels.get();
+		if (e != null) {
+			throw e;
+		}
+
+		verify(mockConnection, times(2)).createChannel();
+		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
+		verify(channel1).txCommit();
+		verify(channel1, never()).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		verify(channel2).basicPublish(Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),
+				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+
+		// verify close() was never called on the channel
+		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
+		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsNonTransactional");
+		assertEquals(1, channels.size());
 
 		container.stop();
 
