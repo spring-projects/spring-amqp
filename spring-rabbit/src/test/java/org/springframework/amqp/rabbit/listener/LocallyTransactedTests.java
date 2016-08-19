@@ -176,9 +176,9 @@ public class LocallyTransactedTests {
 		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
-		Channel channel1 = mock(Channel.class);
+		final Channel channel1 = mock(Channel.class);
 		when(channel1.isOpen()).thenReturn(true);
-		Channel channel2 = mock(Channel.class);
+		final Channel channel2 = mock(Channel.class);
 		when(channel2.isOpen()).thenReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
