@@ -1374,37 +1374,38 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel;
 		RabbitResourceHolder resourceHolder = null;
+		Connection connection = null;
 		if (isChannelTransacted()) {
 			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true);
 			channel = resourceHolder.getChannel();
 			if (channel == null) {
+				ConnectionFactoryUtils.releaseResources(resourceHolder);
 				throw new IllegalStateException("Resource holder returned a null channel");
 			}
 		}
 		else {
-			Connection connection = connectionFactory.createConnection();
+			connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
 			if (connection == null) {
 				throw new IllegalStateException("Connection factory returned a null connection");
 			}
-			channel = connection.createChannel(false);
-			if (channel == null) {
-				throw new IllegalStateException("Connection returned a null channel");
+			try {
+				channel = connection.createChannel(false);
+				if (channel == null) {
+					throw new IllegalStateException("Connection returned a null channel");
+				}
 			}
-		}
-		if (this.confirmsOrReturnsCapable == null) {
-			if (connectionFactory instanceof PublisherCallbackChannelConnectionFactory) {
-				PublisherCallbackChannelConnectionFactory pcccf =
-						(PublisherCallbackChannelConnectionFactory) connectionFactory;
-				this.confirmsOrReturnsCapable = pcccf.isPublisherConfirms() || pcccf.isPublisherReturns();
+			catch (RuntimeException e) {
+				RabbitUtils.closeConnection(connection);
+				throw e;
 			}
-			else {
-				this.confirmsOrReturnsCapable = Boolean.FALSE;
-			}
-		}
-		if (this.confirmsOrReturnsCapable) {
-			addListener(channel);
 		}
 		try {
+			if (this.confirmsOrReturnsCapable == null) {
+				determineConfirmsReturnsCapability(connectionFactory);
+			}
+			if (this.confirmsOrReturnsCapable) {
+				addListener(channel);
+			}
 			if (logger.isDebugEnabled()) {
 				logger.debug("Executing callback on RabbitMQ Channel: " + channel);
 			}
@@ -1422,7 +1423,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			else {
 				RabbitUtils.closeChannel(channel);
+				RabbitUtils.closeConnection(connection);
 			}
+		}
+	}
+
+	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {
+		if (connectionFactory instanceof PublisherCallbackChannelConnectionFactory) {
+			PublisherCallbackChannelConnectionFactory pcccf =
+					(PublisherCallbackChannelConnectionFactory) connectionFactory;
+			this.confirmsOrReturnsCapable = pcccf.isPublisherConfirms() || pcccf.isPublisherReturns();
+		}
+		else {
+			this.confirmsOrReturnsCapable = Boolean.FALSE;
 		}
 	}
 
