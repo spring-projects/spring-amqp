@@ -34,7 +34,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.AbstractRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
@@ -42,7 +41,6 @@ import org.springframework.amqp.rabbit.config.StatelessRetryOperationsIntercepto
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
@@ -187,13 +185,10 @@ public class MessageListenerContainerRetryIntegrationTests {
 		else {
 			factory = new StatelessRetryOperationsInterceptorFactoryBean();
 		}
-		factory.setMessageRecoverer(new MessageRecoverer() {
-			@Override
-			public void recover(Message message, Throwable cause) {
-				logger.warn("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString() +
-						"], message: " + message);
-				latch.countDown();
-			}
+		factory.setMessageRecoverer((message, cause) -> {
+			logger.warn("Recovered: [" + SerializationUtils.deserialize(message.getBody()).toString() +
+					"], message: " + message);
+			latch.countDown();
 		});
 		if (retryTemplate == null) {
 			retryTemplate = new RetryTemplate();
@@ -244,22 +239,19 @@ public class MessageListenerContainerRetryIntegrationTests {
 
 			final int count = messageCount;
 			logger.debug("Waiting for messages with timeout = " + timeout + " (s)");
-			Executors.newSingleThreadExecutor().execute(new Runnable() {
-				@Override
-				public void run() {
-					while (container.getActiveConsumerCount() > 0) {
-						try {
-							Thread.sleep(100L);
-						}
-						catch (InterruptedException e) {
-							latch.countDown();
-							Thread.currentThread().interrupt();
-							return;
-						}
+			Executors.newSingleThreadExecutor().execute(() -> {
+				while (container.getActiveConsumerCount() > 0) {
+					try {
+						Thread.sleep(100L);
 					}
-					for (int i = 0; i < count; i++) {
+					catch (InterruptedException e) {
 						latch.countDown();
+						Thread.currentThread().interrupt();
+						return;
 					}
+				}
+				for (int i = 0; i < count; i++) {
+					latch.countDown();
 				}
 			});
 			boolean waited = latch.await(timeout, TimeUnit.SECONDS);

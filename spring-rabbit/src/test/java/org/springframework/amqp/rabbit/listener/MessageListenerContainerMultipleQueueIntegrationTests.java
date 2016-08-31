@@ -72,42 +72,22 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 
 	@Test
 	public void testMultipleQueues() {
-		doTest(1, new ContainerConfigurer() {
-			@Override
-			public void configure(SimpleMessageListenerContainer container) {
-				container.setQueues(queue1, queue2);
-			}
-		});
+		doTest(1, container -> container.setQueues(queue1, queue2));
 	}
 
 	@Test
 	public void testMultipleQueueNames() {
-		doTest(1, new ContainerConfigurer() {
-			@Override
-			public void configure(SimpleMessageListenerContainer container) {
-				container.setQueueNames(queue1.getName(), queue2.getName());
-			}
-		});
+		doTest(1, container -> container.setQueueNames(queue1.getName(), queue2.getName()));
 	}
 
 	@Test
 	public void testMultipleQueuesWithConcurrentConsumers() {
-		doTest(3, new ContainerConfigurer() {
-			@Override
-			public void configure(SimpleMessageListenerContainer container) {
-				container.setQueues(queue1, queue2);
-			}
-		});
+		doTest(3, container -> container.setQueues(queue1, queue2));
 	}
 
 	@Test
 	public void testMultipleQueueNamesWithConcurrentConsumers() {
-		doTest(3, new ContainerConfigurer() {
-			@Override
-			public void configure(SimpleMessageListenerContainer container) {
-				container.setQueueNames(queue1.getName(), queue2.getName());
-			}
-		});
+		doTest(3, container -> container.setQueueNames(queue1.getName(), queue2.getName()));
 	}
 
 
@@ -157,7 +137,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		connectionFactory.destroy();
 	}
 
-
+	@FunctionalInterface
 	private interface ContainerConfigurer {
 		void configure(SimpleMessageListenerContainer container);
 	}

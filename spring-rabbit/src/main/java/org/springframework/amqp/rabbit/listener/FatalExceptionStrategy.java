@@ -25,6 +25,7 @@ package org.springframework.amqp.rabbit.listener;
  * @since 1.3.2
  *
  */
+@FunctionalInterface
 public interface FatalExceptionStrategy {
 
 	boolean isFatal(Throwable t);

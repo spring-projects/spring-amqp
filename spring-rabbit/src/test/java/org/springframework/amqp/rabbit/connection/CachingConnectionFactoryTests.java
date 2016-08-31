@@ -309,15 +309,10 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		final AtomicReference<Connection> connection = new AtomicReference<Connection>();
 		ccf.setChannelCheckoutTimeout(30000);
-		Executors.newSingleThreadExecutor().execute(new Runnable() {
-
-			@Override
-			public void run() {
-				latch1.countDown();
-				connection.set(ccf.createConnection());
-				latch2.countDown();
-			}
-
+		Executors.newSingleThreadExecutor().execute(() -> {
+			latch1.countDown();
+			connection.set(ccf.createConnection());
+			latch2.countDown();
 		});
 
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
@@ -448,26 +443,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		final AtomicReference<Channel> channelOne = new AtomicReference<Channel>();
 		final CountDownLatch latch = new CountDownLatch(1);
 
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				Channel channel1 = con.createChannel(false);
-				latch.countDown();
-				channelOne.set(channel1);
-				try {
-					Thread.sleep(100);
-					channel1.close();
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				catch (IOException e) {
-				}
-				catch (TimeoutException e) {
-				}
+		new Thread(() -> {
+			Channel channel1 = con.createChannel(false);
+			latch.countDown();
+			channelOne.set(channel1);
+			try {
+				Thread.sleep(100);
+				channel1.close();
 			}
-
+			catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+			}
+			catch (IOException e2) {
+			}
+			catch (TimeoutException e3) {
+			}
 		}).start();
 
 		assertTrue(latch.await(10, TimeUnit.SECONDS));

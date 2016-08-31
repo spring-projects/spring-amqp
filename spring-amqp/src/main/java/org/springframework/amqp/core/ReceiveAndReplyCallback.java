@@ -26,8 +26,10 @@ package org.springframework.amqp.core;
  * @param <S> The type of the response.
  *
  * @author Artem Bilan
+ * @author Gary Russell
  * @since 1.3
  */
+@FunctionalInterface
 public interface ReceiveAndReplyCallback<R, S> {
 
 	S handle(R payload);

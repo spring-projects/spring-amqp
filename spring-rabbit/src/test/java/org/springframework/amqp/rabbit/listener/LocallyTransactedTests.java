@@ -41,7 +41,6 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
@@ -99,37 +98,26 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[6]);
-				return "consumerTag";
-			}
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				commitLatch.countDown();
-				return null;
-			}
+		doAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
 		}).when(onlyChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
-		container.setMessageListener(new MessageListener() {
-			@Override
-			public void onMessage(Message message) {
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
-				rabbitTemplate.setChannelTransacted(true);
-				// should use same channel as container
-				rabbitTemplate.convertAndSend("foo", "bar", "baz");
-				latch.countDown();
-			}
+		container.setMessageListener((MessageListener) message -> {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+			rabbitTemplate.setChannelTransacted(true);
+			// should use same channel as container
+			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			latch.countDown();
 		});
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);
@@ -205,39 +193,26 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[6]);
-				return "consumerTag";
-			}
-
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			return "consumerTag";
 		}).when(channel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				commitLatch.countDown();
-				return null;
-			}
-
+		doAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
 		}).when(channel1).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
-		container.setMessageListener(new MessageListener() {
-			@Override
-			public void onMessage(Message message) {
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
-				rabbitTemplate.setChannelTransacted(false);
-				// should NOT use same channel as container
-				rabbitTemplate.convertAndSend("foo", "bar", "baz");
-				latch.countDown();
-			}
+		container.setMessageListener((MessageListener) message -> {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
+			rabbitTemplate.setChannelTransacted(false);
+			// should NOT use same channel as container
+			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			latch.countDown();
 		});
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);
@@ -307,40 +282,28 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[6]);
-				return "consumerTag";
-			}
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				commitLatch.countDown();
-				return null;
-			}
+		doAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
 		}).when(onlyChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
-		container.setMessageListener(new ChannelAwareMessageListener() {
-			@Override
-			public void onMessage(Message message, Channel channel) {
-				exposed.set(channel);
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
-				rabbitTemplate.setChannelTransacted(true);
-				// should use same channel as container
-				rabbitTemplate.convertAndSend("foo", "bar", "baz");
-				latch.countDown();
-			}
-
+		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
+			exposed.set(channel);
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
+			rabbitTemplate.setChannelTransacted(true);
+			// should use same channel as container
+			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			latch.countDown();
 		});
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);
@@ -407,40 +370,28 @@ public class LocallyTransactedTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[6]);
-				return "consumerTag";
-			}
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			return "consumerTag";
 		}).when(firstChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				commitLatch.countDown();
-				return null;
-			}
+		doAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
 		}).when(firstChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
-		container.setMessageListener(new ChannelAwareMessageListener() {
-			@Override
-			public void onMessage(Message message, Channel channel) {
-				exposed.set(channel);
-				RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
-				rabbitTemplate.setChannelTransacted(true);
-				// should use same channel as container
-				rabbitTemplate.convertAndSend("foo", "bar", "baz");
-				latch.countDown();
-			}
-
+		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
+			exposed.set(channel);
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
+			rabbitTemplate.setChannelTransacted(true);
+			// should use same channel as container
+			rabbitTemplate.convertAndSend("foo", "bar", "baz");
+			latch.countDown();
 		});
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);

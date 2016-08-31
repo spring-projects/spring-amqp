@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
-
-import java.util.Collection;
-
-import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+package org.springframework.amqp.rabbit.listener.adapter;
 
 /**
- * {@link MessageListener}s and {@link ChannelAwareMessageListener}s that also implement this
- * interface can have configuration verified during initialization.
+ * A Message Listener that returns a reply - intended for lambda use in a
+ * {@link MessageListenerAdapter}.
  *
  * @author Gary Russell
- * @since 1.5
+ * @since 2.0
  *
  */
 @FunctionalInterface
-public interface ListenerContainerAware {
+public interface ReplyingMessageListener<T, R> {
 
 	/**
-	 * Return the queue names that the listener expects to listen to.
-	 *
-	 * @return the queue names.
+	 * Handle the message and return a reply.
+	 * @param t the request.
+	 * @return the reply.
 	 */
-	Collection<String> expectedQueueNames();
+	R handleMessage(T t);
 
 }

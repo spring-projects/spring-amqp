@@ -20,8 +20,10 @@ import org.springframework.amqp.core.Message;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
+@FunctionalInterface
 public interface MessageRecoverer {
 
 	/**

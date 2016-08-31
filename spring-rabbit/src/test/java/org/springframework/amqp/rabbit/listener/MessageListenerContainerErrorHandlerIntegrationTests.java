@@ -42,8 +42,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -94,13 +92,9 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 	@Before
 	public void setUp() {
-		doAnswer(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				errorsHandled.countDown();
-				return null;
-			}
+		doAnswer(invocation -> {
+			errorsHandled.countDown();
+			return null;
 		}).when(errorHandler).handleError(any(Throwable.class));
 	}
 
@@ -117,27 +111,19 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		final CountDownLatch messageReceived = new CountDownLatch(1);
 		final CountDownLatch spiedQLogger = new CountDownLatch(1);
 		final CountDownLatch errorHandled = new CountDownLatch(1);
-		container.setErrorHandler(new ErrorHandler() {
-
-			@Override
-			public void handleError(Throwable t) {
-				errorHandled.countDown();
-				throw new AmqpRejectAndDontRequeueException("foo", t);
-			}
+		container.setErrorHandler(t -> {
+			errorHandled.countDown();
+			throw new AmqpRejectAndDontRequeueException("foo", t);
 		});
-		container.setMessageListener(new MessageListener() {
-
-			@Override
-			public void onMessage(Message message) {
-				try {
-					messageReceived.countDown();
-					spiedQLogger.await(10, TimeUnit.SECONDS);
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				throw new RuntimeException("bar");
+		container.setMessageListener((MessageListener) message -> {
+			try {
+				messageReceived.countDown();
+				spiedQLogger.await(10, TimeUnit.SECONDS);
 			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			throw new RuntimeException("bar");
 		});
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
@@ -249,16 +235,12 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 
 		// Verify that the exception strategy has access to the message
 		final AtomicReference<Message> failed = new AtomicReference<Message>();
-		ConditionalRejectingErrorHandler eh = new ConditionalRejectingErrorHandler(new FatalExceptionStrategy() {
-
-			@Override
-			public boolean isFatal(Throwable t) {
-				if (t instanceof ListenerExecutionFailedException) {
-					failed.set(((ListenerExecutionFailedException) t).getFailedMessage());
-				}
-				return t instanceof ListenerExecutionFailedException
-						&& t.getCause() instanceof MessageConversionException;
+		ConditionalRejectingErrorHandler eh = new ConditionalRejectingErrorHandler(t -> {
+			if (t instanceof ListenerExecutionFailedException) {
+				failed.set(((ListenerExecutionFailedException) t).getFailedMessage());
 			}
+			return t instanceof ListenerExecutionFailedException
+					&& t.getCause() instanceof MessageConversionException;
 		});
 		container.setErrorHandler(eh);
 

@@ -56,11 +56,8 @@ public class SingleConnectionFactoryTests extends AbstractConnectionFactoryTests
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
-		connectionFactory.setChannelListeners(Arrays.asList(new ChannelListener() {
-			public void onCreate(Channel channel, boolean transactional) {
-				called.incrementAndGet();
-			}
-		}));
+		connectionFactory.setChannelListeners(Arrays.asList(
+				(ChannelListener) (channel, transactional) -> called.incrementAndGet()));
 
 		Connection con = connectionFactory.createConnection();
 		Channel channel = con.createChannel(false);

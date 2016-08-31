@@ -33,7 +33,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
@@ -43,7 +42,6 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -391,14 +389,9 @@ public class RabbitAdminIntegrationTests {
 
 		RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
 		template.setReceiveTimeout(10000);
-		template.convertAndSend(exchange.getName(), queue.getName(), "foo", new MessagePostProcessor() {
-
-			@Override
-			public Message postProcessMessage(Message message) throws AmqpException {
-				message.getMessageProperties().setDelay(1000);
-				return message;
-			}
-
+		template.convertAndSend(exchange.getName(), queue.getName(), "foo", message -> {
+			message.getMessageProperties().setDelay(1000);
+			return message;
 		});
 		MessageProperties properties = new MessageProperties();
 		properties.setDelay(500);

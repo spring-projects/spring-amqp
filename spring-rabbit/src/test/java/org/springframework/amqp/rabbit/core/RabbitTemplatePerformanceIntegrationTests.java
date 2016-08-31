@@ -33,10 +33,8 @@ import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.test.annotation.Repeat;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -121,12 +119,9 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	@Repeat(200)
 	public void testSendAndReceiveExternalTransacted() throws Exception {
 		template.setChannelTransacted(true);
-		new TransactionTemplate(new TestTransactionManager()).execute(new TransactionCallback<Void>() {
-			@Override
-			public Void doInTransaction(TransactionStatus status) {
-				template.convertAndSend(ROUTE, "message");
-				return null;
-			}
+		new TransactionTemplate(new TestTransactionManager()).execute(status -> {
+			template.convertAndSend(ROUTE, "message");
+			return null;
 		});
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);

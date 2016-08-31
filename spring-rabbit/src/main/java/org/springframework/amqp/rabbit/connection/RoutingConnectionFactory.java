@@ -23,6 +23,7 @@ package org.springframework.amqp.rabbit.connection;
  * @since 1.4.5
  *
  */
+@FunctionalInterface
 public interface RoutingConnectionFactory {
 
 	/**

@@ -24,8 +24,10 @@ package org.springframework.amqp.core;
  * <p>This often as an anonymous class within a method implementation.
  *
 * @author Artem Bilan
+* @author Gary Russell
 * @since 1.3
 */
+@FunctionalInterface
 public interface ReplyToAddressCallback<T> {
 
 	Address getReplyToAddress(Message request, T reply);

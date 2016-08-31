@@ -24,6 +24,7 @@ package org.springframework.amqp.support;
  * @since 1.4.5
  *
  */
+@FunctionalInterface
 public interface ConsumerTagStrategy {
 
 	/**

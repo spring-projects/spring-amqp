@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.core;
 
 import com.rabbitmq.client.AMQP.Queue;
-import com.rabbitmq.client.Channel;
 
 public final class QueueUtils {
 
@@ -27,14 +26,12 @@ public final class QueueUtils {
 
 	static void declareTestQueue(RabbitTemplate template, final String routingKey) {
 		// declare and bind queue
-		template.execute(new ChannelCallback<String>() {
-			public String doInRabbit(Channel channel) throws Exception {
-				Queue.DeclareOk res = channel.queueDeclarePassive(TestConstants.QUEUE_NAME);
-				String queueName = res.getQueue();
-				System.out.println("Queue Name = " + queueName);
-				channel.queueBind(queueName, TestConstants.EXCHANGE_NAME, routingKey);
-				return queueName;
-			}
+		template.execute(channel -> {
+			Queue.DeclareOk res = channel.queueDeclarePassive(TestConstants.QUEUE_NAME);
+			String queueName = res.getQueue();
+			System.out.println("Queue Name = " + queueName);
+			channel.queueBind(queueName, TestConstants.EXCHANGE_NAME, routingKey);
+			return queueName;
 		});
 	}
 

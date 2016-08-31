@@ -54,7 +54,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
-import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -64,8 +63,6 @@ import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
@@ -307,13 +304,10 @@ public class CachingConnectionFactoryIntegrationTests {
 		// The channel is not transactional
 		exception.expect(AmqpIOException.class);
 
-		template2.execute(new ChannelCallback<Void>() {
-			@Override
-			public Void doInRabbit(Channel channel) throws Exception {
-				// Should be an exception because the channel is not transactional
-				channel.txRollback();
-				return null;
-			}
+		template2.execute(channel -> {
+			// Should be an exception because the channel is not transactional
+			channel.txRollback();
+			return null;
 		});
 
 	}
@@ -329,24 +323,18 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		try {
-			template.execute(new ChannelCallback<Object>() {
-				@Override
-				public Object doInRabbit(Channel channel) throws Exception {
-					channel.getConnection().addShutdownListener(new ShutdownListener() {
-						@Override
-						public void shutdownCompleted(ShutdownSignalException cause) {
-							logger.info("Error", cause);
-							latch.countDown();
-							// This will be thrown on the Connection thread just before it dies, so basically ignored
-							throw new RuntimeException(cause);
-						}
-					});
-					String tag = channel.basicConsume(route, new DefaultConsumer(channel));
-					// Consume twice with the same tag is a hard error (connection will be reset)
-					String result = channel.basicConsume(route, false, tag, new DefaultConsumer(channel));
-					fail("Expected IOException, got: " + result);
-					return null;
-				}
+			template.execute(channel -> {
+				channel.getConnection().addShutdownListener(cause -> {
+					logger.info("Error", cause);
+					latch.countDown();
+					// This will be thrown on the Connection thread just before it dies, so basically ignored
+					throw new RuntimeException(cause);
+				});
+				String tag = channel.basicConsume(route, new DefaultConsumer(channel));
+				// Consume twice with the same tag is a hard error (connection will be reset)
+				String result = channel.basicConsume(route, false, tag, new DefaultConsumer(channel));
+				fail("Expected IOException, got: " + result);
+				return null;
 			});
 			fail("Expected AmqpIOException");
 		}
@@ -384,24 +372,20 @@ public class CachingConnectionFactoryIntegrationTests {
 			public void run() {
 				try {
 					final Socket socket = server.accept();
-					Executors.newSingleThreadExecutor().execute(new Runnable() {
-
-						@Override
-						public void run() {
-							while (!socket.isClosed()) {
+					Executors.newSingleThreadExecutor().execute(() -> {
+						while (!socket.isClosed()) {
+							try {
+								int c = socket.getInputStream().read();
+								if (c >= 0) {
+									proxy.getOutputStream().write(c);
+								}
+							}
+							catch (Exception e) {
 								try {
-									int c = socket.getInputStream().read();
-									if (c >= 0) {
-										proxy.getOutputStream().write(c);
-									}
+									socket.close();
+									proxy.close();
 								}
-								catch (Exception e) {
-									try {
-										socket.close();
-										proxy.close();
-									}
-									catch (Exception ee) { }
-								}
+								catch (Exception ee) { }
 							}
 						}
 					});

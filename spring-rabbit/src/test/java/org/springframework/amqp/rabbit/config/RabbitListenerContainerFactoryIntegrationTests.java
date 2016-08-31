@@ -75,7 +75,6 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 		assertListenerMethodInvocation("expectFooBarUpperCase");
 	}
 
-	@SuppressWarnings("unchecked")
 	private void invokeListener(RabbitListenerEndpoint endpoint, Message message) throws Exception {
 		SimpleMessageListenerContainer messageListenerContainer =
 				containerFactory.createListenerContainer(endpoint);

@@ -30,8 +30,6 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -115,17 +113,13 @@ public class BlockingQueueConsumerTests {
 		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
 		when(channel.isOpen()).thenReturn(true);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
-				.then(new Answer<Object>() {
-
-					@Override
-					public Object answer(InvocationOnMock invocation) throws Throwable {
-						Object arg = invocation.getArguments()[0];
-						if ("good".equals(arg)) {
-							return Mockito.any(AMQP.Queue.DeclareOk.class);
-						}
-						else {
-							throw new IOException();
-						}
+				.then(invocation -> {
+					Object arg = invocation.getArguments()[0];
+					if ("good".equals(arg)) {
+						return Mockito.any(AMQP.Queue.DeclareOk.class);
+					}
+					else {
+						throw new IOException();
 					}
 				});
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),

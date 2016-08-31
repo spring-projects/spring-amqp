@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
  * @since 1.5
  *
  */
+@FunctionalInterface
 public interface ConditionalExceptionLogger {
 
 	/**

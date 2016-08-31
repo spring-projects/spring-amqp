@@ -91,14 +91,10 @@ public class RoutingConnectionFactoryTests {
 
 		for (int i = 0; i < 3; i++) {
 			final AtomicInteger count = new AtomicInteger(i);
-			executorService.execute(new Runnable() {
-
-				@Override
-				public void run() {
-					SimpleResourceHolder.bind(connectionFactory, count.get() % 2 == 0 ? "foo" : "bar");
-					connectionFactory.createConnection();
-					SimpleResourceHolder.unbind(connectionFactory);
-				}
+			executorService.execute(() -> {
+				SimpleResourceHolder.bind(connectionFactory, count.get() % 2 == 0 ? "foo" : "bar");
+				connectionFactory.createConnection();
+				SimpleResourceHolder.unbind(connectionFactory);
 			});
 		}
 

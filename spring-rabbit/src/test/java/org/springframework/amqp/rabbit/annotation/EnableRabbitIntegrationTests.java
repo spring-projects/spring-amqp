@@ -25,6 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.Serializable;
@@ -52,10 +53,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -417,14 +415,9 @@ public class EnableRabbitIntegrationTests {
 
 		// No type info in message
 		template.setMessageConverter(new SimpleMessageConverter());
-		MessagePostProcessor messagePostProcessor = new MessagePostProcessor() {
-
-			@Override
-			public Message postProcessMessage(Message message) throws AmqpException {
-				message.getMessageProperties().setContentType("application/json");
-				return message;
-			}
-
+		MessagePostProcessor messagePostProcessor = message -> {
+			message.getMessageProperties().setContentType("application/json");
+			return message;
 		};
 		returned = template.convertSendAndReceive("", "test.converted", "{ \"bar\" : \"baz\" }", messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
@@ -503,25 +496,15 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void testHeadersExchange() throws Exception {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.headers", "", "foo",
-				new MessagePostProcessor() {
-
-					@Override
-					public Message postProcessMessage(Message message) throws AmqpException {
-						message.getMessageProperties().getHeaders().put("foo", "bar");
-						message.getMessageProperties().getHeaders().put("baz", "qux");
-						return message;
-					}
-
+				message -> {
+					message.getMessageProperties().getHeaders().put("foo", "bar");
+					message.getMessageProperties().getHeaders().put("baz", "qux");
+					return message;
 				}));
 		assertEquals("BAR", rabbitTemplate.convertSendAndReceive("auto.headers", "", "bar",
-				new MessagePostProcessor() {
-
-					@Override
-					public Message postProcessMessage(Message message) throws AmqpException {
-						message.getMessageProperties().getHeaders().put("baz", "fiz");
-						return message;
-					}
-
+				message -> {
+					message.getMessageProperties().getHeaders().put("baz", "fiz");
+					return message;
 				}));
 	}
 
@@ -948,13 +931,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public ConsumerTagStrategy consumerTagStrategy() {
-			return new ConsumerTagStrategy() {
-
-				@Override
-				public String createConsumerTag(String queue) {
-					return tagPrefix() + increment++;
-				}
-			};
+			return queue -> tagPrefix() + this.increment++;
 		}
 
 		@Bean
@@ -970,17 +947,14 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public ErrorHandler errorHandler() {
 			ErrorHandler handler = Mockito.spy(new ConditionalRejectingErrorHandler());
-			Mockito.doAnswer(new Answer<Object>() {
-				@Override
-				public Object answer(InvocationOnMock invocation) throws Throwable {
-					try {
-						return invocation.callRealMethod();
-					}
-					catch (Throwable e) {
-						errorHandlerError().set(e);
-						errorHandlerLatch().countDown();
-						throw e;
-					}
+			doAnswer(invocation -> {
+				try {
+					return invocation.callRealMethod();
+				}
+				catch (Throwable e) {
+					errorHandlerError().set(e);
+					errorHandlerLatch().countDown();
+					throw e;
 				}
 			}).when(handler).handleError(Mockito.any(Throwable.class));
 			return handler;

@@ -80,14 +80,9 @@ public class RabbitAdminDeclarationTests {
 		when(conn.createChannel(false)).thenReturn(channel);
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
-		doAnswer(new Answer<Object>() {
-
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				listener.set((ConnectionListener) invocation.getArguments()[0]);
-				return null;
-			}
-
+		doAnswer(invocation -> {
+			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		GenericApplicationContext context = new GenericApplicationContext();
@@ -166,13 +161,9 @@ public class RabbitAdminDeclarationTests {
 		when(conn.createChannel(false)).thenReturn(channel);
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
-		doAnswer(new Answer<Object>() {
-
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				listener.set((ConnectionListener) invocation.getArguments()[0]);
-				return null;
-			}
+		doAnswer(invocation -> {
+			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		GenericApplicationContext context = new GenericApplicationContext();
@@ -206,13 +197,9 @@ public class RabbitAdminDeclarationTests {
 		when(conn.createChannel(false)).thenReturn(channel);
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
-		doAnswer(new Answer<Object>() {
-
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				listener.set((ConnectionListener) invocation.getArguments()[0]);
-				return null;
-			}
+		doAnswer(invocation -> {
+			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		RabbitAdmin other = new RabbitAdmin(cf);
@@ -248,13 +235,9 @@ public class RabbitAdminDeclarationTests {
 		when(conn.createChannel(false)).thenReturn(channel);
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
-		doAnswer(new Answer<Object>() {
-
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				listener.set((ConnectionListener) invocation.getArguments()[0]);
-				return null;
-			}
+		doAnswer(invocation -> {
+			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		GenericApplicationContext context = new GenericApplicationContext();
