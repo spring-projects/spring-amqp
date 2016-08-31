@@ -19,9 +19,13 @@ package org.springframework.amqp.rabbit.connection;
 import com.rabbitmq.client.Channel;
 
 /**
+ * A listener for new channel creation.
+ *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
+@FunctionalInterface
 public interface ChannelListener {
 
 	void onCreate(Channel channel, boolean transactional);

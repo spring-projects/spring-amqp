@@ -1820,6 +1820,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	}
 
+	/**
+	 * A callback for publisher confirmations.
+	 *
+	 */
+	@FunctionalInterface
 	public interface ConfirmCallback {
 
 		/**
@@ -1832,6 +1837,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	}
 
+	/**
+	 * A callback for returned messages.
+	 *
+	 */
+	@FunctionalInterface
 	public interface ReturnCallback {
 
 		/**

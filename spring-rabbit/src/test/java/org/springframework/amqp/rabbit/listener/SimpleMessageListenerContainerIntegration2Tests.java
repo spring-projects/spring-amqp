@@ -49,8 +49,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AnonymousQueue;
@@ -346,14 +344,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean())).then(new Answer<Channel>() {
-
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				return new MockChannel((Channel) invocation.callRealMethod());
-			}
-
-		});
+		when(connection.createChannel(anyBoolean()))
+			.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		dfa.setPropertyValue("connection", connection);
@@ -399,14 +391,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 
 		Connection connection = spy(connectionFactory.createConnection());
-		when(connection.createChannel(anyBoolean())).then(new Answer<Channel>() {
-
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				return new MockChannel((Channel) invocation.callRealMethod());
-			}
-
-		});
+		when(connection.createChannel(anyBoolean()))
+			.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		dfa.setPropertyValue("connection", connection);

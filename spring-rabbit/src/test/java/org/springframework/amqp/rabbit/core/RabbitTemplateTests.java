@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.Message;
@@ -53,15 +51,11 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.RetryContext;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.rabbitmq.client.AMQP;
@@ -116,19 +110,13 @@ public class RabbitTemplateTests {
 		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory(mockConnectionFactory));
 		template.setChannelTransacted(true);
 
-		txTemplate.execute(new TransactionCallback<Object>() {
-			@Override
-			public Object doInTransaction(TransactionStatus status) {
-				template.convertAndSend("foo", "bar");
-				return null;
-			}
+		txTemplate.execute(status -> {
+			template.convertAndSend("foo", "bar");
+			return null;
 		});
-		txTemplate.execute(new TransactionCallback<Object>() {
-			@Override
-			public Object doInTransaction(TransactionStatus status) {
-				template.convertAndSend("baz", "qux");
-				return null;
-			}
+		txTemplate.execute(status -> {
+			template.convertAndSend("baz", "qux");
+			return null;
 		});
 		verify(mockConnectionFactory, Mockito.times(1)).newConnection(Mockito.any(ExecutorService.class));
 		// ensure we used the same channel
@@ -181,12 +169,9 @@ public class RabbitTemplateTests {
 		when(mockChannel.queueDeclare()).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				consumer.set((Consumer) invocation.getArguments()[6]);
-				return null;
-			}
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			return null;
 		}).when(mockChannel).basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.anyString(),
 				Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyMap(), Mockito.any(Consumer.class));
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
@@ -202,13 +187,9 @@ public class RabbitTemplateTests {
 	public void testRetry() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				count.incrementAndGet();
-				throw new AuthenticationFailureException("foo");
-			}
+		doAnswer(invocation -> {
+			count.incrementAndGet();
+			throw new AuthenticationFailureException("foo");
 		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
 
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
@@ -226,13 +207,9 @@ public class RabbitTemplateTests {
 	public void testRecovery() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				count.incrementAndGet();
-				throw new AuthenticationFailureException("foo");
-			}
+		doAnswer(invocation -> {
+			count.incrementAndGet();
+			throw new AuthenticationFailureException("foo");
 		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
 
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
@@ -240,14 +217,9 @@ public class RabbitTemplateTests {
 
 		final AtomicBoolean recoverInvoked = new AtomicBoolean();
 
-		template.setRecoveryCallback(new RecoveryCallback<Object>() {
-
-			@Override
-			public Object recover(RetryContext context) throws Exception {
-				recoverInvoked.set(true);
-				return null;
-			}
-
+		template.setRecoveryCallback(context -> {
+			recoverInvoked.set(true);
+			return null;
 		});
 		template.convertAndSend("foo", "bar", "baz");
 		assertEquals(3, count.get());

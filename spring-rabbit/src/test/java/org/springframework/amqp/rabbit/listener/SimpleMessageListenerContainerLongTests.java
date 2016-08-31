@@ -28,7 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.AnonymousQueue;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -107,12 +106,7 @@ public class SimpleMessageListenerContainerLongTests {
 	public void testAddQueuesAndStartInCycle() throws Exception {
 		final SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setMessageListener(new MessageListener() {
-
-			@Override
-			public void onMessage(Message message) {
-			}
-		});
+		container.setMessageListener((MessageListener) message -> { });
 		container.setConcurrentConsumers(2);
 		container.afterPropertiesSet();
 

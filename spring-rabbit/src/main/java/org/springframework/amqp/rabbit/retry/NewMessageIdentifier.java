@@ -24,8 +24,10 @@ import org.springframework.amqp.core.Message;
  * tracking the processing of a message (e.g. there is no need to check a cache for a hit).
  *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
+@FunctionalInterface
 public interface NewMessageIdentifier {
 
 	/**

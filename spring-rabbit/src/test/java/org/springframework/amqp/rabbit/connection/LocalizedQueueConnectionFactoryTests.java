@@ -47,8 +47,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.internal.stubbing.answers.CallsRealMethods;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -187,18 +185,14 @@ public class LocalizedQueueConnectionFactoryTests {
 		when(connection.createChannel(false)).thenReturn(channel);
 		when(connection.isOpen()).thenReturn(true, false);
 		when(channel.isOpen()).thenReturn(true, false);
-		doAnswer(new Answer<String>() {
-
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				String tag = UUID.randomUUID().toString();
-				consumers.put(address, (Consumer) invocation.getArguments()[6]);
-				consumerTags.put(address, tag);
-				if (latch != null) {
-					latch.countDown();
-				}
-				return tag;
+		doAnswer(invocation -> {
+			String tag = UUID.randomUUID().toString();
+			consumers.put(address, (Consumer) invocation.getArguments()[6]);
+			consumerTags.put(address, tag);
+			if (latch != null) {
+				latch.countDown();
 			}
+			return tag;
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
 				any(Consumer.class));
 		when(connectionFactory.getHost()).thenReturn(address);

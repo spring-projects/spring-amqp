@@ -39,7 +39,6 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
-import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.utils.test.TestUtils;
 
 /**
@@ -81,13 +80,7 @@ public class BlockingQueueConsumerIntegrationTests {
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, true, 1, queue1.getName(), queue2.getName());
 		final String consumerTagPrefix = UUID.randomUUID().toString();
-		blockingQueueConsumer.setTagStrategy(new ConsumerTagStrategy() {
-
-			@Override
-			public String createConsumerTag(String queue) {
-				return consumerTagPrefix + '#' + queue;
-			}
-		});
+		blockingQueueConsumer.setTagStrategy(queue -> consumerTagPrefix + '#' + queue);
 		blockingQueueConsumer.start();
 		assertNotNull(TestUtils.getPropertyValue(blockingQueueConsumer, "consumerTags", Map.class).get(
 				consumerTagPrefix + "#" + queue1.getName()));

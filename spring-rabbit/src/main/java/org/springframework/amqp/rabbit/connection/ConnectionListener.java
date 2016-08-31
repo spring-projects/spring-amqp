@@ -17,7 +17,10 @@
 package org.springframework.amqp.rabbit.connection;
 
 /**
+ * A listener for connection creation and closing.
+ *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public interface ConnectionListener {

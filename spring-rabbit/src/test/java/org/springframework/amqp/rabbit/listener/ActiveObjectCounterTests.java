@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,11 +27,12 @@ import org.junit.Test;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class ActiveObjectCounterTests {
 
-	private ActiveObjectCounter<Object> counter = new ActiveObjectCounter<Object>();
+	private final ActiveObjectCounter<Object> counter = new ActiveObjectCounter<Object>();
 
 	@Test
 	public void testActiveCount() throws Exception {
@@ -54,13 +54,11 @@ public class ActiveObjectCounterTests {
 		final Object object2 = new Object();
 		counter.add(object1);
 		counter.add(object2);
-		Future<Boolean> future = Executors.newSingleThreadExecutor().submit(new Callable<Boolean>() {
-			public Boolean call() throws Exception {
-				counter.release(object1);
-				counter.release(object2);
-				counter.release(object2);
-				return true;
-			}
+		Future<Boolean> future = Executors.newSingleThreadExecutor().submit(() -> {
+			counter.release(object1);
+			counter.release(object2);
+			counter.release(object2);
+			return true;
 		});
 		assertEquals(true, counter.await(1000L, TimeUnit.MILLISECONDS));
 		assertEquals(true, future.get());

@@ -39,12 +39,9 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -345,22 +342,18 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		final AtomicInteger received = new AtomicInteger();
 		final CountDownLatch awaitConsumeFirst = new CountDownLatch(5);
 		final CountDownLatch awaitConsumeSecond = new CountDownLatch(10);
-		container.setMessageListener(new MessageListener() {
-
-			@Override
-			public void onMessage(Message message) {
-				try {
-					awaitStart1.countDown();
-					prefetched.await(10, TimeUnit.SECONDS);
-					awaitStart2.countDown();
-					awaitStop.await(10, TimeUnit.SECONDS);
-					received.incrementAndGet();
-					awaitConsumeFirst.countDown();
-					awaitConsumeSecond.countDown();
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
+		container.setMessageListener((MessageListener) message -> {
+			try {
+				awaitStart1.countDown();
+				prefetched.await(10, TimeUnit.SECONDS);
+				awaitStart2.countDown();
+				awaitStop.await(10, TimeUnit.SECONDS);
+				received.incrementAndGet();
+				awaitConsumeFirst.countDown();
+				awaitConsumeSecond.countDown();
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		});
 		container.setAcknowledgeMode(AcknowledgeMode.AUTO);
@@ -388,13 +381,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			}
 			Thread.sleep(100);
 		}
-		Executors.newSingleThreadExecutor().execute(new Runnable() {
-
-			@Override
-			public void run() {
-				container.stop();
-			}
-		});
+		Executors.newSingleThreadExecutor().execute(() -> container.stop());
 		n = 0;
 		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
@@ -433,14 +420,10 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		Log log = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		final CountDownLatch latch = new CountDownLatch(1);
 		when(log.isDebugEnabled()).thenReturn(true);
-		doAnswer(new Answer<Void>() {
-
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				latch.countDown();
-				invocation.callRealMethod();
-				return null;
-			}
+		doAnswer(invocation -> {
+			latch.countDown();
+			invocation.callRealMethod();
+			return null;
 		}).when(log).debug(
 				Mockito.contains("Consumer received Shutdown Signal, processing stopped"));
 		DirectFieldAccessor dfa = new DirectFieldAccessor(container);
@@ -513,19 +496,14 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		public SimpleMessageListenerContainer container() {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
 			container.setQueues(queue);
-			container.setMessageListener(new MessageListener() {
-
-				@Override
-				public void onMessage(Message message) {
-					try {
-						consumerLatch().countDown();
-						Thread.sleep(500);
-					}
-					catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
+			container.setMessageListener((MessageListener) message -> {
+				try {
+					consumerLatch().countDown();
+					Thread.sleep(500);
 				}
-
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			});
 			container.setShutdownTimeout(1);
 			return container;

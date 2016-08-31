@@ -73,6 +73,7 @@ public class AnonymousQueue extends Queue {
 	 * @since 1.5.3
 	 *
 	 */
+	@FunctionalInterface
 	public interface NamingStrategy {
 
 		String generateName();
@@ -113,11 +114,8 @@ public class AnonymousQueue extends Queue {
 			ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
 			bb.putLong(uuid.getMostSignificantBits())
 			  .putLong(uuid.getLeastSignificantBits());
-			// TODO: when Spring 4.2.4 is the minimum Spring Framework version, use encodeToUrlSafeString() SPR-13784.
-			return this.prefix + Base64Utils.encodeToString(bb.array())
-									.replaceAll("\\+", "-")
-									.replaceAll("/", "_")
-									// but this will remain
+			// Convert to base64 and remove trailing =
+			return this.prefix + Base64Utils.encodeToUrlSafeString(bb.array())
 									.replaceAll("=", "");
 		}
 

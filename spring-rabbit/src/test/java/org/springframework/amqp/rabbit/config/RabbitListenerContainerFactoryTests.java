@@ -128,14 +128,6 @@ public class RabbitListenerContainerFactoryTests {
 		assertEquals("myQueue", container.getQueueNames()[0]);
 	}
 
-	private SimpleRabbitListenerEndpoint createEndpoint() {
-		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
-		endpoint.setMessageListener(this.messageListener);
-		endpoint.setQueueNames("queue");
-		return endpoint;
-	}
-
-
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {
 		factory.setConnectionFactory(this.connectionFactory);
 		factory.setErrorHandler(this.errorHandler);

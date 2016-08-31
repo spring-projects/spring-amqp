@@ -35,12 +35,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate.RabbitConverterFuture;
@@ -105,14 +103,9 @@ public class AsyncRabbitTemplateTests {
 	@Test
 	public void testConvert4Args() throws Exception {
 		ListenableFuture<String> future = this.template.convertSendAndReceive("", this.requests.getName(), "foo",
-				new MessagePostProcessor() {
-
-					@Override
-					public Message postProcessMessage(Message message) throws AmqpException {
-						String body = new String(message.getBody());
-						return new Message((body + "bar").getBytes(), message.getMessageProperties());
-					}
-
+				message -> {
+					String body = new String(message.getBody());
+					return new Message((body + "bar").getBytes(), message.getMessageProperties());
 				});
 		checkConverterResult(future, "FOOBAR");
 	}

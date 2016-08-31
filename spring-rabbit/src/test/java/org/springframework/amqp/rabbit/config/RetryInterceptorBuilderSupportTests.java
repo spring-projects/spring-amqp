@@ -35,8 +35,6 @@ import org.junit.Test;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
-import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
 import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.Pointcut;
@@ -113,14 +111,10 @@ public class RetryInterceptorBuilderSupportTests {
 		StatefulRetryOperationsInterceptor interceptor =
 				RetryInterceptorBuilder.stateful()
 					.maxAttempts(5)
-					.newMessageIdentifier(new NewMessageIdentifier() {
-
-							@Override
-							public boolean isNew(Message message) {
-								latch.countDown();
-								return false;
-							}
-						})
+					.newMessageIdentifier(message -> {
+						latch.countDown();
+						return false;
+					})
 					.backOffPolicy(new FixedBackOffPolicy())
 					.build();
 
@@ -152,14 +146,10 @@ public class RetryInterceptorBuilderSupportTests {
 	public void testWithCustomKeyGenerator() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(1);
 		StatefulRetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateful()
-				.messageKeyGenerator(new MessageKeyGenerator() {
-
-						@Override
-						public Object getKey(Message message) {
-							latch.countDown();
-							return "foo";
-						}
-					})
+				.messageKeyGenerator(message -> {
+					latch.countDown();
+					return "foo";
+				})
 				.build();
 
 		assertEquals(3, TestUtils.getPropertyValue(interceptor, "retryOperations.retryPolicy.maxAttempts"));

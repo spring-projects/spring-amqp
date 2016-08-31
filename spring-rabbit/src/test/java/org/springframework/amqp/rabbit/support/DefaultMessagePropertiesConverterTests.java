@@ -86,7 +86,6 @@ public class DefaultMessagePropertiesConverterTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void testToMessagePropertiesLongStringDeepInList() {
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put("list", Arrays.asList(Arrays.asList(longString)));
