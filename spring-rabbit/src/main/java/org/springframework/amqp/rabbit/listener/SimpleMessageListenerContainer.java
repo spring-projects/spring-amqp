@@ -181,12 +181,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile ApplicationEventPublisher applicationEventPublisher;
 
-	private final ContainerDelegate delegate = new ContainerDelegate() {
-		@Override
-		public void invokeListener(Channel channel, Message message) throws Exception {
-			SimpleMessageListenerContainer.super.invokeListener(channel, message);
-		}
-	};
+	private final ContainerDelegate delegate = super::invokeListener;
 
 	private ContainerDelegate proxy = this.delegate;
 
@@ -1229,7 +1224,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				+ ", queueNames=" + Arrays.toString(getQueueNames()) + "]";
 	}
 
-	public interface ContainerDelegate {
+	private interface ContainerDelegate {
 
 		void invokeListener(Channel channel, Message message) throws Exception;
 
