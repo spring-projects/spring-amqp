@@ -71,6 +71,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
+	private final ContainerDelegate delegate = this::actualInvokeListener;
+
+	private ContainerDelegate proxy = this.delegate;
+
 	private volatile String beanName;
 
 	private volatile boolean autoStartup = true;
@@ -469,9 +473,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void validateConfiguration() {
 	}
 
-	protected ContainerDelegate initializeProxy(Object delegate) {
+	protected void initializeProxy(Object delegate) {
 		if (this.getAdviceChain().length == 0) {
-			return null;
+			return;
 		}
 		ProxyFactory factory = new ProxyFactory();
 		for (Advice advice : getAdviceChain()) {
@@ -480,7 +484,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		factory.setProxyTargetClass(false);
 		factory.addInterface(ContainerDelegate.class);
 		factory.setTarget(delegate);
-		return (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
+		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
 	}
 
 	/**
@@ -506,6 +510,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			synchronized (this.lifecycleMonitor) {
 				this.lifecycleMonitor.notifyAll();
 			}
+			initializeProxy(this.delegate);
 			doInitialize();
 		}
 		catch (Exception ex) {
@@ -724,6 +729,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
+	protected void invokeListener(Channel channel, Message message) throws Exception {
+		this.proxy.invokeListener(channel, message);
+	}
+
 	/**
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
@@ -731,7 +740,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setMessageListener
 	 */
-	protected void invokeListener(Channel channel, Message message) throws Exception {
+	protected void actualInvokeListener(Channel channel, Message message) throws Exception {
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
@@ -909,7 +918,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return e;
 	}
 
-	public interface ContainerDelegate {
+	@FunctionalInterface
+	private interface ContainerDelegate {
 
 		void invokeListener(Channel channel, Message message) throws Exception;
 

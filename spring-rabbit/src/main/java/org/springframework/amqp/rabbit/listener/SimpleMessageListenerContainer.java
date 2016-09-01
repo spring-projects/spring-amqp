@@ -175,10 +175,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile ApplicationEventPublisher applicationEventPublisher;
 
-	private final ContainerDelegate delegate = super::invokeListener;
-
-	private ContainerDelegate proxy = this.delegate;
-
 	private Integer declarationRetries;
 
 	private Long failedDeclarationRetryInterval;
@@ -690,10 +686,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
 			this.taskExecutorSet = true;
 		}
-		ContainerDelegate proxy = initializeProxy(this.delegate);
-		if (proxy != null) {
-			this.proxy = proxy;
-		}
 		if (this.transactionManager != null) {
 			if (!isChannelTransacted()) {
 				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
@@ -1141,11 +1133,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		return consumer.commitIfNecessary(isChannelLocallyTransacted(channel));
 
-	}
-
-	@Override
-	protected void invokeListener(Channel channel, Message message) throws Exception {
-		this.proxy.invokeListener(channel, message);
 	}
 
 	/**

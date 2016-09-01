@@ -56,15 +56,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private final ContainerDelegate delegate = new ContainerDelegate() {
-		@Override
-		public void invokeListener(Channel channel, Message message) throws Exception {
-			DirectMessageListenerContainer.super.invokeListener(channel, message);
-		}
-	};
-
-	private ContainerDelegate proxy = this.delegate;
-
 	private volatile TaskExecutor taskExecutor;
 
 	private volatile int consumersPerQueue = 1;
@@ -117,15 +108,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doInitialize() throws Exception {
 		Assert.notNull(getQueueNames(), "queue(s) are required");
-		ContainerDelegate proxy = initializeProxy(this.delegate);
-		if (proxy != null) {
-			this.proxy = proxy;
-		}
-	}
-
-	@Override
-	protected void invokeListener(Channel channel, Message message) throws Exception {
-		this.proxy.invokeListener(channel, message);
 	}
 
 	@Override
