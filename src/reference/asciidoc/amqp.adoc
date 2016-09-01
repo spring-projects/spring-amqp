@@ -1153,12 +1153,15 @@ public interface ChannelAwareMessageListener {
 
 If you prefer to maintain a stricter separation between your application logic and the messaging API, you can rely upon an adapter implementation that is provided by the framework.
 This is often referred to as "Message-driven POJO" support.
+
+NOTE: _Version 1.5_ introduced a more flexible mechanism for POJO messaging, the `@RabbitListener` annotation - see <<async-annotation-driven>> for more information.
+
 When using the adapter, you only need to provide a reference to the instance that the adapter itself should invoke.
 
 [source,java]
 ----
 MessageListenerAdapter listener = new MessageListenerAdapter(somePojo);
-    listener.setDefaultListenerMethod("myMethod");
+listener.setDefaultListenerMethod("myMethod");
 ----
 
 You can subclass the adapter and provide an implementation of `getListenerMethodName()` to dynamically select different methods based on the message.
@@ -1172,6 +1175,29 @@ to determine which queue a message was received from.
 Starting with _version 1.5_, you can configure a map of consumer queue/tag to method name, to dynamically select the
 method to call.
 If no entry is in the map, we fall back to the default listener method.
+The default listener method (if not set) is `handleMessage`.
+
+Starting with _version 2.0_, a convenient `FunctionalInterface` has been provided:
+
+[source, java]
+----
+@FunctionalInterface
+public interface ReplyingMessageListener<T, R> {
+
+	R handleMessage(T t);
+
+}
+----
+
+This facilitates convenient configuration of the adapter using Java 8 lamdas:
+
+[source, java]
+----
+new MessageListenerAdapter((ReplyingMessageListener<String, String>) data -> {
+    ...
+    return result;
+}));
+----
 
 ====== Container
 

@@ -197,7 +197,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactoryWithConfirmsEnabled);
 		container.setQueueNames(ROUTE);
 		container.setMessageListener(
-				new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> in.toUpperCase()));
+				new MessageListenerAdapter((ReplyingMessageListener<String, String>) String::toUpperCase));
 		container.start();
 		CorrelationData correlationData = new CorrelationData("abc");
 		String result = (String) this.templateWithConfirmsEnabled.convertSendAndReceive(ROUTE, (Object) "message",
