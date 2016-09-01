@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -519,15 +520,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * admin.
 	 */
 	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables) {
-		Collection<T> filtered = new ArrayList<T>();
-		for (T declarable : declarables) {
-			Collection<?> adminsWithWhichToDeclare = declarable.getDeclaringAdmins();
-			if (declarable.shouldDeclare() &&
-				(adminsWithWhichToDeclare.isEmpty() || adminsWithWhichToDeclare.contains(this))) {
-				filtered.add(declarable);
-			}
-		}
-		return filtered;
+		return declarables.stream()
+				.filter(d -> d.shouldDeclare()
+						&& (d.getDeclaringAdmins().isEmpty() || d.getDeclaringAdmins().contains(this)))
+				.collect(Collectors.toList());
 	}
 
 	// private methods for declaring Exchanges, Queues, and Bindings on a Channel
