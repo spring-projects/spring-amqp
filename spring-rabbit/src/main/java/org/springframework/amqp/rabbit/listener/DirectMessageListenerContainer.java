@@ -74,11 +74,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		setConnectionFactory(connectionFactory);
 	}
 
-	@Override
-	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
-		super.setConnectionFactory(connectionFactory);
-	}
-
 	/**
 	 * Set a task executor for the container - used to create the consumers not at
 	 * runtime.
@@ -188,7 +183,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				BasicProperties properties, byte[] body) throws IOException {
 			MessageProperties messageProperties = DirectMessageListenerContainer.this.messagePropertiesConverter
 					.toMessageProperties(properties, envelope, "UTF-8");
-			messageProperties.setMessageCount(0);
 			messageProperties.setConsumerTag(consumerTag);
 			messageProperties.setConsumerQueue(this.queue);
 			Message message = new Message(body, messageProperties);
