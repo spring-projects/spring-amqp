@@ -3523,6 +3523,8 @@ Starting with _version 1.3.2_, the default `ErrorHandler` is now a `ConditionalR
 - `o.s.messaging...MessageConversionException`
 - `o.s.messaging...MethodArgumentNotValidException`
 - `o.s.messaging...MethodArgumentTypeMismatchException`
+- `java.lang.NoSuchMethodException`
+- `java.lang.ClassCastException`
 
 The first can be thrown when converting the incoming message payload using a `MessageConverter`.
 The second may be thrown by the conversion service if additional conversion is required when mapping to a
@@ -3531,12 +3533,16 @@ The third may be thrown if validation (e.g. `@Valid`) is used in the listener an
 The fourth may be thrown if the inbound message was converted to a type that is not correct for the target method.
 For example, the parameter is declared as `Message<Foo>` but `Message<Bar>` is received.
 
+The fifth and sixth were added in _version 1.6.3_.
+
 An instance of this error handler can be configured with a `FatalExceptionStrategy` so users can provide their own rules
 for conditional message rejection, e.g.
 a delegate implementation to the `BinaryExceptionClassifier` from Spring Retry (<<async-listeners>>).
 In addition, the `ListenerExecutionFailedException` now has a `failedMessage` property which can be used in the decision.
 If the `FatalExceptionStrategy.isFatal()` method returns `true`, the error handler throws an `AmqpRejectAndDontRequeueException`.
-The default `FatalExceptionStrategy` logs a warning message.
+The default `FatalExceptionStrategy` logs a warning message when an exception is determined to be fatal.
+
+Since _version 1.6.3_ a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
 
 ==== Transactions
 
