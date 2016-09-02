@@ -19,20 +19,22 @@ package org.springframework.amqp.rabbit.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author Dave Syer
@@ -40,13 +42,12 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * @author Gunnar Hillert
  * @author Artem Bilan
  */
-@ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
 @DirtiesContext
 public final class ExchangeParserIntegrationTests {
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	@ClassRule
+	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private ConnectionFactory connectionFactory;
@@ -68,6 +69,17 @@ public final class ExchangeParserIntegrationTests {
 	@Autowired
 	@Qualifier("bucket.test")
 	private Queue queue3;
+
+	@BeforeClass
+	@AfterClass
+	public static void clean() {
+		RabbitAdmin admin = brokerIsRunning.getAdmin();
+		admin.deleteExchange("fanoutTest");
+		admin.deleteExchange("directTest");
+		admin.deleteExchange("topicTest");
+		admin.deleteExchange("headersTest");
+		admin.deleteExchange("headersTestMulti");
+	}
 
 	@Test
 	public void testBindingsDeclared() throws Exception {

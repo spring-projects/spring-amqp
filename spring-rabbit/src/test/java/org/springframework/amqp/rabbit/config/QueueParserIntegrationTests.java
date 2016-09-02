@@ -74,7 +74,7 @@ public final class QueueParserIntegrationTests {
 		assertEquals(null, result);
 
 		connectionFactory.destroy();
-
+		brokerIsRunning.getAdmin().deleteQueue("arguments");
 	}
 
 }

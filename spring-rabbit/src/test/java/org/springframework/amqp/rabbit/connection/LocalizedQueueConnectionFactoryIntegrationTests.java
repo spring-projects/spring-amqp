@@ -63,6 +63,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(targetConnectionFactory);
 		template.convertAndSend("", queue.getName(), "foo");
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));
+		admin.deleteQueue(queue.getName());
 	}
 
 }
