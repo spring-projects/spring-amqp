@@ -105,7 +105,7 @@ public class RabbitBindingIntegrationTests {
 			return null;
 
 		});
-
+		admin.deleteExchange("topic");
 	}
 
 	@Test
@@ -142,7 +142,7 @@ public class RabbitBindingIntegrationTests {
 			return null;
 
 		});
-
+		admin.deleteExchange("topic");
 	}
 
 	@Test
@@ -180,6 +180,7 @@ public class RabbitBindingIntegrationTests {
 		assertEquals("message", result);
 
 		consumer.stop();
+		admin.deleteExchange("topic");
 		cachingConnectionFactory.destroy();
 
 	}
@@ -231,7 +232,7 @@ public class RabbitBindingIntegrationTests {
 			return null;
 
 		});
-
+		admin.deleteExchange("topic");
 	}
 
 	@Test
@@ -262,7 +263,7 @@ public class RabbitBindingIntegrationTests {
 			return null;
 
 		});
-
+		admin.deleteExchange("fanout");
 	}
 
 	private BlockingQueueConsumer createConsumer(RabbitAccessor accessor) {

@@ -91,6 +91,8 @@ public final class BrokerRunning extends TestWatcher {
 
 	private String hostName = null;
 
+	private RabbitAdmin admin;
+
 	/**
 	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
 	 *
@@ -200,6 +202,7 @@ public final class BrokerRunning extends TestWatcher {
 				connectionFactory.setHost(hostName);
 			}
 			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+			this.admin = admin;
 
 			for (Queue queue : queues) {
 				String queueName = queue.getName();
@@ -251,6 +254,10 @@ public final class BrokerRunning extends TestWatcher {
 
 	private boolean isDefaultQueue(String queue) {
 		return DEFAULT_QUEUE_NAME.equals(queue);
+	}
+
+	public RabbitAdmin getAdmin() {
+		return this.admin;
 	}
 
 	public void removeTestQueues(String... additionalQueues) {

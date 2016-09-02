@@ -4,8 +4,6 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<rabbit:queue name="foo" />
-
 	<rabbit:queue name="arguments">
 		<rabbit:queue-arguments value-type="java.lang.Long">
 			<beans:entry key="x-message-ttl" value="100" />

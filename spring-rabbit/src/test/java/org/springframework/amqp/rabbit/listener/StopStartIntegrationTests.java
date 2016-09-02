@@ -67,6 +67,7 @@ public class StopStartIntegrationTests {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		RabbitAdmin admin = new RabbitAdmin(cf);
 		admin.deleteQueue("stop.start.queue");
+		admin.deleteExchange("stop.start.exchange");
 		cf.destroy();
 	}
 

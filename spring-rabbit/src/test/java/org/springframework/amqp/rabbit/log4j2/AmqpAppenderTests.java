@@ -37,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.BindingBuilder;
@@ -62,8 +62,8 @@ import org.springframework.test.util.ReflectionTestUtils;
  */
 public class AmqpAppenderTests {
 
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunning();
+	@ClassRule
+	public static BrokerRunning brokerRunning = BrokerRunning.isRunning();
 
 	private static final LoggerContext LOGGER_CONTEXT = (LoggerContext) LogManager.getContext(false);
 
@@ -79,6 +79,9 @@ public class AmqpAppenderTests {
 	public static void teardown() {
 		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
 		LOGGER_CONTEXT.reconfigure();
+		brokerRunning.getAdmin().deleteQueue("log4jTest");
+		brokerRunning.getAdmin().deleteQueue("log4j2Test");
+		brokerRunning.getAdmin().deleteExchange("log4j2Test");
 	}
 
 	@Test
@@ -88,7 +91,7 @@ public class AmqpAppenderTests {
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		FanoutExchange fanout = new FanoutExchange("log4j2Test");
 		admin.declareExchange(fanout);
-		Queue queue = new Queue("log4jTest");
+		Queue queue = new Queue("log4j2Test");
 		admin.declareQueue(queue);
 		admin.declareBinding(BindingBuilder.bind(queue).to(fanout));
 		Logger logger = LogManager.getLogger("foo");
