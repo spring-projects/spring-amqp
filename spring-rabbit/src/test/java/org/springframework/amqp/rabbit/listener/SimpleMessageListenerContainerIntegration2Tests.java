@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -62,6 +63,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -305,15 +307,6 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	}
 
 	@Test
-	public void testInvalidListener() throws Exception {
-		PojoListener delegate = new PojoListener(null);
-		MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(delegate);
-		messageListenerAdapter.setDefaultListenerMethod("foo");
-		this.container = createContainer(messageListenerAdapter, queue.getName());
-		assertTrue(containerStoppedForAbortWithBadListener());
-	}
-
-	@Test
 	public void testMissingListener() throws Exception {
 		this.container = createContainer(null, queue.getName());
 		assertTrue(containerStoppedForAbortWithBadListener());
@@ -475,6 +468,34 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.get().stop();
 	}
 
+	@Test
+	public void testTransientBadMessageDoesntStopContainer() throws Exception {
+		CountDownLatch latch = new CountDownLatch(3);
+		this.container = createContainer(new MessageListenerAdapter(new PojoListener(latch, false)), this.queue.getName());
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		this.template.convertAndSend(this.queue.getName(), new Foo());
+		this.template.convertAndSend(this.queue.getName(), new Bar());
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(this.container.isRunning());
+		this.container.stop();
+	}
+
+	@Test
+	public void testTransientBadMessageDoesntStopContainerLambda() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(2);
+		this.container = createContainer(new MessageListenerAdapter((ReplyingMessageListener<String, Void>) m -> {
+			latch.countDown();
+			return null;
+		}), this.queue.getName());
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		this.template.convertAndSend(this.queue.getName(), new Foo());
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(this.container.isRunning());
+		this.container.stop();
+	}
+
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
@@ -531,6 +552,32 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				latch.countDown();
 			}
 		}
+
+		public void handleMessage(Foo value) {
+			try {
+				int counter = count.getAndIncrement();
+				if (logger.isDebugEnabled() && counter % 100 == 0) {
+					logger.debug("Handling: " + value + ":" + counter + " - " + latch);
+				}
+				if (fail) {
+					throw new RuntimeException("Planned failure");
+				}
+			}
+			finally {
+				latch.countDown();
+			}
+		}
+
+	}
+
+	@SuppressWarnings("serial")
+	private static final class Foo implements Serializable {
+
+	}
+
+	@SuppressWarnings("serial")
+	private static final class Bar implements Serializable {
+
 	}
 
 }
