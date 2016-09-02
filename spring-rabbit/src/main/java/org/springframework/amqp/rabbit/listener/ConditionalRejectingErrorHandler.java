@@ -34,7 +34,10 @@ import org.springframework.util.ErrorHandler;
  * on broker configuration.
  * <p>
  * The default strategy will do this if the exception is a
- * {@link ListenerExecutionFailedException} with a cause of {@link MessageConversionException}.
+ * {@link ListenerExecutionFailedException} with a cause of {@link MessageConversionException},
+ * {@link org.springframework.messaging.converter.MessageConversionException},
+ * {@link MethodArgumentNotValidException}, {@link MethodArgumentTypeMismatchException},
+ * {@link NoSuchMethodException} or {@link ClassCastException}.
  * <p>
  * The exception will not be wrapped if the {@code cause} chain already contains an
  * {@link AmqpRejectAndDontRequeueException}.
@@ -89,12 +92,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		return false;
 	}
 
-	private class DefaultExceptionStrategy implements FatalExceptionStrategy {
+	/**
+	 * Default implementation of {@link FatalExceptionStrategy}.
+	 * @since 1.6.3
+	 */
+	public class DefaultExceptionStrategy implements FatalExceptionStrategy {
 
 		@Override
 		public boolean isFatal(Throwable t) {
 			if (t instanceof ListenerExecutionFailedException
-					&& causeIsFatal(t.getCause())) {
+					&& isCauseFatal(t.getCause())) {
 				if (ConditionalRejectingErrorHandler.this.logger.isWarnEnabled()) {
 					ConditionalRejectingErrorHandler.this.logger.warn(
 							"Fatal message conversion error; message rejected; "
@@ -106,11 +113,23 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 			return false;
 		}
 
-		protected boolean causeIsFatal(Throwable cause) {
+		private boolean isCauseFatal(Throwable cause) {
 			return cause instanceof MessageConversionException
 					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
 					|| cause instanceof MethodArgumentNotValidException
-					|| cause instanceof MethodArgumentTypeMismatchException;
+					|| cause instanceof MethodArgumentTypeMismatchException
+					|| cause instanceof NoSuchMethodException
+					|| cause instanceof ClassCastException
+					|| isUserCauseFatal(cause);
+		}
+
+		/**
+		 * Subclasses can override this to add custom exceptions.
+		 * @param cause the cause
+		 * @return true if the cause is fatal.
+		 */
+		protected boolean isUserCauseFatal(Throwable cause) {
+			return false;
 		}
 
 	}
