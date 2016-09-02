@@ -261,17 +261,39 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the message listener implementation to register. This can be either a Spring {@link MessageListener} object
-	 * or a Spring {@link ChannelAwareMessageListener} object.
+	 * Set the message listener implementation to register. This can be either a Spring
+	 * {@link MessageListener} object or a Spring {@link ChannelAwareMessageListener}
+	 * object. Using the strongly typed
+	 * {@link #setChannelAwareMessageListener(ChannelAwareMessageListener)} is preferred.
 	 *
 	 * @param messageListener The listener.
-	 * @throws IllegalArgumentException if the supplied listener is not a {@link MessageListener} or a
-	 * {@link ChannelAwareMessageListener}
+	 * @throws IllegalArgumentException if the supplied listener is not a
+	 * {@link MessageListener} or a {@link ChannelAwareMessageListener}
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
 	public void setMessageListener(Object messageListener) {
 		checkMessageListener(messageListener);
+		this.messageListener = messageListener;
+	}
+
+	/**
+	 * Set the {@link MessageListener}; strongly typed version of
+	 * {@link #setMessageListener(Object)}.
+	 * @param messageListener the listener.
+	 * @since 2.0
+	 */
+	public void setMessageListener(MessageListener messageListener) {
+		this.messageListener = messageListener;
+	}
+
+	/**
+	 * Set the {@link ChannelAwareMessageListener}; strongly typed version of
+	 * {@link #setMessageListener(Object)}.
+	 * @param messageListener the listener.
+	 * @since 2.0
+	 */
+	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		this.messageListener = messageListener;
 	}
 

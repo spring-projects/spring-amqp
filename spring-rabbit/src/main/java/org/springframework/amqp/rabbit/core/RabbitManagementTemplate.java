@@ -207,7 +207,7 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	private List<Queue> converteQueueList(List<QueueInfo> queues) {
 		return queues.stream()
-				.map(qi -> convert(qi))
+				.map(this::convert)
 				.collect(Collectors.toList());
 	}
 
@@ -218,7 +218,7 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	private List<Exchange> convertExchangeList(List<ExchangeInfo> exchanges) {
 		return exchanges.stream()
-				.map(ei -> convert(ei))
+				.map(this::convert)
 				.collect(Collectors.toList());
 	}
 
@@ -243,7 +243,7 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	private List<Binding> convertBindingList(List<BindingInfo> bindings) {
 		return bindings.stream()
-				.map(bi -> convert(bi))
+				.map(this::convert)
 				.collect(Collectors.toList());
 	}
 

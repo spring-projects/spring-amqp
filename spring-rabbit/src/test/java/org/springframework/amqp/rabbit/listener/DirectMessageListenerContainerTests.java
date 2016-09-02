@@ -24,11 +24,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
-import org.apache.commons.logging.LogFactory;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -61,8 +59,6 @@ public class DirectMessageListenerContainerTests {
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
 		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
-
-				LogFactory.getLog(this.getClass()).info(in);
 				if ("foo".equals(in) || "bar".equals(in)) {
 					return in.toUpperCase();
 				}
@@ -88,7 +84,7 @@ public class DirectMessageListenerContainerTests {
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
 		final CountDownLatch latch = new CountDownLatch(2);
-		container.setMessageListener((MessageListener) m -> {
+		container.setMessageListener(m -> {
 			latch.countDown();
 		});
 		final CountDownLatch adviceLatch = new CountDownLatch(2);
