@@ -32,13 +32,11 @@ import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -61,10 +59,7 @@ public class MissingIdRetryTests {
 	@BeforeClass
 	@AfterClass
 	public static void setupAndCleanUp() {
-		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		RabbitAdmin admin = new RabbitAdmin(cf);
-		admin.deleteQueue("retry.test.queue");
-		cf.destroy();
+		brokerIsRunning.deleteQueues("retry.test.queue", "retry.test.exchange");
 	}
 
 	@SuppressWarnings("rawtypes")

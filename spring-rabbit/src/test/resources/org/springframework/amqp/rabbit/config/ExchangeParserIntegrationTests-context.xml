@@ -5,7 +5,7 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<direct-exchange name="directTest">
+	<direct-exchange name="directTest" auto-delete="true">
 		<bindings>
 			<binding queue="bucket" />
 			<binding queue="bucket2" key="" />
@@ -13,7 +13,7 @@
 		</bindings>
 	</direct-exchange>
 
-	<topic-exchange name="topicTest">
+	<topic-exchange name="topicTest" auto-delete="true">
 		<bindings>
 			<binding queue="bucket" pattern="bucket.#"/>
 		</bindings>

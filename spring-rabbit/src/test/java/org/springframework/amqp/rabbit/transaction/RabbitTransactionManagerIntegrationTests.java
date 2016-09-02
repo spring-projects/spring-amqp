@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;

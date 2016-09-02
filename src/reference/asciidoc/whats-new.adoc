@@ -24,6 +24,11 @@ The framework is no longer compatible with previous versions.
 The minimum Jackson version is now `2.8`.
 The framework is no longer compatible with previous versions.
 
+===== JUnit @Rules
+
+Rules that have up until now been used internally by the framework have now been made available in a separate jar `spring-rabbit-junit`.
+See <<junit-rules>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
