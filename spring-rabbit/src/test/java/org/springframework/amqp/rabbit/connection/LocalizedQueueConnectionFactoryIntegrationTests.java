@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 
 
 /**
@@ -63,6 +63,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(targetConnectionFactory);
 		template.convertAndSend("", queue.getName(), "foo");
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));
+		admin.deleteQueue(queue.getName());
 	}
 
 }

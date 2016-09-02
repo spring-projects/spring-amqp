@@ -104,7 +104,7 @@ subprojects { subproject ->
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.4.RELEASE'
 
-		springRetryVersion = '1.2.0.RC1'
+		springRetryVersion = '1.2.0.BUILD-SNAPSHOT'
 	}
 
 	eclipse {
@@ -241,6 +241,22 @@ project('spring-rabbit') {
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 
 		compile ("org.apache.logging.log4j:log4j-core:$log4j2Version", optional)
+
+		testCompile project(":spring-rabbit-junit")
+	}
+
+}
+
+project('spring-rabbit-junit') {
+	description = 'Spring Rabbit JUnit Support'
+
+	dependencies {
+
+		compile "org.springframework:spring-core:$springVersion"
+		compile "junit:junit:$junitVersion"
+		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+
 	}
 
 }
@@ -259,6 +275,7 @@ project('spring-rabbit-test') {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
+		testCompile project(":spring-rabbit-junit")
 
 	}
 
@@ -455,4 +472,3 @@ task dist(dependsOn: assemble) {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
-

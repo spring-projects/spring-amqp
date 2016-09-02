@@ -61,8 +61,8 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.Cache
 import org.springframework.amqp.rabbit.core.ChannelCallback;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
-import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
@@ -106,7 +106,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	@After
 	public void close() {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
-			this.brokerIsRunning.getAdmin().deleteQueue(CF_INTEGRATION_TEST_QUEUE);
+			this.brokerIsRunning.removeTestQueues();
 		}
 		assertEquals("bar", connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo"));
 		connectionFactory.destroy();
