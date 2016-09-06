@@ -46,7 +46,6 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
-import org.springframework.aop.Pointcut;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.BeanNameAware;
@@ -362,7 +361,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
 	 * @param adviceChain the advice chain to set
 	 */
-	public void setAdviceChain(Advice[] adviceChain) {
+	public void setAdviceChain(Advice... adviceChain) {
 		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
@@ -501,9 +500,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		ProxyFactory factory = new ProxyFactory();
 		for (Advice advice : getAdviceChain()) {
-			factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, advice));
+			factory.addAdvisor(new DefaultPointcutAdvisor(advice));
 		}
-		factory.setProxyTargetClass(false);
 		factory.addInterface(ContainerDelegate.class);
 		factory.setTarget(delegate);
 		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());

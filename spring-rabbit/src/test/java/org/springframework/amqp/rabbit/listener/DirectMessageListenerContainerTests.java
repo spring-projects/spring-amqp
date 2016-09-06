@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.Rule;
 import org.junit.Test;
@@ -92,7 +91,7 @@ public class DirectMessageListenerContainerTests {
 			adviceLatch.countDown();
 			return i.proceed();
 		};
-		container.setAdviceChain(new Advice[] { advice });
+		container.setAdviceChain(advice);
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
