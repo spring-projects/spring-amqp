@@ -16,8 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpManagementOperations;
@@ -206,11 +206,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private List<Queue> converteQueueList(List<QueueInfo> queues) {
-		List<Queue> convertedQueues = new ArrayList<Queue>();
-		for (QueueInfo qi : queues) {
-			convertedQueues.add(convert(qi));
-		}
-		return convertedQueues;
+		return queues.stream()
+				.map(this::convert)
+				.collect(Collectors.toList());
 	}
 
 	private Queue convert(QueueInfo qi) {
@@ -219,14 +217,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private List<Exchange> convertExchangeList(List<ExchangeInfo> exchanges) {
-		List<Exchange> convertedExchanges = new ArrayList<Exchange>();
-		for (ExchangeInfo ei : exchanges) {
-			Exchange converted = convert(ei);
-			if (converted != null) {
-				convertedExchanges.add(converted);
-			}
-		}
-		return convertedExchanges;
+		return exchanges.stream()
+				.map(this::convert)
+				.collect(Collectors.toList());
 	}
 
 	private Exchange convert(ExchangeInfo ei) {
@@ -249,11 +242,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private List<Binding> convertBindingList(List<BindingInfo> bindings) {
-		List<Binding> convertedBindings = new ArrayList<Binding>();
-		for (BindingInfo bi : bindings) {
-			convertedBindings.add(convert(bi));
-		}
-		return convertedBindings;
+		return bindings.stream()
+				.map(this::convert)
+				.collect(Collectors.toList());
 	}
 
 	private Binding convert(BindingInfo bi) {

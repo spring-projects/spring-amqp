@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.aopalliance.aop.Advice;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -44,11 +46,12 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
@@ -63,9 +66,13 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
-		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean, SmartLifecycle {
+		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
+
+	private final ContainerDelegate delegate = this::actualInvokeListener;
+
+	private ContainerDelegate proxy = this.delegate;
 
 	private volatile String beanName;
 
@@ -100,6 +107,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile ApplicationContext applicationContext;
 
 	private String listenerId;
+
+	private Advice[] adviceChain = new Advice[0];
 
 	/**
 	 * <p>
@@ -251,17 +260,39 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the message listener implementation to register. This can be either a Spring {@link MessageListener} object
-	 * or a Spring {@link ChannelAwareMessageListener} object.
+	 * Set the message listener implementation to register. This can be either a Spring
+	 * {@link MessageListener} object or a Spring {@link ChannelAwareMessageListener}
+	 * object. Using the strongly typed
+	 * {@link #setChannelAwareMessageListener(ChannelAwareMessageListener)} is preferred.
 	 *
 	 * @param messageListener The listener.
-	 * @throws IllegalArgumentException if the supplied listener is not a {@link MessageListener} or a
-	 * {@link ChannelAwareMessageListener}
+	 * @throws IllegalArgumentException if the supplied listener is not a
+	 * {@link MessageListener} or a {@link ChannelAwareMessageListener}
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
 	public void setMessageListener(Object messageListener) {
 		checkMessageListener(messageListener);
+		this.messageListener = messageListener;
+	}
+
+	/**
+	 * Set the {@link MessageListener}; strongly typed version of
+	 * {@link #setMessageListener(Object)}.
+	 * @param messageListener the listener.
+	 * @since 2.0
+	 */
+	public void setMessageListener(MessageListener messageListener) {
+		this.messageListener = messageListener;
+	}
+
+	/**
+	 * Set the {@link ChannelAwareMessageListener}; strongly typed version of
+	 * {@link #setMessageListener(Object)}.
+	 * @param messageListener the listener.
+	 * @since 2.0
+	 */
+	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		this.messageListener = messageListener;
 	}
 
@@ -319,6 +350,23 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setDeBatchingEnabled(boolean deBatchingEnabled) {
 		this.deBatchingEnabled = deBatchingEnabled;
+	}
+
+	/**
+	 * Public setter for the {@link Advice} to apply to listener executions. If {@link #setTxSize(int) txSize>1} then
+	 * multiple listener executions will all be wrapped in the same advice up to that limit.
+	 * <p>
+	 * If a {code #setTransactionManager(PlatformTransactionManager) transactionManager} is provided as well, then
+	 * separate advice is created for the transaction and applied first in the chain. In that case the advice chain
+	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
+	 * @param adviceChain the advice chain to set
+	 */
+	public void setAdviceChain(Advice... adviceChain) {
+		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
+	}
+
+	protected Advice[] getAdviceChain() {
+		return this.adviceChain;
 	}
 
 	/**
@@ -446,6 +494,19 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void validateConfiguration() {
 	}
 
+	protected void initializeProxy(Object delegate) {
+		if (this.getAdviceChain().length == 0) {
+			return;
+		}
+		ProxyFactory factory = new ProxyFactory();
+		for (Advice advice : getAdviceChain()) {
+			factory.addAdvisor(new DefaultPointcutAdvisor(advice));
+		}
+		factory.addInterface(ContainerDelegate.class);
+		factory.setTarget(delegate);
+		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
+	}
+
 	/**
 	 * Calls {@link #shutdown()} when the BeanFactory destroys the container instance.
 	 * @see #shutdown()
@@ -469,6 +530,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			synchronized (this.lifecycleMonitor) {
 				this.lifecycleMonitor.notifyAll();
 			}
+			initializeProxy(this.delegate);
 			doInitialize();
 		}
 		catch (Exception ex) {
@@ -687,6 +749,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
+	protected void invokeListener(Channel channel, Message message) throws Exception {
+		this.proxy.invokeListener(channel, message);
+	}
+
 	/**
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
@@ -694,7 +760,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setMessageListener
 	 */
-	protected void invokeListener(Channel channel, Message message) throws Exception {
+	protected void actualInvokeListener(Channel channel, Message message) throws Exception {
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
@@ -870,6 +936,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			return new ListenerExecutionFailedException("Listener threw exception", e, message);
 		}
 		return e;
+	}
+
+	@FunctionalInterface
+	private interface ContainerDelegate {
+
+		void invokeListener(Channel channel, Message message) throws Exception;
+
 	}
 
 	/**

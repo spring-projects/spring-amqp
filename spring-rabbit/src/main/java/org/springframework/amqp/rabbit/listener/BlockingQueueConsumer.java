@@ -366,7 +366,6 @@ public class BlockingQueueConsumer {
 
 		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 				delivery.getProperties(), envelope, "UTF-8");
-		messageProperties.setMessageCount(0);
 		messageProperties.setConsumerTag(delivery.getConsumerTag());
 		messageProperties.setConsumerQueue(this.consumerTags.get(delivery.getConsumerTag()));
 		Message message = new Message(body, messageProperties);

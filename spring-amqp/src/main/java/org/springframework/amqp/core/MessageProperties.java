@@ -369,10 +369,20 @@ public class MessageProperties implements Serializable {
 		return this.deliveryTagSet;
 	}
 
+	/**
+	 * Set the message count.
+	 * @param messageCount the count
+	 * @see #getMessageCount()
+	 */
 	public void setMessageCount(Integer messageCount) {
 		this.messageCount = messageCount;
 	}
 
+	/**
+	 * Return the server's most recent estimate of the number of messages remaining on the queue.
+	 * Only applies to messages retrieved via basicGet.
+	 * @return the count.
+	 */
 	public Integer getMessageCount() {
 		return this.messageCount;
 	}
