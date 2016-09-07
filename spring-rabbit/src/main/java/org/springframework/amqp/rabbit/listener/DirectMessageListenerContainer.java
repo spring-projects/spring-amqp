@@ -226,6 +226,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								for (SimpleConsumer consumer : newConsumers) {
 									try {
 										consumer.getChannel().basicCancel(consumer.getConsumerTag());
+										List<SimpleConsumer> list = this.consumersByQueue.get(queue);
+										if (list != null) {
+											list.remove(consumer);
+										}
 									}
 									catch (IOException e1) {
 										logger.error("Failed to cancel consumer during revert", e);
