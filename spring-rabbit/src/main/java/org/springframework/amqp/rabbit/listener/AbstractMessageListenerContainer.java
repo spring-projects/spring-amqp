@@ -772,15 +772,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	@Override
 	public void stop(Runnable callback) {
-		this.stop();
+		stop();
 		callback.run();
 	}
 
 	/**
-	 * This method is invoked when the container is stopping. The default implementation does nothing, but subclasses
-	 * may override.
+	 * This method is invoked when the container is stopping.
 	 */
 	protected void doStop() {
+		shutdown();
 	}
 
 	/**

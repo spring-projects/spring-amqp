@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -61,7 +63,7 @@ import com.rabbitmq.client.Envelope;
  */
 public class DirectMessageListenerContainer extends AbstractMessageListenerContainer {
 
-	private final List<SimpleConsumer> consumers = new ArrayList<SimpleConsumer>();
+	private final List<SimpleConsumer> consumers = new LinkedList<SimpleConsumer>();
 
 	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
@@ -96,6 +98,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param consumersPerQueue the consumers per queue.
 	 */
 	public void setConsumersPerQueue(int consumersPerQueue) {
+		if (isRunning()) {
+			adjustConsumers(consumersPerQueue);
+		}
 		this.consumersPerQueue = consumersPerQueue;
 	}
 
@@ -109,6 +114,18 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.isTrue(!exclusive || (this.consumersPerQueue == 1),
 				"When the consumer is exclusive, the consumers per queue must be 1");
 		super.setExclusive(exclusive);
+	}
+
+	@Override
+	public void setQueueNames(String... queueName) {
+		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
+		super.setQueueNames(queueName);
+	}
+
+	@Override
+	public void setQueues(Queue... queues) {
+		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
+		super.setQueues(queues);
 	}
 
 	@Override
@@ -193,6 +210,50 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		return true;
 	}
 
+	private void adjustConsumers(int newCount) {
+		int delta = newCount - this.consumersPerQueue;
+		if (delta != 0) {
+			synchronized (this.consumersMonitor) {
+				if (delta > 0) {
+					List<SimpleConsumer> newConsumers = new ArrayList<>();
+					for (int i = 0; i < delta; i++) {
+						for (String queue : getQueueNames()) {
+							try {
+								newConsumers.add(doConsumeFromQueue(queue));
+							}
+							catch (IOException e) {
+								logger.error("Failed to start a new consumer, reverting", e);
+								for (SimpleConsumer consumer : newConsumers) {
+									try {
+										consumer.getChannel().basicCancel(consumer.getConsumerTag());
+									}
+									catch (IOException e1) {
+										logger.error("Failed to cancel consumer during revert", e);
+									}
+								}
+								throw new AmqpIOException("Failed to increase consumers", e);
+							}
+						}
+					}
+				}
+				else {
+					for (Entry<String, List<SimpleConsumer>> entry : this.consumersByQueue.entrySet()) {
+						List<SimpleConsumer> consumerList = entry.getValue();
+						while (consumerList.size() > newCount) {
+							SimpleConsumer consumer = consumerList.remove(consumerList.size() - 1);
+							try {
+								consumer.getChannel().basicCancel(consumer.getConsumerTag());
+								this.consumers.remove(consumer);
+							}
+							catch (IOException e) {
+								logger.error("Failed to cancel consumer", e);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 	@Override
 	protected void doInitialize() throws Exception {
 	}
@@ -238,18 +299,23 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void consumeFromQueue(String queue) throws IOException {
 		for (int i = 0; i < DirectMessageListenerContainer.this.consumersPerQueue; i++) {
-			Connection connection = getConnectionFactory().createConnection();
-			Channel channel = connection.createChannel(isChannelTransacted());
-			channel.basicQos(getPrefetchCount());
-			RabbitUtils.setPhysicalCloseRequired(true);
-			SimpleConsumer consumer = new SimpleConsumer(channel, queue);
-			channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
-					(getConsumerTagStrategy() != null
-							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
-					false, isExclusive(), getConsumerArguments(), consumer);
-			DirectMessageListenerContainer.this.consumers.add(consumer);
-			DirectMessageListenerContainer.this.consumersByQueue.add(queue, consumer);
+			doConsumeFromQueue(queue);
 		}
+	}
+
+	private SimpleConsumer doConsumeFromQueue(String queue) throws IOException {
+		Connection connection = getConnectionFactory().createConnection();
+		Channel channel = connection.createChannel(isChannelTransacted());
+		channel.basicQos(getPrefetchCount());
+		RabbitUtils.setPhysicalCloseRequired(true);
+		SimpleConsumer consumer = new SimpleConsumer(channel, queue);
+		channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
+				(getConsumerTagStrategy() != null
+						? getConsumerTagStrategy().createConsumerTag(queue) : ""),
+				false, isExclusive(), getConsumerArguments(), consumer);
+		DirectMessageListenerContainer.this.consumers.add(consumer);
+		DirectMessageListenerContainer.this.consumersByQueue.add(queue, consumer);
+		return consumer;
 	}
 
 	@Override
@@ -264,6 +330,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 		this.consumers.clear();
+		this.consumersByQueue.clear();
 	}
 
 	private final class SimpleConsumer extends DefaultConsumer {

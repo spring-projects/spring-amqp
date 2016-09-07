@@ -728,12 +728,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doStop() {
-		shutdown();
-		super.doStop();
-	}
-
-	@Override
 	protected void doShutdown() {
 
 		if (!this.isRunning()) {

@@ -36,6 +36,7 @@ import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.MultiValueMap;
 
 /**
  * @author Gary Russell
@@ -141,6 +142,45 @@ public class DirectMessageListenerContainerTests {
 		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		container.stop();
+	}
+
+	@Test
+	public void testAddRemoveConsumers() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setThreadNamePrefix("client-");
+		executor.afterPropertiesSet();
+		cf.setExecutor(executor);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(Q1, Q2);
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
+			if ("foo".equals(in) || "bar".equals(in)) {
+				return in.toUpperCase();
+			}
+			else {
+				return null;
+			}
+		}));
+		container.afterPropertiesSet();
+		container.start();
+		RabbitTemplate template = new RabbitTemplate(cf);
+		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
+		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		RabbitAdmin admin = brokerRunning.getAdmin();
+		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		container.setConsumersPerQueue(1);
+		assertEquals(1, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(1, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		container.setConsumersPerQueue(2);
+		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		container.stop();
+		assertEquals(0, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
 	}
 
 }
