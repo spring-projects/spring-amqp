@@ -19,18 +19,22 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.intercept.MethodInterceptor;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
@@ -46,6 +50,11 @@ public class DirectMessageListenerContainerTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2);
+
+	@After
+	public void tearDown() {
+		this.brokerRunning.removeTestQueues();
+	}
 
 	@Test
 	public void testSimple() {
@@ -70,6 +79,7 @@ public class DirectMessageListenerContainerTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		container.stop();
 	}
 
 	@Test
@@ -97,6 +107,40 @@ public class DirectMessageListenerContainerTests {
 		template.convertAndSend(Q1, "bar");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(adviceLatch.await(10, TimeUnit.SECONDS));
+		container.stop();
+	}
+
+	@Test
+	public void testQueueManagement() {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setThreadNamePrefix("client-");
+		executor.afterPropertiesSet();
+		cf.setExecutor(executor);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
+			if ("foo".equals(in) || "bar".equals(in)) {
+				return in.toUpperCase();
+			}
+			else {
+				return null;
+			}
+		}));
+		container.afterPropertiesSet();
+		container.start();
+		container.addQueueNames(Q1, Q2);
+		RabbitAdmin admin = brokerRunning.getAdmin();
+		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		RabbitTemplate template = new RabbitTemplate(cf);
+		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
+		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		container.removeQueueNames(Q1, Q2);
+		assertEquals(0, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		container.stop();
 	}
 
 }

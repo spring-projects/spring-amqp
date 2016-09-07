@@ -20,13 +20,16 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.aopalliance.aop.Advice;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -43,6 +46,7 @@ import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
@@ -70,7 +74,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
+	public static final int DEFAULT_PREFETCH_COUNT = 1;
+
 	private final ContainerDelegate delegate = this::actualInvokeListener;
+
+	protected final Object consumersMonitor = new Object(); //NOSONAR
+
+	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
 
 	private ContainerDelegate proxy = this.delegate;
 
@@ -109,6 +119,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private String listenerId;
 
 	private Advice[] adviceChain = new Advice[0];
+
+	private ConsumerTagStrategy consumerTagStrategy;
+
+	private volatile boolean exclusive;
+
+	private volatile boolean defaultRequeueRejected = true;
+
+	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	/**
 	 * <p>
@@ -209,8 +227,19 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		Assert.isTrue(this.queueNames.size() - queueNames.length > 0, "Cannot remove the last queue");
+		Assert.isTrue(canRemoveLastQueue() || this.queueNames.size() - queueNames.length > 0,
+				"Cannot remove the last queue");
 		return this.queueNames.removeAll(Arrays.asList(queueNames));
+	}
+
+	/**
+	 * Subclasses can override this method if they allow running with zero configured
+	 * queues.
+	 * @return true to allow removal of the last queue.
+	 * @since 2.0
+	 */
+	protected boolean canRemoveLastQueue() {
+		return false;
 	}
 
 	/**
@@ -455,6 +484,103 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public void setListenerId(String listenerId) {
 		this.listenerId = listenerId;
+	}
+
+	/**
+	 * Set the implementation of {@link ConsumerTagStrategy} to generate consumer tags.
+	 * By default, the RabbitMQ server generates consumer tags.
+	 * @param consumerTagStrategy the consumerTagStrategy to set.
+	 * @since 1.4.5
+	 */
+	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
+		this.consumerTagStrategy = consumerTagStrategy;
+	}
+
+	/**
+	 * Return the consumer tag strategy to use.
+	 * @return the strategy.
+	 * @since 2.0
+	 */
+	protected ConsumerTagStrategy getConsumerTagStrategy() {
+		return this.consumerTagStrategy;
+	}
+
+	/**
+	 * Set consumer arguments.
+	 * @param args the arguments.
+	 * @since 1.3
+	 */
+	public void setConsumerArguments(Map<String, Object> args) {
+		synchronized (this.consumersMonitor) {
+			this.consumerArgs.clear();
+			this.consumerArgs.putAll(args);
+		}
+	}
+
+	/**
+	 * Return the consumer arguments.
+	 * @return the arguments.
+	 * @since 2.0
+	 */
+	protected Map<String, Object> getConsumerArguments() {
+		return this.consumerArgs;
+	}
+
+	/**
+	 * Set to true for an exclusive consumer.
+	 * @param exclusive true for an exclusive consumer.
+	 */
+	public void setExclusive(boolean exclusive) {
+		this.exclusive = exclusive;
+	}
+
+	/**
+	 * Return whether the consumers should be exclusive.
+	 * @return true for exclusive consumers.
+	 */
+	protected boolean isExclusive() {
+		return this.exclusive;
+	}
+
+	/**
+	 * Set the default behavior when a message is rejected, for example because the listener
+	 * threw an exception. When true, messages will be requeued, when false, they will not. For
+	 * versions of Rabbit that support dead-lettering, the message must not be requeued in order
+	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
+	 * be requeued. When true, the default can be overridden by the listener throwing an
+	 * {@link AmqpRejectAndDontRequeueException}. Default true.
+	 * @param defaultRequeueRejected true to reject by default.
+	 */
+	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
+		this.defaultRequeueRejected = defaultRequeueRejected;
+	}
+
+	/**
+	 * Return the default requeue rejected.
+	 * @return the boolean.
+	 * @see #setDefaultRequeueRejected(boolean)
+	 * @since 2.0
+	 */
+	protected boolean isDefaultRequeueRejected() {
+		return this.defaultRequeueRejected;
+	}
+
+	/**
+	 * Tell the broker how many messages to send to each consumer in a single request.
+	 * Often this can be set quite high to improve throughput.
+	 * @param prefetchCount the prefetch count
+	 */
+	public void setPrefetchCount(int prefetchCount) {
+		this.prefetchCount = prefetchCount;
+	}
+
+	/**
+	 * Return the prefetch count.
+	 * @return the count.
+	 * @since 2.0
+	 */
+	protected int getPrefetchCount() {
+		return this.prefetchCount;
 	}
 
 	/**

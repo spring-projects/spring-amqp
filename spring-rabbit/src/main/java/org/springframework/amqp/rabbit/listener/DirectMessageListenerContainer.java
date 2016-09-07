@@ -19,14 +19,19 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
@@ -35,6 +40,8 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
@@ -56,15 +63,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final List<SimpleConsumer> consumers = new ArrayList<SimpleConsumer>();
 
+	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
+
 	private final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
 	private volatile TaskExecutor taskExecutor;
 
 	private volatile int consumersPerQueue = 1;
-
-	private volatile int prefetch = 1;
-
-	private volatile boolean defaultRequeueRejected = false;
 
 	private volatile long recoveryInterval;
 
@@ -95,59 +100,155 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Set to false to requeue failed deliveries.
-	 * @param requeueRejected the requeue rejected.
+	 * Set to true for an exclusive consumer - if true, the
+	 * {@link #setConsumersPerQueue(int) consumers per queue} must be 1.
+	 * @param exclusive true for an exclusive consumer.
 	 */
-	public void setDefaultRequeueRejected(boolean requeueRejected) {
-		this.defaultRequeueRejected = requeueRejected;
+	@Override
+	public final void setExclusive(boolean exclusive) {
+		Assert.isTrue(!exclusive || (this.consumersPerQueue == 1),
+				"When the consumer is exclusive, the consumers per queue must be 1");
+		super.setExclusive(exclusive);
+	}
+
+	@Override
+	public void addQueueNames(String... queueNames) {
+		addQueues(Arrays.asList(queueNames));
+		super.addQueueNames(queueNames);
+	}
+
+	@Override
+	public void addQueues(Queue... queues) {
+		addQueues(Arrays.asList(queues)
+				.stream()
+				.map(Queue::getName)
+				.collect(Collectors.toList()));
+		super.addQueues(queues);
+	}
+
+	private void addQueues(Collection<String> queues) {
+		if (isRunning()) {
+			synchronized (this.consumersMonitor) {
+				Set<String> current = getQueueNamesAsSet();
+				for (String queue : queues) {
+					if (current.contains(queue)) {
+						throw new IllegalStateException("Queue " + queue + " is already configured for this container: "
+								+ this + ", no queues added");
+					}
+				}
+				List<String> added = new ArrayList<>();
+				for (String queue : queues) {
+					try {
+						consumeFromQueue(queue);
+						added.add(queue);
+					}
+					catch (IOException e) {
+						logger.error("Failed to add queue: " + queue + " undoing adds (if any)");
+						removeQueues(added);
+						throw new AmqpIOException("Failed to add " + queues, e);
+					}
+				}
+			}
+		}
+	}
+
+	@Override
+	public boolean removeQueueNames(String... queueNames) {
+		removeQueues(Arrays.asList(queueNames));
+		return super.removeQueueNames(queueNames);
+	}
+
+	@Override
+	public boolean removeQueues(Queue... queues) {
+		removeQueues(Arrays.asList(queues)
+				.stream()
+				.map(Queue::getName)
+				.collect(Collectors.toList()));
+		return super.removeQueues(queues);
+	}
+
+	private void removeQueues(Collection<String> queues) {
+		if (isRunning()) {
+			synchronized (this.consumersMonitor) {
+				for (String queue : queues) {
+					List<SimpleConsumer> consumersForQueue = this.consumersByQueue.remove(queue);
+					if (consumersForQueue != null) {
+						for (SimpleConsumer consumer : consumersForQueue) {
+							try {
+								consumer.getChannel().basicCancel(consumer.getConsumerTag());
+								this.consumers.remove(consumer);
+							}
+							catch (IOException e) {
+								logger.error("Failed to cancel consumer: " + consumer, e);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@Override
+	protected boolean canRemoveLastQueue() {
+		return true;
 	}
 
 	@Override
 	protected void doInitialize() throws Exception {
-		Assert.notNull(getQueueNames(), "queue(s) are required");
 	}
 
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
 		if (this.taskExecutor == null) {
-			this.taskExecutor = new SimpleAsyncTaskExecutor((getBeanName() == null ? "container" : getBeanName()) + "-");
+			this.taskExecutor = new SimpleAsyncTaskExecutor(
+					(getBeanName() == null ? "container" : getBeanName()) + "-");
 		}
 		AtomicBoolean initialized = new AtomicBoolean();
 		this.taskExecutor.execute(() -> {
 
-			while (!initialized.get() && isRunning()) {
-				try {
-					for (int i = 0; i < DirectMessageListenerContainer.this.consumersPerQueue; i++) {
+			synchronized (this.consumersMonitor) {
+				while (!initialized.get() && isRunning()) {
+					try {
 						for (String queue : getQueueNames()) {
-							Connection connection = getConnectionFactory().createConnection();
-							Channel channel = connection.createChannel(isChannelTransacted());
-							channel.basicQos(DirectMessageListenerContainer.this.prefetch);
-							RabbitUtils.setPhysicalCloseRequired(true);
-							SimpleConsumer consumer = new SimpleConsumer(channel, queue);
-							DirectMessageListenerContainer.this.consumers.add(consumer);
-							channel.basicConsume(queue, consumer);
+							consumeFromQueue(queue);
 						}
 					}
-				}
-				catch (Exception e) {
-					logger.error("Error creating consumer; retrying in "
-							+ DirectMessageListenerContainer.this.recoveryInterval, e);
-					doShutdown();
-					try {
-						Thread.sleep(DirectMessageListenerContainer.this.recoveryInterval);
+					catch (Exception e) {
+						logger.error("Error creating consumer; retrying in "
+								+ DirectMessageListenerContainer.this.recoveryInterval, e);
+						doShutdown();
+						try {
+							Thread.sleep(DirectMessageListenerContainer.this.recoveryInterval);
+						}
+						catch (InterruptedException e1) {
+							Thread.currentThread().interrupt();
+						}
+						continue; // initialization failed; try again having rested for recovery-interval
 					}
-					catch (InterruptedException e1) {
-						Thread.currentThread().interrupt();
-					}
-					continue; // initialization failed; try again having rested for recovery-interval
+					initialized.set(true);
 				}
-				initialized.set(true);
 			}
 
 		});
 		if (logger.isInfoEnabled()) {
-			logger.info("Container initialized for " + Arrays.asList(getQueueNames()));
+			logger.info("Container initialized for queues: " + Arrays.asList(getQueueNames()));
+		}
+	}
+
+	private void consumeFromQueue(String queue) throws IOException {
+		for (int i = 0; i < DirectMessageListenerContainer.this.consumersPerQueue; i++) {
+			Connection connection = getConnectionFactory().createConnection();
+			Channel channel = connection.createChannel(isChannelTransacted());
+			channel.basicQos(getPrefetchCount());
+			RabbitUtils.setPhysicalCloseRequired(true);
+			SimpleConsumer consumer = new SimpleConsumer(channel, queue);
+			channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
+					(getConsumerTagStrategy() != null
+							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
+					false, isExclusive(), getConsumerArguments(), consumer);
+			DirectMessageListenerContainer.this.consumers.add(consumer);
+			DirectMessageListenerContainer.this.consumersByQueue.add(queue, consumer);
 		}
 	}
 
@@ -157,7 +258,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		for (DefaultConsumer consumer : this.consumers) {
 			try {
 				consumer.getChannel().basicCancel(consumer.getConsumerTag());
-				RabbitUtils.closeChannel(consumer.getChannel());
 			}
 			catch (IOException e) {
 				logger.error("Cancel Error", e);
@@ -189,7 +289,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			messageProperties.setConsumerQueue(this.queue);
 			Message message = new Message(body, messageProperties);
 			try {
-				if (!DirectMessageListenerContainer.this.isRunning()) {
+				if (!isRunning()) {
 					if (this.logger.isWarnEnabled()) {
 						this.logger.warn("Rejecting received message because the listener container has been stopped: "
 								+ message);
@@ -203,7 +303,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (Exception e) {
 				this.logger.error("Failed to invoke listener", e);
-				boolean shouldRequeue = DirectMessageListenerContainer.this.defaultRequeueRejected ||
+				boolean shouldRequeue = isDefaultRequeueRejected() ||
 						e instanceof MessageRejectedWhileStoppingException;
 				Throwable t = e;
 				while (shouldRequeue && t != null) {
@@ -216,6 +316,24 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					getChannel().basicNack(envelope.getDeliveryTag(), false, shouldRequeue);
 				}
 			}
+		}
+
+		@Override
+		public void handleCancelOk(String consumerTag) {
+			RabbitUtils.closeChannel(getChannel());
+		}
+
+		@Override
+		public void handleCancel(String consumerTag) throws IOException {
+			this.logger.error("Consumer canceled - queue deleted? " + this);
+			List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
+			list.remove(this);
+			DirectMessageListenerContainer.this.consumers.remove(this);
+		}
+
+		@Override
+		public String toString() {
+			return "SimpleConsumer [queue=" + this.queue + ", consumerTag=" + this.getConsumerTag() + "]";
 		}
 
 	}
