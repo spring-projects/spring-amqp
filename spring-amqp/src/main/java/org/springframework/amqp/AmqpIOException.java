@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,27 @@ import java.io.IOException;
  * can be commonly thrown from AMQP operations.
  *
  * @author Mark Pollack
+ * @author Gary Russell
  */
 @SuppressWarnings("serial")
 public class AmqpIOException extends AmqpException {
 
+	/**
+	 * Construct an instance with the provided cause.
+	 * @param cause the cause.
+	 */
 	public AmqpIOException(IOException cause) {
 		super(cause);
+	}
+
+	/**
+	 * Construct an instance with the provided message and cause.
+	 * @param message the message.
+	 * @param cause the cause.
+	 * @since 2.0
+	 */
+	public AmqpIOException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }
