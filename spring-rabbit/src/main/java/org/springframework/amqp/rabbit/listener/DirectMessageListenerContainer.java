@@ -146,7 +146,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			addQueues(Arrays.stream(queueNames));
 		}
 		catch (AmqpIOException e) {
-			throw new AmqpIOException("Failed to add " + queueNames, e.getCause());
+			throw new AmqpIOException("Failed to add " + Arrays.asList(queueNames), e.getCause());
 		}
 		super.addQueueNames(queueNames);
 	}
@@ -158,7 +158,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.map(Queue::getName));
 		}
 		catch (AmqpIOException e) {
-			throw new AmqpIOException("Failed to add " + queues, e.getCause());
+			throw new AmqpIOException("Failed to add " + Arrays.asList(queues), e.getCause());
 		}
 		super.addQueues(queues);
 	}
