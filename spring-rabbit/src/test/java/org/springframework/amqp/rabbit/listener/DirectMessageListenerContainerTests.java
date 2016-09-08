@@ -137,7 +137,7 @@ public class DirectMessageListenerContainerTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
-		container.removeQueueNames(Q1, Q2);
+		container.removeQueueNames(Q1, Q2, "junk");
 		assertEquals(0, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
 		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());

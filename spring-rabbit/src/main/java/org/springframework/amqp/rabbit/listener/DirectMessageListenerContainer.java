@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -196,8 +197,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public boolean removeQueues(Queue... queues) {
-		removeQueues(Arrays.asList(queues)
-				.stream()
+		removeQueues(Arrays.stream(queues)
 				.map(Queue::getName));
 		return super.removeQueues(queues);
 	}
@@ -205,10 +205,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void removeQueues(Stream<String> queueNames) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
-				queueNames.forEach(queue -> {
-					List<SimpleConsumer> consumersForQueue = this.consumersByQueue.remove(queue);
-					if (consumersForQueue != null) {
-						consumersForQueue.stream().forEach(consumer -> {
+				queueNames.map(this.consumersByQueue::remove)
+					.filter(consumer -> consumer != null)
+					.flatMap(Collection::stream)
+					.forEach(consumer -> {
 							try {
 								consumer.getChannel().basicCancel(consumer.getConsumerTag());
 								this.consumers.remove(consumer);
@@ -217,8 +217,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								logger.error("Failed to cancel consumer: " + consumer, e);
 							}
 						});
-					}
-				});
 			}
 		}
 	}
