@@ -19,13 +19,11 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 
@@ -63,7 +61,7 @@ import com.rabbitmq.client.Envelope;
  */
 public class DirectMessageListenerContainer extends AbstractMessageListenerContainer {
 
-	private final List<SimpleConsumer> consumers = new LinkedList<SimpleConsumer>();
+	private final List<SimpleConsumer> consumers = new LinkedList<>();
 
 	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
@@ -73,7 +71,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int consumersPerQueue = 1;
 
-	private volatile long recoveryInterval;
+	private volatile long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
 
 	/**
 	 * Create an instance with the provided connection factory.
@@ -95,9 +93,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Each queue runs in its own consumer; set this property to create multiple
 	 * consumers for each queue.
+	 * If the container is already running, the number of consumers per queue will
+	 * be adjusted up or down as necessary.
+	 * If the adjustment fails for any reason, you may have mismatched number of
+	 * consumers on each queue. A subsequent (successful) call will fix the mismatch.
 	 * @param consumersPerQueue the consumers per queue.
 	 */
 	public void setConsumersPerQueue(int consumersPerQueue) {
+		Assert.isTrue(consumersPerQueue >= 1, "'consumersPerQueue' must be 1 or greater");
 		if (isRunning()) {
 			adjustConsumers(consumersPerQueue);
 		}
@@ -116,6 +119,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.setExclusive(exclusive);
 	}
 
+	/**
+	 * Set the interval before retrying when starting the container; default 5000.
+	 * @param recoveryInterval the interval.
+	 */
+	public void setRecoveryInterval(long recoveryInterval) {
+		this.recoveryInterval = recoveryInterval;
+	}
+
 	@Override
 	public void setQueueNames(String... queueName) {
 		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
@@ -130,48 +141,56 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public void addQueueNames(String... queueNames) {
-		addQueues(Arrays.asList(queueNames));
+		try {
+			addQueues(Arrays.stream(queueNames));
+		}
+		catch (AmqpIOException e) {
+			throw new AmqpIOException("Failed to add " + queueNames, e.getCause());
+		}
 		super.addQueueNames(queueNames);
 	}
 
 	@Override
 	public void addQueues(Queue... queues) {
-		addQueues(Arrays.asList(queues)
-				.stream()
-				.map(Queue::getName)
-				.collect(Collectors.toList()));
+		try {
+			addQueues(Arrays.stream(queues)
+					.map(Queue::getName));
+		}
+		catch (AmqpIOException e) {
+			throw new AmqpIOException("Failed to add " + queues, e.getCause());
+		}
 		super.addQueues(queues);
 	}
 
-	private void addQueues(Collection<String> queues) {
+	private void addQueues(Stream<String> queueNameStream) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
 				Set<String> current = getQueueNamesAsSet();
-				for (String queue : queues) {
-					if (current.contains(queue)) {
-						throw new IllegalStateException("Queue " + queue + " is already configured for this container: "
-								+ this + ", no queues added");
-					}
-				}
 				List<String> added = new ArrayList<>();
-				for (String queue : queues) {
-					try {
-						consumeFromQueue(queue);
-						added.add(queue);
+				queueNameStream.forEach(queue -> {
+					if (current.contains(queue)) {
+						this.logger.warn("Queue " + queue + " is already configured for this container: "
+								+ this + ", ignoring add");
 					}
-					catch (IOException e) {
-						logger.error("Failed to add queue: " + queue + " undoing adds (if any)");
-						removeQueues(added);
-						throw new AmqpIOException("Failed to add " + queues, e);
+					else {
+						try {
+							consumeFromQueue(queue);
+							added.add(queue);
+						}
+						catch (IOException e) {
+							logger.error("Failed to add queue: " + queue + " undoing adds (if any)");
+							removeQueues(added.stream());
+							throw new AmqpIOException(e);
+						}
 					}
-				}
+				});
 			}
 		}
 	}
 
 	@Override
 	public boolean removeQueueNames(String... queueNames) {
-		removeQueues(Arrays.asList(queueNames));
+		removeQueues(Arrays.stream(queueNames));
 		return super.removeQueueNames(queueNames);
 	}
 
@@ -179,18 +198,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	public boolean removeQueues(Queue... queues) {
 		removeQueues(Arrays.asList(queues)
 				.stream()
-				.map(Queue::getName)
-				.collect(Collectors.toList()));
+				.map(Queue::getName));
 		return super.removeQueues(queues);
 	}
 
-	private void removeQueues(Collection<String> queues) {
+	private void removeQueues(Stream<String> queueNames) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
-				for (String queue : queues) {
+				queueNames.forEach(queue -> {
 					List<SimpleConsumer> consumersForQueue = this.consumersByQueue.remove(queue);
 					if (consumersForQueue != null) {
-						for (SimpleConsumer consumer : consumersForQueue) {
+						consumersForQueue.stream().forEach(consumer -> {
 							try {
 								consumer.getChannel().basicCancel(consumer.getConsumerTag());
 								this.consumers.remove(consumer);
@@ -198,9 +216,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							catch (IOException e) {
 								logger.error("Failed to cancel consumer: " + consumer, e);
 							}
-						}
+						});
 					}
-				}
+				});
 			}
 		}
 	}
@@ -211,52 +229,33 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void adjustConsumers(int newCount) {
-		int delta = newCount - this.consumersPerQueue;
-		if (delta != 0) {
 			synchronized (this.consumersMonitor) {
-				if (delta > 0) {
-					List<SimpleConsumer> newConsumers = new ArrayList<>();
-					for (int i = 0; i < delta; i++) {
-						for (String queue : getQueueNames()) {
-							try {
-								newConsumers.add(doConsumeFromQueue(queue));
-							}
-							catch (IOException e) {
-								logger.error("Failed to start a new consumer, reverting", e);
-								for (SimpleConsumer consumer : newConsumers) {
-									try {
-										consumer.getChannel().basicCancel(consumer.getConsumerTag());
-										List<SimpleConsumer> list = this.consumersByQueue.get(queue);
-										if (list != null) {
-											list.remove(consumer);
-										}
-									}
-									catch (IOException e1) {
-										logger.error("Failed to cancel consumer during revert", e);
-									}
+				for (String queue : getQueueNames()) {
+					try {
+						while (this.consumersByQueue.get(queue) == null
+								|| this.consumersByQueue.get(queue).size() < newCount) {
+							doConsumeFromQueue(queue);
+						}
+						if (this.consumersByQueue.get(queue).size() > newCount) {
+							List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
+							while (consumerList.size() > newCount) {
+								SimpleConsumer consumer = consumerList.remove(consumerList.size() - 1);
+								try {
+									consumer.getChannel().basicCancel(consumer.getConsumerTag());
+									this.consumers.remove(consumer);
 								}
-								throw new AmqpIOException("Failed to increase consumers", e);
+								catch (IOException e) {
+									logger.error("Failed to cancel consumer", e);
+								}
 							}
 						}
 					}
-				}
-				else {
-					for (Entry<String, List<SimpleConsumer>> entry : this.consumersByQueue.entrySet()) {
-						List<SimpleConsumer> consumerList = entry.getValue();
-						while (consumerList.size() > newCount) {
-							SimpleConsumer consumer = consumerList.remove(consumerList.size() - 1);
-							try {
-								consumer.getChannel().basicCancel(consumer.getConsumerTag());
-								this.consumers.remove(consumer);
-							}
-							catch (IOException e) {
-								logger.error("Failed to cancel consumer", e);
-							}
-						}
+					catch (IOException e) {
+						throw new AmqpIOException(
+								"Failed to adjust the consumer count for '" + queue + "' aborting adjustment", e);
 					}
 				}
 			}
-		}
 	}
 	@Override
 	protected void doInitialize() throws Exception {

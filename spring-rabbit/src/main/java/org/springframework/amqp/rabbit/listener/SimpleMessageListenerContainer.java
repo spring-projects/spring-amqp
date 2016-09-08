@@ -102,11 +102,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
-	/**
-	 * The default recovery interval: 5000 ms = 5 seconds.
-	 */
-	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
-
 	private final AtomicLong lastNoMessageAlert = new AtomicLong();
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;

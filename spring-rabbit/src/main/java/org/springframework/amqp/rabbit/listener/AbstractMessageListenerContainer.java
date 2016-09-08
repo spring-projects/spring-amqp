@@ -76,6 +76,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final int DEFAULT_PREFETCH_COUNT = 1;
 
+	/**
+	 * The default recovery interval: 5000 ms = 5 seconds.
+	 */
+	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
+
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR

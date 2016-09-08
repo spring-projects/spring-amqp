@@ -28,10 +28,20 @@ import java.io.IOException;
 @SuppressWarnings("serial")
 public class AmqpIOException extends AmqpException {
 
+	/**
+	 * Construct an instance with the provided cause.
+	 * @param cause the cause.
+	 */
 	public AmqpIOException(IOException cause) {
 		super(cause);
 	}
 
+	/**
+	 * Construct an instance with the provided message and cause.
+	 * @param message the message.
+	 * @param cause the cause.
+	 * @since 2.0
+	 */
 	public AmqpIOException(String message, Throwable cause) {
 		super(message, cause);
 	}
