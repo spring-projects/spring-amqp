@@ -236,12 +236,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								|| this.consumersByQueue.get(queue).size() < newCount) {
 							doConsumeFromQueue(queue);
 						}
-						if (this.consumersByQueue.get(queue).size() > newCount) {
-							List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
-							while (consumerList.size() > newCount) {
-								SimpleConsumer consumer = consumerList.remove(consumerList.size() - 1);
+						List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
+						if (consumerList.size() > newCount) {
+							int currentCount = consumerList.size();
+							for (int i = newCount; i < currentCount; i++) {
 								try {
-									consumer.getChannel().basicCancel(consumer.getConsumerTag());
+									consumerList.get(i).getChannel().basicCancel(consumerList.get(i).getConsumerTag());
 								}
 								catch (IOException e) {
 									this.logger.error("Failed to cancel consumer", e);
@@ -419,16 +419,16 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("CancelOk " + this);
 			}
-			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
-				DirectMessageListenerContainer.this.cancellationLock.release(this);
-				DirectMessageListenerContainer.this.consumers.remove(this);
-			}
-			RabbitUtils.closeChannel(getChannel());
+			removeConsumer();
 		}
 
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
+			removeConsumer();
+		}
+
+		private void removeConsumer() {
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
@@ -437,6 +437,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
 			}
+			RabbitUtils.closeChannel(getChannel());
 		}
 
 		@Override
