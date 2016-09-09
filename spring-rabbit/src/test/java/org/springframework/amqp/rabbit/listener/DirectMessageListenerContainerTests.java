@@ -31,7 +31,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.logging.log4j.Level;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -59,15 +60,20 @@ public class DirectMessageListenerContainerTests {
 
 	private static final String Q2 = "testQ2";
 
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2);
+	private static final String EQ1 = "eventTestQ1";
+
+	private static final String EQ2 = "eventTestQ2";
+
+	@ClassRule
+	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2);
 
 	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, DirectMessageListenerContainer.class);
+	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
+			DirectMessageListenerContainer.class, BrokerRunning.class);
 
-	@After
-	public void tearDown() {
-		this.brokerRunning.removeTestQueues();
+	@AfterClass
+	public static void tearDown() {
+		brokerRunning.removeTestQueues();
 	}
 
 	@Test
@@ -194,7 +200,7 @@ public class DirectMessageListenerContainerTests {
 	public void testEvents() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
-		container.setQueueNames(Q1, Q2);
+		container.setQueueNames(EQ1, EQ2);
 		final List<Long> times = new ArrayList<>();
 		final CountDownLatch latch1 = new CountDownLatch(2);
 		final AtomicReference<ApplicationEvent> failEvent = new AtomicReference<>();
@@ -223,8 +229,8 @@ public class DirectMessageListenerContainerTests {
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
-		brokerRunning.getAdmin().deleteQueue(Q1);
-		brokerRunning.getAdmin().deleteQueue(Q2);
+		brokerRunning.getAdmin().deleteQueue(EQ1);
+		brokerRunning.getAdmin().deleteQueue(EQ2);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNotNull(failEvent.get());
 		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
@@ -233,7 +239,7 @@ public class DirectMessageListenerContainerTests {
 
 	private boolean consumersOnQueue(String queue, int count) throws Exception {
 		int n = 0;
-		RabbitAdmin admin = this.brokerRunning.getAdmin();
+		RabbitAdmin admin = brokerRunning.getAdmin();
 		while (n++ < 100 && !admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count)) {
 			Thread.sleep(100);
 		}

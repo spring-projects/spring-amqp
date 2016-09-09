@@ -249,7 +249,6 @@ public final class BrokerRunning extends TestWatcher {
 		}
 
 		return super.apply(base, description);
-
 	}
 
 	private boolean isDefaultQueue(String queue) {
@@ -265,6 +264,9 @@ public final class BrokerRunning extends TestWatcher {
 		connectionFactory.setHost("localhost");
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		for (Queue queue : this.queues) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleting " + queue);
+			}
 			admin.deleteQueue(queue.getName());
 		}
 		if (additionalQueues != null) {
