@@ -431,7 +431,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.logger.error("Consumer canceled - queue deleted? " + this);
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
-				list.remove(this);
+				if (list != null) {
+					list.remove(this);
+				}
 				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
 			}
