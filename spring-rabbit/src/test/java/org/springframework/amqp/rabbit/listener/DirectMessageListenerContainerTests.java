@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.intercept.MethodInterceptor;
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
@@ -51,6 +53,9 @@ public class DirectMessageListenerContainerTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2);
+
+	@Rule
+	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, DirectMessageListenerContainer.class);
 
 	@After
 	public void tearDown() {

@@ -16,9 +16,12 @@
 
 package org.springframework.amqp.rabbit.test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,31 +45,38 @@ public class Log4jLevelAdjuster implements MethodRule {
 
 	private static final Log logger = LogFactory.getLog(Log4jLevelAdjuster.class);
 
-	private final Class<?>[] classes;
+	private final List<Class<?>> classes;
 
 	private final Level level;
 
 	public Log4jLevelAdjuster(Level level, Class<?>... classes) {
 		this.level = level;
-		this.classes = classes;
+		this.classes = new ArrayList<>(Arrays.asList(classes));
+		this.classes.add(getClass());
 	}
 
 	public Statement apply(final Statement base, FrameworkMethod method, Object target) {
 		return new Statement() {
 			@Override
 			public void evaluate() throws Throwable {
-				logger.debug("Overriding log level setting for: " + Arrays.asList(classes));
 				Map<Class<?>, Level> oldLevels = new HashMap<Class<?>, Level>();
-				for (Class<?> cls : classes) {
+				for (Class<?> cls : Log4jLevelAdjuster.this.classes) {
 					oldLevels.put(cls, LogManager.getLogger(cls).getLevel());
-					((Logger) LogManager.getLogger(cls)).setLevel(level);
+					((Logger) LogManager.getLogger(cls)).setLevel(Log4jLevelAdjuster.this.level);
 				}
+				logger.debug("++++++++++++++++++++++++++++ "
+						+ "Overridden log level setting for: "
+						+ Log4jLevelAdjuster.this.classes.stream()
+							.map(Class::getSimpleName)
+							.collect(Collectors.toList())
+						+ " for test " + method.getName());
 				try {
 					base.evaluate();
 				}
 				finally {
-					logger.debug("Restoring log level setting for: " + Arrays.asList(classes));
-					for (Class<?> cls : classes) {
+					logger.debug("++++++++++++++++++++++++++++ "
+							+ "Restoring log level setting for test " + method.getName());
+					for (Class<?> cls : Log4jLevelAdjuster.this.classes) {
 						((Logger) LogManager.getLogger(cls)).setLevel(oldLevels.get(cls));
 					}
 				}
