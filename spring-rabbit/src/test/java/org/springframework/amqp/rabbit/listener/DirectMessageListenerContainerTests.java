@@ -112,7 +112,7 @@ public class DirectMessageListenerContainerTests {
 	}
 
 	@Test
-	public void testQueueManagement() {
+	public void testQueueManagement() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 		executor.setThreadNamePrefix("client-");
@@ -131,21 +131,20 @@ public class DirectMessageListenerContainerTests {
 		container.afterPropertiesSet();
 		container.start();
 		container.addQueueNames(Q1, Q2);
-		RabbitAdmin admin = brokerRunning.getAdmin();
-		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
 		RabbitTemplate template = new RabbitTemplate(cf);
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
 		container.removeQueueNames(Q1, Q2, "junk");
-		assertEquals(0, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 0));
+		assertTrue(consumersOnQueue(Q2, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		container.stop();
 	}
 
 	@Test
-	public void testAddRemoveConsumers() {
+	public void testAddRemoveConsumers() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 		executor.setThreadNamePrefix("client-");
@@ -167,20 +166,29 @@ public class DirectMessageListenerContainerTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
-		RabbitAdmin admin = brokerRunning.getAdmin();
-		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
 		container.setConsumersPerQueue(1);
-		assertEquals(1, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(1, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 1));
+		assertTrue(consumersOnQueue(Q2, 1));
 		container.setConsumersPerQueue(2);
-		assertEquals(2, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(2, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
 		container.stop();
-		assertEquals(0, admin.getQueueProperties(Q1).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
-		assertEquals(0, admin.getQueueProperties(Q2).get(RabbitAdmin.QUEUE_CONSUMER_COUNT));
+		assertTrue(consumersOnQueue(Q1, 0));
+		assertTrue(consumersOnQueue(Q2, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+	}
+
+	private boolean consumersOnQueue(String queue, int count) throws Exception {
+		int n = 0;
+		RabbitAdmin admin = this.brokerRunning.getAdmin();
+		while (n++ < 100 && !admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT)
+				.equals(Integer.valueOf(count))) {
+			Thread.sleep(100);
+		}
+		return admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(Integer.valueOf(count));
 	}
 
 }
