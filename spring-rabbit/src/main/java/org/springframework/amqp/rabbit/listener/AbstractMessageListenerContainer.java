@@ -56,6 +56,8 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
@@ -70,7 +72,8 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
-		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean {
+		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
+				ApplicationEventPublisherAware {
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
@@ -93,9 +96,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
-	private volatile String beanName;
+	private ApplicationEventPublisher applicationEventPublisher;
 
-	private volatile boolean autoStartup = true;
+	private String beanName;
+
+	private boolean autoStartup = true;
 
 	private int phase = Integer.MAX_VALUE;
 
@@ -136,6 +141,23 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile boolean defaultRequeueRejected = true;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
+
+	private Long idleEventInterval;
+
+	private volatile long lastReceive = System.currentTimeMillis();
+
+	/**
+	 * {@inheritDoc}
+	 * @since 1.5
+	 */
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
+	}
+
+	protected ApplicationEventPublisher getApplicationEventPublisher() {
+		return this.applicationEventPublisher;
+	}
 
 	/**
 	 * <p>
@@ -605,6 +627,27 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	protected long getShutdownTimeout() {
 		return this.shutdownTimeout;
+	}
+
+	/**
+	 * How often to emit {@link ListenerContainerIdleEvent}s in milliseconds.
+	 * @param idleEventInterval the interval.
+	 */
+	public void setIdleEventInterval(Long idleEventInterval) {
+		this.idleEventInterval = idleEventInterval;
+	}
+
+	protected Long getIdleEventInterval() {
+		return this.idleEventInterval;
+	}
+
+	/**
+	 * Get the time the last message was received - initialized to container start
+	 * time.
+	 * @return the time.
+	 */
+	protected long getLastReceive() {
+		return this.lastReceive;
 	}
 
 	/**
@@ -1080,6 +1123,26 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			return new ListenerExecutionFailedException("Listener threw exception", e, message);
 		}
 		return e;
+	}
+
+	protected final void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
+		if (this.applicationEventPublisher != null) {
+			this.applicationEventPublisher
+					.publishEvent(new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
+		}
+	}
+
+	protected final void publishIdleContainerEvent(long idleTime) {
+		if (this.applicationEventPublisher != null) {
+			this.applicationEventPublisher.publishEvent(
+					new ListenerContainerIdleEvent(this, idleTime, getListenerId(), getQueueNames()));
+		}
+	}
+
+	protected void updateLastReceive() {
+		if (this.idleEventInterval != null) {
+			this.lastReceive = System.currentTimeMillis();
+		}
 	}
 
 	@FunctionalInterface

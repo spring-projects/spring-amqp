@@ -16,12 +16,18 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.After;
@@ -35,6 +41,8 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
 
@@ -86,10 +94,6 @@ public class DirectMessageListenerContainerTests {
 	@Test
 	public void testAdvice() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setThreadNamePrefix("client-");
-		executor.afterPropertiesSet();
-		cf.setExecutor(executor);
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1, Q2);
 		container.setConsumersPerQueue(2);
@@ -179,6 +183,47 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+	}
+
+	@Test
+	public void testEvents() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(Q1, Q2);
+		final List<Long> times = new ArrayList<>();
+		final CountDownLatch latch1 = new CountDownLatch(2);
+		final AtomicReference<ApplicationEvent> failEvent = new AtomicReference<>();
+		final CountDownLatch latch2 = new CountDownLatch(2);
+		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(Object event) {
+			}
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof ListenerContainerIdleEvent) {
+					times.add(System.currentTimeMillis());
+					latch1.countDown();
+				}
+				else {
+					failEvent.set(event);
+					latch2.countDown();
+				}
+			}
+
+		});
+		container.setMessageListener(m -> { });
+		container.setIdleEventInterval(50L);
+		container.start();
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
+		brokerRunning.getAdmin().deleteQueue(Q1);
+		brokerRunning.getAdmin().deleteQueue(Q2);
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertNotNull(failEvent.get());
+		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
+		container.stop();
 	}
 
 	private boolean consumersOnQueue(String queue, int count) throws Exception {
