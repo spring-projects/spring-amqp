@@ -49,6 +49,14 @@ public interface PublisherCallbackChannel extends Channel {
 	 */
 	Collection<PendingConfirm> expire(Listener listener, long cutoffTime);
 
+    /**
+     * {@link PendingConfirm}s count
+     * @param listener the listener.
+     * @return Count of the pending confirms.
+     */
+
+    int getPendingConfirmsCount(Listener listener);
+
 	/**
 	 * Adds a pending confirmation to this channel's map.
 	 *
