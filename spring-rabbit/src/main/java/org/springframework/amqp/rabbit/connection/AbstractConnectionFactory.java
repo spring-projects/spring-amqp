@@ -110,9 +110,6 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * Set the {@link ThreadFactory} on the underlying rabbit connection factory.
-	 * Not exposed using XML configuration; define a bean for the Rabbit CF and
-	 * provide it to the Spring CF using the {@code connection-factory} attribute.
-	 * TODO: remove this comment when AMQP-554 is resolved.
 	 * @param threadFactory the thread factory.
 	 * @since 1.5.3
 	 */
