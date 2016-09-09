@@ -23,13 +23,14 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
@@ -76,7 +77,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TaskScheduler taskScheduler;
 
-	private volatile TaskExecutor taskExecutor;
+	private TaskExecutor taskExecutor;
+
+	private volatile boolean started;
+
+	private volatile CountDownLatch startedLatch = new CountDownLatch(1);
 
 	private volatile int consumersPerQueue = 1;
 
@@ -178,6 +183,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void addQueues(Stream<String> queueNameStream) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
+				checkStartState();
 				Set<String> current = getQueueNamesAsSet();
 				List<String> added = new ArrayList<>();
 				queueNameStream.forEach(queue -> {
@@ -217,6 +223,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void removeQueues(Stream<String> queueNames) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
+				checkStartState();
 				queueNames.map(this.consumersByQueue::remove)
 					.filter(consumer -> consumer != null)
 					.flatMap(Collection::stream)
@@ -239,6 +246,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void adjustConsumers(int newCount) {
 			synchronized (this.consumersMonitor) {
+				checkStartState();
 				for (String queue : getQueueNames()) {
 					try {
 						while (this.consumersByQueue.get(queue) == null
@@ -265,6 +273,19 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 	}
+
+	private void checkStartState() {
+		if (!this.isRunning()) {
+			try {
+				Assert.state(this.startedLatch.await(60, TimeUnit.SECONDS), "Container is not started - cannot adjust queues");
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new AmqpException("Interrupted waiting for start", e);
+			}
+		}
+	}
+
 	@Override
 	protected void doInitialize() throws Exception {
 		if (this.taskScheduler == null) {
@@ -277,6 +298,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doStart() throws Exception {
+		if (!this.started) {
+			actualStart();
+		}
+	}
+
+	protected void actualStart() throws Exception {
 		super.doStart();
 		if (this.taskExecutor == null) {
 			this.taskExecutor = new SimpleAsyncTaskExecutor(
@@ -295,14 +322,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}, idleEventInterval / 2);
 		}
-		AtomicBoolean initialized = new AtomicBoolean();
+		final String[] queueNames = getQueueNames();
 		this.taskExecutor.execute(() -> {
 
 			synchronized (this.consumersMonitor) {
-				while (!initialized.get() && isRunning()) {
+				while (!DirectMessageListenerContainer.this.started && isRunning()) {
 					this.cancellationLock.reset();
 					try {
-						for (String queue : getQueueNames()) {
+						for (String queue : queueNames) {
 							consumeFromQueue(queue);
 						}
 					}
@@ -318,13 +345,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 						continue; // initialization failed; try again having rested for recovery-interval
 					}
-					initialized.set(true);
+					DirectMessageListenerContainer.this.started = true;
+					DirectMessageListenerContainer.this.startedLatch.countDown();
 				}
 			}
 
 		});
 		if (logger.isInfoEnabled()) {
-			this.logger.info("Container initialized for queues: " + Arrays.asList(getQueueNames()));
+			this.logger.info("Container initialized for queues: " + Arrays.asList(queueNames));
 		}
 	}
 
@@ -352,6 +380,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
+		if (!this.started) {
+			actualShutDown();
+		}
+	}
+
+	private void actualShutDown() {
 		Assert.state(this.taskExecutor != null, "Cannot shut down if not initialized");
 		synchronized (this.consumersMonitor) {
 			for (DefaultConsumer consumer : this.consumers) {
@@ -367,6 +401,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		if (this.idleTask != null) {
 			this.idleTask.cancel(true);
+			this.idleTask = null;
 		}
 		try {
 			if (this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
@@ -379,6 +414,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			this.logger.warn("Interrupted waiting for consumers.  Continuing with shutdown.");
+		}
+		finally {
+			this.startedLatch = new CountDownLatch(1);
+			this.started = false;
 		}
 	}
 
