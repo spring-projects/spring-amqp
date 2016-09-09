@@ -282,8 +282,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.taskExecutor = new SimpleAsyncTaskExecutor(
 					(getBeanName() == null ? "container" : getBeanName()) + "-");
 		}
-		Long idleEventInterval = getIdleEventInterval();
-		if (idleEventInterval != null) {
+		long idleEventInterval = getIdleEventInterval();
+		if (idleEventInterval > 0) {
 			if (this.taskScheduler != null) {
 				afterPropertiesSet();
 			}
@@ -293,7 +293,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					publishIdleContainerEvent(now - getLastReceive());
 					this.lastAlertAt = now;
 				}
-			}, this.getIdleEventInterval() / 2);
+			}, idleEventInterval / 2);
 		}
 		AtomicBoolean initialized = new AtomicBoolean();
 		this.taskExecutor.execute(() -> {

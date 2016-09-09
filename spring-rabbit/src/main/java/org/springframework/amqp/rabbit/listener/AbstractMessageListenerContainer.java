@@ -142,7 +142,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
-	private Long idleEventInterval;
+	private long idleEventInterval;
 
 	private volatile long lastReceive = System.currentTimeMillis();
 
@@ -633,11 +633,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * How often to emit {@link ListenerContainerIdleEvent}s in milliseconds.
 	 * @param idleEventInterval the interval.
 	 */
-	public void setIdleEventInterval(Long idleEventInterval) {
+	public void setIdleEventInterval(long idleEventInterval) {
 		this.idleEventInterval = idleEventInterval;
 	}
 
-	protected Long getIdleEventInterval() {
+	protected long getIdleEventInterval() {
 		return this.idleEventInterval;
 	}
 
@@ -1140,7 +1140,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void updateLastReceive() {
-		if (this.idleEventInterval != null) {
+		if (this.idleEventInterval > 0) {
 			this.lastReceive = System.currentTimeMillis();
 		}
 	}

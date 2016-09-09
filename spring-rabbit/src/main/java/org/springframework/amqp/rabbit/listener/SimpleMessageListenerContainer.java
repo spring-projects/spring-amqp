@@ -1165,7 +1165,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								}
 							}
 						}
-						if (getIdleEventInterval() != null) {
+						long idleEventInterval = getIdleEventInterval();
+						if (idleEventInterval > 0) {
 							if (receivedOk) {
 								updateLastReceive();
 							}
@@ -1173,8 +1174,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								long now = System.currentTimeMillis();
 								long lastAlertAt = SimpleMessageListenerContainer.this.lastNoMessageAlert.get();
 								long lastReceive = getLastReceive();
-								if (now > lastReceive + getIdleEventInterval()
-										&& now > lastAlertAt + getIdleEventInterval()
+								if (now > lastReceive + idleEventInterval
+										&& now > lastAlertAt + idleEventInterval
 										&& SimpleMessageListenerContainer.this.lastNoMessageAlert
 												.compareAndSet(lastAlertAt, now)) {
 									publishIdleContainerEvent(now - lastReceive);
