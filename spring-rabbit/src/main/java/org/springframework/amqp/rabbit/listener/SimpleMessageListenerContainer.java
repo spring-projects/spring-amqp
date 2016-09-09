@@ -57,7 +57,6 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
-import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
@@ -101,18 +100,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
-	public static final int DEFAULT_PREFETCH_COUNT = 1;
-
 	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
 
-	/**
-	 * The default recovery interval: 5000 ms = 5 seconds.
-	 */
-	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
-
 	private final AtomicLong lastNoMessageAlert = new AtomicLong();
-
-	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
 
@@ -128,11 +118,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean taskExecutorSet;
 
-	private volatile int concurrentConsumers = 1;
+	volatile int concurrentConsumers = 1;
 
-	private volatile Integer maxConcurrentConsumers;
-
-	private volatile boolean exclusive;
+	volatile Integer maxConcurrentConsumers;
 
 	private volatile long lastConsumerStarted;
 
@@ -147,8 +135,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
 
-	private final Object consumersMonitor = new Object();
-
 	private PlatformTransactionManager transactionManager;
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
@@ -156,10 +142,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
 	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
-
-	private volatile boolean defaultRequeueRejected = true;
-
-	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
 
 	private volatile RabbitAdmin rabbitAdmin;
 
@@ -170,8 +152,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean autoDeclare = true;
 
 	private volatile boolean mismatchedQueuesFatal = false;
-
-	private volatile ConsumerTagStrategy consumerTagStrategy;
 
 	private volatile ApplicationEventPublisher applicationEventPublisher;
 
@@ -236,7 +216,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setConcurrentConsumers(final int concurrentConsumers) {
 		Assert.isTrue(concurrentConsumers > 0, "'concurrentConsumers' value must be at least 1 (one)");
-		Assert.isTrue(!this.exclusive || concurrentConsumers == 1,
+		Assert.isTrue(!isExclusive() || concurrentConsumers == 1,
 				"When the consumer is exclusive, the concurrency must be 1");
 		if (this.maxConcurrentConsumers != null) {
 			Assert.isTrue(concurrentConsumers <= this.maxConcurrentConsumers,
@@ -283,7 +263,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setMaxConcurrentConsumers(int maxConcurrentConsumers) {
 		Assert.isTrue(maxConcurrentConsumers >= this.concurrentConsumers,
 				"'maxConcurrentConsumers' value must be at least 'concurrentConsumers'");
-		Assert.isTrue(!this.exclusive || maxConcurrentConsumers == 1,
+		Assert.isTrue(!isExclusive() || maxConcurrentConsumers == 1,
 				"When the consumer is exclusive, the concurrency must be 1");
 		this.maxConcurrentConsumers = maxConcurrentConsumers;
 	}
@@ -292,11 +272,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * Set to true for an exclusive consumer - if true, the concurrency must be 1.
 	 * @param exclusive true for an exclusive consumer.
 	 */
+	@Override
 	public final void setExclusive(boolean exclusive) {
 		Assert.isTrue(!exclusive || (this.concurrentConsumers == 1
 				&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
 				"When the consumer is exclusive, the concurrency must be 1");
-		this.exclusive = exclusive;
+		super.setExclusive(exclusive);
 	}
 
 	/**
@@ -391,15 +372,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Tells the broker how many messages to send to each consumer in a single request. Often this can be set quite high
-	 * to improve throughput. It should be greater than or equal to {@link #setTxSize(int) the transaction size}.
-	 * @param prefetchCount the prefetch count
-	 */
-	public void setPrefetchCount(int prefetchCount) {
-		this.prefetchCount = prefetchCount;
-	}
-
-	/**
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
 	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
 	 * how often acks are sent when using {@link AcknowledgeMode#AUTO} - one ack per txSize. Default is 1.
@@ -428,26 +400,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
 		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
 		this.messagePropertiesConverter = messagePropertiesConverter;
-	}
-
-	/**
-	 * Determines the default behavior when a message is rejected, for example because the listener
-	 * threw an exception. When true, messages will be requeued, when false, they will not. For
-	 * versions of Rabbit that support dead-lettering, the message must not be requeued in order
-	 * to be sent to the dead letter exchange. Setting to false causes all rejections to not
-	 * be requeued. When true, the default can be overridden by the listener throwing an
-	 * {@link AmqpRejectAndDontRequeueException}. Default true.
-	 * @param defaultRequeueRejected true to reject by default.
-	 */
-	public void setDefaultRequeueRejected(boolean defaultRequeueRejected) {
-		this.defaultRequeueRejected = defaultRequeueRejected;
-	}
-
-	public void setConsumerArguments(Map<String, Object> args) {
-		synchronized (this.consumersMonitor) {
-			this.consumerArgs.clear();
-			this.consumerArgs.putAll(args);
-		}
 	}
 
 	protected RabbitAdmin getRabbitAdmin() {
@@ -615,16 +567,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Set the implementation of {@link ConsumerTagStrategy} to generate consumer tags.
-	 * By default, the RabbitMQ server generates consumer tags.
-	 * @param consumerTagStrategy the consumerTagStrategy to set.
-	 * @since 1.4.5
-	 */
-	public void setConsumerTagStrategy(ConsumerTagStrategy consumerTagStrategy) {
-		this.consumerTagStrategy = consumerTagStrategy;
-	}
-
-	/**
 	 * Set a {@link ConditionalExceptionLogger} for logging exclusive consumer failures. The
 	 * default is to log such failures at WARN level.
 	 * @param exclusiveConsumerExceptionLogger the conditional exception logger.
@@ -778,12 +720,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 		}
-	}
-
-	@Override
-	protected void doStop() {
-		shutdown();
-		super.doStop();
 	}
 
 	@Override
@@ -980,10 +916,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		String[] queues = getRequiredQueueNames();
 		// There's no point prefetching less than the tx size, otherwise the consumer will stall because the broker
 		// didn't get an ack for delivered messages
-		int actualPrefetchCount = this.prefetchCount > this.txSize ? this.prefetchCount : this.txSize;
-		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, this.cancellationLock,
-				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
-				this.consumerArgs, this.exclusive, queues);
+		int actualPrefetchCount = getPrefetchCount() > this.txSize ? getPrefetchCount() : this.txSize;
+		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter,
+				this.cancellationLock, getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount,
+				isDefaultRequeueRejected(), getConsumerArguments(), isExclusive(), queues);
 		if (this.declarationRetries != null) {
 			consumer.setDeclarationRetries(this.declarationRetries);
 		}
@@ -993,8 +929,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.retryDeclarationInterval != null) {
 			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
 		}
-		if (this.consumerTagStrategy != null) {
-			consumer.setTagStrategy(this.consumerTagStrategy);
+		if (getConsumerTagStrategy() != null) {
+			consumer.setTagStrategy(getConsumerTagStrategy());
 		}
 		consumer.setBackOffExecution(this.recoveryBackOff.start());
 		consumer.setShutdownTimeout(this.shutdownTimeout);
