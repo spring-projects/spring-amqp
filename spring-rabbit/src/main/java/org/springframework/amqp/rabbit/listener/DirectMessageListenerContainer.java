@@ -323,34 +323,40 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}, idleEventInterval / 2);
 		}
 		final String[] queueNames = getQueueNames();
-		this.taskExecutor.execute(() -> {
+		if (queueNames.length > 0) {
+			this.taskExecutor.execute(() -> {
 
-			synchronized (this.consumersMonitor) {
-				while (!DirectMessageListenerContainer.this.started && isRunning()) {
-					this.cancellationLock.reset();
-					try {
-						for (String queue : queueNames) {
-							consumeFromQueue(queue);
-						}
-					}
-					catch (Exception e) {
-						this.logger.error("Error creating consumer; retrying in "
-								+ DirectMessageListenerContainer.this.recoveryInterval, e);
-						doShutdown();
+				synchronized (this.consumersMonitor) {
+					while (!DirectMessageListenerContainer.this.started && isRunning()) {
+						this.cancellationLock.reset();
 						try {
-							Thread.sleep(DirectMessageListenerContainer.this.recoveryInterval);
+							for (String queue : queueNames) {
+								consumeFromQueue(queue);
+							}
 						}
-						catch (InterruptedException e1) {
-							Thread.currentThread().interrupt();
+						catch (Exception e) {
+							this.logger.error("Error creating consumer; retrying in "
+									+ DirectMessageListenerContainer.this.recoveryInterval, e);
+							doShutdown();
+							try {
+								Thread.sleep(DirectMessageListenerContainer.this.recoveryInterval);
+							}
+							catch (InterruptedException e1) {
+								Thread.currentThread().interrupt();
+							}
+							continue; // initialization failed; try again having rested for recovery-interval
 						}
-						continue; // initialization failed; try again having rested for recovery-interval
+						DirectMessageListenerContainer.this.started = true;
+						DirectMessageListenerContainer.this.startedLatch.countDown();
 					}
-					DirectMessageListenerContainer.this.started = true;
-					DirectMessageListenerContainer.this.startedLatch.countDown();
 				}
-			}
 
-		});
+			});
+		}
+		else {
+			this.started = true;
+			this.startedLatch.countDown();
+		}
 		if (logger.isInfoEnabled()) {
 			this.logger.info("Container initialized for queues: " + Arrays.asList(queueNames));
 		}
@@ -380,7 +386,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
-		if (!this.started) {
+		if (this.started) {
 			actualShutDown();
 		}
 	}
