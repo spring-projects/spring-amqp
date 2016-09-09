@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -67,6 +68,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private final MultiValueMap<String, SimpleConsumer> consumersByQueue = new LinkedMultiValueMap<>();
 
 	private final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
+
+	private final ActiveObjectCounter<SimpleConsumer> cancellationLock = new ActiveObjectCounter<SimpleConsumer>();
 
 	private volatile TaskExecutor taskExecutor;
 
@@ -179,7 +182,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							added.add(queue);
 						}
 						catch (IOException e) {
-							logger.error("Failed to add queue: " + queue + " undoing adds (if any)");
+							this.logger.error("Failed to add queue: " + queue + " undoing adds (if any)");
 							removeQueues(added.stream());
 							throw new AmqpIOException(e);
 						}
@@ -211,10 +214,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.forEach(consumer -> {
 							try {
 								consumer.getChannel().basicCancel(consumer.getConsumerTag());
-								this.consumers.remove(consumer);
 							}
 							catch (IOException e) {
-								logger.error("Failed to cancel consumer: " + consumer, e);
+								this.logger.error("Failed to cancel consumer: " + consumer, e);
 							}
 						});
 			}
@@ -240,10 +242,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								SimpleConsumer consumer = consumerList.remove(consumerList.size() - 1);
 								try {
 									consumer.getChannel().basicCancel(consumer.getConsumerTag());
-									this.consumers.remove(consumer);
 								}
 								catch (IOException e) {
-									logger.error("Failed to cancel consumer", e);
+									this.logger.error("Failed to cancel consumer", e);
 								}
 							}
 						}
@@ -271,13 +272,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 			synchronized (this.consumersMonitor) {
 				while (!initialized.get() && isRunning()) {
+					this.cancellationLock.reset();
 					try {
 						for (String queue : getQueueNames()) {
 							consumeFromQueue(queue);
 						}
 					}
 					catch (Exception e) {
-						logger.error("Error creating consumer; retrying in "
+						this.logger.error("Error creating consumer; retrying in "
 								+ DirectMessageListenerContainer.this.recoveryInterval, e);
 						doShutdown();
 						try {
@@ -294,7 +296,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		});
 		if (logger.isInfoEnabled()) {
-			logger.info("Container initialized for queues: " + Arrays.asList(getQueueNames()));
+			this.logger.info("Container initialized for queues: " + Arrays.asList(getQueueNames()));
 		}
 	}
 
@@ -314,24 +316,39 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				(getConsumerTagStrategy() != null
 						? getConsumerTagStrategy().createConsumerTag(queue) : ""),
 				false, isExclusive(), getConsumerArguments(), consumer);
-		DirectMessageListenerContainer.this.consumers.add(consumer);
-		DirectMessageListenerContainer.this.consumersByQueue.add(queue, consumer);
+		this.cancellationLock.add(consumer);
+		this.consumers.add(consumer);
+		this.consumersByQueue.add(queue, consumer);
 		return consumer;
 	}
 
 	@Override
 	protected void doShutdown() {
 		Assert.state(this.taskExecutor != null, "Cannot shut down if not initialized");
-		for (DefaultConsumer consumer : this.consumers) {
-			try {
-				consumer.getChannel().basicCancel(consumer.getConsumerTag());
+		synchronized (this.consumersMonitor) {
+			for (DefaultConsumer consumer : this.consumers) {
+				try {
+					consumer.getChannel().basicCancel(consumer.getConsumerTag());
+				}
+				catch (IOException e) {
+					this.logger.error("Cancel Error", e);
+				}
 			}
-			catch (IOException e) {
-				logger.error("Cancel Error", e);
+			this.consumers.clear();
+			this.consumersByQueue.clear();
+		}
+		try {
+			if (this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
+				this.logger.info("Successfully waited for consumers to finish.");
+			}
+			else {
+				this.logger.info("Consumers not finished.");
 			}
 		}
-		this.consumers.clear();
-		this.consumersByQueue.clear();
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			this.logger.warn("Interrupted waiting for consumers.  Continuing with shutdown.");
+		}
 	}
 
 	private final class SimpleConsumer extends DefaultConsumer {
@@ -356,6 +373,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			messageProperties.setConsumerTag(consumerTag);
 			messageProperties.setConsumerQueue(this.queue);
 			Message message = new Message(body, messageProperties);
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug(this + " received " + message);
+			}
 			try {
 				if (!isRunning()) {
 					if (this.logger.isWarnEnabled()) {
@@ -387,16 +407,34 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		@Override
+		public void handleConsumeOk(String consumerTag) {
+			super.handleConsumeOk(consumerTag);
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("New " + this);
+			}
+		}
+
+		@Override
 		public void handleCancelOk(String consumerTag) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("CancelOk " + this);
+			}
+			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
+				DirectMessageListenerContainer.this.cancellationLock.release(this);
+				DirectMessageListenerContainer.this.consumers.remove(this);
+			}
 			RabbitUtils.closeChannel(getChannel());
 		}
 
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
-			List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
-			list.remove(this);
-			DirectMessageListenerContainer.this.consumers.remove(this);
+			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
+				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
+				list.remove(this);
+				DirectMessageListenerContainer.this.cancellationLock.release(this);
+				DirectMessageListenerContainer.this.consumers.remove(this);
+			}
 		}
 
 		@Override
