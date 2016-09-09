@@ -59,8 +59,6 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
@@ -87,8 +85,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Artem Bilan
  * @since 1.0
  */
-public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer
-		implements ApplicationEventPublisherAware {
+public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
 
 	private static final long DEFAULT_START_CONSUMER_MIN_INTERVAL = 10000;
 
@@ -149,8 +146,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean mismatchedQueuesFatal = false;
 
-	private volatile ApplicationEventPublisher applicationEventPublisher;
-
 	private Integer declarationRetries;
 
 	private Long failedDeclarationRetryInterval;
@@ -158,10 +153,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private Long retryDeclarationInterval;
 
 	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
-
-	private Long idleEventInterval;
-
-	private volatile long lastReceive = System.currentTimeMillis();
 
 	/**
 	 * Default constructor for convenient dependency injection via setters.
@@ -431,15 +422,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * @since 1.5
-	 */
-	@Override
-	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-		this.applicationEventPublisher = applicationEventPublisher;
-	}
-
 	@Override
 	public void setQueueNames(String... queueName) {
 		super.setQueueNames(queueName);
@@ -559,14 +541,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setExclusiveConsumerExceptionLogger(ConditionalExceptionLogger exclusiveConsumerExceptionLogger) {
 		this.exclusiveConsumerExceptionLogger = exclusiveConsumerExceptionLogger;
-	}
-
-	/**
-	 * How often to emit {@link ListenerContainerIdleEvent}s in milliseconds.
-	 * @param idleEventInterval the interval.
-	 */
-	public void setIdleEventInterval(long idleEventInterval) {
-		this.idleEventInterval = idleEventInterval;
 	}
 
 	/**
@@ -1191,16 +1165,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								}
 							}
 						}
-						if (SimpleMessageListenerContainer.this.idleEventInterval != null) {
+						long idleEventInterval = getIdleEventInterval();
+						if (idleEventInterval > 0) {
 							if (receivedOk) {
-								SimpleMessageListenerContainer.this.lastReceive = System.currentTimeMillis();
+								updateLastReceive();
 							}
 							else {
 								long now = System.currentTimeMillis();
 								long lastAlertAt = SimpleMessageListenerContainer.this.lastNoMessageAlert.get();
-								long lastReceive = SimpleMessageListenerContainer.this.lastReceive;
-								if (now > lastReceive + SimpleMessageListenerContainer.this.idleEventInterval
-										&& now > lastAlertAt + SimpleMessageListenerContainer.this.idleEventInterval
+								long lastReceive = getLastReceive();
+								if (now > lastReceive + idleEventInterval
+										&& now > lastAlertAt + idleEventInterval
 										&& SimpleMessageListenerContainer.this.lastNoMessageAlert
 												.compareAndSet(lastAlertAt, now)) {
 									publishIdleContainerEvent(now - lastReceive);
@@ -1331,22 +1306,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ "Exception summary: " + t);
 			}
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
-		}
-
-		private void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
-			if (SimpleMessageListenerContainer.this.applicationEventPublisher != null) {
-				SimpleMessageListenerContainer.this.applicationEventPublisher
-						.publishEvent(new ListenerContainerConsumerFailedEvent(SimpleMessageListenerContainer.this,
-								reason, t, fatal));
-			}
-		}
-
-		private void publishIdleContainerEvent(long idleTime) {
-			if (SimpleMessageListenerContainer.this.applicationEventPublisher != null) {
-				SimpleMessageListenerContainer.this.applicationEventPublisher.publishEvent(
-						new ListenerContainerIdleEvent(SimpleMessageListenerContainer.this, idleTime, getListenerId(),
-								getQueueNames()));
-			}
 		}
 
 	}

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -41,6 +42,8 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -71,11 +74,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private final ActiveObjectCounter<SimpleConsumer> cancellationLock = new ActiveObjectCounter<SimpleConsumer>();
 
+	private TaskScheduler taskScheduler;
+
 	private volatile TaskExecutor taskExecutor;
 
 	private volatile int consumersPerQueue = 1;
 
 	private volatile long recoveryInterval = DEFAULT_RECOVERY_INTERVAL;
+
+	private volatile ScheduledFuture<?> idleTask;
+
+	private volatile long lastAlertAt;
 
 	/**
 	 * Create an instance with the provided connection factory.
@@ -258,6 +267,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 	@Override
 	protected void doInitialize() throws Exception {
+		if (this.taskScheduler == null) {
+			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-idleDetector-");
+			threadPoolTaskScheduler.afterPropertiesSet();
+			this.taskScheduler = threadPoolTaskScheduler;
+		}
 	}
 
 	@Override
@@ -266,6 +281,19 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.taskExecutor == null) {
 			this.taskExecutor = new SimpleAsyncTaskExecutor(
 					(getBeanName() == null ? "container" : getBeanName()) + "-");
+		}
+		long idleEventInterval = getIdleEventInterval();
+		if (idleEventInterval > 0) {
+			if (this.taskScheduler == null) {
+				afterPropertiesSet();
+			}
+			this.idleTask = this.taskScheduler.scheduleAtFixedRate(() -> {
+				long now = System.currentTimeMillis();
+				if (now - getLastReceive() > idleEventInterval && now - this.lastAlertAt > idleEventInterval) {
+					publishIdleContainerEvent(now - getLastReceive());
+					this.lastAlertAt = now;
+				}
+			}, idleEventInterval / 2);
 		}
 		AtomicBoolean initialized = new AtomicBoolean();
 		this.taskExecutor.execute(() -> {
@@ -336,6 +364,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			this.consumers.clear();
 			this.consumersByQueue.clear();
+		}
+		if (this.idleTask != null) {
+			this.idleTask.cancel(true);
 		}
 		try {
 			if (this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
@@ -425,6 +456,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
+			publishConsumerFailedEvent("Consumer " + this + " canceled", true, null);
 			removeConsumer();
 		}
 
