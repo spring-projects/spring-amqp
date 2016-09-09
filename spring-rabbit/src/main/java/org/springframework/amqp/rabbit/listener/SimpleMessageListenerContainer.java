@@ -100,8 +100,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	public static final long DEFAULT_RECEIVE_TIMEOUT = 1000;
 
-	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
-
 	private final AtomicLong lastNoMessageAlert = new AtomicLong();
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
@@ -127,8 +125,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long lastConsumerStopped;
 
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
-
-	private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private BackOff recoveryBackOff = new FixedBackOff(DEFAULT_RECOVERY_INTERVAL, FixedBackOff.UNLIMITED_ATTEMPTS);
 
@@ -352,17 +348,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setReceiveTimeout(long receiveTimeout) {
 		this.receiveTimeout = receiveTimeout;
-	}
-
-	/**
-	 * The time to wait for workers in milliseconds after the container is stopped, and before the connection is forced
-	 * closed. If any workers are active when the shutdown signal comes they will be allowed to finish processing as
-	 * long as they can finish within this timeout. Otherwise the connection is closed and messages remain unacked (if
-	 * the channel is transactional). Defaults to 5 seconds.
-	 * @param shutdownTimeout the shutdown timeout to set
-	 */
-	public void setShutdownTimeout(long shutdownTimeout) {
-		this.shutdownTimeout = shutdownTimeout;
 	}
 
 	public void setTaskExecutor(Executor taskExecutor) {
@@ -738,7 +723,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			logger.info("Waiting for workers to finish.");
-			boolean finished = this.cancellationLock.await(this.shutdownTimeout, TimeUnit.MILLISECONDS);
+			boolean finished = this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS);
 			if (finished) {
 				logger.info("Successfully waited for workers to finish.");
 			}
@@ -933,7 +918,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			consumer.setTagStrategy(getConsumerTagStrategy());
 		}
 		consumer.setBackOffExecution(this.recoveryBackOff.start());
-		consumer.setShutdownTimeout(this.shutdownTimeout);
+		consumer.setShutdownTimeout(getShutdownTimeout());
 		return consumer;
 	}
 

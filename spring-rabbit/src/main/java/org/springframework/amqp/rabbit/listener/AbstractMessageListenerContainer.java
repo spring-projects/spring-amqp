@@ -81,6 +81,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public static final long DEFAULT_RECOVERY_INTERVAL = 5000;
 
+	public static final long DEFAULT_SHUTDOWN_TIMEOUT = 5000;
+
 	private final ContainerDelegate delegate = this::actualInvokeListener;
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR
@@ -88,6 +90,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
 
 	private ContainerDelegate proxy = this.delegate;
+
+	private long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
 	private volatile String beanName;
 
@@ -586,6 +590,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected int getPrefetchCount() {
 		return this.prefetchCount;
+	}
+
+	/**
+	 * The time to wait for workers in milliseconds after the container is stopped. If any
+	 * workers are active when the shutdown signal comes they will be allowed to finish
+	 * processing as long as they can finish within this timeout. Defaults
+	 * to 5 seconds.
+	 * @param shutdownTimeout the shutdown timeout to set
+	 */
+	public void setShutdownTimeout(long shutdownTimeout) {
+		this.shutdownTimeout = shutdownTimeout;
+	}
+
+	protected long getShutdownTimeout() {
+		return this.shutdownTimeout;
 	}
 
 	/**
