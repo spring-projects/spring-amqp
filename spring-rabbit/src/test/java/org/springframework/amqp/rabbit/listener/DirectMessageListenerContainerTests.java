@@ -36,13 +36,16 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
+import org.springframework.amqp.rabbit.support.ArgumentBuilder;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,8 +67,10 @@ public class DirectMessageListenerContainerTests {
 
 	private static final String EQ2 = "eventTestQ2";
 
+	private static final String DLQ1 = "testDLQ1";
+
 	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2);
+	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2, DLQ1);
 
 	@Rule
 	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
@@ -234,6 +239,29 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNotNull(failEvent.get());
 		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
+		container.stop();
+	}
+
+	@Test
+	public void testErrorHandler() {
+		brokerRunning.getAdmin().deleteQueue(Q1);
+		Queue q1 = new Queue(Q1, true, false, false, new ArgumentBuilder()
+				.put("x-dead-letter-exchange", "")
+				.put("x-dead-letter-routing-key", DLQ1)
+				.get());
+		brokerRunning.getAdmin().declareQueue(q1);
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(Q1);
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(m -> {
+			throw new MessageConversionException("intended - should be wrapped in an ARADRE");
+		});
+		container.afterPropertiesSet();
+		container.start();
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.convertAndSend(Q1, "foo");
+		assertNotNull(template.receive(DLQ1, 10000));
 		container.stop();
 	}
 

@@ -454,14 +454,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug(this + " received " + message);
 			}
 			try {
-				if (!isRunning()) {
-					if (this.logger.isWarnEnabled()) {
-						this.logger.warn("Rejecting received message because the listener container has been stopped: "
-								+ message);
-					}
-					throw new MessageRejectedWhileStoppingException();
-				}
-				invokeListener(getChannel(), message);
+				executeListener(getChannel(), message);
 				if (this.ackRequired) {
 					getChannel().basicAck(envelope.getDeliveryTag(), false);
 				}
