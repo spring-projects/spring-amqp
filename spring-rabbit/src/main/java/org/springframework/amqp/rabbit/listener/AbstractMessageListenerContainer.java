@@ -887,12 +887,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @param channel the Rabbit Channel to operate on
 	 * @param messageIn the received Rabbit Message
-	 * @throws Throwable Any Throwable.
+	 * @throws Exception Any Exception.
 	 *
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	protected void executeListener(Channel channel, Message messageIn) throws Throwable {
+	protected void executeListener(Channel channel, Message messageIn) throws Exception {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Rejecting received message because the listener container has been stopped: " + messageIn);
