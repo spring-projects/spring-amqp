@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -38,6 +39,7 @@ import org.junit.Test;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -51,6 +53,8 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
@@ -105,6 +109,7 @@ public class DirectMessageListenerContainerTests {
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -129,6 +134,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(adviceLatch.await(10, TimeUnit.SECONDS));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -161,6 +167,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -199,6 +206,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		cf.destroy();
 	}
 
 	@Test
@@ -240,6 +248,7 @@ public class DirectMessageListenerContainerTests {
 		assertNotNull(failEvent.get());
 		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -254,7 +263,9 @@ public class DirectMessageListenerContainerTests {
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1);
 		container.setConsumersPerQueue(2);
-		container.setMessageListener(m -> {
+		final AtomicReference<Channel> channel = new AtomicReference<>();
+		container.setMessageListener((ChannelAwareMessageListener) (m, c) -> {
+			channel.set(c);
 			throw new MessageConversionException("intended - should be wrapped in an ARADRE");
 		});
 		container.afterPropertiesSet();
@@ -263,6 +274,8 @@ public class DirectMessageListenerContainerTests {
 		template.convertAndSend(Q1, "foo");
 		assertNotNull(template.receive(DLQ1, 10000));
 		container.stop();
+		assertFalse(channel.get().isOpen());
+		cf.destroy();
 	}
 
 	private boolean consumersOnQueue(String queue, int count) throws Exception {

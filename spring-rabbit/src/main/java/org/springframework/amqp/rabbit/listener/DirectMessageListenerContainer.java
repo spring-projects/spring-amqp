@@ -373,7 +373,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Connection connection = getConnectionFactory().createConnection();
 		Channel channel = connection.createChannel(isChannelTransacted());
 		channel.basicQos(getPrefetchCount());
-		RabbitUtils.setPhysicalCloseRequired(true);
 		SimpleConsumer consumer = new SimpleConsumer(channel, queue);
 		channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 				(getConsumerTagStrategy() != null
@@ -508,7 +507,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
 			}
+			RabbitUtils.setPhysicalCloseRequired(true);
 			RabbitUtils.closeChannel(getChannel());
+			RabbitUtils.setPhysicalCloseRequired(false);
 		}
 
 		@Override
