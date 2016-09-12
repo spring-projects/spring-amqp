@@ -165,7 +165,7 @@ public class DirectMessageListenerContainerTests {
 		container.removeQueueNames(Q1, Q2, "junk");
 		assertTrue(consumersOnQueue(Q1, 0));
 		assertTrue(consumersOnQueue(Q2, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		assertTrue(activeConsumerCount(container, 0));
 		container.stop();
 		cf.destroy();
 	}
@@ -204,7 +204,7 @@ public class DirectMessageListenerContainerTests {
 		container.stop();
 		assertTrue(consumersOnQueue(Q1, 0));
 		assertTrue(consumersOnQueue(Q2, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
 		cf.destroy();
 	}
@@ -285,6 +285,15 @@ public class DirectMessageListenerContainerTests {
 			Thread.sleep(100);
 		}
 		return admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count);
+	}
+
+	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
+		int n = 0;
+		List<?> consumers = TestUtils.getPropertyValue(container, "consumers", List.class);
+		while (n++ < 100 && consumers.size() != expected) {
+			Thread.sleep(100);
+		}
+		return consumers.size() == expected;
 	}
 
 }
