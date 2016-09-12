@@ -373,7 +373,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Connection connection = getConnectionFactory().createConnection();
 		Channel channel = connection.createChannel(isChannelTransacted());
 		channel.basicQos(getPrefetchCount());
-		RabbitUtils.setPhysicalCloseRequired(true);
 		SimpleConsumer consumer = new SimpleConsumer(channel, queue);
 		channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 				(getConsumerTagStrategy() != null
@@ -454,14 +453,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.logger.debug(this + " received " + message);
 			}
 			try {
-				if (!isRunning()) {
-					if (this.logger.isWarnEnabled()) {
-						this.logger.warn("Rejecting received message because the listener container has been stopped: "
-								+ message);
-					}
-					throw new MessageRejectedWhileStoppingException();
-				}
-				invokeListener(getChannel(), message);
+				executeListener(getChannel(), message);
 				if (this.ackRequired) {
 					getChannel().basicAck(envelope.getDeliveryTag(), false);
 				}
@@ -515,7 +507,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
 			}
+			RabbitUtils.setPhysicalCloseRequired(true);
 			RabbitUtils.closeChannel(getChannel());
+			RabbitUtils.setPhysicalCloseRequired(false);
 		}
 
 		@Override

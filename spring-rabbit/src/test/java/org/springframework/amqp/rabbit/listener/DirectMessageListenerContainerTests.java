@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -36,18 +37,24 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
+import org.springframework.amqp.rabbit.support.ArgumentBuilder;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
@@ -64,8 +71,10 @@ public class DirectMessageListenerContainerTests {
 
 	private static final String EQ2 = "eventTestQ2";
 
+	private static final String DLQ1 = "testDLQ1";
+
 	@ClassRule
-	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2);
+	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2, DLQ1);
 
 	@Rule
 	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
@@ -100,6 +109,7 @@ public class DirectMessageListenerContainerTests {
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -124,6 +134,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(adviceLatch.await(10, TimeUnit.SECONDS));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -154,8 +165,9 @@ public class DirectMessageListenerContainerTests {
 		container.removeQueueNames(Q1, Q2, "junk");
 		assertTrue(consumersOnQueue(Q1, 0));
 		assertTrue(consumersOnQueue(Q2, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		assertTrue(activeConsumerCount(container, 0));
 		container.stop();
+		cf.destroy();
 	}
 
 	@Test
@@ -192,8 +204,9 @@ public class DirectMessageListenerContainerTests {
 		container.stop();
 		assertTrue(consumersOnQueue(Q1, 0));
 		assertTrue(consumersOnQueue(Q2, 0));
-		assertEquals(0, TestUtils.getPropertyValue(container, "consumers", List.class).size());
+		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		cf.destroy();
 	}
 
 	@Test
@@ -235,6 +248,34 @@ public class DirectMessageListenerContainerTests {
 		assertNotNull(failEvent.get());
 		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
 		container.stop();
+		cf.destroy();
+	}
+
+	@Test
+	public void testErrorHandler() {
+		brokerRunning.getAdmin().deleteQueue(Q1);
+		Queue q1 = new Queue(Q1, true, false, false, new ArgumentBuilder()
+				.put("x-dead-letter-exchange", "")
+				.put("x-dead-letter-routing-key", DLQ1)
+				.get());
+		brokerRunning.getAdmin().declareQueue(q1);
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setQueueNames(Q1);
+		container.setConsumersPerQueue(2);
+		final AtomicReference<Channel> channel = new AtomicReference<>();
+		container.setMessageListener((ChannelAwareMessageListener) (m, c) -> {
+			channel.set(c);
+			throw new MessageConversionException("intended - should be wrapped in an ARADRE");
+		});
+		container.afterPropertiesSet();
+		container.start();
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.convertAndSend(Q1, "foo");
+		assertNotNull(template.receive(DLQ1, 10000));
+		container.stop();
+		assertFalse(channel.get().isOpen());
+		cf.destroy();
 	}
 
 	private boolean consumersOnQueue(String queue, int count) throws Exception {
@@ -244,6 +285,15 @@ public class DirectMessageListenerContainerTests {
 			Thread.sleep(100);
 		}
 		return admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count);
+	}
+
+	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
+		int n = 0;
+		List<?> consumers = TestUtils.getPropertyValue(container, "consumers", List.class);
+		while (n++ < 100 && consumers.size() != expected) {
+			Thread.sleep(100);
+		}
+		return consumers.size() == expected;
 	}
 
 }
