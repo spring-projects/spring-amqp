@@ -27,7 +27,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,13 +58,9 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
-import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
@@ -109,10 +104,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int txSize = 1;
 
-	private volatile Executor taskExecutor = new SimpleAsyncTaskExecutor();
-
-	private volatile boolean taskExecutorSet;
-
 	volatile int concurrentConsumers = 1;
 
 	volatile Integer maxConcurrentConsumers;
@@ -127,10 +118,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
-
-	private PlatformTransactionManager transactionManager;
-
-	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
 
@@ -341,12 +328,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.receiveTimeout = receiveTimeout;
 	}
 
-	public void setTaskExecutor(Executor taskExecutor) {
-		Assert.notNull(taskExecutor, "taskExecutor must not be null");
-		this.taskExecutor = taskExecutor;
-		this.taskExecutorSet = true;
-	}
-
 	/**
 	 * Tells the container how many messages to process in a single transaction (if the channel is transactional). For
 	 * best results it should be less than or equal to {@link #setPrefetchCount(int) the prefetch count}. Also affects
@@ -356,17 +337,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	public void setTxSize(int txSize) {
 		Assert.isTrue(txSize > 0, "'txSize' must be > 0");
 		this.txSize = txSize;
-	}
-
-	public void setTransactionManager(PlatformTransactionManager transactionManager) {
-		this.transactionManager = transactionManager;
-	}
-
-	/**
-	 * @param transactionAttribute the transaction attribute to set
-	 */
-	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
-		this.transactionAttribute = transactionAttribute;
 	}
 
 	/**
@@ -553,7 +523,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		super.validateConfiguration();
 
 		Assert.state(
-				!(getAcknowledgeMode().isAutoAck() && this.transactionManager != null),
+				!(getAcknowledgeMode().isAutoAck() && getTransactionManager() != null),
 				"The acknowledgeMode is NONE (autoack in Rabbit terms) which is not consistent with having an "
 						+ "external transaction manager. Either use a different AcknowledgeMode or make sure " +
 						"the transactionManager is null.");
@@ -580,20 +550,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	protected void doInitialize() throws Exception {
 		checkMissingQueuesFatal();
-		if (!this.isExposeListenerChannel() && this.transactionManager != null) {
-			logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
-		}
-		if (!this.taskExecutorSet && StringUtils.hasText(this.getBeanName())) {
-			this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
-			this.taskExecutorSet = true;
-		}
-		if (this.transactionManager != null) {
-			if (!isChannelTransacted()) {
-				logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
-				setChannelTransacted(true);
-			}
-
-		}
 	}
 
 	@ManagedMetric(metricType = MetricType.GAUGE)
@@ -670,7 +626,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
 				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 				processors.add(processor);
-				this.taskExecutor.execute(processor);
+				getTaskExecutor().execute(processor);
 			}
 			for (AsyncMessageProcessingConsumer processor : processors) {
 				FatalListenerStartupException startupException = processor.getStartupException();
@@ -795,7 +751,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					if (logger.isDebugEnabled()) {
 						logger.debug("Starting a new consumer: " + consumer);
 					}
-					this.taskExecutor.execute(processor);
+					getTaskExecutor().execute(processor);
 					try {
 						FatalListenerStartupException startupException = processor.getStartupException();
 						if (startupException != null) {
@@ -865,11 +821,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	@Override
-	protected boolean isChannelLocallyTransacted(Channel channel) {
-		return super.isChannelLocallyTransacted(channel) && this.transactionManager == null;
-	}
-
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
 		String[] queues = getRequiredQueueNames();
@@ -917,7 +868,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// Re-throw and have it logged properly by the caller.
 					throw e;
 				}
-				this.taskExecutor.execute(new AsyncMessageProcessingConsumer(consumer));
+				getTaskExecutor().execute(new AsyncMessageProcessingConsumer(consumer));
 			}
 		}
 	}
@@ -971,9 +922,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean receiveAndExecute(final BlockingQueueConsumer consumer) throws Throwable {
 
-		if (this.transactionManager != null) {
+		if (getTransactionManager() != null) {
 			try {
-				return new TransactionTemplate(this.transactionManager, this.transactionAttribute)
+				return new TransactionTemplate(getTransactionManager(), getTransactionAttribute())
 						.execute(new TransactionCallback<Boolean>() {
 							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
@@ -1026,7 +977,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		}
 
-		return consumer.commitIfNecessary(isChannelLocallyTransacted(channel));
+		return consumer.commitIfNecessary(isChannelLocallyTransacted());
 
 	}
 
@@ -1136,7 +1087,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					throw t;
 				}
 
-				if (SimpleMessageListenerContainer.this.transactionManager != null) {
+				if (getTransactionManager() != null) {
 					/*
 					 * Register the consumer's channel so it will be used by the transaction manager
 					 * if it's an instance of RabbitTransactionManager.
@@ -1260,7 +1211,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			finally {
-				if (SimpleMessageListenerContainer.this.transactionManager != null) {
+				if (getTransactionManager() != null) {
 					ConsumerChannelRegistry.unRegisterConsumerChannel();
 				}
 			}
@@ -1306,15 +1257,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ "Exception summary: " + t);
 			}
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
-		}
-
-	}
-
-	@SuppressWarnings("serial")
-	private static final class WrappedTransactionException extends RuntimeException {
-
-		private WrappedTransactionException(Throwable cause) {
-			super(cause);
 		}
 
 	}

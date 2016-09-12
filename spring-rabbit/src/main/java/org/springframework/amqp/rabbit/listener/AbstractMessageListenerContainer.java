@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
 
@@ -58,9 +59,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
+import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
 
@@ -98,7 +104,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
+	private PlatformTransactionManager transactionManager;
+
+	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
+
 	private String beanName;
+
+	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
+
+	private boolean taskExecutorSet;
 
 	private boolean autoStartup = true;
 
@@ -651,6 +665,44 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set the transaction manager to use.
+	 * @param transactionManager the transaction manager.
+	 */
+	public void setTransactionManager(PlatformTransactionManager transactionManager) {
+		this.transactionManager = transactionManager;
+	}
+
+	protected PlatformTransactionManager getTransactionManager() {
+		return this.transactionManager;
+	}
+
+	/**
+	 * Set the transaction attribute to use when using an external transaction manager.
+	 * @param transactionAttribute the transaction attribute to set
+	 */
+	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
+		this.transactionAttribute = transactionAttribute;
+	}
+
+	protected TransactionAttribute getTransactionAttribute() {
+		return this.transactionAttribute;
+	}
+
+	/**
+	 * Set a task executor for the container - used to create the consumers not at
+	 * runtime.
+	 * @param taskExecutor the task executor.
+	 */
+	public void setTaskExecutor(Executor taskExecutor) {
+		this.taskExecutor = taskExecutor;
+		this.taskExecutorSet = true;
+	}
+
+	protected Executor getTaskExecutor() {
+		return this.taskExecutor;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -719,6 +771,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			initializeProxy(this.delegate);
 			doInitialize();
+			if (!this.isExposeListenerChannel() && this.transactionManager != null) {
+				logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
+			}
+			if (!this.taskExecutorSet && StringUtils.hasText(this.getBeanName())) {
+				this.taskExecutor = new SimpleAsyncTaskExecutor(this.getBeanName() + "-");
+				this.taskExecutorSet = true;
+			}
+			if (this.transactionManager != null) {
+				if (!isChannelTransacted()) {
+					logger.debug("The 'channelTransacted' is coerced to 'true', when 'transactionManager' is provided");
+					setChannelTransacted(true);
+				}
+
+			}
 		}
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
@@ -953,7 +1019,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
 		}
 		else if (listener instanceof MessageListener) {
-			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted(channel);
+			boolean bindChannel = isExposeListenerChannel() && isChannelLocallyTransacted();
 			if (bindChannel) {
 				RabbitResourceHolder resourceHolder = new RabbitResourceHolder(channel, false);
 				resourceHolder.setSynchronizedWithTransaction(true);
@@ -1007,7 +1073,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				 * we need to bind it temporarily here. Any work done on this channel
 				 * will be committed in the finally block.
 				 */
-				if (isChannelLocallyTransacted(channelToUse) &&
+				if (isChannelLocallyTransacted() &&
 							!TransactionSynchronizationManager.isActualTransactionActive()) {
 						resourceHolder.setSynchronizedWithTransaction(true);
 						TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
@@ -1017,7 +1083,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			else {
 				// if locally transacted, bind the current channel to make it available to RabbitTemplate
-				if (isChannelLocallyTransacted(channel)) {
+				if (isChannelLocallyTransacted()) {
 					RabbitResourceHolder localResourceHolder = new RabbitResourceHolder(channelToUse, false);
 					localResourceHolder.setSynchronizedWithTransaction(true);
 					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
@@ -1042,7 +1108,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			if (boundHere) {
 				// unbind if we bound
 				TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
-				if (!isExposeListenerChannel() && isChannelLocallyTransacted(channelToUse)) {
+				if (!isExposeListenerChannel() && isChannelLocallyTransacted()) {
 					/*
 					 *  commit the temporary channel we exposed; the consumer's channel
 					 *  will be committed later. Note that when exposing a different channel
@@ -1082,12 +1148,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * listener container's Channel handling and not by an external transaction coordinator.
 	 * <p>
 	 * Note:This method is about finding out whether the Channel's transaction is local or externally coordinated.
-	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see #isChannelTransacted()
 	 */
-	protected boolean isChannelLocallyTransacted(Channel channel) {
-		return this.isChannelTransacted();
+	protected boolean isChannelLocallyTransacted() {
+		return this.isChannelTransacted() && this.transactionManager == null;
 	}
 
 	/**
@@ -1166,6 +1231,15 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		protected SharedConnectionNotInitializedException(String msg) {
 			super(msg);
 		}
+	}
+
+	@SuppressWarnings("serial")
+	protected static final class WrappedTransactionException extends RuntimeException {
+
+		protected WrappedTransactionException(Throwable cause) {
+			super(cause);
+		}
+
 	}
 
 }

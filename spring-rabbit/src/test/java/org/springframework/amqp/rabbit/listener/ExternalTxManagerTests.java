@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
@@ -63,7 +65,7 @@ import com.rabbitmq.client.Envelope;
  * @since 1.1.2
  *
  */
-public class ExternalTxManagerTests {
+public abstract class ExternalTxManagerTests {
 
 	/**
 	 * Verifies that an up-stack RabbitTemplate uses the listener's
@@ -100,9 +102,11 @@ public class ExternalTxManagerTests {
 		}).when(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
 			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -114,7 +118,7 @@ public class ExternalTxManagerTests {
 		}).when(onlyChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
 		container.setMessageListener((MessageListener) message -> {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
@@ -128,6 +132,7 @@ public class ExternalTxManagerTests {
 		container.setTransactionManager(new DummyTxManager());
 		container.afterPropertiesSet();
 		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
@@ -154,6 +159,72 @@ public class ExternalTxManagerTests {
 	}
 
 	/**
+	 * Verifies that the channel is rolled back after an exception.
+	 */
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testMessageListenerRollback() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		final Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
+
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+
+		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+
+		doAnswer(invocation -> channel).when(mockConnection).createChannel();
+
+		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
+
+		doAnswer(invocation -> {
+			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
+			return "consumerTag";
+		}).when(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+
+		final CountDownLatch rollbackLatch = new CountDownLatch(1);
+		doAnswer(invocation -> {
+			rollbackLatch.countDown();
+			return null;
+		}).when(channel).txRollback();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
+		container.setMessageListener(message -> {
+			latch.countDown();
+			throw new RuntimeException("force rollback");
+		});
+		container.setQueueNames("queue");
+		container.setChannelTransacted(true);
+		container.setShutdownTimeout(100);
+		container.setTransactionManager(new DummyTxManager());
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		Exception e = tooManyChannels.get();
+		if (e != null) {
+			throw e;
+		}
+
+		verify(mockConnection, times(1)).createChannel();
+		assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
+		container.stop();
+	}
+
+	/**
 	 * Verifies that an up-stack RabbitTemplate does not use the listener's
 	 * channel when it has its own connection factory.
 	 */
@@ -169,8 +240,10 @@ public class ExternalTxManagerTests {
 		when(listenerChannel.isOpen()).thenReturn(true);
 		when(templateChannel.isOpen()).thenReturn(true);
 
-		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(listenerConnectionFactory);
-		final CachingConnectionFactory cachingTemplateConnectionFactory = new CachingConnectionFactory(templateConnectionFactory);
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(
+				listenerConnectionFactory);
+		final CachingConnectionFactory cachingTemplateConnectionFactory = new CachingConnectionFactory(
+				templateConnectionFactory);
 
 		when(listenerConnectionFactory.newConnection((ExecutorService) null)).thenReturn(listenerConnection);
 		when(listenerConnection.isOpen()).thenReturn(true);
@@ -196,9 +269,11 @@ public class ExternalTxManagerTests {
 		}).when(listenerConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
 			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(listenerChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -214,7 +289,7 @@ public class ExternalTxManagerTests {
 		}).when(templateChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
 		container.setMessageListener((MessageListener) message -> {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingTemplateConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
@@ -228,6 +303,7 @@ public class ExternalTxManagerTests {
 		container.setTransactionManager(new DummyTxManager());
 		container.afterPropertiesSet();
 		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
@@ -290,9 +366,11 @@ public class ExternalTxManagerTests {
 		}).when(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
 			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -305,7 +383,7 @@ public class ExternalTxManagerTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicReference<Channel> exposed = new AtomicReference<Channel>();
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
+		AbstractMessageListenerContainer container = createContainer(singleConnectionFactory);
 		container.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
 			exposed.set(channel);
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(singleConnectionFactory);
@@ -320,6 +398,7 @@ public class ExternalTxManagerTests {
 		container.setTransactionManager(new DummyTxManager());
 		container.afterPropertiesSet();
 		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
@@ -380,9 +459,11 @@ public class ExternalTxManagerTests {
 		}).when(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
 			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -411,6 +492,7 @@ public class ExternalTxManagerTests {
 		container.setTransactionManager(new DummyTxManager());
 		container.afterPropertiesSet();
 		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
@@ -471,9 +553,11 @@ public class ExternalTxManagerTests {
 		}).when(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
 			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
 			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -485,7 +569,7 @@ public class ExternalTxManagerTests {
 		}).when(onlyChannel).txCommit();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
 		container.setMessageListener((MessageListener) message -> {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
 			rabbitTemplate.setChannelTransacted(true);
@@ -499,6 +583,7 @@ public class ExternalTxManagerTests {
 		container.setTransactionManager(new RabbitTransactionManager(cachingConnectionFactory));
 		container.afterPropertiesSet();
 		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
 
@@ -522,6 +607,8 @@ public class ExternalTxManagerTests {
 
 		container.stop();
 	}
+
+	protected abstract AbstractMessageListenerContainer createContainer(AbstractConnectionFactory connectionFactory);
 
 	@SuppressWarnings("serial")
 	private static class DummyTxManager extends AbstractPlatformTransactionManager {

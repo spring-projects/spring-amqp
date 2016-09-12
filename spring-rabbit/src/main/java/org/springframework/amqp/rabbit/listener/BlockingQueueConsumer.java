@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -117,7 +117,7 @@ public class BlockingQueueConsumer {
 
 	private final Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
-	private final boolean defaultRequeuRejected;
+	private final boolean defaultRequeueRejected;
 
 	private final Map<String, String> consumerTags = new ConcurrentHashMap<String, String>();
 
@@ -229,7 +229,7 @@ public class BlockingQueueConsumer {
 		this.acknowledgeMode = acknowledgeMode;
 		this.transactional = transactional;
 		this.prefetchCount = prefetchCount;
-		this.defaultRequeuRejected = defaultRequeueRejected;
+		this.defaultRequeueRejected = defaultRequeueRejected;
 		if (consumerArgs != null && consumerArgs.size() > 0) {
 			this.consumerArgs.putAll(consumerArgs);
 		}
@@ -632,22 +632,10 @@ public class BlockingQueueConsumer {
 				RabbitUtils.rollbackIfNecessary(this.channel);
 			}
 			if (ackRequired) {
-				// We should always requeue if the container was stopping
-				boolean shouldRequeue = this.defaultRequeuRejected ||
-						ex instanceof MessageRejectedWhileStoppingException;
-				Throwable t = ex;
-				while (shouldRequeue && t != null) {
-					if (t instanceof AmqpRejectAndDontRequeueException) {
-						shouldRequeue = false;
-					}
-					t = t.getCause();
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
-				}
-				for (Long deliveryTag : this.deliveryTags) {
-					// With newer RabbitMQ brokers could use basicNack here...
-					this.channel.basicReject(deliveryTag, shouldRequeue);
+				OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
+				if (deliveryTag.isPresent()) {
+					this.channel.basicNack(deliveryTag.getAsLong(), true,
+							RabbitUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
 				}
 				if (this.transactional) {
 					// Need to commit the reject (=nack)
