@@ -163,7 +163,7 @@ public class BlockingQueueConsumerTests {
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
-		Mockito.verify(channel).basicReject(1L, expectedRequeue);
+		Mockito.verify(channel).basicNack(1L, true, expectedRequeue);
 	}
 
 }

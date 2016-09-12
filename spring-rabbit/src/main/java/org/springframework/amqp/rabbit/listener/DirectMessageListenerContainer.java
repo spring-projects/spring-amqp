@@ -32,19 +32,23 @@ import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
+import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -77,8 +81,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TaskScheduler taskScheduler;
 
-	private TaskExecutor taskExecutor;
-
 	private volatile boolean started;
 
 	private volatile CountDownLatch startedLatch = new CountDownLatch(1);
@@ -97,15 +99,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public DirectMessageListenerContainer(ConnectionFactory connectionFactory) {
 		setConnectionFactory(connectionFactory);
-	}
-
-	/**
-	 * Set a task executor for the container - used to create the consumers not at
-	 * runtime.
-	 * @param taskExecutor the task executor.
-	 */
-	public void setTaskExecutor(TaskExecutor taskExecutor) {
-		this.taskExecutor = taskExecutor;
 	}
 
 	/**
@@ -306,9 +299,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected void actualStart() throws Exception {
 		super.doStart();
-		if (this.taskExecutor == null) {
-			this.taskExecutor = new SimpleAsyncTaskExecutor(
-					(getBeanName() == null ? "container" : getBeanName()) + "-");
+		if (getTaskExecutor() == null) {
+			afterPropertiesSet();
 		}
 		long idleEventInterval = getIdleEventInterval();
 		if (idleEventInterval > 0) {
@@ -325,7 +317,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		final String[] queueNames = getQueueNames();
 		if (queueNames.length > 0) {
-			this.taskExecutor.execute(() -> {
+			getTaskExecutor().execute(() -> {
 
 				synchronized (this.consumersMonitor) {
 					while (!DirectMessageListenerContainer.this.started && isRunning()) {
@@ -392,7 +384,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void actualShutDown() {
-		Assert.state(this.taskExecutor != null, "Cannot shut down if not initialized");
+		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
 		synchronized (this.consumersMonitor) {
 			for (DefaultConsumer consumer : this.consumers) {
 				try {
@@ -435,6 +427,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final boolean ackRequired;
 
+		private final ConnectionFactory connectionFactory = getConnectionFactory();
+
+		private final PlatformTransactionManager transactionManager = getTransactionManager();
+
+		private final TransactionAttribute transactionAttribute = getTransactionAttribute();
+
+		private final boolean isRabbitTxManager = this.transactionManager instanceof RabbitTransactionManager;
+
 		private SimpleConsumer(Channel channel, String queue) {
 			super(channel);
 			this.queue = queue;
@@ -449,29 +449,74 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			messageProperties.setConsumerTag(consumerTag);
 			messageProperties.setConsumerQueue(this.queue);
 			Message message = new Message(body, messageProperties);
+			long deliveryTag = envelope.getDeliveryTag();
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(this + " received " + message);
 			}
+			if (this.transactionManager != null) {
+				try {
+					if (this.isRabbitTxManager) {
+						ConsumerChannelRegistry.registerConsumerChannel(getChannel(), this.connectionFactory);
+					}
+					new TransactionTemplate(this.transactionManager, this.transactionAttribute).execute(s -> {
+						ConnectionFactoryUtils.bindResourceToTransaction(new RabbitResourceHolder(getChannel(), false),
+								this.connectionFactory, true);
+						callExecuteListener(message, deliveryTag);
+						return null;
+					});
+				}
+				finally {
+					if (this.isRabbitTxManager) {
+						ConsumerChannelRegistry.unRegisterConsumerChannel();
+					}
+				}
+			}
+			else {
+				callExecuteListener(message, deliveryTag);
+			}
+		}
+
+		private void callExecuteListener(Message message, long deliveryTag) {
 			try {
 				executeListener(getChannel(), message);
+				boolean channelLocallyTransacted = isChannelLocallyTransacted();
 				if (this.ackRequired) {
-					getChannel().basicAck(envelope.getDeliveryTag(), false);
+					if (isChannelTransacted() && !channelLocallyTransacted) {
+
+						// Not locally transacted but it is transacted so it
+						// could be synchronized with an external transaction
+						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, getChannel(), deliveryTag);
+
+					}
+					else {
+						getChannel().basicAck(deliveryTag, false);
+					}
+				}
+				if (channelLocallyTransacted) {
+					RabbitUtils.commitIfNecessary(getChannel());
 				}
 			}
 			catch (Exception e) {
 				this.logger.error("Failed to invoke listener", e);
-				boolean shouldRequeue = isDefaultRequeueRejected() ||
-						e instanceof MessageRejectedWhileStoppingException;
-				Throwable t = e;
-				while (shouldRequeue && t != null) {
-					if (t instanceof AmqpRejectAndDontRequeueException) {
-						shouldRequeue = false;
-					}
-					t = t.getCause();
+				rollback(deliveryTag, e);
+			}
+		}
+
+		private void rollback(long deliveryTag, Exception e) {
+			if (isChannelTransacted()) {
+				RabbitUtils.rollbackIfNecessary(getChannel());
+			}
+			if (this.ackRequired) {
+				try {
+					getChannel().basicReject(deliveryTag,
+							RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
-				if (this.ackRequired) {
-					getChannel().basicNack(envelope.getDeliveryTag(), false, shouldRequeue);
+				catch (IOException e1) {
+					this.logger.error("Failed to nack message", e1);
 				}
+			}
+			if (isChannelTransacted()) {
+				RabbitUtils.commitIfNecessary(getChannel());
 			}
 		}
 

@@ -23,6 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.rabbit.listener.MessageRejectedWhileStoppingException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
 
@@ -286,6 +288,32 @@ public abstract class RabbitUtils {
 					&& ((AMQP.Connection.Close) shutdownReason).getClassId() == 40 // exchange
 					&& ((AMQP.Connection.Close) shutdownReason).getMethodId() == 10; // declare
 		}
+	}
+
+	/**
+	 * Determine whether a message should be requeued; returns true if the throwable is a
+	 * {@link MessageRejectedWhileStoppingException} or defaultRequeueRejected is true and
+	 * there is not an {@link AmqpRejectAndDontRequeueException} in the cause chain.
+	 * @param defaultRequeueRejected the default requeue rejected.
+	 * @param throwable the throwable.
+	 * @param logger the logger to use for debug.
+	 * @return true to requeue.
+	 * @since 2.0
+	 */
+	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
+		boolean shouldRequeue = defaultRequeueRejected ||
+				throwable instanceof MessageRejectedWhileStoppingException;
+		Throwable t = throwable;
+		while (shouldRequeue && t != null) {
+			if (t instanceof AmqpRejectAndDontRequeueException) {
+				shouldRequeue = false;
+			}
+			t = t.getCause();
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
+		}
+		return shouldRequeue;
 	}
 
 }
