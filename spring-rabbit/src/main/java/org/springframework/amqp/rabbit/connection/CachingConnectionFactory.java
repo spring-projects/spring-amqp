@@ -368,6 +368,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
 		this.closeExceptionLogger.log(logger, "Channel shutdown", cause);
+		int protocolClassId = cause.getReason().protocolClassId();
+		if (protocolClassId == 20) {
+			getChannelListener().onShutDown(cause);
+		}
+		else if (protocolClassId == 10) {
+			getConnectionListener().onShutDown(cause);
+		}
+
 	}
 
 	@Override

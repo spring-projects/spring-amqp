@@ -47,6 +47,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -77,9 +78,11 @@ import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ChannelListener;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -118,12 +121,15 @@ import org.springframework.transaction.support.TransactionSynchronizationUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.AMQImpl;
 
 /**
  * @author Dave Syer
@@ -147,6 +153,8 @@ public class RabbitTemplateIntegrationTests {
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
 
+	private CachingConnectionFactory connectionFactory;
+
 	private RabbitTemplate template;
 
 	@Autowired
@@ -160,7 +168,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Before
 	public void create() {
-		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		this.connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactory.setPublisherReturns(true);
@@ -1329,6 +1337,58 @@ public class RabbitTemplateIntegrationTests {
 
 			return null;
 		});
+	}
+
+	@Test
+	public void testSendToMissingExchange() throws Exception {
+		final CountDownLatch shutdownLatch = new CountDownLatch(1);
+		final AtomicReference<ShutdownSignalException> shutdown = new AtomicReference<>();
+		this.connectionFactory.addChannelListener(new ChannelListener() {
+
+			@Override
+			public void onCreate(Channel channel, boolean transactional) {
+			}
+
+			@Override
+			public void onShutDown(ShutdownSignalException signal) {
+				shutdown.set(signal);
+				shutdownLatch.countDown();
+			}
+
+		});
+		final CountDownLatch connLatch = new CountDownLatch(1);
+		this.connectionFactory.addConnectionListener(new ConnectionListener() {
+
+			@Override
+			public void onCreate(Connection connection) {
+			}
+
+			@Override
+			public void onShutDown(ShutdownSignalException signal) {
+				shutdown.set(signal);
+				connLatch.countDown();
+			}
+
+		});
+		this.template.convertAndSend(UUID.randomUUID().toString(), "foo", "bar");
+		assertTrue(shutdownLatch.await(10, TimeUnit.SECONDS));
+		this.template.setChannelTransacted(true);
+		try {
+			this.template.convertAndSend(UUID.randomUUID().toString(), "foo", "bar");
+			fail("expected exception");
+		}
+		catch (AmqpIOException e) {
+			Method shutdownReason = shutdown.get().getReason();
+			assertThat(shutdownReason, instanceOf(AMQP.Channel.Close.class));
+			assertThat(((AMQP.Channel.Close) shutdownReason).getReplyCode(), equalTo(AMQP.NOT_FOUND));
+		}
+		this.connectionFactory.shutdownCompleted(
+				new ShutdownSignalException(true, false, new AMQImpl.Connection.Close(
+						AMQP.CONNECTION_FORCED, "CONNECTION_FORCED", 10, 0), null));
+		assertTrue(connLatch.await(10, TimeUnit.SECONDS));
+		Method shutdownReason = shutdown.get().getReason();
+		assertThat(shutdownReason, instanceOf(AMQP.Connection.Close.class));
+		assertThat(((AMQP.Connection.Close) shutdownReason).getReplyCode(), equalTo(AMQP.CONNECTION_FORCED));
 	}
 
 	@SuppressWarnings("serial")

@@ -41,9 +41,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
-import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -154,12 +152,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	public void declareExchange(final Exchange exchange) {
 		try {
-			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-				@Override
-				public Object doInRabbit(Channel channel) throws Exception {
-					declareExchanges(channel, exchange);
-					return null;
-				}
+			this.rabbitTemplate.execute(channel -> {
+				declareExchanges(channel, exchange);
+				return null;
 			});
 		}
 		catch (AmqpException e) {
@@ -170,21 +165,18 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation
 	public boolean deleteExchange(final String exchangeName) {
-		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
-			@Override
-			public Boolean doInRabbit(Channel channel) throws Exception {
-				if (isDeletingDefaultExchange(exchangeName)) {
-					return true;
-				}
-
-				try {
-					channel.exchangeDelete(exchangeName);
-				}
-				catch (IOException e) {
-					return false;
-				}
+		return this.rabbitTemplate.execute(channel -> {
+			if (isDeletingDefaultExchange(exchangeName)) {
 				return true;
 			}
+
+			try {
+				channel.exchangeDelete(exchangeName);
+			}
+			catch (IOException e) {
+				return false;
+			}
+			return true;
 		});
 	}
 
@@ -204,12 +196,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public String declareQueue(final Queue queue) {
 		try {
-			return this.rabbitTemplate.execute(new ChannelCallback<String>() {
-				@Override
-				public String doInRabbit(Channel channel) throws Exception {
-					DeclareOk[] declared = declareQueues(channel, queue);
-					return declared.length > 0 ? declared[0].getQueue() : null;
-				}
+			return this.rabbitTemplate.execute(channel -> {
+				DeclareOk[] declared = declareQueues(channel, queue);
+				return declared.length > 0 ? declared[0].getQueue() : null;
 			});
 		}
 		catch (AmqpException e) {
@@ -229,14 +218,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public Queue declareQueue() {
 		try {
-			DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
-				@Override
-				public DeclareOk doInRabbit(Channel channel) throws Exception {
-					return channel.queueDeclare();
-				}
-			});
-			Queue queue = new Queue(declareOk.getQueue(), false, true, true);
-			return queue;
+			DeclareOk declareOk = this.rabbitTemplate.execute(Channel::queueDeclare);
+			return new Queue(declareOk.getQueue(), false, true, true);
 		}
 		catch (AmqpException e) {
 			logOrRethrowDeclarationException(null, "queue", e);
@@ -247,41 +230,32 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation
 	public boolean deleteQueue(final String queueName) {
-		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
-			@Override
-			public Boolean doInRabbit(Channel channel) throws Exception {
-				try {
-					channel.queueDelete(queueName);
-				}
-				catch (IOException e) {
-					return false;
-				}
-				return true;
+		return this.rabbitTemplate.execute(channel -> {
+			try {
+				channel.queueDelete(queueName);
 			}
+			catch (IOException e) {
+				return false;
+			}
+			return true;
 		});
 	}
 
 	@Override
 	@ManagedOperation
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queueDelete(queueName, unused, empty);
-				return null;
-			}
+		this.rabbitTemplate.execute(channel -> {
+			channel.queueDelete(queueName, unused, empty);
+			return null;
 		});
 	}
 
 	@Override
 	@ManagedOperation
 	public void purgeQueue(final String queueName, final boolean noWait) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				channel.queuePurge(queueName);
-				return null;
-			}
+		this.rabbitTemplate.execute(channel -> {
+			channel.queuePurge(queueName);
+			return null;
 		});
 	}
 
@@ -290,12 +264,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public void declareBinding(final Binding binding) {
 		try {
-			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-				@Override
-				public Object doInRabbit(Channel channel) throws Exception {
-					declareBindings(channel, binding);
-					return null;
-				}
+			this.rabbitTemplate.execute(channel -> {
+				declareBindings(channel, binding);
+				return null;
 			});
 		}
 		catch (AmqpException e) {
@@ -306,23 +277,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation
 	public void removeBinding(final Binding binding) {
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				if (binding.isDestinationQueue()) {
-					if (isRemovingImplicitQueueBinding(binding)) {
-						return null;
-					}
+		this.rabbitTemplate.execute(channel -> {
+			if (binding.isDestinationQueue()) {
+				if (isRemovingImplicitQueueBinding(binding)) {
+					return null;
+				}
 
-					channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-							binding.getArguments());
-				}
-				else {
-					channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
-							binding.getArguments());
-				}
-				return null;
+				channel.queueUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
 			}
+			else {
+				channel.exchangeUnbind(binding.getDestination(), binding.getExchange(), binding.getRoutingKey(),
+						binding.getArguments());
+			}
+			return null;
 		});
 	}
 
@@ -333,37 +301,34 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	public Properties getQueueProperties(final String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
-		return this.rabbitTemplate.execute(new ChannelCallback<Properties>() {
-			@Override
-			public Properties doInRabbit(Channel channel) throws Exception {
+		return this.rabbitTemplate.execute(channel -> {
+			try {
+				DeclareOk declareOk = channel.queueDeclarePassive(queueName);
+				Properties props = new Properties();
+				props.put(QUEUE_NAME, declareOk.getQueue());
+				props.put(QUEUE_MESSAGE_COUNT, declareOk.getMessageCount());
+				props.put(QUEUE_CONSUMER_COUNT, declareOk.getConsumerCount());
+				return props;
+			}
+			catch (IllegalArgumentException e) {
+				if (RabbitAdmin.this.logger.isDebugEnabled()) {
+					RabbitAdmin.this.logger.error("Exception while fetching Queue properties: '" + queueName + "'",
+							e);
+				}
 				try {
-					DeclareOk declareOk = channel.queueDeclarePassive(queueName);
-					Properties props = new Properties();
-					props.put(QUEUE_NAME, declareOk.getQueue());
-					props.put(QUEUE_MESSAGE_COUNT, declareOk.getMessageCount());
-					props.put(QUEUE_CONSUMER_COUNT, declareOk.getConsumerCount());
-					return props;
+					if (channel instanceof ChannelProxy) {
+						((ChannelProxy) channel).getTargetChannel().close();
+					}
 				}
-				catch (IllegalArgumentException e) {
-					if (RabbitAdmin.this.logger.isDebugEnabled()) {
-						RabbitAdmin.this.logger.error("Exception while fetching Queue properties: '" + queueName + "'",
-								e);
-					}
-					try {
-						if (channel instanceof ChannelProxy) {
-							((ChannelProxy) channel).getTargetChannel().close();
-						}
-					}
-					catch (TimeoutException e1) {
-					}
-					return null;
+				catch (TimeoutException e1) {
 				}
-				catch (Exception e) {
-					if (RabbitAdmin.this.logger.isDebugEnabled()) {
-						RabbitAdmin.this.logger.debug("Queue '" + queueName + "' does not exist");
-					}
-					return null;
+				return null;
+			}
+			catch (Exception e) {
+				if (RabbitAdmin.this.logger.isDebugEnabled()) {
+					RabbitAdmin.this.logger.debug("Queue '" + queueName + "' does not exist");
 				}
+				return null;
 			}
 		});
 	}
@@ -398,33 +363,26 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				return;
 			}
 
-			this.connectionFactory.addConnectionListener(new ConnectionListener() {
+			// Prevent stack overflow...
+			final AtomicBoolean initializing = new AtomicBoolean(false);
 
-				// Prevent stack overflow...
-				private final AtomicBoolean initializing = new AtomicBoolean(false);
+			this.connectionFactory.addConnectionListener(connection -> {
 
-				@Override
-				public void onCreate(Connection connection) {
-					if (!initializing.compareAndSet(false, true)) {
-						// If we are already initializing, we don't need to do it again...
-						return;
-					}
-					try {
-						/*
-						 * ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
-						 * one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
-						 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
-						 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
-						 */
-						initialize();
-					}
-					finally {
-						initializing.compareAndSet(true, false);
-					}
+				if (!initializing.compareAndSet(false, true)) {
+					// If we are already initializing, we don't need to do it again...
+					return;
 				}
-
-				@Override
-				public void onClose(Connection connection) {
+				try {
+					/*
+					 * ...but it is possible for this to happen twice in the same ConnectionFactory (if more than
+					 * one concurrent Connection is allowed). It's idempotent, so no big deal (a bit of network
+					 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
+					 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
+					 */
+					initialize();
+				}
+				finally {
+					initializing.compareAndSet(true, false);
 				}
 
 			});
@@ -500,14 +458,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 		}
 
-		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
-			@Override
-			public Object doInRabbit(Channel channel) throws Exception {
-				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
-				declareQueues(channel, queues.toArray(new Queue[queues.size()]));
-				declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
-				return null;
-			}
+		this.rabbitTemplate.execute(channel -> {
+			declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
+			declareQueues(channel, queues.toArray(new Queue[queues.size()]));
+			declareBindings(channel, bindings.toArray(new Binding[bindings.size()]));
+			return null;
 		});
 		this.logger.debug("Declarations finished");
 
