@@ -291,13 +291,14 @@ public abstract class RabbitUtils {
 	}
 
 	/**
-	 * Determine whether a message should be requeued; returns true if ex is a
+	 * Determine whether a message should be requeued; returns true if the throwable is a
 	 * {@link MessageRejectedWhileStoppingException} or defaultRequeueRejected is true and
 	 * there is not an {@link AmqpRejectAndDontRequeueException} in the cause chain.
 	 * @param defaultRequeueRejected the default requeue rejected.
 	 * @param throwable the throwable.
 	 * @param logger the logger to use for debug.
 	 * @return true to requeue.
+	 * @since 2.0
 	 */
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
 		boolean shouldRequeue = defaultRequeueRejected ||
