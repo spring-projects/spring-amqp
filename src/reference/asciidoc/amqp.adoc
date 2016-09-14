@@ -527,6 +527,46 @@ These features are explained further in the following sections.
 
 TIP: For some more background information, please see the following blog post by the RabbitMQ team titled http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/[Introducing Publisher Confirms].
 
+[[connection-channel-listeners]]
+===== Connection and Channel Listeners
+
+The connection factory supports registering `ConnectionListener` and `ChannelListener` implementations.
+This allows you to receive notifications for connection and channel related events.
+(A `ConnectionListener` is used by the `RabbitAdmin` to perform declarations when the connection is established - see <<automatic-declaration>> for more information).
+
+.ConnectionListener
+[source, java]
+----
+@FunctionalInterface
+public interface ConnectionListener {
+
+	void onCreate(Connection connection);
+
+	default void onClose(Connection connection) {
+	}
+
+	default void onShutDown(ShutdownSignalException signal) {
+	}
+
+}
+----
+
+.ChannelListener
+[source, java]
+----
+@FunctionalInterface
+public interface ChannelListener {
+
+	void onCreate(Channel channel, boolean transactional);
+
+	default void onShutDown(ShutdownSignalException signal) {
+	}
+
+}
+----
+
+See <<publishing-is-async>> for one scenario where you might want to register a `ChannelListener`.
+
 [[channel-close-logging]]
 ===== Logging Channel Close Events
 
@@ -750,6 +790,42 @@ retryTemplate.execute(
 ----
 
 In this case, you would *not* inject a `RetryTemplate` into the `RabbitTemplate`.
+
+[[publishing-is-async]]
+===== Publishing is Asynchronous - How to Detect Success and Failures
+
+Publishing messages is an asynchronous mechanism and, by default, messages that can't be routed are simply dropped by RabbitMQ.
+For successful publishing you can receive an async confirmation as described in <<template-confirms>> below.
+Let's consider two failure scenarios:
+
+- publish to an exchange but there is no matching destination queue
+- publish to a non-existent exchange
+
+The first case is covered by publisher returns as described in <<template-confirms>> below.
+
+For the second case, the message is dropped, no return is generated; the underlying channel is closed with an exception.
+By default, this exception is logged, but you can register a `ChannelListener` with the `CachingConnectionFactory` to obtain notifications of such events:
+
+[source, java]
+----
+this.connectionFactory.addConnectionListener(new ConnectionListener() {
+
+    @Override
+    public void onCreate(Connection connection) {
+    }
+
+    @Override
+    public void onShutDown(ShutdownSignalException signal) {
+        ...
+    }
+
+});
+----
+
+You can examine the signal's `reason` property to determine the problem that occurred.
+
+To detect the exception on the sending thread, you can `setChannelTransacted(true)` on the `RabbitTemplate` and the exception will be detected on the `txCommit()`.
+However, *transactions significantly impede performance* so consider this carefully before enabling transactions for just this one use case.
 
 [[template-confirms]]
 ===== Publisher Confirms and Returns
