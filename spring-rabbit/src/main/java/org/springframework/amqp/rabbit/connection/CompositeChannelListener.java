@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public class CompositeChannelListener implements ChannelListener {
@@ -32,6 +34,13 @@ public class CompositeChannelListener implements ChannelListener {
 	public void onCreate(Channel channel, boolean transactional) {
 		for (ChannelListener delegate : this.delegates) {
 			delegate.onCreate(channel, transactional);
+		}
+	}
+
+	@Override
+	public void onShutDown(ShutdownSignalException signal) {
+		for (ChannelListener delegate : this.delegates) {
+			delegate.onShutDown(signal);
 		}
 	}
 

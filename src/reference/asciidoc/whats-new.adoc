@@ -25,6 +25,11 @@ See <<message-listener-adapter>> for more information.
 Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
 This property only applies when using `basicGet` (e.g. from `RabbitTemplate.receive()` methods) and is now initialized to `null` for container messages.
 
+===== Connection Factory Changes
+
+The connection and channel listener interfaces now provide a mechanism to obtain information about exceptions.
+See <<connection-channel-listeners>> and <<publishing-is-async>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
