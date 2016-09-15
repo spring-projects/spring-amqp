@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.test;
 
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -260,13 +261,11 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	public void removeTestQueues(String... additionalQueues) {
+		logger.debug("deleting test queues: " + Arrays.toString(additionalQueues));
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		for (Queue queue : this.queues) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Deleting " + queue);
-			}
 			admin.deleteQueue(queue.getName());
 		}
 		if (additionalQueues != null) {

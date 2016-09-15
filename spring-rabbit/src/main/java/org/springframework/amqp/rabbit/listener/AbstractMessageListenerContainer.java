@@ -24,12 +24,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
 
+import org.springframework.amqp.AmqpConnectException;
+import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
@@ -45,8 +48,12 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
+import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -67,6 +74,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
 
@@ -80,6 +89,8 @@ import com.rabbitmq.client.Channel;
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
 				ApplicationEventPublisherAware {
+
+	static final int DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL = 5000;
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
@@ -113,6 +124,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
 
 	private boolean taskExecutorSet;
+
+	private BackOff recoveryBackOff = new FixedBackOff(DEFAULT_RECOVERY_INTERVAL, FixedBackOff.UNLIMITED_ATTEMPTS);
+
+	private MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
+
+	private RabbitAdmin rabbitAdmin;
+
+	private boolean missingQueuesFatal = true;
+
+	private boolean missingQueuesFatalSet;
+
+	private boolean autoDeclare = true;
+
+	private boolean mismatchedQueuesFatal = false;
+
+	private long failedDeclarationRetryInterval = DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL;
 
 	private boolean autoStartup = true;
 
@@ -703,6 +730,126 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Specify the interval between recovery attempts, in <b>milliseconds</b>.
+	 * The default is 5000 ms, that is, 5 seconds.
+	 * @param recoveryInterval The recovery interval.
+	 */
+	public void setRecoveryInterval(long recoveryInterval) {
+		this.recoveryBackOff = new FixedBackOff(recoveryInterval, FixedBackOff.UNLIMITED_ATTEMPTS);
+	}
+
+	/**
+	 * Specify the {@link BackOff} for interval between recovery attempts.
+	 * The default is 5000 ms, that is, 5 seconds.
+	 * With the {@link BackOff} you can supply the {@code maxAttempts} for recovery before
+	 * the {@link #stop()} will be performed.
+	 * @param recoveryBackOff The BackOff to recover.
+	 * @since 1.5
+	 */
+	public void setRecoveryBackOff(BackOff recoveryBackOff) {
+		Assert.notNull(recoveryBackOff, "'recoveryBackOff' must not be null.");
+		this.recoveryBackOff = recoveryBackOff;
+	}
+
+	protected BackOff getRecoveryBackOff() {
+		return this.recoveryBackOff;
+	}
+
+	/**
+	 * Set the {@link MessagePropertiesConverter} for this listener container.
+	 * @param messagePropertiesConverter The properties converter.
+	 */
+	public void setMessagePropertiesConverter(MessagePropertiesConverter messagePropertiesConverter) {
+		Assert.notNull(messagePropertiesConverter, "messagePropertiesConverter must not be null");
+		this.messagePropertiesConverter = messagePropertiesConverter;
+	}
+
+	protected MessagePropertiesConverter getMessagePropertiesConverter() {
+		return this.messagePropertiesConverter;
+	}
+
+	protected RabbitAdmin getRabbitAdmin() {
+		return this.rabbitAdmin;
+	}
+
+	/**
+	 * Set the {@link RabbitAdmin}, used to declare any auto-delete queues, bindings
+	 * etc when the container is started. Only needed if those queues use conditional
+	 * declaration (have a 'declared-by' attribute). If not specified, an internal
+	 * admin will be used which will attempt to declare all elements not having a
+	 * 'declared-by' attribute.
+	 * @param rabbitAdmin The admin.
+	 */
+	public final void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
+		this.rabbitAdmin = rabbitAdmin;
+	}
+
+	/**
+	 * If all of the configured queue(s) are not available on the broker, this setting
+	 * determines whether the condition is fatal. When true, and
+	 * the queues are missing during startup, the context refresh() will fail.
+	 * <p> When false, the condition is not considered fatal and the container will
+	 * continue to attempt to start the consumers.
+	 * @param missingQueuesFatal the missingQueuesFatal to set.
+	 * @since 1.3.5
+	 * @see #setAutoDeclare(boolean)
+	 */
+	public void setMissingQueuesFatal(boolean missingQueuesFatal) {
+		this.missingQueuesFatal = missingQueuesFatal;
+		this.missingQueuesFatalSet = true;
+	}
+
+	protected boolean isMissingQueuesFatal() {
+		return this.missingQueuesFatal;
+	}
+
+	protected boolean isMissingQueuesFatalSet() {
+		return this.missingQueuesFatalSet;
+	}
+
+	/**
+	 * Prevent the container from starting if any of the queues defined in the context have
+	 * mismatched arguments (TTL etc). Default false.
+	 * @param mismatchedQueuesFatal true to fail initialization when this condition occurs.
+	 * @since 1.6
+	 */
+	public void setMismatchedQueuesFatal(boolean mismatchedQueuesFatal) {
+		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
+	}
+
+	protected boolean isMismatchedQueuesFatal() {
+		return this.mismatchedQueuesFatal;
+	}
+
+	/**
+	 * Set to true to automatically declare elements (queues, exchanges, bindings)
+	 * in the application context during container start().
+	 * @param autoDeclare the boolean flag to indicate an declaration operation.
+	 * @since 1.4
+	 * @see #redeclareElementsIfNecessary
+	 */
+	public void setAutoDeclare(boolean autoDeclare) {
+		this.autoDeclare = autoDeclare;
+	}
+
+	protected boolean isAutoDeclare() {
+		return this.autoDeclare;
+	}
+
+	/**
+	 * Set the interval between passive queue declaration attempts in milliseconds.
+	 * @param failedDeclarationRetryInterval the interval, default 5000.
+	 * @since 1.3.9
+	 */
+	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
+		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
+	}
+
+	protected long getFailedDeclarationRetryInterval() {
+		return this.failedDeclarationRetryInterval;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -862,6 +1009,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			if (logger.isDebugEnabled()) {
 				logger.debug("Starting Rabbit listener container.");
 			}
+			configureAdminIfNeeded();
+			checkMismatchedQueues();
 			doStart();
 		}
 		catch (Exception ex) {
@@ -1207,6 +1356,96 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void updateLastReceive() {
 		if (this.idleEventInterval > 0) {
 			this.lastReceive = System.currentTimeMillis();
+		}
+	}
+
+	protected void configureAdminIfNeeded() {
+		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
+			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
+			if (admins.size() == 1) {
+				this.rabbitAdmin = admins.values().iterator().next();
+			}
+			else {
+				if (isAutoDeclare() || isMismatchedQueuesFatal()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
+								+ "RabbitAdmin in the context or you must inject one into this container; found: "
+								+ admins.size() + " for container " + this.toString());
+					}
+				}
+				if (isMismatchedQueuesFatal()) {
+					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "
+							+ "one RabbitAdmin in the context or you must inject one into this container; found: "
+							+ admins.size() + " for container " + this.toString());
+				}
+			}
+		}
+	}
+
+	protected void checkMismatchedQueues() {
+		if (this.mismatchedQueuesFatal && this.rabbitAdmin != null) {
+			try {
+				this.rabbitAdmin.initialize();
+			}
+			catch (AmqpConnectException e) {
+				logger.info("Broker not available; cannot check queue declarations");
+			}
+			catch (AmqpIOException e) {
+				if (RabbitUtils.isMismatchedQueueArgs(e)) {
+					throw new FatalListenerStartupException("Mismatched queues", e);
+				}
+				else {
+					logger.info("Failed to get connection during start(): " + e);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if necessary.
+	 * Since auto deletion of a queue can cause upstream elements
+	 * (bindings, exchanges) to be deleted too, everything needs to be redeclared if
+	 * a queue is missing.
+	 * Declaration is idempotent so, aside from some network chatter, there is no issue,
+	 * and we only will do it if we detect our queue is gone.
+	 * <p>
+	 * In general it makes sense only for the 'auto-delete' or 'expired' queues,
+	 * but with the server TTL policy we don't have ability to determine 'expiration'
+	 * option for the queue.
+	 * <p>
+	 * Starting with version 1.6, if
+	 * {@link #setMismatchedQueuesFatal(boolean) mismatchedQueuesFatal} is true,
+	 * the declarations are always attempted during restart so the listener will
+	 * fail with a fatal error if mismatches occur.
+	 */
+	protected synchronized void redeclareElementsIfNecessary() {
+		RabbitAdmin rabbitAdmin = getRabbitAdmin();
+		if (rabbitAdmin == null || !isAutoDeclare()) {
+			return;
+		}
+		try {
+			ApplicationContext applicationContext = this.getApplicationContext();
+			if (applicationContext != null) {
+				Set<String> queueNames = this.getQueueNamesAsSet();
+				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
+				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
+					Queue queue = entry.getValue();
+					if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
+							rabbitAdmin.getQueueProperties(queue.getName()) == null)) {
+						if (logger.isDebugEnabled()) {
+							logger.debug("Redeclaring context exchanges, queues, bindings.");
+						}
+						rabbitAdmin.initialize();
+						return;
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			if (RabbitUtils.isMismatchedQueueArgs(e)) {
+				throw new FatalListenerStartupException("Mismatched queues", e);
+			}
+			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
 	}
 

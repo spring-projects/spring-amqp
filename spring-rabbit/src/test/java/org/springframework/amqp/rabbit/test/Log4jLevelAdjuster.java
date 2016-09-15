@@ -77,7 +77,9 @@ public class Log4jLevelAdjuster implements MethodRule {
 					logger.debug("++++++++++++++++++++++++++++ "
 							+ "Restoring log level setting for test " + method.getName());
 					for (Class<?> cls : Log4jLevelAdjuster.this.classes) {
-						((Logger) LogManager.getLogger(cls)).setLevel(oldLevels.get(cls));
+						if (!cls.equals(BrokerRunning.class)) {
+							((Logger) LogManager.getLogger(cls)).setLevel(oldLevels.get(cls));
+						}
 					}
 				}
 			}

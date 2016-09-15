@@ -70,9 +70,7 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 		}
 		catch (Exception e) {
 			if (id != null && redelivered) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Canceling delivery of retried message that has no ID");
-				}
+				logger.debug("Canceling delivery of retried message that has no ID");
 				throw new ListenerExecutionFailedException("Cannot retry message without an ID",
 						new AmqpRejectAndDontRequeueException(e), message);
 			}
@@ -82,6 +80,9 @@ public class MissingMessageIdAdvice implements MethodInterceptor {
 		}
 		finally {
 			if (id != null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Removing " + id);
+				}
 				this.retryContextCache.remove(id);
 			}
 		}

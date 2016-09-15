@@ -18,16 +18,25 @@ package org.springframework.amqp.rabbit.retry;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.Level;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -35,14 +44,18 @@ import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptor
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.retry.RetryContext;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.policy.RetryContextCache;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
@@ -52,10 +65,17 @@ import org.springframework.retry.support.RetryTemplate;
  */
 public class MissingIdRetryTests {
 
+	private final Log logger = LogFactory.getLog(MissingIdRetryTests.class);
+
 	private volatile CountDownLatch latch;
 
 	@ClassRule
 	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+
+	@Rule
+	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, BlockingQueueConsumer.class,
+			MissingIdRetryTests.class,
+			RetryTemplate.class, SimpleRetryPolicy.class, MissingMessageIdAdvice.class);
 
 	@BeforeClass
 	@AfterClass
@@ -68,7 +88,7 @@ public class MissingIdRetryTests {
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithNoId() throws Exception {
-		// 2 messsages; each retried once by missing id interceptor
+		// 2 messages; each retried once by missing id interceptor
 		this.latch = new CountDownLatch(4);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -81,7 +101,7 @@ public class MissingIdRetryTests {
 
 		// use an external template so we can share his cache
 		RetryTemplate retryTemplate = new RetryTemplate();
-		RetryContextCache cache = new MapRetryContextCache();
+		RetryContextCache cache = spy(new MapRetryContextCache());
 		retryTemplate.setRetryContextCache(cache);
 		fb.setRetryOperations(retryTemplate);
 
@@ -95,17 +115,31 @@ public class MissingIdRetryTests {
 
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Thread.sleep(2000);
-		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
-		container.stop();
-		ctx.close();
+		try {
+			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
+			int n = 0;
+			while (n++ < 100 && map.size() != 0) {
+				Thread.sleep(100);
+			}
+			ArgumentCaptor putCaptor = ArgumentCaptor.forClass(Object.class);
+			ArgumentCaptor removeCaptor = ArgumentCaptor.forClass(Object.class);
+			verify(cache, atLeastOnce()).put(putCaptor.capture(), any(RetryContext.class));
+			verify(cache, atLeastOnce()).remove(removeCaptor.capture());
+			logger.debug("puts:" + putCaptor.getAllValues());
+			logger.debug("removes:" + removeCaptor.getAllValues());
+			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+		}
+		finally {
+			container.stop();
+			ctx.close();
+		}
 	}
 
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithId() throws Exception {
-		// 2 messsages; each retried twice by retry interceptor
+		// 2 messages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -137,11 +171,19 @@ public class MissingIdRetryTests {
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		template.send("retry.test.exchange", "retry.test.binding", message);
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Thread.sleep(2000);
-		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
-		container.stop();
-		ctx.close();
+		try {
+			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
+			int n = 0;
+			while (n++ < 100 && map.size() != 0) {
+				Thread.sleep(100);
+			}
+			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+		}
+		finally {
+			container.stop();
+			ctx.close();
+		}
 	}
 
 	public class POJO {
