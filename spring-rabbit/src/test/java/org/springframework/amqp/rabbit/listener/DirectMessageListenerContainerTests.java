@@ -23,9 +23,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,7 +41,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -51,8 +56,10 @@ import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
 
@@ -104,6 +111,7 @@ public class DirectMessageListenerContainerTests {
 				return null;
 			}
 		}));
+		container.setBeanName("simple");
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -127,6 +135,7 @@ public class DirectMessageListenerContainerTests {
 			return i.proceed();
 		};
 		container.setAdviceChain(advice);
+		container.setBeanName("advice");
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -155,6 +164,7 @@ public class DirectMessageListenerContainerTests {
 				return null;
 			}
 		}));
+		container.setBeanName("qManage");
 		container.afterPropertiesSet();
 		container.start();
 		container.addQueueNames(Q1, Q2);
@@ -189,6 +199,7 @@ public class DirectMessageListenerContainerTests {
 				return null;
 			}
 		}));
+		container.setBeanName("qAddRemove");
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -240,6 +251,8 @@ public class DirectMessageListenerContainerTests {
 		});
 		container.setMessageListener(m -> { });
 		container.setIdleEventInterval(50L);
+		container.setBeanName("events");
+		container.afterPropertiesSet();
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
@@ -269,6 +282,7 @@ public class DirectMessageListenerContainerTests {
 			channel.set(c);
 			throw new MessageConversionException("intended - should be wrapped in an AmqpRejectAndDontRequeueException");
 		});
+		container.setBeanName("errorHandler");
 		container.afterPropertiesSet();
 		container.start();
 		RabbitTemplate template = new RabbitTemplate(cf);
@@ -279,19 +293,102 @@ public class DirectMessageListenerContainerTests {
 		cf.destroy();
 	}
 
+	@Test
+	public void testContainerNotRecoveredAfterExhaustingRecoveryBackOff() throws Exception {
+		ConnectionFactory mockCF = mock(ConnectionFactory.class);
+		given(mockCF.createConnection()).willThrow(new RuntimeException("intended - backOff test"));
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mockCF);
+		container.setQueueNames("foo");
+		container.setRecoveryBackOff(new FixedBackOff(100, 3));
+		container.setMissingQueuesFatal(false);
+		container.setBeanName("backOff");
+		container.afterPropertiesSet();
+		container.start();
+
+		// Since backOff exhausting makes listenerContainer as invalid (calls stop()),
+		// it is enough to check the listenerContainer activity
+		int n = 0;
+		while (container.isActive() && n++ < 100) {
+			Thread.sleep(100);
+		}
+		assertFalse(container.isActive());
+	}
+
+	@Test
+	public void testRecoverDeletedQueueAutoDeclare() throws Exception {
+		testRecoverDeletedQueueGuts(true);
+		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+	}
+
+	@Test
+	public void testRecoverDeletedQueueNoAutoDeclare() throws Exception {
+		testRecoverDeletedQueueGuts(false);
+	}
+
+	private void testRecoverDeletedQueueGuts(boolean autoDeclare) throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		if (autoDeclare) {
+			GenericApplicationContext context = new GenericApplicationContext();
+			context.getBeanFactory().registerSingleton("foo", new Queue(Q1));
+			RabbitAdmin admin = new RabbitAdmin(cf);
+			admin.setApplicationContext(context);
+			context.getBeanFactory().registerSingleton("admin", admin);
+			context.refresh();
+			container.setApplicationContext(context);
+		}
+		container.setAutoDeclare(autoDeclare);
+		container.setQueueNames(Q1, Q2);
+		container.setConsumersPerQueue(2);
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(m -> { });
+		container.setFailedDeclarationRetryInterval(500);
+		container.setBeanName("deleteQauto=" + autoDeclare);
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
+		assertTrue(activeConsumerCount(container, 4));
+		brokerRunning.getAdmin().deleteQueue(Q1);
+		assertTrue(consumersOnQueue(Q2, 2));
+		assertTrue(activeConsumerCount(container, 2));
+		assertTrue(restartConsumerCount(container, 2));
+		if (!autoDeclare) {
+			Thread.sleep(2000);
+			brokerRunning.getAdmin().declareQueue(new Queue(Q1));
+		}
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
+		assertTrue(activeConsumerCount(container, 4));
+		container.stop();
+		cf.destroy();
+	}
+
 	private boolean consumersOnQueue(String queue, int count) throws Exception {
 		int n = 0;
 		RabbitAdmin admin = brokerRunning.getAdmin();
-		while (n++ < 100 && !admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count)) {
+		Properties queueProperties = admin.getQueueProperties(queue);
+		while (n++ < 600
+				&& (queueProperties == null || !queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count))) {
 			Thread.sleep(100);
+			queueProperties = admin.getQueueProperties(queue);
 		}
-		return admin.getQueueProperties(queue).get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count);
+		return queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(count);
 	}
 
 	private boolean activeConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
 		int n = 0;
 		List<?> consumers = TestUtils.getPropertyValue(container, "consumers", List.class);
-		while (n++ < 100 && consumers.size() != expected) {
+		while (n++ < 600 && consumers.size() != expected) {
+			Thread.sleep(100);
+		}
+		return consumers.size() == expected;
+	}
+
+	private boolean restartConsumerCount(AbstractMessageListenerContainer container, int expected) throws Exception {
+		int n = 0;
+		List<?> consumers = TestUtils.getPropertyValue(container, "consumersToRestart", List.class);
+		while (n++ < 600 && consumers.size() != expected) {
 			Thread.sleep(100);
 		}
 		return consumers.size() == expected;

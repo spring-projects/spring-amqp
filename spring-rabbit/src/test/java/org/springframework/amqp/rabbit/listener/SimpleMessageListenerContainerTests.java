@@ -501,10 +501,10 @@ public class SimpleMessageListenerContainerTests {
 		// Since backOff exhausting makes listenerContainer as invalid (calls stop()),
 		// it is enough to check the listenerContainer activity
 		int n = 0;
-		while (container.isActive() && n++ < 10) {
+		while (container.isActive() && n++ < 100) {
 			Thread.sleep(100);
 		}
-		assertThat(n, lessThanOrEqualTo(10));
+		assertThat(n, lessThanOrEqualTo(100));
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

@@ -125,7 +125,8 @@ public class BlockingQueueConsumer {
 
 	private long retryDeclarationInterval = 60000;
 
-	private long failedDeclarationRetryInterval = 5000;
+	private long failedDeclarationRetryInterval =
+			AbstractMessageListenerContainer.DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL;
 
 	private int declarationRetries = 3;
 

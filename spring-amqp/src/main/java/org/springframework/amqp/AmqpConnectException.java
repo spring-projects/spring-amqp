@@ -23,12 +23,27 @@ import java.net.ConnectException;
  * remote process dies or there is a network issue.
  *
  * @author Dave Syer
+ * @author Gary Russell
  */
 @SuppressWarnings("serial")
 public class AmqpConnectException extends AmqpException {
 
+	/**
+	 * Construct an instance with the supplied message and cause.
+	 * @param cause the cause.
+	 */
 	public AmqpConnectException(Exception cause) {
 		super(cause);
+	}
+
+	/**
+	 * Construct an instance with the supplied message and cause.
+	 * @param message the message.
+	 * @param cause the cause.
+	 * @since 2.0
+	 */
+	public AmqpConnectException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }

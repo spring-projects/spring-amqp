@@ -27,8 +27,7 @@ public class LocallyTransactedDMLCTests extends LocallyTransactedTests {
 
 	@Override
 	protected AbstractMessageListenerContainer createContainer(AbstractConnectionFactory connectionFactory) {
-		AbstractMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
-		return container;
+		return new DirectMessageListenerContainer(connectionFactory);
 	}
 
 }
