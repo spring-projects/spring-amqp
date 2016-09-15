@@ -92,6 +92,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile boolean aborted;
 
+	private volatile boolean hasStopped;
+
 	private volatile CountDownLatch startedLatch = new CountDownLatch(1);
 
 	private volatile int consumersPerQueue = 1;
@@ -308,6 +310,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected void actualStart() throws Exception {
 		this.aborted = false;
+		this.hasStopped = false;
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
@@ -362,33 +365,40 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			getTaskExecutor().execute(() -> {
 
 				synchronized (this.consumersMonitor) {
-					BackOffExecution backOffExecution = getRecoveryBackOff().start();
-					while (!DirectMessageListenerContainer.this.started && isRunning()) {
-						this.cancellationLock.reset();
-						try {
-							for (String queue : queueNames) {
-								consumeFromQueue(queue);
-							}
+					if (this.hasStopped) { // container stopped before we got the lock
+						if (this.logger.isDebugEnabled()) {
+							this.logger.debug("Consumer start aborted - container stopping");
 						}
-						catch (AmqpConnectException e) {
-							long nextBackOff = backOffExecution.nextBackOff();
-							if (nextBackOff < 0) {
-								DirectMessageListenerContainer.this.aborted = true;
-								shutdown();
-								throw new AmqpConnectException("Failed to start container - backOffs exhausted", e);
-							}
-							this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
-							doShutdown();
+					}
+					else {
+						BackOffExecution backOffExecution = getRecoveryBackOff().start();
+						while (!DirectMessageListenerContainer.this.started && isRunning()) {
+							this.cancellationLock.reset();
 							try {
-								Thread.sleep(nextBackOff);
+								for (String queue : queueNames) {
+									consumeFromQueue(queue);
+								}
 							}
-							catch (InterruptedException e1) {
-								Thread.currentThread().interrupt();
+							catch (AmqpConnectException e) {
+								long nextBackOff = backOffExecution.nextBackOff();
+								if (nextBackOff < 0) {
+									DirectMessageListenerContainer.this.aborted = true;
+									shutdown();
+									throw new AmqpConnectException("Failed to start container - backOffs exhausted", e);
+								}
+								this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
+								doShutdown();
+								try {
+									Thread.sleep(nextBackOff);
+								}
+								catch (InterruptedException e1) {
+									Thread.currentThread().interrupt();
+								}
+								continue; // initialization failed; try again having rested for backOff-interval
 							}
-							continue; // initialization failed; try again having rested for backOff-interval
+							DirectMessageListenerContainer.this.started = true;
+							DirectMessageListenerContainer.this.startedLatch.countDown();
 						}
-						DirectMessageListenerContainer.this.started = true;
-						DirectMessageListenerContainer.this.startedLatch.countDown();
 					}
 				}
 
@@ -422,6 +432,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void doConsumeFromQueue(String queue) {
+		if (!isActive()) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Consume from queue " + queue + " ignore, container stopping");
+			}
+			return;
+		}
 		Connection connection = null;
 		try {
 			connection = getConnectionFactory().createConnection();
@@ -470,45 +486,55 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
-		if (this.started || this.aborted) {
-			actualShutDown();
+		boolean waitForConsumers = false;
+		synchronized (this.consumersMonitor) {
+			if (this.started || this.aborted) {
+				actualShutDown();
+				waitForConsumers = true;
+			}
+		}
+		if (waitForConsumers) {
+			try {
+				if (this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
+					this.logger.info("Successfully waited for consumers to finish.");
+				}
+				else {
+					this.logger.info("Consumers not finished.");
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				this.logger.warn("Interrupted waiting for consumers.  Continuing with shutdown.");
+			}
+			finally {
+				this.startedLatch = new CountDownLatch(1);
+				this.started = false;
+				this.aborted = false;
+				this.hasStopped = true;
+			}
 		}
 	}
 
 	private void actualShutDown() {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
-		synchronized (this.consumersMonitor) {
-			for (DefaultConsumer consumer : this.consumers) {
-				try {
-					consumer.getChannel().basicCancel(consumer.getConsumerTag());
+		logger.debug("Shutting down");
+		for (DefaultConsumer consumer : this.consumers) {
+			try {
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Canceling " + consumer);
 				}
-				catch (IOException e) {
-					this.logger.error("Cancel Error", e);
-				}
+				consumer.getChannel().basicCancel(consumer.getConsumerTag());
 			}
-			this.consumers.clear();
-			this.consumersByQueue.clear();
+			catch (IOException e) {
+				this.logger.error("Cancel Error", e);
+			}
 		}
+		this.consumers.clear();
+		this.consumersByQueue.clear();
+		logger.debug("All consumers canceled");
 		if (this.consumerMonitorTask != null) {
 			this.consumerMonitorTask.cancel(true);
 			this.consumerMonitorTask = null;
-		}
-		try {
-			if (this.cancellationLock.await(getShutdownTimeout(), TimeUnit.MILLISECONDS)) {
-				this.logger.info("Successfully waited for consumers to finish.");
-			}
-			else {
-				this.logger.info("Consumers not finished.");
-			}
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			this.logger.warn("Interrupted waiting for consumers.  Continuing with shutdown.");
-		}
-		finally {
-			this.startedLatch = new CountDownLatch(1);
-			this.started = false;
-			this.aborted = false;
 		}
 	}
 
@@ -624,7 +650,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		public void handleConsumeOk(String consumerTag) {
 			super.handleConsumeOk(consumerTag);
 			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("New " + this);
+				this.logger.debug("New " + this + " consumeOk");
 			}
 		}
 
