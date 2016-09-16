@@ -415,7 +415,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void checkMissingQueues(String[] queueNames) {
 		if (isMissingQueuesFatal()) {
-			RabbitAdmin checkAdmin = new RabbitAdmin(getConnectionFactory());
+			RabbitAdmin checkAdmin = getRabbitAdmin();
+			if (checkAdmin == null) {
+				/*
+				 * Checking queue existence doesn't require an admin in the context or injected into
+				 * the container. If there's no such admin, just create a local one here.
+				 */
+				checkAdmin = new RabbitAdmin(getConnectionFactory());
+			}
 			for (String queue : queueNames) {
 				Properties queueProperties = checkAdmin.getQueueProperties(queue);
 				if (queueProperties == null && isMissingQueuesFatal()) {
