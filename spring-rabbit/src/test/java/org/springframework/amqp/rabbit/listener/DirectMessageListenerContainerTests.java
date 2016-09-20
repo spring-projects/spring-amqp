@@ -78,6 +78,7 @@ public class DirectMessageListenerContainerTests {
 
 	@Rule
 	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
+			CachingConnectionFactory.class,
 			DirectMessageListenerContainer.class, BrokerRunning.class);
 
 	@AfterClass
