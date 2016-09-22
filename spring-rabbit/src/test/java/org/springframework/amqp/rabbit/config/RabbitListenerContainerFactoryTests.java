@@ -32,11 +32,13 @@ import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
@@ -52,6 +54,8 @@ public class RabbitListenerContainerFactoryTests {
 	public final ExpectedException thrown = ExpectedException.none();
 
 	private final SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+
+	private final DirectRabbitListenerContainerFactory direct = new DirectRabbitListenerContainerFactory();
 
 	private final ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 
@@ -126,6 +130,52 @@ public class RabbitListenerContainerFactoryTests {
 		assertEquals(true, fieldAccessor.getPropertyValue("missingQueuesFatal"));
 		assertEquals(messageListener, container.getMessageListener());
 		assertEquals("myQueue", container.getQueueNames()[0]);
+	}
+
+	@Test
+	public void createDirectContainerFullConfig() {
+		Executor executor = mock(Executor.class);
+		TaskScheduler scheduler = mock(TaskScheduler.class);
+		PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+		Advice advice = mock(Advice.class);
+
+		setBasicConfig(this.direct);
+		this.direct.setTaskExecutor(executor);
+		this.direct.setTransactionManager(transactionManager);
+		this.direct.setPrefetchCount(3);
+		this.direct.setDefaultRequeueRejected(false);
+		this.direct.setAdviceChain(advice);
+		BackOff recoveryBackOff = new ExponentialBackOff();
+		this.direct.setRecoveryBackOff(recoveryBackOff);
+		this.direct.setMissingQueuesFatal(true);
+		this.direct.setMismatchedQueuesFatal(false);
+		this.direct.setTaskScheduler(scheduler);
+		this.direct.setMonitorInterval(1234L);
+		this.direct.setConsumersPerQueue(42);
+
+		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
+
+		endpoint.setMessageListener(this.messageListener);
+		endpoint.setQueueNames("myQueue");
+		DirectMessageListenerContainer container = this.direct.createListenerContainer(endpoint);
+
+		assertBasicConfig(container);
+		DirectFieldAccessor fieldAccessor = new DirectFieldAccessor(container);
+		assertSame(executor, fieldAccessor.getPropertyValue("taskExecutor"));
+		assertSame(transactionManager, fieldAccessor.getPropertyValue("transactionManager"));
+		assertEquals(3, fieldAccessor.getPropertyValue("prefetchCount"));
+		assertEquals(false, fieldAccessor.getPropertyValue("defaultRequeueRejected"));
+		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
+		assertEquals("Wrong number of advice", 1, actualAdviceChain.length);
+		assertSame("Wrong advice", advice, actualAdviceChain[0]);
+		assertSame(recoveryBackOff, fieldAccessor.getPropertyValue("recoveryBackOff"));
+		assertEquals(true, fieldAccessor.getPropertyValue("missingQueuesFatal"));
+		assertEquals(false, fieldAccessor.getPropertyValue("mismatchedQueuesFatal"));
+		assertEquals(messageListener, container.getMessageListener());
+		assertEquals("myQueue", container.getQueueNames()[0]);
+		assertSame(scheduler, fieldAccessor.getPropertyValue("taskScheduler"));
+		assertEquals(1234L, fieldAccessor.getPropertyValue("monitorInterval"));
+		assertEquals(42, fieldAccessor.getPropertyValue("consumersPerQueue"));
 	}
 
 	private void setBasicConfig(AbstractRabbitListenerContainerFactory<?> factory) {

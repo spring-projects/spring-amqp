@@ -105,6 +105,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long lastRestartAttempt;
 
 	/**
+	 * Create an instance; {@link #setConnectionFactory(ConnectionFactory)} must
+	 * be called before starting.
+	 */
+	public DirectMessageListenerContainer() {
+		setMissingQueuesFatal(false);
+	}
+
+	/**
 	 * Create an instance with the provided connection factory.
 	 * @param connectionFactory the connection factory.
 	 */
@@ -118,8 +126,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * consumers for each queue.
 	 * If the container is already running, the number of consumers per queue will
 	 * be adjusted up or down as necessary.
-	 * If the adjustment fails for any reason, you may have mismatched number of
-	 * consumers on each queue. A subsequent (successful) call will fix the mismatch.
 	 * @param consumersPerQueue the consumers per queue.
 	 */
 	public void setConsumersPerQueue(int consumersPerQueue) {
@@ -143,7 +149,16 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Set how often to run a task to check for missing consumers and idle containers.
+	 * Set the task scheduler to use for the task that monitors idle containers and
+	 * failed consumers.
+	 * @param taskScheduler the scheduler.
+	 */
+	public void setTaskScheduler(TaskScheduler taskScheduler) {
+		this.taskScheduler = taskScheduler;
+	}
+
+	/**
+	 * Set how often to run a task to check for failed consumers and idle containers.
 	 * @param monitorInterval the interval; default 10000 but it will be adjusted down
 	 * to the smallest of this, {@link #setIdleEventInterval(long) idleEventInterval} / 2
 	 * (if configured) or

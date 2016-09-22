@@ -60,6 +60,7 @@ import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -104,6 +105,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContext;
@@ -143,7 +145,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
-			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric");
+			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -231,6 +233,13 @@ public class EnableRabbitIntegrationTests {
 	public void simpleEndpoint() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("test.simple", "foo"));
 		assertEquals(2, this.context.getBean("testGroup", List.class).size());
+	}
+
+	@Test
+	public void simpleDirectEndpoint() {
+		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct", "foo");
+		assertThat(reply, startsWith("FOOfoo"));
+		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
 	}
 
 	@Test
@@ -605,6 +614,11 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(queues = "test.simple.direct", containerFactory = "directListenerContainerFactory")
+		public String capitalizeDirect(String foo) {
+			return foo.toUpperCase() + foo + Thread.currentThread().getName();
+		}
+
 		@RabbitListener(queues = {"#{'test.comma.1,test.comma.2'.split(',')}",
 								  "test,with,commas",
 								  "#{commaQueues}"},
@@ -915,6 +929,16 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@Bean
+		public DirectRabbitListenerContainerFactory directListenerContainerFactory() {
+			DirectRabbitListenerContainerFactory factory = new DirectRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setErrorHandler(errorHandler());
+			factory.setConsumerTagStrategy(consumerTagStrategy());
+			factory.setConsumersPerQueue(2);
+			return factory;
+		}
+
+		@Bean
 		public String tagPrefix() {
 			return UUID.randomUUID().toString();
 		}
@@ -986,6 +1010,10 @@ public class EnableRabbitIntegrationTests {
 		public ConnectionFactory rabbitConnectionFactory() {
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 			connectionFactory.setHost("localhost");
+			ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+			executor.setThreadNamePrefix("rabbitClientThread-");
+			executor.afterPropertiesSet();
+			connectionFactory.setExecutor(executor);
 			return connectionFactory;
 		}
 
