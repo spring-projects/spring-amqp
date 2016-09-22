@@ -207,7 +207,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	@Override
 	public void setupListenerContainer(MessageListenerContainer listenerContainer) {
-		SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) listenerContainer;
+		AbstractMessageListenerContainer container = (AbstractMessageListenerContainer) listenerContainer;
 
 		boolean queuesEmpty = getQueues().isEmpty();
 		boolean queueNamesEmpty = getQueueNames().isEmpty();

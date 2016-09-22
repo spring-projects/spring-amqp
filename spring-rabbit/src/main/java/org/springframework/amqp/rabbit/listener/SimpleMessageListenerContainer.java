@@ -100,9 +100,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile int txSize = 1;
 
-	volatile int concurrentConsumers = 1;
+	private volatile int concurrentConsumers = 1;
 
-	volatile Integer maxConcurrentConsumers;
+	private volatile Integer maxConcurrentConsumers;
 
 	private volatile long lastConsumerStarted;
 
@@ -113,7 +113,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	// Map entry value, when false, signals the consumer to terminate
 	private Map<BlockingQueueConsumer, Boolean> consumers;
 
-	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<BlockingQueueConsumer>();
+	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
 
 	private Integer declarationRetries;
 
