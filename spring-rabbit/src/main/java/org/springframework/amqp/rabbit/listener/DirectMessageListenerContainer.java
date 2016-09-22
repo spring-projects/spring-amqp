@@ -549,11 +549,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				if (list != null) {
 					list.remove(this);
 				}
+				RabbitUtils.setPhysicalCloseRequired(true);
+				RabbitUtils.closeChannel(getChannel());
 				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
 			}
-			RabbitUtils.setPhysicalCloseRequired(true);
-			RabbitUtils.closeChannel(getChannel());
 		}
 
 		@Override
