@@ -68,7 +68,7 @@ public class MissingIdRetryTests {
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithNoId() throws Exception {
-		// 2 messsages; each retried once by missing id interceptor
+		// 2 messages; each retried once by missing id interceptor
 		this.latch = new CountDownLatch(4);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -95,17 +95,25 @@ public class MissingIdRetryTests {
 
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
 		template.convertAndSend("retry.test.exchange", "retry.test.binding", "Hello, world!");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Thread.sleep(2000);
-		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
-		container.stop();
-		ctx.close();
+		try {
+			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
+			int n = 0;
+			while (n++ < 100 && map.size() != 0) {
+				Thread.sleep(100);
+			}
+			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+		}
+		finally {
+			container.stop();
+			ctx.close();
+		}
 	}
 
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithId() throws Exception {
-		// 2 messsages; each retried twice by retry interceptor
+		// 2 messages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -137,11 +145,20 @@ public class MissingIdRetryTests {
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		template.send("retry.test.exchange", "retry.test.binding", message);
 		template.send("retry.test.exchange", "retry.test.binding", message);
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Thread.sleep(2000);
-		assertEquals(0, ((Map) new DirectFieldAccessor(cache).getPropertyValue("map")).size());
-		container.stop();
-		ctx.close();
+		assertTrue(latch.await(30, TimeUnit.SECONDS));
+		try {
+			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			Map map = (Map) new DirectFieldAccessor(cache).getPropertyValue("map");
+			int n = 0;
+			while (n++ < 100 && map.size() != 0) {
+				Thread.sleep(100);
+			}
+			assertEquals("Expected map.size() = 0, was: " + map.size(), 0, map.size());
+		}
+		finally {
+			container.stop();
+			ctx.close();
+		}
 	}
 
 	public class POJO {
