@@ -243,6 +243,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							catch (IOException e) {
 								this.logger.error("Failed to cancel consumer: " + consumer, e);
 							}
+							finally {
+								this.consumers.remove(consumer);
+							}
 						});
 			}
 		}
@@ -266,11 +269,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				if (consumerList.size() > newCount) {
 					int currentCount = consumerList.size();
 					for (int i = newCount; i < currentCount; i++) {
+						SimpleConsumer consumer = consumerList.remove(i);
 						try {
-							consumerList.get(i).getChannel().basicCancel(consumerList.get(i).getConsumerTag());
+							consumer.getChannel().basicCancel(consumer.getConsumerTag());
 						}
 						catch (IOException e) {
 							this.logger.error("Failed to cancel consumer", e);
+						}
+						finally {
+							this.consumers.remove(consumer);
 						}
 					}
 				}
@@ -522,6 +529,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Must hold this.consumersMonitor
+	 */
 	private void actualShutDown() {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
 		logger.debug("Shutting down");
@@ -666,35 +676,29 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("CancelOk " + this);
 			}
-			removeConsumer(false);
+			finalizeConsumer();
 		}
 
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
 			publishConsumerFailedEvent("Consumer " + this + " canceled", true, null);
-			removeConsumer(true);
-		}
-
-		private void removeConsumer(boolean queueForRestart) {
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
 					list.remove(this);
 				}
-				RabbitUtils.setPhysicalCloseRequired(true);
-				RabbitUtils.closeChannel(getChannel());
-				DirectMessageListenerContainer.this.cancellationLock.release(this);
 				DirectMessageListenerContainer.this.consumers.remove(this);
-				if (queueForRestart) {
-					DirectMessageListenerContainer.this.consumersToRestart.add(this);
-				}
+				DirectMessageListenerContainer.this.consumersToRestart.add(this);
 			}
-			if (this.connection != null) { // dummy consumer due to no connection
-				RabbitUtils.setPhysicalCloseRequired(true);
-				RabbitUtils.closeChannel(getChannel());
-				RabbitUtils.closeConnection(this.connection);
-			}
+			finalizeConsumer();
+		}
+
+		private void finalizeConsumer() {
+			RabbitUtils.setPhysicalCloseRequired(true);
+			RabbitUtils.closeChannel(getChannel());
+			RabbitUtils.closeConnection(this.connection);
+			DirectMessageListenerContainer.this.cancellationLock.release(this);
 		}
 
 		@Override
