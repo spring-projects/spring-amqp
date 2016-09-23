@@ -21,7 +21,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
@@ -109,9 +108,8 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				Message message = (Message) args[1];
 				if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 					String messageId = message.getMessageProperties().getMessageId();
-					if (messageId == null) {
-						throw new FatalListenerExecutionException(
-								"Illegal null id in message. Failed to manage retry for message: " + message);
+					if (messageId == null && message.getMessageProperties().isRedelivered()) {
+						message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
 					}
 					return messageId;
 				}

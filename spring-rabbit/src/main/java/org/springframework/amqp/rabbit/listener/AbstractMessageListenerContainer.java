@@ -187,6 +187,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile long lastReceive = System.currentTimeMillis();
 
+	private boolean statefulRetryFatalWithNullMessageId = true;
+
 	/**
 	 * {@inheritDoc}
 	 * @since 1.5
@@ -849,6 +851,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.failedDeclarationRetryInterval;
 	}
 
+	protected boolean isStatefulRetryFatalWithNullMessageId() {
+		return this.statefulRetryFatalWithNullMessageId;
+	}
+
+	/**
+	 * Set whether a message with a null messageId is fatal for the consumer
+	 * when using stateful retry. When false, instead of stopping the consumer,
+	 * the message is rejected and not requeued - it will be discarded or routed
+	 * to the dead letter queue, if so configured. Default true.
+	 * @param statefulRetryFatalWithNullMessageId true for fatal.
+	 * @since 2.0
+	 */
+	public void setStatefulRetryFatalWithNullMessageId(boolean statefulRetryFatalWithNullMessageId) {
+		this.statefulRetryFatalWithNullMessageId = statefulRetryFatalWithNullMessageId;
+	}
+
 	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
@@ -1146,6 +1164,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		catch (Exception ex) {
+			if (messageIn.getMessageProperties().isFinalRetryForMessageWithNoId()) {
+				if (this.statefulRetryFatalWithNullMessageId) {
+					throw new FatalListenerExecutionException(
+							"Illegal null id in message. Failed to manage retry for message: " + messageIn);
+				}
+				else {
+					throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
+							new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
+									messageIn);
+				}
+			}
 			handleListenerException(ex);
 			throw ex;
 		}
