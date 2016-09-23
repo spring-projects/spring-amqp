@@ -46,7 +46,11 @@ import org.springframework.util.backoff.FixedBackOff;
  * Base {@link RabbitListenerContainerFactory} for Spring's base container implementation.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see AbstractMessageListenerContainer
  */
 public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractMessageListenerContainer>
@@ -83,6 +87,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private ConsumerTagStrategy consumerTagStrategy;
 
 	private Long idleEventInterval;
+
+	private Long failedDeclarationRetryInterval;
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
@@ -224,6 +230,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.idleEventInterval = idleEventInterval;
 	}
 
+	public void setFailedDeclarationRetryInterval(Long failedDeclarationRetryInterval) {
+		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
+	}
+
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.applicationEventPublisher = applicationEventPublisher;
@@ -302,6 +312,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		}
 		if (this.idleEventInterval != null) {
 			instance.setIdleEventInterval(this.idleEventInterval);
+		}
+		if (this.failedDeclarationRetryInterval != null) {
+			instance.setFailedDeclarationRetryInterval(this.failedDeclarationRetryInterval);
 		}
 		if (this.applicationEventPublisher != null) {
 			instance.setApplicationEventPublisher(this.applicationEventPublisher);

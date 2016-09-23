@@ -48,9 +48,9 @@ public class DirectRabbitListenerContainerFactory
 	/**
 	 * Set how often to run a task to check for failed consumers and idle containers.
 	 * @param monitorInterval the interval; default 10000 but it will be adjusted down
-	 * to the smallest of this, {@link #setIdleEventInterval(long) idleEventInterval} / 2
+	 * to the smallest of this, {@link #setIdleEventInterval(Long) idleEventInterval} / 2
 	 * (if configured) or
-	 * {@link #setFailedDeclarationRetryInterval(long) failedDeclarationRetryInterval}.
+	 * {@link #setFailedDeclarationRetryInterval(Long) failedDeclarationRetryInterval}.
 	 */
 	public void setMonitorInterval(long monitorInterval) {
 		this.monitorInterval = monitorInterval;
