@@ -1,4 +1,4 @@
-Spring AMQP [![Build Status](https://travis-ci.org/spring-projects/spring-amqp.svg?branch=master)](https://travis-ci.org/spring-projects/spring-amqp) [![Join the chat at https://gitter.im/spring-projects/spring-amqp](https://badges.gitter.im/spring-projects/spring-amqp.svg)](https://gitter.im/spring-projects/spring-amqp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Spring AMQP [<img src="https://build.spring.io/plugins/servlet/buildStatusImage/AMQP-MASTER">](https://build.spring.io/browse/AMQP-MASTER) [![Join the chat at https://gitter.im/spring-projects/spring-amqp](https://badges.gitter.im/spring-projects/spring-amqp.svg)](https://gitter.im/spring-projects/spring-amqp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ===========
 
