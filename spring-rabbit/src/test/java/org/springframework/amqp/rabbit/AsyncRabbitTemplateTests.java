@@ -142,6 +142,7 @@ public class AsyncRabbitTemplateTests {
 		assertEquals(0, TestUtils.getPropertyValue(template, "pending", Map.class).size());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testMessageCustomCorrelation() throws Exception {
 		this.fooMessage.getMessageProperties().setCorrelationId("foo".getBytes());

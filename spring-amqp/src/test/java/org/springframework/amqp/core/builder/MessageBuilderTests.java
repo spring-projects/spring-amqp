@@ -40,6 +40,7 @@ import org.springframework.amqp.core.MessagePropertiesBuilder;
  * @since 1.3
  *
  */
+@SuppressWarnings("deprecation")
 public class MessageBuilderTests {
 
 	@Test

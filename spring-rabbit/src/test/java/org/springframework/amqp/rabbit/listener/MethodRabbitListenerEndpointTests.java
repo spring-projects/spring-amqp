@@ -222,6 +222,7 @@ public class MethodRabbitListenerEndpointTests {
 		assertDefaultListenerMethodInvocation();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void processAndReply() throws Exception {
 		MessagingMessageListenerAdapter listener = createDefaultInstance(String.class);

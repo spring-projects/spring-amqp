@@ -208,10 +208,22 @@ public class MessageProperties implements Serializable {
 		return this.type;
 	}
 
+	/**
+	 * Set the correlation id.
+	 * @param correlationId the correlation Id
+	 * @deprecated - use {@link #setCorrelationIdString(String)}
+	 */
+	@Deprecated
 	public void setCorrelationId(byte[] correlationId) { //NOSONAR
 		this.correlationId = correlationId; //NOSONAR
 	}
 
+	/**
+	 * Return the correlation id.
+	 * @return the id.
+	 * @deprecated - use {@link MessageProperties#getCorrelationIdString()}.
+	 */
+	@Deprecated
 	public byte[] getCorrelationId() {
 		return this.correlationId; //NOSONAR
 	}

@@ -41,6 +41,7 @@ public class AmqpMessageHeaderAccessorTests {
 	@Rule
 	public final ExpectedException thrown = ExpectedException.none();
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void validateAmqpHeaders() throws Exception {
 		byte[] correlationId = "correlation-id-1234".getBytes();

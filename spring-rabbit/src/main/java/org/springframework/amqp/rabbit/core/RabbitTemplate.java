@@ -966,6 +966,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return this.execute(new ChannelCallback<Boolean>() {
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public Boolean doInRabbit(Channel channel) throws Exception {
 				boolean channelTransacted = isChannelTransacted();
@@ -1274,6 +1275,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 							+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(new ChannelCallback<Message>() {
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				final PendingReply pendingReply = new PendingReply();
@@ -1675,6 +1677,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return this.uuid;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void onMessage(Message message) {
 		try {

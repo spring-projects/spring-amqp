@@ -49,6 +49,7 @@ import org.springframework.util.StringUtils;
  */
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void fromHeaders(MessageHeaders headers, MessageProperties amqpMessageProperties) {
 		String appId = getHeaderIfAvailable(headers, AmqpHeaders.APP_ID, String.class);
@@ -75,6 +76,9 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 		Object correlationId = headers.get(AmqpHeaders.CORRELATION_ID);
 		if (correlationId instanceof byte[]) {
 			amqpMessageProperties.setCorrelationId((byte[]) correlationId);
+		}
+		else if (correlationId instanceof String) {
+			amqpMessageProperties.setCorrelationIdString((String) correlationId);
 		}
 		Integer delay = getHeaderIfAvailable(headers, AmqpHeaders.DELAY, Integer.class);
 		if (delay != null) {
@@ -181,8 +185,13 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			if (StringUtils.hasText(contentType)) {
 				headers.put(AmqpHeaders.CONTENT_TYPE, contentType);
 			}
+			@SuppressWarnings("deprecation")
 			byte[] correlationId = amqpMessageProperties.getCorrelationId();
 			if (correlationId != null && correlationId.length > 0) {
+				headers.put(AmqpHeaders.CORRELATION_ID, correlationId);
+			}
+			String correlationIdString = amqpMessageProperties.getCorrelationIdString();
+			if (StringUtils.hasText(correlationIdString)) {
 				headers.put(AmqpHeaders.CORRELATION_ID, correlationId);
 			}
 			MessageDeliveryMode receivedDeliveryMode = amqpMessageProperties.getReceivedDeliveryMode();

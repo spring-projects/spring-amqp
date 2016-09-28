@@ -44,8 +44,10 @@ import com.rabbitmq.client.LongString;
  * @author Soeren Unruh
  * @since 1.0
  */
+@SuppressWarnings("deprecation")
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
 
+	@Deprecated
 	public enum CorrelationIdPolicy {
 		STRING, BYTES, BOTH
 	}
@@ -91,17 +93,30 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	}
 
 	/**
+	 * @param correlationIPolicy true to use.
+	 * @see #setCorrelationIdPolicy(CorrelationIdPolicy)
+	 * @deprecated - the byte[] version of correlation id will be removed in 2.0
+	 */
+	@Deprecated
+	public void setCorrelationIdAsString(CorrelationIdPolicy correlationIPolicy) {
+		this.correlationIdPolicy = correlationIPolicy;
+	}
+
+	/**
 	 * For inbound, determine whether correlationId, correlationIdString or
 	 * both are populated. For outbound, determine whether correlationIdString
 	 * or correlationId is used when mapping; if {@code CorrelationIdPolicy.BOTH}
 	 * is set for outbound, String takes priority and we fallback to bytes.
 	 * Default {@code CorrelationIdPolicy.BYTES}.
 	 * @param correlationIPolicy true to use.
+	 * @deprecated - the byte[] version of correlation id will be removed in 2.0
 	 */
-	public void setCorrelationIdAsString(CorrelationIdPolicy correlationIPolicy) {
-		this.correlationIdPolicy = correlationIPolicy;
+	@Deprecated
+	public void setCorrelationIdPolicy(CorrelationIdPolicy correlationIPolicy) {
+		setCorrelationIdAsString(correlationIPolicy);
 	}
 
+	@SuppressWarnings("deprecation")
 	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
 			final String charset) {
 		MessageProperties target = new MessageProperties();
@@ -179,6 +194,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			.priority(source.getPriority())
 			.contentType(source.getContentType())
 			.contentEncoding(source.getContentEncoding());
+		@SuppressWarnings("deprecation")
 		byte[] correlationId = source.getCorrelationId();
 		String correlationIdString = source.getCorrelationIdString();
 		if (!CorrelationIdPolicy.BYTES.equals(this.correlationIdPolicy)
