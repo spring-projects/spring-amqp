@@ -1225,6 +1225,7 @@ public class RabbitTemplateIntegrationTests {
 
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
 		this.template.setQueue(ROUTE);

@@ -51,6 +51,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @since 1.0.1
  *
  */
+@SuppressWarnings("deprecation")
 public class RabbitTemplateHeaderTests {
 
 	public static final String CORRELATION_HEADER = "spring_reply_correlation";

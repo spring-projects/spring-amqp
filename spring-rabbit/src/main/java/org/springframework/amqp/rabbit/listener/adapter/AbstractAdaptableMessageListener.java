@@ -326,6 +326,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @param response the outgoing Rabbit message about to be sent
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
+	@SuppressWarnings("deprecation")
 	protected void postProcessResponse(Message request, Message response) throws Exception {
 		byte[] correlation = request.getMessageProperties().getCorrelationId();
 

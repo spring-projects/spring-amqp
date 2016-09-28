@@ -189,11 +189,12 @@ public class DefaultMessagePropertiesConverterTests {
 				((Map<String, Object>) basicProps.getHeaders().get("map")).get("unsupported") instanceof String);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testCorrelationIdAsString() {
 		MessageProperties messageProperties = new MessageProperties();
 		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BOTH);
+				.setCorrelationIdPolicy(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BOTH);
 		messageProperties.setCorrelationIdString("foo");
 		messageProperties.setCorrelationId("bar".getBytes()); // foo should win
 		BasicProperties basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
@@ -203,7 +204,7 @@ public class DefaultMessagePropertiesConverterTests {
 		assertEquals("foo", new String(messageProperties.getCorrelationId()));
 
 		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.STRING);
+				.setCorrelationIdPolicy(DefaultMessagePropertiesConverter.CorrelationIdPolicy.STRING);
 		messageProperties.setCorrelationIdString("foo");
 		messageProperties.setCorrelationId("bar".getBytes()); // foo should win
 		basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
@@ -213,7 +214,7 @@ public class DefaultMessagePropertiesConverterTests {
 		assertNull(messageProperties.getCorrelationId());
 
 		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BYTES);
+				.setCorrelationIdPolicy(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BYTES);
 		messageProperties.setCorrelationIdString("foo");
 		messageProperties.setCorrelationId("bar".getBytes()); // bar should win
 		basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");

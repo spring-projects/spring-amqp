@@ -80,8 +80,20 @@ public abstract class MessageBuilderSupport<T> {
 		return this;
 	}
 
+	/**
+	 * Set the correlation id.
+	 * @param correlationId the id.
+	 * @return the builder.
+	 * @deprecated - use {@link #setCorrelationIdString(String)}.
+	 */
+	@Deprecated
 	public MessageBuilderSupport<T> setCorrelationId(byte[] correlationId) {
 		this.properties.setCorrelationId(correlationId);
+		return this;
+	}
+
+	public MessageBuilderSupport<T> setCorrelationIdString(String correlationId) {
+		this.properties.setCorrelationIdString(correlationId);
 		return this;
 	}
 
@@ -203,9 +215,22 @@ public abstract class MessageBuilderSupport<T> {
 		return this;
 	}
 
+	/**
+	 * @param correlationId set the correlationId
+	 * @return the builder.
+	 * @deprecated - use {@link #setCorrelationIdStringIfAbsent(String)}.
+	 */
+	@Deprecated
 	public MessageBuilderSupport<T> setCorrelationIdIfAbsent(byte[] correlationId) {
 		if (this.properties.getCorrelationId() == null) {
 			this.properties.setCorrelationId(correlationId);
+		}
+		return this;
+	}
+
+	public MessageBuilderSupport<T> setCorrelationIdStringIfAbsent(String correlationId) {
+		if (this.properties.getCorrelationIdString() == null) {
+			this.properties.setCorrelationIdString(correlationId);
 		}
 		return this;
 	}

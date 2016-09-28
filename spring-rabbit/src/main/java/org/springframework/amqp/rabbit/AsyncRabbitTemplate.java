@@ -461,6 +461,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	public void onMessage(Message message) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		if (messageProperties != null) {
+			@SuppressWarnings("deprecation")
 			byte[] correlationId = messageProperties.getCorrelationId();
 			if (correlationId != null) {
 				if (this.logger.isDebugEnabled()) {
@@ -488,6 +489,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	@Override
 	public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
 		MessageProperties messageProperties = message.getMessageProperties();
+		@SuppressWarnings("deprecation")
 		byte[] correlationId = messageProperties.getCorrelationId();
 		if (correlationId != null) {
 			RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
@@ -521,6 +523,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private String getOrSetCorrelationIdAndSetReplyTo(Message message) {
 		String correlationId;
 		MessageProperties messageProperties = message.getMessageProperties();
