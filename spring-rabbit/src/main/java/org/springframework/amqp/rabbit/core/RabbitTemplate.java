@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.core;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -1064,10 +1063,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 							if (correlation == null) {
 								String messageId = receiveMessageProperties.getMessageId();
 								if (messageId != null) {
-									correlation = messageId.getBytes(RabbitTemplate.this.encoding);
+									correlation = messageId;
 								}
 							}
-							replyMessageProperties.setCorrelationId((byte[]) correlation);
+							replyMessageProperties.setCorrelationId((String) correlation);
 						}
 						else {
 							replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey, correlation);
@@ -1304,10 +1303,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyAddress);
 				String savedCorrelation = null;
 				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
-					byte[] correlationId = message.getMessageProperties().getCorrelationId();
+					String correlationId = message.getMessageProperties().getCorrelationId();
 					if (correlationId != null) {
-						savedCorrelation = new String(correlationId,
-								RabbitTemplate.this.encoding);
+						savedCorrelation = correlationId;
 					}
 				}
 				else {
@@ -1316,12 +1314,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				pendingReply.setSavedCorrelation(savedCorrelation);
 				if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
-					message.getMessageProperties().setCorrelationId(messageTag
-							.getBytes(RabbitTemplate.this.encoding));
+					message.getMessageProperties().setCorrelationId(messageTag);
 				}
 				else {
-					message.getMessageProperties().setHeader(
-							RabbitTemplate.this.correlationKey, messageTag);
+					message.getMessageProperties().setHeader(RabbitTemplate.this.correlationKey, messageTag);
 				}
 
 				if (logger.isDebugEnabled()) {
@@ -1691,62 +1687,55 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public void onMessage(Message message) {
-		try {
-			String messageTag;
-			if (this.correlationKey == null) { // using standard correlationId property
-				messageTag = new String(message.getMessageProperties().getCorrelationId(), this.encoding);
-			}
-			else {
-				messageTag = (String) message.getMessageProperties()
-						.getHeaders().get(this.correlationKey);
-			}
-			if (messageTag == null) {
-				logger.error("No correlation header in reply");
-				return;
-			}
+		String messageTag;
+		if (this.correlationKey == null) { // using standard correlationId property
+			messageTag = message.getMessageProperties().getCorrelationId();
+		}
+		else {
+			messageTag = (String) message.getMessageProperties()
+					.getHeaders().get(this.correlationKey);
+		}
+		if (messageTag == null) {
+			logger.error("No correlation header in reply");
+			return;
+		}
 
-			PendingReply pendingReply = this.replyHolder.get(messageTag);
-			if (pendingReply == null) {
-				if (logger.isWarnEnabled()) {
-					logger.warn("Reply received after timeout for " + messageTag);
-				}
-				throw new AmqpRejectAndDontRequeueException("Reply received after timeout");
+		PendingReply pendingReply = this.replyHolder.get(messageTag);
+		if (pendingReply == null) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Reply received after timeout for " + messageTag);
 			}
-			else {
-				// Restore the inbound correlation data
-				String savedCorrelation = pendingReply.getSavedCorrelation();
-				if (this.correlationKey == null) {
-					if (savedCorrelation == null) {
-						message.getMessageProperties().setCorrelationId(null);
-					}
-					else {
-						message.getMessageProperties().setCorrelationId(
-								savedCorrelation.getBytes(this.encoding));
-					}
+			throw new AmqpRejectAndDontRequeueException("Reply received after timeout");
+		}
+		else {
+			// Restore the inbound correlation data
+			String savedCorrelation = pendingReply.getSavedCorrelation();
+			if (this.correlationKey == null) {
+				if (savedCorrelation == null) {
+					message.getMessageProperties().setCorrelationId(null);
 				}
 				else {
-					if (savedCorrelation != null) {
-						message.getMessageProperties().setHeader(this.correlationKey,
-							savedCorrelation);
-					}
-					else {
-						message.getMessageProperties().getHeaders().remove(this.correlationKey);
-					}
-				}
-				// Restore any inbound replyTo
-				String savedReplyTo = pendingReply.getSavedReplyTo();
-				message.getMessageProperties().setReplyTo(savedReplyTo);
-				pendingReply.reply(message);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Reply received for " + messageTag);
-					if (savedReplyTo != null) {
-						logger.debug("Restored replyTo to " + savedReplyTo);
-					}
+					message.getMessageProperties().setCorrelationId(savedCorrelation);
 				}
 			}
-		}
-		catch (UnsupportedEncodingException e) {
-			throw new AmqpIllegalStateException("Invalid Character Set:" + this.encoding, e);
+			else {
+				if (savedCorrelation != null) {
+					message.getMessageProperties().setHeader(this.correlationKey, savedCorrelation);
+				}
+				else {
+					message.getMessageProperties().getHeaders().remove(this.correlationKey);
+				}
+			}
+			// Restore any inbound replyTo
+			String savedReplyTo = pendingReply.getSavedReplyTo();
+			message.getMessageProperties().setReplyTo(savedReplyTo);
+			pendingReply.reply(message);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Reply received for " + messageTag);
+				if (savedReplyTo != null) {
+					logger.debug("Restored replyTo to " + savedReplyTo);
+				}
+			}
 		}
 	}
 

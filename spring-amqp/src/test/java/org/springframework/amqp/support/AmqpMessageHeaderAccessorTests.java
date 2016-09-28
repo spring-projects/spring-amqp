@@ -43,7 +43,7 @@ public class AmqpMessageHeaderAccessorTests {
 
 	@Test
 	public void validateAmqpHeaders() throws Exception {
-		byte[] correlationId = "correlation-id-1234".getBytes();
+		String correlationId = "correlation-id-1234";
 		Date timestamp = new Date();
 
 		MessageProperties properties = new MessageProperties();
