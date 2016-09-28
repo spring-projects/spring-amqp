@@ -314,6 +314,7 @@ public class BlockingQueueConsumer {
 
 	protected void basicCancel() {
 		for (String consumerTag : this.consumerTags.keySet()) {
+			removeConsumer(consumerTag);
 			try {
 				this.channel.basicCancel(consumerTag);
 			}
@@ -326,7 +327,6 @@ public class BlockingQueueConsumer {
 				if (logger.isTraceEnabled()) {
 					logger.trace(this.channel + " is already closed");
 				}
-				break;
 			}
 		}
 		this.abortStarted = System.currentTimeMillis();
@@ -654,6 +654,22 @@ public class BlockingQueueConsumer {
 	}
 
 	/**
+	 * Remove the consumer and set cancelled if all are gone.
+	 * @param consumerTag the tag to remove.
+	 * @return true if consumers remain.
+	 */
+	private boolean removeConsumer(String consumerTag) {
+		this.consumerTags.remove(consumerTag);
+		if (this.consumerTags.isEmpty()) {
+			this.cancelled.set(true);
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param locallyTransacted Whether the channel is locally transacted.
 	 * @throws IOException Any IOException.
@@ -743,11 +759,7 @@ public class BlockingQueueConsumer {
 						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
 						+ "); " + BlockingQueueConsumer.this);
 			}
-			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
-				BlockingQueueConsumer.this.cancelled.set(true);
-			}
-			else {
+			if (removeConsumer(consumerTag)) {
 				basicCancel();
 			}
 		}
@@ -758,10 +770,6 @@ public class BlockingQueueConsumer {
 				logger.debug("Received cancelOk for tag " + consumerTag + " ("
 						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
 						+ "); " + BlockingQueueConsumer.this);
-			}
-			BlockingQueueConsumer.this.consumerTags.remove(consumerTag);
-			if (BlockingQueueConsumer.this.consumerTags.isEmpty()) {
-				BlockingQueueConsumer.this.cancelled.set(true);
 			}
 		}
 
