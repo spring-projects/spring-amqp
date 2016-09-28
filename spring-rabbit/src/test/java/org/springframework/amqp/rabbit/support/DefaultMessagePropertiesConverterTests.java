@@ -189,40 +189,6 @@ public class DefaultMessagePropertiesConverterTests {
 	}
 
 	@Test
-	public void testCorrelationIdAsString() {
-		MessageProperties messageProperties = new MessageProperties();
-		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BOTH);
-		messageProperties.setCorrelationIdString("foo");
-		messageProperties.setCorrelationId("bar".getBytes()); // foo should win
-		BasicProperties basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertEquals("foo", basicProps.getCorrelationId());
-		messageProperties = this.messagePropertiesConverter.toMessageProperties(basicProps, null, "UTF-8");
-		assertEquals("foo", messageProperties.getCorrelationIdString());
-		assertEquals("foo", new String(messageProperties.getCorrelationId()));
-
-		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.STRING);
-		messageProperties.setCorrelationIdString("foo");
-		messageProperties.setCorrelationId("bar".getBytes()); // foo should win
-		basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertEquals("foo", basicProps.getCorrelationId());
-		messageProperties = this.messagePropertiesConverter.toMessageProperties(basicProps, null, "UTF-8");
-		assertEquals("foo", messageProperties.getCorrelationIdString());
-		assertNull(messageProperties.getCorrelationId());
-
-		this.messagePropertiesConverter
-				.setCorrelationIdAsString(DefaultMessagePropertiesConverter.CorrelationIdPolicy.BYTES);
-		messageProperties.setCorrelationIdString("foo");
-		messageProperties.setCorrelationId("bar".getBytes()); // bar should win
-		basicProps = this.messagePropertiesConverter.fromMessageProperties(messageProperties, "UTF-8");
-		assertEquals("bar", basicProps.getCorrelationId());
-		messageProperties = this.messagePropertiesConverter.toMessageProperties(basicProps, null, "UTF-8");
-		assertNull(messageProperties.getCorrelationIdString());
-		assertEquals("bar", new String(messageProperties.getCorrelationId()));
-	}
-
-	@Test
 	public void testInboundDeliveryMode() {
 		DefaultMessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
 		MessageProperties props = new MessageProperties();

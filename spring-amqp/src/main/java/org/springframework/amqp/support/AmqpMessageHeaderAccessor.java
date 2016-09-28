@@ -94,8 +94,18 @@ public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 		}
 	}
 
-	public byte[] getCorrelationId() {
-		return (byte[]) getHeader(AmqpHeaders.CORRELATION_ID);
+	public String getCorrelationId() {
+		return (String) getHeader(AmqpHeaders.CORRELATION_ID);
+	}
+
+	/**
+	 * Get the correlation id.
+	 * @return the id.
+	 * @deprecated - use {@link #getCorrelationId()}.
+	 */
+	@Deprecated
+	public String getCorrelationIdString() {
+		return (String) getHeader(AmqpHeaders.CORRELATION_ID);
 	}
 
 	public MessageDeliveryMode getDeliveryMode() {

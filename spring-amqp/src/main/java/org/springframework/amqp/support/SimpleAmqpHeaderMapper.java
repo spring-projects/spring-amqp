@@ -73,8 +73,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			amqpMessageProperties.setContentType(contentType);
 		}
 		Object correlationId = headers.get(AmqpHeaders.CORRELATION_ID);
-		if (correlationId instanceof byte[]) {
-			amqpMessageProperties.setCorrelationId((byte[]) correlationId);
+		if (correlationId instanceof String) {
+			amqpMessageProperties.setCorrelationId((String) correlationId);
 		}
 		Integer delay = getHeaderIfAvailable(headers, AmqpHeaders.DELAY, Integer.class);
 		if (delay != null) {
@@ -181,8 +181,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			if (StringUtils.hasText(contentType)) {
 				headers.put(AmqpHeaders.CONTENT_TYPE, contentType);
 			}
-			byte[] correlationId = amqpMessageProperties.getCorrelationId();
-			if (correlationId != null && correlationId.length > 0) {
+			String correlationId = amqpMessageProperties.getCorrelationId();
+			if (StringUtils.hasText(correlationId)) {
 				headers.put(AmqpHeaders.CORRELATION_ID, correlationId);
 			}
 			MessageDeliveryMode receivedDeliveryMode = amqpMessageProperties.getReceivedDeliveryMode();

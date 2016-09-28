@@ -137,7 +137,7 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testMessageCustomCorrelation() throws Exception {
-		this.fooMessage.getMessageProperties().setCorrelationId("foo".getBytes());
+		this.fooMessage.getMessageProperties().setCorrelationId("foo");
 		ListenableFuture<Message> future = this.template.sendAndReceive(this.fooMessage);
 		Message result = checkMessageResult(future, "FOO");
 		assertEquals("foo", new String(result.getMessageProperties().getCorrelationId()));

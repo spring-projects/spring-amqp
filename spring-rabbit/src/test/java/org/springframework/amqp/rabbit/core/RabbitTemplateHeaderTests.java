@@ -133,7 +133,7 @@ public class RabbitTemplateHeaderTests {
 
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setReplyTo("replyTo1");
-		messageProperties.setCorrelationId("saveThis".getBytes());
+		messageProperties.setCorrelationId("saveThis");
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
@@ -177,7 +177,7 @@ public class RabbitTemplateHeaderTests {
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";
 		messageProperties.setReplyTo(replyTo1);
-		messageProperties.setCorrelationId("a".getBytes());
+		messageProperties.setCorrelationId("a");
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicInteger count = new AtomicInteger();
 		final List<String> nestedReplyTo = new ArrayList<String>();
@@ -195,7 +195,7 @@ public class RabbitTemplateHeaderTests {
 				template.setReplyAddress(replyAddress3);
 				replyMessage = template.sendAndReceive(anotherMessage);
 				nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
-				nestedCorrelation.add(new String(replyMessage.getMessageProperties().getCorrelationId(), "UTF-8"));
+				nestedCorrelation.add(replyMessage.getMessageProperties().getCorrelationId());
 			}
 			template.onMessage(replyMessage);
 			return null;
@@ -210,7 +210,7 @@ public class RabbitTemplateHeaderTests {
 		assertEquals(replyTo2, nestedReplyTo.get(2)); // intermediate reply
 
 		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
-		assertEquals("a", new String(reply.getMessageProperties().getCorrelationId(), "UTF-8"));
+		assertEquals("a", reply.getMessageProperties().getCorrelationId());
 
 	}
 
@@ -233,7 +233,7 @@ public class RabbitTemplateHeaderTests {
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";
 		messageProperties.setReplyTo(replyTo1);
-		messageProperties.setCorrelationId("saveThis".getBytes());
+		messageProperties.setCorrelationId("saveThis");
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
@@ -280,7 +280,7 @@ public class RabbitTemplateHeaderTests {
 		MessageProperties messageProperties = new MessageProperties();
 		String replyTo1 = "replyTo1";
 		messageProperties.setReplyTo(replyTo1);
-		messageProperties.setCorrelationId("a".getBytes());
+		messageProperties.setCorrelationId("a");
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicInteger count = new AtomicInteger();
 		final List<String> nestedReplyTo = new ArrayList<String>();
@@ -313,8 +313,7 @@ public class RabbitTemplateHeaderTests {
 		assertEquals(replyTo2, nestedReplyTo.get(2)); //intermediate reply
 
 		assertEquals(replyTo1, reply.getMessageProperties().getReplyTo());
-		assertEquals("a", new String(reply.getMessageProperties().getCorrelationId(), "UTF-8"));
-
+		assertEquals("a", reply.getMessageProperties().getCorrelationId());
 	}
 
 }

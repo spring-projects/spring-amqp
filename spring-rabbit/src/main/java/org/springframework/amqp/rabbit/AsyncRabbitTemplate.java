@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit;
 
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +45,7 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
@@ -95,8 +95,6 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	private int phase;
 
 	private boolean autoStartup = true;
-
-	private Charset charset = Charset.forName("UTF-8");
 
 	private String beanName;
 
@@ -222,15 +220,6 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		if (enableConfirms) {
 			this.template.setConfirmCallback(this);
 		}
-	}
-
-	/**
-	 * Set the charset to be used when converting byte[] to/from String for
-	 * correlation Ids. Default: UTF-8.
-	 * @param charset the charset.
-	 */
-	public void setCharset(Charset charset) {
-		this.charset = charset;
 	}
 
 	public String getBeanName() {
@@ -461,12 +450,12 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	public void onMessage(Message message) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		if (messageProperties != null) {
-			byte[] correlationId = messageProperties.getCorrelationId();
-			if (correlationId != null) {
+			String correlationId = messageProperties.getCorrelationId();
+			if (StringUtils.hasText(correlationId)) {
 				if (this.logger.isDebugEnabled()) {
 					this.logger.debug("onMessage: " + message);
 				}
-				RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
+				RabbitFuture<?> future = this.pending.remove(correlationId);
 				if (future != null) {
 					if (future instanceof AsyncRabbitTemplate.RabbitConverterFuture) {
 						Object converted = this.template.getMessageConverter().fromMessage(message);
@@ -488,9 +477,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	@Override
 	public void returnedMessage(Message message, int replyCode, String replyText, String exchange, String routingKey) {
 		MessageProperties messageProperties = message.getMessageProperties();
-		byte[] correlationId = messageProperties.getCorrelationId();
-		if (correlationId != null) {
-			RabbitFuture<?> future = this.pending.remove(new String(correlationId, this.charset));
+		String correlationId = messageProperties.getCorrelationId();
+		if (StringUtils.hasText(correlationId)) {
+			RabbitFuture<?> future = this.pending.remove(correlationId);
 			if (future != null) {
 				future.setException(new AmqpMessageReturnedException("Message returned", message, replyCode, replyText,
 						exchange, routingKey));
@@ -525,14 +514,14 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 		String correlationId;
 		MessageProperties messageProperties = message.getMessageProperties();
 		Assert.notNull(messageProperties, "the message properties cannot be null");
-		byte[] currentCorrelationId = messageProperties.getCorrelationId();
-		if (currentCorrelationId == null) {
+		String currentCorrelationId = messageProperties.getCorrelationId();
+		if (!StringUtils.hasText(currentCorrelationId)) {
 			correlationId = UUID.randomUUID().toString();
-			messageProperties.setCorrelationId(correlationId.getBytes(this.charset));
+			messageProperties.setCorrelationId(correlationId);
 			Assert.isNull(messageProperties.getReplyTo(), "'replyTo' property must be null");
 		}
 		else {
-			correlationId = new String(currentCorrelationId, this.charset);
+			correlationId = currentCorrelationId;
 		}
 		messageProperties.setReplyTo(this.replyAddress);
 		return correlationId;

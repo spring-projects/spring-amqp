@@ -48,7 +48,6 @@ import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.AmqpMessageHeaderAccessor;
 import org.springframework.amqp.support.converter.MessageConversionException;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.messaging.Message;
@@ -233,7 +232,7 @@ public class MethodRabbitListenerEndpointTests {
 		listener.setResponseExchange(responseExchange);
 		listener.setResponseRoutingKey(responseRoutingKey);
 		MessageProperties properties = new MessageProperties();
-		properties.setCorrelationId(correlationId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET));
+		properties.setCorrelationId(correlationId);
 		org.springframework.amqp.core.Message message = MessageTestUtils.createTextMessage(body, properties);
 
 		processAndReply(listener, message, responseExchange, responseRoutingKey, false, correlationId);

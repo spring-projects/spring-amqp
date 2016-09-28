@@ -327,12 +327,12 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	protected void postProcessResponse(Message request, Message response) throws Exception {
-		byte[] correlation = request.getMessageProperties().getCorrelationId();
+		String correlation = request.getMessageProperties().getCorrelationId();
 
 		if (correlation == null) {
 			String messageId = request.getMessageProperties().getMessageId();
 			if (messageId != null) {
-				correlation = messageId.getBytes(SimpleMessageConverter.DEFAULT_CHARSET);
+				correlation = messageId;
 			}
 		}
 		response.getMessageProperties().setCorrelationId(correlation);
