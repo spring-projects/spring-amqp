@@ -228,7 +228,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * Set the charset to be used when converting byte[] to/from String for
 	 * correlation Ids. Default: UTF-8.
 	 * @param charset the charset.
+	 * @deprecated - will be removed in 2.0 when byte[] correlation id is removed
 	 */
+	@Deprecated
 	public void setCharset(Charset charset) {
 		this.charset = charset;
 	}
