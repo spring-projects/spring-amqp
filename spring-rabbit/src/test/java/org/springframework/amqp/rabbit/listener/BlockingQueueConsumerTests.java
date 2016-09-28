@@ -36,7 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.logging.log4j.Level;
+import org.apache.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -173,9 +173,14 @@ public class BlockingQueueConsumerTests {
 		final AtomicInteger n = new AtomicInteger();
 		ArgumentCaptor<Consumer> consumerCaptor = ArgumentCaptor.forClass(Consumer.class);
 		final CountDownLatch consumerLatch = new CountDownLatch(2);
-		willAnswer(invocation -> {
-			consumerLatch.countDown();
-			return "consumer" + n.incrementAndGet();
+		willAnswer(new Answer<String>() {
+
+			@Override
+			public String answer(InvocationOnMock invocation) throws Throwable {
+				consumerLatch.countDown();
+				return "consumer" + n.incrementAndGet();
+			}
+
 		}).given(channel).basicConsume(anyString(),
 				anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), consumerCaptor.capture());
 		willThrow(new IOException("Intentional cancel fail")).given(channel).basicCancel("consumer2");
@@ -184,20 +189,24 @@ public class BlockingQueueConsumerTests {
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
 				AcknowledgeMode.AUTO, false, 1, "testQ1", "testQ2");
 		final CountDownLatch latch = new CountDownLatch(1);
-		Executors.newSingleThreadExecutor().execute(() -> {
-			blockingQueueConsumer.start();
-			while (true) {
-				try {
-					blockingQueueConsumer.nextMessage(1000);
-				}
-				catch (ConsumerCancelledException e) {
-					latch.countDown();
-					break;
-				}
-				catch (ShutdownSignalException e) {
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
+		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
+			@Override
+			public void run() {
+				blockingQueueConsumer.start();
+				while (true) {
+					try {
+						blockingQueueConsumer.nextMessage(1000);
+					}
+					catch (ConsumerCancelledException e) {
+						latch.countDown();
+						break;
+					}
+					catch (ShutdownSignalException e) {
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
 				}
 			}
 		});
