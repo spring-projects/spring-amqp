@@ -19,7 +19,6 @@ package org.springframework.amqp.core;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,9 +76,7 @@ public class MessageProperties implements Serializable {
 
 	private volatile String type;
 
-	private volatile byte[] correlationId;
-
-	private volatile String correlationIdString;
+	private volatile String correlationId;
 
 	private volatile String replyTo;
 
@@ -203,25 +200,45 @@ public class MessageProperties implements Serializable {
 		this.type = type;
 	}
 
-	// NOTE stuctureType is int in qpid
+	// NOTE structureType is int in Qpid
 	public String getType() {
 		return this.type;
 	}
 
-	public void setCorrelationId(byte[] correlationId) { //NOSONAR
-		this.correlationId = correlationId; //NOSONAR
+	/**
+	 * Set the correlation id.
+	 * @param correlationId the id.
+	 */
+	public void setCorrelationId(String correlationId) {
+		this.correlationId = correlationId;
 	}
 
-	public byte[] getCorrelationId() {
-		return this.correlationId; //NOSONAR
+	/**
+	 * Get the correlation id.
+	 * @return the id.
+	 */
+	public String getCorrelationId() {
+		return this.correlationId;
 	}
 
+	/**
+	 * Get the correlation id.
+	 * @return the correlation id
+	 * @deprecated use {@link #getCorrelationId()}.
+	 */
+	@Deprecated
 	public String getCorrelationIdString() {
-		return this.correlationIdString;
+		return this.correlationId;
 	}
 
-	public void setCorrelationIdString(String correlationIdString) {
-		this.correlationIdString = correlationIdString;
+	/**
+	 * Set the correlation id.
+	 * @param correlationId the id.
+	 * @deprecated - use {@link #setCorrelationId(String)}.
+	 */
+	@Deprecated
+	public void setCorrelationIdString(String correlationId) {
+		this.correlationId = correlationId;
 	}
 
 	public void setReplyTo(String replyTo) {
@@ -498,7 +515,7 @@ public class MessageProperties implements Serializable {
 		result = prime * result + ((this.contentEncoding == null) ? 0 : this.contentEncoding.hashCode());
 		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> 32));
 		result = prime * result + ((this.contentType == null) ? 0 : this.contentType.hashCode());
-		result = prime * result + Arrays.hashCode(this.correlationId);
+		result = prime * result + this.correlationId.hashCode();
 		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
 		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> 32));
 		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
@@ -563,7 +580,7 @@ public class MessageProperties implements Serializable {
 		else if (!this.contentType.equals(other.contentType)) {
 			return false;
 		}
-		if (!Arrays.equals(this.correlationId, other.correlationId)) {
+		if (!this.correlationId.equals(other.correlationId)) {
 			return false;
 		}
 		if (this.deliveryMode != other.deliveryMode) {
@@ -676,8 +693,7 @@ public class MessageProperties implements Serializable {
 				", appId=" + this.appId +
 				", clusterId=" + this.clusterId +
 				", type=" + this.type +
-				", correlationId=" + Arrays.toString(this.correlationId) +
-				", correlationIdString=" + this.correlationIdString +
+				", correlationId=" + this.correlationId +
 				", replyTo=" + this.replyTo +
 				", contentType=" + this.contentType +
 				", contentEncoding=" + this.contentEncoding +

@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.support;
 
 import java.io.DataInputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.amqp.AmqpUnsupportedEncodingException;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.CollectionUtils;
@@ -46,17 +44,11 @@ import com.rabbitmq.client.LongString;
  */
 public class DefaultMessagePropertiesConverter implements MessagePropertiesConverter {
 
-	public enum CorrelationIdPolicy {
-		STRING, BYTES, BOTH
-	}
-
 	private static final int DEFAULT_LONG_STRING_LIMIT = 1024;
 
 	private final int longStringLimit;
 
 	private final boolean convertLongLongStrings;
-
-	private volatile CorrelationIdPolicy correlationIdPolicy = CorrelationIdPolicy.BYTES;
 
 	/**
 	 * Construct an instance where {@link LongString}s will be returned
@@ -88,18 +80,6 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	public DefaultMessagePropertiesConverter(int longStringLimit, boolean convertLongLongStrings) {
 		this.longStringLimit = longStringLimit;
 		this.convertLongLongStrings = convertLongLongStrings;
-	}
-
-	/**
-	 * For inbound, determine whether correlationId, correlationIdString or
-	 * both are populated. For outbound, determine whether correlationIdString
-	 * or correlationId is used when mapping; if {@code CorrelationIdPolicy.BOTH}
-	 * is set for outbound, String takes priority and we fallback to bytes.
-	 * Default {@code CorrelationIdPolicy.BYTES}.
-	 * @param correlationIPolicy true to use.
-	 */
-	public void setCorrelationIdAsString(CorrelationIdPolicy correlationIPolicy) {
-		this.correlationIdPolicy = correlationIPolicy;
 	}
 
 	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
@@ -136,18 +116,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		target.setContentType(source.getContentType());
 		target.setContentEncoding(source.getContentEncoding());
 		String correlationId = source.getCorrelationId();
-		if (!CorrelationIdPolicy.BYTES.equals(this.correlationIdPolicy) && correlationId != null) {
-			target.setCorrelationIdString(correlationId);
-		}
-		if (!CorrelationIdPolicy.STRING.equals(this.correlationIdPolicy)) {
-			if (correlationId != null) {
-				try {
-					target.setCorrelationId(source.getCorrelationId().getBytes(charset));
-				}
-				catch (UnsupportedEncodingException ex) {
-					throw new AmqpUnsupportedEncodingException(ex);
-				}
-			}
+		if (StringUtils.hasText(correlationId)) {
+			target.setCorrelationId(source.getCorrelationId());
 		}
 		String replyTo = source.getReplyTo();
 		if (replyTo != null) {
@@ -179,21 +149,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 			.priority(source.getPriority())
 			.contentType(source.getContentType())
 			.contentEncoding(source.getContentEncoding());
-		byte[] correlationId = source.getCorrelationId();
-		String correlationIdString = source.getCorrelationIdString();
-		if (!CorrelationIdPolicy.BYTES.equals(this.correlationIdPolicy)
-				&& StringUtils.hasText(correlationIdString)) {
-			target.correlationId(correlationIdString);
-			correlationId = null;
-		}
-		if (!CorrelationIdPolicy.STRING.equals(this.correlationIdPolicy)
-				&& correlationId != null && correlationId.length > 0) {
-			try {
-				target.correlationId(new String(correlationId, charset));
-			}
-			catch (UnsupportedEncodingException ex) {
-				throw new AmqpUnsupportedEncodingException(ex);
-			}
+		String correlationId = source.getCorrelationId();
+		if (StringUtils.hasText(correlationId)) {
+			target.correlationId(correlationId);
 		}
 		String replyTo = source.getReplyTo();
 		if (replyTo != null) {

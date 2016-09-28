@@ -92,7 +92,7 @@ subprojects { subproject ->
 		log4jVersion = '2.6.2'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.9.5'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.6.3'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.6.5'
 		rabbitmqHttpClientVersion = '1.0.0.RELEASE'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.BUILD-SNAPSHOT'
@@ -186,6 +186,7 @@ subprojects { subproject ->
 		archives javadocJar
 	}
 
+	check.dependsOn javadoc
 	build.dependsOn jacocoTestReport
 
 }
@@ -250,33 +251,6 @@ project('spring-rabbit-test') {
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
 
-	}
-
-	project.tasks.withType(Test).all { t ->
-		if (System.getProperty('java.version').startsWith('1.7')) {
-
-			// exclude just the java 8 tests when building with java 7
-
-			exclude	'org/springframework/amqp/rabbit/repeatable/**',
-					'org/springframework/amqp/rabbit/test/mockito/**'
-		}
-		else if (t.name.equals('springIoJdk7Test')) {
-
-			// exclude everything here because the classes were compiled with JDK 8
-
-			exclude '**'
-		}
-	}
-
-	compileTestJava {
-		if (!System.getProperty('java.version').startsWith('1.7')) {
-			sourceCompatibility = 1.8
-			targetCompatibility = 1.8
-		}
-		else {
-			exclude	'org/springframework/amqp/rabbit/repeatable/**',
-					'org/springframework/amqp/rabbit/test/mockito/**'
-		}
 	}
 
 }
