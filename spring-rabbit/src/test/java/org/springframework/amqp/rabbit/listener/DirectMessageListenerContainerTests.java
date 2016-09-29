@@ -363,6 +363,7 @@ public class DirectMessageListenerContainerTests {
 		given(connection.createChannel(false)).willReturn(channel);
 		given(channel.isOpen()).willReturn(true);
 		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(1);
 		ArgumentCaptor<Consumer> consumerCaptor = ArgumentCaptor.forClass(Consumer.class);
 		final String tag = "tag";
 		willAnswer(i -> {
@@ -374,11 +375,16 @@ public class DirectMessageListenerContainerTests {
 		container.setQueueNames("foo");
 		container.setBeanName("backOff");
 		container.setConsumerTagStrategy(q -> "tag");
+		container.setShutdownTimeout(1);
 		container.afterPropertiesSet();
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		Consumer consumer = consumerCaptor.getValue();
-		Executors.newSingleThreadExecutor().execute(() -> container.stop());
+		Executors.newSingleThreadExecutor().execute(() -> {
+			container.stop();
+			latch2.countDown();
+		});
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		verify(channel).basicCancel(tag); // canceled properly even without consumeOk
 		consumer.handleCancelOk(tag);
 	}
