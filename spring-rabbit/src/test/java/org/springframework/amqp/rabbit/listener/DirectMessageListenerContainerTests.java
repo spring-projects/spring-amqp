@@ -24,12 +24,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,9 +48,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -64,6 +73,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
 
 /**
  * @author Gary Russell
@@ -340,6 +350,37 @@ public class DirectMessageListenerContainerTests {
 			Thread.sleep(100);
 		}
 		assertFalse(container.isActive());
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testCancelConsumerBeforeConsumeOk() throws Exception {
+		ConnectionFactory mockCF = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connection.isOpen()).willReturn(true);
+		given(mockCF.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		ArgumentCaptor<Consumer> consumerCaptor = ArgumentCaptor.forClass(Consumer.class);
+		final String tag = "tag";
+		willAnswer(i -> {
+			latch1.countDown();
+			return tag;
+		}).given(channel).basicConsume(eq("foo"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), consumerCaptor.capture());
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mockCF);
+		container.setQueueNames("foo");
+		container.setBeanName("backOff");
+		container.setConsumerTagStrategy(q -> "tag");
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		Consumer consumer = consumerCaptor.getValue();
+		Executors.newSingleThreadExecutor().execute(() -> container.stop());
+		verify(channel).basicCancel(tag); // canceled properly even without consumeOk
+		consumer.handleCancelOk(tag);
 	}
 
 	@Test
