@@ -60,6 +60,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * The {@code SimpleMessageListenerContainer} is not so simple. Recent changes to the
@@ -477,7 +478,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (connection != null) {
 				RabbitUtils.closeConnection(connection);
 			}
-			if (this.logger.isDebugEnabled()) {
+			if (e.getCause() instanceof ShutdownSignalException
+					&& e.getCause().getMessage().contains("in exclusive use")) {
+				getExclusiveConsumerExceptionLogger().log(logger,
+						"Exclusive consumer failure", e.getCause());
+				publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
+			}
+			else if (this.logger.isDebugEnabled()) {
 				this.logger.debug(
 						"Queue not present or basicConsume failed, scheduling consumer " + consumer + " for restart");
 			}

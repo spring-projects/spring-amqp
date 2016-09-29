@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.logging.Log;
-
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -52,7 +50,6 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
-import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jmx.export.annotation.ManagedMetric;
@@ -118,8 +115,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private Integer declarationRetries;
 
 	private Long retryDeclarationInterval;
-
-	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
 
 	/**
 	 * Default constructor for convenient dependency injection via setters.
@@ -399,16 +394,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setRetryDeclarationInterval(long retryDeclarationInterval) {
 		this.retryDeclarationInterval = retryDeclarationInterval;
-	}
-
-	/**
-	 * Set a {@link ConditionalExceptionLogger} for logging exclusive consumer failures. The
-	 * default is to log such failures at WARN level.
-	 * @param exclusiveConsumerExceptionLogger the conditional exception logger.
-	 * @since 1.5
-	 */
-	public void setExclusiveConsumerExceptionLogger(ConditionalExceptionLogger exclusiveConsumerExceptionLogger) {
-		this.exclusiveConsumerExceptionLogger = exclusiveConsumerExceptionLogger;
 	}
 
 	/**
@@ -994,18 +979,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 				else {
-					this.logConsumerException(e);
+					logConsumerException(e);
 				}
 			}
 			catch (AmqpIOException e) {
 				if (e.getCause() instanceof IOException && e.getCause().getCause() instanceof ShutdownSignalException
 						&& e.getCause().getCause().getMessage().contains("in exclusive use")) {
-					SimpleMessageListenerContainer.this.exclusiveConsumerExceptionLogger.log(logger,
+					getExclusiveConsumerExceptionLogger().log(logger,
 							"Exclusive consumer failure", e.getCause().getCause());
 					publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
 				}
 				else {
-					this.logConsumerException(e);
+					logConsumerException(e);
 				}
 			}
 			catch (Error e) { //NOSONAR
@@ -1016,7 +1001,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (Throwable t) { //NOSONAR
 				// by now, it must be an exception
 				if (isActive()) {
-					this.logConsumerException(t);
+					logConsumerException(t);
 				}
 			}
 			finally {
@@ -1066,33 +1051,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						+ "Exception summary: " + t);
 			}
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
-		}
-
-	}
-
-	/**
-	 * Default implementation of {@link ConditionalExceptionLogger} for logging exclusive
-	 * consumer failures.
-	 * @since 1.5
-	 */
-	private static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
-
-		@Override
-		public void log(Log logger, String message, Throwable t) {
-			if (t instanceof ShutdownSignalException) {
-				ShutdownSignalException cause = (ShutdownSignalException) t;
-				if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
-					if (logger.isWarnEnabled()) {
-						logger.warn(message + ": " + cause.toString());
-					}
-				}
-				else if (!RabbitUtils.isNormalChannelClose(cause)) {
-					logger.error(message + ": " + cause.getMessage());
-				}
-			}
-			else {
-				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
-			}
 		}
 
 	}

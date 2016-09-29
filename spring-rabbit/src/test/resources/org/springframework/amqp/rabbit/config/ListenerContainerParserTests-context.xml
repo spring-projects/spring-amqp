@@ -3,8 +3,10 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
 	xmlns:util="http://www.springframework.org/schema/util"
-	xsi:schemaLocation="http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
 		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<rabbit:queue name="foo" />
@@ -88,6 +90,15 @@
 		<rabbit:listener id="anonParentL2" queues="bar" ref="testBean" method="handle" />
 	</rabbit:listener-container>
 
+	<rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual" type="direct"
+			consumers-per-queue="5" monitor-interval="5000" task-scheduler="sched" task-executor="exec"
+			group="containerGroup" idle-event-interval="1235" mismatched-queues-fatal="true"
+			recovery-interval="5555" missing-queues-fatal="false"
+			failed-declaration-retry-interval="1000"
+			consumer-tag-strategy="tagger">
+		<rabbit:listener id="direct1" queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
+	</rabbit:listener-container>
+
 	<util:list id="adviceChain">
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
@@ -103,5 +114,9 @@
 	<bean id="testBean" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestBean"/>
 
 	<bean id="tagger" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestConsumerTagStrategy" />
+
+	<task:scheduler id="sched" />
+
+	<task:executor id="exec" />
 
 </beans>
