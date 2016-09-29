@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 
 import org.aopalliance.aop.Advice;
+import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
@@ -54,6 +55,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -78,6 +80,7 @@ import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
@@ -188,6 +191,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private volatile long lastReceive = System.currentTimeMillis();
 
 	private boolean statefulRetryFatalWithNullMessageId = true;
+
+	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
+
 
 	/**
 	 * {@inheritDoc}
@@ -868,6 +874,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set a {@link ConditionalExceptionLogger} for logging exclusive consumer failures. The
+	 * default is to log such failures at WARN level.
+	 * @param exclusiveConsumerExceptionLogger the conditional exception logger.
+	 * @since 1.5
+	 */
+	public void setExclusiveConsumerExceptionLogger(ConditionalExceptionLogger exclusiveConsumerExceptionLogger) {
+		this.exclusiveConsumerExceptionLogger = exclusiveConsumerExceptionLogger;
+	}
+
+	protected ConditionalExceptionLogger getExclusiveConsumerExceptionLogger() {
+		return this.exclusiveConsumerExceptionLogger;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1506,6 +1526,33 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 		protected WrappedTransactionException(Throwable cause) {
 			super(cause);
+		}
+
+	}
+
+	/**
+	 * Default implementation of {@link ConditionalExceptionLogger} for logging exclusive
+	 * consumer failures.
+	 * @since 1.5
+	 */
+	private static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
+
+		@Override
+		public void log(Log logger, String message, Throwable t) {
+			if (t instanceof ShutdownSignalException) {
+				ShutdownSignalException cause = (ShutdownSignalException) t;
+				if (RabbitUtils.isExclusiveUseChannelClose(cause)) {
+					if (logger.isWarnEnabled()) {
+						logger.warn(message + ": " + cause.toString());
+					}
+				}
+				else if (!RabbitUtils.isNormalChannelClose(cause)) {
+					logger.error(message + ": " + cause.getMessage());
+				}
+			}
+			else {
+				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
+			}
 		}
 
 	}

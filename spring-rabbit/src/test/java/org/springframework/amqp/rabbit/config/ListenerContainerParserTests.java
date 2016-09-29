@@ -16,9 +16,11 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -29,13 +31,13 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.aopalliance.aop.Advice;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.support.ConsumerTagStrategy;
@@ -99,11 +101,46 @@ public class ListenerContainerParserTests {
 		assertEquals(30000L, TestUtils.getPropertyValue(container, "retryDeclarationInterval"));
 		assertEquals(beanFactory.getBean("tagger"), TestUtils.getPropertyValue(container, "consumerTagStrategy"));
 		Collection<?> group = beanFactory.getBean("containerGroup", Collection.class);
-		assertEquals(3, group.size());
-		assertThat(group, Matchers.contains(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
-				beanFactory.getBean("testListener2")));
+		assertEquals(4, group.size());
+		assertThat(group, contains(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
+				beanFactory.getBean("testListener2"), beanFactory.getBean("direct1")));
 		assertEquals(1235L, ReflectionTestUtils.getField(container, "idleEventInterval"));
 		assertEquals("container1", container.getListenerId());
+		assertTrue(TestUtils.getPropertyValue(container, "mismatchedQueuesFatal", Boolean.class));
+	}
+
+	@Test
+	public void testParseWithDirect() throws Exception {
+		DirectMessageListenerContainer container = beanFactory.getBean("direct1", DirectMessageListenerContainer.class);
+		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
+		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
+		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());
+		DirectFieldAccessor listenerAccessor = new DirectFieldAccessor(container.getMessageListener());
+		assertEquals(beanFactory.getBean(TestBean.class), listenerAccessor.getPropertyValue("delegate"));
+		assertEquals("handle", listenerAccessor.getPropertyValue("defaultListenerMethod"));
+		Queue queue = beanFactory.getBean("bar", Queue.class);
+		assertEquals("[foo, " + queue.getName() + "]", Arrays.asList(container.getQueueNames()).toString());
+		assertEquals(5, ReflectionTestUtils.getField(container, "consumersPerQueue"));
+		assertEquals(5000L, ReflectionTestUtils.getField(container, "monitorInterval"));
+		assertSame(this.beanFactory.getBean("sched"), ReflectionTestUtils.getField(container, "taskScheduler"));
+		assertSame(this.beanFactory.getBean("exec"), ReflectionTestUtils.getField(container, "taskExecutor"));
+		Map<?, ?> consumerArgs = TestUtils.getPropertyValue(container, "consumerArgs", Map.class);
+		assertEquals(1, consumerArgs.size());
+		Object xPriority = consumerArgs.get("x-priority");
+		assertNotNull(xPriority);
+		assertEquals(10, xPriority);
+		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryBackOff.interval", Long.class));
+		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
+		assertFalse(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
+		assertTrue(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
+		assertEquals(1000L, TestUtils.getPropertyValue(container, "failedDeclarationRetryInterval"));
+		assertEquals(beanFactory.getBean("tagger"), TestUtils.getPropertyValue(container, "consumerTagStrategy"));
+		Collection<?> group = beanFactory.getBean("containerGroup", Collection.class);
+		assertEquals(4, group.size());
+		assertThat(group, contains(beanFactory.getBean("container1"), beanFactory.getBean("testListener1"),
+				beanFactory.getBean("testListener2"), beanFactory.getBean("direct1")));
+		assertEquals(1235L, ReflectionTestUtils.getField(container, "idleEventInterval"));
+		assertEquals("direct1", container.getListenerId());
 		assertTrue(TestUtils.getPropertyValue(container, "mismatchedQueuesFatal", Boolean.class));
 	}
 
@@ -155,24 +192,24 @@ public class ListenerContainerParserTests {
 
 	@Test
 	public void testAnonListeners() throws Exception {
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#0",
+		beanFactory.getBean("org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#0",
 				SimpleMessageListenerContainer.class);
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#1",
+		beanFactory.getBean("org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#1",
 				SimpleMessageListenerContainer.class);
 		beanFactory.getBean("namedListener", SimpleMessageListenerContainer.class);
-		beanFactory.getBean("org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#2",
+		beanFactory.getBean("org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#2",
 				SimpleMessageListenerContainer.class);
 	}
 
 	@Test
 	public void testAnonEverything() throws Exception {
 		SimpleMessageListenerContainer container = beanFactory.getBean(
-				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#3",
+				"org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#3",
 				SimpleMessageListenerContainer.class);
 		assertEquals("ex1", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
 				"responseExchange"));
 		container = beanFactory.getBean(
-				"org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer#4",
+				"org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#4",
 				SimpleMessageListenerContainer.class);
 		assertEquals("ex2", ReflectionTestUtils.getField(ReflectionTestUtils.getField(container, "messageListener"),
 				"responseExchange"));
