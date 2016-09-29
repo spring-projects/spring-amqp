@@ -55,6 +55,7 @@ ext {
 subprojects { subproject ->
 
 	apply plugin: 'java'
+	apply plugin: 'osgi'
 	apply from:   "${rootProject.projectDir}/publish-maven.gradle"
 	apply plugin: 'eclipse'
 	apply plugin: 'idea'
@@ -99,6 +100,12 @@ subprojects { subproject ->
 
 		springRetryVersion = '1.1.4.RELEASE'
 	}
+
+    jar {
+        manifest {
+            instruction 'Bundle-Vendor', 'SpringSource'
+        }
+    }
 
 	eclipse {
 		project {
@@ -203,6 +210,12 @@ project('spring-amqp') {
 		compile ("com.fasterxml.jackson.core:jackson-core:$jackson2Version", optional)
 		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
 	}
+    jar {
+        manifest {
+            name = "$project.description"
+            symbolicName = "${project.group}"
+        }
+    }
 
 }
 
@@ -232,6 +245,12 @@ project('spring-rabbit') {
 		testCompile "commons-cli:commons-cli:$commonsCliVersion"
 
 	}
+    jar {
+        manifest {
+            name = "$project.description"
+            symbolicName = "org.springframework.erlang"
+        }
+    }
 
 }
 
@@ -278,6 +297,12 @@ project('spring-rabbit-test') {
 					'org/springframework/amqp/rabbit/test/mockito/**'
 		}
 	}
+    jar {
+        manifest {
+            name = "$project.description"
+            symbolicName = "${project.group}.rabbit"
+        }
+    }
 
 }
 
