@@ -251,17 +251,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				queueNames.map(this.consumersByQueue::remove)
 					.filter(consumer -> consumer != null)
 					.flatMap(Collection::stream)
-					.forEach(consumer -> {
-							try {
-								consumer.getChannel().basicCancel(consumer.getConsumerTag());
-							}
-							catch (IOException e) {
-								this.logger.error("Failed to cancel consumer: " + consumer, e);
-							}
-							finally {
-								this.consumers.remove(consumer);
-							}
-						});
+					.forEach(this::cancelConsumer);
 			}
 		}
 	}
@@ -285,15 +275,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					int currentCount = consumerList.size();
 					for (int i = newCount; i < currentCount; i++) {
 						SimpleConsumer consumer = consumerList.remove(i);
-						try {
-							consumer.getChannel().basicCancel(consumer.getConsumerTag());
-						}
-						catch (IOException e) {
-							this.logger.error("Failed to cancel consumer", e);
-						}
-						finally {
-							this.consumers.remove(consumer);
-						}
+						cancelConsumer(consumer);
 					}
 				}
 			}
@@ -406,7 +388,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								if (nextBackOff < 0) {
 									DirectMessageListenerContainer.this.aborted = true;
 									shutdown();
-									throw new AmqpConnectException("Failed to start container - backOffs exhausted", e);
+									this.logger.error("Failed to start container - backOffs exhausted", e);
+									break;
 								}
 								this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
 								doShutdown();
@@ -482,7 +465,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			channel.basicQos(getPrefetchCount());
 			consumer = new SimpleConsumer(connection, channel, queue);
 			channel.queueDeclarePassive(queue);
-			channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
+			consumer.consumerTag = channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 					(getConsumerTagStrategy() != null
 							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
 					false, isExclusive(), getConsumerArguments(), consumer);
@@ -550,23 +533,28 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void actualShutDown() {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
 		logger.debug("Shutting down");
-		for (DefaultConsumer consumer : this.consumers) {
-			try {
-				if (this.logger.isDebugEnabled()) {
-					this.logger.debug("Canceling " + consumer);
-				}
-				consumer.getChannel().basicCancel(consumer.getConsumerTag());
-			}
-			catch (IOException e) {
-				this.logger.error("Cancel Error", e);
-			}
-		}
+		new LinkedList<>(this.consumers).forEach(this::cancelConsumer);
 		this.consumers.clear();
 		this.consumersByQueue.clear();
 		logger.debug("All consumers canceled");
 		if (this.consumerMonitorTask != null) {
 			this.consumerMonitorTask.cancel(true);
 			this.consumerMonitorTask = null;
+		}
+	}
+
+	private void cancelConsumer(SimpleConsumer consumer) {
+		try {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Canceling " + consumer);
+			}
+			consumer.getChannel().basicCancel(consumer.getConsumerTag());
+		}
+		catch (IOException e) {
+			this.logger.error("Failed to cancel consumer: " + consumer, e);
+		}
+		finally {
+			this.consumers.remove(consumer);
 		}
 	}
 
@@ -588,6 +576,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final boolean isRabbitTxManager = this.transactionManager instanceof RabbitTransactionManager;
 
+		private volatile String consumerTag;
+
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
@@ -597,6 +587,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private String getQueue() {
 			return this.queue;
+		}
+
+		@Override
+		public String getConsumerTag() {
+			return this.consumerTag;
 		}
 
 		@Override
@@ -718,7 +713,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		@Override
 		public String toString() {
-			return "SimpleConsumer [queue=" + this.queue + ", consumerTag=" + this.getConsumerTag()
+			return "SimpleConsumer [queue=" + this.queue + ", consumerTag=" + this.consumerTag
 					+ " identity=" + ObjectUtils.getIdentityHexString(this) + "]";
 		}
 
