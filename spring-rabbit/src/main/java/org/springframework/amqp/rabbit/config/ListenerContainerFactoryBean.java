@@ -110,7 +110,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Long shutdownTimeout;
 
-	private Long idleEventInterval ;
+	private Long idleEventInterval;
 
 	private PlatformTransactionManager transactionManager;
 
@@ -504,7 +504,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 			if (this.maxConcurrentConsumers != null) {
 				container.setMaxConcurrentConsumers(this.maxConcurrentConsumers);
 			}
-			if (startConsumerMinInterval != null) {
+			if (this.startConsumerMinInterval != null) {
 				container.setStartConsumerMinInterval(this.startConsumerMinInterval);
 			}
 			if (this.stopConsumerMinInterval != null) {
