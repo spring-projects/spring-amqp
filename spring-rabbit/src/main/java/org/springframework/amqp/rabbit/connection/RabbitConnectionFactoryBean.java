@@ -21,20 +21,26 @@ import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -62,6 +68,8 @@ import com.rabbitmq.client.SocketConfigurator;
  * @since 1.4
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
+
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private static final String KEY_STORE = "keyStore";
 
@@ -93,6 +101,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private volatile String trustStore;
 
+	private volatile Resource keyStoreResource;
+
+	private volatile Resource trustStoreResource;
+
 	private volatile String keyStorePassphrase;
 
 	private volatile String trustStorePassphrase;
@@ -104,6 +116,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private volatile String sslAlgorithm = TLS_V1_1;
 
 	private volatile boolean sslAlgorithmSet;
+
+	private volatile SecureRandom secureRandom;
 
 	/**
 	 * Whether or not the factory should be configured to use SSL.
@@ -175,11 +189,26 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	/**
 	 * Set the key store resource (e.g. file:/foo/keystore) - overrides
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
+	 * Ignored if {@link #setTrustStoreResource(Resource)} is called with a
+	 * resource.
 	 * @param keyStore the keystore resource.
 	 * @since 1.5
 	 */
 	public void setKeyStore(String keyStore) {
 		this.keyStore = keyStore;
+	}
+
+	protected Resource getKeyStoreResource() {
+		return this.keyStoreResource;
+	}
+
+	/**
+	 * Set a Resource pointing to the key store.
+	 * @param keyStoreResource the resource.
+	 * @since 1.6.4
+	 */
+	public void setKeyStoreResource(Resource keyStoreResource) {
+		this.keyStoreResource = keyStoreResource;
 	}
 
 	/**
@@ -193,11 +222,26 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	/**
 	 * Set the key store resource (e.g. file:/foo/truststore) - overrides
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
-	 * @param trustStore the keystore resource.
+	 * Ignored if {@link #setTrustStoreResource(Resource)} is called with a
+	 * resource.
+	 * @param trustStore the truststore resource.
 	 * @since 1.5
 	 */
 	public void setTrustStore(String trustStore) {
 		this.trustStore = trustStore;
+	}
+
+	protected Resource getTrustStoreResource() {
+		return this.trustStoreResource;
+	}
+
+	/**
+	 * Set a Resource pointing to the trust store.
+	 * @param trustStoreResource the resource.
+	 * @since 1.6.4
+	 */
+	public void setTrustStoreResource(Resource trustStoreResource) {
+		this.trustStoreResource = trustStoreResource;
 	}
 
 	/**
@@ -294,6 +338,21 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setTrustStoreType(String trustStoreType) {
 		this.trustStoreType = trustStoreType;
+	}
+
+	protected SecureRandom getSecureRandom() {
+		return this.secureRandom;
+	}
+
+	/**
+	 * Set the secure random to use when initializing the {@link SSLContext}.
+	 * Defaults to null, in which case the default implementation is used.
+	 * @param secureRandom the secure random.
+	 * @see SSLContext#init(KeyManager[], TrustManager[], SecureRandom)
+	 * @since 1.6.4
+	 */
+	public void setSecureRandom(SecureRandom secureRandom) {
+		this.secureRandom = secureRandom;
 	}
 
 	/**
@@ -467,7 +526,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
-				&& this.keyStorePassphrase == null && this.trustStorePassphrase == null) {
+				&& this.keyStoreResource == null && this.trustStoreResource == null) {
 			if (this.sslAlgorithmSet) {
 				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
 			}
@@ -481,34 +540,48 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			}
 			PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 			String keyStoreName = getKeyStore();
-			Assert.state(StringUtils.hasText(keyStoreName), KEY_STORE + " property required");
 			String trustStoreName = getTrustStore();
-			Assert.state(StringUtils.hasText(trustStoreName), TRUST_STORE + " property required");
 			String keyStorePassword = getKeyStorePassphrase();
-			Assert.state(StringUtils.hasText(keyStorePassword), KEY_STORE_PASS_PHRASE + " property required");
 			String trustStorePassword = getTrustStorePassphrase();
-			Assert.state(StringUtils.hasText(trustStorePassword), TRUST_STORE_PASS_PHRASE + " property required");
 			String keyStoreType = getKeyStoreType();
 			String trustStoreType = getTrustStoreType();
-			Resource keyStore = resolver.getResource(keyStoreName);
-			Resource trustStore = resolver.getResource(trustStoreName);
-			char[] keyPassphrase = keyStorePassword.toCharArray();
-			char[] trustPassphrase = trustStorePassword.toCharArray();
+			char[] keyPassphrase = null;
+			if (StringUtils.hasText(keyStorePassword)) {
+				keyPassphrase = keyStorePassword.toCharArray();
+			}
+			char[] trustPassphrase = null;
+			if (StringUtils.hasText(trustStorePassword)) {
+				trustPassphrase = trustStorePassword.toCharArray();
+			}
+			KeyManager[] keyManagers = null;
+			TrustManager[] trustManagers = null;
+			if (StringUtils.hasText(keyStoreName) || this.keyStoreResource != null) {
+				Resource keyStoreResource = this.keyStoreResource != null ? this.keyStoreResource
+						: resolver.getResource(keyStoreName);
+				KeyStore ks = KeyStore.getInstance(keyStoreType);
+				ks.load(keyStoreResource.getInputStream(), keyPassphrase);
+				KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+				kmf.init(ks, keyPassphrase);
+				keyManagers = kmf.getKeyManagers();
+			}
+			if (StringUtils.hasText(trustStoreName) || this.trustStoreResource != null) {
+				Resource trustStoreResource = this.trustStoreResource != null ? this.trustStoreResource
+						: resolver.getResource(trustStoreName);
+				KeyStore tks = KeyStore.getInstance(trustStoreType);
+				tks.load(trustStoreResource.getInputStream(), trustPassphrase);
+				TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+				tmf.init(tks);
+				trustManagers = tmf.getTrustManagers();
+			}
 
-			KeyStore ks = KeyStore.getInstance(keyStoreType);
-			ks.load(keyStore.getInputStream(), keyPassphrase);
-
-			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-			kmf.init(ks, keyPassphrase);
-
-			KeyStore tks = KeyStore.getInstance(trustStoreType);
-			tks.load(trustStore.getInputStream(), trustPassphrase);
-
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-			tmf.init(tks);
-
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Initializing SSLContext with KM: "
+						+ Arrays.toString(keyManagers)
+						+ ", TM: " + Arrays.toString(trustManagers)
+						+ ", random: " + this.secureRandom);
+			}
 			SSLContext context = createSSLContext();
-			context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+			context.init(keyManagers, trustManagers, this.secureRandom);
 			this.connectionFactory.useSslProtocol(context);
 		}
 	}
