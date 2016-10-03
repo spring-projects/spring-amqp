@@ -16,15 +16,22 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import java.security.SecureRandom;
 import java.util.Collections;
 
+import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -79,6 +86,63 @@ public class SSLConnectionTests {
 		fb.afterPropertiesSet();
 		fb.getObject();
 		verify(rabbitCf).useSslProtocol();
+	}
+
+	@Test
+	public void testKSTS() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		given(logger.isDebugEnabled()).willReturn(true);
+		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
+		fb.setUseSSL(true);
+		fb.setKeyStoreType("JKS");
+		fb.setKeyStoreResource(new ClassPathResource("test.ks"));
+		fb.setKeyStorePassphrase("secret");
+		fb.setTrustStoreResource(new ClassPathResource("test.truststore.ks"));
+		fb.setKeyStorePassphrase("secret");
+		fb.setSecureRandom(SecureRandom.getInstanceStrong());
+		fb.afterPropertiesSet();
+		fb.getObject();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).debug(captor.capture());
+		final String log = captor.getValue();
+		assertThat(log, allOf(containsString("KM: ["), containsString("TM: ["), containsString("random: java.")));
+	}
+
+	@Test
+	public void testNullTS() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		given(logger.isDebugEnabled()).willReturn(true);
+		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
+		fb.setUseSSL(true);
+		fb.setKeyStoreType("JKS");
+		fb.setKeyStoreResource(new ClassPathResource("test.ks"));
+		fb.setKeyStorePassphrase("secret");
+		fb.afterPropertiesSet();
+		fb.getObject();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).debug(captor.capture());
+		final String log = captor.getValue();
+		assertThat(log, allOf(containsString("KM: ["), containsString("TM: null"), containsString("random: null")));
+	}
+
+	@Test
+	public void testNullKS() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
+		given(logger.isDebugEnabled()).willReturn(true);
+		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
+		fb.setUseSSL(true);
+		fb.setKeyStoreType("JKS");
+		fb.setTrustStoreResource(new ClassPathResource("test.truststore.ks"));
+		fb.setKeyStorePassphrase("secret");
+		fb.afterPropertiesSet();
+		fb.getObject();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).debug(captor.capture());
+		final String log = captor.getValue();
+		assertThat(log, allOf(containsString("KM: null"), containsString("TM: ["), containsString("random: null")));
 	}
 
 	@Test
