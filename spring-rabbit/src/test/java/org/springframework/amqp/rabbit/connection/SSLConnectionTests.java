@@ -94,8 +94,6 @@ public class SSLConnectionTests {
 		Log logger = spy(TestUtils.getPropertyValue(fb, "logger", Log.class));
 		given(logger.isDebugEnabled()).willReturn(true);
 		new DirectFieldAccessor(fb).setPropertyValue("logger", logger);
-		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
-		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
 		fb.setUseSSL(true);
 		fb.setKeyStoreType("JKS");
 		fb.setKeyStoreResource(new ClassPathResource("test.ks"));

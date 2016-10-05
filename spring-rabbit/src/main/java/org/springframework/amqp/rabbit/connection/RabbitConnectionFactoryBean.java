@@ -22,6 +22,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -574,7 +575,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			}
 
 			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Initializing SSLContext with KM: " + keyManagers + ", TM: " + trustManagers
+				this.logger.debug("Initializing SSLContext with KM: "
+						+ (keyManagers == null? null : Arrays.asList(keyManagers))
+						+ ", TM: " + (trustManagers == null ? null : Arrays.asList(trustManagers))
 						+ ", random: " + this.secureRandom);
 			}
 			SSLContext context = createSSLContext();
