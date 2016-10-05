@@ -140,7 +140,7 @@ public class AsyncRabbitTemplateTests {
 		this.fooMessage.getMessageProperties().setCorrelationId("foo");
 		ListenableFuture<Message> future = this.template.sendAndReceive(this.fooMessage);
 		Message result = checkMessageResult(future, "FOO");
-		assertEquals("foo", new String(result.getMessageProperties().getCorrelationId()));
+		assertEquals("foo", result.getMessageProperties().getCorrelationId());
 	}
 
 	@Test

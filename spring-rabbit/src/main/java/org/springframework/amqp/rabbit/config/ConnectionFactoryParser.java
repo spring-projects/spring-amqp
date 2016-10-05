@@ -26,6 +26,7 @@ import org.springframework.beans.factory.xml.ParserContext;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  */
 class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 
@@ -106,7 +107,7 @@ class ConnectionFactoryParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, THREAD_FACTORY, "connectionThreadFactory");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, FACTORY_TIMEOUT, "channelCheckoutTimeout");
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CONNECTION_LIMIT);
-
+		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, "connection-name-strategy");
 	}
 
 }
