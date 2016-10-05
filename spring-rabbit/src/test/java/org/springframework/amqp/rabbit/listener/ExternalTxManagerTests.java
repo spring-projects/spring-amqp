@@ -89,7 +89,7 @@ public class ExternalTxManagerTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class))).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -261,9 +261,9 @@ public class ExternalTxManagerTests {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(listenerConnectionFactory);
 		final CachingConnectionFactory cachingTemplateConnectionFactory = new CachingConnectionFactory(templateConnectionFactory);
 
-		given(listenerConnectionFactory.newConnection((ExecutorService) null)).willReturn(listenerConnection);
+		given(listenerConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(listenerConnection);
 		given(listenerConnection.isOpen()).willReturn(true);
-		given(templateConnectionFactory.newConnection((ExecutorService) null)).willReturn(templateConnection);
+		given(templateConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(templateConnection);
 		given(templateConnection.isOpen()).willReturn(true);
 		given(templateConnection.createChannel()).willReturn(templateChannel);
 
@@ -373,7 +373,7 @@ public class ExternalTxManagerTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -475,7 +475,7 @@ public class ExternalTxManagerTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -578,7 +578,7 @@ public class ExternalTxManagerTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();

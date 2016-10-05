@@ -24,7 +24,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -90,7 +92,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockConnection.isOpen()).thenReturn(true);
@@ -124,7 +126,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel2 = mock(Channel.class);
 		Channel mockTxChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2, mockTxChannel);
 
@@ -182,7 +184,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel2 = mock(Channel.class);
 		Channel mockChannel3 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2).thenReturn(mockChannel3);
 		when(mockConnection.isOpen()).thenReturn(true);
 
@@ -236,7 +238,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection.isOpen()).thenReturn(true);
 
@@ -282,7 +284,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		final CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -348,7 +350,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel3 = mock(Channel.class);
 		Channel mockChannel4 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1, mockConnection2);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
+				.thenReturn(mockConnection1, mockConnection2);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel1, mockChannel2);
 		when(mockConnection1.isOpen()).thenReturn(true);
 		when(mockConnection2.createChannel()).thenReturn(mockChannel3, mockChannel4);
@@ -432,7 +435,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection.isOpen()).thenReturn(true);
 
@@ -488,7 +491,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection1);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection1.isOpen()).thenReturn(true);
 
@@ -541,7 +544,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection1);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel1);
 		when(mockConnection1.isOpen()).thenReturn(true);
 
@@ -588,7 +591,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
 		when(mockConnection.isOpen()).thenReturn(true);
 
@@ -635,7 +638,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1).thenReturn(mockChannel2);
 		when(mockConnection.isOpen()).thenReturn(true);
 
@@ -697,7 +700,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		assertNotSame(mockChannel1, mockChannel2);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1, mockConnection2);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection1, mockConnection2);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel1, mockChannel2);
 		when(mockConnection1.isOpen()).thenReturn(true);
 		when(mockConnection2.createChannel()).thenReturn(mockChannel3);
@@ -765,7 +768,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
@@ -795,7 +798,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		connectionFactory.destroy();
 		verify(mockConnection, atLeastOnce()).close(anyInt());
 
-		verify(mockConnectionFactory).newConnection((ExecutorService) null);
+		verify(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 	}
 
@@ -809,7 +812,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		when(mockConnection2.toString()).thenReturn("conn2");
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1, mockConnection2);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection1, mockConnection2);
 		when(mockConnection1.isOpen()).thenReturn(true);
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel);
@@ -864,7 +867,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertSame(notSame, closed.get());
 		assertEquals(2, timesClosed.get());
 
-		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
+		verify(mockConnectionFactory, times(2)).newConnection(any(ExecutorService.class), anyString());
 	}
 
 	@Test
@@ -897,7 +900,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				mockConnections.add(connection);
 				return connection;
 			}
-		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setCacheMode(CacheMode.CONNECTION);
@@ -1096,7 +1099,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				mockConnections.add(connection);
 				return connection;
 			}
-		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setCacheMode(CacheMode.CONNECTION);
@@ -1314,7 +1317,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				mockConnections.add(connection);
 				return connection;
 			}
-		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setCacheMode(CacheMode.CONNECTION);
@@ -1376,7 +1379,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setAddresses("");
 		ccf.createConnection();
 		verify(mock).setHost("abc");
-		verify(mock).newConnection((ExecutorService) null);
+		verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1386,7 +1389,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1");
 		ccf.createConnection();
-		verify(mock).newConnection(isNull(ExecutorService.class), aryEq(new Address[] { new Address("mq1") }));
+		verify(mock)
+				.newConnection(isNull(ExecutorService.class), aryEq(new Address[] { new Address("mq1") }), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1397,7 +1401,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setAddresses("mq1,mq2");
 		ccf.createConnection();
 		verify(mock).newConnection(isNull(ExecutorService.class),
-				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }));
+				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1413,7 +1417,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		InOrder order = inOrder(mock);
 		order.verify(mock).setUri(uri);
-		order.verify(mock).newConnection((ExecutorService) null);
+		order.verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
@@ -1423,7 +1427,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 		when(mockChannel.isOpen()).thenReturn(true).thenReturn(false);
