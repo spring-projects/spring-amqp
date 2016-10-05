@@ -1285,7 +1285,7 @@ It provides methods for starting and stopping.
 When configuring the container, you are essentially bridging the gap between an AMQP Queue and the `MessageListener` instance.
 You must provide a reference to the `ConnectionFactory` and the queue name(s) or Queue instance(s) from which that listener should consume Messages.
 
-With versions prior to _version 2.0_, the was one listener container - the `SimpleMessageListenerContainer`; there is now a second container - the `DirectMessageListenerContainer`.
+With versions prior to _version 2.0_, there was one listener container - the `SimpleMessageListenerContainer`; there is now a second container - the `DirectMessageListenerContainer`.
 The differences between the containers and criteria you might apply when choosing which to use are described in <<choose-container>>.
 
 Here is the most basic example using the, `SimpleMessageListenerContainer` :
@@ -2140,7 +2140,7 @@ As messages arrive from the RabbitMQ client, the client thread hands them off to
 This architecture was required because in early versions of the RabbitMQ client, multiple concurrent deliveries were not possible.
 Newer versions of the client have a revised threading model and can now support concurrency.
 This has allowed the introduction of the DMLC where the listener is now invoked directly on the RabbitMQ Client thread.
-It's architecture is therefore actually "simpler" than the SMLC.
+Its architecture is therefore actually "simpler" than the SMLC.
 However, there are some limitations with this approach and certain features of the SMLC are not available with the DMLC; also concurrency is controlled by `consumersPerQueue`; the `concurrentConsumers` and associated properties are not available with this container.
 
 The following features are available with the SMLC, but not the DMLC:
@@ -4180,9 +4180,47 @@ a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
 | idleEventInterval
-(idle-event-integer)
+(idle-event-interval)
 
 | See <<idle-containers>>.
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
+| monitorInterval
+(monitor-interval)
+
+| With the DMLC, a task is scheduled to run at this interval to monitor the state of the consumers and recover any that have failed.
+
+a|
+a| image::images/tickmark.png[]
+
+| taskScheduler
+(task-scheduler)
+
+| With the DMLC, the scheduler used to run the monitor task at the 'monitorInterval'.
+
+a|
+a| image::images/tickmark.png[]
+
+| exclusiveConsumer
+ExceptionLogger
+(N/A)
+
+| An exception logger used when an exclusive consumer can't gain access to a queue.
+By default, this is logged at the WARN level.
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
+| statefulRetry
+FatalWithNull
+MessageId
+(N/A)
+
+| When using a stateful retry advice; if a message with a missing `messageId` property is received, it is considered
+fatal for the consumer (it is stopped) by default.
+Set this to false, to discard (or route to a dead-letter queue) such messages.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]

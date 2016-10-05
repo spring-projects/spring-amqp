@@ -1551,7 +1551,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 			else {
-				logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
+				if (logger.isErrorEnabled()) {
+					logger.error("Unexpected invocation of " + this.getClass() + ", with message: " + message, t);
+				}
 			}
 		}
 

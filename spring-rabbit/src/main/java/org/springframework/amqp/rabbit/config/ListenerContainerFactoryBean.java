@@ -44,7 +44,6 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
-import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
 
@@ -494,9 +493,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private AbstractMessageListenerContainer createContainer() {
 		if (this.type.equals(Type.simple)) {
-			Assert.isNull(this.consumersPerQueue, "Cannot have 'consumersPerQueue' with a 'simple' container");
-			Assert.isNull(this.taskScheduler, "Cannot have 'taskScheduler'with a 'simple' container");
-			Assert.isNull(this.monitorInterval, "Cannot have 'monitorInterval' with a 'simple' container");
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 			if (this.concurrentConsumers != null) {
 				container.setConcurrentConsumers(this.concurrentConsumers);
@@ -532,23 +528,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		}
 		else {
 			DirectMessageListenerContainer container = new DirectMessageListenerContainer(this.connectionFactory);
-			Assert.isNull(this.concurrentConsumers,
-					"Cannot have 'concurrent-consumers' with a 'direct' container");
-			Assert.isNull(this.maxConcurrentConsumers,
-					"Cannot have 'max-concurrent-consumers' with a 'direct' container");
-			Assert.isNull(this.startConsumerMinInterval,
-					"Cannot have 'start-consumer-min-interval' with a 'direct' container");
-			Assert.isNull(this.stopConsumerMinInterval,
-					"Cannot have 'stop-consumer-min-interval' with a 'direct' container");
-			Assert.isNull(this.consecutiveActiveTrigger,
-					"Cannot have 'consecutive-active-trigger' with a 'direct' container");
-			Assert.isNull(this.consecutiveIdleTrigger,
-					"Cannot have 'consecutive-idle-trigger' with a 'direct' container");
-			Assert.isNull(this.receiveTimeout, "Cannot have 'receive-timeout' with a 'direct' container");
-			Assert.isNull(this.txSize, "Cannot have 'tx-size' with a 'direct' container");
-			Assert.isNull(this.declarationRetries, "Cannot have 'declaration-retries' with a 'direct' container");
-			Assert.isNull(this.retryDeclarationInterval,
-					"Cannot have 'retryDeclarationInterval' with a 'direct' container");
 			if (this.consumersPerQueue != null) {
 				container.setConsumersPerQueue(this.consumersPerQueue);
 			}
