@@ -21,6 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,8 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -71,7 +71,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -87,25 +87,22 @@ public class RabbitTemplateHeaderTests {
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
-				replyTo.set(basicProps.getReplyTo());
-				if (standardHeader) {
-					correlationId.set(basicProps.getCorrelationId());
-				}
-				else {
-					correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
-				}
-				MessageProperties springProps = new DefaultMessagePropertiesConverter()
-						.toMessageProperties(basicProps, null, "UTF-8");
-				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-				template.onMessage(replyMessage);
-				return null;
-			} }
-		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		doAnswer(invocation -> {
+			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			replyTo.set(basicProps.getReplyTo());
+			if (standardHeader) {
+				correlationId.set(basicProps.getCorrelationId());
+			}
+			else {
+				correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
+			}
+			MessageProperties springProps = new DefaultMessagePropertiesConverter()
+					.toMessageProperties(basicProps, null, "UTF-8");
+			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
+			template.onMessage(replyMessage);
+			return null;
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -127,7 +124,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -143,20 +140,17 @@ public class RabbitTemplateHeaderTests {
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
-				replyTo.set(basicProps.getReplyTo());
-				correlationId.set(basicProps.getCorrelationId());
-				MessageProperties springProps = new DefaultMessagePropertiesConverter()
-						.toMessageProperties(basicProps, null, "UTF-8");
-				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-				template.onMessage(replyMessage);
-				return null;
-			} }
-		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		doAnswer(invocation -> {
+			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			replyTo.set(basicProps.getReplyTo());
+			correlationId.set(basicProps.getCorrelationId());
+			MessageProperties springProps = new DefaultMessagePropertiesConverter()
+					.toMessageProperties(basicProps, null, "UTF-8");
+			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
+			template.onMessage(replyMessage);
+			return null;
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -174,7 +168,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -192,27 +186,24 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedReplyTo = new ArrayList<String>();
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyAddress3 = "replyTo3";
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
-				nestedReplyTo.add(basicProps.getReplyTo());
-				nestedCorrelation.add(basicProps.getCorrelationId());
-				MessageProperties springProps = new DefaultMessagePropertiesConverter()
-						.toMessageProperties(basicProps, null, "UTF-8");
-				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-				if (count.incrementAndGet() < 2) {
-					Message anotherMessage = new Message("Second".getBytes(), springProps);
-					template.setReplyAddress(replyAddress3);
-					replyMessage = template.sendAndReceive(anotherMessage);
-					nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
-					nestedCorrelation.add(new String(replyMessage.getMessageProperties().getCorrelationId(), "UTF-8"));
-				}
-				template.onMessage(replyMessage);
-				return null;
-			} }
-		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		doAnswer(invocation -> {
+			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			nestedReplyTo.add(basicProps.getReplyTo());
+			nestedCorrelation.add(basicProps.getCorrelationId());
+			MessageProperties springProps = new DefaultMessagePropertiesConverter()
+					.toMessageProperties(basicProps, null, "UTF-8");
+			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
+			if (count.incrementAndGet() < 2) {
+				Message anotherMessage = new Message("Second".getBytes(), springProps);
+				template.setReplyAddress(replyAddress3);
+				replyMessage = template.sendAndReceive(anotherMessage);
+				nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
+				nestedCorrelation.add(replyMessage.getMessageProperties().getCorrelationIdString());
+			}
+			template.onMessage(replyMessage);
+			return null;
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -232,7 +223,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -249,21 +240,18 @@ public class RabbitTemplateHeaderTests {
 		Message message = new Message("Hello, world!".getBytes(), messageProperties);
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
-				replyTo.set(basicProps.getReplyTo());
-				correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
+		doAnswer(invocation -> {
+			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			replyTo.set(basicProps.getReplyTo());
+			correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
 
-				MessageProperties springProps = new DefaultMessagePropertiesConverter()
-						.toMessageProperties(basicProps, null, "UTF-8");
-				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-				template.onMessage(replyMessage);
-				return null;
-			} }
-		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+			MessageProperties springProps = new DefaultMessagePropertiesConverter()
+					.toMessageProperties(basicProps, null, "UTF-8");
+			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
+			template.onMessage(replyMessage);
+			return null;
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -282,7 +270,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -301,27 +289,24 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedReplyTo = new ArrayList<String>();
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyTo3 = "replyTo3";
-		doAnswer(new Answer<Object>() {
-			@Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
-				nestedReplyTo.add(basicProps.getReplyTo());
-				nestedCorrelation.add(basicProps.getCorrelationId());
-				MessageProperties springProps = new DefaultMessagePropertiesConverter()
-						.toMessageProperties(basicProps, null, "UTF-8");
-				Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
-				if (count.incrementAndGet() < 2) {
-					Message anotherMessage = new Message("Second".getBytes(), springProps);
-					template.setReplyAddress(replyTo3);
-					replyMessage = template.sendAndReceive(anotherMessage);
-					nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
-					nestedCorrelation.add((String) replyMessage.getMessageProperties().getHeaders().get(CORRELATION_HEADER));
-				}
-				template.onMessage(replyMessage);
-				return null;
-			} }
-		).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		doAnswer(invocation -> {
+			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			nestedReplyTo.add(basicProps.getReplyTo());
+			nestedCorrelation.add(basicProps.getCorrelationId());
+			MessageProperties springProps = new DefaultMessagePropertiesConverter()
+					.toMessageProperties(basicProps, null, "UTF-8");
+			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
+			if (count.incrementAndGet() < 2) {
+				Message anotherMessage = new Message("Second".getBytes(), springProps);
+				template.setReplyAddress(replyTo3);
+				replyMessage = template.sendAndReceive(anotherMessage);
+				nestedReplyTo.add(replyMessage.getMessageProperties().getReplyTo());
+				nestedCorrelation.add((String) replyMessage.getMessageProperties().getHeaders().get(CORRELATION_HEADER));
+			}
+			template.onMessage(replyMessage);
+			return null;
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 

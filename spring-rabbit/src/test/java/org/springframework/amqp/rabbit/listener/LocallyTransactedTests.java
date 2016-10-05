@@ -80,7 +80,7 @@ public class LocallyTransactedTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection(any(ExecutorService.class))).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -211,7 +211,7 @@ public class LocallyTransactedTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final Channel channel1 = mock(Channel.class);
@@ -323,7 +323,7 @@ public class LocallyTransactedTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -426,7 +426,7 @@ public class LocallyTransactedTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		given(mockConnectionFactory.newConnection((ExecutorService) null)).willReturn(mockConnection);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
