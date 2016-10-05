@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -41,6 +42,7 @@ import com.rabbitmq.client.ConnectionFactory;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  */
 public final class ConnectionFactoryParserTests {
@@ -68,6 +70,8 @@ public final class ConnectionFactoryParserTests {
 		assertEquals(CachingConnectionFactory.CacheMode.CHANNEL, connectionFactory.getCacheMode());
 		assertEquals(234L, TestUtils.getPropertyValue(connectionFactory, "channelCheckoutTimeout"));
 		assertEquals(456,  TestUtils.getPropertyValue(connectionFactory, "connectionLimit"));
+		assertSame(beanFactory.getBean(ConnectionNameStrategy.class),
+				TestUtils.getPropertyValue(connectionFactory, "connectionNameStrategy"));
 	}
 
 	@Test

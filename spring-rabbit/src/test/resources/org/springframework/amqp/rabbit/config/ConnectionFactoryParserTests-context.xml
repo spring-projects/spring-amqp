@@ -3,17 +3,20 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
 	xmlns:task="http://www.springframework.org/schema/task"
-	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
 		http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<rabbit:connection-factory id="kitchenSink" host="foo" virtual-host="/bar"
 		channel-cache-size="10" port="6888" username="user" password="password"
 		publisher-confirms="true" publisher-returns="true" connection-timeout="789"
 		factory-timeout="234" connection-limit="456"
-		requested-heartbeat="123"/>
+		requested-heartbeat="123"
+		connection-name-strategy="connectionNameStrategy"/>
+
+	<bean id="connectionNameStrategy" class="org.mockito.Mockito" factory-method="mock">
+		<constructor-arg value="org.springframework.amqp.rabbit.connection.ConnectionNameStrategy"/>
+	</bean>
 
 	<rabbit:connection-factory id="native" connection-factory="connectionFactory" channel-cache-size="10" />
 

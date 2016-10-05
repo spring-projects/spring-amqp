@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.springframework.amqp.utils.test.TestUtils.getPropertyValue;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -68,12 +69,15 @@ import com.rabbitmq.client.DefaultConsumer;
  * @author Dave Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.0
  *
  */
 public class CachingConnectionFactoryIntegrationTests {
 
 	private static final String CF_INTEGRATION_TEST_QUEUE = "cfIntegrationTest";
+
+	private static final String CF_INTEGRATION_CONNECTION_NAME = "cfIntegrationTestConnectionName";
 
 	private static Log logger = LogFactory.getLog(CachingConnectionFactoryIntegrationTests.class);
 
@@ -91,6 +95,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		connectionFactory.setHost("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactory.getRabbitConnectionFactory().getClientProperties().put("foo", "bar");
+		connectionFactory.setConnectionNameStrategy(cf -> CF_INTEGRATION_CONNECTION_NAME);
 	}
 
 	@After
@@ -107,7 +112,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		connectionFactory.setCacheMode(CacheMode.CONNECTION);
 		connectionFactory.setConnectionCacheSize(5);
 		connectionFactory.setExecutor(Executors.newCachedThreadPool());
-		List<Connection> connections = new ArrayList<Connection>();
+		List<Connection> connections = new ArrayList<>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		assertNotSame(connections.get(0), connections.get(1));
@@ -115,14 +120,12 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		Set<?> allocatedConnections = getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(6, allocatedConnections.size());
-		for (Connection connection : connections) {
-			connection.close();
-		}
+		connections.forEach(Connection::close);
 		assertEquals(6, allocatedConnections.size());
 		assertEquals("5", connectionFactory.getCacheProperties().get("openConnections"));
-		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
+		BlockingQueue<?> idleConnections = getPropertyValue(connectionFactory, "idleConnections",
 				BlockingQueue.class);
 		assertEquals(6, idleConnections.size());
 		connections.clear();
@@ -130,9 +133,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		assertEquals(6, allocatedConnections.size());
 		assertEquals(4, idleConnections.size());
-		for (Connection connection : connections) {
-			connection.close();
-		}
+		connections.forEach(Connection::close);
 	}
 
 	@Test
@@ -166,9 +167,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertSame(channels.get(1), channels.get(3));
 		channels.get(2).close();
 		channels.get(3).close();
-		for (Connection connection : connections) {
-			connection.close();
-		}
+		connections.forEach(Connection::close);
 	}
 
 	@Test
@@ -179,7 +178,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		Set<?> allocatedConnections = getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(2, allocatedConnections.size());
 		assertNotSame(connections.get(0), connections.get(1));
 		List<Channel> channels = new ArrayList<Channel>();
@@ -190,12 +189,12 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(1).createChannel(true));
 		}
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
+		Map<?, List<?>> cachedChannels = getPropertyValue(connectionFactory,
 				"allocatedConnectionNonTransactionalChannels", Map.class);
 		assertEquals(0, cachedChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedChannels.get(connections.get(1)).size());
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
+		Map<?, List<?>> cachedTxChannels = getPropertyValue(connectionFactory,
 				"allocatedConnectionTransactionalChannels", Map.class);
 		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
@@ -231,7 +230,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
 
 		Connection connection = connectionFactory.createConnection();
-		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target", Connection.class);
+		Connection rabbitConnection = getPropertyValue(connection, "target", Connection.class);
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
 		assertEquals(2, allocatedConnections.size());
@@ -351,12 +350,21 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testConnectionCloseLog() {
-		Log logger = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
+		Log logger = spy(getPropertyValue(this.connectionFactory, "logger", Log.class));
 		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", logger);
 		Connection conn = this.connectionFactory.createConnection();
 		conn.createChannel(false);
 		this.connectionFactory.destroy();
 		verify(logger, never()).error(anyString());
+	}
+
+	@Test
+	public void testConnectionName() {
+		Connection connection = this.connectionFactory.createConnection();
+		com.rabbitmq.client.Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target.delegate",
+				com.rabbitmq.client.Connection.class);
+		assertEquals(CF_INTEGRATION_CONNECTION_NAME, rabbitConnection.getClientProperties().get("connection_name"));
+		this.connectionFactory.destroy();
 	}
 
 	@Test
@@ -366,34 +374,15 @@ public class CachingConnectionFactoryIntegrationTests {
 		final ServerSocket server = ServerSocketFactory.getDefault().createServerSocket(2765);
 		final AtomicBoolean hangOnClose = new AtomicBoolean();
 		// create a simple proxy so we can drop the close response
-		Executors.newSingleThreadExecutor().execute(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					final Socket socket = server.accept();
-					Executors.newSingleThreadExecutor().execute(() -> {
-						while (!socket.isClosed()) {
-							try {
-								int c = socket.getInputStream().read();
-								if (c >= 0) {
-									proxy.getOutputStream().write(c);
-								}
-							}
-							catch (Exception e) {
-								try {
-									socket.close();
-									proxy.close();
-								}
-								catch (Exception ee) { }
-							}
-						}
-					});
-					while (!proxy.isClosed()) {
+		Executors.newSingleThreadExecutor().execute(() -> {
+			try {
+				final Socket socket = server.accept();
+				Executors.newSingleThreadExecutor().execute(() -> {
+					while (!socket.isClosed()) {
 						try {
-							int c = proxy.getInputStream().read();
-							if (c >= 0 && !hangOnClose.get()) {
-								socket.getOutputStream().write(c);
+							int c = socket.getInputStream().read();
+							if (c >= 0) {
+								proxy.getOutputStream().write(c);
 							}
 						}
 						catch (Exception e) {
@@ -404,11 +393,26 @@ public class CachingConnectionFactoryIntegrationTests {
 							catch (Exception ee) { }
 						}
 					}
-					socket.close();
+				});
+				while (!proxy.isClosed()) {
+					try {
+						int c = proxy.getInputStream().read();
+						if (c >= 0 && !hangOnClose.get()) {
+							socket.getOutputStream().write(c);
+						}
+					}
+					catch (Exception e) {
+						try {
+							socket.close();
+							proxy.close();
+						}
+						catch (Exception ee) { }
+					}
 				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+				socket.close();
+			}
+			catch (Exception e) {
+				e.printStackTrace();
 			}
 		});
 		CachingConnectionFactory factory = new CachingConnectionFactory(2765);
