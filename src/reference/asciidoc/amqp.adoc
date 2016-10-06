@@ -3535,7 +3535,7 @@ To send a delayed message, it's simply a matter of setting the `x-delay` header,
 [source, java]
 ----
 MessageProperties properties = new MessageProperties();
-properties.setXDelay(15000);
+properties.setDelay(15000);
 template.send(exchange, routingKey,
         MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 ----
@@ -3548,7 +3548,7 @@ rabbitTemplate.convertAndSend(exchange, routingKey, "foo", new MessagePostProces
 
     @Override
     public Message postProcessMessage(Message message) throws AmqpException {
-        message.getMessageProperties().setXDelay(15000);
+        message.getMessageProperties().setDelay(15000);
         return message;
     }
 
