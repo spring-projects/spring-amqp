@@ -1510,7 +1510,7 @@
 			<xsd:attribute name="connection-name-strategy">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Reference to a 'ConnectionNameStrategy' to provide client-specific target RabbitMQ connection name.
+	Reference to a 'ConnectionNameStrategy' to provide client-specific name for the target RabbitMQ connection.
 	It can be displayed in the management UI if RabbitMQ server supports it.
 				]]></xsd:documentation>
 					<xsd:appinfo>

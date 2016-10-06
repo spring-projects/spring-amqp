@@ -348,7 +348,7 @@ connectionFactory.setConnectionNameStrategy(connectionFactory -> "MY_CONNECTION"
 ----
 
 The `ConnectionFactory` argument can be used to distinguish target connection names by some logic.
-By default a `beanName` of the `AbstractConnectionFactory` and internal counter are used to generate `connection_name`.
+By default a `beanName` of the `AbstractConnectionFactory` and an internal counter are used to generate `connection_name`.
 The `<rabbit:connection-factory>` namespace component is also supplied with the `connection-name-strategy` attribute.
 
 [[connection-factory]]

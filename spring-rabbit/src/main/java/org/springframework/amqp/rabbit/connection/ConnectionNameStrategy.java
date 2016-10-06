@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.connection;
 
-import com.rabbitmq.client.Address;
-
 /**
  * A strategy to build an application-specific connection name,
  * which can be displayed in the management UI if RabbitMQ server supports it.
@@ -27,7 +25,7 @@ import com.rabbitmq.client.Address;
  *
  * @author Artem Bilan
  * @since 2.0
- * @see com.rabbitmq.client.ConnectionFactory#newConnection(Address[], String)
+ * @see com.rabbitmq.client.ConnectionFactory#newConnection(com.rabbitmq.client.Address[], String)
  */
 @FunctionalInterface
 public interface ConnectionNameStrategy {

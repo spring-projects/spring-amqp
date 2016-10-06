@@ -71,7 +71,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
 	private ConnectionNameStrategy connectionNameStrategy =
-			connectionFactory -> (this.beanName != null ? this.beanName : getClass()) +
+			connectionFactory -> (this.beanName != null ? this.beanName : "SpringAMQP") +
 					"#" + this.defaultConnectionNameStrategyCounter.getAndIncrement();
 
 	private volatile String beanName;
@@ -283,8 +283,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	}
 
 	/**
-	 * Provide a {@link ConnectionNameStrategy} to build the name for target RabbitMQ connection.
-	 * The {@link #beanName} together with the counter is used by default.
+	 * Provide a {@link ConnectionNameStrategy} to build the name for the target RabbitMQ connection.
+	 * The {@link #beanName} together with a counter is used by default.
 	 * @param connectionNameStrategy the {@link ConnectionNameStrategy} to use.
 	 * @since 2.0
 	 */
