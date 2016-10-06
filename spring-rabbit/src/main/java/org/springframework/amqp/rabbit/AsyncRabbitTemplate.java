@@ -29,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
+import org.springframework.amqp.core.AsyncAmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -37,6 +38,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -61,8 +63,9 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * Returned (undeliverable) request messages are presented as a
  * {@link AmqpMessageReturnedException} cause of an {@link ExecutionException}.
  * <p>
- * Internally, the template uses a {@link RabbitTemplate} and a
- * {@link SimpleMessageListenerContainer} either provided or constructed internally.
+ * Internally, the template uses a {@link RabbitTemplate} and an
+ * {@link AbstractMessageListenerContainer} either provided or constructed internally
+ * (a {@link SimpleMessageListenerContainer}).
  * If an external {@link RabbitTemplate} is provided and confirms/returns are enabled,
  * it must not previously have had callbacks registered because this object needs to
  * be the callback.
@@ -70,8 +73,8 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * @author Gary Russell
  * @since 1.6
  */
-public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback,
-		BeanNameAware {
+public class AsyncRabbitTemplate
+		implements AsyncAmqpTemplate, MessageListener, ReturnCallback, ConfirmCallback, BeanNameAware, SmartLifecycle {
 
 	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
 
@@ -79,7 +82,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 	private final RabbitTemplate template;
 
-	private final SimpleMessageListenerContainer container;
+	private final AbstractMessageListenerContainer container;
 
 	private final String replyAddress;
 
@@ -110,7 +113,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param replyQueue the name of the reply queue to listen for replies.
 	 */
 	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey,
-	                           String replyQueue) {
+			String replyQueue) {
 		this(connectionFactory, exchange, routingKey, replyQueue, null);
 	}
 
@@ -126,7 +129,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param replyAddress the reply address (exchange/routingKey).
 	 */
 	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey,
-	                           String replyQueue, String replyAddress) {
+			String replyQueue, String replyAddress) {
 		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
 		Assert.notNull(routingKey, "'routingKey' cannot be null");
 		Assert.notNull(replyQueue, "'replyQueue' cannot be null");
@@ -151,9 +154,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * is configured to listen to will be used as the reply queue. Replies will be
 	 * routed using the default exchange with that queue name as the routing key.
 	 * @param template a {@link RabbitTemplate}
-	 * @param container a {@link SimpleMessageListenerContainer}.
+	 * @param container a {@link AbstractMessageListenerContainer}.
 	 */
-	public AsyncRabbitTemplate(RabbitTemplate template, SimpleMessageListenerContainer container) {
+	public AsyncRabbitTemplate(RabbitTemplate template, AbstractMessageListenerContainer container) {
 		this(template, container, null);
 	}
 
@@ -164,10 +167,11 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * routing key. Otherwise it should have the form exchange/routingKey and must
 	 * cause messages to be routed to the reply queue.
 	 * @param template a {@link RabbitTemplate}.
-	 * @param container a {@link SimpleMessageListenerContainer}.
+	 * @param container a {@link AbstractMessageListenerContainer}.
 	 * @param replyAddress the reply address.
 	 */
-	public AsyncRabbitTemplate(RabbitTemplate template, SimpleMessageListenerContainer container, String replyAddress) {
+	public AsyncRabbitTemplate(RabbitTemplate template, AbstractMessageListenerContainer container,
+			String replyAddress) {
 		Assert.notNull(template, "'template' cannot be null");
 		Assert.notNull(container, "'container' cannot be null");
 		this.template = template;
@@ -273,6 +277,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param message the message.
 	 * @return the {@link RabbitMessageFuture}.
 	 */
+	@Override
 	public RabbitMessageFuture sendAndReceive(Message message) {
 		return sendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message);
 	}
@@ -284,74 +289,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param message the message.
 	 * @return the {@link RabbitMessageFuture}.
 	 */
+	@Override
 	public RabbitMessageFuture sendAndReceive(String routingKey, Message message) {
 		return sendAndReceive(this.template.getExchange(), routingKey, message);
-	}
-
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * default routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message, null);
-	}
-
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * provided routing key.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message) throws AmqpException {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, message, null);
-	}
-
-	/**
-	 * Convert the object to a message and send it to the provided exchange and
-	 * routing key.
-	 * @param exchange the exchange.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message) {
-		return convertSendAndReceive(exchange, routingKey, message, null);
-	}
-
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * default routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
-	 * @param message the message.
-	 * @param messagePostProcessor the post processor.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message,
-	                                                          MessagePostProcessor messagePostProcessor) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message,
-				messagePostProcessor);
-	}
-
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * provided routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param messagePostProcessor the post processor.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message,
-	                                                          MessagePostProcessor messagePostProcessor) {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, message, messagePostProcessor);
 	}
 
 	/**
@@ -362,6 +302,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param message the message.
 	 * @return the {@link RabbitMessageFuture}.
 	 */
+	@Override
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
@@ -376,6 +317,77 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	}
 
 	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * default routing key.
+	 * @param message the message.
+	 * @param <C> the expected result type.
+	 * @return the {@link RabbitConverterFuture}.
+	 */
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message) {
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message, null);
+	}
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * provided routing key.
+	 * @param routingKey the routing key.
+	 * @param message the message.
+	 * @param <C> the expected result type.
+	 * @return the {@link RabbitConverterFuture}.
+	 */
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message) {
+		return convertSendAndReceive(this.template.getExchange(), routingKey, message, null);
+	}
+
+	/**
+	 * Convert the object to a message and send it to the provided exchange and
+	 * routing key.
+	 * @param exchange the exchange.
+	 * @param routingKey the routing key.
+	 * @param message the message.
+	 * @param <C> the expected result type.
+	 * @return the {@link RabbitConverterFuture}.
+	 */
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message) {
+		return convertSendAndReceive(exchange, routingKey, message, null);
+	}
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * default routing key after invoking the {@link MessagePostProcessor}.
+	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param message the message.
+	 * @param messagePostProcessor the post processor.
+	 * @param <C> the expected result type.
+	 * @return the {@link RabbitConverterFuture}.
+	 */
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message,
+			MessagePostProcessor messagePostProcessor) {
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message,
+				messagePostProcessor);
+	}
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * provided routing key after invoking the {@link MessagePostProcessor}.
+	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param routingKey the routing key.
+	 * @param message the message.
+	 * @param messagePostProcessor the post processor.
+	 * @param <C> the expected result type.
+	 * @return the {@link RabbitConverterFuture}.
+	 */
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor) {
+		return convertSendAndReceive(this.template.getExchange(), routingKey, message, messagePostProcessor);
+	}
+
+	/**
 	 * Convert the object to a message and send it to the provided exchange and
 	 * routing key after invoking the {@link MessagePostProcessor}.
 	 * If the post processor adds a correlationId property, it must be unique.
@@ -386,8 +398,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param <C> the expected result type.
 	 * @return the {@link RabbitConverterFuture}.
 	 */
+	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message,
-	                                                          MessagePostProcessor messagePostProcessor) {
+			MessagePostProcessor messagePostProcessor) {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
@@ -611,7 +624,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * A {@link RabbitFuture} with a return type of {@link Message}.
 	 * @since 1.6
 	 */
-	public class RabbitMessageFuture extends RabbitFuture<Message> {
+	public class RabbitMessageFuture extends RabbitFuture<Message> implements AmqpMessageFuture {
 
 		public RabbitMessageFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);
@@ -624,7 +637,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * generic parameter.
 	 * @since 1.6
 	 */
-	public class RabbitConverterFuture<C> extends RabbitFuture<C> {
+	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements AmqpConverterFuture<C> {
 
 		public RabbitConverterFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);

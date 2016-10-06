@@ -182,7 +182,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Test
 	public void invalidValueInAnnotationTestBean() {
 		try {
-			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class);
+			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class).close();
 		}
 		catch (BeanCreationException e) {
 			assertThat(e.getCause(), Matchers.instanceOf(IllegalArgumentException.class));
