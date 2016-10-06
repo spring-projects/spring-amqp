@@ -37,8 +37,6 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.ReflectionUtils.MethodCallback;
 import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.rabbitmq.client.AMQP;
@@ -88,12 +86,6 @@ public class PublisherCallbackChannelImpl
 
 	};
 
-	private static volatile java.lang.reflect.Method consumerCountMethod;
-
-	private static volatile java.lang.reflect.Method messageCountMethod;
-
-	private static volatile boolean conditionalMethodsChecked;
-
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -108,29 +100,6 @@ public class PublisherCallbackChannelImpl
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
-
-		if (!conditionalMethodsChecked) {
-			// The following reflection is required to maintain compatibility with pre 3.6.x clients.
-			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback() {
-
-				@Override
-				public void doWith(java.lang.reflect.Method method)
-						throws IllegalArgumentException, IllegalAccessException {
-					if ("consumerCount".equals(method.getName()) && method.getParameterTypes().length == 1
-							&& String.class.equals(method.getParameterTypes()[0])
-							&& long.class.equals(method.getReturnType())) {
-						consumerCountMethod = method;
-					}
-					else if ("messageCount".equals(method.getName()) && method.getParameterTypes().length == 1
-							&& String.class.equals(method.getParameterTypes()[0])
-							&& long.class.equals(method.getReturnType())) {
-						messageCountMethod = method;
-					}
-				}
-
-			}, METHOD_FILTER);
-			conditionalMethodsChecked = true;
-		}
 	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,18 +580,12 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public long consumerCount(String queue) throws IOException {
-		if (consumerCountMethod != null) {
-			return (Long) ReflectionUtils.invokeMethod(consumerCountMethod, this.delegate, new Object[] { queue });
-		}
-		throw new UnsupportedOperationException("'consumerCount()' requires a 3.6+ client library");
+		return this.delegate.consumerCount(queue);
 	}
 
 	@Override
 	public long messageCount(String queue) throws IOException {
-		if (messageCountMethod != null) {
-			return (Long) ReflectionUtils.invokeMethod(messageCountMethod, this.delegate, new Object[] { queue });
-		}
-		throw new UnsupportedOperationException("'messageCountMethod()' requires a 3.6+ client library");
+		return this.delegate.messageCount(queue);
 	}
 
 	@Override

@@ -32,8 +32,7 @@ While the default Spring Framework version dependency is 4.2.x, Spring AMQP is g
 versions of Spring Framework.
 Annotation-based listeners and the `RabbitMessagingTemplate` require Spring Framework 4.1 or higher, however.
 
-Similarly, the default `amqp-client` version is 3.6.x but the framework is compatible with versions 3.4.0 and above.
-However, of course, features that rely on newer client versions will not be available.
+The minimum `amqp-client` java client library version is 3.6.5.
 Note the this refers to the java client library; generally, it will work with older broker versions.
 
 ===== Very, Very Quick
