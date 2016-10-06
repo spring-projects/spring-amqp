@@ -25,7 +25,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.springframework.amqp.utils.test.TestUtils.getPropertyValue;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -120,12 +119,12 @@ public class CachingConnectionFactoryIntegrationTests {
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(6, allocatedConnections.size());
 		connections.forEach(Connection::close);
 		assertEquals(6, allocatedConnections.size());
 		assertEquals("5", connectionFactory.getCacheProperties().get("openConnections"));
-		BlockingQueue<?> idleConnections = getPropertyValue(connectionFactory, "idleConnections",
+		BlockingQueue<?> idleConnections = TestUtils.getPropertyValue(connectionFactory, "idleConnections",
 				BlockingQueue.class);
 		assertEquals(6, idleConnections.size());
 		connections.clear();
@@ -178,7 +177,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
-		Set<?> allocatedConnections = getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
+		Set<?> allocatedConnections = TestUtils.getPropertyValue(connectionFactory, "allocatedConnections", Set.class);
 		assertEquals(2, allocatedConnections.size());
 		assertNotSame(connections.get(0), connections.get(1));
 		List<Channel> channels = new ArrayList<Channel>();
@@ -189,12 +188,12 @@ public class CachingConnectionFactoryIntegrationTests {
 			channels.add(connections.get(1).createChannel(true));
 		}
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedChannels = getPropertyValue(connectionFactory,
+		Map<?, List<?>> cachedChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionNonTransactionalChannels", Map.class);
 		assertEquals(0, cachedChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedChannels.get(connections.get(1)).size());
 		@SuppressWarnings("unchecked")
-		Map<?, List<?>> cachedTxChannels = getPropertyValue(connectionFactory,
+		Map<?, List<?>> cachedTxChannels = TestUtils.getPropertyValue(connectionFactory,
 				"allocatedConnectionTransactionalChannels", Map.class);
 		assertEquals(0, cachedTxChannels.get(connections.get(0)).size());
 		assertEquals(0, cachedTxChannels.get(connections.get(1)).size());
@@ -230,7 +229,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		assertEquals("1", connectionFactory.getCacheProperties().get("openConnections"));
 
 		Connection connection = connectionFactory.createConnection();
-		Connection rabbitConnection = getPropertyValue(connection, "target", Connection.class);
+		Connection rabbitConnection = TestUtils.getPropertyValue(connection, "target", Connection.class);
 		rabbitConnection.close();
 		Channel channel = connection.createChannel(false);
 		assertEquals(2, allocatedConnections.size());
@@ -350,7 +349,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testConnectionCloseLog() {
-		Log logger = spy(getPropertyValue(this.connectionFactory, "logger", Log.class));
+		Log logger = spy(TestUtils.getPropertyValue(this.connectionFactory, "logger", Log.class));
 		new DirectFieldAccessor(this.connectionFactory).setPropertyValue("logger", logger);
 		Connection conn = this.connectionFactory.createConnection();
 		conn.createChannel(false);
