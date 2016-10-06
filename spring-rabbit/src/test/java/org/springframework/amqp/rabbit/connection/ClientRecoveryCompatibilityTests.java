@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.connection;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,6 +34,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.4
  *
  */
@@ -47,7 +49,7 @@ public class ClientRecoveryCompatibilityTests {
 		final com.rabbitmq.client.Connection rabbitConn = mock(AutorecoveringConnection.class);
 		when(rabbitConn.isOpen()).thenReturn(true);
 		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
-		doAnswer(invocation -> rabbitConn).when(cf).newConnection(any(ExecutorService.class));
+		doAnswer(invocation -> rabbitConn).when(cf).newConnection(any(ExecutorService.class), anyString());
 		when(rabbitConn.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);

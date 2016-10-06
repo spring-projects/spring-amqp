@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -293,7 +294,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
@@ -324,7 +325,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockChannel1.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 		when(mockChannel2.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
 		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
@@ -389,7 +390,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
@@ -428,7 +429,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
@@ -466,7 +467,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
@@ -526,7 +527,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockChannel.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		final PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(channel);
@@ -650,7 +651,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicLong seq = new AtomicLong();
 		doAnswer(invocation -> seq.incrementAndGet()).when(mockChannel).getNextPublishSeqNo();
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(mockChannel).when(mockConnection).createChannel();
 
@@ -710,7 +711,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final AtomicLong seq2 = new AtomicLong();
 		doAnswer(invocation -> seq2.incrementAndGet()).when(mockChannel2).getNextPublishSeqNo();
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2);
 

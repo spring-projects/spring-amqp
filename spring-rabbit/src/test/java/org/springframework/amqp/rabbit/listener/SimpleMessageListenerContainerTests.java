@@ -406,7 +406,7 @@ public class SimpleMessageListenerContainerTests {
 		Channel mockChannel1 = mock(Channel.class);
 		Channel mockChannel2 = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null))
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
 			.thenReturn(mockConnection1)
 			.thenReturn(mockConnection2)
 			.thenReturn(null);

@@ -76,7 +76,7 @@ public abstract class LocallyTransactedTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -166,7 +166,7 @@ public abstract class LocallyTransactedTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -230,7 +230,7 @@ public abstract class LocallyTransactedTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		Channel channel1 = mock(Channel.class);
@@ -333,7 +333,7 @@ public abstract class LocallyTransactedTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
@@ -429,7 +429,7 @@ public abstract class LocallyTransactedTests {
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();

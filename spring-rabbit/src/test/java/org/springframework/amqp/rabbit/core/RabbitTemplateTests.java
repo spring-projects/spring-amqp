@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -101,7 +103,7 @@ public class RabbitTemplateTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -118,7 +120,7 @@ public class RabbitTemplateTests {
 			template.convertAndSend("baz", "qux");
 			return null;
 		});
-		verify(mockConnectionFactory, Mockito.times(1)).newConnection(Mockito.any(ExecutorService.class));
+		verify(mockConnectionFactory, Mockito.times(1)).newConnection(any(ExecutorService.class), anyString());
 		// ensure we used the same channel
 		verify(mockConnection, Mockito.times(1)).createChannel();
 	}
@@ -162,7 +164,7 @@ public class RabbitTemplateTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -173,7 +175,7 @@ public class RabbitTemplateTests {
 			consumer.set((Consumer) invocation.getArguments()[6]);
 			return null;
 		}).when(mockChannel).basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.anyString(),
-				Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyMap(), Mockito.any(Consumer.class));
+				Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyMap(), any(Consumer.class));
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setReplyTimeout(1);
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
@@ -190,7 +192,7 @@ public class RabbitTemplateTests {
 		doAnswer(invocation -> {
 			count.incrementAndGet();
 			throw new AuthenticationFailureException("foo");
-		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setRetryTemplate(new RetryTemplate());
@@ -210,7 +212,7 @@ public class RabbitTemplateTests {
 		doAnswer(invocation -> {
 			count.incrementAndGet();
 			throw new AuthenticationFailureException("foo");
-		}).when(mockConnectionFactory).newConnection((ExecutorService) null);
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
 		template.setRetryTemplate(new RetryTemplate());

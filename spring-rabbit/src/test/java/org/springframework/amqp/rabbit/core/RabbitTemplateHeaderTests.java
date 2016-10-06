@@ -21,6 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -68,7 +70,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -98,8 +100,8 @@ public class RabbitTemplateHeaderTests {
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 			template.onMessage(replyMessage);
 			return null;
-		}).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -121,7 +123,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -146,8 +148,8 @@ public class RabbitTemplateHeaderTests {
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 			template.onMessage(replyMessage);
 			return null;
-		}).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -165,7 +167,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -199,8 +201,8 @@ public class RabbitTemplateHeaderTests {
 			}
 			template.onMessage(replyMessage);
 			return null;
-		}).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -220,7 +222,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -247,8 +249,8 @@ public class RabbitTemplateHeaderTests {
 			Message replyMessage = new Message("!dlrow olleH".getBytes(), springProps);
 			template.onMessage(replyMessage);
 			return null;
-		}).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
@@ -267,7 +269,7 @@ public class RabbitTemplateHeaderTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
@@ -302,8 +304,8 @@ public class RabbitTemplateHeaderTests {
 			}
 			template.onMessage(replyMessage);
 			return null;
-		}).when(mockChannel).basicPublish(Mockito.any(String.class), Mockito.any(String.class), Mockito.anyBoolean(),
-				Mockito.any(BasicProperties.class), Mockito.any(byte[].class));
+		}).when(mockChannel).basicPublish(any(String.class), any(String.class), Mockito.anyBoolean(),
+				any(BasicProperties.class), any(byte[].class));
 		Message reply = template.sendAndReceive(message);
 		assertNotNull(reply);
 
