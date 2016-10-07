@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.core;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.util.concurrent.ListenableFuture;
 
 /**
@@ -73,7 +72,7 @@ public interface AsyncAmqpTemplate {
 	 * @param <C> the expected result type.
 	 * @return the {@link AmqpConverterFuture}.
 	 */
-	<C> AmqpConverterFuture<C> convertSendAndReceive(String routingKey, Object message) throws AmqpException;
+	<C> AmqpConverterFuture<C> convertSendAndReceive(String routingKey, Object message);
 
 	/**
 	 * Convert the object to a message and send it to the provided exchange and

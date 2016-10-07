@@ -73,8 +73,8 @@ import org.springframework.util.concurrent.SettableListenableFuture;
  * @author Gary Russell
  * @since 1.6
  */
-public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, ReturnCallback, ConfirmCallback,
-		BeanNameAware, AsyncAmqpTemplate {
+public class AsyncRabbitTemplate
+		implements AsyncAmqpTemplate, MessageListener, ReturnCallback, ConfirmCallback, BeanNameAware, SmartLifecycle {
 
 	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
 
@@ -337,7 +337,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @return the {@link RabbitConverterFuture}.
 	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message) throws AmqpException {
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message) {
 		return convertSendAndReceive(this.template.getExchange(), routingKey, message, null);
 	}
 
