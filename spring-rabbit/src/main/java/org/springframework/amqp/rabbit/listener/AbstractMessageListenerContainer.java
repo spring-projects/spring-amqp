@@ -226,7 +226,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param acknowledgeMode the acknowledge mode to set. Defaults to {@link AcknowledgeMode#AUTO}
 	 * @see AcknowledgeMode
 	 */
-	public void setAcknowledgeMode(AcknowledgeMode acknowledgeMode) {
+	public final void setAcknowledgeMode(AcknowledgeMode acknowledgeMode) {
 		this.acknowledgeMode = acknowledgeMode;
 	}
 

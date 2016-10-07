@@ -18,15 +18,20 @@ package org.springframework.amqp.rabbit;
 
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpIllegalStateException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AsyncAmqpTemplate;
@@ -39,17 +44,22 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.expression.Expression;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * Provides asynchronous send and receive operations returning a {@link ListenableFuture}
@@ -80,6 +90,8 @@ public class AsyncRabbitTemplate
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
+	private final Object directConsumersMonitor = new Object();
+
 	private final RabbitTemplate template;
 
 	private final AbstractMessageListenerContainer container;
@@ -88,6 +100,8 @@ public class AsyncRabbitTemplate
 
 	@SuppressWarnings("rawtypes")
 	private final ConcurrentMap<String, RabbitFuture> pending = new ConcurrentHashMap<String, RabbitFuture>();
+
+	private final BlockingQueue<DirectReplyToMessageListenerContainer> directConsumers = new LinkedBlockingQueue<>();
 
 	private volatile boolean running;
 
@@ -186,6 +200,35 @@ public class AsyncRabbitTemplate
 	}
 
 	/**
+	 * Construct an instance using the provided arguments. "Direct replyTo" is used for
+	 * replies.
+	 * @param connectionFactory the connection factory.
+	 * @param exchange the default exchange to which requests will be sent.
+	 * @param routingKey the default routing key.
+	 */
+	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey) {
+		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
+		Assert.notNull(routingKey, "'routingKey' cannot be null");
+		this.template = new RabbitTemplate(connectionFactory);
+		this.template.setExchange(exchange == null ? "" : exchange);
+		this.template.setRoutingKey(routingKey);
+		this.container = null;
+		this.replyAddress = null;
+	}
+
+	/**
+	 * Construct an instance using the provided arguments. "Direct replyTo" is used for
+	 * replies.
+	 * @param template a {@link RabbitTemplate}
+	 */
+	public AsyncRabbitTemplate(RabbitTemplate template) {
+		Assert.notNull(template, "'template' cannot be null");
+		this.template = template;
+		this.container = null;
+		this.replyAddress = null;
+	}
+
+	/**
 	 * @param autoStartup true for auto start.
 	 * @see #isAutoStartup()
 	 */
@@ -207,10 +250,28 @@ public class AsyncRabbitTemplate
 	 * @param mandatory true to enable returns.
 	 */
 	public void setMandatory(boolean mandatory) {
-		if (mandatory) {
-			this.template.setReturnCallback(this);
-		}
+		this.template.setReturnCallback(this);
 		this.template.setMandatory(mandatory);
+	}
+
+	/**
+	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each request
+	 * message. The result of the evaluation must be a {@code boolean} value.
+	 * @since 2.0
+	 */
+	public void setMandatoryExpression(Expression mandatoryExpression) {
+		this.template.setReturnCallback(this);
+		this.template.setMandatoryExpression(mandatoryExpression);
+	}
+
+	/**
+	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each request
+	 * message. The result of the evaluation must be a {@code boolean} value.
+	 * @since 2.0
+	 */
+	public void setMandatoryExpressionString(String mandatoryExpression) {
+		this.template.setReturnCallback(this);
+		this.template.setMandatoryExpressionString(mandatoryExpression);
 	}
 
 	/**
@@ -271,37 +332,16 @@ public class AsyncRabbitTemplate
 		return this.template.getMessageConverter();
 	}
 
-	/**
-	 * Send a message to the default exchange with the default routing key. If the message
-	 * contains a correlationId property, it must be unique.
-	 * @param message the message.
-	 * @return the {@link RabbitMessageFuture}.
-	 */
 	@Override
 	public RabbitMessageFuture sendAndReceive(Message message) {
 		return sendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message);
 	}
 
-	/**
-	 * Send a message to the default exchange with the supplied routing key. If the message
-	 * contains a correlationId property, it must be unique.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @return the {@link RabbitMessageFuture}.
-	 */
 	@Override
 	public RabbitMessageFuture sendAndReceive(String routingKey, Message message) {
 		return sendAndReceive(this.template.getExchange(), routingKey, message);
 	}
 
-	/**
-	 * Send a message to the supplied exchange and routing key. If the message
-	 * contains a correlationId property, it must be unique.
-	 * @param exchange the exchange.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @return the {@link RabbitMessageFuture}.
-	 */
 	@Override
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
@@ -312,94 +352,45 @@ public class AsyncRabbitTemplate
 			future.setConfirm(new SettableListenableFuture<Boolean>());
 		}
 		this.pending.put(correlationId, future);
-		this.template.send(exchange, routingKey, message, correlationData);
+		if (this.container != null) {
+			this.template.send(exchange, routingKey, message, correlationData);
+		}
+		else {
+			sendDirect(exchange, routingKey, message, correlationData);
+		}
 		return future;
 	}
 
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * default routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message, null);
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object object) {
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object, null);
 	}
 
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * provided routing key.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message) {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, message, null);
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object) {
+		return convertSendAndReceive(this.template.getExchange(), routingKey, object, null);
 	}
 
-	/**
-	 * Convert the object to a message and send it to the provided exchange and
-	 * routing key.
-	 * @param exchange the exchange.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message) {
-		return convertSendAndReceive(exchange, routingKey, message, null);
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object) {
+		return convertSendAndReceive(exchange, routingKey, object, null);
 	}
 
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * default routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
-	 * @param message the message.
-	 * @param messagePostProcessor the post processor.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object message,
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object object,
 			MessagePostProcessor messagePostProcessor) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), message,
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object,
 				messagePostProcessor);
 	}
 
-	/**
-	 * Convert the object to a message and send it to the default exchange with the
-	 * provided routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param messagePostProcessor the post processor.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object message,
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor) {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, message, messagePostProcessor);
+		return convertSendAndReceive(this.template.getExchange(), routingKey, object, messagePostProcessor);
 	}
 
-	/**
-	 * Convert the object to a message and send it to the provided exchange and
-	 * routing key after invoking the {@link MessagePostProcessor}.
-	 * If the post processor adds a correlationId property, it must be unique.
-	 * @param exchange the exchange
-	 * @param routingKey the routing key.
-	 * @param message the message.
-	 * @param messagePostProcessor the post processor.
-	 * @param <C> the expected result type.
-	 * @return the {@link RabbitConverterFuture}.
-	 */
 	@Override
-	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message,
+	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor) {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
@@ -407,8 +398,84 @@ public class AsyncRabbitTemplate
 		}
 		CorrelationMessagePostProcessor<C> correlationPostProcessor = new CorrelationMessagePostProcessor<C>(
 				messagePostProcessor, correlationData);
-		this.template.convertAndSend(exchange, routingKey, message, correlationPostProcessor, correlationData);
+		if (this.container != null) {
+			this.template.convertAndSend(exchange, routingKey, object, correlationPostProcessor, correlationData);
+		}
+		else {
+			MessageConverter converter = this.template.getMessageConverter();
+			if (converter == null) {
+				throw new AmqpIllegalStateException(
+						"No 'messageConverter' specified. Check configuration of RabbitTemplate.");
+			}
+			Message message = converter.toMessage(object, new MessageProperties());
+			correlationPostProcessor.postProcessMessage(message);
+			sendDirect(exchange, routingKey, message, correlationData);
+		}
 		return correlationPostProcessor.getFuture();
+	}
+
+	private void sendDirect(String exchange, String routingKey, Message message,
+			CorrelationData correlationData) {
+		final Channel channel = obtainChannel();
+		message.getMessageProperties().setReplyTo(Address.AMQ_RABBITMQ_REPLY_TO);
+		try {
+			if (channel instanceof PublisherCallbackChannel) {
+				this.template.addListener(channel);
+			}
+			this.template.doSend(channel, exchange, routingKey, message, this.template.isMandatoryFor(message),
+					correlationData);
+		}
+		catch (Exception e) {
+			throw new AmqpException("Failed to send request", e);
+		}
+	}
+
+	private Channel obtainChannel() {
+		DirectReplyToMessageListenerContainer container = null;
+		Channel channel = null;
+		while (this.directConsumers.size() > 0) {
+			container = this.directConsumers.poll();
+			channel = container.getChannel();
+			if (channel != null && channel.isOpen()) {
+				break;
+			}
+		}
+		if (channel == null) {
+			container = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
+			container.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
+			container.start();
+			try {
+				if (!container.isConsuming(10, TimeUnit.SECONDS)) {
+					container.stop();
+					throw new IllegalStateException("ReplyTo container failed to start");
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				container.stop();
+				throw new IllegalStateException("Interrupted while waiting for ReplyTo container to start");
+			}
+			channel = container.getChannel();
+		}
+		final DirectReplyToMessageListenerContainer theContainer = container;
+		container.setMessageListener(message -> {
+			onMessage(message);
+			try {
+				synchronized (this.directConsumersMonitor) {
+					if (this.running) {
+						this.directConsumers.put(theContainer);
+					}
+					else {
+						theContainer.stop();
+					}
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				theContainer.stop();
+			}
+		});
+		return channel;
 	}
 
 	@Override
@@ -420,7 +487,9 @@ public class AsyncRabbitTemplate
 				scheduler.afterPropertiesSet();
 				this.taskScheduler = scheduler;
 			}
-			this.container.start();
+			if (this.container != null) {
+				this.container.start();
+			}
 		}
 		this.running = true;
 	}
@@ -428,7 +497,15 @@ public class AsyncRabbitTemplate
 	@Override
 	public synchronized void stop() {
 		if (this.running) {
-			this.container.stop();
+			if (this.container != null) {
+				this.container.stop();
+			}
+			else {
+				synchronized (this.directConsumersMonitor) {
+					this.directConsumers.forEach(c -> c.stop());
+					this.directConsumers.clear();
+				}
+			}
 			for (RabbitFuture<?> future : this.pending.values()) {
 				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
 				future.cancel(true);
@@ -496,6 +573,11 @@ public class AsyncRabbitTemplate
 			if (future != null) {
 				future.setException(new AmqpMessageReturnedException("Message returned", message, replyCode, replyText,
 						exchange, routingKey));
+			}
+			else {
+				if (this.logger.isWarnEnabled()) {
+					this.logger.warn("No pending reply - perhaps timed out? Message returned: " + message);
+				}
 			}
 		}
 	}

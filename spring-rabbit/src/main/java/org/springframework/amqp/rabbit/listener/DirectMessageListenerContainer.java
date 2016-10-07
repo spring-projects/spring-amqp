@@ -78,7 +78,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private static final int DEFAULT_MONITOR_INTERVAL = 10000;
 
-	private final List<SimpleConsumer> consumers = new LinkedList<>();
+	protected final List<SimpleConsumer> consumers = new LinkedList<>();
 
 	private final List<SimpleConsumer> consumersToRestart = new LinkedList<>();
 
@@ -105,6 +105,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long lastAlertAt;
 
 	private volatile long lastRestartAttempt;
+
+	private volatile CountDownLatch consuming = new CountDownLatch(1);
 
 	/**
 	 * Create an instance; {@link #setConnectionFactory(ConnectionFactory)} must
@@ -171,7 +173,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	public void setQueueNames(String... queueName) {
+	public final void setQueueNames(String... queueName) {
 		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
 		super.setQueueNames(queueName);
 	}
@@ -190,6 +192,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	public void setQueues(Queue... queues) {
 		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
 		super.setQueues(queues);
+	}
+
+	/**
+	 * True if at least one consumer has started.
+	 * @param timeout how long to wait for the consumer to start.
+	 * @param unit the time unit.
+	 * @return true or false.
+	 * @throws InterruptedException if interrupted while waiting.
+	 */
+	public boolean isConsuming(long timeout, TimeUnit unit) throws InterruptedException {
+		return this.consuming.await(timeout, unit);
 	}
 
 	@Override
@@ -317,6 +330,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void actualStart() throws Exception {
 		this.aborted = false;
 		this.hasStopped = false;
+		this.consuming = new CountDownLatch(1);
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
@@ -478,6 +492,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					(getConsumerTagStrategy() != null
 							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
 					false, isExclusive(), getConsumerArguments(), consumer);
+			this.consuming.countDown();
 		}
 		catch (IOException e) {
 			if (channel != null) {
@@ -574,7 +589,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	private final class SimpleConsumer extends DefaultConsumer {
+	final class SimpleConsumer extends DefaultConsumer {
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;
 
