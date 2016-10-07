@@ -15,6 +15,8 @@ IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an e
 This was a serious bug; however, users might have relied on this behavior.
 Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
 
+The `AsyncRabbitTemplate` now supports Direct reply-to; see <<async-template>> for more information.
+
 ===== Listener Adapter
 
 A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.

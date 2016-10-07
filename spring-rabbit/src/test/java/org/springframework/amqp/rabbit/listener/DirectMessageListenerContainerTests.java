@@ -97,7 +97,7 @@ public class DirectMessageListenerContainerTests {
 
 	@Rule
 	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
-			CachingConnectionFactory.class,
+			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
 			DirectMessageListenerContainer.class, DirectMessageListenerContainerTests.class, BrokerRunning.class);
 
 	@Rule
@@ -292,7 +292,7 @@ public class DirectMessageListenerContainerTests {
 		brokerRunning.getAdmin().deleteQueue(EQ2);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNotNull(failEvent.get());
-		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
+		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerTerminatedEvent.class));
 		container.stop();
 		cf.destroy();
 	}
@@ -477,6 +477,38 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
 		cf.destroy();
+	}
+
+	@Test
+	public void testReplyToReleaseWithCancel() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
+		container.setBeanName("releaseCancel");
+		container.afterPropertiesSet();
+		container.start();
+		Channel channel = container.getChannel();
+		final CountDownLatch latch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof ListenerContainerConsumerTerminatedEvent) {
+				latch.countDown();
+			}
+		});
+		container.releaseConsumerFor(channel, true, "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testReplyToConsumersReduced() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
+		container.setBeanName("reducing");
+		container.setIdleEventInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+		Channel channel = container.getChannel();
+		assertTrue(activeConsumerCount(container, 1));
+		container.releaseConsumerFor(channel, false, null);
+		assertTrue(activeConsumerCount(container, 0));
 	}
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {

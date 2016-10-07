@@ -52,6 +52,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
@@ -78,7 +79,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private static final int DEFAULT_MONITOR_INTERVAL = 10000;
 
-	private final List<SimpleConsumer> consumers = new LinkedList<>();
+	protected final List<SimpleConsumer> consumers = new LinkedList<>(); // NOSONAR
 
 	private final List<SimpleConsumer> consumersToRestart = new LinkedList<>();
 
@@ -131,7 +132,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param consumersPerQueue the consumers per queue.
 	 */
 	public void setConsumersPerQueue(int consumersPerQueue) {
-		Assert.isTrue(consumersPerQueue >= 1, "'consumersPerQueue' must be 1 or greater");
 		if (isRunning()) {
 			adjustConsumers(consumersPerQueue);
 		}
@@ -273,7 +273,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					doConsumeFromQueue(queue);
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
-				if (consumerList.size() > newCount) {
+				if (consumerList != null && consumerList.size() > newCount) {
 					int currentCount = consumerList.size();
 					for (int i = newCount; i < currentCount; i++) {
 						SimpleConsumer consumer = consumerList.remove(i);
@@ -346,7 +346,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.filter(c -> !c.getChannel().isOpen())
 					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
 					.forEach(c -> {
-						this.logger.error("Consumer canceled - channel closed " + this);
+						this.logger.error("Consumer canceled - channel closed " + c);
 						c.cancelConsumer("Consumer " + c + " channel closed");
 					});
 			if (this.lastRestartAttempt + getFailedDeclarationRetryInterval() < now) {
@@ -367,6 +367,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 			}
+			processMonitorTask();
 		}, this.monitorInterval);
 		if (queueNames.length > 0) {
 			try {
@@ -427,6 +428,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Subclasses can override this to take additional actions when the monitor task runs.
+	 */
+	protected void processMonitorTask() {
+		// default do nothing
+	}
+
 	private void checkMissingQueues(String[] queueNames) {
 		if (isMissingQueuesFatal()) {
 			RabbitAdmin checkAdmin = getRabbitAdmin();
@@ -447,8 +455,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void consumeFromQueue(String queue) {
-		for (int i = 0; i < this.consumersPerQueue; i++) {
-			doConsumeFromQueue(queue);
+		List<SimpleConsumer> list = this.consumersByQueue.get(queue);
+		// Possible race with setConsumersPerQueue and the task launched by start()
+		if (CollectionUtils.isEmpty(list)) {
+			for (int i = 0; i < this.consumersPerQueue; i++) {
+				doConsumeFromQueue(queue);
+			}
 		}
 	}
 
@@ -571,10 +583,19 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			this.consumers.remove(consumer);
+			consumerRemoved(consumer);
 		}
 	}
 
-	private final class SimpleConsumer extends DefaultConsumer {
+	/**
+	 * Called whenever a consumer is removed.
+	 * @param consumer the consumer.
+	 */
+	protected void consumerRemoved(SimpleConsumer consumer) {
+		// default empty
+	}
+
+	final class SimpleConsumer extends DefaultConsumer {
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;
 
@@ -622,6 +643,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(this + " received " + message);
 			}
+			updateLastReceive();
 			if (this.transactionManager != null) {
 				try {
 					if (this.isRabbitTxManager) {
@@ -711,7 +733,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			cancelConsumer("Consumer " + this + " canceled");
 		}
 
-		private void cancelConsumer(final String eventMessage) {
+		void cancelConsumer(final String eventMessage) {
 			publishConsumerFailedEvent(eventMessage, true, null);
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
@@ -729,6 +751,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			RabbitUtils.closeChannel(getChannel());
 			RabbitUtils.closeConnection(this.connection);
 			DirectMessageListenerContainer.this.cancellationLock.release(this);
+			consumerRemoved(this);
 		}
 
 		@Override
