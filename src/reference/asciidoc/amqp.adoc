@@ -895,7 +895,18 @@ should consider increasing the cache size to reduce overhead on the server.
 
 Starting with _version 1.4_ `RabbitMessagingTemplate`, built on top of `RabbitTemplate`, provides an integration with the Spring Framework messaging abstraction, i.e.
 `org.springframework.messaging.Message`.
-This allows you to create the message to send in generic manner.
+This allows you to send and receive messages using the `spring-messaging` `Message<?>` abstraction.
+This abstraction is used by other Spring projects such as Spring Integration and Spring's STOMP support.
+There are two message converters involved; one to convert between a spring-messaging `Message<?>` and Spring AMQP's `Message` abstraction, and one to convert between Spring AMQP's `Message` abstraction and the format required by the underlying RabbitMQ client library.
+By default, the message payload is converted by the provided `RabbitTemplate` 's message converter.
+Alternatively, you can inject a custom `MessagingMessageConverter` with some other payload converter:
+
+[source, java]
+----
+MessagingMessageConverter amqpMessageConverter = new MessagingMessageConverter();
+amqpMessageConverter.setPayloadConverter(myPayloadConverter);
+rabbitMessagingTempalte.setAmqpMessageConverter(amqpMessageConverter);
+----
 
 [[template-user-id]]
 ===== Validated User Id

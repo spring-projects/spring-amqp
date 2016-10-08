@@ -43,13 +43,17 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.support.MessageBuilder;
+
 
 /**
  * @author Stephane Nicoll
@@ -78,6 +82,24 @@ public class RabbitMessagingTemplateTests {
 	@Test
 	public void validateRabbitTemplate() {
 		assertSame(this.rabbitTemplate, messagingTemplate.getRabbitTemplate());
+		this.rabbitTemplate.afterPropertiesSet();
+	}
+
+	@Test
+	public void verifyConverter() {
+		RabbitTemplate template = new RabbitTemplate(mock(ConnectionFactory.class));
+		RabbitMessagingTemplate rmt = new RabbitMessagingTemplate(template);
+		rmt.afterPropertiesSet();
+		assertSame(template.getMessageConverter(),
+				TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"));
+
+		rmt = new RabbitMessagingTemplate(template);
+		MessagingMessageConverter amqpMessageConverter = new MessagingMessageConverter();
+		MessageConverter payloadConverter = mock(MessageConverter.class);
+		amqpMessageConverter.setPayloadConverter(payloadConverter);
+		rmt.setAmqpMessageConverter(amqpMessageConverter);
+		rmt.afterPropertiesSet();
+		assertSame(payloadConverter, TestUtils.getPropertyValue(rmt, "amqpMessageConverter.payloadConverter"));
 	}
 
 	@Test
