@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.springframework.util.Assert;
  * An implementation of {@link RabbitMessageOperations}.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  */
 public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
@@ -41,6 +42,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	private RabbitTemplate rabbitTemplate;
 
 	private MessageConverter amqpMessageConverter = new MessagingMessageConverter();
+
+	private boolean converterSet;
 
 
 	/**
@@ -78,17 +81,19 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	/**
 	 * Set the {@link MessageConverter} to use to convert a {@link Message} from
 	 * the messaging to and from a {@link org.springframework.amqp.core.Message}.
-	 * By default, a {@link MessagingMessageConverter} is defined using a
+	 * By default, a {@link MessagingMessageConverter} is defined using the provided
+	 * {@link RabbitTemplate}'s message converter (a
 	 * {@link org.springframework.amqp.support.converter.SimpleMessageConverter}
-	 * to convert the payload of the message.
+	 * by default) to convert the payload of the message.
 	 * <p>Consider configuring a {@link MessagingMessageConverter} with a different
 	 * {@link MessagingMessageConverter#setPayloadConverter(MessageConverter) payload converter}
-	 * for more advanced scenario.
+	 * for more advanced scenarios.
 	 * @param amqpMessageConverter the message converter.
 	 * @see MessagingMessageConverter
 	 */
 	public void setAmqpMessageConverter(MessageConverter amqpMessageConverter) {
 		this.amqpMessageConverter = amqpMessageConverter;
+		this.converterSet = true;
 	}
 
 	/**
@@ -103,6 +108,10 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	public void afterPropertiesSet() {
 		Assert.notNull(getRabbitTemplate(), "Property 'rabbitTemplate' is required");
 		Assert.notNull(getAmqpMessageConverter(), "Property 'amqpMessageConverter' is required");
+		if (!this.converterSet && this.rabbitTemplate.getMessageConverter() != null) {
+			((MessagingMessageConverter) this.amqpMessageConverter)
+					.setPayloadConverter(this.rabbitTemplate.getMessageConverter());
+		}
 	}
 
 	@Override
