@@ -44,7 +44,7 @@ public class SimpleBatchStrategyTests {
 //			System.arraycopy(buff, 0, bbBuff, 0, 10000);
 		}
 		watch.stop();
-		System.out.println(watch.getTotalTimeMillis());
+//		System .out .println(watch.getTotalTimeMillis());
 	}
 
 }

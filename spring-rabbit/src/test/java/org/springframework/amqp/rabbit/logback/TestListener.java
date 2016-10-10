@@ -60,8 +60,8 @@ public class TestListener implements MessageListener {
 
 	@Override
 	public void onMessage(Message message) {
-		System.out.println("MESSAGE: " + message);
-		System.out.println("BODY: " + new String(message.getBody()));
+		System .out .println("MESSAGE: " + message);
+		System .out .println("BODY: " + new String(message.getBody()));
 		this.message = message;
 		latch.countDown();
 	}

@@ -18,6 +18,9 @@ package org.springframework.amqp.core;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 
@@ -30,10 +33,13 @@ public class QueueNameTests {
 
 	@Test
 	public void testAnonymous() {
-		AnonymousQueue q = new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy());
+		AnonymousQueue q = new AnonymousQueue();
 		assertThat(q.getName(), startsWith("spring.gen-"));
 		q = new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy("foo-"));
 		assertThat(q.getName(), startsWith("foo-"));
+		q = new AnonymousQueue(AnonymousQueue.UUIDNamingStrategy.DEFAULT);
+		assertTrue("Not a UUID: " + q.getName(),
+				Pattern.matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}", q.getName()));
 	}
 
 }

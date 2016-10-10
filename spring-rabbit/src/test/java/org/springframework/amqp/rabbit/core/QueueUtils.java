@@ -29,7 +29,7 @@ public final class QueueUtils {
 		template.execute(channel -> {
 			Queue.DeclareOk res = channel.queueDeclarePassive(TestConstants.QUEUE_NAME);
 			String queueName = res.getQueue();
-			System.out.println("Queue Name = " + queueName);
+			System .out .println("Queue Name = " + queueName);
 			channel.queueBind(queueName, TestConstants.EXCHANGE_NAME, routingKey);
 			return queueName;
 		});

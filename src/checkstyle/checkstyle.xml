@@ -154,7 +154,11 @@
 			<property name="illegalPattern" value="true" />
 			<property name="message" value="Trailing whitespace" />
 		</module>
-
+		<module name="Regexp">
+			<property name="format" value="System.(out|err).print" />
+			<property name="illegalPattern" value="true" />
+			<property name="message" value="System.out or .err" />
+		</module>
 		<!-- Whitespace -->
 		<module name="GenericWhitespace" />
 		<module name="MethodParamPad" />

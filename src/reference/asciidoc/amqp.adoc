@@ -3478,29 +3478,35 @@ In fact, the broker might not even be running when the app is started.
 name.
 If we used broker-declared queues, the queue name would change.
 
-Starting with _version 1.5.3_, you can control the format of the queue name used by `AnonymousQueue` s.
+You can control the format of the queue name used by `AnonymousQueue` s.
 
-By default, the queue name is the String representation of a `UUID`; for example:
-`07afcfe9-fe77-4983-8645-0061ec61a47a`.
+By default, the queue name is prefixed by `spring.gen-` followed by a base64 representation of the `UUID`, for
+example: `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
 
-You can now provide an `AnonymousQueue.NamingStrategy` implementation in a constructor argument:
+You can provide an `AnonymousQueue.NamingStrategy` implementation in a constructor argument.
 
 [source, java]
 ----
 @Bean
 public Queue anon1() {
-    return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy());
+    return new AnonymousQueue();
 }
 
 @Bean
 public Queue anon2() {
     return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy("foo-"));
 }
+
+@Bean
+public Queue anon3() {
+    return new AnonymousQueue(AnonymousQueue.UUIDNamingStrategy.DEFAULT);
+}
 ----
 
 The first will generate a queue name prefixed by `spring.gen-` followed by a base64 representation of the `UUID`, for
 example: `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
 The second will generate a queue name prefixed by `foo-` followed by a base64 representation of the `UUID`.
+The third will generate a name using just the UUID (no base64 conversion), e.g. `f20c818a-006b-4416-bf91-643590fedb0e`.
 
 The base64 encoding uses the "URL and Filename Safe Alphabet" from RFC 4648; trailing padding characters (`=`) are
 removed.
@@ -3508,7 +3514,7 @@ removed.
 You can provide your own naming strategy, whereby you can include other information (e.g. application, client host) in
 the queue name.
 
-Starting with _version 1.6_, the naming strategy can be specified when using XML configuration;
+The naming strategy can be specified when using XML configuration;
 the `naming-strategy` attribute is present on the `<rabbit:queue>` element
 for a bean reference that implements `AnonymousQueue.NamingStrategy`.
 
@@ -3516,19 +3522,19 @@ for a bean reference that implements `AnonymousQueue.NamingStrategy`.
 ----
 <rabbit:queue id="uuidAnon" />
 
-<rabbit:queue id="springAnon" naming-strategy="springNamer" />
+<rabbit:queue id="springAnon" naming-strategy="uuidNamer" />
 
 <rabbit:queue id="customAnon" naming-strategy="customNamer" />
 
-<bean id="springNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy" />
+<bean id="uuidNamer" class="org.springframework.amqp.core.AnonymousQueue.UUIDNamingStrategy" />
 
 <bean id="customNamer" class="org.springframework.amqp.core.AnonymousQueue.Base64UrlNamingStrategy">
     <constructor-arg value="custom.gen-" />
 </bean>
 ----
 
-The first creates names with a String representation of a UUID.
-The second creates names like `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
+The first creates names like `spring.gen-MRBv9sqISkuCiPfOYfpo4g`.
+The second creates names with a String representation of a UUID.
 The third creates names like `custom.gen-MRBv9sqISkuCiPfOYfpo4g`.
 
 Of course, you can provide your own naming strategy bean.

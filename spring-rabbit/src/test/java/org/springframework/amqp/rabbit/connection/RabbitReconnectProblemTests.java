@@ -48,7 +48,7 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 @ContextConfiguration
 @RunWith(SpringJUnit4ClassRunner.class)
-@Ignore
+@Ignore("Requires user interaction")
 public class RabbitReconnectProblemTests {
 
 	@Autowired
@@ -70,7 +70,7 @@ public class RabbitReconnectProblemTests {
 	@Test
 	public void surviveAReconnect() throws Exception {
 		checkIt(0);
-		System.out.println("Restart RabbitMQ & press any key...");
+		System .out .println("Restart RabbitMQ & press any key...");
 		System.in.read();
 
 		for (int i = 1; i < 10; i++) {
@@ -79,14 +79,14 @@ public class RabbitReconnectProblemTests {
 
 		int availablePermits = ((Semaphore) TestUtils.getPropertyValue(this.connFactory, "checkoutPermits", Map.class).values()
 				.iterator().next()).availablePermits();
-		System.out.println("Permits after test: " + availablePermits);
+		System .out .println("Permits after test: " + availablePermits);
 		assertEquals(2, availablePermits);
 	}
 
 	void checkIt(int counter) {
-		System.out.println("\n#" + counter);
+		System .out .println("\n#" + counter);
 		template.receive(myQueue.getName());
-		System.out.println("OK");
+		System .out .println("OK");
 	}
 
 	@Configuration
