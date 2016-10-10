@@ -102,19 +102,19 @@ public class QueueParserTests {
 		assertFalse(queue.isDurable());
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
-		assertThat(queue.getName(), matchesRegex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"));
+		assertThat(queue.getName(), matchesRegex("spring.gen-[0-9A-Za-z_\\-]{22}"));
 	}
 
 	@Test
 	public void testAnonymousQueueSpringName() throws Exception {
-		Queue queue = beanFactory.getBean("springAnon", Queue.class);
+		Queue queue = beanFactory.getBean("uuidAnon", Queue.class);
 		assertNotNull(queue);
 		assertNotSame("anonymous", queue.getName());
 		assertTrue(queue instanceof AnonymousQueue);
 		assertFalse(queue.isDurable());
 		assertTrue(queue.isExclusive());
 		assertTrue(queue.isAutoDelete());
-		assertThat(queue.getName(), matchesRegex("spring.gen-[0-9A-Za-z_\\-]{22}"));
+		assertThat(queue.getName(), matchesRegex("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"));
 	}
 
 	@Test
