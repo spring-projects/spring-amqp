@@ -344,7 +344,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			this.consumers.stream()
 					.filter(c -> !c.getChannel().isOpen())
-					.collect(Collectors.toList())
+					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
 					.forEach(c -> {
 						this.logger.error("Consumer canceled - channel closed " + this);
 						c.cancelConsumer("Consumer " + c + " channel closed");
