@@ -35,6 +35,7 @@ public class QueueNameTests {
 	public void testAnonymous() {
 		AnonymousQueue q = new AnonymousQueue();
 		assertThat(q.getName(), startsWith("spring.gen-"));
+		System.out.println(q);
 		q = new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy("foo-"));
 		assertThat(q.getName(), startsWith("foo-"));
 		q = new AnonymousQueue(AnonymousQueue.UUIDNamingStrategy.DEFAULT);
