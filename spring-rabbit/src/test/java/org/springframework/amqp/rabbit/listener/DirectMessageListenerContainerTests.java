@@ -354,6 +354,42 @@ public class DirectMessageListenerContainerTests {
 
 	@SuppressWarnings("unchecked")
 	@Test
+	public void testRecoverBrokerLoss() throws Exception {
+		ConnectionFactory mockCF = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connection.isOpen()).willReturn(true);
+		given(mockCF.createConnection()).willReturn(connection);
+		given(connection.createChannel(false)).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		final CountDownLatch latch2 = new CountDownLatch(2);
+		ArgumentCaptor<Consumer> consumerCaptor = ArgumentCaptor.forClass(Consumer.class);
+		final String tag = "tag";
+		willAnswer(i -> {
+			latch1.countDown();
+			latch2.countDown();
+			return tag;
+		}).given(channel).basicConsume(eq("foo"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), consumerCaptor.capture());
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mockCF);
+		container.setQueueNames("foo");
+		container.setBeanName("brokerLost");
+		container.setConsumerTagStrategy(q -> "tag");
+		container.setShutdownTimeout(1);
+		container.setMonitorInterval(200);
+		container.setFailedDeclarationRetryInterval(200);
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		given(channel.isOpen()).willReturn(false);
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		container.setShutdownTimeout(1);
+		container.stop();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
 	public void testCancelConsumerBeforeConsumeOk() throws Exception {
 		ConnectionFactory mockCF = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);

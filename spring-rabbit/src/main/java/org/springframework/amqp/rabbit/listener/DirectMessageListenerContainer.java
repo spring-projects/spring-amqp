@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
@@ -341,6 +342,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					this.lastAlertAt = now;
 				}
 			}
+			this.consumers.stream()
+					.filter(c -> !c.getChannel().isOpen())
+					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
+					.forEach(c -> {
+						this.logger.error("Consumer canceled - channel closed " + this);
+						c.cancelConsumer("Consumer " + c + " channel closed");
+					});
 			if (this.lastRestartAttempt + getFailedDeclarationRetryInterval() < now) {
 				synchronized (this.consumersMonitor) {
 					List<SimpleConsumer> restartableConsumers = new ArrayList<>(this.consumersToRestart);
@@ -700,7 +708,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
-			publishConsumerFailedEvent("Consumer " + this + " canceled", true, null);
+			cancelConsumer("Consumer " + this + " canceled");
+		}
+
+		private void cancelConsumer(final String eventMessage) {
+			publishConsumerFailedEvent(eventMessage, true, null);
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);
 				if (list != null) {
