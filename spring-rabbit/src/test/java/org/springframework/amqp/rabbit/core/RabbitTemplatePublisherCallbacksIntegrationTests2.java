@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -25,12 +26,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
@@ -39,6 +43,7 @@ import com.rabbitmq.client.Envelope;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.6
  *
  */
@@ -52,6 +57,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests2 {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+
+	@BeforeClass
+	public static void setup() {
+		new DirectFieldAccessor(new PublisherCallbackChannelImpl(mock(Channel.class)))
+				.setPropertyValue("conditionalMethodsChecked", false);
+	}
 
 	@Before
 	public void create() {
