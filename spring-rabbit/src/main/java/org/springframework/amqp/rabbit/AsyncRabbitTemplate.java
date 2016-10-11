@@ -18,13 +18,10 @@ package org.springframework.amqp.rabbit;
 
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,10 +33,10 @@ import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AsyncAmqpTemplate;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
@@ -83,25 +80,23 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @since 1.6
  */
-public class AsyncRabbitTemplate
-		implements AsyncAmqpTemplate, MessageListener, ReturnCallback, ConfirmCallback, BeanNameAware, SmartLifecycle {
+public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessageListener, ReturnCallback,
+		ConfirmCallback, BeanNameAware, SmartLifecycle {
 
 	public static final int DEFAULT_RECEIVE_TIMEOUT = 30000;
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
-	private final Object directConsumersMonitor = new Object();
-
 	private final RabbitTemplate template;
 
 	private final AbstractMessageListenerContainer container;
+
+	private final DirectReplyToMessageListenerContainer directReplyToContainer;
 
 	private final String replyAddress;
 
 	@SuppressWarnings("rawtypes")
 	private final ConcurrentMap<String, RabbitFuture> pending = new ConcurrentHashMap<String, RabbitFuture>();
-
-	private final BlockingQueue<DirectReplyToMessageListenerContainer> directConsumers = new LinkedBlockingQueue<>();
 
 	private volatile boolean running;
 
@@ -154,6 +149,7 @@ public class AsyncRabbitTemplate
 		this.container.setQueueNames(replyQueue);
 		this.container.setMessageListener(this);
 		this.container.afterPropertiesSet();
+		this.directReplyToContainer = null;
 		if (replyAddress == null) {
 			this.replyAddress = replyQueue;
 		}
@@ -191,6 +187,7 @@ public class AsyncRabbitTemplate
 		this.template = template;
 		this.container = container;
 		this.container.setMessageListener(this);
+		this.directReplyToContainer = null;
 		if (replyAddress == null) {
 			this.replyAddress = container.getQueueNames()[0];
 		}
@@ -205,6 +202,7 @@ public class AsyncRabbitTemplate
 	 * @param connectionFactory the connection factory.
 	 * @param exchange the default exchange to which requests will be sent.
 	 * @param routingKey the default routing key.
+	 * @since 2.0
 	 */
 	public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey) {
 		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
@@ -214,18 +212,25 @@ public class AsyncRabbitTemplate
 		this.template.setRoutingKey(routingKey);
 		this.container = null;
 		this.replyAddress = null;
+		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
+		this.directReplyToContainer.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
+		this.directReplyToContainer.setChannelAwareMessageListener(this);
 	}
 
 	/**
 	 * Construct an instance using the provided arguments. "Direct replyTo" is used for
 	 * replies.
 	 * @param template a {@link RabbitTemplate}
+	 * @since 2.0
 	 */
 	public AsyncRabbitTemplate(RabbitTemplate template) {
 		Assert.notNull(template, "'template' cannot be null");
 		this.template = template;
 		this.container = null;
 		this.replyAddress = null;
+		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
+		this.directReplyToContainer.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
+		this.directReplyToContainer.setChannelAwareMessageListener(this);
 	}
 
 	/**
@@ -416,7 +421,7 @@ public class AsyncRabbitTemplate
 
 	private void sendDirect(String exchange, String routingKey, Message message,
 			CorrelationData correlationData) {
-		final Channel channel = obtainChannel();
+		final Channel channel = this.directReplyToContainer.getChannel();
 		message.getMessageProperties().setReplyTo(Address.AMQ_RABBITMQ_REPLY_TO);
 		try {
 			if (channel instanceof PublisherCallbackChannel) {
@@ -428,54 +433,6 @@ public class AsyncRabbitTemplate
 		catch (Exception e) {
 			throw new AmqpException("Failed to send request", e);
 		}
-	}
-
-	private Channel obtainChannel() {
-		DirectReplyToMessageListenerContainer container = null;
-		Channel channel = null;
-		while (this.directConsumers.size() > 0) {
-			container = this.directConsumers.poll();
-			channel = container.getChannel();
-			if (channel != null && channel.isOpen()) {
-				break;
-			}
-		}
-		if (channel == null) {
-			container = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-			container.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
-			container.start();
-			try {
-				if (!container.isConsuming(10, TimeUnit.SECONDS)) {
-					container.stop();
-					throw new IllegalStateException("ReplyTo container failed to start");
-				}
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				container.stop();
-				throw new IllegalStateException("Interrupted while waiting for ReplyTo container to start");
-			}
-			channel = container.getChannel();
-		}
-		final DirectReplyToMessageListenerContainer theContainer = container;
-		container.setMessageListener(message -> {
-			onMessage(message);
-			try {
-				synchronized (this.directConsumersMonitor) {
-					if (this.running) {
-						this.directConsumers.put(theContainer);
-					}
-					else {
-						theContainer.stop();
-					}
-				}
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				theContainer.stop();
-			}
-		});
-		return channel;
 	}
 
 	@Override
@@ -490,6 +447,10 @@ public class AsyncRabbitTemplate
 			if (this.container != null) {
 				this.container.start();
 			}
+			if (this.directReplyToContainer != null) {
+				this.directReplyToContainer.setTaskScheduler(this.taskScheduler);
+				this.directReplyToContainer.start();
+			}
 		}
 		this.running = true;
 	}
@@ -500,11 +461,8 @@ public class AsyncRabbitTemplate
 			if (this.container != null) {
 				this.container.stop();
 			}
-			else {
-				synchronized (this.directConsumersMonitor) {
-					this.directConsumers.forEach(c -> c.stop());
-					this.directConsumers.clear();
-				}
+			if (this.directReplyToContainer != null) {
+				this.directReplyToContainer.stop();
 			}
 			for (RabbitFuture<?> future : this.pending.values()) {
 				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
@@ -537,7 +495,7 @@ public class AsyncRabbitTemplate
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void onMessage(Message message) {
+	public void onMessage(Message message, Channel channel) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		if (messageProperties != null) {
 			String correlationId = messageProperties.getCorrelationId();
@@ -706,7 +664,7 @@ public class AsyncRabbitTemplate
 	 * A {@link RabbitFuture} with a return type of {@link Message}.
 	 * @since 1.6
 	 */
-	public class RabbitMessageFuture extends RabbitFuture<Message> implements AmqpMessageFuture {
+	public class RabbitMessageFuture extends RabbitFuture<Message> implements ListenableFuture<Message> {
 
 		public RabbitMessageFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);
@@ -719,7 +677,7 @@ public class AsyncRabbitTemplate
 	 * generic parameter.
 	 * @since 1.6
 	 */
-	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements AmqpConverterFuture<C> {
+	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements ListenableFuture<C> {
 
 		public RabbitConverterFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);

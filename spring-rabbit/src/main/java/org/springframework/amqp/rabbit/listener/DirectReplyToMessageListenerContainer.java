@@ -16,10 +16,14 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 
 import com.rabbitmq.client.Channel;
 
@@ -33,61 +37,95 @@ import com.rabbitmq.client.Channel;
  */
 public class DirectReplyToMessageListenerContainer extends DirectMessageListenerContainer {
 
+	private final ConcurrentMap<Channel, Boolean> inUseConsumerChannels = new ConcurrentHashMap<>();
+
+	private int consumerCount;
+
 	public DirectReplyToMessageListenerContainer(ConnectionFactory connectionFactory) {
 		super(connectionFactory);
 		setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
 		setAcknowledgeMode(AcknowledgeMode.NONE);
+		super.setConsumersPerQueue(0);
 	}
 
 	@Override
-	public void setConsumersPerQueue(int consumersPerQueue) {
+	public final void setConsumersPerQueue(int consumersPerQueue) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setMonitorInterval(long monitorInterval) {
+	public final void setMonitorInterval(long monitorInterval) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void setQueues(Queue... queues) {
+	public final void setQueues(Queue... queues) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void addQueueNames(String... queueNames) {
+	public final void addQueueNames(String... queueNames) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void addQueues(Queue... queues) {
+	public final void addQueues(Queue... queues) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean removeQueueNames(String... queueNames) {
+	public final boolean removeQueueNames(String... queueNames) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean removeQueues(Queue... queues) {
+	public final boolean removeQueues(Queue... queues) {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
+		super.setChannelAwareMessageListener((message, channel) -> {
+			this.inUseConsumerChannels.remove(channel);
+			messageListener.onMessage(message, channel);
+		});
+	}
+
+	@Override
+	protected void doStart() throws Exception {
+		if (!isStarted()) {
+			this.consumerCount = 0;
+			super.setConsumersPerQueue(0);
+			super.doStart();
+		}
+	}
+
+	@Override
+	protected void consumerRemoved(SimpleConsumer consumer) {
+		this.inUseConsumerChannels.remove(consumer);
 	}
 
 	/**
-	 * Get the channel associated with the single direct reply-to consumer.
+	 * Get the channel associated with a direct reply-to consumer.
 	 * If the consumer has exited, the container will be stopped.
 	 * @return the channel or null if there is no consumer.
 	 */
 	public Channel getChannel() {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers.size() == 1) {
-				return this.consumers.get(0).getChannel();
+			Channel channel = null;
+			while (channel == null) {
+				for (SimpleConsumer consumer : getConsumers()) {
+					if (this.inUseConsumerChannels.putIfAbsent(consumer.getChannel(), Boolean.TRUE) == null) {
+						channel = consumer.getChannel();
+						break;
+					}
+				}
+				if (channel == null) {
+					this.consumerCount++;
+					super.setConsumersPerQueue(this.consumerCount);
+				}
 			}
-			else {
-				stop();
-				return null;
-			}
+			return channel;
 		}
 	}
 

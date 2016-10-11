@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -26,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -41,7 +40,6 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
 import org.springframework.amqp.core.AnonymousQueue;
-import org.springframework.amqp.core.AsyncAmqpTemplate.AmqpConverterFuture;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
@@ -91,22 +89,27 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testConvert1Arg() throws Exception {
-		AmqpConverterFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
+		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
 		checkConverterResult(future, "FOO");
 	}
 
 	@Test
 	public void testConvert1ArgDirect() throws Exception {
-		AmqpConverterFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
-		AmqpConverterFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("foo");
+		ListenableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
+		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("foo");
 		checkConverterResult(future1, "FOO");
 		checkConverterResult(future2, "FOO");
-		assertThat(TestUtils.getPropertyValue(this.asyncDirectTemplate, "directConsumers", BlockingQueue.class).size(),
-			greaterThanOrEqualTo(1));
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size(), equalTo(0));
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					equalTo(2));
 		this.asyncDirectTemplate.stop();
-		assertEquals(0,
-				TestUtils.getPropertyValue(this.asyncDirectTemplate, "directConsumers", BlockingQueue.class).size());
 		this.asyncDirectTemplate.start();
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					equalTo(0));
 	}
 
 	@Test
@@ -145,12 +148,17 @@ public class AsyncRabbitTemplateTests {
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply1.getMessageProperties().getConsumerQueue());
 		Message reply2 = checkMessageResult(future2, "FOO");
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply2.getMessageProperties().getConsumerQueue());
-		assertThat(TestUtils.getPropertyValue(this.asyncDirectTemplate, "directConsumers", BlockingQueue.class).size(),
-				greaterThanOrEqualTo(1));
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size(), equalTo(0));
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					equalTo(2));
 		this.asyncDirectTemplate.stop();
-		assertEquals(0,
-				TestUtils.getPropertyValue(this.asyncDirectTemplate, "directConsumers", BlockingQueue.class).size());
 		this.asyncDirectTemplate.start();
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					equalTo(0));
 	}
 
 	@Test
@@ -161,7 +169,8 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testMessage3Args() throws Exception {
-		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive("", this.requests.getName(), getFooMessage());
+		ListenableFuture<Message> future = this.asyncTemplate.sendAndReceive("", this.requests.getName(),
+				getFooMessage());
 		checkMessageResult(future, "FOO");
 	}
 
@@ -420,12 +429,12 @@ public class AsyncRabbitTemplateTests {
 
 		@Bean
 		public Queue requests() {
-			return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy());
+			return new AnonymousQueue();
 		}
 
 		@Bean
 		public Queue replies() {
-			return new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy());
+			return new AnonymousQueue();
 		}
 
 		@Bean

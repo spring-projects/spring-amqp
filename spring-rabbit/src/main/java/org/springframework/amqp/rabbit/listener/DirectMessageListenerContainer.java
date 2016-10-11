@@ -133,7 +133,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param consumersPerQueue the consumers per queue.
 	 */
 	public void setConsumersPerQueue(int consumersPerQueue) {
-		Assert.isTrue(consumersPerQueue >= 1, "'consumersPerQueue' must be 1 or greater");
 		if (isRunning()) {
 			adjustConsumers(consumersPerQueue);
 		}
@@ -194,15 +193,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.setQueues(queues);
 	}
 
-	/**
-	 * True if at least one consumer has started.
-	 * @param timeout how long to wait for the consumer to start.
-	 * @param unit the time unit.
-	 * @return true or false.
-	 * @throws InterruptedException if interrupted while waiting.
-	 */
-	public boolean isConsuming(long timeout, TimeUnit unit) throws InterruptedException {
-		return this.consuming.await(timeout, unit);
+	protected List<SimpleConsumer> getConsumers() {
+		return this.consumers;
+	}
+
+	protected boolean isStarted() {
+		return this.started;
 	}
 
 	@Override
@@ -286,7 +282,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					doConsumeFromQueue(queue);
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
-				if (consumerList.size() > newCount) {
+				if (consumerList != null && consumerList.size() > newCount) {
 					int currentCount = consumerList.size();
 					for (int i = newCount; i < currentCount; i++) {
 						SimpleConsumer consumer = consumerList.remove(i);
@@ -586,7 +582,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			this.consumers.remove(consumer);
+			consumerRemoved(consumer);
 		}
+	}
+
+	/**
+	 * Called whenever a consumer is removed.
+	 */
+	protected void consumerRemoved(SimpleConsumer consumer) {
+		// default empty
 	}
 
 	final class SimpleConsumer extends DefaultConsumer {
@@ -744,6 +748,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			RabbitUtils.closeChannel(getChannel());
 			RabbitUtils.closeConnection(this.connection);
 			DirectMessageListenerContainer.this.cancellationLock.release(this);
+			consumerRemoved(this);
 		}
 
 		@Override
