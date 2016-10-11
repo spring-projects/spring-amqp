@@ -588,6 +588,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Called whenever a consumer is removed.
+	 * @param the consumer.
 	 */
 	protected void consumerRemoved(SimpleConsumer consumer) {
 		// default empty

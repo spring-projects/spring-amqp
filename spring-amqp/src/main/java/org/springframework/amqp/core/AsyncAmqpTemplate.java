@@ -32,7 +32,7 @@ public interface AsyncAmqpTemplate {
 	 * Send a message to the default exchange with the default routing key. If the message
 	 * contains a correlationId property, it must be unique.
 	 * @param message the message.
-	 * @return the {@link AmqpMessageFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	ListenableFuture<Message> sendAndReceive(Message message);
 
@@ -41,7 +41,7 @@ public interface AsyncAmqpTemplate {
 	 * contains a correlationId property, it must be unique.
 	 * @param routingKey the routing key.
 	 * @param message the message.
-	 * @return the {@link AmqpMessageFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	ListenableFuture<Message> sendAndReceive(String routingKey, Message message);
 
@@ -51,7 +51,7 @@ public interface AsyncAmqpTemplate {
 	 * @param exchange the exchange.
 	 * @param routingKey the routing key.
 	 * @param message the message.
-	 * @return the {@link AmqpMessageFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	ListenableFuture<Message> sendAndReceive(String exchange, String routingKey, Message message);
 
@@ -60,7 +60,7 @@ public interface AsyncAmqpTemplate {
 	 * default routing key.
 	 * @param object the object to convert.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(Object object);
 
@@ -70,7 +70,7 @@ public interface AsyncAmqpTemplate {
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(String routingKey, Object object);
 
@@ -81,7 +81,7 @@ public interface AsyncAmqpTemplate {
 	 * @param routingKey the routing key.
 	 * @param object the object to convert.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object);
 
@@ -92,7 +92,7 @@ public interface AsyncAmqpTemplate {
 	 * @param object the object to convert.
 	 * @param messagePostProcessor the post processor.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(Object object, MessagePostProcessor messagePostProcessor);
 
@@ -104,7 +104,7 @@ public interface AsyncAmqpTemplate {
 	 * @param object the object to convert.
 	 * @param messagePostProcessor the post processor.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor);
@@ -118,7 +118,7 @@ public interface AsyncAmqpTemplate {
 	 * @param object the object to convert.
 	 * @param messagePostProcessor the post processor.
 	 * @param <C> the expected result type.
-	 * @return the {@link AmqpConverterFuture}.
+	 * @return the {@link ListenableFuture}.
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor);
