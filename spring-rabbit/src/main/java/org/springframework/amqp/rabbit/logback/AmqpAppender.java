@@ -638,14 +638,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.events.add(new Event(event));
 	}
 
-	/**
-	 * @deprecated - use {@link #setUpExchangeDeclaration()}
-	 */
-	@Deprecated
-	protected void maybeDeclareExchange() {
-		setUpExchangeDeclaration();
-	}
-
 	protected void setUpExchangeDeclaration() {
 		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		if (this.declareExchange) {

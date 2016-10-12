@@ -528,16 +528,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
-	 * @deprecated use {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}
-	 * @param afterReceivePostProcessors the post processors.
-	 * @since 1.4.2
-	 */
-	@Deprecated
-	public void setAfterReceivePostProcessor(MessagePostProcessor... afterReceivePostProcessors) {
-		setAfterReceivePostProcessors(afterReceivePostProcessors);
-	}
-
-	/**
 	 * Set a {@link MessagePostProcessor} that will be invoked immediately after a {@code Channel#basicGet()}
 	 * and before any message conversion is performed.
 	 * May be used for operations such as decompression  Processors are invoked in order,
@@ -762,12 +752,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void convertAndSend(Object object) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, (CorrelationData) null);
 	}
-
-	@Deprecated
-	public void correlationconvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
-		this.correlationConvertAndSend(object, correlationData);
-	}
-
 
 	public void correlationConvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, correlationData);
