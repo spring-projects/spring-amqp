@@ -2891,6 +2891,18 @@ If a timeout occurs, the future will be completed with an `AmqpReplyTimeoutExcep
 The template implements `SmartLifecycle`; stopping the template while there are pending replies will cause the
 pending `Future` s to be canceled.
 
+Starting with _version 2.0_, the async template now supports https://www.rabbitmq.com/direct-reply-to.html[Direct reply-to] instead of a configured reply queue.
+To enable this feature, use one of the following constructors:
+
+[source, java]
+----
+public AsyncRabbitTemplate(ConnectionFactory connectionFactory, String exchange, String routingKey)
+
+public AsyncRabbitTemplate(RabbitTemplate template)
+----
+
+See <<direct-reply-to>> to use Direct reply-to with the synchronous `RabbitTemplate`.
+
 [[remoting]]
 ===== Spring Remoting with AMQP
 

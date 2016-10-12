@@ -41,7 +41,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
@@ -287,7 +286,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
-	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
+	 * The encoding to use when converting between byte arrays and Strings in message properties.
 	 *
 	 * @param encoding the encoding to set
 	 */
@@ -295,17 +294,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		this.encoding = encoding;
 	}
 
-
 	/**
-	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
-	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
-	 * http://www.rabbitmq.com/direct-reply-to.html
-	 * @deprecated - use #setReplyAddress(String replyAddress)
-	 * @param replyQueue the replyQueue to set
+	 * The encoding used when converting between byte arrays and Strings in message properties.
+	 * @return the encoding.
 	 */
-	@Deprecated
-	public void setReplyQueue(Queue replyQueue) {
-		setReplyAddress(replyQueue.getName());
+	public String getEncoding() {
+		return this.encoding;
 	}
 
 	/**
@@ -401,19 +395,35 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		this.returnCallback = returnCallback;
 	}
 
+	/**
+	 * Set the mandatory flag when sending messages; only applies if a
+	 * {@link #setReturnCallback(ReturnCallback) returnCallback} had been provided.
+	 * @param mandatory the mandatory to set.
+	 */
 	public void setMandatory(boolean mandatory) {
 		this.mandatoryExpression = new ValueExpression<Boolean>(mandatory);
 	}
 
 	/**
-	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each request
-	 * message, if a {@link #returnCallback} has been provided. The result of expression must be
-	 * a {@code boolean} value.
+	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each
+	 * request message, if a {@link #setReturnCallback(ReturnCallback) returnCallback} has
+	 * been provided. The result of the evaluation must be a {@code boolean} value.
 	 * @since 1.4
 	 */
 	public void setMandatoryExpression(Expression mandatoryExpression) {
 		Assert.notNull(mandatoryExpression, "'mandatoryExpression' must not be null");
 		this.mandatoryExpression = mandatoryExpression;
+	}
+
+	/**
+	 * @param mandatoryExpression a SpEL {@link Expression} to evaluate against each
+	 * request message, if a {@link #setReturnCallback(ReturnCallback) returnCallback} has
+	 * been provided. The result of the evaluation must be a {@code boolean} value.
+	 * @since 2.0
+	 */
+	public void setMandatoryExpressionString(String mandatoryExpression) {
+		Assert.notNull(mandatoryExpression, "'mandatoryExpression' must not be null");
+		this.mandatoryExpression = PARSER.parseExpression(mandatoryExpression);
 	}
 
 	/**
@@ -1078,8 +1088,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 								replyTo.getExchangeName(),
 								replyTo.getRoutingKey(),
 								replyMessage,
-								RabbitTemplate.this.returnCallback != null && RabbitTemplate.this.mandatoryExpression
-										.getValue(RabbitTemplate.this.evaluationContext, replyMessage, Boolean.class),
+								RabbitTemplate.this.returnCallback != null && isMandatoryFor(replyMessage),
 								null);
 					}
 					else if (channelLocallyTransacted) {
@@ -1340,13 +1349,23 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final CorrelationData correlationData, Channel channel, final PendingReply pendingReply, String messageTag)
 			throws Exception {
 		Message reply;
-		boolean mandatory = this.mandatoryExpression.getValue(this.evaluationContext, message, Boolean.class);
+		boolean mandatory = isMandatoryFor(message);
 		if (mandatory && this.returnCallback == null) {
 			message.getMessageProperties().getHeaders().put(RETURN_CORRELATION_KEY, messageTag);
 		}
 		doSend(channel, exchange, routingKey, message, mandatory, correlationData);
 		reply = this.replyTimeout < 0 ? pendingReply.get() : pendingReply.get(this.replyTimeout, TimeUnit.MILLISECONDS);
 		return reply;
+	}
+
+	/**
+	 * Return whether the provided message should be sent with the mandatory flag set.
+	 * @param message the message.
+	 * @return true for mandatory.
+	 * @since 2.0
+	 */
+	public Boolean isMandatoryFor(final Message message) {
+		return this.mandatoryExpression.getValue(this.evaluationContext, message, Boolean.class);
 	}
 
 	@Override
@@ -1460,7 +1479,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @param correlationData The correlation data.
 	 * @throws IOException If thrown by RabbitMQ API methods
 	 */
-	protected void doSend(Channel channel, String exchange, String routingKey, Message message,
+	public void doSend(Channel channel, String exchange, String routingKey, Message message,
 			boolean mandatory, CorrelationData correlationData) throws Exception {
 		if (exchange == null) {
 			// try to send to configured exchange
@@ -1587,7 +1606,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return replyTo;
 	}
 
-	private void addListener(Channel channel) {
+	/**
+	 * Add this template as a confirms listener for the provided channel.
+	 * @param channel the channel.
+	 * @since 2.0
+	 */
+	public void addListener(Channel channel) {
 		if (channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			Channel key = channel instanceof ChannelProxy ? ((ChannelProxy) channel).getTargetChannel() : channel;

@@ -226,7 +226,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param acknowledgeMode the acknowledge mode to set. Defaults to {@link AcknowledgeMode#AUTO}
 	 * @see AcknowledgeMode
 	 */
-	public void setAcknowledgeMode(AcknowledgeMode acknowledgeMode) {
+	public final void setAcknowledgeMode(AcknowledgeMode acknowledgeMode) {
 		this.acknowledgeMode = acknowledgeMode;
 	}
 
@@ -1391,7 +1391,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected final void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher
-					.publishEvent(new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
+					.publishEvent(t == null ? new ListenerContainerConsumerTerminatedEvent(this, reason) :
+							new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
 		}
 	}
 
