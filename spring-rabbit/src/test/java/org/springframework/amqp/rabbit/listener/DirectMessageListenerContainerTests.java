@@ -479,6 +479,23 @@ public class DirectMessageListenerContainerTests {
 		cf.destroy();
 	}
 
+	@Test
+	public void testReplyToReleaseWithCancel() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
+		container.afterPropertiesSet();
+		container.start();
+		Channel channel = container.getChannel();
+		final CountDownLatch latch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof ListenerContainerConsumerFailedEvent) {
+				latch.countDown();
+			}
+		});
+		container.releaseConsumerFor(channel, true, "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+	}
+
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
 		int n = 0;
 		RabbitAdmin admin = brokerRunning.getAdmin();

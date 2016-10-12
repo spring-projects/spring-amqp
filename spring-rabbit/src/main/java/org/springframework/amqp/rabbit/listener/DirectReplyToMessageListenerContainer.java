@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
@@ -37,13 +38,13 @@ import com.rabbitmq.client.Channel;
  */
 public class DirectReplyToMessageListenerContainer extends DirectMessageListenerContainer {
 
-	private final ConcurrentMap<Channel, Boolean> inUseConsumerChannels = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Channel, SimpleConsumer> inUseConsumerChannels = new ConcurrentHashMap<>();
 
 	private int consumerCount;
 
 	public DirectReplyToMessageListenerContainer(ConnectionFactory connectionFactory) {
 		super(connectionFactory);
-		setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
+		super.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
 		setAcknowledgeMode(AcknowledgeMode.NONE);
 		super.setConsumersPerQueue(0);
 	}
@@ -55,6 +56,11 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	@Override
 	public final void setMonitorInterval(long monitorInterval) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public final void setQueueNames(String... queueName) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -84,6 +90,12 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
+	public void setMessageListener(Object messageListener) {
+		throw new UnsupportedOperationException(
+				"'messageListener' must be a 'MessageListener' or 'ChannelAwareMessageListener'");
+	}
+
+	@Override
 	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		super.setChannelAwareMessageListener((message, channel) -> {
 			this.inUseConsumerChannels.remove(channel);
@@ -92,8 +104,16 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
+	public void setMessageListener(MessageListener messageListener) {
+		super.setChannelAwareMessageListener((message, channel) -> {
+			this.inUseConsumerChannels.remove(channel);
+			messageListener.onMessage(message);
+		});
+	}
+
+	@Override
 	protected void doStart() throws Exception {
-		if (!isStarted()) {
+		if (!isRunning()) {
 			this.consumerCount = 0;
 			super.setConsumersPerQueue(0);
 			super.doStart();
@@ -102,21 +122,24 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	@Override
 	protected void consumerRemoved(SimpleConsumer consumer) {
-		this.inUseConsumerChannels.remove(consumer);
+		this.inUseConsumerChannels.remove(consumer.getChannel());
 	}
 
 	/**
 	 * Get the channel associated with a direct reply-to consumer.
-	 * If the consumer has exited, the container will be stopped.
-	 * @return the channel or null if there is no consumer.
+	 * @return the channel.
 	 */
 	public Channel getChannel() {
 		synchronized (this.consumersMonitor) {
 			Channel channel = null;
 			while (channel == null) {
-				for (SimpleConsumer consumer : getConsumers()) {
-					if (this.inUseConsumerChannels.putIfAbsent(consumer.getChannel(), Boolean.TRUE) == null) {
-						channel = consumer.getChannel();
+				if (!isRunning()) {
+					throw new IllegalStateException("Direct reply-to container is not running");
+				}
+				for (SimpleConsumer consumer : this.consumers) {
+					Channel candidate = consumer.getChannel();
+					if (candidate.isOpen() && this.inUseConsumerChannels.putIfAbsent(candidate, consumer) == null) {
+						channel = candidate;
 						break;
 					}
 				}
@@ -126,6 +149,22 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 				}
 			}
 			return channel;
+		}
+	}
+
+	/**
+	 * Release the consumer associated with the channel for reuse.
+	 * Set cancelConsumer to true if the client is not prepared to handle/discard a
+	 * late arriving reply.
+	 * @param channel the channel.
+	 * @param cancelConsumer true to cancel the consumer.
+	 * @param message a message to be included in the cancel event if cancelConsumer is true.
+	 */
+	public void releaseConsumerFor(Channel channel, boolean cancelConsumer, String message) {
+		SimpleConsumer consumer = this.inUseConsumerChannels.remove(channel);
+		if (consumer != null && cancelConsumer) {
+			this.logger.error("Consumer canceled by client" + consumer);
+			consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
 		}
 	}
 

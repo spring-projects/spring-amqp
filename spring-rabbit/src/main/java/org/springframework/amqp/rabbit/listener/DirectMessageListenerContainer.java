@@ -78,7 +78,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private static final int DEFAULT_MONITOR_INTERVAL = 10000;
 
-	protected final List<SimpleConsumer> consumers = new LinkedList<>();
+	protected final List<SimpleConsumer> consumers = new LinkedList<>(); // NOSONAR
 
 	private final List<SimpleConsumer> consumersToRestart = new LinkedList<>();
 
@@ -105,8 +105,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long lastAlertAt;
 
 	private volatile long lastRestartAttempt;
-
-	private volatile CountDownLatch consuming = new CountDownLatch(1);
 
 	/**
 	 * Create an instance; {@link #setConnectionFactory(ConnectionFactory)} must
@@ -172,7 +170,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	public final void setQueueNames(String... queueName) {
+	public void setQueueNames(String... queueName) {
 		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
 		super.setQueueNames(queueName);
 	}
@@ -191,14 +189,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	public void setQueues(Queue... queues) {
 		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
 		super.setQueues(queues);
-	}
-
-	protected List<SimpleConsumer> getConsumers() {
-		return this.consumers;
-	}
-
-	protected boolean isStarted() {
-		return this.started;
 	}
 
 	@Override
@@ -326,7 +316,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void actualStart() throws Exception {
 		this.aborted = false;
 		this.hasStopped = false;
-		this.consuming = new CountDownLatch(1);
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
@@ -356,7 +345,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.filter(c -> !c.getChannel().isOpen())
 					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
 					.forEach(c -> {
-						this.logger.error("Consumer canceled - channel closed " + this);
+						this.logger.error("Consumer canceled - channel closed " + c);
 						c.cancelConsumer("Consumer " + c + " channel closed");
 					});
 			if (this.lastRestartAttempt + getFailedDeclarationRetryInterval() < now) {
@@ -488,7 +477,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					(getConsumerTagStrategy() != null
 							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
 					false, isExclusive(), getConsumerArguments(), consumer);
-			this.consuming.countDown();
 		}
 		catch (IOException e) {
 			if (channel != null) {
@@ -588,7 +576,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Called whenever a consumer is removed.
-	 * @param the consumer.
+	 * @param consumer the consumer.
 	 */
 	protected void consumerRemoved(SimpleConsumer consumer) {
 		// default empty
@@ -731,7 +719,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			cancelConsumer("Consumer " + this + " canceled");
 		}
 
-		private void cancelConsumer(final String eventMessage) {
+		void cancelConsumer(final String eventMessage) {
 			publishConsumerFailedEvent(eventMessage, true, null);
 			synchronized (DirectMessageListenerContainer.this.consumersMonitor) {
 				List<SimpleConsumer> list = DirectMessageListenerContainer.this.consumersByQueue.get(this.queue);

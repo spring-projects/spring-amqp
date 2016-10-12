@@ -213,7 +213,6 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
 		this.directReplyToContainer.setChannelAwareMessageListener(this);
 	}
 
@@ -229,7 +228,6 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
 		this.directReplyToContainer.setChannelAwareMessageListener(this);
 	}
 
@@ -361,8 +359,11 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			this.template.send(exchange, routingKey, message, correlationData);
 		}
 		else {
-			sendDirect(exchange, routingKey, message, correlationData);
+			Channel channel = this.directReplyToContainer.getChannel();
+			future.setChannel(channel);
+			sendDirect(channel, exchange, routingKey, message, correlationData);
 		}
+		future.startTimer();
 		return future;
 	}
 
@@ -414,14 +415,17 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			}
 			Message message = converter.toMessage(object, new MessageProperties());
 			correlationPostProcessor.postProcessMessage(message);
-			sendDirect(exchange, routingKey, message, correlationData);
+			Channel channel = this.directReplyToContainer.getChannel();
+			correlationPostProcessor.getFuture().setChannel(channel);
+			sendDirect(channel, exchange, routingKey, message, correlationData);
 		}
-		return correlationPostProcessor.getFuture();
+		RabbitConverterFuture<C> future = correlationPostProcessor.getFuture();
+		future.startTimer();
+		return future;
 	}
 
-	private void sendDirect(String exchange, String routingKey, Message message,
+	private void sendDirect(Channel channel, String exchange, String routingKey, Message message,
 			CorrelationData correlationData) {
-		final Channel channel = this.directReplyToContainer.getChannel();
 		message.getMessageProperties().setReplyTo(Address.AMQ_RABBITMQ_REPLY_TO);
 		try {
 			if (channel instanceof PublisherCallbackChannel) {
@@ -595,30 +599,33 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		private final Message requestMessage;
 
-		private final ScheduledFuture<?> cancelTask;
+		private ScheduledFuture<?> timeoutTask;
 
 		private volatile ListenableFuture<Boolean> confirm;
 
 		private String nackCause;
 
+		private Channel channel;
+
 		public RabbitFuture(String correlationId, Message requestMessage) {
 			this.correlationId = correlationId;
 			this.requestMessage = requestMessage;
-			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
-				this.cancelTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new CancelTask(),
-						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
-			}
-			else {
-				this.cancelTask = null;
-			}
+		}
+
+		void setChannel(Channel channel) {
+			this.channel = channel;
 		}
 
 		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
-			if (this.cancelTask != null) {
-				this.cancelTask.cancel(true);
+			if (this.timeoutTask != null) {
+				this.timeoutTask.cancel(true);
 			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
+			if (RabbitFuture.this.channel != null) {
+				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(RabbitFuture.this.channel, false,
+						null);
+			}
 			return super.cancel(mayInterruptIfRunning);
 		}
 
@@ -648,11 +655,25 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			this.nackCause = nackCause;
 		}
 
-		private class CancelTask implements Runnable {
+		void startTimer() {
+			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
+				this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
+						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+			}
+			else {
+				this.timeoutTask = null;
+			}
+		}
+
+		private class TimeoutTask implements Runnable {
 
 			@Override
 			public void run() {
 				AsyncRabbitTemplate.this.pending.remove(RabbitFuture.this.correlationId);
+				if (RabbitFuture.this.channel != null) {
+					AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(RabbitFuture.this.channel, false,
+							null);
+				}
 				setException(new AmqpReplyTimeoutException("Reply timed out", RabbitFuture.this.requestMessage));
 			}
 

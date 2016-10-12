@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -96,20 +97,44 @@ public class AsyncRabbitTemplateTests {
 	@Test
 	public void testConvert1ArgDirect() throws Exception {
 		ListenableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
-		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("foo");
+		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
 		checkConverterResult(future1, "FOO");
-		checkConverterResult(future2, "FOO");
+		checkConverterResult(future2, "BAR");
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
 				.size(), equalTo(0));
 		assertThat(TestUtils
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 					equalTo(2));
-		this.asyncDirectTemplate.stop();
-		this.asyncDirectTemplate.start();
+		final String missingQueue = UUID.randomUUID().toString();
+		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
+		this.asyncDirectTemplate.stop(); // should clear the inUse channel map
 		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
-					equalTo(0));
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size(), equalTo(0));
+		this.asyncDirectTemplate.start();
+		this.asyncDirectTemplate.setReceiveTimeout(1);
+		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
+		waitForEmpty();
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size(), equalTo(0));
+
+		this.asyncDirectTemplate.setReceiveTimeout(10000);
+		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo").cancel(true);
+		waitForEmpty();
+		assertThat(TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size(), equalTo(0));
+	}
+
+	private void waitForEmpty() throws InterruptedException {
+		int n = 0;
+		while (n++ < 100 && TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
+				.size() > 0) {
+			Thread.sleep(100);
+		}
 	}
 
 	@Test
