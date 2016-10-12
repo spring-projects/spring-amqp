@@ -61,7 +61,7 @@ public class RabbitGatewaySupportTests {
 				test.add("test");
 			}
 		};
-		gateway.setRabbitTemplate(template);
+		gateway.setRabbitOperations(template);
 		gateway.afterPropertiesSet();
 		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitOperations());
 		assertEquals("initGateway called", test.size(), 1);
