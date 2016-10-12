@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 the original author or authors.
+ * Copyright 2010-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,8 @@ public class RabbitGatewaySupportTests {
 		gateway.setConnectionFactory(mockConnectionFactory);
 		gateway.afterPropertiesSet();
 		assertEquals("Correct ConnectionFactory", mockConnectionFactory, gateway.getConnectionFactory());
-		assertEquals("Correct RabbitTemplate", mockConnectionFactory, gateway.getRabbitTemplate().getConnectionFactory());
+		assertEquals("Correct RabbitTemplate", mockConnectionFactory,
+				((RabbitTemplate) gateway.getRabbitOperations()).getConnectionFactory());
 		assertEquals("initGatway called", test.size(), 1);
 	}
 
@@ -60,9 +61,9 @@ public class RabbitGatewaySupportTests {
 				test.add("test");
 			}
 		};
-		gateway.setRabbitTemplate(template);
+		gateway.setRabbitOperations(template);
 		gateway.afterPropertiesSet();
-		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitTemplate());
+		assertEquals("Correct RabbitTemplate", template, gateway.getRabbitOperations());
 		assertEquals("initGateway called", test.size(), 1);
 	}
 
