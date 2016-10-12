@@ -1391,7 +1391,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected final void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher
-					.publishEvent(new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
+					.publishEvent(t == null ? new ListenerContainerConsumerTerminatedEvent(this, reason) :
+							new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
 		}
 	}
 

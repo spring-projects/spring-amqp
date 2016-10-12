@@ -25,6 +25,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
 
@@ -190,7 +191,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	public void releaseConsumerFor(Channel channel, boolean cancelConsumer, String message) {
 		SimpleConsumer consumer = this.inUseConsumerChannels.remove(channel);
 		if (consumer != null && cancelConsumer) {
-			this.logger.error("Consumer canceled by client" + consumer);
+			Assert.isTrue(message != null, "A 'message' is required when 'cancelConsumer' is 'true'");
 			consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
 		}
 	}

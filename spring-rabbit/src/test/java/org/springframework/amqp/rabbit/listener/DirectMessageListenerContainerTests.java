@@ -292,7 +292,7 @@ public class DirectMessageListenerContainerTests {
 		brokerRunning.getAdmin().deleteQueue(EQ2);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNotNull(failEvent.get());
-		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerFailedEvent.class));
+		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerTerminatedEvent.class));
 		container.stop();
 		cf.destroy();
 	}
@@ -489,7 +489,7 @@ public class DirectMessageListenerContainerTests {
 		Channel channel = container.getChannel();
 		final CountDownLatch latch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(e -> {
-			if (e instanceof ListenerContainerConsumerFailedEvent) {
+			if (e instanceof ListenerContainerConsumerTerminatedEvent) {
 				latch.countDown();
 			}
 		});

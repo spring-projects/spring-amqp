@@ -622,9 +622,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				this.timeoutTask.cancel(true);
 			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
-			if (RabbitFuture.this.channel != null) {
-				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(RabbitFuture.this.channel, false,
-						null);
+			if (this.channel != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
+				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channel, false, null);
 			}
 			return super.cancel(mayInterruptIfRunning);
 		}
