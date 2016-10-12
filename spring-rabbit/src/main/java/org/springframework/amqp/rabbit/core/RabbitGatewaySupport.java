@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 
 /**
  * Convenient super class for application classes that need RabbitMQ access.
@@ -79,15 +80,36 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * Set the RabbitTemplate for the gateway.
 	 * @param rabbitTemplate The Rabbit template.
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
+	 * @deprecated - use {@link #setRabbitOperations(RabbitOperations)}
 	 */
+	@Deprecated
 	public final void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
 		this.rabbitTemplate = rabbitTemplate;
 	}
 
 	/**
-	 * @return The RabbitTemplate for the gateway.
+	 * Set the RabbitTemplate for the gateway.
+	 * @param rabbitTemplate The Rabbit template.
+	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
 	 */
+	public final void setRabbitOperations(RabbitOperations rabbitTemplate) {
+		Assert.isInstanceOf(RabbitTemplate.class, rabbitTemplate);
+		this.rabbitTemplate = (RabbitTemplate) rabbitTemplate;
+	}
+
+	/**
+	 * @return The RabbitTemplate for the gateway.
+	 * @deprecated - use {@link #getRabbitOperations()}
+	 */
+	@Deprecated
 	public final RabbitTemplate getRabbitTemplate() {
+		return this.rabbitTemplate;
+	}
+
+	/**
+	 * @return The {@link RabbitOperations} for the gateway.
+	 */
+	public final RabbitOperations getRabbitOperations() {
 		return this.rabbitTemplate;
 	}
 
