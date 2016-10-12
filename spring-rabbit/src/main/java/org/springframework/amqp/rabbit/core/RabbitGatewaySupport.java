@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ import org.springframework.beans.factory.InitializingBean;
  * through overriding the {@link #createRabbitTemplate} method.
  *
  * @author Mark Pollack
+ * @author Gary Russell
+ *
  * @see #setConnectionFactory
- * @see #setRabbitTemplate
+ * @see #setRabbitOperations
  * @see #createRabbitTemplate
  * @see org.springframework.amqp.rabbit.core.RabbitTemplate
  */
@@ -42,7 +44,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private RabbitTemplate rabbitTemplate;
+	private RabbitOperations rabbitOperations;
 
 	/**
 	 * Set the Rabbit connection factory to be used by the gateway.
@@ -53,7 +55,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * @param connectionFactory The connection factory.
 	 */
 	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
-		this.rabbitTemplate = createRabbitTemplate(connectionFactory);
+		this.rabbitOperations = createRabbitTemplate(connectionFactory);
 	}
 
 	/**
@@ -72,28 +74,28 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * @return The Rabbit ConnectionFactory used by the gateway.
 	 */
 	public final ConnectionFactory getConnectionFactory() {
-		return (this.rabbitTemplate != null ? this.rabbitTemplate.getConnectionFactory() : null);
+		return (this.rabbitOperations != null ? this.rabbitOperations.getConnectionFactory() : null);
 	}
 
 	/**
-	 * Set the RabbitTemplate for the gateway.
-	 * @param rabbitTemplate The Rabbit template.
+	 * Set the {@link RabbitOperations} for the gateway.
+	 * @param rabbitOperations The Rabbit operations.
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
 	 */
-	public final void setRabbitTemplate(RabbitTemplate rabbitTemplate) {
-		this.rabbitTemplate = rabbitTemplate;
+	public final void setRabbitOperations(RabbitOperations rabbitOperations) {
+		this.rabbitOperations = rabbitOperations;
 	}
 
 	/**
-	 * @return The RabbitTemplate for the gateway.
+	 * @return The {@link RabbitOperations} for the gateway.
 	 */
-	public final RabbitTemplate getRabbitTemplate() {
-		return this.rabbitTemplate;
+	public final RabbitOperations getRabbitOperations() {
+		return this.rabbitOperations;
 	}
 
 	@Override
 	public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
-		if (this.rabbitTemplate == null) {
+		if (this.rabbitOperations == null) {
 			throw new IllegalArgumentException("'connectionFactory' or 'rabbitTemplate' is required");
 		}
 		try {
