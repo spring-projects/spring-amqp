@@ -366,6 +366,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 			}
+			processMonitorTask();
 		}, this.monitorInterval);
 		if (queueNames.length > 0) {
 			try {
@@ -426,6 +427,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Subclasses can override this to take additional actions when the monitor task runs.
+	 */
+	protected void processMonitorTask() {
+		// default do nothing
+	}
+
 	private void checkMissingQueues(String[] queueNames) {
 		if (isMissingQueuesFatal()) {
 			RabbitAdmin checkAdmin = getRabbitAdmin();
@@ -446,8 +454,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void consumeFromQueue(String queue) {
-		for (int i = 0; i < this.consumersPerQueue; i++) {
-			doConsumeFromQueue(queue);
+		List<SimpleConsumer> list = this.consumersByQueue.get(queue);
+		// Possible race with setConsumersPerQueue and the task launched by start()
+		if (list == null || list.size() == 0) {
+			for (int i = 0; i < this.consumersPerQueue; i++) {
+				doConsumeFromQueue(queue);
+			}
 		}
 	}
 
@@ -630,6 +642,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug(this + " received " + message);
 			}
+			updateLastReceive();
 			if (this.transactionManager != null) {
 				try {
 					if (this.isRabbitTxManager) {

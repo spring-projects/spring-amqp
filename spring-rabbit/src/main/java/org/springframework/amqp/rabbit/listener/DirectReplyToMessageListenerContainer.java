@@ -30,7 +30,9 @@ import com.rabbitmq.client.Channel;
 
 /**
  * Listener container for Direct ReplyTo only listens to the pseudo queue
- * {@link Address#AMQ_RABBITMQ_REPLY_TO} with a single consumer.
+ * {@link Address#AMQ_RABBITMQ_REPLY_TO}. Consumers are added on-demand and
+ * terminated when idle for {@link #setIdleEventInterval(long) idleEventInterval}
+ * (default 60 seconds).
  *
  * @author Gary Russell
  * @since 2.0
@@ -38,7 +40,11 @@ import com.rabbitmq.client.Channel;
  */
 public class DirectReplyToMessageListenerContainer extends DirectMessageListenerContainer {
 
+	private static final int DEFAULT_IDLE = 60000;
+
 	private final ConcurrentMap<Channel, SimpleConsumer> inUseConsumerChannels = new ConcurrentHashMap<>();
+
+	private final ConcurrentMap<SimpleConsumer, Long> whenUsed = new ConcurrentHashMap<>();
 
 	private int consumerCount;
 
@@ -47,6 +53,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 		super.setQueueNames(Address.AMQ_RABBITMQ_REPLY_TO);
 		setAcknowledgeMode(AcknowledgeMode.NONE);
 		super.setConsumersPerQueue(0);
+		super.setIdleEventInterval(DEFAULT_IDLE);
 	}
 
 	@Override
@@ -121,8 +128,27 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
+	protected void processMonitorTask() {
+		long now = System.currentTimeMillis();
+		synchronized (this.consumersMonitor) {
+			long reduce = this.consumers.stream()
+				.filter(c -> this.whenUsed.containsKey(c) && !this.inUseConsumerChannels.containsValue(c)
+						&& this.whenUsed.get(c) < now - getIdleEventInterval())
+				.count();
+			if (reduce > 0) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Reducing idle consumes by " + reduce);
+				}
+				this.consumerCount = (int) Math.max(0, this.consumerCount - reduce);
+				super.setConsumersPerQueue(this.consumerCount);
+			}
+		}
+	}
+
+	@Override
 	protected void consumerRemoved(SimpleConsumer consumer) {
 		this.inUseConsumerChannels.remove(consumer.getChannel());
+		this.whenUsed.remove(consumer);
 	}
 
 	/**
@@ -140,6 +166,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 					Channel candidate = consumer.getChannel();
 					if (candidate.isOpen() && this.inUseConsumerChannels.putIfAbsent(candidate, consumer) == null) {
 						channel = candidate;
+						this.whenUsed.put(consumer, System.currentTimeMillis());
 						break;
 					}
 				}

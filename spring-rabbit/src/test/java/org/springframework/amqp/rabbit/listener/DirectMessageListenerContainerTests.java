@@ -97,7 +97,7 @@ public class DirectMessageListenerContainerTests {
 
 	@Rule
 	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
-			CachingConnectionFactory.class,
+			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
 			DirectMessageListenerContainer.class, DirectMessageListenerContainerTests.class, BrokerRunning.class);
 
 	@Rule
@@ -483,6 +483,7 @@ public class DirectMessageListenerContainerTests {
 	public void testReplyToReleaseWithCancel() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
+		container.setBeanName("releaseCancel");
 		container.afterPropertiesSet();
 		container.start();
 		Channel channel = container.getChannel();
@@ -494,6 +495,20 @@ public class DirectMessageListenerContainerTests {
 		});
 		container.releaseConsumerFor(channel, true, "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testReplyToConsumersReduced() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
+		container.setBeanName("reducing");
+		container.setIdleEventInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+		Channel channel = container.getChannel();
+		assertTrue(activeConsumerCount(container, 1));
+		container.releaseConsumerFor(channel, false, null);
+		assertTrue(activeConsumerCount(container, 0));
 	}
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
