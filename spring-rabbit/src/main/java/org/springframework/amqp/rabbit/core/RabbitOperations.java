@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.core;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 /**
  * Rabbit specific methods for Amqp functionality.
@@ -26,6 +27,21 @@ import org.springframework.amqp.core.AmqpTemplate;
  */
 public interface RabbitOperations extends AmqpTemplate {
 
+	/**
+	 * Execute the callback with a channel and reliably close the channel
+	 * afterwards.
+	 * @param action the call back.
+	 * @param <T> the return type.
+	 * @return the result from the {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
+	 * @throws AmqpException if one occurs.
+	 */
 	<T> T execute(ChannelCallback<T> action) throws AmqpException;
+
+	/**
+	 * Return the connection factory for this operations.
+	 * @return the connection factory.
+	 * @since 2.0
+	 */
+	ConnectionFactory getConnectionFactory();
 
 }
