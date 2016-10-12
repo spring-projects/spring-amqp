@@ -81,7 +81,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * @param rabbitOperations The Rabbit operations.
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
 	 */
-	public final void setRabbitOperations(RabbitTemplate rabbitOperations) {
+	public final void setRabbitOperations(RabbitOperations rabbitOperations) {
 		this.rabbitOperations = rabbitOperations;
 	}
 
