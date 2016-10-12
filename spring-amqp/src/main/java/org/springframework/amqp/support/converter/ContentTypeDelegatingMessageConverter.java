@@ -71,30 +71,10 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 	/**
 	 * @param contentType the content type to check.
 	 * @param messageConverter the {@link MessageConverter} for the content type.
-	 * @deprecated in favor of {@link #addDelegate(String, MessageConverter)}
-	 */
-	@Deprecated
-	public void addDelgate(String contentType, MessageConverter messageConverter) {
-		addDelegate(contentType, messageConverter);
-	}
-
-	/**
-	 * @param contentType the content type to check.
-	 * @param messageConverter the {@link MessageConverter} for the content type.
 	 * @since 1.6
 	 */
 	public void addDelegate(String contentType, MessageConverter messageConverter) {
 		this.delegates.put(contentType, messageConverter);
-	}
-
-	/**
-	 * @param contentType the content type key to remove {@link MessageConverter} from delegates.
-	 * @return the remove {@link MessageConverter}.
-	 * @deprecated in favor of {@link #removeDelegate(String)}
-	 */
-	@Deprecated
-	public MessageConverter removeDelgate(String contentType) {
-		return removeDelegate(contentType);
 	}
 
 	/**

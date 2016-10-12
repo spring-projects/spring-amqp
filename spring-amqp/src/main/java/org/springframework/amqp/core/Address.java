@@ -91,19 +91,6 @@ public class Address {
 	}
 
 	/***
-	 * Create an Address given the exchange type, exchange name and routing key.
-	 * This will set the exchange type, name and the routing key explicitly.
-	 * @param exchangeType The exchange type.
-	 * @param exchangeName The exchange name.
-	 * @param routingKey The routing key.
-	 */
-	@Deprecated
-	public Address(String exchangeType, String exchangeName, String routingKey) {
-		this.exchangeName = exchangeName;
-		this.routingKey = routingKey;
-	}
-
-	/***
 	 * Create an Address given the exchange name and routing key.
 	 * This will set the exchange type, name and the routing key explicitly.
 	 * @param exchangeName The exchange name.
@@ -112,11 +99,6 @@ public class Address {
 	public Address(String exchangeName, String routingKey) {
 		this.exchangeName = exchangeName;
 		this.routingKey = routingKey;
-	}
-
-	@Deprecated
-	public String getExchangeType() {
-		return null;
 	}
 
 	public String getExchangeName() {

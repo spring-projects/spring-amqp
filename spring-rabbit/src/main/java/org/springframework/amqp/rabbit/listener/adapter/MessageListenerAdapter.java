@@ -355,21 +355,6 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * Invoke the specified listener method.
 	 * @param methodName the name of the listener method
 	 * @param arguments the message arguments to be passed in
-	 * @return the result returned from the listener method
-	 * @throws Exception if thrown by Rabbit API methods
-	 * @see #getListenerMethodName
-	 * @see #buildListenerArguments
-	 * @deprecated in favor of {@link #invokeListenerMethod(String, Object[], Message)}
-	 */
-	@Deprecated
-	protected Object invokeListenerMethod(String methodName, Object[] arguments) throws Exception {
-		return this.invokeListenerMethod(methodName, arguments, null);
-	}
-
-	/**
-	 * Invoke the specified listener method.
-	 * @param methodName the name of the listener method
-	 * @param arguments the message arguments to be passed in
 	 * @param originalMessage the original message
 	 * @return the result returned from the listener method
 	 * @throws Exception if thrown by Rabbit API methods

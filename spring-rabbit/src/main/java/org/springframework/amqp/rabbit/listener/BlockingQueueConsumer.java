@@ -247,15 +247,6 @@ public class BlockingQueueConsumer {
 		return this.consumer.getConsumerTag();
 	}
 
-	/**
-	 * Stop receiving new messages; drain the queue of any prefetched messages.
-	 * @param shutdownTimeout how long (ms) to suspend the client thread.
-	 * @deprecated as redundant option in favor of {@link #basicCancel}.
-	 */
-	@Deprecated
-	public final void setQuiesce(long shutdownTimeout) {
-	}
-
 	public void setShutdownTimeout(long shutdownTimeout) {
 		this.shutdownTimeout = shutdownTimeout;
 	}

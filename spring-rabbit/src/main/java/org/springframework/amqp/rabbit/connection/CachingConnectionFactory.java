@@ -256,11 +256,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		this.cacheMode = cacheMode;
 	}
 
-	@Deprecated
-	public int getConnectionCachesize() {
-		return getConnectionCacheSize();
-	}
-
 	public int getConnectionCacheSize() {
 		return this.connectionCacheSize;
 	}

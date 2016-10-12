@@ -41,7 +41,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReceiveAndReplyMessageCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
@@ -295,19 +294,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		this.encoding = encoding;
 	}
 
-
-	/**
-	 * A queue for replies; if not provided, a temporary exclusive, auto-delete queue will
-	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
-	 * http://www.rabbitmq.com/direct-reply-to.html
-	 * @deprecated - use #setReplyAddress(String replyAddress)
-	 * @param replyQueue the replyQueue to set
-	 */
-	@Deprecated
-	public void setReplyQueue(Queue replyQueue) {
-		setReplyAddress(replyQueue.getName());
-	}
-
 	/**
 	 * An address for replies; if not provided, a temporary exclusive, auto-delete queue will
 	 * be used for each reply, unless RabbitMQ supports 'amq.rabbitmq.reply-to' - see
@@ -515,16 +501,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Assert.notNull(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot be null");
 		Assert.noNullElements(beforePublishPostProcessors, "'beforePublishPostProcessors' cannot have null elements");
 		this.beforePublishPostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(beforePublishPostProcessors));
-	}
-
-	/**
-	 * @deprecated use {@link #setAfterReceivePostProcessors(MessagePostProcessor...)}
-	 * @param afterReceivePostProcessors the post processors.
-	 * @since 1.4.2
-	 */
-	@Deprecated
-	public void setAfterReceivePostProcessor(MessagePostProcessor... afterReceivePostProcessors) {
-		setAfterReceivePostProcessors(afterReceivePostProcessors);
 	}
 
 	/**
@@ -752,12 +728,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void convertAndSend(Object object) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, (CorrelationData) null);
 	}
-
-	@Deprecated
-	public void correlationconvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
-		this.correlationConvertAndSend(object, correlationData);
-	}
-
 
 	public void correlationConvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, correlationData);

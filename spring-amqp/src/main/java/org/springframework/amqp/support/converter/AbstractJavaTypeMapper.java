@@ -114,14 +114,6 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 		return Collections.unmodifiableMap(this.idClassMapping);
 	}
 
-	/**
-	 * @throws Exception an exception.
-	 * @deprecated - no longer necessary.
-	 */
-	@Deprecated
-	public void afterPropertiesSet() throws Exception {
-	}
-
 	protected boolean hasInferredTypeHeader(MessageProperties properties) {
 		return properties.getInferredArgumentType() != null;
 	}
