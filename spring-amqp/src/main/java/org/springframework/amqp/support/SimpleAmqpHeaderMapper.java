@@ -24,6 +24,7 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.AbstractHeaderMapper;
+import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
 /**
@@ -276,9 +277,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 		if (contentType != null) {
 			String contentTypeClassName = contentType.getClass().getName();
 
-			// TODO: 2.0 - check instanceof MimeType instead
-			if (contentTypeClassName.equals("org.springframework.http.MediaType")
-					|| contentTypeClassName.equals("org.springframework.util.MimeType")) {
+			if (contentType instanceof MimeType) {
 				contentTypeStringValue = contentType.toString();
 			}
 			else if (contentType instanceof String) {

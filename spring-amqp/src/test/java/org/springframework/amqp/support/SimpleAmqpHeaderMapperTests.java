@@ -40,7 +40,6 @@ import org.springframework.util.MimeTypeUtils;
  */
 public class SimpleAmqpHeaderMapperTests {
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void fromHeaders() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
@@ -110,7 +109,6 @@ public class SimpleAmqpHeaderMapperTests {
 		assertEquals("text/html", amqpProperties.getContentType());
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void toHeaders() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
