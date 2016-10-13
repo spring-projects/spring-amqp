@@ -1316,7 +1316,6 @@ public class RabbitTemplateIntegrationTests {
 		assertNull(template.receive(ROUTE));
 	}
 
-	@SuppressWarnings({ "serial", "unchecked" })
 	private void testSendInGlobalTransactionGuts(final boolean rollback) throws Exception {
 		template.setChannelTransacted(true);
 		new TransactionTemplate(new TestTransactionManager()).execute(status -> {

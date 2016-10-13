@@ -36,8 +36,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Basic.RecoverOk;
@@ -73,18 +71,6 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
-
-	private static final String[] METHODS_OF_INTEREST =
-			new String[] { "consumerCount", "messageCount" };
-
-	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
-
-		@Override
-		public boolean matches(java.lang.reflect.Method method) {
-			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
-		}
-
-	};
 
 	private final Log logger = LogFactory.getLog(this.getClass());
 
