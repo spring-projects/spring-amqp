@@ -33,6 +33,7 @@
 	</rabbit:queue-arguments>
 
 	<rabbit:template id="withCallbacks" connection-factory="connectionFactory"
+					 direct-reply-to-container="false"
 					 mandatory="true" return-callback="rcb" confirm-callback="ccb"/>
 
 	<rabbit:template id="withMandatoryExpression" connection-factory="connectionFactory"

@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,6 +68,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Address;
@@ -85,6 +87,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
@@ -93,6 +96,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -152,6 +156,11 @@ public class RabbitTemplateIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
+
+	@Rule
+	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
+			CachingConnectionFactory.class, SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
+			RabbitTemplate.class, BrokerRunning.class);
 
 	private CachingConnectionFactory connectionFactory;
 
@@ -553,7 +562,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testAtomicSendAndReceive() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -608,7 +617,7 @@ public class RabbitTemplateIntegrationTests {
 			}
 			return null;
 		}).when(logger).trace(Mockito.anyString());
-		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		ReflectionUtils.setField(fields[0], template, logger);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
@@ -644,7 +653,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testAtomicSendAndReceiveWithRoutingKey() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(() -> {
@@ -675,7 +684,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testAtomicSendAndReceiveWithExchangeAndRoutingKey() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(() -> {
@@ -706,7 +715,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testAtomicSendAndReceiveWithConversion() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -750,6 +759,7 @@ public class RabbitTemplateIntegrationTests {
 			template.send(message.getMessageProperties().getReplyTo(), message);
 			return (String) template.getMessageConverter().fromMessage(message);
 		});
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		String result = (String) template.convertSendAndReceive(ROUTE, "message");
 		assertEquals("message", received.get(1000, TimeUnit.MILLISECONDS));
 		assertEquals("message", result);
@@ -775,6 +785,7 @@ public class RabbitTemplateIntegrationTests {
 			template.send(message.getMessageProperties().getReplyTo(), message);
 			return (String) template.getMessageConverter().fromMessage(message);
 		});
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		String result = (String) template.convertSendAndReceive("", ROUTE, "message");
 		assertEquals("message", received.get(1000, TimeUnit.MILLISECONDS));
 		assertEquals("message", result);
@@ -787,7 +798,7 @@ public class RabbitTemplateIntegrationTests {
 	public void testAtomicSendAndReceiveWithConversionAndMessagePostProcessor() throws Exception {
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
 		cachingConnectionFactory.setHost("localhost");
-		final RabbitTemplate template = new RabbitTemplate(cachingConnectionFactory);
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
 		template.setQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
@@ -839,6 +850,7 @@ public class RabbitTemplateIntegrationTests {
 			template.send(message.getMessageProperties().getReplyTo(), message);
 			return (String) template.getMessageConverter().fromMessage(message);
 		});
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		String result = (String) template.convertSendAndReceive(ROUTE, (Object) "message", message -> {
 			try {
 				byte[] newBody = new String(message.getBody(), "UTF-8").toUpperCase().getBytes("UTF-8");
@@ -873,6 +885,7 @@ public class RabbitTemplateIntegrationTests {
 			template.send(message.getMessageProperties().getReplyTo(), message);
 			return (String) template.getMessageConverter().fromMessage(message);
 		});
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		String result = (String) template.convertSendAndReceive("", ROUTE, "message", message -> {
 			try {
 				byte[] newBody = new String(message.getBody(), "UTF-8").toUpperCase().getBytes("UTF-8");
@@ -1044,16 +1057,17 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
-		this.template.setQueue(ROUTE);
-		this.template.setRoutingKey(ROUTE);
-		this.template.setReplyAddress(REPLY_QUEUE.getName());
-		this.template.setReplyTimeout(10000);
-		this.template.setReceiveTimeout(10000);
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
+		template.setQueue(ROUTE);
+		template.setRoutingKey(ROUTE);
+		template.setReplyAddress(REPLY_QUEUE.getName());
+		template.setReplyTimeout(10000);
+		template.setReceiveTimeout(10000);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-		container.setConnectionFactory(this.template.getConnectionFactory());
+		container.setConnectionFactory(template.getConnectionFactory());
 		container.setQueues(REPLY_QUEUE);
-		container.setMessageListener(this.template);
+		container.setMessageListener(template);
 		container.start();
 
 		int count = 10;
@@ -1062,7 +1076,7 @@ public class RabbitTemplateIntegrationTests {
 
 		ExecutorService executor = Executors.newFixedThreadPool(10);
 
-		this.template.setCorrelationKey("CorrelationKey");
+		template.setCorrelationKey("CorrelationKey");
 
 		for (int i = 0; i < count; i++) {
 			executor.execute(() -> {
@@ -1124,40 +1138,37 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveFastImplicit() {
-		sendAndReceiveFastGuts();
+		sendAndReceiveFastGuts(false, false, false);
 	}
 
 	@Test
 	public void testSendAndReceiveFastExplicit() {
-		this.template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
-		sendAndReceiveFastGuts();
+		sendAndReceiveFastGuts(false, true, false);
 	}
 
 	@Test
 	public void testSendAndReceiveNeverFast() {
-		this.template.setUseTemporaryReplyQueues(true);
-		sendAndReceiveFastGuts(true);
+		sendAndReceiveFastGuts(true, false, true);
 	}
 
 	@Test
 	public void testSendAndReceiveNeverFastWitReplyQueue() {
-		this.template.setUseTemporaryReplyQueues(true);
-		this.template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
-		sendAndReceiveFastGuts();
+		sendAndReceiveFastGuts(true, true, false);
 	}
 
-	private void sendAndReceiveFastGuts() {
-		sendAndReceiveFastGuts(false);
-	}
-
-	private void sendAndReceiveFastGuts(boolean tempQueue) {
+	private void sendAndReceiveFastGuts(boolean tempQueue, boolean setDirectReplyToExplicitly, boolean expectUsedTemp) {
 		try {
-			this.template.execute(channel -> {
+			RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
+			template.execute(channel -> {
 				channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 				return null;
 			});
+			template.setUseTemporaryReplyQueues(tempQueue);
+			if (setDirectReplyToExplicitly) {
+				template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
+			}
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-			container.setConnectionFactory(this.template.getConnectionFactory());
+			container.setConnectionFactory(template.getConnectionFactory());
 			container.setQueueNames(ROUTE);
 			final AtomicReference<String> replyToWas = new AtomicReference<String>();
 			MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter(new Object() {
@@ -1172,12 +1183,12 @@ public class RabbitTemplateIntegrationTests {
 			messageListenerAdapter.setMessageConverter(null);
 			container.setMessageListener(messageListenerAdapter);
 			container.start();
-			this.template.setQueue(ROUTE);
-			this.template.setRoutingKey(ROUTE);
-			Object result = this.template.convertSendAndReceive("foo");
+			template.setQueue(ROUTE);
+			template.setRoutingKey(ROUTE);
+			Object result = template.convertSendAndReceive("foo");
 			container.stop();
 			assertEquals("FOO", result);
-			if (tempQueue) {
+			if (expectUsedTemp) {
 				assertThat(replyToWas.get(), not(startsWith(Address.AMQ_RABBITMQ_REPLY_TO)));
 			}
 			else {
@@ -1208,8 +1219,7 @@ public class RabbitTemplateIntegrationTests {
 		container.afterPropertiesSet();
 		container.start();
 		try {
-			RabbitTemplate template = new RabbitTemplate();
-			template.setConnectionFactory(this.template.getConnectionFactory());
+			RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.template.getConnectionFactory());
 			MessageProperties props = new MessageProperties();
 			props.setContentType("text/plain");
 			Message message = new Message("foo".getBytes(), props);
@@ -1223,6 +1233,12 @@ public class RabbitTemplateIntegrationTests {
 		finally {
 			container.stop();
 		}
+	}
+
+	protected RabbitTemplate createSendAndReceiveRabbitTemplate(ConnectionFactory connectionFactory) {
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setUseDirectReplyToContainer(false);
+		return template;
 	}
 
 	@Test
@@ -1376,7 +1392,7 @@ public class RabbitTemplateIntegrationTests {
 			this.template.convertAndSend(UUID.randomUUID().toString(), "foo", "bar");
 			fail("expected exception");
 		}
-		catch (AmqpIOException e) {
+		catch (AmqpIOException | AmqpConnectException e) {
 			Method shutdownReason = shutdown.get().getReason();
 			assertThat(shutdownReason, instanceOf(AMQP.Channel.Close.class));
 			assertThat(((AMQP.Channel.Close) shutdownReason).getReplyCode(), equalTo(AMQP.NOT_FOUND));

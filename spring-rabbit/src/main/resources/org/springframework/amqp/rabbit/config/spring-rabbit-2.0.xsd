@@ -1083,6 +1083,8 @@
 						<xsd:documentation><![CDATA[
 	A <listener-container/> used to receive asynchronous replies on the reply-channel the
 	<listener/> child element is disallowed because the template itself is the listener.
+	A 'reply-listener' must not be provided when using Direct reply-to. See 'reply-queue'
+	for more information.
 						]]></xsd:documentation>
 					</xsd:annotation>
 				</xsd:element>
@@ -1173,7 +1175,7 @@
 					<xsd:documentation><![CDATA[
 	A reference to a <queue/> for replies; optional; if not supplied, methods expecting replies
 	will use a temporary, exclusive, auto-delete queue or, if the RabbitMQ version is 3.4 or higher,
-	using the 'direct reply-to' mechanism. See also 'reply-address'.
+	using the 'direct reply-to' mechanism. See also 'reply-address' and 'direct-reply-to-container'.
 					]]></xsd:documentation>
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
@@ -1181,6 +1183,25 @@
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="direct-reply-to-container">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	When true (default) direct reply-to will use a 'DirectReplyToMessageListenerContainer' for replies
+	for sendAndReceive() operations, allowing consumers to be reused. Set to 'false' to create (and cancel)
+	a new consumer for each request. Direct reply-to is enbled by leaving the reply-queue as unspecified,
+	or with a value 'amq.rabbitmq.reply-to'; it can only be used with RabbitMQ version 3.4 or higher.
+	A 'reply-listener' child element must not be provided when this is true.
+					]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.core.Queue" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+				<xsd:simpleType>
+					<xsd:union memberTypes="xsd:boolean xsd:string" />
+				</xsd:simpleType>
 			</xsd:attribute>
 			<xsd:attribute name="reply-address" type="xsd:string" use="optional">
 				<xsd:annotation>

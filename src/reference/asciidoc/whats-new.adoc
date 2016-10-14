@@ -15,6 +15,9 @@ IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an e
 This was a serious bug; however, users might have relied on this behavior.
 Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
 
+The `RabbitTemplate` now uses a `DirecyReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
+See <<direct-reply-to>> for more information.
+
 The `AsyncRabbitTemplate` now supports Direct reply-to; see <<async-template>> for more information.
 
 ===== Listener Adapter

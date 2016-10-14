@@ -79,11 +79,12 @@ public class AmqpInvokerServiceExporter extends RemoteInvocationBasedExporter im
 			RemoteInvocation invocation = (RemoteInvocation) invocationRaw;
 			remoteInvocationResult = invokeAndCreateResult(invocation, getService());
 		}
-		send(remoteInvocationResult, replyToAddress);
+		send(remoteInvocationResult, replyToAddress, message);
 	}
 
-	private void send(Object object, Address replyToAddress) {
+	private void send(Object object, Address replyToAddress, Message requestMessage) {
 		Message message = this.messageConverter.toMessage(object, new MessageProperties());
+		message.getMessageProperties().setCorrelationId(requestMessage.getMessageProperties().getCorrelationId());
 
 		getAmqpTemplate().send(replyToAddress.getExchangeName(), replyToAddress.getRoutingKey(), message);
 	}
