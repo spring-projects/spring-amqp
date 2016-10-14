@@ -101,41 +101,22 @@ public class AsyncRabbitTemplateTests {
 		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
 		checkConverterResult(future1, "FOO");
 		checkConverterResult(future2, "BAR");
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size(), equalTo(0));
+		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 				equalTo(2));
 		final String missingQueue = UUID.randomUUID().toString();
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
 		this.asyncDirectTemplate.stop(); // should clear the inUse channel map
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size(), equalTo(0));
+		waitForZeroInUseConsumers();
 		this.asyncDirectTemplate.start();
 		this.asyncDirectTemplate.setReceiveTimeout(1);
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo"); // send to nowhere
-		waitForEmpty();
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size(), equalTo(0));
+		waitForZeroInUseConsumers();
 
 		this.asyncDirectTemplate.setReceiveTimeout(10000);
 		this.asyncDirectTemplate.convertSendAndReceive("", missingQueue, "foo").cancel(true);
-		waitForEmpty();
-		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size(), equalTo(0));
-	}
-
-	private void waitForEmpty() throws InterruptedException {
-		int n = 0;
-		while (n++ < 100 && TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size() > 0) {
-			Thread.sleep(100);
-		}
+		waitForZeroInUseConsumers();
 	}
 
 	@Test
@@ -174,17 +155,25 @@ public class AsyncRabbitTemplateTests {
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply1.getMessageProperties().getConsumerQueue());
 		Message reply2 = checkMessageResult(future2, "FOO");
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply2.getMessageProperties().getConsumerQueue());
+		waitForZeroInUseConsumers();
 		assertThat(TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size(), equalTo(0));
-		assertThat(TestUtils
-						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 				equalTo(2));
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
 		assertThat(TestUtils
-						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 				equalTo(0));
+	}
+
+	private void waitForZeroInUseConsumers() throws InterruptedException {
+		int n = 0;
+		Map<?, ?> inUseConsumers = TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class);
+		while (n++ < 100 && inUseConsumers.size() > 0) {
+			Thread.sleep(100);
+		}
+		assertThat(inUseConsumers.size(), equalTo(0));
 	}
 
 	@Test

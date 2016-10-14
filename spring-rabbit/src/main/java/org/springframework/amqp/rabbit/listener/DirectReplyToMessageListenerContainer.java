@@ -106,16 +106,24 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	@Override
 	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		super.setChannelAwareMessageListener((message, channel) -> {
-			this.inUseConsumerChannels.remove(channel);
-			messageListener.onMessage(message, channel);
+			try {
+				messageListener.onMessage(message, channel);
+			}
+			finally {
+				this.inUseConsumerChannels.remove(channel);
+			}
 		});
 	}
 
 	@Override
 	public void setMessageListener(MessageListener messageListener) {
 		super.setChannelAwareMessageListener((message, channel) -> {
-			this.inUseConsumerChannels.remove(channel);
-			messageListener.onMessage(message);
+			try {
+				messageListener.onMessage(message);
+			}
+			finally {
+				this.inUseConsumerChannels.remove(channel);
+			}
 		});
 	}
 
@@ -153,30 +161,32 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	/**
-	 * Get the channel associated with a direct reply-to consumer.
-	 * @return the channel.
+	 * Get the channel holder associated with a direct reply-to consumer; contains a
+	 * consumer epoch to prevent inappropriate releases.
+	 * @return the channel holder.
 	 */
-	public Channel getChannel() {
+	public ChannelHolder getChannelHolder() {
 		synchronized (this.consumersMonitor) {
-			Channel channel = null;
-			while (channel == null) {
+			ChannelHolder channelHolder = null;
+			while (channelHolder == null) {
 				if (!isRunning()) {
 					throw new IllegalStateException("Direct reply-to container is not running");
 				}
 				for (SimpleConsumer consumer : this.consumers) {
 					Channel candidate = consumer.getChannel();
 					if (candidate.isOpen() && this.inUseConsumerChannels.putIfAbsent(candidate, consumer) == null) {
-						channel = candidate;
+						channelHolder = new ChannelHolder(candidate, consumer.incrementAndGetEpoch());
 						this.whenUsed.put(consumer, System.currentTimeMillis());
+
 						break;
 					}
 				}
-				if (channel == null) {
+				if (channelHolder == null) {
 					this.consumerCount++;
 					super.setConsumersPerQueue(this.consumerCount);
 				}
 			}
-			return channel;
+			return channelHolder;
 		}
 	}
 
@@ -184,16 +194,53 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	 * Release the consumer associated with the channel for reuse.
 	 * Set cancelConsumer to true if the client is not prepared to handle/discard a
 	 * late arriving reply.
-	 * @param channel the channel.
+	 * @param channelHolder the channel holder.
 	 * @param cancelConsumer true to cancel the consumer.
 	 * @param message a message to be included in the cancel event if cancelConsumer is true.
 	 */
-	public void releaseConsumerFor(Channel channel, boolean cancelConsumer, String message) {
-		SimpleConsumer consumer = this.inUseConsumerChannels.remove(channel);
-		if (consumer != null && cancelConsumer) {
-			Assert.isTrue(message != null, "A 'message' is required when 'cancelConsumer' is 'true'");
-			consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
+	public void releaseConsumerFor(ChannelHolder channelHolder, boolean cancelConsumer, String message) {
+		synchronized (this.consumersMonitor) {
+			SimpleConsumer consumer = this.inUseConsumerChannels.get(channelHolder.getChannel());
+			if (consumer != null) {
+				if (consumer.getEpoch() == channelHolder.getConsumerEpoch()) {
+					this.inUseConsumerChannels.remove(channelHolder.getChannel());
+					if (cancelConsumer) {
+						Assert.isTrue(message != null, "A 'message' is required when 'cancelConsumer' is 'true'");
+						consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
+					}
+				}
+			}
 		}
+	}
+
+	/**
+	 * Holder for a channel; contains a consumer epoch used to prevent inappropriate release
+	 * of the consumer after it has been allocated for reuse.
+	 */
+	public static class ChannelHolder {
+
+		public final Channel channel;
+
+		public final int consumerEpoch;
+
+		public ChannelHolder(Channel channel, int consumerEpoch) {
+			this.channel = channel;
+			this.consumerEpoch = consumerEpoch;
+		}
+
+		public Channel getChannel() {
+			return this.channel;
+		}
+
+		public int getConsumerEpoch() {
+			return this.consumerEpoch;
+		}
+
+		@Override
+		public String toString() {
+			return "ChannelHolder [channel=" + this.channel + ", consumerEpoch=" + this.consumerEpoch + "]";
+		}
+
 	}
 
 }
