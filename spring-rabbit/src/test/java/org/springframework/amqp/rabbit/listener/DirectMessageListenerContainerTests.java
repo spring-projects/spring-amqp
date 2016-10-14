@@ -57,6 +57,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.support.ArgumentBuilder;
@@ -486,14 +487,14 @@ public class DirectMessageListenerContainerTests {
 		container.setBeanName("releaseCancel");
 		container.afterPropertiesSet();
 		container.start();
-		Channel channel = container.getChannel();
+		ChannelHolder channelHolder = container.getChannelHolder();
 		final CountDownLatch latch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(e -> {
 			if (e instanceof ListenerContainerConsumerTerminatedEvent) {
 				latch.countDown();
 			}
 		});
-		container.releaseConsumerFor(channel, true, "foo");
+		container.releaseConsumerFor(channelHolder, true, "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 	}
 
@@ -505,9 +506,9 @@ public class DirectMessageListenerContainerTests {
 		container.setIdleEventInterval(500);
 		container.afterPropertiesSet();
 		container.start();
-		Channel channel = container.getChannel();
+		ChannelHolder channelHolder = container.getChannelHolder();
 		assertTrue(activeConsumerCount(container, 1));
-		container.releaseConsumerFor(channel, false, null);
+		container.releaseConsumerFor(channelHolder, false, null);
 		assertTrue(activeConsumerCount(container, 0));
 	}
 

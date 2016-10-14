@@ -615,6 +615,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile String consumerTag;
 
+		private volatile int epoch;
+
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
@@ -629,6 +631,23 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		@Override
 		public String getConsumerTag() {
 			return this.consumerTag;
+		}
+
+		/**
+		 * Return the current epoch for this consumer; consumersMonitor must be held.
+		 * @return the epoch.
+		 */
+		int getEpoch() {
+			return this.epoch;
+		}
+
+		/**
+		 * Increment and return the current epoch for this consumer; consumersMonitor must
+		 * be held.
+		 * @return the epoch.
+		 */
+		int incrementAndGetEpoch() {
+			return ++this.epoch;
 		}
 
 		@Override

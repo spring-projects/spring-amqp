@@ -42,6 +42,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -359,9 +360,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			this.template.send(exchange, routingKey, message, correlationData);
 		}
 		else {
-			Channel channel = this.directReplyToContainer.getChannel();
-			future.setChannel(channel);
-			sendDirect(channel, exchange, routingKey, message, correlationData);
+			ChannelHolder channelHolder = this.directReplyToContainer.getChannelHolder();
+			future.setChannelHolder(channelHolder);
+			sendDirect(channelHolder.getChannel(), exchange, routingKey, message, correlationData);
 		}
 		future.startTimer();
 		return future;
@@ -415,9 +416,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			}
 			Message message = converter.toMessage(object, new MessageProperties());
 			correlationPostProcessor.postProcessMessage(message);
-			Channel channel = this.directReplyToContainer.getChannel();
-			correlationPostProcessor.getFuture().setChannel(channel);
-			sendDirect(channel, exchange, routingKey, message, correlationData);
+			ChannelHolder channelHolder = this.directReplyToContainer.getChannelHolder();
+			correlationPostProcessor.getFuture().setChannelHolder(channelHolder);
+			sendDirect(channelHolder.getChannel(), exchange, routingKey, message, correlationData);
 		}
 		RabbitConverterFuture<C> future = correlationPostProcessor.getFuture();
 		future.startTimer();
@@ -605,15 +606,15 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		private String nackCause;
 
-		private Channel channel;
+		private ChannelHolder channelHolder;
 
 		public RabbitFuture(String correlationId, Message requestMessage) {
 			this.correlationId = correlationId;
 			this.requestMessage = requestMessage;
 		}
 
-		void setChannel(Channel channel) {
-			this.channel = channel;
+		void setChannelHolder(ChannelHolder channel) {
+			this.channelHolder = channel;
 		}
 
 		@Override
@@ -622,8 +623,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				this.timeoutTask.cancel(true);
 			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
-			if (this.channel != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
-				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channel, false, null);
+			if (this.channelHolder != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
+				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channelHolder, false, null);
 			}
 			return super.cancel(mayInterruptIfRunning);
 		}
@@ -669,8 +670,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			@Override
 			public void run() {
 				AsyncRabbitTemplate.this.pending.remove(RabbitFuture.this.correlationId);
-				if (RabbitFuture.this.channel != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
-					AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(RabbitFuture.this.channel, false,
+				if (RabbitFuture.this.channelHolder != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
+					AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(RabbitFuture.this.channelHolder, false,
 							null);
 				}
 				setException(new AmqpReplyTimeoutException("Reply timed out", RabbitFuture.this.requestMessage));

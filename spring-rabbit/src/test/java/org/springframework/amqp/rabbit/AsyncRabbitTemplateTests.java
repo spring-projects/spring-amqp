@@ -131,9 +131,9 @@ public class AsyncRabbitTemplateTests {
 
 	private void waitForEmpty() throws InterruptedException {
 		int n = 0;
-		while (n++ < 100 && TestUtils
-				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
-				.size() > 0) {
+		Map<?, ?> inUse = TestUtils
+				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class);
+		while (n++ < 100 && inUse.size() > 0) {
 			Thread.sleep(100);
 		}
 	}
@@ -178,12 +178,12 @@ public class AsyncRabbitTemplateTests {
 				.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.inUseConsumerChannels", Map.class)
 				.size(), equalTo(0));
 		assertThat(TestUtils
-						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 				equalTo(2));
 		this.asyncDirectTemplate.stop();
 		this.asyncDirectTemplate.start();
 		assertThat(TestUtils
-						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
+					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
 				equalTo(0));
 	}
 
