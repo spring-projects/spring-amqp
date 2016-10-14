@@ -75,6 +75,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final String RECOVERY_CALLBACK = "recovery-callback";
 
+	private static final String DIRECT_REPLY_TO_CONTAINER = "direct-reply-to-container";
+
 	@Override
 	protected Class<?> getBeanClass(Element element) {
 		return RabbitTemplate.class;
@@ -124,6 +126,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		NamespaceUtils.setValueIfAttributeDefined(builder, element, CORRELATION_KEY);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RETRY_TEMPLATE);
 		NamespaceUtils.setReferenceIfAttributeDefined(builder, element, RECOVERY_CALLBACK);
+		NamespaceUtils.setValueIfAttributeDefined(builder, element, DIRECT_REPLY_TO_CONTAINER,
+				"useDirectReplyToContainer");
 
 		BeanDefinition expressionDef =
 				NamespaceUtils.createExpressionDefinitionFromValueOrExpression(MANDATORY_ATTRIBUTE,

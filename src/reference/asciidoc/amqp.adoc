@@ -2687,6 +2687,12 @@ The decision whether or not to use direct reply-to can be changed to use differe
 `RabbitTemplate` and overriding `useDirectReplyTo()`.
 The method is called once only; when the first request is sent.
 
+With versions earlier than _verion 2.0_, the `RabbitTemplate` created a new consumer for each request and canceled the consumer when the reply was received (or timed out).
+Now, the template uses a `DirectReplyToMessageListenerContainer` instead, allowing the consumers to be reused; the template still takes care of correlating the replies so there is no danger of a late reply going to a different sender.
+If you want to revert to the previous behavior, set property `useDirectReplyToContainer` (`direct-reply-to-container` when using XML configuration) to false.
+
+The `AsynRabbitTemplate` has no such option - it always used a `DirectReplyToContainer` for replies when direct replyTo is being used.
+
 ===== Message Correlation With A Reply Queue
 
 When using a fixed reply queue (other than `amq.rabbitmq.reply-to`), it is necessary to provide correlation data so that replies can be correlated to requests.

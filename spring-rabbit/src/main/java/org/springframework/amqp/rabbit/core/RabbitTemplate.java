@@ -53,6 +53,8 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnec
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
@@ -155,6 +157,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback =
 			(request, reply) -> getReplyToAddress(request);
 
+	private final ConcurrentMap<ConnectionFactory, DirectReplyToMessageListenerContainer> directReplyToContainers =
+			new ConcurrentHashMap<>();
+
 	private volatile String exchange = DEFAULT_EXCHANGE;
 
 	private volatile String routingKey = DEFAULT_ROUTING_KEY;
@@ -194,6 +199,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private volatile boolean usingFastReplyTo;
 
+	private volatile boolean useDirectReplyToContainer = true;
+
 	private volatile boolean evaluatedFastReplyTo;
 
 	private volatile boolean useTemporaryReplyQueues;
@@ -219,7 +226,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @param connectionFactory the connection factory to use
 	 */
 	public RabbitTemplate(ConnectionFactory connectionFactory) {
-		this();
 		setConnectionFactory(connectionFactory);
 	}
 
@@ -550,6 +556,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * Set whether or not to use a {@link DirectReplyToMessageListenerContainer} when
+	 * direct reply-to is available and being used. When false, a new consumer is created
+	 * for each request (the mechanism used in versions prior to 2.0). Default true.
+	 * @param useDirectReplyToContainer set to false to use a consumer per request.
+	 * @since 2.0
+	 * @see #setUseTemporaryReplyQueues(boolean)
+	 */
+	public void setUseDirectReplyToContainer(boolean useDirectReplyToContainer) {
+		this.useDirectReplyToContainer = useDirectReplyToContainer;
+	}
+
+	/**
 	 * Set an expression to be evaluated to set the userId message property if it
 	 * evaluates to a non-null value and the property is not already set in the
 	 * message to be sent.
@@ -583,13 +601,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public Collection<String> expectedQueueNames() {
 		this.isListener = true;
 		Collection<String> replyQueue = null;
-		if (this.replyAddress != null) {
+		if (this.replyAddress == null || this.replyAddress.equals(Address.AMQ_RABBITMQ_REPLY_TO)) {
+			throw new IllegalStateException("A listener container must not be provided when using direct reply-to");
+		}
+		else {
 			Address address = new Address(this.replyAddress);
 			if ("".equals(address.getExchangeName())) {
 				replyQueue = Collections.singletonList(address.getRoutingKey());
 			}
 			else {
-				logger.debug("Cannot verify reply queue because it has the form 'exchange/routingKey'");
+				if (logger.isInfoEnabled()) {
+					logger.info("Cannot verify reply queue because 'replyAddress' is not a simple queue name: "
+							+ this.replyAddress);
+				}
 			}
 		}
 		return replyQueue;
@@ -615,19 +639,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return unconfirmed.size() > 0 ? unconfirmed : null;
 	}
 
-    /**
-     * Gets unconfirmed messages count.
-     * @return The count of the messages that are not confirmed yet by RabbitMQ.
-     * @since 2.0
-     */
-    public int getUnconfirmedCount() {
-        synchronized (this.publisherConfirmChannels) {
-	        return this.publisherConfirmChannels.keySet()
-			        .stream()
-			        .mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
-			        .sum();
-        }
-    }
+	/**
+	 * Gets unconfirmed messages count.
+	 * @return The count of the messages that are not confirmed yet by RabbitMQ.
+	 * @since 2.0
+	 */
+	public int getUnconfirmedCount() {
+		synchronized (this.publisherConfirmChannels) {
+			return this.publisherConfirmChannels.keySet()
+					.stream()
+					.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
+					.sum();
+		}
+	}
 
 	private void evaluateFastReplyTo() {
 		this.usingFastReplyTo = useDirectReplyTo();
@@ -650,7 +674,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	protected boolean useDirectReplyTo() {
 		if (this.useTemporaryReplyQueues) {
 			if (this.replyAddress != null) {
-				logger.error("'useTemporaryReplyQueues' is ignored when a 'replyAddress' is provided");
+				logger.warn("'useTemporaryReplyQueues' is ignored when a 'replyAddress' is provided");
 			}
 			else {
 				return false;
@@ -665,15 +689,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return true;
 			}
 			catch (Exception e) {
-				if (this.replyAddress != null) {
-					logger.error("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+				if (logger.isDebugEnabled()) {
+					logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
 							+ "queues will be used:" + e.getMessage() + ".");
-				}
-				else {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
-								+ "queues will be used:" + e.getMessage() + ".");
-					}
 				}
 				this.replyAddress = null;
 			}
@@ -701,8 +719,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			throws AmqpException {
 		execute(channel -> {
 			doSend(channel, exchange, routingKey, message, RabbitTemplate.this.returnCallback != null
-					&& RabbitTemplate.this.mandatoryExpression.getValue(
-							RabbitTemplate.this.evaluationContext, message, Boolean.class),
+							&& RabbitTemplate.this.mandatoryExpression.getValue(
+					RabbitTemplate.this.evaluationContext, message, Boolean.class),
 					correlationData);
 			return null;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
@@ -772,7 +790,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-				CorrelationData correlationData)
+			CorrelationData correlationData)
 			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
@@ -921,7 +939,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
-										  final String replyRoutingKey) throws AmqpException {
+			final String replyRoutingKey) throws AmqpException {
 		return this.receiveAndReply(queueName, callback,
 				(request, reply) -> new Address(replyExchange, replyRoutingKey));
 	}
@@ -934,12 +952,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
-										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
-											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return this.execute(channel -> {
 			Message receiveMessage = null;
 
@@ -1000,10 +1018,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@SuppressWarnings("unchecked")
 	private <R, S> Boolean sendReply(final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel, Message receiveMessage)
-			throws Exception, IOException {
+			throws Exception {
 		Object receive = receiveMessage;
 		if (!(ReceiveAndReplyMessageCallback.class.isAssignableFrom(callback.getClass()))) {
-			receive = RabbitTemplate.this.getRequiredMessageConverter().fromMessage(receiveMessage);
+			receive = getRequiredMessageConverter().fromMessage(receiveMessage);
 		}
 
 		S reply;
@@ -1024,16 +1042,16 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (reply != null) {
 			Address replyTo = replyToAddressCallback.getReplyToAddress(receiveMessage, reply);
 
-			Message replyMessage = RabbitTemplate.this.convertMessageIfNecessary(reply);
+			Message replyMessage = convertMessageIfNecessary(reply);
 
 			MessageProperties receiveMessageProperties = receiveMessage.getMessageProperties();
 			MessageProperties replyMessageProperties = replyMessage.getMessageProperties();
 
-			Object correlation = RabbitTemplate.this.correlationKey == null
+			Object correlation = this.correlationKey == null
 					? receiveMessageProperties.getCorrelationId()
-					: receiveMessageProperties.getHeaders().get(RabbitTemplate.this.correlationKey);
+					: receiveMessageProperties.getHeaders().get(this.correlationKey);
 
-			if (RabbitTemplate.this.correlationKey == null || correlation == null) {
+			if (this.correlationKey == null || correlation == null) {
 				// using standard correlationId property
 				if (correlation == null) {
 					String messageId = receiveMessageProperties.getMessageId();
@@ -1044,12 +1062,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				replyMessageProperties.setCorrelationId((String) correlation);
 			}
 			else {
-				replyMessageProperties.setHeader(RabbitTemplate.this.correlationKey, correlation);
+				replyMessageProperties.setHeader(this.correlationKey, correlation);
 			}
 
 			// 'doSend()' takes care of 'channel.txCommit()'.
-			RabbitTemplate.this.doSend(
-					channel,
+			doSend(channel,
 					replyTo.getExchangeName(),
 					replyTo.getRoutingKey(),
 					replyMessage,
@@ -1188,7 +1205,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 		}
-		if (this.replyAddress == null || this.usingFastReplyTo) {
+
+		if (this.usingFastReplyTo && this.useDirectReplyToContainer) {
+			return doSendAndReceiveWithDirect(exchange, routingKey, message, correlationData);
+		}
+		else if (this.replyAddress == null || this.usingFastReplyTo) {
 			return doSendAndReceiveWithTemporary(exchange, routingKey, message, correlationData);
 		}
 		else {
@@ -1220,7 +1241,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 				@Override
 				public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-										   byte[] body) throws IOException {
+						byte[] body) throws IOException {
 					MessageProperties messageProperties = RabbitTemplate.this.messagePropertiesConverter
 							.toMessageProperties(properties, envelope, RabbitTemplate.this.encoding);
 					Message reply = new Message(body, messageProperties);
@@ -1237,11 +1258,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						messageTag);
 			}
 			finally {
-				RabbitTemplate.this.replyHolder.remove(messageTag);
+				this.replyHolder.remove(messageTag);
 				try {
 					channel.basicCancel(consumerTag);
 				}
-				catch (Exception e) { }
+				catch (Exception e) {
+				}
 			}
 			return reply;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
@@ -1250,52 +1272,89 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData) {
 		Assert.state(this.isListener, "RabbitTemplate is not configured as MessageListener - "
-							+ "cannot use a 'replyAddress': " + this.replyAddress);
+				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(channel -> {
-			final PendingReply pendingReply = new PendingReply();
-			String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
-			RabbitTemplate.this.replyHolder.put(messageTag, pendingReply);
-			// Save any existing replyTo and correlation data
-			String savedReplyTo = message.getMessageProperties().getReplyTo();
-			pendingReply.setSavedReplyTo(savedReplyTo);
-			if (StringUtils.hasLength(savedReplyTo) && logger.isDebugEnabled()) {
-				logger.debug("Replacing replyTo header:" + savedReplyTo
-						+ " in favor of template's configured reply-queue:"
-						+ RabbitTemplate.this.replyAddress);
-			}
-			message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyAddress);
-			String savedCorrelation = null;
-			if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
-				String correlationId = message.getMessageProperties().getCorrelationId();
-				if (correlationId != null) {
-					savedCorrelation = correlationId;
+			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);
+		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+	}
+
+	private Message doSendAndReceiveWithDirect(String exchange, String routingKey, Message message,
+			CorrelationData correlationData) {
+		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
+				this.sendConnectionFactorySelectorExpression, message);
+		DirectReplyToMessageListenerContainer container = this.directReplyToContainers.get(connectionFactory);
+		if (container == null) {
+			synchronized (this.directReplyToContainers) {
+				container = this.directReplyToContainers.get(connectionFactory);
+				if (container == null) {
+					container = new DirectReplyToMessageListenerContainer(connectionFactory);
+					container.setMessageListener(this);
+					container.start();
+					this.directReplyToContainers.putIfAbsent(connectionFactory, container);
+					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
 				}
 			}
-			else {
-				savedCorrelation = (String) message.getMessageProperties()
-						.getHeaders().get(RabbitTemplate.this.correlationKey);
-			}
-			pendingReply.setSavedCorrelation(savedCorrelation);
-			if (RabbitTemplate.this.correlationKey == null) { // using standard correlationId property
-				message.getMessageProperties().setCorrelationId(messageTag);
-			}
-			else {
-				message.getMessageProperties().setHeader(RabbitTemplate.this.correlationKey, messageTag);
-			}
+		}
+		ChannelHolder channelHolder = container.getChannelHolder();
+		try {
+			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData,
+					channelHolder.getChannel());
+		}
+		catch (Exception e) {
+			container.releaseConsumerFor(channelHolder, false, null);
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
 
-			if (logger.isDebugEnabled()) {
-				logger.debug("Sending message with tag " + messageTag);
+	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
+			final CorrelationData correlationData, Channel channel) throws Exception {
+		final PendingReply pendingReply = new PendingReply();
+		String messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
+		this.replyHolder.put(messageTag, pendingReply);
+		saveAndSetHeaders(message, pendingReply, messageTag);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Sending message with tag " + messageTag);
+		}
+		Message reply = null;
+		try {
+			reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
+					messageTag);
+		}
+		finally {
+			this.replyHolder.remove(messageTag);
+		}
+		return reply;
+	}
+
+	private void saveAndSetHeaders(final Message message, final PendingReply pendingReply, String messageTag) {
+		// Save any existing replyTo and correlation data
+		String savedReplyTo = message.getMessageProperties().getReplyTo();
+		pendingReply.setSavedReplyTo(savedReplyTo);
+		if (StringUtils.hasLength(savedReplyTo) && logger.isDebugEnabled()) {
+			logger.debug("Replacing replyTo header: " + savedReplyTo
+					+ " in favor of template's configured reply-queue: "
+					+ RabbitTemplate.this.replyAddress);
+		}
+		message.getMessageProperties().setReplyTo(this.replyAddress);
+		String savedCorrelation = null;
+		if (this.correlationKey == null) { // using standard correlationId property
+			String correlationId = message.getMessageProperties().getCorrelationId();
+			if (correlationId != null) {
+				savedCorrelation = correlationId;
 			}
-			Message reply = null;
-			try {
-				reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
-						messageTag);
-			}
-			finally {
-				RabbitTemplate.this.replyHolder.remove(messageTag);
-			}
-			return reply;
-		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+		}
+		else {
+			savedCorrelation = (String) message.getMessageProperties()
+					.getHeaders().get(this.correlationKey);
+		}
+		pendingReply.setSavedCorrelation(savedCorrelation);
+		if (this.correlationKey == null) { // using standard correlationId property
+			message.getMessageProperties().setCorrelationId(messageTag);
+		}
+		else {
+			message.getMessageProperties().setHeader(this.correlationKey, messageTag);
+		}
 	}
 
 	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
@@ -1331,8 +1390,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(
-					(RetryCallback<T, Exception>) context -> RabbitTemplate.this.doExecute(action, connectionFactory),
-					(RecoveryCallback<T>) this.recoveryCallback);
+						(RetryCallback<T, Exception>) context -> RabbitTemplate.this.doExecute(action, connectionFactory),
+						(RecoveryCallback<T>) this.recoveryCallback);
 			}
 			catch (Exception e) {
 				if (e instanceof RuntimeException) {
@@ -1438,7 +1497,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			routingKey = this.routingKey;
 		}
 		if (logger.isDebugEnabled()) {
-			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
+			logger.debug("Publishing message " + message
+					+ "on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 		}
 
 		setupConfirm(channel, correlationData);
@@ -1492,6 +1552,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private Message buildMessageFromDelivery(Delivery delivery) {
 		return buildMessage(delivery.getEnvelope(), delivery.getProperties(), delivery.getBody(), -1);
 	}
+
 	private Message buildMessageFromResponse(GetResponse response) {
 		return buildMessage(response.getEnvelope(), response.getProps(), response.getBody(), response.getMessageCount());
 	}
@@ -1566,14 +1627,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			if (this.publisherConfirmChannels.putIfAbsent(key, this) == null) {
 				publisherCallbackChannel.addListener(this);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Added pubsub channel: " + channel + " to map, size now " + this.publisherConfirmChannels.size());
+					logger.debug("Added publisher confirm channel: " + channel + " to map, size now "
+							+ this.publisherConfirmChannels.size());
 				}
 			}
 		}
 		else {
 			throw new IllegalStateException(
 					"Channel does not support confirms or returns; " +
-					"is the connection factory configured for confirms or returns?");
+							"is the connection factory configured for confirms or returns?");
 		}
 	}
 
@@ -1596,7 +1658,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			String routingKey,
 			BasicProperties properties,
 			byte[] body)
-		throws IOException {
+			throws IOException {
 
 		ReturnCallback returnCallback = this.returnCallback;
 		if (returnCallback == null) {
@@ -1607,7 +1669,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (pendingReply != null) {
 					returnCallback = (message, replyCode1, replyText1, exchange1, routingKey1) ->
 							pendingReply.returned(new AmqpMessageReturnedException("Message returned",
-											message, replyCode1, replyText1, exchange1, routingKey1));
+									message, replyCode1, replyText1, exchange1, routingKey1));
 				}
 				else if (logger.isWarnEnabled()) {
 					logger.warn("Returned request message but caller has timed out");
@@ -1653,6 +1715,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public void onMessage(Message message) {
+		if (logger.isTraceEnabled()) {
+			logger.trace("Message received " + message);
+		}
 		String messageTag;
 		if (this.correlationKey == null) { // using standard correlationId property
 			messageTag = message.getMessageProperties().getCorrelationId();
