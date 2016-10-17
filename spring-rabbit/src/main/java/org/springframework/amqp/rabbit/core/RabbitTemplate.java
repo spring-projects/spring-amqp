@@ -88,8 +88,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * <p>
@@ -861,10 +859,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public Message receive(final String queueName, final long timeoutMillis) {
 		return execute(new ChannelCallback<Message>() {
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
-				QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-				Delivery delivery;
+				com.rabbitmq.client.QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
+				com.rabbitmq.client.QueueingConsumer.Delivery delivery;
 				if (timeoutMillis < 0) {
 					delivery = consumer.nextDelivery();
 				}
@@ -991,8 +990,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					}
 				}
 				else {
-					QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-					Delivery delivery;
+					com.rabbitmq.client.QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
+					com.rabbitmq.client.QueueingConsumer.Delivery delivery;
 					if (RabbitTemplate.this.receiveTimeout < 0) {
 						delivery = consumer.nextDelivery();
 					}
@@ -1514,7 +1513,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
 	}
 
-	private Message buildMessageFromDelivery(Delivery delivery) {
+	@SuppressWarnings("deprecation")
+	private Message buildMessageFromDelivery(com.rabbitmq.client.QueueingConsumer.Delivery delivery) {
 		return buildMessage(delivery.getEnvelope(), delivery.getProperties(), delivery.getBody(), -1);
 	}
 	private Message buildMessageFromResponse(GetResponse response) {
@@ -1739,10 +1739,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-	private QueueingConsumer createQueueingConsumer(final String queueName, Channel channel) throws Exception {
+	@SuppressWarnings("deprecation")
+	private com.rabbitmq.client.QueueingConsumer createQueueingConsumer(final String queueName, Channel channel)
+			throws Exception {
 		channel.basicQos(1);
 		final CountDownLatch latch = new CountDownLatch(1);
-		QueueingConsumer consumer = new QueueingConsumer(channel) {
+		com.rabbitmq.client.QueueingConsumer consumer = new com.rabbitmq.client.QueueingConsumer(channel) {
 
 			@Override
 			public void handleCancel(String consumerTag) throws IOException {

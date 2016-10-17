@@ -3,6 +3,11 @@
 
 ==== Changes in 1.7 Since 1.6
 
+===== AMQP Client library
+
+Spring AMQP now uses the new 4.0.x version of the `amqp-client` library provided by the RabbitMQ team.
+This client has auto recovery configured by default; see <<auto-recovery>>.
+
 ===== Log4j2 upgrade
 
 The minimum Log4j2 version (for the `AmqpAppender`) is now `2.7`.

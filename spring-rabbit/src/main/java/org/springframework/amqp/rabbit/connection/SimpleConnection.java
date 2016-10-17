@@ -17,25 +17,31 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.impl.AMQConnection;
+import com.rabbitmq.client.impl.NetworkConnection;
+import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * Simply a Connection.
+ *
  * @author Dave Syer
  * @author Gary Russell
+ *
  * @since 1.0
  *
  */
-public class SimpleConnection implements Connection {
+public class SimpleConnection implements Connection, NetworkConnection {
 
 	private final com.rabbitmq.client.Connection delegate;
 
 	private final int closeTimeout;
+
+	private volatile boolean explicitlyClosed;
 
 	public SimpleConnection(com.rabbitmq.client.Connection delegate,
 			int closeTimeout) {
@@ -61,6 +67,7 @@ public class SimpleConnection implements Connection {
 	@Override
 	public void close() {
 		try {
+			this.explicitlyClosed = true;
 			// let the physical close time out if necessary
 			this.delegate.close(this.closeTimeout);
 		}
@@ -69,19 +76,52 @@ public class SimpleConnection implements Connection {
 		}
 	}
 
+	/**
+	 * True if the connection is open.
+	 * @return true if the connection is open
+	 * @throws AutoRecoverConnectionNotCurrentlyOpenException if the connection is an
+	 * {@link AutorecoveringConnection} and is currently closed; this is required to
+	 * prevent the {@link CachingConnectionFactory} from discarding this connection
+	 * and opening a new one, in which case the "old" connection would eventually be recovered
+	 * and orphaned - also any consumers belonging to it might be recovered too
+	 * and the broker will deliver messages to them when there is no code actually running
+	 * to deal with those messages (when using the {@code SimpleMessageListenerContainer}).
+	 * If we have actually closed the connection
+	 * (e.g. via {@link CachingConnectionFactory#resetConnection()}) this will return false.
+	 */
 	@Override
 	public boolean isOpen() {
-		return this.delegate != null
-				&& (this.delegate.isOpen() || this.delegate.getClass().getSimpleName().contains("AutorecoveringConnection"));
+		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
+			throw new AutoRecoverConnectionNotCurrentlyOpenException("Auto recovery connection is not currently open");
+		}
+		return this.delegate != null && (this.delegate.isOpen());
 	}
 
 
 	@Override
 	public int getLocalPort() {
-		if (this.delegate instanceof AMQConnection) {
-			return ((AMQConnection) this.delegate).getLocalPort();
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getLocalPort();
 		}
 		return 0;
+	}
+
+	@Override
+	public InetAddress getLocalAddress() {
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getLocalAddress();
+		}
+		return null;
+	}
+
+	@Override
+	public InetAddress getAddress() {
+		return this.delegate.getAddress();
+	}
+
+	@Override
+	public int getPort() {
+		return this.delegate.getPort();
 	}
 
 	@Override

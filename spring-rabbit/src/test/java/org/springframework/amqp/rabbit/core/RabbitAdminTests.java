@@ -119,7 +119,7 @@ public class RabbitAdminTests {
 
 	@Test
 	public void testFailOnFirstUseWithMissingBroker() throws Exception {
-		SingleConnectionFactory connectionFactory = new SingleConnectionFactory("foo");
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
 		connectionFactory.setPort(434343);
 		GenericApplicationContext applicationContext = new GenericApplicationContext();
 		applicationContext.getBeanFactory().registerSingleton("foo", new Queue("queue"));

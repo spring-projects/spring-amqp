@@ -1061,6 +1061,7 @@ public class RabbitTemplateIntegrationTests {
 		assertTrue(received);
 
 		Message receive = this.template.receive();
+		assertNotNull(receive);
 		assertEquals("bar", receive.getMessageProperties().getHeaders().get("foo"));
 
 		this.template.convertAndSend(ROUTE, 1);

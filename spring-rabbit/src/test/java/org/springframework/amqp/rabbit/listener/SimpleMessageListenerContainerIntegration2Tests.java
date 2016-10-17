@@ -446,7 +446,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	public void testRestartConsumerOnConnectionLossDuringQueueDeclare() throws Exception {
 		this.template.convertAndSend(queue.getName(), "foo");
 
-		ConnectionFactory connectionFactory = new CachingConnectionFactory("localhost", BrokerTestUtils.getPort());
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost",
+				BrokerTestUtils.getPort());
+		// this test closes the underlying connection normally; it will never be recovered
+		connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(false);
 
 		final AtomicBoolean networkGlitch = new AtomicBoolean();
 
