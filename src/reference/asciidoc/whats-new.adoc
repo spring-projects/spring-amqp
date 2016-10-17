@@ -44,6 +44,11 @@ The `MissingMessageIdAdvice` is no longer provided; it's functionality is now bu
 By default, `AnonymousQueues` are now named with the default `Base64UrlNamingStrategy` instead of a simple `UUID` string.
 See <<anonymous-queue>> for more information.
 
+===== @RabbitListener Changes
+
+You can now provide simple queue declarations (only bound to the default exchange) in `@RabbitListener` annotations.
+See <<async-annotation-driven>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

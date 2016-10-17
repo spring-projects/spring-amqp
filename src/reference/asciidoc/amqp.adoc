@@ -1492,7 +1492,7 @@ See <<containerAttributes>>.
 
 ====== Introduction
 
-Starting with _version 1.4_, the easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
+The easiest way to receive a message asynchronously is to use the annotated listener endpoint infrastructure.
 In a nutshell, it allows you to expose a method of a managed bean as a Rabbit listener endpoint.
 
 [source,java]
@@ -1514,8 +1514,7 @@ The idea of the example above is that, whenever a message is available on the `o
 The annotated endpoint infrastructure creates a message listener container behind the scenes for each annotated method, using a `RabbitListenerContainerFactory`.
 
 In the example above, `myQueue` must already exist and be bound to some exchange.
-Starting with _version 1.5.0_, the queue can be declared and bound automatically, as long as a `RabbitAdmin` exists
-in the application context.
+The queue can be declared and bound automatically, as long as a `RabbitAdmin` exists in the application context.
 
 [source,java]
 ----
@@ -1528,7 +1527,7 @@ public class MyService {
         exchange = @Exchange(value = "auto.exch", ignoreDeclarationExceptions = "true"),
         key = "orderRoutingKey")
   )
-  public void processOrder(String data) {
+  public void processOrder(Order order) {
     ...
   }
 
@@ -1537,8 +1536,13 @@ public class MyService {
         exchange = @Exchange(value = "auto.exch"),
         key = "invoiceRoutingKey")
   )
-  public void processInvoice(String data) {
+  public void processInvoice(Invoice invoice) {
     ...
+  }
+
+  @RabbitListener(queuesToDeclare = @Queue(name = "${my.queue}", durable = "true"))
+  public String handleWithSimpleDeclare(String data) {
+      ...
   }
 
 }
@@ -1548,6 +1552,7 @@ In the first example, a queue `myQueue` will be declared automatically (durable)
 and bound to the exchange with the routing key.
 In the second example, an anonymous (exclusive, auto-delete) queue will be declared and bound.
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
+In the third example, a queue with the name retrieved from property `my.queue` will be declared if necessary, with the default binding to the default exchange using the queue name as the routing key.
 
 Only DIRECT, FANOUT, TOPIC and HEADERS, exchange types are supported with this mechanism.
 Use normal `@Bean` definitions when more advanced configuration is required.
@@ -1556,7 +1561,7 @@ Notice `ignoreDeclarationExceptions` on the exchange in the first example.
 This allows, for example, binding to an existing exchange that might have different settings (such as `internal`).
 By default the properties of an existing exchange must match.
 
-Starting with _version 1.6_, you can now specify arguments within `@QueueBinding` annotations for queues, exchanges
+You can also specify arguments within `@QueueBinding` annotations for queues, exchanges
 and bindings. For example:
 
 [source, java]
