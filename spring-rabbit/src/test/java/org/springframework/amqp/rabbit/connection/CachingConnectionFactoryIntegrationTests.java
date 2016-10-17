@@ -43,6 +43,7 @@ import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -50,6 +51,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
@@ -255,14 +257,13 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testReceiveFromNonExistentVirtualHost() throws Exception {
-
 		connectionFactory.setVirtualHost("non-existent");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(AmqpIOException.class);
-		String result = (String) template.receiveAndConvert("foo");
-		assertEquals("message", result);
 
+		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
+		exception.expect(Matchers.anyOf(Matchers.instanceOf(AmqpIOException.class),
+				Matchers.instanceOf(AmqpAuthenticationException.class)));
+		template.receiveAndConvert("foo");
 	}
 
 	@Test
