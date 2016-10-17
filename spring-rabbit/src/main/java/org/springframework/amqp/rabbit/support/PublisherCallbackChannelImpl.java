@@ -49,6 +49,7 @@ import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
 import com.rabbitmq.client.AlreadyClosedException;
+import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
@@ -228,8 +229,18 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type);
+	}
+
+	@Override
 	public DeclareOk exchangeDeclare(String exchange, String type,
 			boolean durable) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable);
+	}
+
+	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable) throws IOException {
 		return this.delegate.exchangeDeclare(exchange, type, durable);
 	}
 
@@ -242,11 +253,23 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			Map<String, Object> arguments) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete, arguments);
+	}
+
+	@Override
 	public DeclareOk exchangeDeclare(String exchange, String type,
 			boolean durable, boolean autoDelete, boolean internal,
 			Map<String, Object> arguments) throws IOException {
 		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete,
 				internal, arguments);
+	}
+
+	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			boolean internal, Map<String, Object> arguments) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete, internal, arguments);
 	}
 
 	@Override
@@ -529,6 +552,12 @@ public class PublisherCallbackChannelImpl
 	public void exchangeDeclareNoWait(String exchange, String type,
 			boolean durable, boolean autoDelete, boolean internal,
 			Map<String, Object> arguments) throws IOException {
+		this.delegate.exchangeDeclareNoWait(exchange, type, durable, autoDelete, internal, arguments);
+	}
+
+	@Override
+	public void exchangeDeclareNoWait(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			boolean internal, Map<String, Object> arguments) throws IOException {
 		this.delegate.exchangeDeclareNoWait(exchange, type, durable, autoDelete, internal, arguments);
 	}
 
