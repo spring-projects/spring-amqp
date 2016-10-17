@@ -20,6 +20,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.core.annotation.AliasFor;
+
 /**
  * A queue definition used within the bindings attribute of a {@code QueueBinding}.
  *
@@ -34,7 +36,15 @@ public @interface Queue {
 	/**
 	 * @return the queue name or "" for a generated queue name (default).
 	 */
+	@AliasFor("name")
 	String value() default "";
+
+	/**
+	 * @return the queue name or "" for a generated queue name (default).
+	 * @since 2.0
+	 */
+	@AliasFor("value")
+	String name() default "";
 
 	/**
 	 * @return true if the queue is to be declared as durable.

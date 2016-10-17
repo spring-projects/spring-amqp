@@ -21,6 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.springframework.amqp.core.ExchangeTypes;
+import org.springframework.core.annotation.AliasFor;
 
 /**
  * An exchange to which to bind a {@code RabbitListener} queue.
@@ -36,7 +37,15 @@ public @interface Exchange {
 	/**
 	 * @return the exchange name.
 	 */
-	String value();
+	@AliasFor("name")
+	String value() default "";
+
+	/**
+	 * @return the exchange name.
+	 * @since 2.0
+	 */
+	@AliasFor("value")
+	String name() default "";
 
 	/**
 	 * The exchange type - only DIRECT, FANOUT TOPIC, and HEADERS exchanges are supported.

@@ -263,18 +263,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
 		final List<Method> multiMethods = new ArrayList<Method>();
-		ReflectionUtils.doWithMethods(targetClass, new ReflectionUtils.MethodCallback() {
-
-			@Override
-			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
-				for (RabbitListener rabbitListener : findListenerAnnotations(method)) {
-					processAmqpListener(rabbitListener, method, bean, beanName);
-				}
-				if (hasClassLevelListeners) {
-					RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
-					if (rabbitHandler != null) {
-						multiMethods.add(method);
-					}
+		ReflectionUtils.doWithMethods(targetClass, method -> {
+			for (RabbitListener rabbitListener : findListenerAnnotations(method)) {
+				processAmqpListener(rabbitListener, method, bean, beanName);
+			}
+			if (hasClassLevelListeners) {
+				RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
+				if (rabbitHandler != null) {
+					multiMethods.add(method);
 				}
 			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
@@ -437,17 +433,28 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private String[] resolveQueues(RabbitListener rabbitListener) {
 		String[] queues = rabbitListener.queues();
 		QueueBinding[] bindings = rabbitListener.bindings();
-		if (queues.length > 0 && bindings.length > 0) {
-			throw new BeanInitializationException("@RabbitListener can have 'queues' or 'bindings' but not both");
-		}
+		org.springframework.amqp.rabbit.annotation.Queue[] queuesToDeclare = rabbitListener.queuesToDeclare();
 		List<String> result = new ArrayList<String>();
 		if (queues.length > 0) {
 			for (int i = 0; i < queues.length; i++) {
-				Object resolvedValue = resolveExpression(queues[i]);
-				resolveAsString(resolvedValue, result);
+				resolveAsString(resolveExpression(queues[i]), result);
 			}
 		}
-		else {
+		if (queuesToDeclare.length > 0) {
+			if (queues.length > 0) {
+				throw new BeanInitializationException(
+						"@RabbitListener can have only one of 'queues', 'queuesToDecclare', or 'bindings'");
+			}
+			for (int i = 0; i < queuesToDeclare.length; i++) {
+				declareQueue(queuesToDeclare[i]);
+				resolveAsString(resolveExpression(queuesToDeclare[i].value()), result);
+			}
+		}
+		if (bindings.length > 0) {
+			if (queues.length > 0 || queuesToDeclare.length > 0) {
+				throw new BeanInitializationException(
+						"@RabbitListener can have only one of 'queues', 'queuesToDecclare', or 'bindings'");
+			}
 			return registerBeansForDeclaration(rabbitListener);
 		}
 		return result.toArray(new String[result.size()]);
@@ -481,7 +488,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		List<String> queues = new ArrayList<String>();
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
 			for (QueueBinding binding : rabbitListener.bindings()) {
-				String queueName = declareQueue(binding);
+				String queueName = declareQueue(binding.value());
 				queues.add(queueName);
 				declareExchangeAndBinding(binding, queueName);
 			}
@@ -489,8 +496,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return queues.toArray(new String[queues.size()]);
 	}
 
-	private String declareQueue(QueueBinding binding) {
-		org.springframework.amqp.rabbit.annotation.Queue bindingQueue = binding.value();
+	private String declareQueue(org.springframework.amqp.rabbit.annotation.Queue bindingQueue) {
 		String queueName = (String) resolveExpression(bindingQueue.value());
 		boolean exclusive = false;
 		boolean autoDelete = false;
@@ -523,6 +529,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void declareExchangeAndBinding(QueueBinding binding, String queueName) {
 		org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
+		Assert.isTrue(StringUtils.hasText(exchangeName), "Exchange name required; binding queue " + queueName);
 		String exchangeType = resolveExpressionAsString(bindingExchange.type(), "@Exchange.type");
 		String routingKey = resolveExpressionAsString(binding.key(), "@QueueBinding.key");
 		Exchange exchange;
