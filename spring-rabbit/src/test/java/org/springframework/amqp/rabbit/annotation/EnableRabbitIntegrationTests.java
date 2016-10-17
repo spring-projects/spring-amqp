@@ -149,7 +149,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
-			"amqp656dlq");
+			"amqp656dlq", "test.simple.declare");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -204,6 +204,11 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoDeclare() {
 		assertEquals("FOO", rabbitTemplate.convertSendAndReceive("auto.exch", "auto.rk", "foo"));
+	}
+
+	@Test
+	public void autoSimpleDeclare() {
+		assertEquals("FOOX", rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo"));
 	}
 
 	@Test
@@ -615,6 +620,11 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"))
+		public String handleWithSimpleDeclare(String foo) {
+			return foo.toUpperCase() + "X";
+		}
+
 		@RabbitListener(bindings = @QueueBinding(
 				value = @Queue(value = "auto.declare.fanout", autoDelete = "true"),
 				exchange = @Exchange(value = "auto.exch.fanout", autoDelete = "true", type = "fanout"))
@@ -725,12 +735,12 @@ public class EnableRabbitIntegrationTests {
 		public void handleWithAutoStartFalse(String foo) {
 		}
 
-		@RabbitListener(bindings = {
+		@RabbitListener(id = "headersId", bindings = {
 				@QueueBinding(
-					value = @Queue(value = "auto.headers1", autoDelete = "true",
+					value = @Queue(name = "auto.headers1", autoDelete = "true",
 									arguments = @Argument(name = "x-message-ttl", value = "10000",
 															type = "java.lang.Integer")),
-					exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+					exchange = @Exchange(name = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
 					arguments = {
 							@Argument(name = "x-match", value = "all"),
 							@Argument(name = "foo", value = "bar"),
