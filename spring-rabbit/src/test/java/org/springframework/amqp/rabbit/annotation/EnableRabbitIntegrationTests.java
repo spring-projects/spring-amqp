@@ -437,6 +437,7 @@ public class EnableRabbitIntegrationTests {
 			@Override
 			public Message postProcessMessage(Message message) throws AmqpException {
 				message.getMessageProperties().setContentType("application/json");
+				message.getMessageProperties().setUserId("guest");
 				return message;
 			}
 
@@ -493,7 +494,7 @@ public class EnableRabbitIntegrationTests {
 		returned = template.convertSendAndReceive("", "test.converted.foomessage", "{ \"bar\" : \"baz\" }",
 				messagePostProcessor);
 		assertThat(returned, instanceOf(byte[].class));
-		assertEquals("\"GenericMessageFoo2\"", new String((byte[]) returned));
+		assertEquals("\"GenericMessageFoo2guest\"", new String((byte[]) returned));
 
 		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
 				"{ \"bar\" : \"baz\" }", messagePostProcessor);
@@ -1401,8 +1402,9 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(queues = "test.converted.foomessage")
 		public String messagingMessage(org.springframework.messaging.Message<Foo2> message,
-				@Header(value = "", required = false) String h) {
-			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName();
+				@Header(value = "", required = false) String h,
+				@Header(name = AmqpHeaders.RECEIVED_USER_ID) String userId) {
+			return message.getClass().getSimpleName() + message.getPayload().getClass().getSimpleName() + userId;
 		}
 
 		@RabbitListener(queues = "test.notconverted.messagingmessagenotgeneric")
