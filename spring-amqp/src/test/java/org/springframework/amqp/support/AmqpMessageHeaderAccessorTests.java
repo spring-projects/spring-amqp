@@ -65,7 +65,7 @@ public class AmqpMessageHeaderAccessorTests {
 		properties.setReplyTo("reply-to-1234");
 		properties.setTimestamp(timestamp);
 		properties.setType("type-1234");
-		properties.setUserId("user-id-1234");
+		properties.setReceivedUserId("user-id-1234");
 
 		SimpleAmqpHeaderMapper amqpHeaderMapper = new SimpleAmqpHeaderMapper();
 

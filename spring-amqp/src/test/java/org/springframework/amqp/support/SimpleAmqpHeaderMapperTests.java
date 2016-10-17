@@ -134,7 +134,7 @@ public class SimpleAmqpHeaderMapperTests {
 		Date testTimestamp = new Date();
 		amqpProperties.setTimestamp(testTimestamp);
 		amqpProperties.setType("test.type");
-		amqpProperties.setUserId("test.userId");
+		amqpProperties.setReceivedUserId("test.userId");
 		amqpProperties.setConsumerTag("consumer.tag");
 		amqpProperties.setConsumerQueue("consumer.queue");
 		amqpProperties.setHeader(AmqpHeaders.SPRING_REPLY_CORRELATION, "test.correlation");
