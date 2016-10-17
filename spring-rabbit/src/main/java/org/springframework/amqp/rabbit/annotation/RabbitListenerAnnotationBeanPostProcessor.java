@@ -64,11 +64,13 @@ import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.env.Environment;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -107,16 +109,21 @@ import org.springframework.util.StringUtils;
  * @see MethodRabbitListenerEndpoint
  */
 public class RabbitListenerAnnotationBeanPostProcessor
-		implements BeanPostProcessor, Ordered, BeanFactoryAware, BeanClassLoaderAware, SmartInitializingSingleton {
+		implements BeanPostProcessor, Ordered, BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware,
+			SmartInitializingSingleton {
 
 	/**
 	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
 	 */
 	public static final String DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME = "rabbitListenerContainerFactory";
 
+	public static final String RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY = "spring.rabbitmq.emptyStringArguments";
+
 	private static final ConversionService CONVERSION_SERVICE = new DefaultConversionService();
 
 	private final Log logger = LogFactory.getLog(this.getClass());
+
+	private final Set<String> emptyStringArguments = new HashSet<>();
 
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
@@ -142,6 +149,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public int getOrder() {
 		return LOWEST_PRECEDENCE;
+	}
+
+	public RabbitListenerAnnotationBeanPostProcessor() {
+		this.emptyStringArguments.add("x-dead-letter-exchange");
 	}
 
 	/**
@@ -193,6 +204,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public void setBeanClassLoader(ClassLoader classLoader) {
 		this.beanClassLoader = classLoader;
+	}
+
+	@Override
+	public void setEnvironment(Environment environment) {
+		String property = environment.getProperty(RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY, String.class);
+		if (property != null) {
+			this.emptyStringArguments.addAll(StringUtils.commaDelimitedListToSet(property));
+		}
 	}
 
 	@Override
@@ -612,7 +631,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void addToMap(Map<String, Object> map, String key, Object value, Class<?> typeClass, String typeName) {
 		if (value.getClass().getName().equals(typeName)) {
 			if (typeClass.equals(String.class) && !StringUtils.hasText((String) value)) {
-				map.put(key, null);
+				putEmpty(map, key);
 			}
 			else {
 				map.put(key, value);
@@ -620,7 +639,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		else {
 			if (value instanceof String && !StringUtils.hasText((String) value)) {
-				map.put(key, null);
+				putEmpty(map, key);
 			}
 			else {
 				if (CONVERSION_SERVICE.canConvert(value.getClass(), typeClass)) {
@@ -631,6 +650,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						+ " to " + typeName);
 				}
 			}
+		}
+	}
+
+	private void putEmpty(Map<String, Object> map, String key) {
+		if (this.emptyStringArguments.contains(key)) {
+			map.put(key, "");
+		}
+		else {
+			map.put(key, null);
 		}
 	}
 

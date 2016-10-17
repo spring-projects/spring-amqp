@@ -49,6 +49,8 @@ import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.hamcrest.Matchers;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,6 +67,7 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
@@ -145,7 +148,8 @@ public class EnableRabbitIntegrationTests {
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
-			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct");
+			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
+			"amqp656dlq");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -185,6 +189,17 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private MetaListener metaListener;
+
+	@BeforeClass
+	public static void setUp() {
+		System.setProperty(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY,
+				"test-empty");
+	}
+
+	@AfterClass
+	public static void tearDown() {
+		System.getProperties().remove(RabbitListenerAnnotationBeanPostProcessor.RABBIT_EMPTY_STRING_ARGUMENTS_PROPERTY);
+	}
 
 	@Test
 	public void autoDeclare() {
@@ -517,6 +532,23 @@ public class EnableRabbitIntegrationTests {
 				}));
 	}
 
+	@Test
+	public void deadLetterOnDefaultExchange() {
+		this.rabbitTemplate.convertAndSend("amqp656", "foo");
+		assertEquals("foo", this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000));
+		try {
+			RabbitManagementTemplate rmt = new RabbitManagementTemplate();
+			org.springframework.amqp.core.Queue amqp656 = rmt.getQueue("amqp656");
+			if (amqp656 != null) {
+				assertEquals("", amqp656.getArguments().get("test-empty"));
+				assertEquals("undefined", amqp656.getArguments().get("test-null"));
+			}
+		}
+		catch (Exception e) {
+			// empty
+		}
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -742,6 +774,20 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
+		@RabbitListener(id = "defaultDLX",
+			bindings = @QueueBinding(
+				value = @Queue(value = "amqp656",
+					autoDelete = "true",
+					arguments = {
+						@Argument(name = "x-dead-letter-exchange", value = ""),
+						@Argument(name = "x-dead-letter-routing-key", value = "amqp656dlq"),
+						@Argument(name = "test-empty", value = ""),
+						@Argument(name = "test-null", value = "") }),
+				exchange = @Exchange(value = "amq.topic", durable = "true", type = "topic"),
+				key = "foo"))
+		public String handleWithDeadLetterDefaultExchange(String foo) {
+			throw new AmqpRejectAndDontRequeueException("dlq");
+		}
 	}
 
 	public static class Foo1 {
