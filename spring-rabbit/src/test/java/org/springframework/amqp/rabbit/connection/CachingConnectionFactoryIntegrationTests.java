@@ -256,14 +256,16 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testReceiveFromNonExistentVirtualHost() throws Exception {
-
 		connectionFactory.setVirtualHost("non-existent");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(AmqpAuthenticationException.class);
-		String result = (String) template.receiveAndConvert("foo");
-		assertEquals("message", result);
-
+		try {
+			template.receiveAndConvert("foo");
+			fail("Exception expected");
+		}
+		catch (AmqpIOException | AmqpAuthenticationException e) {
+			// expected
+		}
 	}
 
 	@Test
