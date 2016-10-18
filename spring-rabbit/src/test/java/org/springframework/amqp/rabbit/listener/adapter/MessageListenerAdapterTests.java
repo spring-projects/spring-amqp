@@ -52,7 +52,7 @@ public class MessageListenerAdapterTests {
 		this.adapter = new MessageListenerAdapter();
 		this.adapter.setMessageConverter(new SimpleMessageConverter());
 	}
-
+	
 	@Test
 	public void testDefaultListenerMethod() throws Exception {
 		final AtomicBoolean called = new AtomicBoolean(false);
@@ -80,6 +80,21 @@ public class MessageListenerAdapterTests {
 		}
 		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
 		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties));
+		assertTrue(called.get());
+	}
+
+	@Test
+	public void testAlternateConstructor() throws Exception {
+		final AtomicBoolean called = new AtomicBoolean(false);
+		class Delegate {
+			@SuppressWarnings("unused")
+			public String myPojoMessageMethod(String input) {
+				called.set(true);
+				return "processed" + input;
+			}
+		}
+		adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
+		adapter.onMessage(new Message("foo".getBytes(), messageProperties));
 		assertTrue(called.get());
 	}
 
