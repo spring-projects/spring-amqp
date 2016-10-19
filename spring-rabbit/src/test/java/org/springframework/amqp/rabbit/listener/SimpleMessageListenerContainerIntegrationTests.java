@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -91,6 +92,9 @@ public class SimpleMessageListenerContainerIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
+
+	@Rule
+	public ExpectedException exception = ExpectedException.none();
 
 	private final int messageCount;
 
@@ -211,6 +215,18 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		doListenerWithExceptionTest(latch, new ChannelAwareListener(latch, true));
 	}
 
+	@Test
+	public void testNullQueue() throws Exception {
+		exception.expect(IllegalArgumentException.class);
+		container = createContainer((MessageListener) (m) -> { }, (Queue) null);
+	}
+
+	@Test
+	public void testNullQueueName() throws Exception {
+		exception.expect(IllegalArgumentException.class);
+		container = createContainer((MessageListener) (m) -> { }, (String) null);
+	}
+
 	private void doSunnyDayTest(CountDownLatch latch, Object listener) throws Exception {
 		container = createContainer(listener);
 		for (int i = 0; i < messageCount; i++) {
@@ -254,9 +270,27 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	}
 
 	private SimpleMessageListenerContainer createContainer(Object listener) {
+		SimpleMessageListenerContainer container = createContainer(listener, queue.getName());
+		container.afterPropertiesSet();
+		container.start();
+		return container;
+	}
+
+	private SimpleMessageListenerContainer createContainer(Object listener, String queue) {
+		SimpleMessageListenerContainer container = doCreateContainer(listener);
+		container.setQueueNames(queue);
+		return container;
+	}
+
+	private SimpleMessageListenerContainer createContainer(Object listener, Queue queue) {
+		SimpleMessageListenerContainer container = doCreateContainer(listener);
+		container.setQueues(queue);
+		return container;
+	}
+
+	private SimpleMessageListenerContainer doCreateContainer(Object listener) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(listener);
-		container.setQueueNames(queue.getName());
 		container.setTxSize(txSize);
 		container.setPrefetchCount(txSize);
 		container.setConcurrentConsumers(concurrentConsumers);
@@ -268,8 +302,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		if (externalTransaction) {
 			container.setTransactionManager(new TestTransactionManager());
 		}
-		container.afterPropertiesSet();
-		container.start();
 		return container;
 	}
 

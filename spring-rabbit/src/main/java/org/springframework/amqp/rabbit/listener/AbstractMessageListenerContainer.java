@@ -140,6 +140,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queueName the desired queueName(s) (can not be <code>null</code>)
 	 */
 	public void setQueueNames(String... queueName) {
+		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
 		this.queueNames = new CopyOnWriteArrayList<String>(Arrays.asList(queueName));
 	}
 
@@ -150,7 +151,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void setQueues(Queue... queues) {
 		List<String> queueNames = new ArrayList<String>(queues.length);
 		for (int i = 0; i < queues.length; i++) {
-			Assert.notNull(queues[i], "Queue must not be null.");
+			Assert.notNull(queues[i], "Queue (" + i + ") must not be null.");
 			queueNames.add(queues[i].getName());
 		}
 		queueNames = new CopyOnWriteArrayList<String>(queueNames);
