@@ -601,17 +601,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public Collection<String> expectedQueueNames() {
 		this.isListener = true;
 		Collection<String> replyQueue = null;
-		if (this.replyAddress != null) {
+		if (this.replyAddress == null || this.replyAddress.equals(Address.AMQ_RABBITMQ_REPLY_TO)) {
+			throw new IllegalStateException("A listener container must not be provided when using direct reply-to");
+		}
+		else if (this.replyAddress != null) {
 			Address address = new Address(this.replyAddress);
 			if ("".equals(address.getExchangeName())) {
 				replyQueue = Collections.singletonList(address.getRoutingKey());
 			}
 			else {
-				logger.debug("Cannot verify reply queue because it has the form 'exchange/routingKey'");
+				logger.info("Cannot verify reply queue because 'replyAddress' is not a simple queue name: "
+						+ this.replyAddress);
 			}
-		}
-		else if (this.replyAddress == null || this.replyAddress.equals(Address.AMQ_RABBITMQ_REPLY_TO)) {
-			throw new IllegalStateException("A listener container must not be provided when using direct reply-to");
 		}
 		return replyQueue;
 	}
@@ -671,7 +672,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	protected boolean useDirectReplyTo() {
 		if (this.useTemporaryReplyQueues) {
 			if (this.replyAddress != null) {
-				logger.error("'useTemporaryReplyQueues' is ignored when a 'replyAddress' is provided");
+				logger.warn("'useTemporaryReplyQueues' is ignored when a 'replyAddress' is provided");
 			}
 			else {
 				return false;
@@ -686,15 +687,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return true;
 			}
 			catch (Exception e) {
-				if (this.replyAddress != null) {
-					logger.error("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
+				if (logger.isDebugEnabled()) {
+					logger.warn("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
 							+ "queues will be used:" + e.getMessage() + ".");
-				}
-				else {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Broker does not support fast replies via 'amq.rabbitmq.reply-to', temporary "
-								+ "queues will be used:" + e.getMessage() + ".");
-					}
 				}
 				this.replyAddress = null;
 			}
@@ -1287,7 +1282,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		DirectReplyToMessageListenerContainer container = this.directReplyToContainers.get(connectionFactory);
 		if (container == null) {
 			synchronized (this.directReplyToContainers) {
-				if (this.directReplyToContainers.get(connectionFactory) == null) {
+				container = this.directReplyToContainers.get(connectionFactory);
+				if (container == null) {
 					container = new DirectReplyToMessageListenerContainer(connectionFactory);
 					container.setMessageListener(this);
 					container.start();
@@ -1333,11 +1329,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		String savedReplyTo = message.getMessageProperties().getReplyTo();
 		pendingReply.setSavedReplyTo(savedReplyTo);
 		if (StringUtils.hasLength(savedReplyTo) && logger.isDebugEnabled()) {
-			logger.debug("Replacing replyTo header:" + savedReplyTo
+			logger.debug("Replacing replyTo header: " + savedReplyTo
 					+ " in favor of template's configured reply-queue:"
 					+ RabbitTemplate.this.replyAddress);
 		}
-		message.getMessageProperties().setReplyTo(RabbitTemplate.this.replyAddress);
+		message.getMessageProperties().setReplyTo(this.replyAddress);
 		String savedCorrelation = null;
 		if (this.correlationKey == null) { // using standard correlationId property
 			String correlationId = message.getMessageProperties().getCorrelationId();
@@ -1347,7 +1343,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		else {
 			savedCorrelation = (String) message.getMessageProperties()
-					.getHeaders().get(RabbitTemplate.this.correlationKey);
+					.getHeaders().get(this.correlationKey);
 		}
 		pendingReply.setSavedCorrelation(savedCorrelation);
 		if (this.correlationKey == null) { // using standard correlationId property
@@ -1627,7 +1623,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			if (this.publisherConfirmChannels.putIfAbsent(key, this) == null) {
 				publisherCallbackChannel.addListener(this);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Added confirmable channel: " + channel + " to map, size now "
+					logger.debug("Added publisher confirm channel: " + channel + " to map, size now "
 									+ this.publisherConfirmChannels.size());
 				}
 			}

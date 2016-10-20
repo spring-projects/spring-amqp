@@ -58,7 +58,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -87,7 +86,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
-import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
@@ -96,7 +94,6 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -156,11 +153,6 @@ public class RabbitTemplateIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
-
-	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
-			CachingConnectionFactory.class, SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
-			RabbitTemplate.class, BrokerRunning.class);
 
 	private CachingConnectionFactory connectionFactory;
 

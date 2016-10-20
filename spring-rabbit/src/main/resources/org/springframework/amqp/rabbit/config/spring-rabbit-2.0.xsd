@@ -1193,11 +1193,6 @@
 	or with a value 'amq.rabbitmq.reply-to'; it can only be used with RabbitMQ version 3.4 or higher.
 	A 'reply-listener' child element must not be provided when this is true.
 					]]></xsd:documentation>
-					<xsd:appinfo>
-						<tool:annotation kind="ref">
-							<tool:expected-type type="org.springframework.amqp.core.Queue" />
-						</tool:annotation>
-					</xsd:appinfo>
 				</xsd:annotation>
 				<xsd:simpleType>
 					<xsd:union memberTypes="xsd:boolean xsd:string" />
