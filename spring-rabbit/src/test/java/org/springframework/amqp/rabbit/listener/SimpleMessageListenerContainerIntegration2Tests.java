@@ -36,6 +36,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -163,8 +164,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		boolean waited = latch.await(10, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
-		BlockingQueueConsumer consumer = (BlockingQueueConsumer) TestUtils
-				.getPropertyValue(container, "consumers", Map.class).keySet().iterator().next();
+		Map<?, ?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
+		BlockingQueueConsumer consumer = (BlockingQueueConsumer) consumers.keySet().iterator().next();
 		admin.deleteQueue(queue1.getName());
 		latch = new CountDownLatch(10);
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
@@ -173,13 +174,19 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		waited = latch.await(10, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
-		BlockingQueueConsumer newConsumer = (BlockingQueueConsumer) TestUtils
-				.getPropertyValue(container, "consumers", Map.class).keySet().iterator().next();
+		BlockingQueueConsumer newConsumer = consumer;
 		int n = 0;
 		while (n++ < 100 && newConsumer == consumer) {
+			try {
+				newConsumer = (BlockingQueueConsumer) consumers.keySet().iterator().next();
+				if (newConsumer == consumer) {
+					break;
+				}
+			}
+			catch (NoSuchElementException e) {
+				// race; hasNext() won't help
+			}
 			Thread.sleep(100);
-			newConsumer = (BlockingQueueConsumer) TestUtils
-					.getPropertyValue(container, "consumers", Map.class).keySet().iterator().next();
 		}
 		assertTrue("Failed to restart consumer", n < 100);
 		Set<?> missingQueues = TestUtils.getPropertyValue(newConsumer, "missingQueues", Set.class);
