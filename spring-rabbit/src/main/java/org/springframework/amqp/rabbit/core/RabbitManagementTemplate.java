@@ -70,6 +70,20 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	/**
 	 * Construct a template using the supplied uri.
+	 * @param uri the uri - must include user info, e.g.
+	 * "http://guest:guest@localhost:15672/api/".
+	 */
+	public RabbitManagementTemplate(String uri) {
+		try {
+			this.rabbitClient = new Client(uri, null, null);
+		}
+		catch (Exception e) {
+			throw new AmqpException(e);
+		}
+	}
+
+	/**
+	 * Construct a template using the supplied uri.
 	 * @param uri the uri.
 	 * @param username the user.
 	 * @param password the password.
