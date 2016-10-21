@@ -36,10 +36,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
@@ -76,6 +79,9 @@ import com.rabbitmq.client.impl.AMQImpl;
  *
  */
 public class RabbitTemplateTests {
+
+	@Rule
+	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void returnConnectionAfterCommit() throws Exception {
@@ -244,6 +250,21 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend("foo");
 		verify(channel).addListener(template);
+	}
+
+	@Test
+	public void testNoListenerAllowed1() {
+		RabbitTemplate template = new RabbitTemplate();
+		this.exception.expect(IllegalStateException.class);
+		template.expectedQueueNames();
+	}
+
+	@Test
+	public void testNoListenerAllowed2() {
+		RabbitTemplate template = new RabbitTemplate();
+		template.setReplyAddress(Address.AMQ_RABBITMQ_REPLY_TO);
+		this.exception.expect(IllegalStateException.class);
+		template.expectedQueueNames();
 	}
 
 	public final static AtomicInteger LOOKUP_KEY_COUNT = new AtomicInteger();
