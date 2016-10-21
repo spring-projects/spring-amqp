@@ -123,7 +123,6 @@ import org.springframework.context.annotation.Import;
  * {@code RabbitListenerContainerFactory}
  *
  * <pre class="code">
- * {@code
  * &#064;Configuration
  * &#064;EnableRabbit
  * public class AppConfig implements RabbitListenerConfigurer {
@@ -133,7 +132,7 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public RabbitListenerContainerFactory<?> myRabbitListenerContainerFactory() {
+ *     public RabbitListenerContainerFactory&lt;?&gt; myRabbitListenerContainerFactory() {
  *         // factory settings
  *     }
  *
@@ -142,7 +141,7 @@ import org.springframework.context.annotation.Import;
  *         return new MyService();
  *     }
  * }
- * }</pre>
+ * </pre>
  *
  * For reference, the example above can be compared to the following Spring XML
  * configuration:
@@ -167,7 +166,6 @@ import org.springframework.context.annotation.Import;
  * Validated} are first validated against a custom {@code Validator}.
  *
  * <pre class="code">
- * {@code
  * &#064;Configuration
  * &#064;EnableRabbit
  * public class AppConfig implements RabbitListenerConfigurer {
@@ -178,7 +176,7 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public RabbitListenerEndpointRegistry<?> myRabbitListenerEndpointRegistry() {
+ *     public RabbitListenerEndpointRegistry&lt;?&gt; myRabbitListenerEndpointRegistry() {
  *         // registry configuration
  *     }
  *
@@ -194,14 +192,14 @@ import org.springframework.context.annotation.Import;
  *         return new MyService();
  *     }
  * }
- * }</pre>
+ * </pre>
  *
  * For reference, the example above can be compared to the following Spring XML
  * configuration:
  * <pre class="code">
  * {@code <beans>
  *     <rabbit:annotation-driven registry="myRabbitListenerEndpointRegistry"
- *         handler-method-factory="myRabbitHandlerMethodFactory"/&gt;
+ *         handler-method-factory="myRabbitHandlerMethodFactory"/>
  *
  *     <bean id="myRabbitListenerEndpointRegistry"
  *           class="org.springframework.amqp.rabbit.config.RabbitListenerEndpointRegistry">
@@ -222,7 +220,6 @@ import org.springframework.context.annotation.Import;
  * For example, the following configures an extra endpoint:
  *
  * <pre class="code">
- * {@code
  * &#064;Configuration
  * &#064;EnableRabbit
  * public class AppConfig implements RabbitListenerConfigurer {
@@ -239,13 +236,13 @@ import org.springframework.context.annotation.Import;
  *     }
  *
  *     &#064;Bean
- *     public RabbitListenerContainerFactory<?> anotherRabbitListenerContainerFactory() {
+ *     public RabbitListenerContainerFactory&lt;?&gt; anotherRabbitListenerContainerFactory() {
  *         // ...
  *     }
  *
  *     // Rabbit infrastructure setup
  * }
- * }</pre>
+ * </pre>
  *
  * Note that all beans implementing {@code RabbitListenerConfigurer} will be detected and
  * invoked in a similar fashion. The example above can be translated in a regular bean
