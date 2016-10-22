@@ -831,7 +831,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @since 1.5
 	 */
 	protected Message doReceiveNoWait(final String queueName) {
-		return execute(channel -> {
+		Message message = execute(channel -> {
 			GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
 			// Response can be null is the case that there is no message on the queue.
 			if (response != null) {
@@ -850,6 +850,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			return null;
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
+		if (logger.isDebugEnabled()) {
+			if (message == null) {
+				logger.debug("Received no message");
+			}
+			else {
+				logger.debug("Received: " + message);
+			}
+		}
+		return message;
 	}
 
 	@Override
@@ -865,7 +874,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Message receive(final String queueName, final long timeoutMillis) {
-		return execute(channel -> {
+		Message message = execute(channel -> {
 			QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
 			Delivery delivery;
 			if (timeoutMillis < 0) {
@@ -893,6 +902,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return buildMessageFromDelivery(delivery);
 			}
 		});
+		if (logger.isDebugEnabled()) {
+			if (message == null) {
+				logger.debug("Received no message");
+			}
+			else {
+				logger.debug("Received: " + message);
+			}
+		}
+		return message;
 	}
 
 	@Override
@@ -921,33 +939,33 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
-		return this.receiveAndReply(this.getRequiredQueue(), callback);
+		return receiveAndReply(this.getRequiredQueue(), callback);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
-		return this.receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
+		return receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
 
 	}
 
 	@Override
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, final String exchange, final String routingKey)
 			throws AmqpException {
-		return this.receiveAndReply(this.getRequiredQueue(), callback, exchange, routingKey);
+		return receiveAndReply(this.getRequiredQueue(), callback, exchange, routingKey);
 	}
 
 	@Override
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
 			final String replyRoutingKey) throws AmqpException {
-		return this.receiveAndReply(queueName, callback,
+		return receiveAndReply(queueName, callback,
 				(request, reply) -> new Address(replyExchange, replyRoutingKey));
 	}
 
 	@Override
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
 			throws AmqpException {
-		return this.receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
+		return receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
 	}
 
 	@Override
@@ -1010,6 +1028,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					channel.basicAck(deliveryTag2, false);
 				}
 				receiveMessage = buildMessageFromDelivery(delivery);
+			}
+		}
+		if (logger.isDebugEnabled()) {
+			if (receiveMessage == null) {
+				logger.debug("Received no message");
+			}
+			else {
+				logger.debug("Received: " + receiveMessage);
 			}
 		}
 		return receiveMessage;
@@ -1443,7 +1469,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				addListener(channel);
 			}
 			if (logger.isDebugEnabled()) {
-				logger.debug("Executing callback on RabbitMQ Channel: " + channel);
+				logger.debug(
+						"Executing callback " + action.getClass().getSimpleName() + " on RabbitMQ Channel: " + channel);
 			}
 			return action.doInRabbit(channel);
 		}

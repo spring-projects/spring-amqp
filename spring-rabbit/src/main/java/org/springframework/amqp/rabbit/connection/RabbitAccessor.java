@@ -35,7 +35,7 @@ import com.rabbitmq.client.Channel;
 public abstract class RabbitAccessor implements InitializingBean {
 
 	/** Logger available to subclasses */
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private volatile ConnectionFactory connectionFactory;
 

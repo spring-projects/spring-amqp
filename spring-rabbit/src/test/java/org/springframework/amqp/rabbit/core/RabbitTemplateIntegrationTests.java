@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,6 +95,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -153,6 +155,10 @@ public class RabbitTemplateIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
+
+	@Rule
+	public Log4jLevelAdjuster logAdjuster = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
+			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class);
 
 	private CachingConnectionFactory connectionFactory;
 
@@ -1124,6 +1130,7 @@ public class RabbitTemplateIntegrationTests {
 		template.receiveAndReply((ReceiveAndReplyCallback<String, String>) payload -> payload.toUpperCase());
 
 		Message result = this.template.receive(REPLY_QUEUE.getName());
+		assertNotNull(result);
 		assertEquals("TEST", new String(result.getBody()));
 		assertEquals(messageId, new String(result.getMessageProperties().getCorrelationId()));
 	}
