@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,7 +58,7 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	 * Construct a template using uri "localhost:15672/api/" and user guest/guest.
 	 */
 	public RabbitManagementTemplate() {
-		this("http://localhost:15672/api/", "guest", "guest");
+		this("http://guest:guest@localhost:15672/api/");
 	}
 
 	/**
@@ -66,6 +67,34 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	 */
 	public RabbitManagementTemplate(Client rabbitClient) {
 		this.rabbitClient = rabbitClient;
+	}
+
+	/**
+	 * Construct a template using the supplied uri.
+	 * @param uri the uri - must include user info, e.g.
+	 * "http://guest:guest@localhost:15672/api/".
+	 * @since 2.0
+	 */
+	public RabbitManagementTemplate(String uri) {
+		try {
+			String username = "guest";
+			String password = "guest";
+			URI theUri = new URI(uri);
+			String userInfo = theUri.getUserInfo();
+			if (userInfo != null) {
+				String[] userParts = userInfo.split(":");
+				if (userParts.length > 0) {
+					username = userParts[0];
+				}
+				if (userParts.length > 1) {
+					password = userParts[1];
+				}
+			}
+			this.rabbitClient = new Client(uri, username, password);
+		}
+		catch (Exception e) {
+			throw new AmqpException(e);
+		}
 	}
 
 	/**
