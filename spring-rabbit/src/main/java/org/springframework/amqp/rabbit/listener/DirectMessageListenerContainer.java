@@ -89,6 +89,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TaskScheduler taskScheduler;
 
+	private boolean taskSchedulerSet;
+
 	private long monitorInterval = DEFAULT_MONITOR_INTERVAL;
 
 	private volatile boolean started;
@@ -157,6 +159,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setTaskScheduler(TaskScheduler taskScheduler) {
 		this.taskScheduler = taskScheduler;
+		this.taskSchedulerSet = true;
 	}
 
 	/**
@@ -311,6 +314,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doStart() throws Exception {
 		if (!this.started) {
 			actualStart();
+		}
+	}
+
+	@Override
+	protected void doStop() {
+		super.doStop();
+		if (!this.taskSchedulerSet && this.taskScheduler != null) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
+			this.taskScheduler = null;
 		}
 	}
 
@@ -492,12 +504,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					false, isExclusive(), getConsumerArguments(), consumer);
 		}
 		catch (IOException e) {
-			if (channel != null) {
-				RabbitUtils.closeChannel(channel);
-			}
-			if (connection != null) {
-				RabbitUtils.closeConnection(connection);
-			}
+			RabbitUtils.closeChannel(channel);
+			RabbitUtils.closeConnection(connection);
+
 			if (e.getCause() instanceof ShutdownSignalException
 					&& e.getCause().getMessage().contains("in exclusive use")) {
 				getExclusiveConsumerExceptionLogger().log(logger,
@@ -543,7 +552,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				this.logger.warn("Interrupted waiting for consumers.  Continuing with shutdown.");
+				this.logger.warn("Interrupted waiting for consumers. Continuing with shutdown.");
 			}
 			finally {
 				this.startedLatch = new CountDownLatch(1);
