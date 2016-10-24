@@ -89,6 +89,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private TaskScheduler taskScheduler;
 
+	private boolean taskSchedulerSet;
+
 	private long monitorInterval = DEFAULT_MONITOR_INTERVAL;
 
 	private volatile boolean started;
@@ -157,6 +159,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setTaskScheduler(TaskScheduler taskScheduler) {
 		this.taskScheduler = taskScheduler;
+		this.taskSchedulerSet = true;
 	}
 
 	/**
@@ -302,6 +305,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");
+			threadPoolTaskScheduler.setDaemon(true);
 			threadPoolTaskScheduler.afterPropertiesSet();
 			this.taskScheduler = threadPoolTaskScheduler;
 		}
@@ -551,6 +555,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.aborted = false;
 				this.hasStopped = true;
 			}
+		}
+		if (!this.taskSchedulerSet && this.taskScheduler != null) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
+			this.taskScheduler = null;
 		}
 	}
 
