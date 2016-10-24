@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -157,8 +158,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private final ReplyToAddressCallback<?> defaultReplyToAddressCallback =
 			(request, reply) -> getReplyToAddress(request);
 
-	private final ConcurrentMap<ConnectionFactory, DirectReplyToMessageListenerContainer> directReplyToContainers =
-			new ConcurrentHashMap<>();
+	private final Map<ConnectionFactory, DirectReplyToMessageListenerContainer> directReplyToContainers =
+			new HashMap<>();
 
 	private volatile String exchange = DEFAULT_EXCHANGE;
 
@@ -850,14 +851,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			return null;
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
-		if (logger.isDebugEnabled()) {
-			if (message == null) {
-				logger.debug("Received no message");
-			}
-			else {
-				logger.debug("Received: " + message);
-			}
-		}
+		logReceived(message);
 		return message;
 	}
 
@@ -902,14 +896,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return buildMessageFromDelivery(delivery);
 			}
 		});
-		if (logger.isDebugEnabled()) {
-			if (message == null) {
-				logger.debug("Received no message");
-			}
-			else {
-				logger.debug("Received: " + message);
-			}
-		}
+		logReceived(message);
 		return message;
 	}
 
@@ -1030,15 +1017,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				receiveMessage = buildMessageFromDelivery(delivery);
 			}
 		}
+		logReceived(receiveMessage);
+		return receiveMessage;
+	}
+
+	private void logReceived(Message message) {
 		if (logger.isDebugEnabled()) {
-			if (receiveMessage == null) {
+			if (message == null) {
 				logger.debug("Received no message");
 			}
 			else {
-				logger.debug("Received: " + receiveMessage);
+				logger.debug("Received: " + message);
 			}
 		}
-		return receiveMessage;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1316,7 +1307,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					container = new DirectReplyToMessageListenerContainer(connectionFactory);
 					container.setMessageListener(this);
 					container.start();
-					this.directReplyToContainers.putIfAbsent(connectionFactory, container);
+					this.directReplyToContainers.put(connectionFactory, container);
 					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
 				}
 			}
@@ -1333,11 +1324,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private Message doSendAndReceiveAsListener(final String exchange, final String routingKey, final Message message,
-			final CorrelationData correlationData, Channel channel) throws Exception {
+			final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
 		final PendingReply pendingReply = new PendingReply();
 		String messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
 		this.replyHolder.put(messageTag, pendingReply);
-		saveAndSetHeaders(message, pendingReply, messageTag);
+		saveAndSetProperties(message, pendingReply, messageTag);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Sending message with tag " + messageTag);
@@ -1353,7 +1344,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return reply;
 	}
 
-	private void saveAndSetHeaders(final Message message, final PendingReply pendingReply, String messageTag) {
+	private void saveAndSetProperties(final Message message, final PendingReply pendingReply, String messageTag) {
 		// Save any existing replyTo and correlation data
 		String savedReplyTo = message.getMessageProperties().getReplyTo();
 		pendingReply.setSavedReplyTo(savedReplyTo);
@@ -1766,34 +1757,35 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			throw new AmqpRejectAndDontRequeueException("Reply received after timeout");
 		}
 		else {
-			// Restore the inbound correlation data
-			String savedCorrelation = pendingReply.getSavedCorrelation();
-			if (this.correlationKey == null) {
-				if (savedCorrelation == null) {
-					message.getMessageProperties().setCorrelationId(null);
-				}
-				else {
-					message.getMessageProperties().setCorrelationId(savedCorrelation);
-				}
+			restoreProperties(message, pendingReply);
+			pendingReply.reply(message);
+		}
+	}
+
+	private void restoreProperties(Message message, PendingReply pendingReply) {
+		// Restore the inbound correlation data
+		String savedCorrelation = pendingReply.getSavedCorrelation();
+		if (this.correlationKey == null) {
+			if (savedCorrelation == null) {
+				message.getMessageProperties().setCorrelationId(null);
 			}
 			else {
-				if (savedCorrelation != null) {
-					message.getMessageProperties().setHeader(this.correlationKey, savedCorrelation);
-				}
-				else {
-					message.getMessageProperties().getHeaders().remove(this.correlationKey);
-				}
+				message.getMessageProperties().setCorrelationId(savedCorrelation);
 			}
-			// Restore any inbound replyTo
-			String savedReplyTo = pendingReply.getSavedReplyTo();
-			message.getMessageProperties().setReplyTo(savedReplyTo);
-			pendingReply.reply(message);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Reply received for " + messageTag);
-				if (savedReplyTo != null) {
-					logger.debug("Restored replyTo to " + savedReplyTo);
-				}
+		}
+		else {
+			if (savedCorrelation != null) {
+				message.getMessageProperties().setHeader(this.correlationKey, savedCorrelation);
 			}
+			else {
+				message.getMessageProperties().getHeaders().remove(this.correlationKey);
+			}
+		}
+		// Restore any inbound replyTo
+		String savedReplyTo = pendingReply.getSavedReplyTo();
+		message.getMessageProperties().setReplyTo(savedReplyTo);
+		if (logger.isDebugEnabled() && savedReplyTo != null) {
+			logger.debug("Restored replyTo to " + savedReplyTo);
 		}
 	}
 
