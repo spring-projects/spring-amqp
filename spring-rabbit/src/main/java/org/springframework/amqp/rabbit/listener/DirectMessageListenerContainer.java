@@ -305,7 +305,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");
-			threadPoolTaskScheduler.setDaemon(true);
 			threadPoolTaskScheduler.afterPropertiesSet();
 			this.taskScheduler = threadPoolTaskScheduler;
 		}
@@ -315,6 +314,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doStart() throws Exception {
 		if (!this.started) {
 			actualStart();
+		}
+	}
+
+	@Override
+	protected void doStop() {
+		super.doStop();
+		if (!this.taskSchedulerSet && this.taskScheduler != null) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
+			this.taskScheduler = null;
 		}
 	}
 
@@ -555,10 +563,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				this.aborted = false;
 				this.hasStopped = true;
 			}
-		}
-		if (!this.taskSchedulerSet && this.taskScheduler != null) {
-			((ThreadPoolTaskScheduler) this.taskScheduler).shutdown();
-			this.taskScheduler = null;
 		}
 	}
 
