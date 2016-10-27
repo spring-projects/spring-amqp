@@ -87,7 +87,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
 			replyTo.set(basicProps.getReplyTo());
 			if (standardHeader) {
 				correlationId.set(basicProps.getCorrelationId());
@@ -140,7 +140,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
 			replyTo.set(basicProps.getReplyTo());
 			correlationId.set(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -186,7 +186,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyAddress3 = "replyTo3";
 		doAnswer(invocation -> {
-			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
 			nestedReplyTo.add(basicProps.getReplyTo());
 			nestedCorrelation.add(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -240,7 +240,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
 			replyTo.set(basicProps.getReplyTo());
 			correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
 
@@ -289,7 +289,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyTo3 = "replyTo3";
 		doAnswer(invocation -> {
-			BasicProperties basicProps = (BasicProperties) invocation.getArguments()[3];
+			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
 			nestedReplyTo.add(basicProps.getReplyTo());
 			nestedCorrelation.add(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()

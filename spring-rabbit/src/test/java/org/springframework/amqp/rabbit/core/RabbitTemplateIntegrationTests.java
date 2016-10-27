@@ -609,12 +609,12 @@ public class RabbitTemplateIntegrationTests {
 		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
 
 		doAnswer(invocation -> {
-			String log = (String) invocation.getArguments()[0];
+			String log = invocation.getArgumentAt(0, String.class);
 			if (log.startsWith("Message received") && Thread.currentThread().getName().startsWith(execName)) {
 				execConfiguredOk.set(true);
 			}
 			return null;
-		}).when(logger).trace(Mockito.anyString());
+		}).when(logger).trace(anyString());
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		ReflectionUtils.setField(fields[0], template, logger);
 		template.setRoutingKey(ROUTE);

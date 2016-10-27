@@ -745,7 +745,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		Listener listener = mock(Listener.class);
 		doAnswer(invocation -> {
-			boolean ack = (Boolean) invocation.getArguments()[1];
+			boolean ack = invocation.getArgumentAt(1, Boolean.class);
 			if (!ack) {
 				nacks.incrementAndGet();
 			}

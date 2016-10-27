@@ -131,7 +131,7 @@ public class BlockingQueueConsumerTests {
 		when(channel.isOpen()).thenReturn(true);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(invocation -> {
-					Object arg = invocation.getArguments()[0];
+					String arg = invocation.getArgumentAt(0, String.class);
 					if ("good".equals(arg)) {
 						return Mockito.any(AMQP.Queue.DeclareOk.class);
 					}

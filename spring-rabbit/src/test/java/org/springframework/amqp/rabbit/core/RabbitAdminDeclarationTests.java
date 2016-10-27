@@ -162,7 +162,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -198,7 +198,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -236,7 +236,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set((ConnectionListener) invocation.getArguments()[0]);
+			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -336,14 +336,9 @@ public class RabbitAdminDeclarationTests {
 			when(conn1.createChannel(false)).thenReturn(channel1);
 			when(channel1.queueDeclare("foo", true, false, false, null))
 					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
-			doAnswer(new Answer<Object>() {
-
-				@Override
-				public Object answer(InvocationOnMock invocation) throws Throwable {
-					listener1 = (ConnectionListener) invocation.getArguments()[0];
-					return null;
-				}
-
+			doAnswer(invocation -> {
+				listener1 = invocation.getArgumentAt(0, ConnectionListener.class);
+				return null;
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;
 		}
@@ -355,14 +350,9 @@ public class RabbitAdminDeclarationTests {
 			when(conn2.createChannel(false)).thenReturn(channel2);
 			when(channel2.queueDeclare("foo", true, false, false, null))
 					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
-			doAnswer(new Answer<Object>() {
-
-				@Override
-				public Object answer(InvocationOnMock invocation) throws Throwable {
-					listener2 = (ConnectionListener) invocation.getArguments()[0];
-					return null;
-				}
-
+			doAnswer(invocation -> {
+				listener2 = invocation.getArgumentAt(0, ConnectionListener.class);
+				return null;
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;
 		}

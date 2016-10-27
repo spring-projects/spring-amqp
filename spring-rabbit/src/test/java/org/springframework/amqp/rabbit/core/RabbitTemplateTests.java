@@ -178,7 +178,7 @@ public class RabbitTemplateTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			return null;
 		}).when(mockChannel).basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.anyString(),
 				Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyMap(), any(Consumer.class));
