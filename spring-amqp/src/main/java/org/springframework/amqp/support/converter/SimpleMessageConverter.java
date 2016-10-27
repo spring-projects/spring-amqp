@@ -107,13 +107,10 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 			else if (contentType != null &&
 					contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)) {
 				try {
-					content = SerializationUtils.deserialize(createObjectInputStream(new ByteArrayInputStream(message.getBody()), this.codebaseUrl));
+					content = SerializationUtils.deserialize(
+							createObjectInputStream(new ByteArrayInputStream(message.getBody()), this.codebaseUrl));
 				}
-				catch (IOException e) {
-					throw new MessageConversionException(
-							"failed to convert serialized Message content", e);
-				}
-				catch (IllegalArgumentException e) {
+				catch (IOException | IllegalArgumentException | IllegalStateException e) {
 					throw new MessageConversionException(
 							"failed to convert serialized Message content", e);
 				}

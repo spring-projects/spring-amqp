@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -29,12 +30,15 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.core.NestedIOException;
 import org.springframework.core.serializer.DefaultDeserializer;
 import org.springframework.core.serializer.Deserializer;
 
@@ -43,6 +47,9 @@ import org.springframework.core.serializer.Deserializer;
  * @author Gary Russell
  */
 public class SerializerMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
+
+	@Rule
+	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
@@ -166,6 +173,20 @@ public class SerializerMessageConverterTests extends WhiteListDeserializingMessa
 		Message message = converter.toMessage(testBean, new MessageProperties());
 		converter.fromMessage(message);
 		verify(mock).deserialize(Mockito.any(InputStream.class));
+	}
+
+	@Test
+	public void messageConversionExceptionForClassNotFound() throws Exception {
+		SerializerMessageConverter converter = new SerializerMessageConverter();
+		TestBean testBean = new TestBean("foo");
+		Message message = converter.toMessage(testBean, new MessageProperties());
+		String contentType = message.getMessageProperties().getContentType();
+		assertEquals("application/x-java-serialized-object", contentType);
+		byte[] body = message.getBody();
+		body[10] = 'z';
+		this.exception.expect(MessageConversionException.class);
+		this.exception.expectCause(instanceOf(NestedIOException.class));
+		converter.fromMessage(message);
 	}
 
 }
