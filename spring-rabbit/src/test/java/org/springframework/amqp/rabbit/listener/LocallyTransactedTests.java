@@ -100,7 +100,7 @@ public abstract class LocallyTransactedTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
@@ -177,7 +177,7 @@ public abstract class LocallyTransactedTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(channel)
@@ -264,7 +264,7 @@ public abstract class LocallyTransactedTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(channel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
@@ -357,7 +357,7 @@ public abstract class LocallyTransactedTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
@@ -450,7 +450,7 @@ public abstract class LocallyTransactedTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(firstChannel)

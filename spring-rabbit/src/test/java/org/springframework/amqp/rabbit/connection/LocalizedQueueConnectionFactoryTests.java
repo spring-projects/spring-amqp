@@ -187,7 +187,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		when(channel.isOpen()).thenReturn(true, false);
 		doAnswer(invocation -> {
 			String tag = UUID.randomUUID().toString();
-			consumers.put(address, (Consumer) invocation.getArguments()[6]);
+			consumers.put(address, invocation.getArgumentAt(6, Consumer.class));
 			consumerTags.put(address, tag);
 			if (latch != null) {
 				latch.countDown();

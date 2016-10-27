@@ -178,7 +178,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumer.get().handleConsumeOk("1");
 			return "1";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -229,7 +229,7 @@ public class SimpleMessageListenerContainerTests {
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final String consumerTag = "1";
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumer.get().handleConsumeOk(consumerTag);
 			return consumerTag;
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -277,9 +277,9 @@ public class SimpleMessageListenerContainerTests {
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?, ?>>();
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumer.get().handleConsumeOk("foo");
-			args.set((Map<?, ?>) invocation.getArguments()[5]);
+			args.set(invocation.getArgumentAt(5, Map.class));
 			return "foo";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
 
@@ -356,7 +356,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel1);
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(invocation -> {
-			Consumer cons = (Consumer) invocation.getArguments()[6];
+			Consumer cons = invocation.getArgumentAt(6, Consumer.class);
 			String consumerTag = "consFoo" + count.incrementAndGet();
 			cons.handleConsumeOk(consumerTag);
 			return consumerTag;
@@ -379,7 +379,7 @@ public class SimpleMessageListenerContainerTests {
 	protected void setupMockConsume(Channel channel, final List<Consumer> consumers, final AtomicInteger consumerTag,
 			final CountDownLatch latch) throws IOException {
 		doAnswer(invocation -> {
-			Consumer cons = (Consumer) invocation.getArguments()[6];
+			Consumer cons = invocation.getArgumentAt(6, Consumer.class);
 			consumers.add(cons);
 			String actualTag = String.valueOf(consumerTag.getAndIncrement());
 			cons.handleConsumeOk(actualTag);
@@ -391,7 +391,7 @@ public class SimpleMessageListenerContainerTests {
 	protected void setUpMockCancel(Channel channel, final List<Consumer> consumers) throws IOException {
 		final Executor exec = Executors.newCachedThreadPool();
 		doAnswer(invocation -> {
-			final String consTag = (String) invocation.getArguments()[0];
+			final String consTag = invocation.getArgumentAt(0, String.class);
 			exec.execute(() -> consumers.get(Integer.parseInt(consTag)).handleCancelOk(consTag));
 			return null;
 		}).when(channel).basicCancel(anyString());
@@ -456,7 +456,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumer.get().handleConsumeOk("foo");
 			return "foo";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -472,7 +472,7 @@ public class SimpleMessageListenerContainerTests {
 		doReturn(false).when(logger).isDebugEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(invocation -> {
-			if (((String) invocation.getArguments()[0]).startsWith("Consumer raised exception")) {
+			if (invocation.getArgumentAt(0, String.class).startsWith("Consumer raised exception")) {
 				latch.countDown();
 			}
 			return invocation.callRealMethod();
@@ -517,7 +517,7 @@ public class SimpleMessageListenerContainerTests {
 				if (channel != null && channel.getTargetChannel() == mockChannel) {
 					Consumer rabbitConsumer = TestUtils.getPropertyValue(consumer, "consumer", Consumer.class);
 					if (cancel) {
-						rabbitConsumer.handleCancelOk((String) invocation.getArguments()[0]);
+						rabbitConsumer.handleCancelOk(invocation.getArgumentAt(0, String.class));
 					}
 					else {
 						rabbitConsumer.handleConsumeOk("foo");

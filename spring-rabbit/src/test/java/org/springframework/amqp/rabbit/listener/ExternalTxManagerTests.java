@@ -105,7 +105,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
@@ -182,7 +182,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(channel)
@@ -272,7 +272,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(listenerChannel)
@@ -369,7 +369,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
@@ -462,7 +462,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
@@ -556,11 +556,12 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		doAnswer(invocation -> {
-			consumer.set((Consumer) invocation.getArguments()[6]);
+			consumer.set(invocation.getArgumentAt(6, Consumer.class));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
-			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		doAnswer(invocation -> {
