@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,7 +26,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -35,6 +38,9 @@ import org.springframework.amqp.core.MessageProperties;
  * @author Gary Russell
  */
 public class SimpleMessageConverterTests extends WhiteListDeserializingMessageConverterTests {
+
+	@Rule
+	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void bytesAsDefaultMessageBodyType() throws Exception {
@@ -137,6 +143,20 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		ByteArrayInputStream bais = new ByteArrayInputStream(body);
 		Object deserializedObject = new ObjectInputStream(bais).readObject();
 		assertEquals(testBean, deserializedObject);
+	}
+
+	@Test
+	public void messageConversionExceptionForClassNotFound() throws Exception {
+		SimpleMessageConverter converter = new SimpleMessageConverter();
+		TestBean testBean = new TestBean("foo");
+		Message message = converter.toMessage(testBean, new MessageProperties());
+		String contentType = message.getMessageProperties().getContentType();
+		assertEquals("application/x-java-serialized-object", contentType);
+		byte[] body = message.getBody();
+		body[10] = 'z';
+		this.exception.expect(MessageConversionException.class);
+		this.exception.expectCause(instanceOf(IllegalStateException.class));
+		converter.fromMessage(message);
 	}
 
 }

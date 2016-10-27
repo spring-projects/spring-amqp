@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -53,6 +54,11 @@ public class DirectReplyToMessageListenerContainerTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(TEST_RELEASE_CONSUMER_Q);
+
+	@After
+	public void tearDown() {
+		this.brokerRunning.removeTestQueues();
+	}
 
 	@Test
 	public void testReleaseConsumerRace() throws Exception {
