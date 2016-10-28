@@ -48,7 +48,7 @@ import org.springframework.util.ErrorHandler;
  */
 public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
-	protected final Log logger = LogFactory.getLog(this.getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private final FatalExceptionStrategy exceptionStrategy;
 
@@ -96,14 +96,16 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 	 * Default implementation of {@link FatalExceptionStrategy}.
 	 * @since 1.6.3
 	 */
-	public class DefaultExceptionStrategy implements FatalExceptionStrategy {
+	public static class DefaultExceptionStrategy implements FatalExceptionStrategy {
+
+		protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 		@Override
 		public boolean isFatal(Throwable t) {
 			if (t instanceof ListenerExecutionFailedException
 					&& isCauseFatal(t.getCause())) {
-				if (ConditionalRejectingErrorHandler.this.logger.isWarnEnabled()) {
-					ConditionalRejectingErrorHandler.this.logger.warn(
+				if (this.logger.isWarnEnabled()) {
+					this.logger.warn(
 							"Fatal message conversion error; message rejected; "
 							+ "it will be dropped or routed to a dead letter exchange, if so configured: "
 							+ ((ListenerExecutionFailedException) t).getFailedMessage());
