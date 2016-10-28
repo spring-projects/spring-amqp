@@ -448,7 +448,7 @@ public class RabbitTemplateIntegrationTests {
 		template.convertAndSend(ROUTE, "message");
 		final MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 		String result = template.execute(channel -> {
-			// We need noAck=false here for the message to be expicitly
+			// We need noAck=false here for the message to be explicitly
 			// acked
 			GetResponse response = channel.basicGet(ROUTE, false);
 			MessageProperties messageProps = messagePropertiesConverter.toMessageProperties(response.getProps(),
@@ -985,8 +985,7 @@ public class RabbitTemplateIntegrationTests {
 			messageProperties.setContentType(message.getMessageProperties().getContentType());
 			messageProperties.setHeader("testReplyTo", new Address("", ROUTE));
 			return new Message(message.getBody(), messageProperties);
-		}, (ReplyToAddressCallback<Message>)
-				(request, reply) -> (Address) reply.getMessageProperties().getHeaders().get("testReplyTo"));
+		}, (request, reply) -> (Address) reply.getMessageProperties().getHeaders().get("testReplyTo"));
 		assertTrue(received);
 		result = this.template.receiveAndConvert(ROUTE);
 		assertEquals("TEST", result);
@@ -1059,8 +1058,8 @@ public class RabbitTemplateIntegrationTests {
 		template.setQueue(ROUTE);
 		template.setRoutingKey(ROUTE);
 		template.setReplyAddress(REPLY_QUEUE.getName());
-		template.setReplyTimeout(10000);
-		template.setReceiveTimeout(10000);
+		template.setReplyTimeout(20000);
+		template.setReceiveTimeout(20000);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 		container.setConnectionFactory(template.getConnectionFactory());
@@ -1127,12 +1126,12 @@ public class RabbitTemplateIntegrationTests {
 
 		template.send(new Message("test".getBytes(), messageProperties));
 
-		template.receiveAndReply((ReceiveAndReplyCallback<String, String>) payload -> payload.toUpperCase());
+		template.receiveAndReply((ReceiveAndReplyCallback<String, String>) String::toUpperCase);
 
 		Message result = this.template.receive(REPLY_QUEUE.getName());
 		assertNotNull(result);
 		assertEquals("TEST", new String(result.getBody()));
-		assertEquals(messageId, new String(result.getMessageProperties().getCorrelationId()));
+		assertEquals(messageId, result.getMessageProperties().getCorrelationId());
 	}
 
 	@Test
