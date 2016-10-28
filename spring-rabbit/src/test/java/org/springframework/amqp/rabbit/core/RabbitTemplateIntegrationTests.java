@@ -1128,6 +1128,8 @@ public class RabbitTemplateIntegrationTests {
 
 		template.receiveAndReply((ReceiveAndReplyCallback<String, String>) String::toUpperCase);
 
+		this.template.setReceiveTimeout(20000);
+
 		Message result = this.template.receive(REPLY_QUEUE.getName());
 		assertNotNull(result);
 		assertEquals("TEST", new String(result.getBody()));
