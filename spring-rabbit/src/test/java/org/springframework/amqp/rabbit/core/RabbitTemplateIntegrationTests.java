@@ -68,7 +68,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
-import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.Address;
@@ -1392,7 +1391,7 @@ public class RabbitTemplateIntegrationTests {
 			this.template.convertAndSend(UUID.randomUUID().toString(), "foo", "bar");
 			fail("expected exception");
 		}
-		catch (AmqpIOException | AmqpConnectException e) {
+		catch (AmqpException e) {
 			Method shutdownReason = shutdown.get().getReason();
 			assertThat(shutdownReason, instanceOf(AMQP.Channel.Close.class));
 			assertThat(((AMQP.Channel.Close) shutdownReason).getReplyCode(), equalTo(AMQP.NOT_FOUND));
