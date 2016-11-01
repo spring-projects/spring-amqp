@@ -39,7 +39,7 @@ public final class RabbitMatchers {
 
 		private final String pattern;
 
-		private RegexMatcher(String pattern) {
+		RegexMatcher(String pattern) {
 			this.pattern = pattern;
 		}
 

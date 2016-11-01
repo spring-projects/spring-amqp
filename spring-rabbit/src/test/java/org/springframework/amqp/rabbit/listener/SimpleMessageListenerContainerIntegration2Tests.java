@@ -580,10 +580,18 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@SuppressWarnings("serial")
 	private static final class Foo implements Serializable {
 
+		Foo() {
+			super();
+		}
+
 	}
 
 	@SuppressWarnings("serial")
 	private static final class Bar implements Serializable {
+
+		Bar() {
+			super();
+		}
 
 	}
 

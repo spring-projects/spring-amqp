@@ -248,7 +248,7 @@ public final class ConnectionFactoryUtils {
 
 		private final RabbitResourceHolder resourceHolder;
 
-		private RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey) {
+		RabbitResourceSynchronization(RabbitResourceHolder resourceHolder, Object resourceKey) {
 			super(resourceHolder, resourceKey);
 			this.resourceHolder = resourceHolder;
 		}

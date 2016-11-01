@@ -200,9 +200,6 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 	public abstract T build();
 
 
-	private RetryInterceptorBuilder() {
-	}
-
 	public static final class StatefulRetryInterceptorBuilder extends RetryInterceptorBuilder<StatefulRetryOperationsInterceptor> {
 
 		private final StatefulRetryOperationsInterceptorFactoryBean factoryBean =
@@ -211,6 +208,9 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 		private MessageKeyGenerator messageKeyGenerator;
 
 		private NewMessageIdentifier newMessageIdentifier;
+
+		StatefulRetryInterceptorBuilder() {
+		}
 
 		/**
 		 * Stateful retry requires messages to be identifiable. Default is to use the message id header; use a custom
@@ -283,9 +283,6 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 			return this.factoryBean.getObject();
 		}
 
-		private StatefulRetryInterceptorBuilder() {
-		}
-
 	}
 
 
@@ -294,13 +291,14 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 		private final StatelessRetryOperationsInterceptorFactoryBean factoryBean =
 				new StatelessRetryOperationsInterceptorFactoryBean();
 
+		StatelessRetryInterceptorBuilder() {
+			super();
+		}
+
 		@Override
 		public RetryOperationsInterceptor build() {
 			this.applyCommonSettings(this.factoryBean);
 			return this.factoryBean.getObject();
-		}
-
-		private StatelessRetryInterceptorBuilder() {
 		}
 
 	}

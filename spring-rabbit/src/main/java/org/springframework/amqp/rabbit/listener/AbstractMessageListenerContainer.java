@@ -1539,6 +1539,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	private static class DefaultExclusiveConsumerLogger implements ConditionalExceptionLogger {
 
+		DefaultExclusiveConsumerLogger() {
+			super();
+		}
+
 		@Override
 		public void log(Log logger, String message, Throwable t) {
 			if (t instanceof ShutdownSignalException) {
