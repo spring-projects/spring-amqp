@@ -34,6 +34,4 @@ public abstract class ExchangeTypes {
 
 	public static final String SYSTEM = "system";
 
-	public static final String DELAYED = "x-delayed-message";
-
 }
