@@ -722,7 +722,7 @@ public class EnableRabbitIntegrationTests {
 		@RabbitListener(id = "notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
 			bindings = @QueueBinding(
 				value = @Queue(autoDelete = "true", exclusive = "true", durable = "true"),
-				exchange = @Exchange(value = "auto.start", autoDelete = "true"),
+				exchange = @Exchange(value = "auto.start", autoDelete = "true", delayed = "${no.prop:false}"),
 				key = "auto.start")
 		)
 		public void handleWithAutoStartFalse(String foo) {

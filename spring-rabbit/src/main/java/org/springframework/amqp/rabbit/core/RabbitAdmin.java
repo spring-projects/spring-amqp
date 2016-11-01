@@ -35,7 +35,6 @@ import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Exchange;
-import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -89,6 +88,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #getQueueProperties(String)}.
 	 */
 	public static final Object QUEUE_CONSUMER_COUNT = "QUEUE_CONSUMER_COUNT";
+
+	private static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -549,7 +550,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 							arguments = new HashMap<String, Object>(arguments);
 						}
 						arguments.put("x-delayed-type", exchange.getType());
-						channel.exchangeDeclare(exchange.getName(), ExchangeTypes.DELAYED, exchange.isDurable(),
+						channel.exchangeDeclare(exchange.getName(), DELAYED_MESSAGE_EXCHANGE, exchange.isDurable(),
 								exchange.isAutoDelete(), exchange.isInternal(), arguments);
 					}
 					else {
