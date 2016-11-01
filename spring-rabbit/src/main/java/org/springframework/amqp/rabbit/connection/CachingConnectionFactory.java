@@ -847,7 +847,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final boolean transactional;
 
-		private CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
+		CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
 				Channel target,
 				LinkedList<ChannelProxy> channelList,
 				boolean transactional) {
@@ -1022,34 +1022,29 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							? getExecutorService()
 							: CachingConnectionFactory.this.deferredCloseExecutor);
 					final Channel channel = CachedChannelInvocationHandler.this.target;
-					executorService.execute(new Runnable() {
-
-						@Override
-						public void run() {
-							try {
-								if (CachingConnectionFactory.this.publisherConfirms) {
-									channel.waitForConfirmsOrDie(5000);
-								}
-								else {
-									Thread.sleep(5000);
-								}
+					executorService.execute(() -> {
+						try {
+							if (CachingConnectionFactory.this.publisherConfirms) {
+								channel.waitForConfirmsOrDie(5000);
 							}
-							catch (InterruptedException e) {
-								Thread.currentThread().interrupt();
-							}
-							catch (Exception e) { }
-							finally {
-								try {
-									if (channel.isOpen()) {
-										channel.close();
-									}
-								}
-								catch (IOException e) { }
-								catch (AlreadyClosedException e) { }
-								catch (TimeoutException e) { }
+							else {
+								Thread.sleep(5000);
 							}
 						}
-
+						catch (InterruptedException e1) {
+							Thread.currentThread().interrupt();
+						}
+						catch (Exception e2) { }
+						finally {
+							try {
+								if (channel.isOpen()) {
+									channel.close();
+								}
+							}
+							catch (IOException e3) { }
+							catch (AlreadyClosedException e4) { }
+							catch (TimeoutException e5) { }
+						}
 					});
 				}
 				else {
@@ -1074,7 +1069,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final AtomicBoolean closeNotified = new AtomicBoolean(false);
 
-		private ChannelCachingConnectionProxy(Connection target) {
+		ChannelCachingConnectionProxy(Connection target) {
 			this.target = target;
 		}
 
@@ -1183,6 +1178,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @since 1.5
 	 */
 	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
+
+		DefaultChannelCloseLogger() {
+			super();
+		}
 
 		@Override
 		public void log(Log logger, String message, Throwable t) {

@@ -55,7 +55,7 @@ public class ZipPostProcessor extends AbstractDeflaterPostProcessor {
 
 	private static final class SettableLevelZipOutputStream extends ZipOutputStream {
 
-		private SettableLevelZipOutputStream(OutputStream zipped, int level) {
+		SettableLevelZipOutputStream(OutputStream zipped, int level) {
 			super(zipped);
 			this.setLevel(level);
 		}

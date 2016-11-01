@@ -288,7 +288,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 		private final Runnable finishCallback;
 
-		private AggregatingCallback(int count, Runnable finishCallback) {
+		AggregatingCallback(int count, Runnable finishCallback) {
 			this.count = new AtomicInteger(count);
 			this.finishCallback = finishCallback;
 		}

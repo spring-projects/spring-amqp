@@ -112,6 +112,10 @@ public final class SimpleMessageListenerWithRabbitMQ {
 
 	private static class SimpleAdapter {
 
+		SimpleAdapter() {
+			super();
+		}
+
 		@SuppressWarnings("unused")
 		public void handleMessage(String input) {
 			logger.debug("Got it: " + input);

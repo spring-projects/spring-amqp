@@ -362,21 +362,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setChannelCheckoutTimeout(10);
 		ccf.setCacheMode(mode);
 
-		ccf.addConnectionListener(new ConnectionListener() { // simulate admin
-
-			@Override
-			public void onCreate(Connection connection) {
-				try {
-					connection.createChannel(false).close();
-				}
-				catch (Exception e) {
-					fail(e.getMessage());
-				}
+		ccf.addConnectionListener(connection -> {
+			try {
+				 // simulate admin
+				connection.createChannel(false).close();
 			}
-
-			@Override
-			public void onClose(Connection connection) {
-				// empty
+			catch (Exception e) {
+				fail(e.getMessage());
 			}
 		});
 

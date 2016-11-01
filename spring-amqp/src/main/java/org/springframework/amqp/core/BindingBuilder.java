@@ -180,7 +180,7 @@ public final class BindingBuilder {
 
 		protected final String exchange;
 
-		private AbstractRoutingKeyConfigurer(DestinationConfigurer destination, String exchange) {
+		AbstractRoutingKeyConfigurer(DestinationConfigurer destination, String exchange) {
 			this.destination = destination;
 			this.exchange = exchange;
 		}

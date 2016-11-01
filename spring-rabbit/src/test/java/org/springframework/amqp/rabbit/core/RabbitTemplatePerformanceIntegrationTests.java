@@ -131,6 +131,10 @@ public class RabbitTemplatePerformanceIntegrationTests {
 	@SuppressWarnings("serial")
 	private class TestTransactionManager extends AbstractPlatformTransactionManager {
 
+		TestTransactionManager() {
+			super();
+		}
+
 		@Override
 		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
 		}

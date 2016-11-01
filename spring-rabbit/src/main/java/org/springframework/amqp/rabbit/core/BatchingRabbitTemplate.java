@@ -76,13 +76,7 @@ public class BatchingRabbitTemplate extends RabbitTemplate implements Lifecycle 
 			}
 			Date next = this.batchingStrategy.nextRelease();
 			if (next != null) {
-				this.scheduledTask = this.scheduler.schedule(new Runnable() {
-
-					@Override
-					public void run() {
-						releaseBatches();
-					}
-				}, next);
+				this.scheduledTask = this.scheduler.schedule((Runnable) () -> releaseBatches(), next);
 			}
 		}
 	}

@@ -54,8 +54,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -721,22 +719,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		if (getTransactionManager() != null) {
 			try {
 				return new TransactionTemplate(getTransactionManager(), getTransactionAttribute())
-						.execute(new TransactionCallback<Boolean>() {
-							@Override
-							public Boolean doInTransaction(TransactionStatus status) {
-								ConnectionFactoryUtils.bindResourceToTransaction(
-										new RabbitResourceHolder(consumer.getChannel(), false),
-										getConnectionFactory(), true);
-								try {
-									return doReceiveAndExecute(consumer);
-								}
-								catch (RuntimeException e) {
-									throw e;
-								}
-								catch (Throwable e) { //NOSONAR
-									// ok to catch Throwable here because we re-throw it below
-									throw new WrappedTransactionException(e);
-								}
+						.execute(status -> {
+							ConnectionFactoryUtils.bindResourceToTransaction(
+									new RabbitResourceHolder(consumer.getChannel(), false),
+									getConnectionFactory(), true);
+							try {
+								return doReceiveAndExecute(consumer);
+							}
+							catch (RuntimeException e1) {
+								throw e1;
+							}
+							catch (Throwable e2) { //NOSONAR
+								// ok to catch Throwable here because we re-throw it below
+								throw new WrappedTransactionException(e2);
 							}
 						});
 			}
@@ -827,7 +822,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile FatalListenerStartupException startupException;
 
-		private AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
+		AsyncMessageProcessingConsumer(BlockingQueueConsumer consumer) {
 			this.consumer = consumer;
 			this.start = new CountDownLatch(1);
 		}

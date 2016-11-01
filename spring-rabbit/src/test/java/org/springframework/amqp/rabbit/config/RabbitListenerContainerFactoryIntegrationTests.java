@@ -131,6 +131,10 @@ public class RabbitListenerContainerFactoryIntegrationTests {
 
 	private static class UpperCaseMessageConverter implements MessageConverter {
 
+		UpperCaseMessageConverter() {
+			super();
+		}
+
 		@Override
 		public Message toMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 			return new Message(object.toString().toUpperCase().getBytes(), new MessageProperties());

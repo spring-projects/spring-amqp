@@ -109,7 +109,7 @@ public final class ConsumerChannelRegistry {
 
 		private final ConnectionFactory connectionFactory;
 
-		private ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
+		ChannelHolder(Channel channel, ConnectionFactory connectionFactory) {
 			this.channel = channel;
 			this.connectionFactory = connectionFactory;
 		}
