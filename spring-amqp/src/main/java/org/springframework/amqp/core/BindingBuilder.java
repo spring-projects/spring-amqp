@@ -58,7 +58,7 @@ public final class BindingBuilder {
 		protected final String name;
 		protected final DestinationType type;
 
-		private DestinationConfigurer(String name, DestinationType type) {
+		DestinationConfigurer(String name, DestinationType type) {
 			this.name = name;
 			this.type = type;
 		}
@@ -90,7 +90,7 @@ public final class BindingBuilder {
 
 		protected final HeadersExchange exchange;
 
-		private HeadersExchangeMapConfigurer(DestinationConfigurer destination, HeadersExchange exchange) {
+		HeadersExchangeMapConfigurer(DestinationConfigurer destination, HeadersExchange exchange) {
 			this.destination = destination;
 			this.exchange = exchange;
 		}
@@ -119,7 +119,7 @@ public final class BindingBuilder {
 
 			private final String key;
 
-			private HeadersExchangeSingleValueBindingCreator(String key) {
+			HeadersExchangeSingleValueBindingCreator(String key) {
 				Assert.notNull(key, "key must not be null");
 				this.key = key;
 			}
@@ -143,7 +143,7 @@ public final class BindingBuilder {
 
 			private final Map<String, Object> headerMap;
 
-			private HeadersExchangeKeysBindingCreator(String[] headerKeys, boolean matchAll) {
+			HeadersExchangeKeysBindingCreator(String[] headerKeys, boolean matchAll) {
 				Assert.notEmpty(headerKeys, "header key list must not be empty");
 				this.headerMap = createMapForKeys(headerKeys);
 				this.headerMap.put("x-match", (matchAll ? "all" : "any"));
@@ -160,7 +160,7 @@ public final class BindingBuilder {
 
 			private final Map<String, Object> headerMap;
 
-			private HeadersExchangeMapBindingCreator(Map<String, Object> headerMap, boolean matchAll) {
+			HeadersExchangeMapBindingCreator(Map<String, Object> headerMap, boolean matchAll) {
 				Assert.notEmpty(headerMap, "header map must not be empty");
 				this.headerMap = new HashMap<String, Object>(headerMap);
 				this.headerMap.put("x-match", (matchAll ? "all" : "any"));
@@ -188,7 +188,7 @@ public final class BindingBuilder {
 
 	public static final class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
-		private TopicExchangeRoutingKeyConfigurer(DestinationConfigurer destination, TopicExchange exchange) {
+		TopicExchangeRoutingKeyConfigurer(DestinationConfigurer destination, TopicExchange exchange) {
 			super(destination, exchange.getName());
 		}
 
@@ -205,7 +205,7 @@ public final class BindingBuilder {
 
 	public static final class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
-		private GenericExchangeRoutingKeyConfigurer(DestinationConfigurer destination, Exchange exchange) {
+		GenericExchangeRoutingKeyConfigurer(DestinationConfigurer destination, Exchange exchange) {
 			super(destination, exchange.getName());
 		}
 
@@ -243,7 +243,7 @@ public final class BindingBuilder {
 
 	public static final class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
 
-		private DirectExchangeRoutingKeyConfigurer(DestinationConfigurer destination, DirectExchange exchange) {
+		DirectExchangeRoutingKeyConfigurer(DestinationConfigurer destination, DirectExchange exchange) {
 			super(destination, exchange.getName());
 		}
 
