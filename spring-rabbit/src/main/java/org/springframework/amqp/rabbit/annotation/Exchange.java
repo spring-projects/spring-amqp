@@ -65,6 +65,7 @@ public @interface Exchange {
 
 	/**
 	 * @return true if the exchange is to be declared as internal.
+	 * @since 1.6
 	 */
 	String internal() default "false";
 
@@ -73,6 +74,14 @@ public @interface Exchange {
 	 * @since 1.6
 	 */
 	String ignoreDeclarationExceptions() default "false";
+
+	/**
+	 * @return true if the exchange is to be declared as an
+	 * 'x-delayed-message' exchange. Requires the delayed message exchange
+	 * plugin on the broker.
+	 * @since 1.6.4
+	 */
+	String delayed() default "false";
 
 	/**
 	 * @return the arguments to apply when declaring this exchange.

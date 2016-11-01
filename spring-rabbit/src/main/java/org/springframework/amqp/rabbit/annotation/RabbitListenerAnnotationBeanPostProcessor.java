@@ -559,6 +559,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		AbstractExchange abstractExchange = (AbstractExchange) exchange;
 		abstractExchange.setInternal(resolveExpressionAsBoolean(bindingExchange.internal()));
+		abstractExchange.setDelayed(resolveExpressionAsBoolean(bindingExchange.delayed()));
 		abstractExchange.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingExchange.ignoreDeclarationExceptions()));
 		((AbstractDeclarable) actualBinding)
 				.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(binding.ignoreDeclarationExceptions()));
