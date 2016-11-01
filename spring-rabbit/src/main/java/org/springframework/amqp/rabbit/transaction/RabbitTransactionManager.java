@@ -112,12 +112,14 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	/**
 	 * Make sure the ConnectionFactory has been set.
 	 */
+	@Override
 	public void afterPropertiesSet() {
 		if (getConnectionFactory() == null) {
 			throw new IllegalArgumentException("Property 'connectionFactory' is required");
 		}
 	}
 
+	@Override
 	public Object getResourceFactory() {
 		return getConnectionFactory();
 	}
@@ -215,6 +217,10 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 
 		private RabbitResourceHolder resourceHolder;
 
+		RabbitTransactionObject() {
+			super();
+		}
+
 		public void setResourceHolder(RabbitResourceHolder resourceHolder) {
 			this.resourceHolder = resourceHolder;
 		}
@@ -223,10 +229,12 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 			return this.resourceHolder;
 		}
 
+		@Override
 		public boolean isRollbackOnly() {
 			return this.resourceHolder.isRollbackOnly();
 		}
 
+		@Override
 		public void flush() {
 			// no-op
 		}

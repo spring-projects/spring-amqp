@@ -247,14 +247,9 @@ public class RetryInterceptorBuilderSupportTests {
 	}
 
 	private Foo createDelegate(MethodInterceptor interceptor, final AtomicInteger count) {
-		Foo delegate = new Foo() {
-
-			@Override
-			public void onMessage(String s, Message message) {
-				count.incrementAndGet();
-				throw new RuntimeException("foo", new RuntimeException("bar"));
-			}
-
+		Foo delegate = (s, message) -> {
+			count.incrementAndGet();
+			throw new RuntimeException("foo", new RuntimeException("bar"));
 		};
 		ProxyFactory factory = new ProxyFactory();
 		factory.addAdvisor(new DefaultPointcutAdvisor(Pointcut.TRUE, interceptor));

@@ -85,15 +85,22 @@ public class MarshallingMessageConverterTests {
 
 	private static class TestMarshaller implements Marshaller, Unmarshaller {
 
+		TestMarshaller() {
+			super();
+		}
+
+		@Override
 		public boolean supports(Class<?> clazz) {
 			return true;
 		}
 
+		@Override
 		public void marshal(Object graph, Result result) throws IOException, XmlMappingException {
 			String response = ((String) graph).toUpperCase();
 			((StreamResult) result).getOutputStream().write(response.getBytes());
 		}
 
+		@Override
 		public Object unmarshal(Source source) throws IOException, XmlMappingException {
 			byte[] buffer = new byte["UNMARSHAL TEST".length()];
 			((StreamSource) source).getInputStream().read(buffer);

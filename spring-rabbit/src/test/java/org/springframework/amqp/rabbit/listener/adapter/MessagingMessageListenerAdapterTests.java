@@ -175,6 +175,10 @@ public class MessagingMessageListenerAdapterTests {
 
 		private Object payload;
 
+		SampleBean() {
+			super();
+		}
+
 		@SuppressWarnings("unused")
 		public Message<String> echo(Message<String> input) {
 			return MessageBuilder.withPayload(input.getPayload())

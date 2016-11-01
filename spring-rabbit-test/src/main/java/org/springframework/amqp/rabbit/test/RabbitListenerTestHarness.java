@@ -114,6 +114,10 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 
 		private final BlockingQueue<InvocationData> invocationData = new LinkedBlockingQueue<InvocationData>();
 
+		CaptureAdvice() {
+			super();
+		}
+
 		@Override
 		public Object invoke(MethodInvocation invocation) throws Throwable {
 			Object result = null;

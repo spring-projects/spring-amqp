@@ -190,7 +190,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 		private final Type inferredArgumentType;
 
-		private MessagingMessageConverterAdapter(Object bean, Method method) {
+		MessagingMessageConverterAdapter(Object bean, Method method) {
 			this.bean = bean;
 			this.method = method;
 			this.inferredArgumentType = determineInferredType();

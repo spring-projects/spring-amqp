@@ -714,7 +714,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		private volatile RabbitConverterFuture<C> future;
 
-		private CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
+		CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
 				CorrelationData correlationData) {
 			this.userPostProcessor = userPostProcessor;
 			this.correlationData = correlationData;

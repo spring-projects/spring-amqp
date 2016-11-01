@@ -52,7 +52,7 @@ public class GZipPostProcessor extends AbstractDeflaterPostProcessor {
 
 	private static final class SettableLevelGZIPOutputStream extends GZIPOutputStream {
 
-		private SettableLevelGZIPOutputStream(OutputStream out, int level) throws IOException {
+		SettableLevelGZIPOutputStream(OutputStream out, int level) throws IOException {
 			super(out);
 			this.def.setLevel(level);
 		}

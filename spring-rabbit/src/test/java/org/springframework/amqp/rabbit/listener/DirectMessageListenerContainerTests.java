@@ -67,7 +67,6 @@ import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationEvent;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
@@ -262,24 +261,15 @@ public class DirectMessageListenerContainerTests {
 		final CountDownLatch latch1 = new CountDownLatch(2);
 		final AtomicReference<ApplicationEvent> failEvent = new AtomicReference<>();
 		final CountDownLatch latch2 = new CountDownLatch(2);
-		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
-
-			@Override
-			public void publishEvent(Object event) {
+		container.setApplicationEventPublisher(event -> {
+			if (event instanceof ListenerContainerIdleEvent) {
+				times.add(System.currentTimeMillis());
+				latch1.countDown();
 			}
-
-			@Override
-			public void publishEvent(ApplicationEvent event) {
-				if (event instanceof ListenerContainerIdleEvent) {
-					times.add(System.currentTimeMillis());
-					latch1.countDown();
-				}
-				else {
-					failEvent.set(event);
-					latch2.countDown();
-				}
+			else {
+				failEvent.set((ApplicationEvent) event);
+				latch2.countDown();
 			}
-
 		});
 		container.setMessageListener(m -> { });
 		container.setIdleEventInterval(50L);
