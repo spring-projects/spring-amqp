@@ -292,6 +292,7 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 				new StatelessRetryOperationsInterceptorFactoryBean();
 
 		StatelessRetryInterceptorBuilder() {
+			super();
 		}
 
 		@Override
