@@ -1018,34 +1018,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (CachingConnectionFactory.this.active &&
 						(CachingConnectionFactory.this.publisherConfirms ||
 								CachingConnectionFactory.this.publisherReturns)) {
-					ExecutorService executorService = (getExecutorService() != null
-							? getExecutorService()
-							: CachingConnectionFactory.this.deferredCloseExecutor);
-					final Channel channel = CachedChannelInvocationHandler.this.target;
-					executorService.execute(() -> {
-						try {
-							if (CachingConnectionFactory.this.publisherConfirms) {
-								channel.waitForConfirmsOrDie(5000);
-							}
-							else {
-								Thread.sleep(5000);
-							}
-						}
-						catch (InterruptedException e1) {
-							Thread.currentThread().interrupt();
-						}
-						catch (Exception e2) { }
-						finally {
-							try {
-								if (channel.isOpen()) {
-									channel.close();
-								}
-							}
-							catch (IOException e3) { }
-							catch (AlreadyClosedException e4) { }
-							catch (TimeoutException e5) { }
-						}
-					});
+					asyncClose();
 				}
 				else {
 					this.target.close();
@@ -1059,6 +1032,37 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			finally {
 				this.target = null;
 			}
+		}
+
+		private void asyncClose() {
+			ExecutorService executorService = (getExecutorService() != null
+					? getExecutorService()
+					: CachingConnectionFactory.this.deferredCloseExecutor);
+			final Channel channel = CachedChannelInvocationHandler.this.target;
+			executorService.execute(() -> {
+				try {
+					if (CachingConnectionFactory.this.publisherConfirms) {
+						channel.waitForConfirmsOrDie(5000);
+					}
+					else {
+						Thread.sleep(5000);
+					}
+				}
+				catch (InterruptedException e1) {
+					Thread.currentThread().interrupt();
+				}
+				catch (Exception e2) { }
+				finally {
+					try {
+						if (channel.isOpen()) {
+							channel.close();
+						}
+					}
+					catch (IOException e3) { }
+					catch (AlreadyClosedException e4) { }
+					catch (TimeoutException e5) { }
+				}
+			});
 		}
 
 	}
