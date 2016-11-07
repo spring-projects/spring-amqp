@@ -263,11 +263,12 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 			if (!transactional) {
 
 				int messagesReceivedAfterStop = listener.getCount();
-				waited = latch.await(1000, TimeUnit.MILLISECONDS);
+				boolean prefetchNoTx = transactionMode == TransactionMode.PREFETCH_NO_TX;
+				waited = latch.await(prefetchNoTx ? 100 : 10000, TimeUnit.MILLISECONDS);
 				// AMQP-338
 				logger.info("All messages received after stop: " + waited + " (" + messagesReceivedAfterStop + ")");
 
-				if (transactionMode == TransactionMode.PREFETCH_NO_TX) {
+				if (prefetchNoTx) {
 					assertFalse("Didn't expect to receive all messages after stop", waited);
 				}
 				else {
