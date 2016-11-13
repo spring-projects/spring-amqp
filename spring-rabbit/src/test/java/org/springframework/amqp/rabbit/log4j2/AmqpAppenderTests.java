@@ -57,6 +57,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 /**
  * @author Gary Russell
  * @author Stephen Oakey
+ * @author Artem Bilan
  *
  * @since 1.6
  */
@@ -143,7 +144,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testDefaultConfiguration() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 
 		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
 		manager.configureRabbitConnectionFactory(bean);
@@ -154,7 +155,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testCustomHostInformation() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 
 		String host = "rabbitmq.com";
 		int port = 5671;
@@ -180,7 +181,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testDefaultSslConfiguration() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 		ReflectionTestUtils.setField(manager, "useSsl", true);
 
 		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
@@ -193,7 +194,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testSslConfigurationWithAlgorithm() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 		ReflectionTestUtils.setField(manager, "useSsl", true);
 		String sslAlgorithm = "TLSv2";
 		ReflectionTestUtils.setField(manager, "sslAlgorithm", sslAlgorithm);
@@ -208,7 +209,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testSslConfigurationWithSslPropertiesResource() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 		ReflectionTestUtils.setField(manager, "useSsl", true);
 
 		String path = "ssl.properties";
@@ -230,7 +231,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testSslConfigurationWithKeyAndTrustStore() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 		ReflectionTestUtils.setField(manager, "useSsl", true);
 
 		String keyStore = "file:/path/to/client/keycert.p12";
@@ -263,7 +264,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testSslConfigurationWithKeyAndTrustStoreDefaultTypes() {
-		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager("test");
+		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 		ReflectionTestUtils.setField(manager, "useSsl", true);
 
 		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);
