@@ -17,8 +17,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -79,7 +77,6 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.BackOffExecution;
@@ -230,28 +227,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * provided here should not contain a transaction interceptor (otherwise two transactions would be be applied).
 	 * @param adviceChain the advice chain to set
 	 */
-	public void setAdviceChain(Advice[] adviceChain) {
+	public void setAdviceChain(Advice... adviceChain) {
 		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 		for (final Advice advice : this.adviceChain) {
 			if (advice instanceof StatefulRetryOperationsInterceptor) {
-				ReflectionUtils.doWithMethods(StatefulRetryOperationsInterceptor.class, new ReflectionUtils.MethodCallback() {
-
-					@Override
-					public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
-						try {
-							method.invoke(advice, Boolean.TRUE);
-						}
-						catch (InvocationTargetException e) {
-							logger.error("Failed to set useRawKey in retry interceptor", e);
-						}
-					}
-				}, new ReflectionUtils.MethodFilter() {
-
-					@Override
-					public boolean matches(Method method) {
-						return method.getName().equals("setUseRawKey");
-					}
-				});
+				((StatefulRetryOperationsInterceptor) advice).setUseRawKey(true);
 			}
 		}
 	}

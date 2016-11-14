@@ -107,7 +107,7 @@ public class MissingIdRetryTests {
 	@SuppressWarnings("rawtypes")
 	@Test
 	public void testWithId() throws Exception {
-		// 2 messsages; each retried twice by retry interceptor
+		// 2 messages; each retried twice by retry interceptor
 		this.latch = new CountDownLatch(6);
 		ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("retry-context.xml", this.getClass());
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
@@ -147,9 +147,12 @@ public class MissingIdRetryTests {
 	}
 
 	public class POJO {
+
 		public void handleMessage(String foo) {
 			latch.countDown();
 			throw new RuntimeException("fail");
 		}
+
 	}
+
 }
