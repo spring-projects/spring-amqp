@@ -40,8 +40,11 @@ import org.springframework.util.Assert;
  * Must be placed before the retry interceptor in the advice chain.
  * @author Gary Russell
  * @since 1.1.2
+ * @deprecated since 1.7 in favor of non-retryable messages logic in the {@code StatefulRetryOperationsInterceptor}
  *
  */
+@Deprecated
+@SuppressWarnings("deprecation")
 public class MissingMessageIdAdvice implements MethodInterceptor {
 
 	private static final Log logger = LogFactory.getLog(MissingMessageIdAdvice.class);

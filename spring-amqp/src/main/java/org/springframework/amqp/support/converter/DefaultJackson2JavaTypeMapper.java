@@ -21,8 +21,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 /**
@@ -94,11 +92,13 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 
 			JavaType contentClassType = getClassIdType(retrieveHeader(properties, getContentClassIdFieldName()));
 			if (classType.getKeyType() == null) {
-				return CollectionType.construct(classType.getRawClass(), contentClassType);
+				return TypeFactory.defaultInstance()
+						.constructCollectionLikeType(classType.getRawClass(), contentClassType);
 			}
 
 			JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
-			return MapType.construct(classType.getRawClass(), keyClassType, contentClassType);
+			return TypeFactory.defaultInstance()
+					.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
 		}
 
 		if (hasInferredTypeHeader) {

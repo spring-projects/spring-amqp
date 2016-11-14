@@ -29,17 +29,20 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.appender.AbstractManager;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
@@ -55,22 +58,25 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.DeclareExchangeConnectionListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.support.LogAppenderUtils;
 
+import com.rabbitmq.client.ConnectionFactory;
+
 /**
  * A Log4j 2 appender that publishes logging events to an AMQP Exchange.
  *
  * @author Gary Russell
+ * @author Stephen Oakey
+ * @author Artem Bilan
  *
  * @since 1.6
  */
 @Plugin(name = "RabbitMQ", category = "Core", elementType = "appender", printObject = true)
 public class AmqpAppender extends AbstractAppender {
-
-	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Key name for the application id (if there is one set via the appender config) in the message properties.
@@ -116,6 +122,7 @@ public class AmqpAppender extends AbstractAppender {
 
 	@PluginFactory
 	public static AmqpAppender createAppender(
+			@PluginConfiguration final Configuration configuration,
 			@PluginAttribute("name") String name,
 			@PluginElement("Layout") Layout<? extends Serializable> layout,
 			@PluginElement("Filter") Filter filter,
@@ -142,13 +149,13 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("charset") String charset) {
 		if (name == null) {
-			LogFactory.getLog("log4j2AppenderErrors").error("No name for AmqpAppender");
+			LOGGER.error("No name for AmqpAppender");
 		}
 		Layout<? extends Serializable> theLayout = layout;
 		if (theLayout == null) {
 			theLayout = PatternLayout.createDefaultLayout();
 		}
-		AmqpManager manager = new AmqpManager(name);
+		AmqpManager manager = new AmqpManager(configuration.getLoggerContext(), name);
 		manager.host = host;
 		manager.port = port;
 		manager.addresses = addresses;
@@ -171,9 +178,11 @@ public class AmqpAppender extends AbstractAppender {
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
-		manager.activateOptions();
-		appender.startSenders();
-		return appender;
+		if (manager.activateOptions()) {
+			appender.startSenders();
+			return appender;
+		}
+		return null;
 	}
 
 	/**
@@ -188,7 +197,7 @@ public class AmqpAppender extends AbstractAppender {
 
 	@Override
 	public void append(LogEvent event) {
-		this.events.add(new Event(event, event.getContextMap()));
+		this.events.add(new Event(event, event.getContextData().toMap()));
 	}
 
 	/**
@@ -285,6 +294,7 @@ public class AmqpAppender extends AbstractAppender {
 						if (retries < AmqpAppender.this.manager.maxSenderRetries) {
 							// Schedule a retry based on the number of times I've tried to re-send this
 							AmqpAppender.this.manager.retryTimer.schedule(new TimerTask() {
+
 								@Override
 								public void run() {
 									AmqpAppender.this.events.add(event);
@@ -338,7 +348,7 @@ public class AmqpAppender extends AbstractAppender {
 
 	}
 
-	private static final class AmqpManager extends AbstractManager {
+	protected static class AmqpManager extends AbstractManager {
 
 		/**
 		 * Name of the exchange to publish log events to.
@@ -459,36 +469,75 @@ public class AmqpAppender extends AbstractAppender {
 		 */
 		private final Timer retryTimer = new Timer("log-event-retry-delay", true);
 
-		protected AmqpManager(String name) {
-			super(name);
+		protected AmqpManager(LoggerContext loggerContext, String name) {
+			super(loggerContext, name);
 		}
 
-		private void activateOptions() {
-			this.routingKeyLayout = PatternLayout.createLayout(this.routingKeyPattern
-					.replaceAll("%X\\{applicationId\\}", this.applicationId),
-					null, null, null, Charset.forName(this.charset), false, true, null, null);
-			this.connectionFactory = new CachingConnectionFactory();
-			this.connectionFactory.setHost(this.host);
-			this.connectionFactory.setPort(this.port);
-			if (this.addresses != null) {
-				this.connectionFactory.setAddresses(this.addresses);
+		private boolean activateOptions() {
+			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
+			if (rabbitConnectionFactory != null) {
+				this.routingKeyLayout = PatternLayout.createLayout(this.routingKeyPattern
+								.replaceAll("%X\\{applicationId\\}", this.applicationId),
+						null, null, null, Charset.forName(this.charset), false, true, null, null);
+				this.connectionFactory = new CachingConnectionFactory(createRabbitConnectionFactory());
+				if (this.addresses != null) {
+					this.connectionFactory.setAddresses(this.addresses);
+				}
+				if (this.clientConnectionProperties != null) {
+					LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory,
+							this.clientConnectionProperties);
+				}
+				setUpExchangeDeclaration();
+				this.senderPool = Executors.newCachedThreadPool();
+				return true;
 			}
-			this.connectionFactory.setUsername(this.username);
-			this.connectionFactory.setPassword(this.password);
-			this.connectionFactory.setVirtualHost(this.virtualHost);
-			if (this.clientConnectionProperties != null) {
-				LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory,
-						this.clientConnectionProperties);
+			return false;
+		}
+
+		/**
+		 * Create the {@link ConnectionFactory}.
+		 *
+		 * @return a {@link ConnectionFactory}.
+		 */
+		protected ConnectionFactory createRabbitConnectionFactory() {
+			RabbitConnectionFactoryBean factoryBean = new RabbitConnectionFactoryBean();
+			configureRabbitConnectionFactory(factoryBean);
+			try {
+				factoryBean.afterPropertiesSet();
+				return factoryBean.getObject();
 			}
-			setUpExchangeDeclaration();
-			this.senderPool = Executors.newCachedThreadPool();
+			catch (Exception e) {
+				LOGGER.error("Failed to create customized Rabbit ConnectionFactory.", e);
+				return null;
+			}
+		}
+
+		/**
+		 * Configure the {@link RabbitConnectionFactoryBean}. Sub-classes may override to
+		 * customize the configuration of the bean.
+		 *
+		 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
+		 */
+		protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
+			factoryBean.setHost(this.host);
+			factoryBean.setPort(this.port);
+			factoryBean.setUsername(this.username);
+			factoryBean.setPassword(this.password);
+			factoryBean.setVirtualHost(this.virtualHost);
 		}
 
 		@Override
-		protected void releaseSub() {
+		protected boolean releaseSub(long timeout, TimeUnit timeUnit) {
 			this.retryTimer.cancel();
 			this.senderPool.shutdownNow();
 			this.connectionFactory.destroy();
+			try {
+				return this.senderPool.awaitTermination(timeout, timeUnit);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new IllegalStateException(e);
+			}
 		}
 
 		protected void setUpExchangeDeclaration() {

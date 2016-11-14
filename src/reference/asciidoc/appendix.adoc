@@ -7,6 +7,237 @@ See <<whats-new>>.
 [[previous-whats-new]]
 === Previous Releases
 
+==== Changes in 1.6 Since 1.5
+
+===== Testing Support
+
+A new testing support library is now provided.
+See <<testing>> for more information.
+
+===== Builder
+
+Builders are now available providing a fluent API for configuring `Queue` and `Exchange` objects.
+See <<builder-api>> for more information.
+
+===== Namespace Changes
+
+====== Connection Factory
+
+It is now possible to add a `thread-factory` to a connection factory bean declaration, for example to name the threads
+created by the `amqp-client` library.
+See <<connections>> for more information.
+
+When using `CacheMode.CONNECTION`, you can now limit the total number of connections allowed.
+See <<connections>> for more information.
+
+====== Queue Definitions
+
+It is now possible to provide a naming strategy for anonymous queues; see <<anonymous-queue>> for more information.
+
+===== Listener Container Changes
+
+====== Idle Message Listener Detection
+
+It is now possible to configure listener containers to publish `ApplicationEvent` s when idle.
+See <<idle-containers>> for more information.
+
+====== Mismatched Queue Detection
+
+By default, when a listener container starts, if queues with mismatched properties or arguments were detected,
+the container would log the exception but continue to listen.
+The container now has a property `mismatchedQueuesFatal` which will prevent the container (and context) from
+starting if the problem is detected during startup.
+It will also stop the container if the problem is detected later, such as after recovering from a connection failure.
+See <<containerAttributes>> for more information.
+
+====== Listener Container Logging
+
+Now listener container provides its `beanName` into the internal `SimpleAsyncTaskExecutor` as a `threadNamePrefix`.
+It is useful for logs analysis.
+
+====== Default Error Handler
+
+The default error handler (`ConditionalRejectingErrorHandler`) now considers irrecoverable `@RabbitListener`
+exceptions as fatal.
+See <<exception-handling>> for more information.
+
+
+===== AutoDeclare and RabbitAdmins
+
+See <<containerAttributes>> (`autoDeclare`) for some changes to the semantics of that option with respect to the use
+of `RabbitAdmin` s in the application context.
+
+===== AmqpTemplate: receive with timeout
+
+A number of new `receive()` methods with `timeout` have been introduced for the `AmqpTemplate`
+ and its `RabbitTemplate` implementation.
+See <<polling-consumer>> for more information.
+
+===== AsyncRabbitTemplate
+
+A new `AsyncRabbitTemplate` has been introduced.
+This template provides a number of send and receive methods, where the return value is a `ListenableFuture`, which can
+be used later to obtain the result either synchronously, or asynchronously.
+See <<async-template>> for more information.
+
+===== RabbitTemplate Changes
+
+1.4.1 introduced the ability to use https://www.rabbitmq.com/direct-reply-to.html[Direct reply-to] when the broker
+supports it; it is more efficient than using a temporary queue for each reply.
+This version allows you to override this default behavior and use a temporary queue by setting the
+`useTemporaryReplyQueues` property to `true`.
+See <<direct-reply-to>> for more information.
+
+The `RabbitTemplate` now supports a `user-id-expression` (`userIdExpression` when using Java configuration).
+See https://www.rabbitmq.com/validated-user-id.html[Validated User-ID RabbitMQ documentation] and <<template-user-id>> for more information.
+
+===== Message Properties
+
+====== CorrelationId
+
+The `correlationId` message property can now be a `String`.
+See <<message-properties-converters>> for more information.
+
+====== Long String Headers
+
+Previously, the `DefaultMessagePropertiesConverter` "converted" headers longer than the long string limit (default 1024)
+to a `DataInputStream` (actually it just referenced the `LongString`'s `DataInputStream`).
+On output, this header was not converted (except to a String, e.g. `java.io.DataInputStream@1d057a39` by calling
+`toString()` on the stream).
+
+With this release, long `LongString` s are now left as `LongString` s by default; you can access the contents via
+the `getBytes[]`, `toString()`, or `getStream()` methods.
+A large incoming `LongString` is now correctly "converted" on output too.
+
+See <<message-properties-converters>> for more information.
+
+====== Inbound Delivery Mode
+
+The `deliveryMode` property is no longer mapped to the `MessageProperties.deliveryMode`; this is to avoid unintended
+propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `deliveryMode` header is mapped to `MessageProperties.receivedDeliveryMode`.
+
+See <<message-properties-converters>> for more information.
+
+When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_DELIVERY_MODE`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+====== Inbound User ID
+
+The `user_id` property is no longer mapped to the `MessageProperties.userId`; this is to avoid unintended
+propagation if the the same `MessageProperties` object is used to send an outbound message.
+Instead, the inbound `userId` header is mapped to `MessageProperties.receivedUserId`.
+
+See <<message-properties-converters>> for more information.
+
+When using annotated endpoints, the header is provided in the header named `AmqpHeaders.RECEIVED_USER_ID`.
+
+See <<async-annotation-driven-enable-signature>> for more information.
+
+===== RabbitAdmin Changes
+
+====== Declaration Failures
+
+Previously, the `ignoreDeclarationFailures` flag only took effect for `IOException` on the channel (such as mis-matched
+arguments).
+It now takes effect for any exception (such as `TimeoutException`).
+In addition, a `DeclarationExceptionEvent` is now published whenever a declaration fails.
+The `RabbitAdmin` last declaration event is also available as a property `lastDeclarationExceptionEvent`.
+See <<broker-configuration>> for more information.
+
+===== @RabbitListener Changes
+
+====== Multiple Containers per Bean
+
+When using Java 8 or later, it is now possible to add multiple `@RabbitListener` annotations to `@Bean` classes or
+their methods.
+When using Java 7 or earlier, you can use the `@RabbitListeners` container annotation to provide the same
+functionality.
+See <<repeatable-rabbit-listener>> for more information.
+
+====== @SendTo SpEL Expressions
+
+`@SendTo` for routing replies with no `replyTo` property can now be SpEL expressions evaluated against the
+request/reply.
+See <<async-annotation-driven-reply>> for more information.
+
+====== @QueueBinding Improvements
+
+You can now specify arguments for queues, exchanges and bindings in `@QueueBinding` annotations.
+Header exchanges are now supported by `@QueueBinding`.
+See <<async-annotation-driven>> for more information.
+
+===== Delayed Message Exchange
+
+Spring AMQP now has first class support for the RabbitMQ Delayed Message Exchange plugin.
+See <<delayed-message-exchange>> for more information.
+
+===== Exchange internal flag
+
+Any `Exchange` definitions can now be marked as `internal` and the `RabbitAdmin` will pass the value to the broker when
+declaring the exchange.
+See <<broker-configuration>> for more information.
+
+===== CachingConnectionFactory Changes
+
+====== CachingConnectionFactory Cache Statistics
+
+The `CachingConnectionFactory` now provides cache properties at runtime and over JMX.
+See <<runtime-cache-properties>> for more information.
+
+====== Access the Underlying RabbitMQ Connection Factory
+
+A new getter has been added to provide access to the underlying factory.
+This can be used, for example, to add custom connection properties.
+See <<custom-client-props>> for more information.
+
+====== Channel Cache
+
+The default channel cache size has been increased from 1 to 25.
+See <<connections>> for more information.
+
+In addition, the `SimpleMessageListenerContainer` no longer adjusts the cache size to be at least as large as the number
+of `concurrentConsumers` - this was superfluous, since the container consumer channels are never cached.
+
+===== RabbitConnectionFactoryBean
+
+The factory bean now exposes a property to add client connection properties to connections made by the resulting
+factory.
+
+===== Java Deserialization
+
+A "white list" of allowable classes can now be configured when using Java deserialization.
+It is important to consider creating a white list if you accept messages with serialized java objects from
+untrusted sources.
+See <<java-deserialization>> for more information.
+
+===== JSON MessageConverter
+
+Improvements to the JSON message converter now allow the consumption of messages that don't have type information
+in message headers.
+See <<async-annotation-conversion>> and <<json-message-converter>> for more information.
+
+===== Logging Appenders
+
+====== Log4j2
+
+A log4j2 appender has been added, and the appenders can now be configured with an `addresses` property to connect
+to a broker cluster.
+
+====== Client Connection Properties
+
+You can now add custom client connection properties to RabbitMQ connections.
+
+See <<logging>> for more information.
+
+===== RabbitTemplate Changes
+
+IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an existing transaction if it ran on a transactional listener container thread.
+This was a serious bug; however, users might have relied on this behavior.
+Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
+
+
 ==== Changes in 1.5 Since 1.4
 
 ===== spring-erlang is No Longer Supported
