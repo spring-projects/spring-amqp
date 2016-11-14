@@ -121,8 +121,6 @@ public class MessageProperties implements Serializable {
 
 	private volatile MessageDeliveryMode receivedDeliveryMode;
 
-	private volatile boolean finalRetryForMessageWithNoId;
-
 	private volatile transient Type inferredArgumentType;
 
 	private volatile transient Method targetMethod;
@@ -491,14 +489,6 @@ public class MessageProperties implements Serializable {
 	 */
 	public void setTargetBean(Object targetBean) {
 		this.targetBean = targetBean;
-	}
-
-	public boolean isFinalRetryForMessageWithNoId() {
-		return this.finalRetryForMessageWithNoId;
-	}
-
-	public void setFinalRetryForMessageWithNoId(boolean finalRetryForMessageWithNoId) {
-		this.finalRetryForMessageWithNoId = finalRetryForMessageWithNoId;
 	}
 
 	@Override

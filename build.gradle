@@ -241,9 +241,6 @@ project('spring-rabbit') {
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 
 		compile ("org.apache.logging.log4j:log4j-core:$log4j2Version", optional)
-
-//		testCompile "commons-cli:commons-cli:$commonsCliVersion"
-
 	}
 
 }

@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.retry.MessageKeyGenerator;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.retry.NewMessageIdentifier;
@@ -75,7 +76,6 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 		retryInterceptor.setRetryOperations(retryTemplate);
 
 		retryInterceptor.setNewItemIdentifier(new NewMethodArgumentsIdentifier() {
-
 			public boolean isNew(Object[] args) {
 				Message message = (Message) args[1];
 				if (StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier == null) {
@@ -85,12 +85,10 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 					return StatefulRetryOperationsInterceptorFactoryBean.this.newMessageIdentifier.isNew(message);
 				}
 			}
-
 		});
 
 		final MessageRecoverer messageRecoverer = getMessageRecoverer();
 		retryInterceptor.setRecoverer(new MethodInvocationRecoverer<Void>() {
-
 			public Void recover(Object[] args, Throwable cause) {
 				Message message = (Message) args[1];
 				if (messageRecoverer == null) {
@@ -104,17 +102,16 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 				throw new ImmediateAcknowledgeAmqpException("Recovered message forces ack (if ack mode requires it): "
 						+ message, cause);
 			}
-
 		});
 
 		retryInterceptor.setKeyGenerator(new MethodArgumentsKeyGenerator() {
-
 			public Object getKey(Object[] args) {
 				Message message = (Message) args[1];
 				if (StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator == null) {
 					String messageId = message.getMessageProperties().getMessageId();
-					if (messageId == null && message.getMessageProperties().isRedelivered()) {
-						message.getMessageProperties().setFinalRetryForMessageWithNoId(true);
+					if (messageId == null) {
+						throw new FatalListenerExecutionException(
+								"Illegal null id in message. Failed to manage retry for message: " + message);
 					}
 					return messageId;
 				}
@@ -122,7 +119,6 @@ public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetry
 					return StatefulRetryOperationsInterceptorFactoryBean.this.messageKeyGenerator.getKey(message);
 				}
 			}
-
 		});
 
 		return retryInterceptor;

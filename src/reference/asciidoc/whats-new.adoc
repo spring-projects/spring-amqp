@@ -12,9 +12,7 @@ See <<logging>> for more information.
 ===== Spring Retry upgrade
 
 The minimum Spring Retry version is `1.2`.
-The framework isn't compatible with previous version if `null` keys are expected for stateful retry logic.
-The `MissingMessageIdAdvice` has been deprecated since Spring Retry doesn't support `null` keys in the `RetryContextCache`.
-Now such messages are treated ans non-retryable and can be rejected and not requeued via `AbstractMessageListenerContainer.statefulRetryFatalWithNullMessageId` property.
+The framework isn't compatible with previous version any more.
 
 ===== FasterXML Jackson upgrade
 

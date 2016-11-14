@@ -69,6 +69,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
+import org.springframework.retry.interceptor.StatefulRetryOperationsInterceptor;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
@@ -228,6 +229,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setAdviceChain(Advice... adviceChain) {
 		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
+		for (final Advice advice : this.adviceChain) {
+			if (advice instanceof StatefulRetryOperationsInterceptor) {
+				((StatefulRetryOperationsInterceptor) advice).setUseRawKey(true);
+			}
+		}
 	}
 
 	/**
