@@ -297,7 +297,7 @@ public class BatchingRabbitTemplateTests {
 			}
 			assertTrue(latch.await(60,  TimeUnit.SECONDS));
 			watch.stop();
-			System.out.println(watch.getTotalTimeMillis());
+//			System.out.println(watch.getTotalTimeMillis());
 			assertEquals(count, received.size());
 		}
 		finally {
