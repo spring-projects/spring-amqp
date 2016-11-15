@@ -54,6 +54,7 @@ import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AMQP;
@@ -234,7 +235,7 @@ public class BlockingQueueConsumer {
 			this.consumerArgs.putAll(consumerArgs);
 		}
 		this.exclusive = exclusive;
-		this.queues = queues;
+		this.queues = Arrays.copyOf(queues, queues.length);
 		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
 	}
 
@@ -309,6 +310,14 @@ public class BlockingQueueConsumer {
 
 	public BackOffExecution getBackOffExecution() {
 		return this.backOffExecution;
+	}
+
+	/**
+	 * Return the size the queues array.
+	 * @return the count.
+	 */
+	int getQueueCount() {
+		return this.queues.length;
 	}
 
 	protected void basicCancel() {
@@ -730,7 +739,8 @@ public class BlockingQueueConsumer {
 
 	@Override
 	public String toString() {
-		return "Consumer: tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
+		return "Consumer@" + ObjectUtils.getIdentityHexString(this) + ": "
+				+ "tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
 				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
 	}
 

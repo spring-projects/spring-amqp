@@ -167,7 +167,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	protected String[] getRequiredQueueNames() {
 		Assert.state(this.queueNames.size() > 0, "Queue names must not be empty.");
-		return this.getQueueNames();
+		return getQueueNames();
 	}
 
 	protected Set<String> getQueueNamesAsSet() {
@@ -206,7 +206,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		Assert.isTrue(this.queueNames.size() - queueNames.length > 0, "Cannot remove the last queue");
 		return this.queueNames.removeAll(Arrays.asList(queueNames));
 	}
 
