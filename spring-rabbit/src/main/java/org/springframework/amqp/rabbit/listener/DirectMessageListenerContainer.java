@@ -261,11 +261,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	@Override
-	protected boolean canRemoveLastQueue() {
-		return true;
-	}
-
 	private void adjustConsumers(int newCount) {
 		synchronized (this.consumersMonitor) {
 			checkStartState();

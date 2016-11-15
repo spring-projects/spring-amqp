@@ -487,6 +487,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 				processors.add(processor);
 				getTaskExecutor().execute(processor);
+				if (getApplicationEventPublisher() != null) {
+					getApplicationEventPublisher().publishEvent(new AsyncConsumerStartedEvent(this, consumer));
+				}
 			}
 			for (AsyncMessageProcessingConsumer processor : processors) {
 				FatalListenerStartupException startupException = processor.getStartupException();
@@ -593,6 +596,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						logger.debug("Starting a new consumer: " + consumer);
 					}
 					getTaskExecutor().execute(processor);
+					if (this.getApplicationEventPublisher() != null) {
+						this.getApplicationEventPublisher().publishEvent(new AsyncConsumerStartedEvent(this, consumer));
+					}
 					try {
 						FatalListenerStartupException startupException = processor.getStartupException();
 						if (startupException != null) {
@@ -664,7 +670,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected BlockingQueueConsumer createBlockingQueueConsumer() {
 		BlockingQueueConsumer consumer;
-		String[] queues = getRequiredQueueNames();
+		String[] queues = getQueueNames();
 		// There's no point prefetching less than the tx size, otherwise the consumer will stall because the broker
 		// didn't get an ack for delivered messages
 		int actualPrefetchCount = getPrefetchCount() > this.txSize ? getPrefetchCount() : this.txSize;
@@ -688,7 +694,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return consumer;
 	}
 
-	private void restart(BlockingQueueConsumer consumer) {
+	private void restart(BlockingQueueConsumer oldConsumer) {
+		BlockingQueueConsumer consumer = oldConsumer;
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
 				try {
@@ -703,6 +710,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					newConsumer.setBackOffExecution(consumer.getBackOffExecution());
 					consumer = newConsumer;
 					this.consumers.put(consumer, true);
+					if (getApplicationEventPublisher() != null) {
+						getApplicationEventPublisher()
+								.publishEvent(new AsyncConsumerRestartedEvent(this, oldConsumer, newConsumer));
+					}
 				}
 				catch (RuntimeException e) {
 					logger.warn("Consumer failed irretrievably on restart. " + e.getClass() + ": " + e.getMessage());
@@ -849,6 +860,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int consecutiveIdles = 0;
 
 			int consecutiveMessages = 0;
+
+			if (this.consumer.getQueueCount() < 1) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Consumer stopping; no queues for " + this.consumer);
+				}
+				SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
+				if (getApplicationEventPublisher() != null) {
+					getApplicationEventPublisher().publishEvent(
+							new AsyncConsumerStoppedEvent(SimpleMessageListenerContainer.this, this.consumer));
+				}
+				this.start.countDown();
+				return;
+			}
 
 			try {
 
@@ -1017,6 +1041,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						if (SimpleMessageListenerContainer.this.consumers != null) {
 							SimpleMessageListenerContainer.this.consumers.remove(this.consumer);
 						}
+					}
+					if (getApplicationEventPublisher() != null) {
+						getApplicationEventPublisher().publishEvent(
+								new AsyncConsumerStoppedEvent(SimpleMessageListenerContainer.this, this.consumer));
 					}
 				}
 				catch (AmqpException e) {
