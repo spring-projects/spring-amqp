@@ -55,7 +55,6 @@ import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.FlowListener;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ReturnListener;
@@ -140,6 +139,7 @@ public class PublisherCallbackChannelImpl
 	 */
 	@Override
 	@Deprecated
+	@SuppressWarnings("deprecation")
 	public boolean flowBlocked() {
 		return this.delegate.flowBlocked();
 	}
@@ -156,13 +156,13 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public void addFlowListener(FlowListener listener) {
+	public void addFlowListener(com.rabbitmq.client.FlowListener listener) {
 		this.delegate.addFlowListener(listener);
 	}
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public boolean removeFlowListener(FlowListener listener) {
+	public boolean removeFlowListener(com.rabbitmq.client.FlowListener listener) {
 		return this.delegate.removeFlowListener(listener);
 	}
 

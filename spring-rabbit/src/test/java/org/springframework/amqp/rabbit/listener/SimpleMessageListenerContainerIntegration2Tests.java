@@ -18,23 +18,26 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -57,6 +60,7 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.event.AmqpEvent;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -73,6 +77,7 @@ import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
 
@@ -152,12 +157,65 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	}
 
 	@Test
+	public void testNoQueues() throws Exception {
+		CountDownLatch latch1 = new CountDownLatch(20);
+		container = createContainer(new MessageListenerAdapter(new PojoListener(latch1)), (String[]) null);
+		container.addQueueNames(queue.getName(), queue1.getName());
+		for (int i = 0; i < 10; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+			template.convertAndSend(queue1.getName(), i + "foo");
+		}
+		boolean waited = latch1.await(10, TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
+		assertNull(template.receiveAndConvert(queue.getName()));
+		assertNull(template.receiveAndConvert(queue1.getName()));
+		final AtomicReference<Object> newConsumer = new AtomicReference<Object>();
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(Object event) {
+				// NOSONAR
+			}
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof AsyncConsumerStartedEvent) {
+					newConsumer.set(((AsyncConsumerStartedEvent) event).getConsumer());
+					latch2.countDown();
+				}
+			}
+		});
+		container.removeQueueNames(queue.getName(), queue1.getName());
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		assertEquals(0, TestUtils.getPropertyValue(newConsumer.get(), "queues", String[].class).length);
+	}
+
+	@Test
 	public void testDeleteOneQueue() throws Exception {
 		CountDownLatch latch = new CountDownLatch(20);
-		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), false,
+				queue.getName(), queue1.getName());
 		container.setFailedDeclarationRetryInterval(100);
-		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
-		container.setApplicationEventPublisher(publisher);
+		final List<AmqpEvent> events = new ArrayList<>();
+		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
+		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(Object event) {
+				//NOSONAR
+			}
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof ListenerContainerConsumerFailedEvent) {
+					eventRef.set((ListenerContainerConsumerFailedEvent) event);
+				}
+				events.add((AmqpEvent) event);
+			}
+
+		});
+		container.start();
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 			template.convertAndSend(queue1.getName(), i + "foo");
@@ -195,12 +253,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			Thread.sleep(200);
 		}
 		assertTrue("Failed to detect missing queue", n < 100);
-		ArgumentCaptor<ListenerContainerConsumerFailedEvent> captor = ArgumentCaptor
-				.forClass(ListenerContainerConsumerFailedEvent.class);
-		verify(publisher).publishEvent(captor.capture());
-		ListenerContainerConsumerFailedEvent event = captor.getValue();
-		assertThat(event.getThrowable(), instanceOf(ConsumerCancelledException.class));
-		assertFalse(event.isFatal());
+		assertThat(eventRef.get().getThrowable(), instanceOf(ConsumerCancelledException.class));
+		assertFalse(eventRef.get().isFatal());
 		DirectFieldAccessor dfa = new DirectFieldAccessor(newConsumer);
 		dfa.setPropertyValue("lastRetryDeclaration", 0);
 		dfa.setPropertyValue("retryDeclarationInterval", 100);
@@ -219,6 +273,12 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		waited = latch.await(10, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
+		container.stop();
+		assertThat(events.size(), equalTo(4));
+		assertThat(events.get(0), instanceOf(AsyncConsumerStartedEvent.class));
+		assertSame(events.get(1), eventRef.get());
+		assertThat(events.get(2), instanceOf(AsyncConsumerRestartedEvent.class));
+		assertThat(events.get(3), instanceOf(AsyncConsumerStoppedEvent.class));
 	}
 
 	@Test
@@ -281,8 +341,22 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setApplicationContext(context);
 		container2.setRecoveryInterval(1000);
 		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exclusive.
-		ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
-		container2.setApplicationEventPublisher(publisher);
+		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
+		container2.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(Object event) {
+				//NOSONAR
+			}
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof ListenerContainerConsumerFailedEvent) {
+					eventRef.set((ListenerContainerConsumerFailedEvent) event);
+				}
+			}
+
+		});
 		container2.afterPropertiesSet();
 		Log containerLogger = spy(TestUtils.getPropertyValue(container2, "logger", Log.class));
 		doReturn(true).when(containerLogger).isWarnEnabled();
@@ -303,13 +377,9 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		verify(logger, atLeastOnce()).info(captor.capture());
 		assertThat(captor.getAllValues(), contains(containsString("exclusive")));
-		ArgumentCaptor<ListenerContainerConsumerFailedEvent> eventCaptor = ArgumentCaptor
-				.forClass(ListenerContainerConsumerFailedEvent.class);
-		verify(publisher).publishEvent(eventCaptor.capture());
-		ListenerContainerConsumerFailedEvent event = eventCaptor.getValue();
-		assertEquals("Consumer raised exception, attempting restart", event.getReason());
-		assertFalse(event.isFatal());
-		assertThat(event.getThrowable(), instanceOf(AmqpIOException.class));
+		assertEquals("Consumer raised exception, attempting restart", eventRef.get().getReason());
+		assertFalse(eventRef.get().isFatal());
+		assertThat(eventRef.get().getThrowable(), instanceOf(AmqpIOException.class));
 		verify(containerLogger).warn(any());
 	}
 
@@ -518,13 +588,21 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	}
 
 	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {
+		return createContainer(listener, true, queueNames);
+	}
+
+	private SimpleMessageListenerContainer createContainer(Object listener, boolean start, String... queueNames) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		if (listener != null) {
 			container.setMessageListener(listener);
 		}
-		container.setQueueNames(queueNames);
+		if (queueNames != null) {
+			container.setQueueNames(queueNames);
+		}
 		container.afterPropertiesSet();
-		container.start();
+		if (start) {
+			container.start();
+		}
 		return container;
 	}
 
