@@ -861,6 +861,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public Message receive(final String queueName, final long timeoutMillis) {
 		return execute(new ChannelCallback<Message>() {
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public Message doInRabbit(Channel channel) throws Exception {
 				QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
@@ -1514,6 +1515,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return isChannelTransacted() && !ConnectionFactoryUtils.isChannelTransactional(channel, getConnectionFactory());
 	}
 
+	@SuppressWarnings("deprecation")
 	private Message buildMessageFromDelivery(Delivery delivery) {
 		return buildMessage(delivery.getEnvelope(), delivery.getProperties(), delivery.getBody(), -1);
 	}
@@ -1739,6 +1741,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	private QueueingConsumer createQueueingConsumer(final String queueName, Channel channel) throws Exception {
 		channel.basicQos(1);
 		final CountDownLatch latch = new CountDownLatch(1);

@@ -51,6 +51,7 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
+import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
@@ -58,7 +59,6 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -817,43 +817,6 @@ public class BlockingQueueConsumer {
 			}
 		}
 
-	}
-
-	/**
-	 * Encapsulates an arbitrary message - simple "bean" holder structure.
-	 */
-	private static class Delivery {
-
-		private final String consumerTag;
-
-		private final Envelope envelope;
-
-		private final AMQP.BasicProperties properties;
-
-		private final byte[] body;
-
-		Delivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) { //NOSONAR
-			this.consumerTag = consumerTag;
-			this.envelope = envelope;
-			this.properties = properties;
-			this.body = body;
-		}
-
-		public String getConsumerTag() {
-			return this.consumerTag;
-		}
-
-		public Envelope getEnvelope() {
-			return this.envelope;
-		}
-
-		public BasicProperties getProperties() {
-			return this.properties;
-		}
-
-		public byte[] getBody() {
-			return this.body;
-		}
 	}
 
 	@SuppressWarnings("serial")
