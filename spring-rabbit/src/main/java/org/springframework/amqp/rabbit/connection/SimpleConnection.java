@@ -17,12 +17,15 @@
 package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.impl.AMQConnection;
+import com.rabbitmq.client.impl.NetworkConnection;
+import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * Simply a Connection.
@@ -31,7 +34,7 @@ import com.rabbitmq.client.impl.AMQConnection;
  * @since 1.0
  *
  */
-public class SimpleConnection implements Connection {
+public class SimpleConnection implements Connection, NetworkConnection {
 
 	private final com.rabbitmq.client.Connection delegate;
 
@@ -71,15 +74,41 @@ public class SimpleConnection implements Connection {
 
 	@Override
 	public boolean isOpen() {
-		return this.delegate != null
-				&& (this.delegate.isOpen() || this.delegate.getClass().getSimpleName().contains("AutorecoveringConnection"));
+		if (this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
+			throw new AmqpException("Auto recovery connection is not currently open");
+		}
+		return this.delegate != null && (this.delegate.isOpen());
 	}
 
 
 	@Override
 	public int getLocalPort() {
-		if (this.delegate instanceof AMQConnection) {
-			return ((AMQConnection) this.delegate).getLocalPort();
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getLocalPort();
+		}
+		return 0;
+	}
+
+	@Override
+	public InetAddress getLocalAddress() {
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getLocalAddress();
+		}
+		return null;
+	}
+
+	@Override
+	public InetAddress getAddress() {
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getAddress();
+		}
+		return null;
+	}
+
+	@Override
+	public int getPort() {
+		if (this.delegate instanceof NetworkConnection) {
+			return ((NetworkConnection) this.delegate).getPort();
 		}
 		return 0;
 	}
