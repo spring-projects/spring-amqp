@@ -27,10 +27,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.AmqpException;
@@ -56,6 +59,7 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
+import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
@@ -88,8 +92,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * <p>
@@ -869,15 +871,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public Message receive(final String queueName, final long timeoutMillis) {
 		Message message = execute(channel -> {
-			QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-			Delivery delivery;
-			if (timeoutMillis < 0) {
-				delivery = consumer.nextDelivery();
-			}
-			else {
-				delivery = consumer.nextDelivery(timeoutMillis);
-			}
-			channel.basicCancel(consumer.getConsumerTag());
+			CompletableFuture<Delivery> future = new CompletableFuture<>();
+			Delivery delivery = getDeliveryAndCancelConsumer(channel, future,
+					createConsumer(queueName, channel, future), timeoutMillis);
 			if (delivery == null) {
 				return null;
 			}
@@ -995,15 +991,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		else {
-			QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-			Delivery delivery;
-			if (RabbitTemplate.this.receiveTimeout < 0) {
-				delivery = consumer.nextDelivery();
-			}
-			else {
-				delivery = consumer.nextDelivery(RabbitTemplate.this.receiveTimeout);
-			}
-			channel.basicCancel(consumer.getConsumerTag());
+			CompletableFuture<Delivery> future = new CompletableFuture<>();
+			long timeoutMillis = this.receiveTimeout;
+			Delivery delivery = getDeliveryAndCancelConsumer(channel, future,
+					createConsumer(queueName, channel, future), timeoutMillis);
 			if (delivery != null) {
 				long deliveryTag2 = delivery.getEnvelope().getDeliveryTag();
 				if (channelTransacted && !channelLocallyTransacted) {
@@ -1019,6 +1010,52 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		logReceived(receiveMessage);
 		return receiveMessage;
+	}
+
+	public Delivery getDeliveryAndCancelConsumer(Channel channel, CompletableFuture<Delivery> future,
+			DefaultConsumer consumer, long timeoutMillis) {
+		Delivery delivery = null;
+		Throwable exception = null;
+		try {
+			if (timeoutMillis < 0) {
+				delivery = future.get();
+			}
+			else {
+				delivery = future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+			}
+		}
+		catch (ExecutionException e) {
+			this.logger.error("Failed to receive message", e.getCause());
+			exception = e.getCause();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		catch (TimeoutException e) {
+			// no result in time
+		}
+		try {
+			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
+				channel.basicCancel(consumer.getConsumerTag());
+			}
+		}
+		catch (Exception e) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to cancel consumer", e);
+			}
+		}
+		if (exception != null) {
+			if (exception instanceof RuntimeException) {
+				throw (RuntimeException) exception;
+			}
+			else if (exception instanceof Error) {
+				throw (Error) exception;
+			}
+			else  {
+				throw new AmqpException(exception);
+			}
+		}
+		return delivery;
 	}
 
 	private void logReceived(Message message) {
@@ -1789,15 +1826,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-	private QueueingConsumer createQueueingConsumer(final String queueName, Channel channel) throws Exception {
+	private DefaultConsumer createConsumer(final String queueName, Channel channel,
+			CompletableFuture<Delivery> future) throws Exception {
 		channel.basicQos(1);
 		final CountDownLatch latch = new CountDownLatch(1);
-		QueueingConsumer consumer = new QueueingConsumer(channel) {
+		DefaultConsumer consumer = new DefaultConsumer(channel) {
 
 			@Override
 			public void handleCancel(String consumerTag) throws IOException {
-				super.handleCancel(consumerTag);
-				latch.countDown();
+				future.completeExceptionally(new ConsumerCancelledException());
 			}
 
 			@Override
@@ -1806,13 +1843,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				latch.countDown();
 			}
 
+			@Override
+			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
+					throws IOException {
+				future.complete(new Delivery(envelope, properties, body));
+			}
+
 		};
 		channel.basicConsume(queueName, consumer);
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			if (channel instanceof ChannelProxy) {
 				((ChannelProxy) channel).getTargetChannel().close();
 			}
-			throw new AmqpException("Blocking receive, consumer failed to consume");
+			future.completeExceptionally(new AmqpException("Blocking receive, consumer failed to consume"));
 		}
 		return consumer;
 	}
@@ -1871,6 +1914,48 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			this.queue.add(e);
 		}
 
+	}
+
+	/**
+	 * A wrapper for the contents of a message delivery.
+	 */
+	public static class Delivery {
+
+		private final Envelope _envelope;
+
+		private final AMQP.BasicProperties _properties;
+
+		private final byte[] _body;
+
+		public Delivery(Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
+			this._envelope = envelope;
+			this._properties = properties;
+			this._body = body;
+		}
+
+		/**
+		 * Retrieve the message envelope.
+		 * @return the message envelope
+		 */
+		public Envelope getEnvelope() {
+			return this._envelope;
+		}
+
+		/**
+		 * Retrieve the message properties.
+		 * @return the message properties
+		 */
+		public BasicProperties getProperties() {
+			return this._properties;
+		}
+
+		/**
+		 * Retrieve the message body.
+		 * @return the message body
+		 */
+		public byte[] getBody() {
+			return this._body;
+		}
 	}
 
 	/**
