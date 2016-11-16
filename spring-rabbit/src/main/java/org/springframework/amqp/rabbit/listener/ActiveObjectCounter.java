@@ -43,7 +43,7 @@ public class ActiveObjectCounter<T> {
 		}
 	}
 
-	public boolean await(Long timeout, TimeUnit timeUnit) throws InterruptedException {
+	public boolean await(long timeout, TimeUnit timeUnit) throws InterruptedException {
 		long t0 = System.currentTimeMillis();
 		long t1 = t0 + TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 		while (System.currentTimeMillis() <= t1) {
