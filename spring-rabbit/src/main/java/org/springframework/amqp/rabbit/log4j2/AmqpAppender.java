@@ -215,7 +215,7 @@ public class AmqpAppender extends AbstractAppender {
 
 	@Override
 	public void append(LogEvent event) {
-		this.events.add(new Event(event, event.getContextMap()));
+		this.events.add(new Event(event, event.getContextData().toMap()));
 	}
 
 	/**
