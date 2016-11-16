@@ -95,7 +95,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue, sendQueue);
 
-	protected ConnectionFactory createConnectionFactory() {
+	protected CachingConnectionFactory createConnectionFactory() {
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
 		connectionFactory.setChannelCacheSize(concurrentConsumers);
@@ -273,7 +273,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory1);
 
 		CountDownLatch latch = new CountDownLatch(messageCount);
-		ConnectionFactory connectionFactory2 = createConnectionFactory();
+		CachingConnectionFactory connectionFactory2 = createConnectionFactory();
+		// this test closes the underlying connection normally; it won't automatically recover.
+		connectionFactory2.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(false);
 		container = createContainer(queue.getName(),
 				new CloseConnectionListener((ConnectionProxy) connectionFactory2.createConnection(), latch),
 				connectionFactory2);

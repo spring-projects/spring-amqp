@@ -19,20 +19,25 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * Used to verify raw Rabbit Java Client behaviour for corner cases.
@@ -95,9 +100,9 @@ public class UnackedRawIntegrationTests {
 
 		noTxChannel.basicPublish("", "test.queue", null, "foo".getBytes());
 
-		QueueingConsumer callback = new QueueingConsumer(txChannel);
+		BlockingConsumer callback = new BlockingConsumer(txChannel);
 		txChannel.basicConsume("test.queue", callback);
-		Delivery next = callback.nextDelivery(1000L);
+		Delivery next = callback.nextDelivery(10_000L);
 		assertNotNull(next);
 		txChannel.basicReject(next.getEnvelope().getDeliveryTag(), true);
 		txChannel.txRollback();
@@ -115,15 +120,41 @@ public class UnackedRawIntegrationTests {
 		noTxChannel.basicPublish("", "test.queue", null, "one".getBytes());
 		noTxChannel.basicPublish("", "test.queue", null, "two".getBytes());
 
-		QueueingConsumer callback = new QueueingConsumer(txChannel);
+		BlockingConsumer callback = new BlockingConsumer(txChannel);
 		txChannel.basicConsume("test.queue", callback);
-		Delivery next = callback.nextDelivery(1000L);
+		Delivery next = callback.nextDelivery(10_000L);
 		assertNotNull(next);
 		txChannel.basicReject(next.getEnvelope().getDeliveryTag(), true);
 		txChannel.txRollback();
 
 		GetResponse get = noTxChannel.basicGet("test.queue", true);
 		assertNotNull(get);
+
+	}
+
+	public class BlockingConsumer extends DefaultConsumer {
+
+		private final BlockingQueue<Delivery> queue = new LinkedBlockingQueue<>();
+
+		public BlockingConsumer(Channel channel) {
+			super(channel);
+		}
+
+		public Delivery nextDelivery(long timeout) throws InterruptedException {
+			return this.queue.poll(timeout, TimeUnit.MILLISECONDS);
+		}
+
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
+				throws IOException {
+			try {
+				this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new IOException(e);
+			}
+		}
 
 	}
 

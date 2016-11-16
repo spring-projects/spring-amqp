@@ -27,10 +27,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.amqp.AmqpException;
@@ -56,8 +59,10 @@ import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
+import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
@@ -88,8 +93,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * <p>
@@ -139,6 +142,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private static final String DEFAULT_ROUTING_KEY = "";
 
 	private static final long DEFAULT_REPLY_TIMEOUT = 5000;
+
+	private static final long DEFAULT_CONSUME_TIMEOUT = 10000;
 
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
@@ -401,7 +406,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @param mandatory the mandatory to set.
 	 */
 	public void setMandatory(boolean mandatory) {
-		this.mandatoryExpression = new ValueExpression<Boolean>(mandatory);
+		this.mandatoryExpression = new ValueExpression<>(mandatory);
 	}
 
 	/**
@@ -627,7 +632,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * not been received or null if no such confirms exist.
 	 */
 	public Collection<CorrelationData> getUnconfirmed(long age) {
-		Set<CorrelationData> unconfirmed = new HashSet<CorrelationData>();
+		Set<CorrelationData> unconfirmed = new HashSet<>();
 		synchronized (this.publisherConfirmChannels) {
 			long cutoffTime = System.currentTimeMillis() - age;
 			for (Channel channel : this.publisherConfirmChannels.keySet()) {
@@ -766,7 +771,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(this.exchange, routingKey, object, (CorrelationData) null);
 	}
 
-	public void convertAndSend(String routingKey, final Object object, CorrelationData correlationData) throws AmqpException {
+	public void convertAndSend(String routingKey, final Object object, CorrelationData correlationData)
+			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, object, correlationData);
 	}
 
@@ -775,7 +781,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
 
-	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData correlationData) throws AmqpException {
+	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData correlationData)
+			throws AmqpException {
 		send(exchange, routingKey, convertMessageIfNecessary(object), correlationData);
 	}
 
@@ -869,15 +876,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public Message receive(final String queueName, final long timeoutMillis) {
 		Message message = execute(channel -> {
-			QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-			Delivery delivery;
-			if (timeoutMillis < 0) {
-				delivery = consumer.nextDelivery();
-			}
-			else {
-				delivery = consumer.nextDelivery(timeoutMillis);
-			}
-			channel.basicCancel(consumer.getConsumerTag());
+			Delivery delivery = consumeDelivery(channel, queueName, timeoutMillis);
 			if (delivery == null) {
 				return null;
 			}
@@ -995,15 +994,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		else {
-			QueueingConsumer consumer = createQueueingConsumer(queueName, channel);
-			Delivery delivery;
-			if (RabbitTemplate.this.receiveTimeout < 0) {
-				delivery = consumer.nextDelivery();
-			}
-			else {
-				delivery = consumer.nextDelivery(RabbitTemplate.this.receiveTimeout);
-			}
-			channel.basicCancel(consumer.getConsumerTag());
+			Delivery delivery = consumeDelivery(channel, queueName, this.receiveTimeout);
 			if (delivery != null) {
 				long deliveryTag2 = delivery.getEnvelope().getDeliveryTag();
 				if (channelTransacted && !channelLocallyTransacted) {
@@ -1019,6 +1010,54 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		logReceived(receiveMessage);
 		return receiveMessage;
+	}
+
+	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis) throws Exception {
+		Delivery delivery = null;
+		Throwable exception = null;
+		CompletableFuture<Delivery> future = new CompletableFuture<>();
+		DefaultConsumer consumer = createConsumer(queueName, channel, future,
+				timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
+		try {
+			if (timeoutMillis < 0) {
+				delivery = future.get();
+			}
+			else {
+				delivery = future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+			}
+		}
+		catch (ExecutionException e) {
+			this.logger.error("Consumer failed to receive message: " + consumer, e.getCause());
+			exception = e.getCause();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+		catch (TimeoutException e) {
+			// no result in time
+		}
+		try {
+			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
+				channel.basicCancel(consumer.getConsumerTag());
+			}
+		}
+		catch (Exception e) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to cancel consumer: " + consumer, e);
+			}
+		}
+		if (exception != null) {
+			if (exception instanceof RuntimeException) {
+				throw (RuntimeException) exception;
+			}
+			else if (exception instanceof Error) {
+				throw (Error) exception;
+			}
+			else  {
+				throw new AmqpException(exception);
+			}
+		}
+		return delivery;
 	}
 
 	private void logReceived(Message message) {
@@ -1254,7 +1293,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			message.getMessageProperties().setReplyTo(replyTo);
 
 			String consumerTag = UUID.randomUUID().toString();
-			DefaultConsumer consumer = new DefaultConsumer(channel) {
+			DefaultConsumer consumer = new TemplateConsumer(channel) {
 
 				@Override
 				public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
@@ -1267,6 +1306,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					}
 					pendingReply.reply(reply);
 				}
+
 			};
 			channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
 			Message reply = null;
@@ -1721,7 +1761,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void revoke(Channel channel) {
 		this.publisherConfirmChannels.remove(channel);
 		if (logger.isDebugEnabled()) {
-			logger.debug("Removed pubsub channel: " + channel + " from map, size now "
+			logger.debug("Removed publisher confirm channel: " + channel + " from map, size now "
 					+ this.publisherConfirmChannels.size());
 		}
 	}
@@ -1789,15 +1829,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-	private QueueingConsumer createQueueingConsumer(final String queueName, Channel channel) throws Exception {
+	private DefaultConsumer createConsumer(final String queueName, Channel channel,
+			CompletableFuture<Delivery> future, long timeoutMillis) throws Exception {
 		channel.basicQos(1);
 		final CountDownLatch latch = new CountDownLatch(1);
-		QueueingConsumer consumer = new QueueingConsumer(channel) {
+		DefaultConsumer consumer = new TemplateConsumer(channel) {
 
 			@Override
 			public void handleCancel(String consumerTag) throws IOException {
-				super.handleCancel(consumerTag);
-				latch.countDown();
+				future.completeExceptionally(new ConsumerCancelledException());
 			}
 
 			@Override
@@ -1806,13 +1846,20 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				latch.countDown();
 			}
 
+			@Override
+			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
+					throws IOException {
+				future.complete(new Delivery(consumerTag, envelope, properties, body));
+			}
+
 		};
 		channel.basicConsume(queueName, consumer);
-		if (!latch.await(10, TimeUnit.SECONDS)) {
+		if (!latch.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
 			if (channel instanceof ChannelProxy) {
 				((ChannelProxy) channel).getTargetChannel().close();
 			}
-			throw new AmqpException("Blocking receive, consumer failed to consume");
+			future.completeExceptionally(new AmqpException("Blocking receive, consumer failed to consume: "
+					+ consumer));
 		}
 		return consumer;
 	}
@@ -1869,6 +1916,23 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 		public void returned(AmqpMessageReturnedException e) {
 			this.queue.add(e);
+		}
+
+	}
+
+	/**
+	 * Adds {@link #toString()} to the {@link DefaultConsumer}.
+	 * @since 2.0
+	 */
+	protected static abstract class TemplateConsumer extends DefaultConsumer {
+
+		public TemplateConsumer(Channel channel) {
+			super(channel);
+		}
+
+		@Override
+		public String toString() {
+			return "TemplateConsumer [channel=" + this.getChannel() + ", consumerTag=" + this.getConsumerTag() + "]";
 		}
 
 	}
