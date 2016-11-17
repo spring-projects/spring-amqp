@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
@@ -375,7 +376,7 @@ public class RabbitAdminIntegrationTests {
 		try {
 			this.rabbitAdmin.declareExchange(exchange);
 		}
-		catch (AmqpIOException e) {
+		catch (AmqpException e) {
 			if (RabbitUtils.isExchangeDeclarationFailure(e)
 					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
 				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);

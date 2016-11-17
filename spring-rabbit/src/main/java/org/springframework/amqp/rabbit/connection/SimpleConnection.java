@@ -72,6 +72,17 @@ public class SimpleConnection implements Connection, NetworkConnection {
 		}
 	}
 
+	/**
+	 * True if the connection is open.
+	 * @return true if the connection is open
+	 * @throws AmqpException if the connection is an {@link AutorecoveringConnection}
+	 * and is currently closed; this is required to prevent the CCF from discarding
+	 * this connection and opening a new one, in which case the "old" connection
+	 * would eventually be recovered and orphaned - also any consumers belonging to
+	 * it might be recovered too and the broker will deliver messages to them when
+	 * there is no code actually running to deal with those messages (when using the
+	 * SMLC).
+	 */
 	@Override
 	public boolean isOpen() {
 		if (this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {

@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate.Delivery;
+import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -148,7 +148,7 @@ public class UnackedRawIntegrationTests {
 		public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
 				throws IOException {
 			try {
-				this.queue.put(new Delivery(envelope, properties, body));
+				this.queue.put(new Delivery(consumerTag, envelope, properties, body));
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();

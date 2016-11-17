@@ -319,7 +319,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	public void testHardErrorAndReconnectNoAoto() throws Exception {
+	public void testHardErrorAndReconnectNoAuto() throws Exception {
 		this.connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(false);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
@@ -397,7 +397,7 @@ public class CachingConnectionFactoryIntegrationTests {
 					((AutorecoveringChannel) targetChannel).addRecoveryListener(listener);
 				}
 				else {
-					recoveryLatch.countDown();
+					fail("Expected an AutorecoveringChannel");
 				}
 				String tag = channel.basicConsume(route, false, "testHardErrorAndReconnect",
 						new DefaultConsumer(channel));

@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -49,10 +48,6 @@ public class ClientRecoveryCompatibilityTests {
 	public void testDefeatRecovery() throws Exception {
 		final Channel channel1 = mock(Channel.class);
 		when(channel1.isOpen()).thenReturn(true);
-		willAnswer(i -> {
-			return null;
-		}).given(channel1).close();
-
 		final Channel channel2 = mock(Channel.class);
 		when(channel2.isOpen()).thenReturn(true);
 		final com.rabbitmq.client.Connection rabbitConn = mock(AutorecoveringConnection.class);
@@ -78,7 +73,7 @@ public class ClientRecoveryCompatibilityTests {
 		when(channel1.isOpen()).thenReturn(false);
 		conn2 = ccf.createConnection();
 		try {
-			channel = conn2.createChannel(false);
+			conn2.createChannel(false);
 		}
 		catch (AmqpException e) {
 			assertThat(e.getMessage(), equalTo("Auto recovery connection is not currently open"));
