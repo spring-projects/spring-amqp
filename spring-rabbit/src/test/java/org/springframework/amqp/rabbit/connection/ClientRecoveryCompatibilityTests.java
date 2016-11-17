@@ -16,7 +16,10 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -68,6 +71,13 @@ public class ClientRecoveryCompatibilityTests {
 		when(rabbitConn.isOpen()).thenReturn(false).thenReturn(true);
 		when(channel1.isOpen()).thenReturn(false);
 		conn2 = ccf.createConnection();
+		try {
+			conn2.createChannel(false);
+			fail("Expected AutoRecoverConnectionNotCurrentlyOpenException");
+		}
+		catch (AutoRecoverConnectionNotCurrentlyOpenException e) {
+			assertThat(e.getMessage(), equalTo("Auto recovery connection is not currently open"));
+		}
 		channel = conn2.createChannel(false);
 		verifyChannelIs(channel2, channel);
 		channel.close();
