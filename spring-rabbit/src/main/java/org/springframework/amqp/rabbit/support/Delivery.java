@@ -24,7 +24,7 @@ import com.rabbitmq.client.Envelope;
  * Encapsulates an arbitrary message - simple "bean" holder structure.
  *
  * @author Gary Russell
- * @since 5.0
+ * @since 2.0
  */
 public class Delivery {
 

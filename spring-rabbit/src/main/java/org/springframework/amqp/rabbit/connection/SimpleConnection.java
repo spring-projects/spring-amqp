@@ -84,7 +84,7 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	 * consumers belonging to it might be recovered too and the broker will deliver
 	 * messages to them when there is no code actually running to deal with those messages
 	 * (when using the SMLC). If we have actually closed the connection (e.g. via
-	 * CCF.resetConnection()) this will return false.
+	 * {@link CachingConnectionFactory#resetConnection()}) this will return false.
 	 */
 	@Override
 	public boolean isOpen() {

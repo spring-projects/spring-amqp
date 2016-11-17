@@ -1918,7 +1918,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	}
 
-	public abstract class TemplateConsumer extends DefaultConsumer {
+	/**
+	 * Adds {@link #toString()} to the {@link DefaultConsumer}.
+	 * @since 2.0
+	 */
+	protected static abstract class TemplateConsumer extends DefaultConsumer {
 
 		public TemplateConsumer(Channel channel) {
 			super(channel);
