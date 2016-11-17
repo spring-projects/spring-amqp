@@ -40,6 +40,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 
 	private final int closeTimeout;
 
+	private volatile boolean explicitlyClosed;
+
 	public SimpleConnection(com.rabbitmq.client.Connection delegate,
 			int closeTimeout) {
 		this.delegate = delegate;
@@ -64,6 +66,7 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	@Override
 	public void close() {
 		try {
+			this.explicitlyClosed = true;
 			// let the physical close time out if necessary
 			this.delegate.close(this.closeTimeout);
 		}
@@ -81,11 +84,12 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	 * would eventually be recovered and orphaned - also any consumers belonging to
 	 * it might be recovered too and the broker will deliver messages to them when
 	 * there is no code actually running to deal with those messages (when using the
-	 * SMLC).
+	 * SMLC). If we have actually closed the connection (e.g. via CCF.resetConnection())
+	 * this will return false.
 	 */
 	@Override
 	public boolean isOpen() {
-		if (this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
+		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
 			throw new AmqpException("Auto recovery connection is not currently open");
 		}
 		return this.delegate != null && (this.delegate.isOpen());
