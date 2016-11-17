@@ -27,13 +27,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
@@ -45,10 +45,12 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurrentlyOpenException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -69,6 +71,10 @@ public class RabbitAdminIntegrationTests {
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+
+	@Rule
+	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, RabbitAdmin.class,
+			RabbitTemplate.class, CachingConnectionFactory.class);
 
 	private GenericApplicationContext context;
 
@@ -376,7 +382,8 @@ public class RabbitAdminIntegrationTests {
 		try {
 			this.rabbitAdmin.declareExchange(exchange);
 		}
-		catch (AmqpException e) {
+		catch (AmqpIOException e) {
+			System.out.println(e);
 			if (RabbitUtils.isExchangeDeclarationFailure(e)
 					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
 				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
@@ -384,6 +391,9 @@ public class RabbitAdminIntegrationTests {
 			else {
 				throw e;
 			}
+		}
+		catch (AutoRecoverConnectionNotCurrentlyOpenException e) {
+			Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
 		}
 		this.rabbitAdmin.declareQueue(queue);
 		this.rabbitAdmin.declareBinding(binding);

@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.net.InetAddress;
 
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
@@ -78,19 +77,19 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	/**
 	 * True if the connection is open.
 	 * @return true if the connection is open
-	 * @throws AmqpException if the connection is an {@link AutorecoveringConnection}
-	 * and is currently closed; this is required to prevent the CCF from discarding
-	 * this connection and opening a new one, in which case the "old" connection
-	 * would eventually be recovered and orphaned - also any consumers belonging to
-	 * it might be recovered too and the broker will deliver messages to them when
-	 * there is no code actually running to deal with those messages (when using the
-	 * SMLC). If we have actually closed the connection (e.g. via CCF.resetConnection())
-	 * this will return false.
+	 * @throws AutoRecoverConnectionNotCurrentlyOpenException if the connection is an
+	 * {@link AutorecoveringConnection} and is currently closed; this is required to
+	 * prevent the CCF from discarding this connection and opening a new one, in which
+	 * case the "old" connection would eventually be recovered and orphaned - also any
+	 * consumers belonging to it might be recovered too and the broker will deliver
+	 * messages to them when there is no code actually running to deal with those messages
+	 * (when using the SMLC). If we have actually closed the connection (e.g. via
+	 * CCF.resetConnection()) this will return false.
 	 */
 	@Override
 	public boolean isOpen() {
 		if (!this.explicitlyClosed && this.delegate instanceof AutorecoveringConnection && !this.delegate.isOpen()) {
-			throw new AmqpException("Auto recovery connection is not currently open");
+			throw new AutoRecoverConnectionNotCurrentlyOpenException("Auto recovery connection is not currently open");
 		}
 		return this.delegate != null && (this.delegate.isOpen());
 	}
