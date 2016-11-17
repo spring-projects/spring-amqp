@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -50,7 +49,6 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
 import org.springframework.context.support.GenericApplicationContext;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -73,9 +71,6 @@ public class RabbitAdminIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, RabbitAdmin.class,
-			RabbitTemplate.class, CachingConnectionFactory.class);
-
 	private GenericApplicationContext context;
 
 	private RabbitAdmin rabbitAdmin;
@@ -383,7 +378,6 @@ public class RabbitAdminIntegrationTests {
 			this.rabbitAdmin.declareExchange(exchange);
 		}
 		catch (AmqpIOException e) {
-			System.out.println(e);
 			if (RabbitUtils.isExchangeDeclarationFailure(e)
 					&& e.getCause().getCause().getMessage().contains("exchange type 'x-delayed-message'")) {
 				Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
