@@ -70,7 +70,6 @@ public class RabbitAdminIntegrationTests {
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
-	@Rule
 	private GenericApplicationContext context;
 
 	private RabbitAdmin rabbitAdmin;
