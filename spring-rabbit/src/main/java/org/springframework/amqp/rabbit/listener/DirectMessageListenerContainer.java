@@ -478,7 +478,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			return;
 		}
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (close)
 		try {
 			connection = getConnectionFactory().createConnection();
 		}

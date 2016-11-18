@@ -20,7 +20,6 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 
 import org.apache.commons.logging.Log;
@@ -69,7 +68,8 @@ import com.rabbitmq.client.Channel;
  * published.
  * <p>
  * Returned (undeliverable) request messages are presented as a
- * {@link AmqpMessageReturnedException} cause of an {@link ExecutionException}.
+ * {@link AmqpMessageReturnedException} cause of an
+ * {@link java.util.concurrent.ExecutionException}.
  * <p>
  * Internally, the template uses a {@link RabbitTemplate} and an
  * {@link AbstractMessageListenerContainer} either provided or constructed internally
@@ -325,7 +325,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @see #setReceiveTimeout(long)
 	 */
 	public void setTaskScheduler(TaskScheduler taskScheduler) {
-		this.taskScheduler = taskScheduler;
+		this.taskScheduler = taskScheduler; // NOSONAR synchronization
 	}
 
 	/**
@@ -657,7 +657,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		void startTimer() {
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
-				this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
+				this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(), // NOSONAR sync
 						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
 			}
 			else {

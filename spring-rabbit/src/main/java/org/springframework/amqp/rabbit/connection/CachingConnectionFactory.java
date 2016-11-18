@@ -1160,7 +1160,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public int getLocalPort() {
-			Connection target = this.target;
+			Connection target = this.target; // NOSONAR (close)
 			if (target != null) {
 				return target.getLocalPort();
 			}

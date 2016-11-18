@@ -1467,7 +1467,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel;
 		RabbitResourceHolder resourceHolder = null;
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (close)
 		if (isChannelTransacted()) {
 			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true);
 			channel = resourceHolder.getChannel();
