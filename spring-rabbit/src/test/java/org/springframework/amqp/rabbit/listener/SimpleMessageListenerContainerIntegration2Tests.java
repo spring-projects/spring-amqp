@@ -199,21 +199,13 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setFailedDeclarationRetryInterval(100);
 		final List<AmqpEvent> events = new ArrayList<>();
 		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
-		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
-
-			@Override
-			public void publishEvent(Object event) {
-				//NOSONAR
+		final CountDownLatch eventLatch = new CountDownLatch(4);
+		container.setApplicationEventPublisher(event -> {
+			if (event instanceof ListenerContainerConsumerFailedEvent) {
+				eventRef.set((ListenerContainerConsumerFailedEvent) event);
 			}
-
-			@Override
-			public void publishEvent(ApplicationEvent event) {
-				if (event instanceof ListenerContainerConsumerFailedEvent) {
-					eventRef.set((ListenerContainerConsumerFailedEvent) event);
-				}
-				events.add((AmqpEvent) event);
-			}
-
+			events.add((AmqpEvent) event);
+			eventLatch.countDown();
 		});
 		container.start();
 		for (int i = 0; i < 10; i++) {
@@ -274,6 +266,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 		container.stop();
+		assertTrue(eventLatch.await(10, TimeUnit.SECONDS));
 		assertThat(events.size(), equalTo(4));
 		assertThat(events.get(0), instanceOf(AsyncConsumerStartedEvent.class));
 		assertSame(events.get(1), eventRef.get());
