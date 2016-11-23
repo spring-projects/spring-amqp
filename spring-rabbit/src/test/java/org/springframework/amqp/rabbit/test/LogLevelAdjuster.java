@@ -123,7 +123,7 @@ public class LogLevelAdjuster implements MethodRule {
 	private Map<String, ch.qos.logback.classic.Level> applyLogBack() {
 		Map<String, ch.qos.logback.classic.Level> oldCatLevels = new HashMap<>();
 		this.categories.stream().forEach(cat -> {
-			ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(cat);
+			ch.qos.logback.classic.Logger lbLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat);
 			oldCatLevels.put(cat, lbLogger.getLevel());
 			lbLogger.setLevel(ch.qos.logback.classic.Level.toLevel(this.level.name()));
 		});
@@ -132,7 +132,7 @@ public class LogLevelAdjuster implements MethodRule {
 
 	private void revertLogBack(Map<String, ch.qos.logback.classic.Level> oldLevels) {
 		this.categories.stream().forEach(cat -> {
-			((ch.qos.logback.classic.Logger)LoggerFactory.getLogger(cat)).setLevel(oldLevels.get(cat));
+			((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(cat)).setLevel(oldLevels.get(cat));
 		});
 	}
 
