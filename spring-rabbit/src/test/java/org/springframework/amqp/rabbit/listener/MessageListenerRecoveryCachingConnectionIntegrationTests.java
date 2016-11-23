@@ -52,7 +52,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.factory.DisposableBean;
@@ -89,7 +89,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class, ManualAckListener.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.DEBUG, RabbitTemplate.class, ManualAckListener.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule

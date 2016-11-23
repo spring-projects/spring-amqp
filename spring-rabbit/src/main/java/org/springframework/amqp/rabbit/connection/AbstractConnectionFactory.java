@@ -40,6 +40,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
+import com.rabbitmq.client.Recoverable;
+import com.rabbitmq.client.RecoveryListener;
+import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Dave Syer
@@ -61,6 +64,24 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	private final CompositeChannelListener channelListener = new CompositeChannelListener();
 
 	private final AtomicInteger defaultConnectionNameStrategyCounter = new AtomicInteger();
+
+	private RecoveryListener recoveryListener = new RecoveryListener() {
+
+		@Override
+		public void handleRecoveryStarted(Recoverable recoverable) {
+			if (AbstractConnectionFactory.this.logger.isDebugEnabled()) {
+				AbstractConnectionFactory.this.logger.debug("Connection recovery started: " + recoverable);
+			}
+		}
+
+		@Override
+		public void handleRecovery(Recoverable recoverable) {
+			if (AbstractConnectionFactory.this.logger.isDebugEnabled()) {
+				AbstractConnectionFactory.this.logger.debug("Connection recovery complete: " + recoverable);
+			}
+		}
+
+	};
 
 	private volatile ExecutorService executorService;
 
@@ -242,6 +263,15 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.channelListener.setDelegates(listeners);
 	}
 
+	/**
+	 * Set a {@link RecoveryListener} that will be added to each connection created.
+	 * @param recoveryListener the listener.
+	 * @since 2.0
+	 */
+	public void setRecoveryListener(RecoveryListener recoveryListener) {
+		this.recoveryListener = recoveryListener;
+	}
+
 	public void addChannelListener(ChannelListener listener) {
 		this.channelListener.addDelegate(listener);
 	}
@@ -314,6 +344,9 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
 			if (this.logger.isInfoEnabled()) {
 				this.logger.info("Created new connection: " + connection);
+			}
+			if (this.recoveryListener != null && connection instanceof AutorecoveringConnection) {
+				((AutorecoveringConnection) connection).addRecoveryListener(this.recoveryListener);
 			}
 			return connection;
 		}

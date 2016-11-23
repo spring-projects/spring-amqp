@@ -39,7 +39,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 
 /**
@@ -59,7 +59,7 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue1, queue2);
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule

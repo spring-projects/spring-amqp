@@ -94,7 +94,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.support.postprocessor.GUnzipPostProcessor;
 import org.springframework.amqp.support.postprocessor.GZipPostProcessor;
@@ -156,7 +156,7 @@ public class RabbitTemplateIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE, REPLY_QUEUE.getName());
 
 	@Rule
-	public Log4jLevelAdjuster logAdjuster = new Log4jLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
+	public LogLevelAdjuster logAdjuster = new LogLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
 			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class);
 
 	private CachingConnectionFactory connectionFactory;

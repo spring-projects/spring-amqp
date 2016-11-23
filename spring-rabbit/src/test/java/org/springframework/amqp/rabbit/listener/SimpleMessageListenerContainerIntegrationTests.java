@@ -48,7 +48,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.transaction.TransactionDefinition;
@@ -82,12 +82,12 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.OFF, RabbitTemplate.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.OFF, RabbitTemplate.class,
 			ConditionalRejectingErrorHandler.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, CachingConnectionFactory.class);
 
 	@Rule
-	public Log4jLevelAdjuster testLogLevels = new Log4jLevelAdjuster(Level.DEBUG,
+	public LogLevelAdjuster testLogLevels = new LogLevelAdjuster(Level.DEBUG,
 			SimpleMessageListenerContainerIntegrationTests.class);
 
 	@Rule

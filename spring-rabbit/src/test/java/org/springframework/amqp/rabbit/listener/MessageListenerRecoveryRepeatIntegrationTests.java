@@ -43,7 +43,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.rabbit.test.RepeatProcessor;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.test.annotation.Repeat;
@@ -79,7 +79,7 @@ public class MessageListenerRecoveryRepeatIntegrationTests {
 	private SimpleMessageListenerContainer container;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class,
 			ConditionalRejectingErrorHandler.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class, MessageListenerRecoveryRepeatIntegrationTests.class);
 

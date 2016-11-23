@@ -51,7 +51,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.rabbit.test.LongRunningIntegrationTest;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -127,7 +127,7 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(queue);
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.INFO, RabbitTemplate.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.INFO, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class,
 			MessageListenerContainerLifecycleIntegrationTests.class);
 

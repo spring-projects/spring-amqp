@@ -62,7 +62,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.support.ArgumentBuilder;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -96,7 +96,7 @@ public class DirectMessageListenerContainerTests {
 	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2, DLQ1);
 
 	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG,
+	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
 			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
 			DirectMessageListenerContainer.class, DirectMessageListenerContainerTests.class, BrokerRunning.class);
 

@@ -48,7 +48,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.AMQP;
@@ -65,7 +65,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 public class BlockingQueueConsumerTests {
 
 	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.ERROR, BlockingQueueConsumer.class);
+	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.ERROR, BlockingQueueConsumer.class);
 
 	@Test
 	public void testRequeue() throws Exception {

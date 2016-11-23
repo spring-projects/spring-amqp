@@ -53,7 +53,7 @@ import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -78,7 +78,7 @@ public class MissingIdRetryTests {
 	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Rule
-	public Log4jLevelAdjuster adjuster = new Log4jLevelAdjuster(Level.DEBUG, BlockingQueueConsumer.class,
+	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG, BlockingQueueConsumer.class,
 			MissingIdRetryTests.class,
 			RetryTemplate.class, SimpleRetryPolicy.class);
 

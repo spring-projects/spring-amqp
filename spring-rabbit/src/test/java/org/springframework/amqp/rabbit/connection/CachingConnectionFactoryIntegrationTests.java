@@ -44,6 +44,7 @@ import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.Level;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +63,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
@@ -94,6 +96,11 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
+
+	@Rule
+	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
+			CachingConnectionFactoryIntegrationTests.class, CachingConnectionFactory.class)
+		.categories("com.rabbitmq");
 
 	@Before
 	public void open() {
@@ -357,7 +364,6 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testHardErrorAndReconnectAuto() throws Exception {
-
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
@@ -366,11 +372,13 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final CountDownLatch recoveryLatch = new CountDownLatch(1);
-		final RecoveryListener listener = new RecoveryListener() {
+		final RecoveryListener channelRecoveryListener = new RecoveryListener() {
 
 			@Override
 			public void handleRecoveryStarted(Recoverable recoverable) {
-				//NOSONAR
+				if (logger.isDebugEnabled()) {
+					logger.debug("Channel recovery started: " + asString(recoverable));
+				}
 			}
 
 			@Override
@@ -380,7 +388,15 @@ public class CachingConnectionFactoryIntegrationTests {
 				}
 				catch (IOException e) {
 				}
+				if (logger.isDebugEnabled()) {
+					logger.debug("Channel recovery complete: " + asString(recoverable));
+				}
 				recoveryLatch.countDown();
+			}
+
+			private String asString(Recoverable recoverable) {
+				// TODO: https://github.com/rabbitmq/rabbitmq-java-client/issues/217
+				return ((AutorecoveringChannel) recoverable).getDelegate().toString();
 			}
 
 		};
@@ -394,7 +410,7 @@ public class CachingConnectionFactoryIntegrationTests {
 				});
 				Channel targetChannel = ((ChannelProxy) channel).getTargetChannel();
 				if (targetChannel instanceof AutorecoveringChannel) {
-					((AutorecoveringChannel) targetChannel).addRecoveryListener(listener);
+					((AutorecoveringChannel) targetChannel).addRecoveryListener(channelRecoveryListener);
 				}
 				else {
 					recoveryLatch.countDown(); // Spring IO Platform Tests

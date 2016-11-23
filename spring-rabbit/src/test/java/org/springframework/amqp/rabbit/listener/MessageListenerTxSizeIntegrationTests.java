@@ -39,7 +39,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.BrokerTestUtils;
-import org.springframework.amqp.rabbit.test.Log4jLevelAdjuster;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.beans.factory.DisposableBean;
 
 import com.rabbitmq.client.Channel;
@@ -71,7 +71,7 @@ public class MessageListenerTxSizeIntegrationTests {
 	private SimpleMessageListenerContainer container;
 
 	@Rule
-	public Log4jLevelAdjuster logLevels = new Log4jLevelAdjuster(Level.ERROR, RabbitTemplate.class,
+	public LogLevelAdjuster logLevels = new LogLevelAdjuster(Level.ERROR, RabbitTemplate.class,
 			SimpleMessageListenerContainer.class, BlockingQueueConsumer.class);
 
 	@Rule
