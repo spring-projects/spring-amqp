@@ -966,7 +966,12 @@ public class RabbitTemplateIntegrationTests {
 		if (timeout > 0) {
 			this.template.setReceiveTimeout(1);
 		}
-		received = this.template.receiveAndReply(message -> message);
+		try {
+			received = this.template.receiveAndReply(message -> message);
+		}
+		catch (ConsumeOkNotReceivedException e) {
+			// we're expecting no result, this could happen, depending on timing.
+		}
 		assertFalse(received);
 
 		this.template.convertAndSend(ROUTE, "test");
