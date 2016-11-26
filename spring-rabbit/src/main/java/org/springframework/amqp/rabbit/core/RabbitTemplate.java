@@ -1858,8 +1858,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			if (channel instanceof ChannelProxy) {
 				((ChannelProxy) channel).getTargetChannel().close();
 			}
-			future.completeExceptionally(new AmqpException("Blocking receive, consumer failed to consume: "
-					+ consumer));
+			future.completeExceptionally(
+					new ConsumeOkNotReceivedException("Blocking receive, consumer failed to consume: " + consumer));
 		}
 		return consumer;
 	}
