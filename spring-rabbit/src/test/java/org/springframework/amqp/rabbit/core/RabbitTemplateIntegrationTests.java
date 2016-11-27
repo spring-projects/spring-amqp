@@ -963,6 +963,7 @@ public class RabbitTemplateIntegrationTests {
 		assertTrue(result instanceof Integer);
 		assertEquals(4, result);
 
+		received = false;
 		if (timeout > 0) {
 			this.template.setReceiveTimeout(1);
 		}
