@@ -514,9 +514,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @see com.rabbitmq.client.ConnectionFactory#useNio()
 	 */
 	public void setUseNio(boolean useNio) {
-		if(useNio) {
+		if (useNio) {
 			this.connectionFactory.useNio();
-		} else {
+		}
+		else {
 			this.connectionFactory.useBlockingIo();
 		}
 	}
