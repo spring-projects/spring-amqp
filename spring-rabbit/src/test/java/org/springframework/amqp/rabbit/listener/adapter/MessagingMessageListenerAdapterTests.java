@@ -105,10 +105,8 @@ public class MessagingMessageListenerAdapterTests {
 			fail("Should have thrown an exception");
 		}
 		catch (ListenerExecutionFailedException ex) {
-			assertEquals(org.springframework.amqp.support.converter.MessageConversionException.class,
-					ex.getCause().getClass());
 			assertEquals(org.springframework.messaging.converter.MessageConversionException.class,
-					ex.getCause().getCause().getClass());
+					ex.getCause().getClass());
 		}
 		catch (Exception ex) {
 			fail("Should not have thrown another exception");

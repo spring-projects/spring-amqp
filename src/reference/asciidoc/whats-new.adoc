@@ -20,7 +20,7 @@ IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an e
 This was a serious bug; however, users might have relied on this behavior.
 Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
 
-The `RabbitTemplate` now uses a `DirecyReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
+The `RabbitTemplate` now uses a `DirectReplyToMessageListenerContainer` (by default) instead of creating a new consumer for each request.
 See <<direct-reply-to>> for more information.
 
 The `AsyncRabbitTemplate` now supports Direct reply-to; see <<async-template>> for more information.
@@ -56,6 +56,11 @@ See <<anonymous-queue>> for more information.
 
 You can now provide simple queue declarations (only bound to the default exchange) in `@RabbitListener` annotations.
 See <<async-annotation-driven>> for more information.
+
+You can now configure `@RabbitListener` annotations so that any exceptions thrown will be returned to the sender.
+You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
+See <<annotation-error-handling>> for more information.
+
 
 ==== Earlier Releases
 

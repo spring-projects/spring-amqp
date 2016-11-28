@@ -22,6 +22,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.annotation.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.converter.MessageConversionException;
@@ -31,6 +32,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -59,12 +61,23 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	private final MessagingMessageConverterAdapter messagingMessageConverter;
 
+	private final boolean returnExceptions;
+
+	private final RabbitListenerErrorHandler errorHandler;
+
 	public MessagingMessageListenerAdapter() {
 		this(null, null);
 	}
 
 	public MessagingMessageListenerAdapter(Object bean, Method method) {
+		this(bean, method, false, null);
+	}
+
+	public MessagingMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
+			RabbitListenerErrorHandler errorHandler) {
 		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method);
+		this.returnExceptions = returnExceptions;
+		this.errorHandler = errorHandler;
 	}
 
 	/**
@@ -102,12 +115,39 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		if (logger.isDebugEnabled()) {
 			logger.debug("Processing [" + message + "]");
 		}
-		Object result = invokeHandler(amqpMessage, channel, message);
-		if (result != null) {
-			handleResult(result, amqpMessage, channel, message);
+		try {
+			Object result = invokeHandler(amqpMessage, channel, message);
+			if (result != null) {
+				handleResult(result, amqpMessage, channel, message);
+			}
+			else {
+				logger.trace("No result object given - no result to handle");
+			}
 		}
-		else {
-			logger.trace("No result object given - no result to handle");
+		catch (ListenerExecutionFailedException e) {
+			if (this.errorHandler != null) {
+				try {
+					Object result = this.errorHandler.handleError(amqpMessage, message, e);
+					if (result != null) {
+						handleResult(result, amqpMessage, channel, message);
+					}
+					else {
+						logger.trace("Error handler returned no result");
+					}
+				}
+				catch (Exception ex) {
+					if (!this.returnExceptions) {
+						throw ex;
+					}
+					handleResult(new RemoteInvocationResult(ex), amqpMessage, channel, message);
+				}
+			}
+			else {
+				if (!this.returnExceptions) {
+					throw e;
+				}
+				handleResult(new RemoteInvocationResult(e.getCause()), amqpMessage, channel, message);
+			}
 		}
 	}
 
@@ -123,11 +163,6 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 			Message<?> message) {
 		try {
 			return this.handlerMethod.invoke(message, amqpMessage, channel);
-		}
-		catch (org.springframework.messaging.converter.MessageConversionException ex) {
-			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
-					"be invoked with the incoming message", message.getPayload()),
-					new MessageConversionException("Cannot handle message", ex));
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +

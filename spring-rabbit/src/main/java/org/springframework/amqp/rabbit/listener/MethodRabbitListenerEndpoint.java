@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -44,6 +45,9 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 
 	private MessageHandlerMethodFactory messageHandlerMethodFactory;
 
+	private boolean returnExceptions;
+
+	private RabbitListenerErrorHandler errorHandler;
 
 	/**
 	 * Set the object instance that should manage this endpoint.
@@ -77,6 +81,26 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 */
 	public void setMessageHandlerMethodFactory(MessageHandlerMethodFactory messageHandlerMethodFactory) {
 		this.messageHandlerMethodFactory = messageHandlerMethodFactory;
+	}
+
+	/**
+	 * Set whether exceptions thrown by the listener should be returned to the sender
+	 * using the normal {@code replyTo/@SendTo} semantics.
+	 * @param returnExceptions true to return exceptions.
+	 * @since 2.0
+	 */
+	public void setReturnExceptions(boolean returnExceptions) {
+		this.returnExceptions = returnExceptions;
+	}
+
+	/**
+	 * Set the {@link RabbitListenerErrorHandler} to invoke if the listener method
+	 * throws an exception.
+	 * @param errorHandler the error handler.
+	 * @since 2.0
+	 */
+	public void setErrorHandler(RabbitListenerErrorHandler errorHandler) {
+		this.errorHandler = errorHandler;
 	}
 
 	/**
@@ -122,7 +146,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the {@link MessagingMessageListenerAdapter} instance.
 	 */
 	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return new MessagingMessageListenerAdapter(this.bean, this.method);
+		return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions, this.errorHandler);
 	}
 
 	private String getDefaultReplyToAddress() {

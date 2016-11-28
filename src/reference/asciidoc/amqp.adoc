@@ -1520,7 +1520,7 @@ public class MyService {
 }
 ----
 
-The idea of the example above is that, whenever a message is available on the `org.springframework.amqp.core.Queue` "myQueue", the `processOrder` method is invoked accordingly (in this case, with the payload of the message).
+The idea of the example above is that, whenever a message is available on the queue named `myQueue`, the `processOrder` method is invoked accordingly (in this case, with the payload of the message).
 
 The annotated endpoint infrastructure creates a message listener container behind the scenes for each annotated method, using a `RabbitListenerContainerFactory`.
 
@@ -2126,6 +2126,40 @@ static class TxServiceImpl implements TxService<Foo> {
 }
 ----
 
+[[annotation-error-handling]]
+====== Handling Exceptions
+
+By default, if an annotated listener method throws an exception, it is thrown to the container and the message will be requeued and redelivered, discarded, or routed to a Dead Letter Exchange, depending on the container and broker configuration.
+Nothing is returned to the sender.
+
+Starting with _version 2.0_, the `@RabbitListener` annotation has two new attributes: `errorHandler` and `returnExceptions`.
+
+These are not configured by default.
+
+Use the `errorHandler` to provide the bean name of a `RabbitListenerErrorHandler` implementation.
+This functional interface has one method:
+
+[source, java]
+----
+@FunctionalInterface
+public interface RabbitListenerErrorHandler {
+
+    Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
+              ListenerExecutionFailedException exception) throws Exception;
+
+}
+----
+
+As you can see, you have access to the raw message received from the container, the spring-messaging `Message<?>` object produced by the message converter and the exception that was thrown by the listener, wrapped in a `ListenerExecutionFailedException`.
+The error handler can either return some result which will be sent as the reply, or throw the original or a new exception which will be thrown to the container, or returned to the sender, depending on the `returnExceptions` setting.
+
+The `returnExceptions` attribute, when "true" will cause exceptions to be returned to the sender.
+The exception is wrapped in a `RemoteInvocationResult` object.
+On the sender side, there is an available `RemoteInvocationAwareMessageConverterAdapter` which, if configured into the `RabbitTemplate`, will re-throw the server-side exception, wrapped in an `AmqpRemoteException`.
+The stack trace of the server exception will be synthesized by merging the server and client stack traces.
+
+IMPORTANT: This mechanism will generally only work with the default `SimpleMessageConverter`, which uses Java serialization; exceptions are generally not "Jackson-friendly" so can't be serialized to JSON.
+If you are using JSON, consider using an `errorHandler` to return some other Jackson-friendly `Error` object when an exception is thrown.
 
 ====== Container Management
 
