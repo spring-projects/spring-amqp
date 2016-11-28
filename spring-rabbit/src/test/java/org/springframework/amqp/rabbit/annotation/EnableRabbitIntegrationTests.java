@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.annotation;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -25,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -83,6 +85,7 @@ import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.RemoteInvocationAwareMessageConverterAdapter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.framework.ProxyFactoryBean;
@@ -149,7 +152,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
-			"amqp656dlq", "test.simple.declare");
+			"amqp656dlq", "test.simple.declare", "test.propagate.exceptions", "test.pojo.errors", "test.pojo.errors2");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -401,10 +404,8 @@ public class EnableRabbitIntegrationTests {
 		assertThat(throwable, instanceOf(AmqpRejectAndDontRequeueException.class));
 		assertThat(throwable.getCause(), instanceOf(ListenerExecutionFailedException.class));
 		assertThat(throwable.getCause().getCause(),
-				instanceOf(org.springframework.amqp.support.converter.MessageConversionException.class));
-		assertThat(throwable.getCause().getCause().getCause(),
 				instanceOf(org.springframework.messaging.converter.MessageConversionException.class));
-		assertThat(throwable.getCause().getCause().getCause().getMessage(),
+		assertThat(throwable.getCause().getCause().getMessage(),
 				containsString("Failed to convert message payload 'bar' to 'java.util.Date'"));
 	}
 
@@ -553,6 +554,38 @@ public class EnableRabbitIntegrationTests {
 		}
 		catch (Exception e) {
 			// empty
+		}
+	}
+
+	@Test
+	@DirtiesContext
+	public void propagate() {
+		this.rabbitTemplate.setMessageConverter(new RemoteInvocationAwareMessageConverterAdapter());
+		try {
+			this.rabbitTemplate.convertSendAndReceive("test.propagate.exceptions", "foo");
+			fail("ExpectedException");
+		}
+		catch (Exception e) {
+			assertThat(e.getCause().getMessage(), equalTo("propagate this"));
+		}
+	}
+
+	@Test
+	public void listenerErrorHandler() {
+		assertEquals("BAR", this.rabbitTemplate.convertSendAndReceive("test.pojo.errors", "foo"));
+	}
+
+	@Test
+	@DirtiesContext
+	public void listenerErrorHandlerException() {
+		this.rabbitTemplate.setMessageConverter(new RemoteInvocationAwareMessageConverterAdapter());
+		try {
+			this.rabbitTemplate.convertSendAndReceive("test.pojo.errors2", "foo");
+			fail("ExpectedException");
+		}
+		catch (Exception e) {
+			assertThat(e.getCause().getMessage(), equalTo("from error handler"));
+			assertThat(e.getCause().getCause().getMessage(), equalTo("propagate this"));
 		}
 	}
 
@@ -800,6 +833,22 @@ public class EnableRabbitIntegrationTests {
 		public String handleWithDeadLetterDefaultExchange(String foo) {
 			throw new AmqpRejectAndDontRequeueException("dlq");
 		}
+
+		@RabbitListener(queues = "test.propagate.exceptions", propagateExceptions = "${some.prop:true}")
+		public String alwaysFails(String data) throws Exception {
+			throw new Exception("propagate this");
+		}
+
+		@RabbitListener(queues = "test.pojo.errors", errorHandler = "alwaysBARHandler")
+		public String alwaysFailsWithErrorHandler(String data) throws Exception {
+			throw new Exception("propagate this");
+		}
+
+		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANewException", propagateExceptions = "true")
+		public String alwaysFailsWithErrorHandlerThrowAnother(String data) throws Exception {
+			throw new Exception("propagate this");
+		}
+
 	}
 
 	public static class Foo1 {
@@ -1045,6 +1094,18 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public MyService myService() {
 			return new MyService();
+		}
+
+		@Bean
+		public RabbitListenerErrorHandler alwaysBARHandler() {
+			return (m, sm, e) -> "BAR";
+		}
+
+		@Bean
+		public RabbitListenerErrorHandler throwANewException() {
+			return (m, sm, e) -> {
+				throw new RuntimeException("from error handler", e.getCause());
+			};
 		}
 
 		@Bean
