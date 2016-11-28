@@ -45,9 +45,10 @@ import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.ExceptionHandler;
+import com.rabbitmq.client.MetricsCollector;
 import com.rabbitmq.client.SaslConfig;
 import com.rabbitmq.client.SocketConfigurator;
-
+import com.rabbitmq.client.impl.nio.NioParams;
 
 /**
  * Factory bean to create a RabbitMQ ConnectionFactory, delegating most
@@ -64,6 +65,7 @@ import com.rabbitmq.client.SocketConfigurator;
  *
  * @author Gary Russell
  * @author Heath Abelson
+ * @author Arnaud Cogoluègnes
  *
  * @since 1.4
  */
@@ -504,6 +506,36 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setExceptionHandler(ExceptionHandler exceptionHandler) {
 		this.connectionFactory.setExceptionHandler(exceptionHandler);
+	}
+
+	/**
+	 * Whether or not the factory should be configured to use Java NIO.
+	 * @param useNio true to use Java NIO, false to use blocking IO
+	 * @see com.rabbitmq.client.ConnectionFactory#useNio()
+	 */
+	public void setUseNio(boolean useNio) {
+		if (useNio) {
+			this.connectionFactory.useNio();
+		}
+		else {
+			this.connectionFactory.useBlockingIo();
+		}
+	}
+
+	/**
+	 * @param nioParams the NIO parameters
+	 * @see com.rabbitmq.client.ConnectionFactory#setNioParams(com.rabbitmq.client.impl.nio.NioParams)
+	 */
+	public void setNioParams(NioParams nioParams) {
+		this.connectionFactory.setNioParams(nioParams);
+	}
+
+	/**
+	 * @param metricsCollector the metrics collector instance
+	 * @see com.rabbitmq.client.ConnectionFactory#setMetricsCollector(MetricsCollector)
+	 */
+	public void setMetricsCollector(MetricsCollector metricsCollector) {
+		this.connectionFactory.setMetricsCollector(metricsCollector);
 	}
 
 	@Override
