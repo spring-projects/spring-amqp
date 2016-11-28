@@ -38,7 +38,8 @@ public interface RabbitListenerErrorHandler {
 	 * @param message the converted spring-messaging message.
 	 * @param exception the exception the listener threw, wrapped in a
 	 * {@link ListenerExecutionFailedException}.
-	 * @return the return value.
+	 * @return the return value to be sent to the sender.
+	 * @throws an exception which may be the original or different.
 	 */
 	Object handleError(Message amqpMessage, org.springframework.messaging.Message<?> message,
 			ListenerExecutionFailedException exception) throws Exception;
