@@ -46,8 +46,10 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.amqp.support.converter.SmartMessageConverter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.expression.Expression;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -370,17 +372,19 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object object) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object, null);
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object,
+				(MessagePostProcessor) null);
 	}
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object) {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, object, null);
+		return convertSendAndReceive(this.template.getExchange(), routingKey, object,
+				(MessagePostProcessor) null);
 	}
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object) {
-		return convertSendAndReceive(exchange, routingKey, object, null);
+		return convertSendAndReceive(exchange, routingKey, object, (MessagePostProcessor) null);
 	}
 
 	@Override
@@ -399,6 +403,57 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor) {
+		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, true);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(Object object,
+			ParameterizedTypeReference<C> responseType) {
+		return convertSendAndReceiveAsType(this.template.getExchange(), this.template.getRoutingKey(), object,
+				(MessagePostProcessor) null, responseType);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+			ParameterizedTypeReference<C> responseType) {
+		return convertSendAndReceiveAsType(this.template.getExchange(), routingKey, object, (MessagePostProcessor) null,
+				responseType);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+			ParameterizedTypeReference<C> responseType) {
+		return convertSendAndReceiveAsType(exchange, routingKey, object, (MessagePostProcessor) null, responseType);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(Object object,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+		return convertSendAndReceiveAsType(this.template.getExchange(), this.template.getRoutingKey(), object,
+				messagePostProcessor, responseType);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+		return convertSendAndReceiveAsType(this.template.getExchange(), routingKey, object, messagePostProcessor,
+				responseType);
+	}
+
+	@Override
+	public <C> RabbitConverterFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+		Assert.state(this.template.getMessageConverter() instanceof SmartMessageConverter,
+				"template's message converter must be a SmartMessageConverter");
+		RabbitConverterFuture<C> future = convertSendAndReceive(exchange, routingKey, object, messagePostProcessor,
+				false);
+		future.setReturnType(responseType);
+		future.startTimer();
+		return future;
+	}
+
+	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
+			MessagePostProcessor messagePostProcessor, boolean start) {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
@@ -421,7 +476,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			sendDirect(channelHolder.getChannel(), exchange, routingKey, message, correlationData);
 		}
 		RabbitConverterFuture<C> future = correlationPostProcessor.getFuture();
-		future.startTimer();
+		if (start) {
+			future.startTimer();
+		}
 		return future;
 	}
 
@@ -511,8 +568,14 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				RabbitFuture<?> future = this.pending.remove(correlationId);
 				if (future != null) {
 					if (future instanceof AsyncRabbitTemplate.RabbitConverterFuture) {
-						Object converted = this.template.getMessageConverter().fromMessage(message);
-						((RabbitConverterFuture<Object>) future).set(converted);
+						MessageConverter messageConverter = this.template.getMessageConverter();
+						RabbitConverterFuture<Object> rabbitFuture = (RabbitConverterFuture<Object>) future;
+						Object converted = rabbitFuture.getReturnType() != null
+								&& messageConverter instanceof SmartMessageConverter
+										? ((SmartMessageConverter) messageConverter).fromMessage(message,
+												rabbitFuture.getReturnType())
+										: messageConverter.fromMessage(message);
+						rabbitFuture.set(converted);
 					}
 					else {
 						((RabbitMessageFuture) future).set(message);
@@ -700,8 +763,18 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 */
 	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements ListenableFuture<C> {
 
+		private volatile ParameterizedTypeReference<C> returnType;
+
 		public RabbitConverterFuture(String correlationId, Message requestMessage) {
 			super(correlationId, requestMessage);
+		}
+
+		public ParameterizedTypeReference<C> getReturnType() {
+			return this.returnType;
+		}
+
+		public void setReturnType(ParameterizedTypeReference<C> returnType) {
+			this.returnType = returnType;
 		}
 
 	}

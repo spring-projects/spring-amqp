@@ -31,6 +31,11 @@ See <<direct-reply-to>> for more information.
 
 The `AsyncRabbitTemplate` now supports Direct reply-to; see <<async-template>> for more information.
 
+The `RabbitTemplate` and `AsyncRabbitTemplate` now have `receiveAndConvert` and `convertSendAndReceiveAsType` methods that take a `ParameterizedTypeReference<T>` argument, allowing the caller to specify the type to convert the result to.
+This is particularly useful for complex types or when type information is not conveyed in message headers.
+Requires a `SmartMessageConverter` such as the `Jackson2JsonMessageConverter`.
+See <<receiving-messages>>, <<request-reply>>, <<async-template>>, and <<json-complex>> for more information.
+
 ===== Listener Adapter
 
 A convenient `FunctionalInterface` is available for using lambdas with the `MessageListenerAdapter`.

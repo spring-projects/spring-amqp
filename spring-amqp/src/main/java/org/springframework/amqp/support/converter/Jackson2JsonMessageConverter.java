@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
+import org.springframework.core.ParameterizedTypeReference;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -40,7 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Gary Russell
  * @author Artem Bilan
  */
-public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
+public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter implements SmartMessageConverter {
 
 	private static Log log = LogFactory.getLog(Jackson2JsonMessageConverter.class);
 
@@ -127,8 +128,15 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	}
 
 	@Override
-	public Object fromMessage(Message message)
-			throws MessageConversionException {
+	public Object fromMessage(Message message) throws MessageConversionException {
+		return fromMessage(message, null);
+	}
+
+	/**
+	 * @param conversionHint The conversionHint must be a {@link ParameterizedTypeReference}.
+	 */
+	@Override
+	public Object fromMessage(Message message, Object conversionHint) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
@@ -139,8 +147,12 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 					encoding = getDefaultCharset();
 				}
 				try {
-
-					if (getClassMapper() == null) {
+					if (conversionHint instanceof ParameterizedTypeReference) {
+						content = convertBytesToObject(message.getBody(), encoding,
+								this.jsonObjectMapper.getTypeFactory().constructType(
+										((ParameterizedTypeReference<?>) conversionHint).getType()));
+					}
+					else if (getClassMapper() == null) {
 						JavaType targetJavaType = getJavaTypeMapper()
 								.toJavaType(message.getMessageProperties());
 						content = convertBytesToObject(message.getBody(),
