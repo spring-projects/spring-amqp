@@ -26,6 +26,7 @@ import org.springframework.util.Assert;
 /**
  * A delegating adapter that unwraps {@link RemoteInvocationResult} after invoking
  * the delegate to convert from a message.
+ * Delegates to a {@link SimpleMessageConverter} by default.
  *
  * @author Gary Russell
  * @since 2.0
