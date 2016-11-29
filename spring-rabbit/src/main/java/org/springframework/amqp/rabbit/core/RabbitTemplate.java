@@ -1170,15 +1170,34 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) throws AmqpException {
+		Message replyMessage = convertSendAndReceiveRaw(exchange, routingKey, message, messagePostProcessor,
+				correlationData);
+		if (replyMessage == null) {
+			return null;
+		}
+		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+	}
+
+	/**
+	 * Convert and send a message and return the raw reply message, or null. Subclasses can
+	 * invoke this method if they want to perform conversion on the outbound message but
+	 * have direct access to the reply message before conversion.
+	 * @param exchange the exchange.
+	 * @param routingKey the routing key.
+	 * @param message the data to send.
+	 * @param messagePostProcessor a message post processor (can be null).
+	 * @param correlationData correlation data (can be null).
+	 * @return the reply message or null if a timeout occurs.
+	 * @since 1.6.6
+	 */
+	protected Message convertSendAndReceiveRaw(final String exchange, final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) {
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
 			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
 		}
 		Message replyMessage = doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
-		if (replyMessage == null) {
-			return null;
-		}
-		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+		return replyMessage;
 	}
 
 	protected Message convertMessageIfNecessary(final Object object) {
@@ -1338,6 +1357,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		doSend(channel, exchange, routingKey, message, mandatory, correlationData);
 		reply = this.replyTimeout < 0 ? pendingReply.get() : pendingReply.get(this.replyTimeout, TimeUnit.MILLISECONDS);
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Reply: " + reply);
+		}
 		return reply;
 	}
 
