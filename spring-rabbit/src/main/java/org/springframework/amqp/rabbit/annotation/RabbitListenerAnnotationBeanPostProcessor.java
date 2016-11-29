@@ -330,7 +330,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setMethod(methodToUse);
 		endpoint.setBeanFactory(this.beanFactory);
-		endpoint.setPropagateExceptions(resolveExpressionAsBoolean(rabbitListener.propagateExceptions()));
+		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
 		String errorHandlerBeanName = resolveExpressionAsString(rabbitListener.errorHandler(), "errorHandler");
 		if (StringUtils.hasText(errorHandlerBeanName)) {
 			endpoint.setErrorHandler(this.beanFactory.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class));

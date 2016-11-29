@@ -61,7 +61,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 	private final MessagingMessageConverterAdapter messagingMessageConverter;
 
-	private final boolean propagateExceptions;
+	private final boolean returnExceptions;
 
 	private final RabbitListenerErrorHandler errorHandler;
 
@@ -73,10 +73,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		this(bean, method, false, null);
 	}
 
-	public MessagingMessageListenerAdapter(Object bean, Method method, boolean propagateExceptions,
+	public MessagingMessageListenerAdapter(Object bean, Method method, boolean returnExceptions,
 			RabbitListenerErrorHandler errorHandler) {
 		this.messagingMessageConverter = new MessagingMessageConverterAdapter(bean, method);
-		this.propagateExceptions = propagateExceptions;
+		this.returnExceptions = returnExceptions;
 		this.errorHandler = errorHandler;
 	}
 
@@ -136,14 +136,14 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 					}
 				}
 				catch (Exception ex) {
-					if (!this.propagateExceptions) {
+					if (!this.returnExceptions) {
 						throw ex;
 					}
 					handleResult(new RemoteInvocationResult(ex), amqpMessage, channel, message);
 				}
 			}
 			else {
-				if (!this.propagateExceptions) {
+				if (!this.returnExceptions) {
 					throw e;
 				}
 				handleResult(new RemoteInvocationResult(e.getCause()), amqpMessage, channel, message);

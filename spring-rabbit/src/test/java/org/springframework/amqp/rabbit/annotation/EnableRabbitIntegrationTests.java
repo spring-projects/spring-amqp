@@ -152,7 +152,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
-			"amqp656dlq", "test.simple.declare", "test.propagate.exceptions", "test.pojo.errors", "test.pojo.errors2");
+			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -559,14 +559,14 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	@DirtiesContext
-	public void propagate() {
+	public void returnExceptionWithRethrowAdapter() {
 		this.rabbitTemplate.setMessageConverter(new RemoteInvocationAwareMessageConverterAdapter());
 		try {
-			this.rabbitTemplate.convertSendAndReceive("test.propagate.exceptions", "foo");
+			this.rabbitTemplate.convertSendAndReceive("test.return.exceptions", "foo");
 			fail("ExpectedException");
 		}
 		catch (Exception e) {
-			assertThat(e.getCause().getMessage(), equalTo("propagate this"));
+			assertThat(e.getCause().getMessage(), equalTo("return this"));
 		}
 	}
 
@@ -585,7 +585,7 @@ public class EnableRabbitIntegrationTests {
 		}
 		catch (Exception e) {
 			assertThat(e.getCause().getMessage(), equalTo("from error handler"));
-			assertThat(e.getCause().getCause().getMessage(), equalTo("propagate this"));
+			assertThat(e.getCause().getCause().getMessage(), equalTo("return this"));
 		}
 	}
 
@@ -834,19 +834,19 @@ public class EnableRabbitIntegrationTests {
 			throw new AmqpRejectAndDontRequeueException("dlq");
 		}
 
-		@RabbitListener(queues = "test.propagate.exceptions", propagateExceptions = "${some.prop:true}")
+		@RabbitListener(queues = "test.return.exceptions", returnExceptions = "${some.prop:true}")
 		public String alwaysFails(String data) throws Exception {
-			throw new Exception("propagate this");
+			throw new Exception("return this");
 		}
 
 		@RabbitListener(queues = "test.pojo.errors", errorHandler = "alwaysBARHandler")
 		public String alwaysFailsWithErrorHandler(String data) throws Exception {
-			throw new Exception("propagate this");
+			throw new Exception("return this");
 		}
 
-		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANewException", propagateExceptions = "true")
+		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANewException", returnExceptions = "true")
 		public String alwaysFailsWithErrorHandlerThrowAnother(String data) throws Exception {
-			throw new Exception("propagate this");
+			throw new Exception("return this");
 		}
 
 	}

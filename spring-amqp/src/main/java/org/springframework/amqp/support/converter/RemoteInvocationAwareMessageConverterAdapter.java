@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.AmqpRemoteException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -33,22 +33,26 @@ import org.springframework.util.Assert;
  */
 public class RemoteInvocationAwareMessageConverterAdapter implements MessageConverter, BeanClassLoaderAware {
 
-	private final SimpleMessageConverter defaultMessageConverter = new SimpleMessageConverter();
-
 	private final MessageConverter delegate;
 
+	private final boolean shouldSetClassLoader;
+
 	public RemoteInvocationAwareMessageConverterAdapter() {
-		this.delegate = this.defaultMessageConverter;
+		this.delegate = new SimpleMessageConverter();
+		this.shouldSetClassLoader = true;
 	}
 
 	public RemoteInvocationAwareMessageConverterAdapter(MessageConverter delegate) {
 		Assert.notNull(delegate, "'delegate' converter cannot be null");
 		this.delegate = delegate;
+		this.shouldSetClassLoader = false;
 	}
 
 	@Override
 	public void setBeanClassLoader(ClassLoader classLoader) {
-		this.defaultMessageConverter.setBeanClassLoader(classLoader);
+		if (this.shouldSetClassLoader) {
+			((SimpleMessageConverter) this.delegate).setBeanClassLoader(classLoader);
+		}
 	}
 
 	@Override
@@ -64,7 +68,7 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 				result = ((RemoteInvocationResult) result).recreate();
 			}
 			catch (Throwable e) {
-				throw new AmqpException(e);
+				throw new AmqpRemoteException(e);
 			}
 		}
 		return result;

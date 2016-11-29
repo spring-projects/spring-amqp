@@ -45,7 +45,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 
 	private MessageHandlerMethodFactory messageHandlerMethodFactory;
 
-	private boolean propagateExceptions;
+	private boolean returnExceptions;
 
 	private RabbitListenerErrorHandler errorHandler;
 
@@ -84,13 +84,13 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	}
 
 	/**
-	 * Set whether exceptions thrown by the listener should be propagated to the sender
+	 * Set whether exceptions thrown by the listener should be returned to the sender
 	 * using the normal {@code replyTo/@SendTo} semantics.
-	 * @param propagateExceptions true to propagate exceptions.
+	 * @param returnExceptions true to return exceptions.
 	 * @since 2.0
 	 */
-	public void setPropagateExceptions(boolean propagateExceptions) {
-		this.propagateExceptions = propagateExceptions;
+	public void setReturnExceptions(boolean returnExceptions) {
+		this.returnExceptions = returnExceptions;
 	}
 
 	/**
@@ -145,7 +145,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	 * @return the {@link MessagingMessageListenerAdapter} instance.
 	 */
 	protected MessagingMessageListenerAdapter createMessageListenerInstance() {
-		return new MessagingMessageListenerAdapter(this.bean, this.method, this.propagateExceptions, this.errorHandler);
+		return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions, this.errorHandler);
 	}
 
 	private String getDefaultReplyToAddress() {

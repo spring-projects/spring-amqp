@@ -188,13 +188,16 @@ public @interface RabbitListener {
 	String group() default "";
 
 	/**
-	 * Set to true to cause exceptions thrown by the listener to be sent to the sender
+	 * Set to "true" to cause exceptions thrown by the listener to be sent to the sender
 	 * using normal {@code replyTo/@SendTo} semantics. When false, the exception is thrown
 	 * to the listener container and normal retry/DLQ processing is performed.
-	 * @return true to propagate exceptions.
+	 * @return true to return exceptions. If the client side uses a
+	 * {@code RemoteInvocationAwareMessageConverterAdapter} the exception will be re-thrown.
+	 * Otherwise, the sender will receive a {@code RemoteInvocationResult} wrapping the
+	 * exception.
 	 * @since 2.0
 	 */
-	String propagateExceptions() default "";
+	String returnExceptions() default "";
 
 	/**
 	 * Set an {@link RabbitListenerErrorHandler} to invoke if the listener method throws
