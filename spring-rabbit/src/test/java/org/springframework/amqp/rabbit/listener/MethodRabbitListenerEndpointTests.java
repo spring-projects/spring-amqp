@@ -378,7 +378,7 @@ public class MethodRabbitListenerEndpointTests {
 		Channel channel = mock(Channel.class);
 
 		thrown.expect(ListenerExecutionFailedException.class);
-		thrown.expectCause(Matchers.isA(MessageConversionException.class));
+		thrown.expectCause(Matchers.isA(org.springframework.messaging.converter.MessageConversionException.class));
 		thrown.expectMessage(getDefaultListenerMethod(Integer.class).toGenericString()); // ref to method
 		listener.onMessage(MessageTestUtils.createTextMessage("test"), channel); // test is not a valid integer
 	}
@@ -390,7 +390,7 @@ public class MethodRabbitListenerEndpointTests {
 
 		thrown.expect(ListenerExecutionFailedException.class);
 		thrown.expectCause(Matchers.<Throwable>either(Matchers.instanceOf(MethodArgumentTypeMismatchException.class))
-				.or(Matchers.instanceOf(MessageConversionException.class)));
+				.or(Matchers.instanceOf(org.springframework.messaging.converter.MessageConversionException.class)));
 		listener.onMessage(MessageTestUtils.createTextMessage("test"), channel);  // Message<String> as Message<Integer>
 	}
 
