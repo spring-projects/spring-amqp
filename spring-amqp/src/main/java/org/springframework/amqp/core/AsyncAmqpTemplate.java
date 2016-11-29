@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.core;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.concurrent.ListenableFuture;
 
 /**
@@ -122,5 +123,82 @@ public interface AsyncAmqpTemplate {
 	 */
 	<C> ListenableFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor);
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * default routing key.
+	 * @param object the object to convert.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(Object object, ParameterizedTypeReference<C> responseType);
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * provided routing key.
+	 * @param routingKey the routing key.
+	 * @param object the object to convert.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+			ParameterizedTypeReference<C> responseType);
+
+	/**
+	 * Convert the object to a message and send it to the provided exchange and
+	 * routing key.
+	 * @param exchange the exchange.
+	 * @param routingKey the routing key.
+	 * @param object the object to convert.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+			ParameterizedTypeReference<C> responseType);
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * default routing key after invoking the {@link MessagePostProcessor}.
+	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param object the object to convert.
+	 * @param messagePostProcessor the post processor.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(Object object, MessagePostProcessor messagePostProcessor,
+			ParameterizedTypeReference<C> responseType);
+
+	/**
+	 * Convert the object to a message and send it to the default exchange with the
+	 * provided routing key after invoking the {@link MessagePostProcessor}.
+	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param routingKey the routing key.
+	 * @param object the object to convert.
+	 * @param messagePostProcessor the post processor.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(String routingKey, Object object,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType);
+
+	/**
+	 * Convert the object to a message and send it to the provided exchange and
+	 * routing key after invoking the {@link MessagePostProcessor}.
+	 * If the post processor adds a correlationId property, it must be unique.
+	 * @param exchange the exchange
+	 * @param routingKey the routing key.
+	 * @param object the object to convert.
+	 * @param messagePostProcessor the post processor.
+	 * @param responseType the response type.
+	 * @param <C> the expected result type.
+	 * @return the {@link ListenableFuture}.
+	 */
+	<C> ListenableFuture<C> convertSendAndReceiveAsType(String exchange, String routingKey, Object object,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType);
 
 }

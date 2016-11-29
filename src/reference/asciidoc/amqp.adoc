@@ -1183,6 +1183,9 @@ Message receiveAndConvert(long timeoutMillis) throws AmqpException;
 Message receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
 ----
 
+Starting with __version 2.0__, there are variants of these methods that take an additional `ParameterizedTypeReference` argument to convert complex types.
+The template must be configured with a `SmartMessageConverter`; see <<json-complex>> for more information.
+
 Similar to `sendAndReceive` methods, beginning with _version 1.3_, the `AmqpTemplate` has several convenience `receiveAndReply` methods for synchronously receiving, processing and replying to messages:
 [source,java]
 ----
@@ -2537,6 +2540,20 @@ For this reason, the infrastructure provides the `targetObject` message property
 converter to determine the type.
 ====
 
+[[json-complex]]
+====== Converting From a Message With RabbitTemplate
+
+As mentioned above, type information is conveyed in message headers to assist the converter when converting from a message.
+This works fine in most cases, but when using generic types, it can only convert simple objects and known "container" objects (lists, arrays, maps).
+Starting with __version 2.0__, the `Jackson2JsonMessageConverter` implements `SmartMessageConverter` which allows it to be used with the new `RabbitTemplate` methods that take a `ParameterizedTypeReference` argument; this allows conversion of complex generic types.
+For example:
+
+[source, java]
+----
+Foo<Bar<Baz, Qux>> foo =
+    rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { });
+----
+
 ===== MarshallingMessageConverter
 
 Yet another option is the `MarshallingMessageConverter`.
@@ -2699,7 +2716,11 @@ See the Javadoc of `AmqpTemplate` for more detail.
 
 Starting with _version 1.5.0_, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
 Together with a properly configured connection factory, this enables the receipt of publisher confirms for the send side of the operation.
-See <<template-confirms>> for more information.
+See <<template-confirms>> and the javadoc for `RabbitOperations` for more information.
+
+Starting with __version 2.0__, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
+The template must be configured with a `SmartMessageConverter`; see <<json-complex>> for more information.
+
 
 [[reply-timeout]]
 ===== Reply Timeout
@@ -2960,6 +2981,9 @@ public AsyncRabbitTemplate(RabbitTemplate template)
 ----
 
 See <<direct-reply-to>> to use Direct reply-to with the synchronous `RabbitTemplate`.
+
+Starting with __version 2.0__, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
+The underlying `RabbitTemplate` must be configured with a `SmartMessageConverter`; see <<json-complex>> for more information.
 
 [[remoting]]
 ===== Spring Remoting with AMQP

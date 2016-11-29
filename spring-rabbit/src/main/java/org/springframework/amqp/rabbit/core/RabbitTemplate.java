@@ -71,12 +71,14 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.rabbit.support.ValueExpression;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.support.converter.SmartMessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -720,6 +722,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		send(exchange, routingKey, message, null);
 	}
 
+	@Override
 	public void send(final String exchange, final String routingKey,
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
@@ -762,6 +765,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(this.exchange, this.routingKey, object, (CorrelationData) null);
 	}
 
+	@Override
 	public void correlationConvertAndSend(Object object, CorrelationData correlationData) throws AmqpException {
 		convertAndSend(this.exchange, this.routingKey, object, correlationData);
 	}
@@ -771,6 +775,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(this.exchange, routingKey, object, (CorrelationData) null);
 	}
 
+	@Override
 	public void convertAndSend(String routingKey, final Object object, CorrelationData correlationData)
 			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, object, correlationData);
@@ -781,6 +786,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(exchange, routingKey, object, (CorrelationData) null);
 	}
 
+	@Override
 	public void convertAndSend(String exchange, String routingKey, final Object object, CorrelationData correlationData)
 			throws AmqpException {
 		send(exchange, routingKey, convertMessageIfNecessary(object), correlationData);
@@ -797,6 +803,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, null);
 	}
 
+	@Override
+	public void convertAndSend(Object message, MessagePostProcessor messagePostProcessor,
+			CorrelationData correlationData)
+			throws AmqpException {
+		convertAndSend(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
+	}
+
+	@Override
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData)
 			throws AmqpException {
@@ -809,6 +823,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		convertAndSend(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
+	@Override
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException {
 		Message messageToSend = convertMessageIfNecessary(message);
@@ -919,6 +934,31 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
 		if (response != null) {
 			return getRequiredMessageConverter().fromMessage(response);
+		}
+		return null;
+	}
+
+	@Override
+	public <T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException {
+		return receiveAndConvert(this.getRequiredQueue(), type);
+	}
+
+	@Override
+	public <T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException {
+		return receiveAndConvert(queueName, this.receiveTimeout, type);
+	}
+
+	@Override
+	public <T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+		return receiveAndConvert(this.getRequiredQueue(), timeoutMillis, type);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
+		if (response != null) {
+			return (T) getRequiredSmartMessageConverter().fromMessage(response, type);
 		}
 		return null;
 	}
@@ -1170,6 +1210,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(message, (CorrelationData) null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final Object message, CorrelationData correlationData) throws AmqpException {
 		return convertSendAndReceive(this.exchange, this.routingKey, message, null, correlationData);
 	}
@@ -1179,6 +1220,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(routingKey, message, (CorrelationData) null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message, CorrelationData correlationData)
 			throws AmqpException {
 		return convertSendAndReceive(this.exchange, routingKey, message, null, correlationData);
@@ -1190,6 +1232,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			CorrelationData correlationData) throws AmqpException {
 		return convertSendAndReceive(exchange, routingKey, message, null, correlationData);
@@ -1201,6 +1244,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(message, messagePostProcessor, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData) throws AmqpException {
 		return convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
@@ -1212,6 +1256,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(routingKey, message, messagePostProcessor, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData) throws AmqpException {
 		return convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor, correlationData);
@@ -1223,6 +1268,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return convertSendAndReceive(exchange, routingKey, message, messagePostProcessor, null);
 	}
 
+	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) throws AmqpException {
 		Message replyMessage = convertSendAndReceiveRaw(exchange, routingKey, message, messagePostProcessor,
@@ -1231,6 +1277,91 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			return null;
 		}
 		return this.getRequiredMessageConverter().fromMessage(replyMessage);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return convertSendAndReceiveAsType(message, (CorrelationData) null, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, CorrelationData correlationData,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(this.exchange, this.routingKey, message, null, correlationData,
+				responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(routingKey, message, (CorrelationData) null, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(this.exchange, routingKey, message, null, correlationData, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(exchange, routingKey, message, (CorrelationData) null, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(exchange, routingKey, message, null, correlationData, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, final MessagePostProcessor messagePostProcessor,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(message, messagePostProcessor, null, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, final MessagePostProcessor messagePostProcessor,
+			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(this.exchange, this.routingKey, message, messagePostProcessor,
+				correlationData, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return convertSendAndReceiveAsType(routingKey, message, messagePostProcessor, null, responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return convertSendAndReceiveAsType(this.exchange, routingKey, message, messagePostProcessor, correlationData,
+				responseType);
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return convertSendAndReceiveAsType(exchange, routingKey, message, messagePostProcessor, null, responseType);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData,
+			ParameterizedTypeReference<T> responseType) throws AmqpException {
+		Message replyMessage = convertSendAndReceiveRaw(exchange, routingKey, message, messagePostProcessor,
+				correlationData);
+		if (replyMessage == null) {
+			return null;
+		}
+		return (T) getRequiredSmartMessageConverter().fromMessage(replyMessage, responseType);
 	}
 
 	/**
@@ -1659,6 +1790,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					"No 'messageConverter' specified. Check configuration of RabbitTemplate.");
 		}
 		return converter;
+	}
+
+	private SmartMessageConverter getRequiredSmartMessageConverter() throws IllegalStateException {
+		MessageConverter converter = getRequiredMessageConverter();
+		Assert.state(converter instanceof SmartMessageConverter,
+				"template's message converter must be a SmartMessageConverter");
+		return (SmartMessageConverter) converter;
 	}
 
 	private String getRequiredQueue() throws IllegalStateException {
