@@ -39,7 +39,6 @@ allprojects {
 			maven { url 'https://repo.spring.io/libs-snapshot' }
 		}
 		maven { url 'https://repo.spring.io/libs-release' }
-		maven { url 'http://dl.bintray.com/rabbitmq/maven-milestones' }
 	}
 	apply plugin: 'javadocHotfix'
 }
@@ -93,10 +92,10 @@ subprojects { subproject ->
 		log4jVersion = '2.7'
 		logbackVersion = '1.1.2'
 		mockitoVersion = '1.10.19'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.0.0.RC2'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.0.0'
 		rabbitmqHttpClientVersion = '1.1.0.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.BUILD-SNAPSHOT'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.M3'
 
 		springRetryVersion = '1.2.0.RC1'
 	}
