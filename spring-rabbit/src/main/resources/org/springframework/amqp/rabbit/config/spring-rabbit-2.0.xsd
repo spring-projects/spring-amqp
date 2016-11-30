@@ -550,24 +550,6 @@
 	</xsd:element>
 
 	<xsd:complexType name="listenerContainerBaseType">
-<!--
-	REMOVED in 1.5 - originally, it was deprecated in 1.5 M1 but that resulted in confusion.
-	So, we decided to remove it completely so configuration will fail fast when migrating to 1.5.
-
-	Users need to move the id from the listener-container element to the child listener elements.
-
-		<xsd:attribute name="id" type="xsd:string">
-			<xsd:annotation>
-				<xsd:documentation><![CDATA[
-	Deprecated - the top level container 'id' is no longer used when naming the child
-	'listener' beans - the 'id' there alone is now used instead. Also, the 'id'
-	attribute was ignored in a rabbit template 'reply-listener' where the bean name
-	is always 'templateId.replyListener'. This attribute will be removed in a future
-	release.
-				]]></xsd:documentation>
-			</xsd:annotation>
-		</xsd:attribute>
--->
 		<xsd:attribute name="type" default="simple">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
