@@ -2202,6 +2202,7 @@ The `Executor` configured in the `CachingConnectionFactory` is passed into the `
 At the time of writing, if this is not configured, the client uses an internal thread pool executor with a pool size of 5.
 
 IMPORTANT: With the `DirectMessageListenerContainer` you need to ensure that the connection factory is configured with a task executor that had sufficient threads to support your desired concurrency, across all listener containers that use that factory.
+At the time of writing, the default pool size is only 5.
 
 The `RabbitMQ client` uses a `ThreadFactory` to create threads for low-level I/O (socket) operations.
 To modify this factory, you need to configure the underlying RabbitMQ `ConnectionFactory`, as discussed in <<connection-factory>>.
@@ -2217,7 +2218,7 @@ This architecture was required because in early versions of the RabbitMQ client,
 Newer versions of the client have a revised threading model and can now support concurrency.
 This has allowed the introduction of the DMLC where the listener is now invoked directly on the RabbitMQ Client thread.
 Its architecture is therefore actually "simpler" than the SMLC.
-However, there are some limitations with this approach and certain features of the SMLC are not available with the DMLC; also concurrency is controlled by `consumersPerQueue`; the `concurrentConsumers` and associated properties are not available with this container.
+However, there are some limitations with this approach and certain features of the SMLC are not available with the DMLC; also concurrency is controlled by `consumersPerQueue` (and the client library's thread pool); the `concurrentConsumers` and associated properties are not available with this container.
 
 The following features are available with the SMLC, but not the DMLC:
 
@@ -2226,11 +2227,12 @@ The following features are available with the SMLC, but not the DMLC:
 
 However, the DMLC has the following benefits over the SMLC:
 
-* Adding and removing queues at runtime is much more efficient; with the SMLC, the entire consumer thread is restarted (all consumers canceled and re-created); with the DMLC, unaffected consumers are not canceled.
+* Adding and removing queues at runtime is more efficient; with the SMLC, the entire consumer thread is restarted (all consumers canceled and re-created); with the DMLC, unaffected consumers are not canceled.
 * The context switch between the RabbitMQ Client thread and the consumer thread is avoided.
 * Threads are shared across consumers rather than having a dedicated thread for each consumer in the SMLC.
-However, see the important note about the connection factory configuration in <<threading>>.
+However, see the IMPORTANT note about the connection factory configuration in <<threading>>.
 
+See <<containerAttributes>> for information about which configuration properties apply to each container.
 
 [[idle-containers]]
 ===== Detecting Idle Asynchronous Consumers
@@ -3875,9 +3877,12 @@ If you prefer using XML configuration, declare the following bean in your XML Ap
 [[containerAttributes]]
 ==== Message Listener Container Configuration
 
-There are quite a few options for configuring a `SimpleMessageListenerContainer` related to transactions and quality of service, and some of them interact with each other.
+There are quite a few options for configuring a `SimpleMessageListenerContainer` (SMLC) and `DirectMessageListenerContainer` (DMLC) related to transactions and quality of service, and some of them interact with each other.
+Properties that apply to the SMLC or DMLC are indicated by the check mark in the appropriate column.
+See <<choose-container>> for information to help you decide which container is appropriate for your application.
 
 The table below shows the container property names and their equivalent attribute names (in parentheses) when using the namespace to configure a `<rabbit:listener-container/>`.
+The `type` attribute on that element can be `simple` (default) or `direct` to specify an `SMLC` or `DMLC` respectively.
 
 Some properties are not exposed by the namespace; indicated by `N/A` for the attribute.
 
