@@ -26,6 +26,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -50,6 +52,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
@@ -64,8 +68,11 @@ import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Recoverable;
+import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * @author Dave Syer
@@ -99,7 +106,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	@After
 	public void close() {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
-			new RabbitAdmin(this.connectionFactory).deleteQueue(CF_INTEGRATION_TEST_QUEUE);
+			this.brokerIsRunning.getAdmin().deleteQueue(CF_INTEGRATION_TEST_QUEUE);
 		}
 		assertEquals("bar", connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo"));
 		connectionFactory.destroy();
@@ -179,6 +186,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		connectionFactory.setCacheMode(CacheMode.CONNECTION);
 		connectionFactory.setConnectionCacheSize(1);
 		connectionFactory.setChannelCacheSize(3);
+		// the following is needed because we close the underlying connection below.
+		connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(false);
 		List<Connection> connections = new ArrayList<Connection>();
 		connections.add(connectionFactory.createConnection());
 		connections.add(connectionFactory.createConnection());
@@ -260,14 +269,13 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testReceiveFromNonExistentVirtualHost() throws Exception {
-
 		connectionFactory.setVirtualHost("non-existent");
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(AmqpIOException.class);
-		String result = (String) template.receiveAndConvert("foo");
-		assertEquals("message", result);
 
+		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
+		exception.expect(Matchers.anyOf(Matchers.instanceOf(AmqpIOException.class),
+				Matchers.instanceOf(AmqpAuthenticationException.class)));
+		template.receiveAndConvert("foo");
 	}
 
 	@Test
@@ -319,8 +327,8 @@ public class CachingConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	public void testHardErrorAndReconnect() throws Exception {
-
+	public void testHardErrorAndReconnectNoAuto() throws Exception {
+		this.connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(false);
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
@@ -355,6 +363,71 @@ public class CachingConnectionFactoryIntegrationTests {
 		}
 		template.convertAndSend(route, "message");
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+		String result = (String) template.receiveAndConvert(route);
+		assertEquals("message", result);
+		result = (String) template.receiveAndConvert(route);
+		assertEquals(null, result);
+	}
+
+	@Test
+	public void testHardErrorAndReconnectAuto() throws Exception {
+
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
+		admin.declareQueue(queue);
+		final String route = queue.getName();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch recoveryLatch = new CountDownLatch(1);
+		final RecoveryListener listener = new RecoveryListener() {
+
+			@Override
+			public void handleRecoveryStarted(Recoverable recoverable) {
+				//NOSONAR
+			}
+
+			@Override
+			public void handleRecovery(Recoverable recoverable) {
+				try {
+					((Channel) recoverable).basicCancel("testHardErrorAndReconnect");
+				}
+				catch (IOException e) {
+				}
+				recoveryLatch.countDown();
+			}
+
+		};
+		try {
+			template.execute(channel -> {
+				channel.getConnection().addShutdownListener(cause -> {
+					logger.info("Error", cause);
+					latch.countDown();
+					// This will be thrown on the Connection thread just before it dies, so basically ignored
+					throw new RuntimeException(cause);
+				});
+				Channel targetChannel = ((ChannelProxy) channel).getTargetChannel();
+				if (targetChannel instanceof AutorecoveringChannel) {
+					((AutorecoveringChannel) targetChannel).addRecoveryListener(listener);
+				}
+				else {
+					fail("Expected an AutorecoveringChannel");
+				}
+				String tag = channel.basicConsume(route, false, "testHardErrorAndReconnect",
+						new DefaultConsumer(channel));
+				// Consume twice with the same tag is a hard error (connection will be reset)
+				String result = channel.basicConsume(route, false, tag, new DefaultConsumer(channel));
+				fail("Expected IOException, got: " + result);
+				return null;
+			});
+			fail("Expected AmqpIOException");
+		}
+		catch (AmqpException e) {
+			// expected
+		}
+		assertTrue(recoveryLatch.await(10, TimeUnit.SECONDS));
+		template.convertAndSend(route, "message");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		String result = (String) template.receiveAndConvert(route);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(route);

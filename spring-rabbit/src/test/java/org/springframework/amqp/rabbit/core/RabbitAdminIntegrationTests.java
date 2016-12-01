@@ -46,6 +46,7 @@ import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.AutoRecoverConnectionNotCurrentlyOpenException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.test.BrokerRunning;
@@ -385,6 +386,9 @@ public class RabbitAdminIntegrationTests {
 			else {
 				throw e;
 			}
+		}
+		catch (AutoRecoverConnectionNotCurrentlyOpenException e) {
+			Assume.assumeTrue("Broker does not have the delayed message exchange plugin installed", false);
 		}
 		this.rabbitAdmin.declareQueue(queue);
 		this.rabbitAdmin.declareBinding(binding);

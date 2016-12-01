@@ -36,10 +36,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.ReflectionUtils.MethodCallback;
-import org.springframework.util.ReflectionUtils.MethodFilter;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Basic.RecoverOk;
@@ -53,12 +49,12 @@ import com.rabbitmq.client.AMQP.Tx.CommitOk;
 import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
 import com.rabbitmq.client.AlreadyClosedException;
+import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
 import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.FlowListener;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ReturnListener;
@@ -76,24 +72,6 @@ import com.rabbitmq.client.ShutdownSignalException;
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
-	private static final String[] METHODS_OF_INTEREST =
-			new String[] { "consumerCount", "messageCount" };
-
-	private static final MethodFilter METHOD_FILTER = new MethodFilter() {
-
-		@Override
-		public boolean matches(java.lang.reflect.Method method) {
-			return ObjectUtils.containsElement(METHODS_OF_INTEREST, method.getName());
-		}
-
-	};
-
-	private static volatile java.lang.reflect.Method consumerCountMethod;
-
-	private static volatile java.lang.reflect.Method messageCountMethod;
-
-	private static volatile boolean conditionalMethodsChecked;
-
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -108,29 +86,6 @@ public class PublisherCallbackChannelImpl
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
-
-		if (!conditionalMethodsChecked) {
-			// The following reflection is required to maintain compatibility with pre 3.6.x clients.
-			ReflectionUtils.doWithMethods(delegate.getClass(), new MethodCallback() {
-
-				@Override
-				public void doWith(java.lang.reflect.Method method)
-						throws IllegalArgumentException, IllegalAccessException {
-					if ("consumerCount".equals(method.getName()) && method.getParameterTypes().length == 1
-							&& String.class.equals(method.getParameterTypes()[0])
-							&& long.class.equals(method.getReturnType())) {
-						consumerCountMethod = method;
-					}
-					else if ("messageCount".equals(method.getName()) && method.getParameterTypes().length == 1
-							&& String.class.equals(method.getParameterTypes()[0])
-							&& long.class.equals(method.getReturnType())) {
-						messageCountMethod = method;
-					}
-				}
-
-			}, METHOD_FILTER);
-			conditionalMethodsChecked = true;
-		}
 	}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,13 +155,13 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public void addFlowListener(FlowListener listener) {
+	public void addFlowListener(com.rabbitmq.client.FlowListener listener) {
 		this.delegate.addFlowListener(listener);
 	}
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public boolean removeFlowListener(FlowListener listener) {
+	public boolean removeFlowListener(com.rabbitmq.client.FlowListener listener) {
 		return this.delegate.removeFlowListener(listener);
 	}
 
@@ -273,8 +228,18 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type);
+	}
+
+	@Override
 	public DeclareOk exchangeDeclare(String exchange, String type,
 			boolean durable) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable);
+	}
+
+	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable) throws IOException {
 		return this.delegate.exchangeDeclare(exchange, type, durable);
 	}
 
@@ -287,11 +252,23 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			Map<String, Object> arguments) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete, arguments);
+	}
+
+	@Override
 	public DeclareOk exchangeDeclare(String exchange, String type,
 			boolean durable, boolean autoDelete, boolean internal,
 			Map<String, Object> arguments) throws IOException {
 		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete,
 				internal, arguments);
+	}
+
+	@Override
+	public DeclareOk exchangeDeclare(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			boolean internal, Map<String, Object> arguments) throws IOException {
+		return this.delegate.exchangeDeclare(exchange, type, durable, autoDelete, internal, arguments);
 	}
 
 	@Override
@@ -578,6 +555,12 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public void exchangeDeclareNoWait(String exchange, BuiltinExchangeType type, boolean durable, boolean autoDelete,
+			boolean internal, Map<String, Object> arguments) throws IOException {
+		this.delegate.exchangeDeclareNoWait(exchange, type, durable, autoDelete, internal, arguments);
+	}
+
+	@Override
 	public void exchangeDeleteNoWait(String exchange, boolean ifUnused) throws IOException {
 		this.delegate.exchangeDeleteNoWait(exchange, ifUnused);
 	}
@@ -611,18 +594,12 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public long consumerCount(String queue) throws IOException {
-		if (consumerCountMethod != null) {
-			return (Long) ReflectionUtils.invokeMethod(consumerCountMethod, this.delegate, new Object[] { queue });
-		}
-		throw new UnsupportedOperationException("'consumerCount()' requires a 3.6+ client library");
+		return this.delegate.consumerCount(queue);
 	}
 
 	@Override
 	public long messageCount(String queue) throws IOException {
-		if (messageCountMethod != null) {
-			return (Long) ReflectionUtils.invokeMethod(messageCountMethod, this.delegate, new Object[] { queue });
-		}
-		throw new UnsupportedOperationException("'messageCountMethod()' requires a 3.6+ client library");
+		return this.delegate.messageCount(queue);
 	}
 
 	@Override
