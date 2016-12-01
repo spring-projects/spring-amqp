@@ -28,9 +28,8 @@ import org.junit.runner.RunWith;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.annotation.DirtiesContext;
@@ -73,12 +72,7 @@ public final class ExchangeParserIntegrationTests {
 	@BeforeClass
 	@AfterClass
 	public static void clean() {
-		RabbitAdmin admin = brokerIsRunning.getAdmin();
-		admin.deleteExchange("fanoutTest");
-		admin.deleteExchange("directTest");
-		admin.deleteExchange("topicTest");
-		admin.deleteExchange("headersTest");
-		admin.deleteExchange("headersTestMulti");
+		brokerIsRunning.deleteExchanges("fanoutTest", "directTest", "topicTest", "headersTest", "headersTestMulti");
 	}
 
 	@Test

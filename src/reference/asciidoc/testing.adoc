@@ -260,3 +260,43 @@ for the result.
 to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
+
+[[junit-rules]]
+==== JUnit @Rules
+
+Spring AMQP _version 1.7_ provides an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit tests.
+
+`BrokerRunning` provides a mechanism to allow tests to succeed when a broker is not running on `localhost`.
+
+It also has utility methods to delete queues and exchanges.
+
+Usage:
+
+[source, java]
+----
+
+@ClassRule
+public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
+
+@AfterClass
+public void tearDown() {
+    brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
+}
+----
+
+Of course, there are times when you want tests to fail if there is no broker, such as a nightly CI build.
+To disable the rule at runtime, set an environment variable `RABBITMQ_SERVER_REQUIRED` to `true`.
+
+There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
+
+`LongRunningIntegrationTest` is a rule that disables long running tests; you might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
+
+Usage:
+
+[source, java]
+----
+@Rule
+public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
+----
+
+To disable the rule at runtime, set an environment variable `RUN_LONG_INTEGRATION_TESTS` to `true`.

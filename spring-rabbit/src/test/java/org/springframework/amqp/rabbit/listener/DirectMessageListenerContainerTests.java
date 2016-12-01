@@ -57,11 +57,11 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.ReplyingMessageListener;
 import org.springframework.amqp.rabbit.support.ArgumentBuilder;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
@@ -279,8 +279,7 @@ public class DirectMessageListenerContainerTests {
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
-		brokerRunning.getAdmin().deleteQueue(EQ1);
-		brokerRunning.getAdmin().deleteQueue(EQ2);
+		brokerRunning.deleteQueues(EQ1, EQ2);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		assertNotNull(failEvent.get());
 		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerTerminatedEvent.class));
@@ -290,13 +289,14 @@ public class DirectMessageListenerContainerTests {
 
 	@Test
 	public void testErrorHandler() throws Exception {
-		brokerRunning.getAdmin().deleteQueue(Q1);
+		brokerRunning.deleteQueues(Q1);
 		Queue q1 = new Queue(Q1, true, false, false, new ArgumentBuilder()
 				.put("x-dead-letter-exchange", "")
 				.put("x-dead-letter-routing-key", DLQ1)
 				.get());
-		brokerRunning.getAdmin().declareQueue(q1);
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		admin.declareQueue(q1);
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1);
 		container.setConsumersPerQueue(2);
@@ -451,13 +451,14 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q1, 2));
 		assertTrue(consumersOnQueue(Q2, 2));
 		assertTrue(activeConsumerCount(container, 4));
-		brokerRunning.getAdmin().deleteQueue(Q1);
+		brokerRunning.deleteQueues(Q1);
 		assertTrue(consumersOnQueue(Q2, 2));
 		assertTrue(activeConsumerCount(container, 2));
 		assertTrue(restartConsumerCount(container, 2));
+		RabbitAdmin admin = new RabbitAdmin(cf);
 		if (!autoDeclare) {
 			Thread.sleep(2000);
-			brokerRunning.getAdmin().declareQueue(new Queue(Q1));
+			admin.declareQueue(new Queue(Q1));
 		}
 		assertTrue(consumersOnQueue(Q1, 2));
 		assertTrue(consumersOnQueue(Q2, 2));
@@ -504,7 +505,8 @@ public class DirectMessageListenerContainerTests {
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
 		int n = 0;
-		RabbitAdmin admin = brokerRunning.getAdmin();
+		CachingConnectionFactory cf = new CachingConnectionFactory(brokerRunning.getConnectionFactory());
+		RabbitAdmin admin = new RabbitAdmin(cf);
 		Properties queueProperties = admin.getQueueProperties(queue);
 		LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
 		while (n++ < 600
@@ -513,6 +515,7 @@ public class DirectMessageListenerContainerTests {
 			queueProperties = admin.getQueueProperties(queue);
 			LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
 		}
+		cf.destroy();
 		return queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected);
 	}
 

@@ -95,9 +95,9 @@ subprojects { subproject ->
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.0.0'
 		rabbitmqHttpClientVersion = '1.1.0.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.M3'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.BUILD-SNAPSHOT'
 
-		springRetryVersion = '1.2.0.RC1'
+		springRetryVersion = '1.2.0.BUILD-SNAPSHOT'
 	}
 
 	eclipse {
@@ -230,7 +230,22 @@ project('spring-rabbit') {
 
 		compile ("org.apache.logging.log4j:log4j-core:$log4jVersion", optional)
 
+		testCompile project(":spring-rabbit-junit")
 		testCompile "commons-cli:commons-cli:$commonsCliVersion"
+
+	}
+
+}
+
+project('spring-rabbit-junit') {
+	description = 'Spring Rabbit JUnit Support'
+
+	dependencies {
+
+		compile "org.springframework:spring-core:$springVersion"
+		compile "junit:junit:$junitVersion"
+		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
+		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 
 	}
 
@@ -250,6 +265,7 @@ project('spring-rabbit-test') {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
+		testCompile project(":spring-rabbit-junit")
 
 	}
 

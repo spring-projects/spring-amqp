@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
+package org.springframework.amqp.rabbit.junit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,8 +41,8 @@ public class LongRunningIntegrationTest extends TestWatcher {
 	private boolean shouldRun = false;
 
 	public LongRunningIntegrationTest() {
-		for (String value: new String[]{System.getenv(RUN_LONG_PROP), System.getProperty(RUN_LONG_PROP)}) {
-			if ("true".equalsIgnoreCase(value)) {
+		for (String value: new String[] { System.getenv(RUN_LONG_PROP), System.getProperty(RUN_LONG_PROP) }) {
+			if (Boolean.parseBoolean(value)) {
 				this.shouldRun = true;
 				break;
 			}

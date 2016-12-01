@@ -34,6 +34,8 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
+
 /**
  * A JUnit method &#064;Rule that changes the logger level for a set of classes
  * while a test method is running. Useful for performance or scalability tests
