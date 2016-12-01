@@ -256,7 +256,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 
 			Type genericParameterType = null;
 
-			for (int i = 0; i < this.method.getParameterTypes().length; i++) {
+			for (int i = 0; i < this.method.getParameterCount(); i++) {
 				MethodParameter methodParameter = new MethodParameter(this.method, i);
 				/*
 				 * We're looking for a single non-annotated parameter, or one annotated with @Payload.
