@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
-
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+package org.springframework.amqp.rabbit.junit;
 
 /**
  * Global convenience class for all integration tests, carrying constants and other utilities for broker set up.
@@ -34,7 +32,8 @@ public final class BrokerTestUtils {
 	}
 
 	/**
-	 * The port that the broker is listening on (e.g. as input for a {@link ConnectionFactory}).
+	 * The port that the broker is listening on (e.g. as input for a
+	 * {@link com.rabbitmq.client.ConnectionFactory}).
 	 *
 	 * @return a port number
 	 */

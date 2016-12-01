@@ -49,7 +49,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -80,9 +80,8 @@ public class AmqpAppenderTests {
 	public static void teardown() {
 		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
 		LOGGER_CONTEXT.reconfigure();
-		brokerRunning.getAdmin().deleteQueue("log4jTest");
-		brokerRunning.getAdmin().deleteQueue("log4j2Test");
-		brokerRunning.getAdmin().deleteExchange("log4j2Test");
+		brokerRunning.deleteQueues("log4jTest", "log4j2Test");
+		brokerRunning.deleteExchanges("log4j2Test");
 	}
 
 	@Test
@@ -144,6 +143,7 @@ public class AmqpAppenderTests {
 
 	@Test
 	public void testDefaultConfiguration() {
+		@SuppressWarnings("resource")
 		AmqpAppender.AmqpManager manager = new AmqpAppender.AmqpManager(LOGGER_CONTEXT, "test");
 
 		RabbitConnectionFactoryBean bean = mock(RabbitConnectionFactoryBean.class);

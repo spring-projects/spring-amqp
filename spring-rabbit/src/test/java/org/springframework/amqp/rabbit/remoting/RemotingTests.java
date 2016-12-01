@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.remoting.RemoteProxyFailureException;
 import org.springframework.test.annotation.DirtiesContext;

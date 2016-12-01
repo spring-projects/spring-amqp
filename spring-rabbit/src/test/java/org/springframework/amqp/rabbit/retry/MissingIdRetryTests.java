@@ -47,12 +47,11 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.StatefulRetryOperationsInterceptorFactoryBean;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.BlockingQueueConsumer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
 import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -85,9 +84,8 @@ public class MissingIdRetryTests {
 	@BeforeClass
 	@AfterClass
 	public static void setupAndCleanUp() {
-		RabbitAdmin admin = brokerIsRunning.getAdmin();
-		admin.deleteQueue("retry.test.queue");
-		admin.deleteExchange("retry.test.exchange");
+		brokerIsRunning.deleteQueues("retry.test.queue");
+		brokerIsRunning.deleteExchanges("retry.test.exchange");
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -190,7 +188,7 @@ public class MissingIdRetryTests {
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "resource" })
 	@Test
 	public void testWithIdAndSuccess() throws Exception {
 		// 2 messages; each retried twice by retry interceptor

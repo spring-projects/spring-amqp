@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.test;
+package org.springframework.amqp.rabbit.junit;
 
-import static org.junit.Assert.fail;
-
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,12 +34,12 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import org.springframework.amqp.AmqpTimeoutException;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.util.Base64Utils;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 
 /**
@@ -65,8 +69,12 @@ import com.rabbitmq.http.client.Client;
  * @author Dave Syer
  * @author Gary Russell
  *
+ * @since 1.7
+ *
  */
 public final class BrokerRunning extends TestWatcher {
+
+	public static final String BROKER_REQUIRED = "RABBITMQ_SERVER_REQUIRED";
 
 	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
 
@@ -84,36 +92,24 @@ public final class BrokerRunning extends TestWatcher {
 
 	private final boolean management;
 
-	private final Queue[] queues;
+	private final String[] queues;
 
-	private final int DEFAULT_PORT = BrokerTestUtils.getPort();
+	private final int defaultPort = BrokerTestUtils.getPort();
 
 	private int port;
 
 	private String hostName = null;
 
-	private RabbitAdmin admin;
+	private ConnectionFactory connectionFactory;
 
 	/**
 	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
 	 *
+	 * @param names the queues to declare for the test.
 	 * @return a new rule that assumes an existing running broker
 	 */
 	public static BrokerRunning isRunningWithEmptyQueues(String... names) {
-		Queue[] queues = new Queue[names.length];
-		for (int i = 0; i < queues.length; i++) {
-			queues[i] = new Queue(names[i]);
-		}
-		return new BrokerRunning(true, true, queues);
-	}
-
-	/**
-	 * Ensure the broker is running and has an empty queue (which can be addressed via the default exchange).
-	 *
-	 * @return a new rule that assumes an existing running broker
-	 */
-	public static BrokerRunning isRunningWithEmptyQueues(Queue... queues) {
-		return new BrokerRunning(true, true, queues);
+		return new BrokerRunning(true, true, names);
 	}
 
 	/**
@@ -132,34 +128,33 @@ public final class BrokerRunning extends TestWatcher {
 
 	/**
 	 * @return a new rule that assumes an existing broker with the management plugin
-	 * @since 1.5
 	 */
 	public static BrokerRunning isBrokerAndManagementRunning() {
 		return new BrokerRunning(true, false, true);
 	}
 
-	private BrokerRunning(boolean assumeOnline, boolean purge, Queue... queues) {
+	private BrokerRunning(boolean assumeOnline, boolean purge, String... queues) {
 		this(assumeOnline, purge, false, queues);
 	}
 
-	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, Queue... queues) {
+	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management, String... queues) {
 		this.assumeOnline = assumeOnline;
 		this.queues = queues;
 		this.purge = purge;
 		this.management = management;
-		setPort(DEFAULT_PORT);
+		setPort(this.defaultPort);
 	}
 
-	private BrokerRunning(boolean assumeOnline, Queue... queues) {
+	private BrokerRunning(boolean assumeOnline, String... queues) {
 		this(assumeOnline, false, queues);
 	}
 
 	private BrokerRunning(boolean assumeOnline) {
-		this(assumeOnline, new Queue(DEFAULT_QUEUE_NAME));
+		this(assumeOnline, DEFAULT_QUEUE_NAME);
 	}
 
 	private BrokerRunning(boolean assumeOnline, boolean purge, boolean management) {
-		this(assumeOnline, purge, management, new Queue(DEFAULT_QUEUE_NAME));
+		this(assumeOnline, purge, management, DEFAULT_QUEUE_NAME);
 	}
 
 	/**
@@ -186,45 +181,42 @@ public final class BrokerRunning extends TestWatcher {
 	public Statement apply(Statement base, Description description) {
 
 		// Check at the beginning, so this can be used as a static field
-		if (assumeOnline) {
-			Assume.assumeTrue(brokerOnline.get(port));
+		if (this.assumeOnline) {
+			Assume.assumeTrue(brokerOnline.get(this.port));
 		}
 		else {
-			Assume.assumeTrue(brokerOffline.get(port));
+			Assume.assumeTrue(brokerOffline.get(this.port));
 		}
 
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-		connectionFactory.setHost("localhost");
+		ConnectionFactory connectionFactory = getConnectionFactory();
+
+		Connection connection = null;
+		Channel channel = null;
 
 		try {
+			connection = connectionFactory.newConnection();
+			connection.setId(generateId());
+			channel = connection.createChannel();
 
-			connectionFactory.setPort(port);
-			if (StringUtils.hasText(hostName)) {
-				connectionFactory.setHost(hostName);
-			}
-			RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-			this.admin = admin;
+			for (String queueName : this.queues) {
 
-			for (Queue queue : queues) {
-				String queueName = queue.getName();
-
-				if (purge) {
+				if (this.purge) {
 					logger.debug("Deleting queue: " + queueName);
 					// Delete completely - gets rid of consumers and bindings as well
-					admin.deleteQueue(queueName);
+					channel.queueDelete(queueName);
 				}
 
 				if (isDefaultQueue(queueName)) {
 					// Just for test probe.
-					admin.deleteQueue(queueName);
+					channel.queueDelete(queueName);
 				}
 				else {
-					admin.declareQueue(queue);
+					channel.queueDeclare(queueName, true, false, false, null);
 				}
 			}
-			brokerOffline.put(port, false);
-			if (!assumeOnline) {
-				Assume.assumeTrue(brokerOffline.get(port));
+			brokerOffline.put(this.port, false);
+			if (!this.assumeOnline) {
+				Assume.assumeTrue(brokerOffline.get(this.port));
 			}
 
 			if (this.management) {
@@ -235,45 +227,146 @@ public final class BrokerRunning extends TestWatcher {
 				}
 			}
 		}
-		catch (AmqpTimeoutException e) {
-			fail("Timed out getting connection");
-		}
 		catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed", e);
-			brokerOnline.put(port, false);
-			if (assumeOnline) {
+			brokerOnline.put(this.port, false);
+			if (this.assumeOnline && !fatal()) {
 				Assume.assumeNoException(e);
 			}
 		}
 		finally {
-			connectionFactory.destroy();
+			closeResources(connection, channel);
 		}
 
 		return super.apply(base, description);
+	}
+
+	private boolean fatal() {
+		String serversRequired = System.getenv(BROKER_REQUIRED);
+		if (Boolean.parseBoolean(serversRequired)) {
+			logger.error("RABBITMQ IS REQUIRED BUT NOT AVAILABLE");
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	public String generateId() {
+		UUID uuid = UUID.randomUUID();
+		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+		bb.putLong(uuid.getMostSignificantBits())
+		  .putLong(uuid.getLeastSignificantBits());
+		return "SpringBrokerRunning." + Base64Utils.encodeToUrlSafeString(bb.array()).replaceAll("=", "");
 	}
 
 	private boolean isDefaultQueue(String queue) {
 		return DEFAULT_QUEUE_NAME.equals(queue);
 	}
 
-	public RabbitAdmin getAdmin() {
-		return this.admin;
-	}
-
 	public void removeTestQueues(String... additionalQueues) {
-		logger.debug("deleting test queues: " + Arrays.toString(additionalQueues));
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-		connectionFactory.setHost("localhost");
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		for (Queue queue : this.queues) {
-			admin.deleteQueue(queue.getName());
-		}
+		List<String> queuesToRemove = Arrays.asList(this.queues);
 		if (additionalQueues != null) {
-			for (String queueName : additionalQueues) {
-				admin.deleteQueue(queueName);
+			queuesToRemove = new ArrayList<>(queuesToRemove);
+			queuesToRemove.addAll(Arrays.asList(additionalQueues));
+		}
+		logger.debug("deleting test queues: " + queuesToRemove);
+		ConnectionFactory connectionFactory = getConnectionFactory();
+		Connection connection = null;
+		Channel channel = null;
+
+		try {
+			connection = connectionFactory.newConnection();
+			connection.setId(generateId() + ".queueDelete");
+			channel = connection.createChannel();
+
+			for (String queue : queuesToRemove) {
+				channel.queueDelete(queue);
 			}
 		}
-		connectionFactory.destroy();
+		catch (Exception e) {
+			logger.warn("Failed to delete queues", e);
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	public void deleteQueues(String... queues) {
+		ConnectionFactory connectionFactory = getConnectionFactory();
+		Connection connection = null;
+		Channel channel = null;
+
+		try {
+			connection = connectionFactory.newConnection();
+			connection.setId(generateId() + ".queueDelete");
+			channel = connection.createChannel();
+
+			for (String queue : queues) {
+				channel.queueDelete(queue);
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to delete queues", e);
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	public void deleteExchanges(String... exchanges) {
+		ConnectionFactory connectionFactory = getConnectionFactory();
+		Connection connection = null;
+		Channel channel = null;
+
+		try {
+			connection = connectionFactory.newConnection();
+			connection.setId(generateId() + ".queueDelete");
+			channel = connection.createChannel();
+
+			for (String exchange : exchanges) {
+				channel.exchangeDelete(exchange);
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to delete queues", e);
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	public ConnectionFactory getConnectionFactory() {
+		if (this.connectionFactory == null) {
+			this.connectionFactory = new ConnectionFactory();
+			if (StringUtils.hasText(this.hostName)) {
+				this.connectionFactory.setHost(this.hostName);
+			}
+			else {
+				this.connectionFactory.setHost("localhost");
+			}
+			this.connectionFactory.setPort(this.port);
+		}
+		return this.connectionFactory;
+	}
+
+	private void closeResources(Connection connection, Channel channel) {
+		if (channel != null) {
+			try {
+				channel.close();
+			}
+			catch (IOException | TimeoutException e) {
+				// Ignore
+			}
+		}
+		if (connection != null) {
+			try {
+				connection.close();
+			}
+			catch (IOException e) {
+				// Ignore
+			}
+		}
 	}
 
 }
