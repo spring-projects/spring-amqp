@@ -321,7 +321,7 @@ public final class BrokerRunning extends TestWatcher {
 
 		try {
 			connection = connectionFactory.newConnection();
-			connection.setId(generateId() + ".queueDelete");
+			connection.setId(generateId() + ".exchangeDelete");
 			channel = connection.createChannel();
 
 			for (String exchange : exchanges) {

@@ -261,8 +261,8 @@ to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
 
-
-==== BrokerRunning JUnit @Rules
+[[junit-rules]]
+==== JUnit @Rules
 
 Spring AMQP _version 1.7_ provides an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit tests.
 
@@ -289,7 +289,7 @@ To disable the rule at runtime, set an environment variable `RABBITMQ_SERVER_REQ
 
 There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
 
-`LongRunningIntegrationTest` is a rule that disables long running tests; you might want to use this on a developer system but ensure that the rule is disabled on, for exaple, nightly CI builds.
+`LongRunningIntegrationTest` is a rule that disables long running tests; you might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
 
 Usage:
 

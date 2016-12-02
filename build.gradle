@@ -243,7 +243,7 @@ project('spring-rabbit-junit') {
 	dependencies {
 
 		compile "org.springframework:spring-core:$springVersion"
-  		compile "junit:junit:$junitVersion"
+		compile "junit:junit:$junitVersion"
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 
