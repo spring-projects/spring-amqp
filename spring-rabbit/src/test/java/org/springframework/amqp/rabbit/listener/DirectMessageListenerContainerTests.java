@@ -66,7 +66,9 @@ import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.MultiValueMap;
@@ -501,6 +503,57 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(activeConsumerCount(container, 1));
 		container.releaseConsumerFor(channelHolder, false, null);
 		assertTrue(activeConsumerCount(container, 0));
+		container.stop();
+		cf.destroy();
+	}
+
+	@Test
+	public void testNonManagedContainerDoesntStartWhenConnectionFactoryDestroyed() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		ApplicationContext context = mock(ApplicationContext.class);
+		cf.setApplicationContext(context);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setMessageListener(m -> { });
+		container.setQueueNames(Q1);
+		container.setBeanName("stopAfterDestroyBeforeStart");
+		container.afterPropertiesSet();
+		container.start();
+		cf.onApplicationEvent(new ContextClosedEvent(context));
+		cf.stop();
+		cf.destroy();
+		int n = 0;
+		while (n++ < 100 && container.isRunning()) {
+			Thread.sleep(100);
+		}
+		assertFalse(container.isRunning());
+	}
+
+	@Test
+	public void testNonManagedContainerStopsWhenConnectionFactoryDestroyed() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		ApplicationContext context = mock(ApplicationContext.class);
+		cf.setApplicationContext(context);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		final CountDownLatch latch = new CountDownLatch(1);
+		container.setMessageListener(m -> {
+			latch.countDown();
+		});
+		container.setQueueNames(Q1);
+		container.setBeanName("stopAfterDestroy");
+		container.setIdleEventInterval(500);
+		container.setFailedDeclarationRetryInterval(500);
+		container.afterPropertiesSet();
+		container.start();
+		new RabbitTemplate(cf).convertAndSend(Q1, "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		cf.onApplicationEvent(new ContextClosedEvent(context));
+		cf.stop();
+		cf.destroy();
+		int n = 0;
+		while (n++ < 100 && container.isRunning()) {
+			Thread.sleep(100);
+		}
+		assertFalse(container.isRunning());
 	}
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {

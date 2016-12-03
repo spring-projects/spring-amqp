@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 
+import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -543,7 +544,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public final Connection createConnection() throws AmqpException {
-		Assert.state(!this.stopped, "The ApplicationContext is closed and the ConnectionFactory can no longer create connections.");
+		if (this.stopped) {
+			throw new AmqpApplicationContextClosedException(
+					"The ApplicationContext is closed and the ConnectionFactory can no longer create connections.");
+		}
 		synchronized (this.connectionMonitor) {
 			if (this.cacheMode == CacheMode.CHANNEL) {
 				if (this.connection.target == null) {
