@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -44,7 +46,6 @@ import javax.net.SocketFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -73,6 +74,7 @@ import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
+import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Dave Syer
@@ -273,8 +275,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
 		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(Matchers.anyOf(Matchers.instanceOf(AmqpIOException.class),
-				Matchers.instanceOf(AmqpAuthenticationException.class)));
+		exception.expect(anyOf(instanceOf(AmqpIOException.class),
+				instanceOf(AmqpAuthenticationException.class)));
 		template.receiveAndConvert("foo");
 	}
 
@@ -380,11 +382,13 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		final CountDownLatch recoveryLatch = new CountDownLatch(1);
-		final RecoveryListener listener = new RecoveryListener() {
+		final RecoveryListener channelRecoveryListener = new RecoveryListener() {
 
 			@Override
 			public void handleRecoveryStarted(Recoverable recoverable) {
-				//NOSONAR
+				if (logger.isDebugEnabled()) {
+					logger.debug("Channel recovery started: " + asString(recoverable));
+				}
 			}
 
 			@Override
@@ -394,10 +398,40 @@ public class CachingConnectionFactoryIntegrationTests {
 				}
 				catch (IOException e) {
 				}
+				if (logger.isDebugEnabled()) {
+					logger.debug("Channel recovery complete: " + asString(recoverable));
+				}
+			}
+
+			private String asString(Recoverable recoverable) {
+				// TODO: https://github.com/rabbitmq/rabbitmq-java-client/issues/217
+				return ((AutorecoveringChannel) recoverable).getDelegate().toString();
+			}
+
+		};
+		final RecoveryListener connectionRecoveryListener = new RecoveryListener() {
+
+			@Override
+			public void handleRecoveryStarted(Recoverable recoverable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Connection recovery started: " + recoverable);
+				}
+			}
+
+			@Override
+			public void handleRecovery(Recoverable recoverable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Connection recovery complete: " + recoverable);
+				}
 				recoveryLatch.countDown();
 			}
 
 		};
+		Object connection = ((ConnectionProxy) this.connectionFactory.createConnection()).getTargetConnection();
+		connection = TestUtils.getPropertyValue(connection, "delegate");
+		if (connection instanceof AutorecoveringConnection) {
+			((AutorecoveringConnection) connection).addRecoveryListener(connectionRecoveryListener);
+		}
 		try {
 			template.execute(channel -> {
 				channel.getConnection().addShutdownListener(cause -> {
@@ -408,7 +442,7 @@ public class CachingConnectionFactoryIntegrationTests {
 				});
 				Channel targetChannel = ((ChannelProxy) channel).getTargetChannel();
 				if (targetChannel instanceof AutorecoveringChannel) {
-					((AutorecoveringChannel) targetChannel).addRecoveryListener(listener);
+					((AutorecoveringChannel) targetChannel).addRecoveryListener(channelRecoveryListener);
 				}
 				else {
 					fail("Expected an AutorecoveringChannel");
