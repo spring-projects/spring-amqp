@@ -16,14 +16,18 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -53,6 +57,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
@@ -366,6 +371,8 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testHardErrorAndReconnectAuto() throws Exception {
+		Log cfLogger = spyOnLogger(this.connectionFactory);
+		willReturn(true).given(cfLogger).isDebugEnabled();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
@@ -455,6 +462,9 @@ public class CachingConnectionFactoryIntegrationTests {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Resuming test after recovery complete");
 		}
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(cfLogger, atLeastOnce()).debug(captor.capture());
+		assertThat(captor.getValue(), containsString("Connection recovery complete:"));
 		template.convertAndSend(route, "message");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		String result = (String) template.receiveAndConvert(route);
@@ -534,6 +544,13 @@ public class CachingConnectionFactoryIntegrationTests {
 		factory.createConnection();
 		hangOnClose.set(true);
 		factory.destroy();
+	}
+
+	private Log spyOnLogger(CachingConnectionFactory connectionFactory2) {
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory2);
+		Log logger = spy((Log) dfa.getPropertyValue("logger"));
+		dfa.setPropertyValue("logger", logger);
+		return logger;
 	}
 
 }

@@ -345,8 +345,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			if (this.logger.isInfoEnabled()) {
 				this.logger.info("Created new connection: " + connection);
 			}
-			if (this.recoveryListener != null && connection instanceof AutorecoveringConnection) {
-				((AutorecoveringConnection) connection).addRecoveryListener(this.recoveryListener);
+			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection) {
+				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(this.recoveryListener);
 			}
 			return connection;
 		}
