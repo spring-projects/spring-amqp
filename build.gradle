@@ -46,8 +46,8 @@ allprojects {
 ext {
 	expandPlaceholders = '**/quick-tour.xml'
 	javadocLinks = [
-		"http://docs.oracle.com/javase/6/docs/api/",
-		"http://docs.oracle.com/javaee/6/api/",
+		"http://docs.oracle.com/javase/8/docs/api/",
+		"http://docs.oracle.com/javaee/7/api/",
 		"http://docs.spring.io/spring/docs/current/javadoc-api/"
 	] as String[]
 }
