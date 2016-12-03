@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -58,7 +59,7 @@ public class ConnectionFactoryLifecycleTests {
 			cf.createConnection();
 			fail("Expected exception");
 		}
-		catch (IllegalStateException e) {
+		catch (AmqpApplicationContextClosedException e) {
 			assertThat(e.getMessage(), containsString("The ApplicationContext is closed"));
 		}
 	}

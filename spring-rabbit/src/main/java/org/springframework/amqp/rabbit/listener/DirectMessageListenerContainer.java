@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 
+import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -366,9 +368,19 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 						for (SimpleConsumer consumer : restartableConsumers) {
 							if (this.logger.isDebugEnabled() && restartableConsumers.size() > 0) {
-								logger.debug("Attempting to restart consumer " + consumer);
+								this.logger.debug("Attempting to restart consumer " + consumer);
 							}
-							doConsumeFromQueue(consumer.getQueue());
+							try {
+								doConsumeFromQueue(consumer.getQueue());
+							}
+							catch (AmqpConnectException e) {
+								this.logger.error("Cannot connect to server", e);
+								if (e.getCause() instanceof AmqpApplicationContextClosedException) {
+									this.logger.error("Application context is closed, terminating");
+									this.taskScheduler.schedule(() -> stop(), new Date());
+								}
+								break;
+							}
 						}
 						this.lastRestartAttempt = now;
 					}
@@ -402,10 +414,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							}
 							catch (AmqpConnectException e) {
 								long nextBackOff = backOffExecution.nextBackOff();
-								if (nextBackOff < 0) {
+								if (nextBackOff < 0 || e.getCause() instanceof AmqpApplicationContextClosedException) {
 									DirectMessageListenerContainer.this.aborted = true;
 									shutdown();
-									this.logger.error("Failed to start container - backOffs exhausted", e);
+									this.logger.error("Failed to start container - fatal error or backOffs exhausted",
+											e);
 									break;
 								}
 								this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
