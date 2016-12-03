@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -45,7 +47,6 @@ import javax.net.SocketFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -72,6 +73,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
+import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Dave Syer
@@ -275,8 +277,8 @@ public class CachingConnectionFactoryIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 
 		// Wrong vhost is very unfriendly to client - the exception has no clue (just an EOF)
-		exception.expect(Matchers.anyOf(Matchers.instanceOf(AmqpIOException.class),
-				Matchers.instanceOf(AmqpAuthenticationException.class)));
+		exception.expect(anyOf(instanceOf(AmqpIOException.class),
+				instanceOf(AmqpAuthenticationException.class)));
 		template.receiveAndConvert("foo");
 	}
 
@@ -391,7 +393,6 @@ public class CachingConnectionFactoryIntegrationTests {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Channel recovery complete: " + asString(recoverable));
 				}
-				recoveryLatch.countDown();
 			}
 
 			private String asString(Recoverable recoverable) {
@@ -400,6 +401,29 @@ public class CachingConnectionFactoryIntegrationTests {
 			}
 
 		};
+		final RecoveryListener connectionRecoveryListener = new RecoveryListener() {
+
+			@Override
+			public void handleRecoveryStarted(Recoverable recoverable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Connection recovery started: " + recoverable);
+				}
+			}
+
+			@Override
+			public void handleRecovery(Recoverable recoverable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Connection recovery complete: " + recoverable);
+				}
+				recoveryLatch.countDown();
+			}
+
+		};
+		Object connection = ((ConnectionProxy) this.connectionFactory.createConnection()).getTargetConnection();
+		connection = TestUtils.getPropertyValue(connection, "delegate");
+		if (connection instanceof AutorecoveringConnection) {
+			((AutorecoveringConnection) connection).addRecoveryListener(connectionRecoveryListener);
+		}
 		try {
 			template.execute(channel -> {
 				channel.getConnection().addShutdownListener(cause -> {
