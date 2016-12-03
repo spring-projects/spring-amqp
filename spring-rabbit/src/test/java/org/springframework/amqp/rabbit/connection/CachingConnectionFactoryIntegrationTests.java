@@ -426,6 +426,9 @@ public class CachingConnectionFactoryIntegrationTests {
 			// expected
 		}
 		assertTrue(recoveryLatch.await(10, TimeUnit.SECONDS));
+		if (logger.isDebugEnabled()) {
+			logger.debug("Resuming test after recovery complete");
+		}
 		template.convertAndSend(route, "message");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		String result = (String) template.receiveAndConvert(route);
