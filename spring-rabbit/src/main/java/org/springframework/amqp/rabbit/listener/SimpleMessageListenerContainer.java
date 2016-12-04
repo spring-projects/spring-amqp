@@ -462,7 +462,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						break;
 					}
 				}
-				Assert.state(found, "Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
+				Assert.state(found, () -> "Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
 						+ Arrays.asList(queueNames));
 			}
 		}

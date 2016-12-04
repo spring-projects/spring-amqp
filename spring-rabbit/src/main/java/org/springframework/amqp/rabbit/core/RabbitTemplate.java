@@ -1347,7 +1347,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData) {
-		Assert.state(this.isListener, "RabbitTemplate is not configured as MessageListener - "
+		Assert.state(this.isListener, () -> "RabbitTemplate is not configured as MessageListener - "
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(channel -> {
 			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);

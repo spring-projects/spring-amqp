@@ -111,7 +111,7 @@ public final class SimpleResourceHolder {
 			resources.set(map);
 		}
 		Object oldValue = map.put(key, value);
-		Assert.isNull(oldValue, "Already value [" + oldValue + "] for key [" + key + "] bound to thread [" + Thread.currentThread().getName() + "]");
+		Assert.isNull(oldValue, () -> "Already value [" + oldValue + "] for key [" + key + "] bound to thread [" + Thread.currentThread().getName() + "]");
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("Bound value [" + value + "] for key [" + key + "] to thread [" + Thread.currentThread().getName() + "]");
@@ -126,7 +126,7 @@ public final class SimpleResourceHolder {
 	 */
 	public static Object unbind(Object key) throws IllegalStateException {
 		Object value = unbindIfPossible(key);
-		Assert.notNull(value, "No value for key [" + key + "] bound to thread [" + Thread.currentThread().getName() + "]");
+		Assert.notNull(value, () -> "No value for key [" + key + "] bound to thread [" + Thread.currentThread().getName() + "]");
 		return value;
 	}
 

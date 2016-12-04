@@ -246,7 +246,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private void setupMessageListener(MessageListenerContainer container) {
 		MessageListener messageListener = createMessageListener(container);
-		Assert.state(messageListener != null, "Endpoint [" + this + "] must provide a non null message listener");
+		Assert.state(messageListener != null, () -> "Endpoint [" + this + "] must provide a non null message listener");
 		container.setupMessageListener(messageListener);
 	}
 

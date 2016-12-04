@@ -260,7 +260,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	public ConnectionFactory getTargetConnectionFactory(Object key) {
 		String queue = ((String) key);
 		queue = queue.substring(1, queue.length() - 1);
-		Assert.isTrue(!queue.contains(","), "Cannot use LocalizedQueueConnectionFactory with more than one queue: " + key);
+		Assert.isTrue(!queue.contains(","), () -> "Cannot use LocalizedQueueConnectionFactory with more than one queue: " + key);
 		ConnectionFactory connectionFactory = determineConnectionFactory(queue);
 		if (connectionFactory == null) {
 			return this.defaultConnectionFactory;
