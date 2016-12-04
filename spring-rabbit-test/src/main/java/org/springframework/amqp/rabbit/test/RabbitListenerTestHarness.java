@@ -63,7 +63,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 		Map<String, Object> map = importMetadata.getAnnotationAttributes(RabbitListenerTest.class.getName());
 		this.attributes = AnnotationAttributes.fromMap(map);
 		Assert.notNull(this.attributes,
-				"@RabbitListenerTest is not present on importing class " + importMetadata.getClassName());
+				() -> "@RabbitListenerTest is not present on importing class " + importMetadata.getClassName());
 	}
 
 	@Override

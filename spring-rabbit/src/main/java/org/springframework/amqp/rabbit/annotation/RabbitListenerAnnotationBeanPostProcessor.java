@@ -534,7 +534,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private void declareExchangeAndBinding(QueueBinding binding, String queueName) {
 		org.springframework.amqp.rabbit.annotation.Exchange bindingExchange = binding.exchange();
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
-		Assert.isTrue(StringUtils.hasText(exchangeName), "Exchange name required; binding queue " + queueName);
+		Assert.isTrue(StringUtils.hasText(exchangeName), () -> "Exchange name required; binding queue " + queueName);
 		String exchangeType = resolveExpressionAsString(bindingExchange.type(), "@Exchange.type");
 		String routingKey = resolveExpressionAsString(binding.key(), "@QueueBinding.key");
 		Exchange exchange;
@@ -620,7 +620,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 					typeName = typeClass.getName();
 				}
 				else {
-					Assert.isTrue(type instanceof String, "Type must resolve to a Class or String, but resolved to ["
+					Assert.isTrue(type instanceof String, () -> "Type must resolve to a Class or String, but resolved to ["
 							+ type.getClass().getName() + "]");
 					typeName = (String) type;
 					try {
