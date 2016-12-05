@@ -301,7 +301,12 @@ public class RabbitTemplateIntegrationTests {
 		String out = (String) this.template.receiveAndConvert(ROUTE, -1);
 		assertNotNull(out);
 		assertEquals("blockNoTO", out);
-		this.template.setReceiveTimeout(1); // test the no message after timeout path
+		try {
+			this.template.setReceiveTimeout(1); // test the no message after timeout path
+		}
+		catch (ConsumeOkNotReceivedException e) {
+			// we're expecting no result, this could happen, depending on timing.
+		}
 		assertNull(this.template.receive(ROUTE));
 	}
 
