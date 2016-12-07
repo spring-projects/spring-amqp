@@ -190,7 +190,7 @@ public final class BrokerRunning extends TestWatcher {
 
 		ConnectionFactory connectionFactory = getConnectionFactory();
 
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
 		try {
@@ -272,7 +272,7 @@ public final class BrokerRunning extends TestWatcher {
 		}
 		logger.debug("deleting test queues: " + queuesToRemove);
 		ConnectionFactory connectionFactory = getConnectionFactory();
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
 		try {
@@ -294,7 +294,7 @@ public final class BrokerRunning extends TestWatcher {
 
 	public void deleteQueues(String... queues) {
 		ConnectionFactory connectionFactory = getConnectionFactory();
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
 		try {
@@ -316,7 +316,7 @@ public final class BrokerRunning extends TestWatcher {
 
 	public void deleteExchanges(String... exchanges) {
 		ConnectionFactory connectionFactory = getConnectionFactory();
-		Connection connection = null;
+		Connection connection = null; // NOSONAR (closeResources())
 		Channel channel = null;
 
 		try {
