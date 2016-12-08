@@ -67,6 +67,11 @@ You can now configure `@RabbitListener` annotations so that any exceptions throw
 You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
 See <<annotation-error-handling>> for more information.
 
+===== Container Conditional Rollback
+
+When using an external transaction manager (e.g. JDBC), rule-based rollback is now supported when providing the container with a transaction attribute.
+It is also now more flexible when using a transaction advice.
+See <<conditional-rollback>> for more information.
 
 ==== Earlier Releases
 

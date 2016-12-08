@@ -27,7 +27,9 @@ public class ExternalTxManagerSMLCTests extends ExternalTxManagerTests {
 
 	@Override
 	protected AbstractMessageListenerContainer createContainer(AbstractConnectionFactory connectionFactory) {
-		return new SimpleMessageListenerContainer(connectionFactory);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setReceiveTimeout(60000);
+		return container;
 	}
 
 }

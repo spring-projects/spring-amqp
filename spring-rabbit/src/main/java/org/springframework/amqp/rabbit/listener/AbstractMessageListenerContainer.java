@@ -35,6 +35,7 @@ import org.apache.commons.logging.Log;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -705,6 +706,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param transactionAttribute the transaction attribute to set
 	 */
 	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
+		Assert.notNull(transactionAttribute, "'transactionAttribute' cannot be null");
 		this.transactionAttribute = transactionAttribute;
 	}
 
@@ -1486,6 +1488,31 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
+	}
+
+	/**
+	 * Traverse the cause chain and, if an {@link ImmediateAcknowledgeAmqpException}
+	 * is found before an {@link AmqpRejectAndDontRequeueException}, return true.
+	 * An {@link Error} will take precedence.
+	 * @param ex the exception
+	 * @return true if we should ack immediately.
+	 * @since 1.6.6
+	 */
+	protected boolean causeChainHasImmediateAcknowledgeAmqpException(Throwable ex) {
+		if (ex instanceof Error) {
+			return false;
+		}
+		Throwable cause = ex.getCause();
+		while (cause != null) {
+			if (cause instanceof ImmediateAcknowledgeAmqpException) {
+				return true;
+			}
+			else if (cause instanceof AmqpRejectAndDontRequeueException || cause instanceof Error) {
+				return false;
+			}
+			cause = cause.getCause();
+		}
+		return false;
 	}
 
 	@FunctionalInterface

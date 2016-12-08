@@ -181,8 +181,7 @@ public final class ConnectionFactoryUtils {
 		}
 	}
 
-	public static void registerDeliveryTag(ConnectionFactory connectionFactory, Channel channel, Long tag)
-			throws IOException {
+	public static void registerDeliveryTag(ConnectionFactory connectionFactory, Channel channel, Long tag) {
 
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 
