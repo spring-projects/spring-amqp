@@ -3592,6 +3592,34 @@ a database constraint error, or connectivity problem), then the AMQP transaction
 This is sometimes known as a Best Efforts 1 Phase Commit, and is a very powerful pattern for reliable messaging.
 If the `channelTransacted` flag was set to false in the example above, which is the default, then the external transaction would still be provided for the listener, but all messaging operations would be auto-acked, so the effect is to commit the messaging operations even on a rollback of the business operation.
 
+[[conditional-rollback]]
+===== Conditional Rollback
+
+Prior to _version 1.6.6_, adding a rollback rule to a container's `transactionAttribute`, when using an external transaction manager (e.g. JDBC) had no effect; exceptions always rolled back the transaction.
+
+Also, when using a http://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/transaction.html#transaction-declarative[transaction advice] in the container's advice chain, conditional rollback was not very useful because all listener exceptions are wrapped in a `ListenerExecutionFailedException`.
+
+The first problem has been corrected and the rules are now applied properly.
+Further, the `ListenerFailedRuleBasedTransactionAttribute` is now provided; it is a subclass of `RuleBasedTransactionAttribute`, with the only difference being that it is aware of the `ListenerExecutionFailedException` and uses the cause of such exceptions for the rule.
+This transaction attribute can be used directly in the container, or via a transaction advice.
+
+An example of using this rule follows:
+
+[source, java]
+----
+@Bean
+public AbstractMessageListenerContainer container() {
+    ...
+    container.setTransactionManager(transactionManager);
+    RuleBasedTransactionAttribute transactionAttribute =
+        new ListenerFailedRuleBasedTransactionAttribute();
+    transactionAttribute.setRollbackRules(Collections.singletonList(
+        new NoRollbackRuleAttribute(DontRollBackException.class)));
+    container.setTransactionAttribute(transactionAttribute);
+    ...
+}
+----
+
 ===== A note on Rollback of Received Messages
 
 AMQP transactions only apply to messages and acks sent to the broker, so when there is a rollback of a Spring transaction and a message has been received, what Spring AMQP has to do is not just rollback the transaction, but also manually reject the message (sort of a nack, but that's not what the specification calls it).

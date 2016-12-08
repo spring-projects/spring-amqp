@@ -17,10 +17,12 @@
 package org.springframework.amqp;
 
 /**
- * Special exception for listener implementations that want to signal that the current batch of messages should be
- * acknowledged immediately (i.e. as soon as possible) without rollback, and without consuming any more messages.
+ * Special exception for listener implementations that want to signal that the current
+ * batch of messages should be acknowledged immediately (i.e. as soon as possible) without
+ * rollback, and without consuming any more messages within the current transaction.
  *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 @SuppressWarnings("serial")
