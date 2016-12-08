@@ -73,6 +73,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * each message is acked (or nacked) individually.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.0
  *
@@ -373,11 +374,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							try {
 								doConsumeFromQueue(consumer.getQueue());
 							}
-							catch (AmqpConnectException e) {
+							catch (AmqpConnectException | AmqpIOException e) {
 								this.logger.error("Cannot connect to server", e);
 								if (e.getCause() instanceof AmqpApplicationContextClosedException) {
 									this.logger.error("Application context is closed, terminating");
-									this.taskScheduler.schedule(() -> stop(), new Date());
+									this.taskScheduler.schedule(this::stop, new Date());
 								}
 								break;
 							}
@@ -419,6 +420,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 									shutdown();
 									this.logger.error("Failed to start container - fatal error or backOffs exhausted",
 											e);
+									this.taskScheduler.schedule(this::stop, new Date());
 									break;
 								}
 								this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
