@@ -114,6 +114,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private Long retryDeclarationInterval;
 
+	private TransactionTemplate transactionTemplate;
+
 	/**
 	 * Default constructor for convenient dependency injection via setters.
 	 */
@@ -729,11 +731,16 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		if (getTransactionManager() != null) {
 			try {
-				return new TransactionTemplate(getTransactionManager(), getTransactionAttribute())
+				if (this.transactionTemplate == null) {
+					this.transactionTemplate =
+							new TransactionTemplate(getTransactionManager(), getTransactionAttribute());
+				}
+				return this.transactionTemplate
 						.execute(status -> {
 							ConnectionFactoryUtils.bindResourceToTransaction(
 									new RabbitResourceHolder(consumer.getChannel(), false),
 									getConnectionFactory(), true);
+							// unbound in ResourceHolderSynchronization.beforeCompletion()
 							try {
 								return doReceiveAndExecute(consumer);
 							}
@@ -770,13 +777,29 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				executeListener(channel, message);
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
+				if (this.logger.isDebugEnabled()) {
+					logger.debug("User requested ack for failed delivery");
+				}
 				break;
 			}
 			catch (Throwable ex) { //NOSONAR
-				consumer.rollbackOnExceptionIfNecessary(ex);
-				throw ex;
+				if (getTransactionManager() != null) {
+					if (getTransactionAttribute().rollbackOn(ex)) {
+						consumer.rollbackOnExceptionIfNecessary(ex);
+						throw ex;
+					}
+					else {
+						if (this.logger.isDebugEnabled()) {
+							logger.debug("No rollback for " + ex);
+						}
+						break;
+					}
+				}
+				else {
+					consumer.rollbackOnExceptionIfNecessary(ex);
+					throw ex;
+				}
 			}
-
 		}
 
 		return consumer.commitIfNecessary(isChannelLocallyTransacted());

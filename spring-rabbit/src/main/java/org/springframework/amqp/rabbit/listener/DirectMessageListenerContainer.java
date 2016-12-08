@@ -636,6 +636,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private volatile int epoch;
 
+		private volatile TransactionTemplate transactionTemplate;
+
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
 			this.connection = connection;
@@ -687,12 +689,32 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					if (this.isRabbitTxManager) {
 						ConsumerChannelRegistry.registerConsumerChannel(getChannel(), this.connectionFactory);
 					}
-					new TransactionTemplate(this.transactionManager, this.transactionAttribute).execute(s -> {
+					if (this.transactionTemplate == null) {
+						this.transactionTemplate =
+								new TransactionTemplate(this.transactionManager, this.transactionAttribute);
+					}
+					this.transactionTemplate.execute(s -> {
 						ConnectionFactoryUtils.bindResourceToTransaction(new RabbitResourceHolder(getChannel(), false),
 								this.connectionFactory, true);
-						callExecuteListener(message, deliveryTag);
+						// unbound in ResourceHolderSynchronization.beforeCompletion()
+						try {
+							callExecuteListener(message, deliveryTag);
+						}
+						catch (RuntimeException e1) {
+							throw e1;
+						}
+						catch (Throwable e2) { //NOSONAR ok to catch Throwable here because we re-throw it below
+							throw new WrappedTransactionException(e2);
+						}
 						return null;
 					});
+				}
+				catch (Throwable e) {
+					if (e instanceof WrappedTransactionException) {
+						if (e.getCause() instanceof Error) {
+							throw (Error) e.getCause();
+						}
+					}
 				}
 				finally {
 					if (this.isRabbitTxManager) {
@@ -701,11 +723,16 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			else {
-				callExecuteListener(message, deliveryTag);
+				try {
+					callExecuteListener(message, deliveryTag);
+				}
+				catch (Exception e) {
+					// NOSONAR
+				}
 			}
 		}
 
-		private void callExecuteListener(Message message, long deliveryTag) {
+		private void callExecuteListener(Message message, long deliveryTag) throws Exception {
 			try {
 				executeListener(getChannel(), message);
 				boolean channelLocallyTransacted = isChannelLocallyTransacted();
@@ -727,7 +754,20 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (Exception e) {
 				this.logger.error("Failed to invoke listener", e);
-				rollback(deliveryTag, e);
+				if (this.transactionManager != null) {
+					if (this.transactionAttribute.rollbackOn(e)) {
+						rollback(deliveryTag, e);
+						throw e;
+					}
+					else {
+						if (this.logger.isDebugEnabled()) {
+							logger.debug("No rollback for " + e);
+						}
+					}
+				}
+				else {
+					rollback(deliveryTag, e);
+				}
 			}
 		}
 

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -46,10 +47,14 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.transaction.ListenerFailedRuleBasedTransactionAttribute;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.interceptor.NoRollbackRuleAttribute;
+import org.springframework.transaction.interceptor.RollbackRuleAttribute;
+import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 
@@ -109,7 +114,8 @@ public abstract class ExternalTxManagerTests {
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).when(onlyChannel)
-			.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
 
 		final CountDownLatch commitLatch = new CountDownLatch(1);
 		doAnswer(invocation -> {
@@ -129,12 +135,19 @@ public abstract class ExternalTxManagerTests {
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);
 		container.setShutdownTimeout(100);
-		container.setTransactionManager(new DummyTxManager());
+		DummyTxManager transactionManager = new DummyTxManager();
+		container.setTransactionManager(transactionManager);
+		RuleBasedTransactionAttribute transactionAttribute = new ListenerFailedRuleBasedTransactionAttribute();
+		List<RollbackRuleAttribute> rollbackRules =
+				Collections.singletonList(new NoRollbackRuleAttribute(IllegalStateException.class));
+		transactionAttribute.setRollbackRules(rollbackRules);
+		container.setTransactionAttribute(transactionAttribute);
 		container.afterPropertiesSet();
 		container.start();
 		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 
-		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(), new byte[] {0});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
 
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 
@@ -153,6 +166,27 @@ public abstract class ExternalTxManagerTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(cachingConnectionFactory);
 		List<?> channels = (List<?>) dfa.getPropertyValue("cachedChannelsTransactional");
 		assertEquals(0, channels.size());
+
+		assertTrue(transactionManager.committed);
+		transactionManager.committed = false;
+		transactionManager.latch = new CountDownLatch(1);
+		container.setMessageListener(m -> {
+			throw new RuntimeException();
+		});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+		assertTrue(transactionManager.latch.await(10, TimeUnit.SECONDS));
+		assertTrue(transactionManager.rolledBack);
+
+		transactionManager.rolledBack = false;
+		transactionManager.latch = new CountDownLatch(1);
+		container.setMessageListener(m -> {
+			throw new IllegalStateException();
+		});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+		assertTrue(transactionManager.latch.await(10, TimeUnit.SECONDS));
+		assertTrue(transactionManager.committed);
 
 		container.stop();
 
@@ -614,6 +648,12 @@ public abstract class ExternalTxManagerTests {
 	@SuppressWarnings("serial")
 	private static class DummyTxManager extends AbstractPlatformTransactionManager {
 
+		private volatile boolean committed;
+
+		private volatile boolean rolledBack;
+
+		private volatile CountDownLatch latch = new CountDownLatch(1);
+
 		@Override
 		protected Object doGetTransaction() throws TransactionException {
 			return new Object();
@@ -625,10 +665,14 @@ public abstract class ExternalTxManagerTests {
 
 		@Override
 		protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
+			this.committed = true;
+			this.latch.countDown();
 		}
 
 		@Override
 		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+			this.rolledBack = true;
+			this.latch.countDown();
 		}
 	}
 
