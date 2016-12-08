@@ -203,6 +203,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private volatile long lastReceive = System.currentTimeMillis();
 
+	private TransactionTemplate transactionTemplate;
+
 	/**
 	 * Default constructor for convenient dependency injection via setters.
 	 */
@@ -452,6 +454,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * @param transactionAttribute the transaction attribute to set
 	 */
 	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
+		Assert.notNull(transactionAttribute, "'transactionAttribute' cannot be null");
 		this.transactionAttribute = transactionAttribute;
 	}
 
@@ -1138,7 +1141,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		if (this.transactionManager != null) {
 			try {
-				return new TransactionTemplate(this.transactionManager, this.transactionAttribute)
+				if (this.transactionTemplate == null) {
+					this.transactionTemplate =
+							new TransactionTemplate(this.transactionManager, this.transactionAttribute);
+				}
+				return this.transactionTemplate
 						.execute(new TransactionCallback<Boolean>() {
 							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
@@ -1167,7 +1174,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable { //NOSONAR
 
 		Channel channel = consumer.getChannel();
 
@@ -1182,13 +1189,37 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				executeListener(channel, message);
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("User requested ack for failed delivery: "
+							+ message.getMessageProperties().getDeliveryTag());
+				}
 				break;
 			}
 			catch (Throwable ex) { //NOSONAR
-				consumer.rollbackOnExceptionIfNecessary(ex);
-				throw ex;
+				if (causeChainHasImmediateAcknowledgeAmqpException(ex)) {
+					if (this.logger.isDebugEnabled()) {
+						this.logger.debug("User requested ack for failed delivery: "
+								+ message.getMessageProperties().getDeliveryTag());
+					}
+					break;
+				}
+				if (this.transactionManager != null) {
+					if (this.transactionAttribute.rollbackOn(ex)) {
+						consumer.clearDeliveryTags();
+						throw ex; // encompassing transaction will handle the rollback.
+					}
+					else {
+						if (this.logger.isDebugEnabled()) {
+							this.logger.debug("No rollback for " + ex);
+						}
+						break;
+					}
+				}
+				else {
+					consumer.rollbackOnExceptionIfNecessary(ex);
+					throw ex;
+				}
 			}
-
 		}
 
 		return consumer.commitIfNecessary(isChannelLocallyTransacted(channel));
@@ -1287,6 +1318,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int consecutiveIdles = 0;
 
 			int consecutiveMessages = 0;
+
+			this.consumer.setLocallyTransacted(isChannelLocallyTransacted(null));
 
 			if (this.consumer.getQueueCount() < 1) {
 				if (logger.isDebugEnabled()) {

@@ -29,6 +29,12 @@ The framework is no longer compatible with previous versions.
 Rules that have up until now been used internally by the framework have now been made available in a separate jar `spring-rabbit-junit`.
 See <<junit-rules>> for more information.
 
+===== Container Conditional Rollback
+
+When using an external transaction manager (e.g. JDBC), rule-based rollback is now supported when providing the container with a transaction attribute.
+It is also now more flexible when using a transaction advice.
+See <<conditional-rollback>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
