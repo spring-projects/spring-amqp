@@ -137,6 +137,8 @@ public class BlockingQueueConsumer {
 
 	private long shutdownTimeout;
 
+	private boolean locallyTransacted;
+
 	private volatile long abortStarted;
 
 	/**
@@ -311,6 +313,24 @@ public class BlockingQueueConsumer {
 		return this.backOffExecution;
 	}
 
+	/**
+	 * True if the channel is locally transacted.
+	 * @param locallyTransacted the locally transacted to set.
+	 * @since 1.6.6
+	 */
+	public void setLocallyTransacted(boolean locallyTransacted) {
+		this.locallyTransacted = locallyTransacted;
+	}
+
+	/**
+	 * Clear the delivery tags when rolling back with an external transaction
+	 * manager.
+	 * @since 1.6.6
+	 */
+	public void clearDeliveryTags() {
+		this.deliveryTags.clear();
+	}
+
 	protected void basicCancel() {
 		for (String consumerTag : this.consumerTags.keySet()) {
 			removeConsumer(consumerTag);
@@ -374,6 +394,10 @@ public class BlockingQueueConsumer {
 			logger.debug("Received message: " + message);
 		}
 		this.deliveryTags.add(messageProperties.getDeliveryTag());
+		if (this.transactional && !this.locallyTransacted) {
+			ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel,
+					delivery.getEnvelope().getDeliveryTag());
+		}
 		return message;
 	}
 
@@ -469,7 +493,8 @@ public class BlockingQueueConsumer {
 			logger.debug("Starting consumer " + this);
 		}
 		try {
-			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory, this.transactional);
+			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
+					this.transactional);
 			this.channel = this.resourceHolder.getChannel();
 		}
 		catch (AmqpAuthenticationException e) {
@@ -698,17 +723,7 @@ public class BlockingQueueConsumer {
 			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 
 			if (ackRequired) {
-
-				if (this.transactional && !locallyTransacted) {
-
-					// Not locally transacted but it is transacted so it
-					// could be synchronized with an external transaction
-					for (Long deliveryTag : this.deliveryTags) {
-						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel, deliveryTag);
-					}
-
-				}
-				else {
+				if (!this.transactional || locallyTransacted) {
 					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 					this.channel.basicAck(deliveryTag, true);
 				}

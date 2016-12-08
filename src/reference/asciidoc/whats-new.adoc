@@ -231,6 +231,12 @@ IMPORTANT: Previously, a non-transactional `RabbitTemplate` participated in an e
 This was a serious bug; however, users might have relied on this behavior.
 Starting with _version 1.6.2_, you must set the `channelTransacted` boolean on the template for it to participate in the container transaction.
 
+===== Container Conditional Rollback
+
+When using an external transaction manager (e.g. JDBC), rule-based rollback is now supported when providing the container with a transaction attribute.
+It is also now more flexible when using a transaction advice.
+See <<conditional-rollback>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
