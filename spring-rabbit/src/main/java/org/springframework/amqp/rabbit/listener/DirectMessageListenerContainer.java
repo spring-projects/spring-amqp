@@ -37,6 +37,7 @@ import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
@@ -733,9 +734,45 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		private void callExecuteListener(Message message, long deliveryTag) throws Exception {
+			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
 				executeListener(getChannel(), message);
-				boolean channelLocallyTransacted = isChannelLocallyTransacted();
+				handleAck(deliveryTag, channelLocallyTransacted);
+			}
+			catch (ImmediateAcknowledgeAmqpException e) {
+				if (this.logger.isDebugEnabled()) {
+					logger.debug("User requested ack for failed delivery");
+				}
+				handleAck(deliveryTag, channelLocallyTransacted);
+			}
+			catch (Exception e) {
+				if (causeChainHasImmediateAcknowledgeAmqpException(e)) {
+					if (this.logger.isDebugEnabled()) {
+						logger.debug("User requested ack for failed delivery");
+					}
+				}
+				else {
+					this.logger.error("Failed to invoke listener", e);
+					if (this.transactionManager != null) {
+						if (this.transactionAttribute.rollbackOn(e)) {
+							rollback(deliveryTag, e);
+							throw e;
+						}
+						else {
+							if (this.logger.isDebugEnabled()) {
+								this.logger.debug("No rollback for " + e);
+							}
+						}
+					}
+					else {
+						rollback(deliveryTag, e);
+					}
+				}
+			}
+		}
+
+		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) throws IOException {
+			try {
 				if (this.ackRequired) {
 					if (isChannelTransacted() && !channelLocallyTransacted) {
 
@@ -753,21 +790,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Exception e) {
-				this.logger.error("Failed to invoke listener", e);
-				if (this.transactionManager != null) {
-					if (this.transactionAttribute.rollbackOn(e)) {
-						rollback(deliveryTag, e);
-						throw e;
-					}
-					else {
-						if (this.logger.isDebugEnabled()) {
-							logger.debug("No rollback for " + e);
-						}
-					}
-				}
-				else {
-					rollback(deliveryTag, e);
-				}
+				logger.error("Error acking", e);
 			}
 		}
 

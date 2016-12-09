@@ -762,7 +762,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	}
 
-	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable {
+	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable { //NOSONAR
 
 		Channel channel = consumer.getChannel();
 
@@ -783,6 +783,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				break;
 			}
 			catch (Throwable ex) { //NOSONAR
+				if (causeChainHasImmediateAcknowledgeAmqpException(ex)) {
+					if (this.logger.isDebugEnabled()) {
+						logger.debug("User requested ack for failed delivery");
+					}
+					break;
+				}
 				if (getTransactionManager() != null) {
 					if (getTransactionAttribute().rollbackOn(ex)) {
 						consumer.rollbackOnExceptionIfNecessary(ex);
@@ -790,7 +796,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					else {
 						if (this.logger.isDebugEnabled()) {
-							logger.debug("No rollback for " + ex);
+							this.logger.debug("No rollback for " + ex);
 						}
 						break;
 					}

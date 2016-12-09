@@ -41,6 +41,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -188,8 +190,27 @@ public abstract class ExternalTxManagerTests {
 		assertTrue(transactionManager.latch.await(10, TimeUnit.SECONDS));
 		assertTrue(transactionManager.committed);
 
-		container.stop();
+		transactionManager.committed = false;
+		transactionManager.latch = new CountDownLatch(1);
+		container.setMessageListener(m -> {
+			throw new AmqpRejectAndDontRequeueException("foo", new ImmediateAcknowledgeAmqpException("bar"));
+		});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+		assertTrue(transactionManager.latch.await(10, TimeUnit.SECONDS));
+		assertTrue(transactionManager.rolledBack);
 
+		transactionManager.rolledBack = false;
+		transactionManager.latch = new CountDownLatch(1);
+		container.setMessageListener(m -> {
+			throw new ImmediateAcknowledgeAmqpException("foo");
+		});
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+		assertTrue(transactionManager.latch.await(10, TimeUnit.SECONDS));
+		assertTrue(transactionManager.committed);
+
+		container.stop();
 	}
 
 	/**
