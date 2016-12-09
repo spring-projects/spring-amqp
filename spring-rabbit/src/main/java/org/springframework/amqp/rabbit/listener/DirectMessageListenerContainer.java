@@ -579,12 +579,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	private void actualShutDown() {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
-		logger.debug("Shutting down");
+		this.logger.debug("Shutting down");
 		// Copy in the same order to avoid ConcurrentModificationException during remove in the cancelConsumer().
 		new LinkedList<>(this.consumers).forEach(this::cancelConsumer);
 		this.consumers.clear();
 		this.consumersByQueue.clear();
-		logger.debug("All consumers canceled");
+		this.logger.debug("All consumers canceled");
 		if (this.consumerMonitorTask != null) {
 			this.consumerMonitorTask.cancel(true);
 			this.consumerMonitorTask = null;
@@ -741,14 +741,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
 				if (this.logger.isDebugEnabled()) {
-					logger.debug("User requested ack for failed delivery");
+					this.logger.debug("User requested ack for failed delivery");
 				}
 				handleAck(deliveryTag, channelLocallyTransacted);
 			}
 			catch (Exception e) {
 				if (causeChainHasImmediateAcknowledgeAmqpException(e)) {
 					if (this.logger.isDebugEnabled()) {
-						logger.debug("User requested ack for failed delivery");
+						this.logger.debug("User requested ack for failed delivery");
 					}
 				}
 				else {
@@ -790,7 +790,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			catch (Exception e) {
-				logger.error("Error acking", e);
+				this.logger.error("Error acking", e);
 			}
 		}
 

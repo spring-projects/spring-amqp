@@ -778,14 +778,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
 				if (this.logger.isDebugEnabled()) {
-					logger.debug("User requested ack for failed delivery");
+					this.logger.debug("User requested ack for failed delivery");
 				}
 				break;
 			}
 			catch (Throwable ex) { //NOSONAR
 				if (causeChainHasImmediateAcknowledgeAmqpException(ex)) {
 					if (this.logger.isDebugEnabled()) {
-						logger.debug("User requested ack for failed delivery");
+						this.logger.debug("User requested ack for failed delivery");
 					}
 					break;
 				}
