@@ -413,7 +413,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 									consumeFromQueue(queue);
 								}
 							}
-							catch (AmqpConnectException e) {
+							catch (AmqpConnectException | AmqpIOException e) {
 								long nextBackOff = backOffExecution.nextBackOff();
 								if (nextBackOff < 0 || e.getCause() instanceof AmqpApplicationContextClosedException) {
 									DirectMessageListenerContainer.this.aborted = true;
