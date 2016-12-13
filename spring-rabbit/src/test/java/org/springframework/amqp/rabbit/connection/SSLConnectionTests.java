@@ -33,6 +33,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.mockito.Mockito;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.core.io.ClassPathResource;
@@ -40,6 +41,8 @@ import org.springframework.core.io.ClassPathResource;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+
+import javax.net.ssl.SSLContext;
 
 /**
  * @author Gary Russell
@@ -74,9 +77,7 @@ public class SSLConnectionTests {
 		fb.setSslAlgorithm("TLSv1.2");
 		fb.afterPropertiesSet();
 		fb.getObject();
-		//since useSslProtocol is not called directly; commenting off the verification ; and not sure on what to verify
-		// as well may be perhaps checking whether  useSslProtocol (SSLContext) method is invoked at least 1 time
-		//verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
 
 	@Test
@@ -87,9 +88,7 @@ public class SSLConnectionTests {
 		fb.setUseSSL(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		//since useSslProtocol is not called directly; commenting off the verification ; and not sure on what to verify
-		// as well may be perhaps checking whether  useSslProtocol (SSLContext) method is invoked at least 1 time
-		//verify(rabbitCf).useSslProtocol();
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
 
 	@Test
