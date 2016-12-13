@@ -644,27 +644,15 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	public static X509TrustManager getDefaultTrustManager(String algorithm, KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException {
 
-		TrustManagerFactory factory;
+		TrustManagerFactory factory = TrustManagerFactory.getInstance(algorithm);
 		X509TrustManager x509TrustManager = null;
-
-		try {
-			factory = TrustManagerFactory.getInstance(algorithm);
-			factory.init(keystore);
+        factory.init(keystore);
 			for (TrustManager trustManager : factory.getTrustManagers()) {
-
 				if (trustManager instanceof X509TrustManager) {
 					x509TrustManager = (X509TrustManager) trustManager;
 					break;
 				}
 			}
-
-		}
-		catch (NoSuchAlgorithmException e) {
-			throw  e;
-		}
-		catch (KeyStoreException e) {
-			throw  e;
-		}
 
 		return x509TrustManager;
 
