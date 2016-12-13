@@ -791,8 +791,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				if (getTransactionManager() != null) {
 					if (getTransactionAttribute().rollbackOn(ex)) {
-						consumer.rollbackOnExceptionIfNecessary(ex);
-						throw ex;
+						consumer.clearDeliveryTags();
+						throw ex; // encompassing transaction will handle the rollback.
 					}
 					else {
 						if (this.logger.isDebugEnabled()) {
@@ -889,6 +889,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			int consecutiveIdles = 0;
 
 			int consecutiveMessages = 0;
+
+			this.consumer.setLocallyTransacted(isChannelLocallyTransacted());
 
 			if (this.consumer.getQueueCount() < 1) {
 				if (logger.isDebugEnabled()) {

@@ -706,6 +706,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param transactionAttribute the transaction attribute to set
 	 */
 	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {
+		Assert.notNull(transactionAttribute, "'transactionAttribute' cannot be null");
 		this.transactionAttribute = transactionAttribute;
 	}
 

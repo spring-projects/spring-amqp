@@ -695,7 +695,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								new TransactionTemplate(this.transactionManager, this.transactionAttribute);
 					}
 					this.transactionTemplate.execute(s -> {
-						ConnectionFactoryUtils.bindResourceToTransaction(new RabbitResourceHolder(getChannel(), false),
+						RabbitResourceHolder resourceHolder = new RabbitResourceHolder(getChannel(), false);
+						resourceHolder.addDeliveryTag(getChannel(), deliveryTag);
+						ConnectionFactoryUtils.bindResourceToTransaction(resourceHolder,
 								this.connectionFactory, true);
 						// unbound in ResourceHolderSynchronization.beforeCompletion()
 						try {
@@ -741,22 +743,22 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
 				if (this.logger.isDebugEnabled()) {
-					this.logger.debug("User requested ack for failed delivery");
+					this.logger.debug("User requested ack for failed delivery: " + deliveryTag);
 				}
 				handleAck(deliveryTag, channelLocallyTransacted);
 			}
 			catch (Exception e) {
 				if (causeChainHasImmediateAcknowledgeAmqpException(e)) {
 					if (this.logger.isDebugEnabled()) {
-						this.logger.debug("User requested ack for failed delivery");
+						this.logger.debug("User requested ack for failed delivery: " + deliveryTag);
 					}
+					handleAck(deliveryTag, channelLocallyTransacted);
 				}
 				else {
 					this.logger.error("Failed to invoke listener", e);
 					if (this.transactionManager != null) {
 						if (this.transactionAttribute.rollbackOn(e)) {
-							rollback(deliveryTag, e);
-							throw e;
+							throw e; // encompassing transaction will handle the rollback.
 						}
 						else {
 							if (this.logger.isDebugEnabled()) {
@@ -766,6 +768,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					}
 					else {
 						rollback(deliveryTag, e);
+						// no need to rethrow e - we'd ignore it anyway, not throw to client
 					}
 				}
 			}
@@ -774,14 +777,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) throws IOException {
 			try {
 				if (this.ackRequired) {
-					if (isChannelTransacted() && !channelLocallyTransacted) {
-
-						// Not locally transacted but it is transacted so it
-						// could be synchronized with an external transaction
-						ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, getChannel(), deliveryTag);
-
-					}
-					else {
+					if (!isChannelTransacted() || channelLocallyTransacted) {
 						getChannel().basicAck(deliveryTag, false);
 					}
 				}
@@ -800,7 +796,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			if (this.ackRequired) {
 				try {
-					getChannel().basicReject(deliveryTag,
+					getChannel().basicNack(deliveryTag, true,
 							RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
 				catch (IOException e1) {
