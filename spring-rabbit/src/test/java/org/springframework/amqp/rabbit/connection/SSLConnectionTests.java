@@ -22,16 +22,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import java.security.SecureRandom;
 import java.util.Collections;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import org.mockito.Mockito;
 
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -41,9 +46,13 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+
+
 /**
  * @author Gary Russell
  * @author Heath Abelson
+ * @author Hareendran
+ *
  * @since 1.4.4
  *
  */
@@ -74,7 +83,7 @@ public class SSLConnectionTests {
 		fb.setSslAlgorithm("TLSv1.2");
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol("TLSv1.2");
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
 
 	@Test
@@ -85,8 +94,60 @@ public class SSLConnectionTests {
 		fb.setUseSSL(true);
 		fb.afterPropertiesSet();
 		fb.getObject();
-		verify(rabbitCf).useSslProtocol();
+		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
+
+	@Test
+	public void testUseSslProtocolShouldNotBeCalled() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf, never()).useSslProtocol();
+	}
+
+	@Test
+	public void testSkipServerCertificate() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSkipServerCertificateValidation(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol();
+		verify(rabbitCf).useSslProtocol("TLSv1.2");
+	}
+
+	@Test
+	public void testSkipServerCertificateWithAlgorithm() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSslAlgorithm("TLSv1.2");
+		fb.setSkipServerCertificateValidation(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol("TLSv1.2");
+	}
+
+
+
+	@Test
+	public void testUseSslProtocolWithProtocolShouldNotBeCalled() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSslAlgorithm("TLSv1.2");
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf, never()).useSslProtocol("TLSv1.2");
+	}
+
 
 	@Test
 	public void testKSTS() throws Exception {
