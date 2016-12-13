@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -559,12 +561,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
 				&& this.keyStoreResource == null && this.trustStoreResource == null) {
-			if (this.sslAlgorithmSet) {
-				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
-			}
-			else {
-				this.connectionFactory.useSslProtocol();
-			}
+			useDefaultTrustStoreMechanism();
 		}
 		else {
 			if (this.sslPropertiesLocation != null) {
@@ -627,6 +624,50 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected SSLContext createSSLContext() throws NoSuchAlgorithmException {
 		return SSLContext.getInstance(this.sslAlgorithm);
+	}
+
+
+	/**
+	 * In case the client doesn't provide the sslProperties location or the truststore is null delegate to Java's default
+	 * trust mechanism
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyManagementException
+	 * @throws KeyStoreException
+     */
+	public void useDefaultTrustStoreMechanism() throws NoSuchAlgorithmException, KeyManagementException,
+			KeyStoreException {
+		SSLContext c = SSLContext.getInstance(this.sslAlgorithm);
+		c.init(null, new TrustManager[] {  getDefaultTrustManager(TrustManagerFactory.getDefaultAlgorithm(), null) }, null);
+		this.connectionFactory.useSslProtocol(c);
+	}
+
+
+	public static X509TrustManager getDefaultTrustManager(String algorithm, KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException {
+
+		TrustManagerFactory factory;
+		X509TrustManager x509TrustManager = null;
+
+		try {
+			factory = TrustManagerFactory.getInstance(algorithm);
+			factory.init(keystore);
+			for (TrustManager trustManager : factory.getTrustManagers()) {
+
+				if (trustManager instanceof X509TrustManager) {
+					x509TrustManager = (X509TrustManager) trustManager;
+					break;
+				}
+			}
+
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw  e;
+		}
+		catch (KeyStoreException e) {
+			throw  e;
+		}
+
+		return x509TrustManager;
+
 	}
 
 }
