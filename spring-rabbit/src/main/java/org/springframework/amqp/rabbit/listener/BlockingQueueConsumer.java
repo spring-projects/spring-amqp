@@ -394,7 +394,7 @@ public class BlockingQueueConsumer {
 			logger.debug("Received message: " + message);
 		}
 		this.deliveryTags.add(messageProperties.getDeliveryTag());
-		if (this.transactional && !locallyTransacted) {
+		if (this.transactional && !this.locallyTransacted) {
 			ConnectionFactoryUtils.registerDeliveryTag(this.connectionFactory, this.channel,
 					delivery.getEnvelope().getDeliveryTag());
 		}
