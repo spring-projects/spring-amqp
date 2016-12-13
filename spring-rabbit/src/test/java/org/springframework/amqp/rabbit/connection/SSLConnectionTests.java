@@ -28,12 +28,15 @@ import static org.mockito.Mockito.verify;
 import java.security.SecureRandom;
 import java.util.Collections;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.mockito.Mockito;
+
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.core.io.ClassPathResource;
@@ -42,12 +45,12 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
-import javax.net.ssl.SSLContext;
+
 
 /**
  * @author Gary Russell
  * @author Heath Abelson
- * @author Hareendran 
+ * @author Hareendran
  * @since 1.4.4
  *
  */
