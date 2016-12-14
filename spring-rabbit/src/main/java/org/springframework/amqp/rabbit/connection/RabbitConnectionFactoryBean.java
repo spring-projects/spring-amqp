@@ -635,7 +635,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @throws KeyManagementException
 	 * @throws KeyStoreException
      */
-	public void useDefaultTrustStoreMechanism() throws NoSuchAlgorithmException, KeyManagementException,
+	private void useDefaultTrustStoreMechanism() throws NoSuchAlgorithmException, KeyManagementException,
 			KeyStoreException {
 		SSLContext c = SSLContext.getInstance(this.sslAlgorithm);
 		c.init(null, new TrustManager[] {  getDefaultTrustManager(TrustManagerFactory.getDefaultAlgorithm(), null) }, null);
@@ -643,7 +643,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 
-	public static X509TrustManager getDefaultTrustManager(String algorithm, KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException {
+	private static X509TrustManager getDefaultTrustManager(String algorithm, KeyStore keystore) throws NoSuchAlgorithmException, KeyStoreException {
 
 		TrustManagerFactory factory = TrustManagerFactory.getInstance(algorithm);
 		X509TrustManager x509TrustManager = null;
