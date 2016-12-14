@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -94,6 +95,31 @@ public class SSLConnectionTests {
 		fb.getObject();
 		verify(rabbitCf).useSslProtocol(Mockito.any(SSLContext.class));
 	}
+
+	@Test
+	public void testuseSslProtocolShouldNotbecalled() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf, never()).useSslProtocol();
+	}
+
+
+	@Test
+	public void testuseSslProtocolwithProtocolShouldNotbecalled() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSslAlgorithm("TLSv1.2");
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf, never()).useSslProtocol("TLSv1.2");
+	}
+
 
 	@Test
 	public void testKSTS() throws Exception {
