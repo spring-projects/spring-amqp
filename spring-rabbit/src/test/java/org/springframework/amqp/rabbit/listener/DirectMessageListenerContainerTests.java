@@ -79,6 +79,7 @@ import com.rabbitmq.client.Consumer;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 2.0
  *
  */
@@ -512,15 +513,20 @@ public class DirectMessageListenerContainerTests {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		ApplicationContext context = mock(ApplicationContext.class);
 		cf.setApplicationContext(context);
+
+		cf.addConnectionListener(connection -> {
+			cf.onApplicationEvent(new ContextClosedEvent(context));
+			cf.stop();
+			cf.destroy();
+		});
+
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setMessageListener(m -> { });
 		container.setQueueNames(Q1);
 		container.setBeanName("stopAfterDestroyBeforeStart");
 		container.afterPropertiesSet();
 		container.start();
-		cf.onApplicationEvent(new ContextClosedEvent(context));
-		cf.stop();
-		cf.destroy();
+
 		int n = 0;
 		while (n++ < 100 && container.isRunning()) {
 			Thread.sleep(100);

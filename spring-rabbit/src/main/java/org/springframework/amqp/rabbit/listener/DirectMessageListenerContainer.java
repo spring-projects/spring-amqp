@@ -514,6 +514,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
 					false, isExclusive(), getConsumerArguments(), consumer);
 		}
+		catch (AmqpApplicationContextClosedException e) {
+			throw new AmqpConnectException(e);
+		}
 		catch (IOException e) {
 			RabbitUtils.closeChannel(channel);
 			RabbitUtils.closeConnection(connection);
