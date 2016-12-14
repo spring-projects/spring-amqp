@@ -97,7 +97,7 @@ public class SSLConnectionTests {
 	}
 
 	@Test
-	public void testuseSslProtocolShouldNotbecalled() throws Exception {
+	public void testUseSslProtocolShouldNotbeCalled() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
@@ -109,7 +109,7 @@ public class SSLConnectionTests {
 
 
 	@Test
-	public void testuseSslProtocolwithProtocolShouldNotbecalled() throws Exception {
+	public void testUseSslProtocolWithProtocolShouldNotbeCalled() throws Exception {
 		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
 		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
 		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
