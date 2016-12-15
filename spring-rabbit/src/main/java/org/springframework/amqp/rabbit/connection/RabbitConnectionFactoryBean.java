@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -66,6 +67,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * @author Gary Russell
  * @author Heath Abelson
  * @author Arnaud Cogoluègnes
+ * @author Hareendran
  *
  * @since 1.4
  */
@@ -120,6 +122,30 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	private volatile boolean sslAlgorithmSet;
 
 	private volatile SecureRandom secureRandom;
+
+	private boolean skipServerCertificateValidation;
+
+
+	/**
+	 *
+	 * @return true if Server Side certificate has to be skipped
+	 * @since 1.6.6
+     */
+	public boolean isSkipServerCertificateValidation() {
+		return this.skipServerCertificateValidation;
+	}
+
+	/**
+	 * whether or not Server Side certificate has to be validated or not.
+	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
+	 * skipServerCertificateValidation should <b> never be set to true in production</b>
+	 * @param skipServerCertificateValidation Flag to override Server side certificate checks; if set to true com.rabbitmq.client.NullTrustManager would be used
+	 * @since 1.6.6
+	 * @see com.rabbitmq.client.NullTrustManager
+	 */
+	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
+		this.skipServerCertificateValidation = skipServerCertificateValidation;
+	}
 
 	/**
 	 * Whether or not the factory should be configured to use SSL.
@@ -559,11 +585,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
 				&& this.keyStoreResource == null && this.trustStoreResource == null) {
-			if (this.sslAlgorithmSet) {
-				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
+			if (this.skipServerCertificateValidation) {
+				this.connectionFactory.useSslProtocol(this.getSslAlgorithm());
 			}
 			else {
-				this.connectionFactory.useSslProtocol();
+				useDefaultTrustStoreMechanism();
 			}
 		}
 		else {
@@ -627,6 +653,22 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	protected SSLContext createSSLContext() throws NoSuchAlgorithmException {
 		return SSLContext.getInstance(this.sslAlgorithm);
+	}
+
+
+	/**
+	 * In case the client doesn't provide the sslProperties location or the truststore is null delegate to Java's default
+	 * trust mechanism
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyManagementException
+	 * @throws KeyStoreException
+     */
+	private void useDefaultTrustStoreMechanism() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
+		SSLContext sslContext = SSLContext.getInstance(this.sslAlgorithm);
+		TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		trustManagerFactory.init((KeyStore) null);
+		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+		this.connectionFactory.useSslProtocol(sslContext);
 	}
 
 }
