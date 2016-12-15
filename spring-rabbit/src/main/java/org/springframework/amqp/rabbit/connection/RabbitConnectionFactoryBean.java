@@ -128,17 +128,20 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 *
-	 * @return whether or not Server Side certificate has to be validated or not
+	 * @return true if Server Side certificate has to be skipped
+	 * @since 1.6.6
      */
 	public boolean isSkipServerCertificateValidation() {
 		return this.skipServerCertificateValidation;
 	}
 
 	/**
-	 * whether or not Server Side certificate has to be validated or not
-	 * this would be used if useSSL is set to true and should only be used on dev or Qa regions
-	 * skipServerCertificateValidation should never be set to true in production
-	 *
+	 * whether or not Server Side certificate has to be validated or not.
+	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
+	 * skipServerCertificateValidation should <b> never be set to true in production</b>
+	 * @param skipServerCertificateValidation Flag to override Server side certificate checks; if set to true com.rabbitmq.client.NullTrustManager would be used
+	 * @since 1.6.6
+	 * @see com.rabbitmq.client.NullTrustManager
 	 */
 	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
 		this.skipServerCertificateValidation = skipServerCertificateValidation;
@@ -661,11 +664,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @throws KeyStoreException
      */
 	private void useDefaultTrustStoreMechanism() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
-		SSLContext c = SSLContext.getInstance(this.sslAlgorithm);
-		TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-		factory.init((KeyStore) null);
-		c.init(null, factory.getTrustManagers(), null);
-		this.connectionFactory.useSslProtocol(c);
+		SSLContext sslContext = SSLContext.getInstance(this.sslAlgorithm);
+		TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		trustManagerFactory.init((KeyStore) null);
+		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+		this.connectionFactory.useSslProtocol(sslContext);
 	}
 
 }
