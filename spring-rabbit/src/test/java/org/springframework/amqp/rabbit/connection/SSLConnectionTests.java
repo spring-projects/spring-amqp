@@ -107,6 +107,32 @@ public class SSLConnectionTests {
 		verify(rabbitCf, never()).useSslProtocol();
 	}
 
+	@Test
+	public void testSkipServerCertificate() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSkipServerCertificateValidation(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol("TLSv1.1");
+	}
+
+	@Test
+	public void testSkipServerCertificateWithAlgo() throws Exception {
+		RabbitConnectionFactoryBean fb = new RabbitConnectionFactoryBean();
+		ConnectionFactory rabbitCf = spy(TestUtils.getPropertyValue(fb, "connectionFactory", ConnectionFactory.class));
+		new DirectFieldAccessor(fb).setPropertyValue("connectionFactory", rabbitCf);
+		fb.setUseSSL(true);
+		fb.setSslAlgorithm("TLSv1.2");
+		fb.setSkipServerCertificateValidation(true);
+		fb.afterPropertiesSet();
+		fb.getObject();
+		verify(rabbitCf).useSslProtocol("TLSv1.2");
+	}
+
+
 
 	@Test
 	public void testUseSslProtocolWithProtocolShouldNotbeCalled() throws Exception {

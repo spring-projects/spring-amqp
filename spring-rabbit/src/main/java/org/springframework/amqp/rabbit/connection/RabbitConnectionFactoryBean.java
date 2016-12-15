@@ -123,6 +123,27 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private volatile SecureRandom secureRandom;
 
+	private boolean skipServerCertificateValidation;
+
+
+	/**
+	 *
+	 * @return whether or not Server Side certificate has to be validated or not
+     */
+	public boolean isSkipServerCertificateValidation() {
+		return this.skipServerCertificateValidation;
+	}
+
+	/**
+	 * whether or not Server Side certificate has to be validated or not
+	 * this would be used if useSSL is set to true and should only be used on dev or Qa regions
+	 * skipServerCertificateValidation should never be set to true in production
+	 *
+	 */
+	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
+		this.skipServerCertificateValidation = skipServerCertificateValidation;
+	}
+
 	/**
 	 * Whether or not the factory should be configured to use SSL.
 	 * @param useSSL true to use SSL.
@@ -561,7 +582,12 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	protected void setUpSSL() throws Exception {
 		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
 				&& this.keyStoreResource == null && this.trustStoreResource == null) {
-			useDefaultTrustStoreMechanism();
+			if (this.skipServerCertificateValidation) {
+				this.connectionFactory.useSslProtocol(this.getSslAlgorithm());
+			}
+			else {
+				useDefaultTrustStoreMechanism();
+			}
 		}
 		else {
 			if (this.sslPropertiesLocation != null) {
