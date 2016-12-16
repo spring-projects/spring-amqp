@@ -22,6 +22,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.core.ReplyToAddressCallback;
+import org.springframework.core.ParameterizedTypeReference;
 
 /**
  * @author David Bilge
@@ -196,6 +197,59 @@ public abstract class AbstractAmqpTemplate implements AmqpTemplate {
 	public Object convertSendAndReceive(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor) throws AmqpException {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message, ParameterizedTypeReference<T> responseType)
+			throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final String routingKey, final Object message, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException {
+		return null;
+	}
+
+	@Override
+	public <T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException {
+		return null;
 	}
 
 }
