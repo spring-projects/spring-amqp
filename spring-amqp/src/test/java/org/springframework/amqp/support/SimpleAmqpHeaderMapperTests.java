@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.support.converter.JsonMessageConverter;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.util.MimeTypeUtils;
 
@@ -167,7 +167,7 @@ public class SimpleAmqpHeaderMapperTests {
 	@Test // INT-2090
 	public void jsonTypeIdNotOverwritten() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
-		JsonMessageConverter converter = new JsonMessageConverter();
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
 		MessageProperties amqpProperties = new MessageProperties();
 		converter.toMessage("123", amqpProperties);
 		Map<String, Object> headerMap = new HashMap<String, Object>();

@@ -3309,7 +3309,7 @@ public abstract class AbstractStockAppRabbitConfiguration {
 
     @Bean
     public MessageConverter jsonMessageConverter() {
-        return new JsonMessageConverter();
+        return new Jackson2JsonMessageConverter();
     }
 
     @Bean
