@@ -163,7 +163,7 @@ public class Jackson2JsonMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.setContentType("application/json");
 		Message message = new Message(bytes, messageProperties);
-		JsonMessageConverter converter = new JsonMessageConverter();
+		Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
 		DefaultClassMapper classMapper = new DefaultClassMapper();
 		classMapper.setDefaultType(Foo.class);
 		converter.setClassMapper(classMapper);
