@@ -633,9 +633,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	private int getConsumersThatHaveNotInitiatedStopping() {
+		return (int) this.consumers.values().stream().filter(x -> x = Boolean.TRUE).count();
+	}
+
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
+			if (this.consumers != null && this.getConsumersThatHaveNotInitiatedStopping() > this.concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
 					consumer.basicCancel();
