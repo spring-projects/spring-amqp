@@ -634,7 +634,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private int getConsumersThatHaveNotInitiatedStopping() {
-		return (int) this.consumers.values().stream().filter(x -> x = Boolean.TRUE).count();
+		synchronized (this.consumersMonitor) {
+			return (int) this.consumers.values().stream().filter(x -> x = Boolean.TRUE).count();
+		}
 	}
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
