@@ -436,7 +436,7 @@ public class SimpleMessageListenerContainerTests {
 
 		container.start();
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
 		container.stop();
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 
@@ -511,7 +511,7 @@ public class SimpleMessageListenerContainerTests {
 			final boolean cancel, final CountDownLatch latch) {
 		return invocation -> {
 			String returnValue = null;
-			Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class).keySet();
+			Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
 			for (Object consumer : consumers) {
 				ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
 				if (channel != null && channel.getTargetChannel() == mockChannel) {

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -131,8 +131,8 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(queue.getName(), "baz");
 		assertTrue(messageReceived.await(10, TimeUnit.SECONDS));
-		Object consumer = TestUtils.getPropertyValue(container, "consumers", Map.class)
-				.keySet().iterator().next();
+		Object consumer = TestUtils.getPropertyValue(container, "consumers", Set.class)
+				.iterator().next();
 		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
 		doReturn(true).when(qLogger).isDebugEnabled();
 		new DirectFieldAccessor(consumer).setPropertyValue("logger", qLogger);
