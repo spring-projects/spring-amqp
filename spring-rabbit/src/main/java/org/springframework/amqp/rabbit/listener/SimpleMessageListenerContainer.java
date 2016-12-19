@@ -161,7 +161,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						if (entry.getValue()) {
 							BlockingQueueConsumer consumer = entry.getKey();
 							consumer.basicCancel();
-							this.consumers.put(consumer, false);
+							this.consumers.remove(consumer);
 							delta--;
 						}
 					}
@@ -633,19 +633,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	private int getConsumersThatHaveNotInitiatedStopping() {
-		synchronized (this.consumersMonitor) {
-			return (int) this.consumers.values().stream().filter(x -> x = Boolean.TRUE).count();
-		}
-	}
+
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null && this.getConsumersThatHaveNotInitiatedStopping() > this.concurrentConsumers) {
+			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
 					consumer.basicCancel();
-					this.consumers.put(consumer, false);
+					this.consumers.remove(consumer);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Idle consumer terminating: " + consumer);
 					}
@@ -1043,11 +1039,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					this.consumer.stop();
 					SimpleMessageListenerContainer.this.cancellationLock.release(this.consumer);
-					synchronized (SimpleMessageListenerContainer.this.consumersMonitor) {
-						if (SimpleMessageListenerContainer.this.consumers != null) {
-							SimpleMessageListenerContainer.this.consumers.remove(this.consumer);
-						}
-					}
 					if (getApplicationEventPublisher() != null) {
 						getApplicationEventPublisher().publishEvent(
 								new AsyncConsumerStoppedEvent(SimpleMessageListenerContainer.this, this.consumer));
