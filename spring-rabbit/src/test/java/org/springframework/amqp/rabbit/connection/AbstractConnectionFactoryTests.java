@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +51,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Dave Syer
  * @author Gary Russell
  * @author Dmitry Dbrazhnikov
+ * @author Artem Bilan
  */
 public abstract class AbstractConnectionFactoryTests {
 
@@ -61,19 +63,22 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
-		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+		connectionFactory.setConnectionListeners(Collections.singletonList(new ConnectionListener() {
+
 			@Override
 			public void onCreate(Connection connection) {
 				called.incrementAndGet();
 			}
+
 			@Override
 			public void onClose(Connection connection) {
 				called.decrementAndGet();
 			}
+
 		}));
 
 		Log logger = spy(TestUtils.getPropertyValue(connectionFactory, "logger", Log.class));
@@ -96,7 +101,7 @@ public abstract class AbstractConnectionFactoryTests {
 		assertEquals(0, called.get());
 		verify(mockConnection, atLeastOnce()).close(anyInt());
 
-		verify(mockConnectionFactory, times(1)).newConnection((ExecutorService) null);
+		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
 
 	}
 
@@ -106,22 +111,25 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 
 		final AtomicInteger called = new AtomicInteger(0);
 		AbstractConnectionFactory connectionFactory = createConnectionFactory(mockConnectionFactory);
 		Connection con = connectionFactory.createConnection();
 		assertEquals(0, called.get());
 
-		connectionFactory.setConnectionListeners(Arrays.asList(new ConnectionListener() {
+		connectionFactory.setConnectionListeners(Collections.singletonList(new ConnectionListener() {
+
 			@Override
 			public void onCreate(Connection connection) {
 				called.incrementAndGet();
 			}
+
 			@Override
 			public void onClose(Connection connection) {
 				called.decrementAndGet();
 			}
+
 		}));
 		assertEquals(1, called.get());
 
@@ -136,7 +144,7 @@ public abstract class AbstractConnectionFactoryTests {
 		assertEquals(0, called.get());
 		verify(mockConnection, atLeastOnce()).close(anyInt());
 
-		verify(mockConnectionFactory, times(1)).newConnection((ExecutorService) null);
+		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
 
 	}
 
@@ -147,7 +155,8 @@ public abstract class AbstractConnectionFactoryTests {
 		com.rabbitmq.client.Connection mockConnection1 = mock(com.rabbitmq.client.Connection.class);
 		com.rabbitmq.client.Connection mockConnection2 = mock(com.rabbitmq.client.Connection.class);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection1).thenReturn(mockConnection2);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
+				.thenReturn(mockConnection1, mockConnection2);
 		// simulate a dead connection
 		when(mockConnection1.isOpen()).thenReturn(false);
 
@@ -156,7 +165,7 @@ public abstract class AbstractConnectionFactoryTests {
 		Connection connection = connectionFactory.createConnection();
 		// the dead connection should be discarded
 		connection.createChannel(false);
-		verify(mockConnectionFactory, times(2)).newConnection((ExecutorService) null);
+		verify(mockConnectionFactory, times(2)).newConnection(any(ExecutorService.class), anyString());
 		verify(mockConnection2, times(1)).createChannel();
 
 		connectionFactory.destroy();

@@ -399,7 +399,7 @@
 		<xsd:attribute name="ignore-declaration-exceptions">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[
-	Specifies whether exceptions encountered while declraring this element should be ignored.
+	Specifies whether exceptions encountered while declaring this element should be ignored.
 	If 'false', the equivalent setting on the rabbit admin applies.
 	Default value is 'false'.
 				]]></xsd:documentation>
@@ -1331,7 +1331,7 @@
 			<xsd:attribute name="virtual-host" type="xsd:string" use="optional">
 				<xsd:annotation>
 					<xsd:documentation><![CDATA[
-	Virtual host name to connect to broker.  Default is "/".  Virtual hosts are logical partitions of the broker with separate queues, excchanges, users, etc.
+	Virtual host name to connect to broker.  Default is "/".  Virtual hosts are logical partitions of the broker with separate queues, exchanges, users, etc.
 					]]></xsd:documentation>
 				</xsd:annotation>
 			</xsd:attribute>
@@ -1450,6 +1450,19 @@
 					<xsd:appinfo>
 						<tool:annotation kind="ref">
 							<tool:expected-type type="java.util.concurrent.ThreadFactory" />
+						</tool:annotation>
+					</xsd:appinfo>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="connection-name-strategy">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	Reference to a 'ConnectionNameStrategy' to provide client-specific name for the target RabbitMQ connection.
+	It can be displayed in the management UI if RabbitMQ server supports it.
+				]]></xsd:documentation>
+					<xsd:appinfo>
+						<tool:annotation kind="ref">
+							<tool:expected-type type="org.springframework.amqp.rabbit.connection.ConnectionNameStrategy" />
 						</tool:annotation>
 					</xsd:appinfo>
 				</xsd:annotation>

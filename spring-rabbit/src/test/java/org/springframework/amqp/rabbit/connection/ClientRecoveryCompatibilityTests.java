@@ -21,6 +21,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,14 +31,13 @@ import static org.mockito.Mockito.when;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
  * @since 1.4
  *
  */
@@ -52,13 +52,7 @@ public class ClientRecoveryCompatibilityTests {
 		final com.rabbitmq.client.Connection rabbitConn = mock(AutorecoveringConnection.class);
 		when(rabbitConn.isOpen()).thenReturn(true);
 		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
-		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
-
-			@Override
-			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
-				return rabbitConn;
-			}
-		}).when(cf).newConnection(any(ExecutorService.class));
+		doAnswer(invocation -> rabbitConn).when(cf).newConnection(any(ExecutorService.class), anyString());
 		when(rabbitConn.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);

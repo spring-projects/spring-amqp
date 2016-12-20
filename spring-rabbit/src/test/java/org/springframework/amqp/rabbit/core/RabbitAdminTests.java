@@ -169,7 +169,7 @@ public class RabbitAdminTests {
 		Properties props = rabbitAdmin.getQueueProperties(queueName);
 		assertNotNull(props);
 		assertNotNull(props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
-		return Integer.valueOf((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT));
+		return (Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT);
 	}
 
 	@Test
@@ -274,7 +274,7 @@ public class RabbitAdminTests {
 		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(
 				com.rabbitmq.client.ConnectionFactory.class);
 		TimeoutException toBeThrown = new TimeoutException("test");
-		doThrow(toBeThrown).when(rabbitConnectionFactory).newConnection(any(ExecutorService.class));
+		doThrow(toBeThrown).when(rabbitConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		List<DeclarationExceptionEvent> events = new ArrayList<DeclarationExceptionEvent>();
@@ -285,7 +285,7 @@ public class RabbitAdminTests {
 		admin.declareExchange(new DirectExchange("foo"));
 		admin.declareBinding(new Binding("foo", DestinationType.QUEUE, "bar", "baz", null));
 		assertThat(events.size(), equalTo(4));
-		assertThat((RabbitAdmin) events.get(0).getSource(), sameInstance(admin));
+		assertThat(events.get(0).getSource(), sameInstance(admin));
 		assertThat(events.get(0).getDeclarable(), instanceOf(AnonymousQueue.class));
 		assertSame(toBeThrown, events.get(0).getThrowable().getCause());
 		assertNull(events.get(1).getDeclarable());
