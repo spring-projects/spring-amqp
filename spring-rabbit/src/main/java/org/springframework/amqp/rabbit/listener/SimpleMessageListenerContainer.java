@@ -19,11 +19,8 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -106,7 +103,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private long receiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
 	// Map entry value, when false, signals the consumer to terminate
-	private Map<BlockingQueueConsumer, Boolean> consumers;
+	private Set<BlockingQueueConsumer> activeConsumers;
 
 	private final ActiveObjectCounter<BlockingQueueConsumer> cancellationLock = new ActiveObjectCounter<>();
 
@@ -148,24 +145,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		synchronized (this.consumersMonitor) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Changing consumers from " + this.concurrentConsumers + " to " + concurrentConsumers);
+				logger.debug("Changing activeConsumers from " + this.concurrentConsumers + " to " + concurrentConsumers);
 			}
 			int delta = this.concurrentConsumers - concurrentConsumers;
 			this.concurrentConsumers = concurrentConsumers;
-			if (isActive() && this.consumers != null) {
+			if (isActive() && this.activeConsumers != null) {
 				if (delta > 0) {
-					Iterator<Entry<BlockingQueueConsumer, Boolean>> entryIterator = this.consumers.entrySet()
-							.iterator();
-					while (entryIterator.hasNext() && delta > 0) {
-						Entry<BlockingQueueConsumer, Boolean> entry = entryIterator.next();
-						if (entry.getValue()) {
-							BlockingQueueConsumer consumer = entry.getKey();
-							consumer.basicCancel();
-							this.consumers.remove(consumer);
-							delta--;
-						}
+					Iterator<BlockingQueueConsumer> consumerIterator = this.activeConsumers.iterator();
+					while (consumerIterator.hasNext() && delta > 0) {
+						BlockingQueueConsumer consumer = consumerIterator.next();
+						consumer.basicCancel();
+						consumerIterator.remove();
+						delta--;
 					}
-
 				}
 				else {
 					addAndStartConsumers(-delta);
@@ -469,7 +461,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		super.doStart();
 		synchronized (this.consumersMonitor) {
 			int newConsumers = initializeConsumers();
-			if (this.consumers == null) {
+			if (this.activeConsumers == null) {
 				if (logger.isInfoEnabled()) {
 					logger.info("Consumers were initialized and then cleared " +
 							"(presumably the container was stopped concurrently)");
@@ -483,7 +475,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				return;
 			}
 			Set<AsyncMessageProcessingConsumer> processors = new HashSet<AsyncMessageProcessingConsumer>();
-			for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
+			for (BlockingQueueConsumer consumer : this.activeConsumers) {
 				AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 				processors.add(processor);
 				getTaskExecutor().execute(processor);
@@ -509,9 +501,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		try {
 			synchronized (this.consumersMonitor) {
-				if (this.consumers != null) {
-					for (BlockingQueueConsumer consumer : this.consumers.keySet()) {
+				if (this.activeConsumers != null) {
+					Iterator<BlockingQueueConsumer> consumerIterator = this.activeConsumers.iterator();
+					while (consumerIterator.hasNext()) {
+						BlockingQueueConsumer consumer = consumerIterator.next();
 						consumer.basicCancel();
+						consumerIterator.remove();
 					}
 				}
 			}
@@ -530,21 +525,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		synchronized (this.consumersMonitor) {
-			this.consumers = null;
+			this.activeConsumers = null;
 		}
 
 	}
 
 	private boolean isActive(BlockingQueueConsumer consumer) {
-		Boolean consumerActive;
+		boolean consumerActive;
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null) {
-				Boolean active = this.consumers.get(consumer);
-				consumerActive = active != null && active;
-			}
-			else {
-				consumerActive = false;
-			}
+			consumerActive = this.activeConsumers != null && this.activeConsumers.contains(consumer);
 		}
 		return consumerActive && this.isActive();
 	}
@@ -552,12 +541,12 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	protected int initializeConsumers() {
 		int count = 0;
 		synchronized (this.consumersMonitor) {
-			if (this.consumers == null) {
+			if (this.activeConsumers == null) {
 				this.cancellationLock.reset();
-				this.consumers = new HashMap<BlockingQueueConsumer, Boolean>(this.concurrentConsumers);
+				this.activeConsumers = new HashSet<BlockingQueueConsumer>(this.concurrentConsumers);
 				for (int i = 0; i < this.concurrentConsumers; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
-					this.consumers.put(consumer, true);
+					this.activeConsumers.add(consumer);
 					count++;
 				}
 			}
@@ -587,10 +576,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	protected void addAndStartConsumers(int delta) {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null) {
+			if (this.activeConsumers != null) {
 				for (int i = 0; i < delta; i++) {
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
-					this.consumers.put(consumer, true);
+					this.activeConsumers.add(consumer);
 					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Starting a new consumer: " + consumer);
@@ -602,7 +591,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					try {
 						FatalListenerStartupException startupException = processor.getStartupException();
 						if (startupException != null) {
-							this.consumers.remove(consumer);
+							this.activeConsumers.remove(consumer);
 							throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
 						}
 					}
@@ -613,7 +602,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						consumer.stop();
 						logger.error("Error starting new consumer", e);
 						this.cancellationLock.release(consumer);
-						this.consumers.remove(consumer);
+						this.activeConsumers.remove(consumer);
 					}
 				}
 			}
@@ -622,8 +611,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void considerAddingAConsumer() {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null
-					&& this.maxConcurrentConsumers != null && this.consumers.size() < this.maxConcurrentConsumers) {
+			if (this.activeConsumers != null
+					&& this.maxConcurrentConsumers != null && this.activeConsumers.size() < this.maxConcurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStarted + this.startConsumerMinInterval < now) {
 					this.addAndStartConsumers(1);
@@ -637,11 +626,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
+			if (this.activeConsumers != null && this.activeConsumers.size() > this.concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
 					consumer.basicCancel();
-					this.consumers.remove(consumer);
+					this.activeConsumers.remove(consumer);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Idle consumer terminating: " + consumer);
 					}
@@ -653,17 +642,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void queuesChanged() {
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null) {
+			if (this.activeConsumers != null) {
 				int count = 0;
-				for (Entry<BlockingQueueConsumer, Boolean> consumer : this.consumers.entrySet()) {
-					if (consumer.getValue()) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Queues changed; stopping consumer: " + consumer.getKey());
-						}
-						consumer.getKey().basicCancel();
-						consumer.setValue(false);
-						count++;
+				Iterator<BlockingQueueConsumer> consumerIterator = this.activeConsumers.iterator();
+				while (consumerIterator.hasNext()) {
+					BlockingQueueConsumer consumer = consumerIterator.next();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Queues changed; stopping consumer: " + consumer);
 					}
+					consumer.basicCancel();
+					consumerIterator.remove();
+					count++;
 				}
 				this.addAndStartConsumers(count);
 			}
@@ -699,7 +688,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private void restart(BlockingQueueConsumer oldConsumer) {
 		BlockingQueueConsumer consumer = oldConsumer;
 		synchronized (this.consumersMonitor) {
-			if (this.consumers != null) {
+			if (this.activeConsumers != null) {
 				try {
 					// Need to recycle the channel in this consumer
 					consumer.stop();
@@ -707,11 +696,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// to start because of the exception, but
 					// we haven't counted down yet)
 					this.cancellationLock.release(consumer);
-					this.consumers.remove(consumer);
+					this.activeConsumers.remove(consumer);
 					BlockingQueueConsumer newConsumer = createBlockingQueueConsumer();
 					newConsumer.setBackOffExecution(consumer.getBackOffExecution());
 					consumer = newConsumer;
-					this.consumers.put(consumer, true);
+					this.activeConsumers.add(consumer);
 					if (getApplicationEventPublisher() != null) {
 						getApplicationEventPublisher()
 								.publishEvent(new AsyncConsumerRestartedEvent(this, oldConsumer, newConsumer));
