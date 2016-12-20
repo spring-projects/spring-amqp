@@ -131,7 +131,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
 		template.convertAndSend(queue.getName(), "baz");
 		assertTrue(messageReceived.await(10, TimeUnit.SECONDS));
-		Object consumer = TestUtils.getPropertyValue(container, "activeConsumers", Set.class)
+		Object consumer = TestUtils.getPropertyValue(container, "consumers", Set.class)
 				.iterator().next();
 		Log qLogger = spy(TestUtils.getPropertyValue(consumer, "logger", Log.class));
 		doReturn(true).when(qLogger).isDebugEnabled();
