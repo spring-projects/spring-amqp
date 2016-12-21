@@ -25,7 +25,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -376,12 +376,12 @@ public class MessageListenerContainerLifecycleIntegrationTests {
 		assertTrue(awaitStart1.await(10, TimeUnit.SECONDS));
 		// ... and the remaining 4 are queued...
 		@SuppressWarnings("unchecked")
-		Map<BlockingQueueConsumer, Boolean> consumers = (Map<BlockingQueueConsumer, Boolean>) TestUtils
+		Set<BlockingQueueConsumer> consumers = (Set<BlockingQueueConsumer>) TestUtils
 				.getPropertyValue(container, "consumers");
 		int n = 0;
 		while (n++ < 100) {
 			if (consumers.size() > 0) {
-				if (TestUtils.getPropertyValue(consumers.keySet().iterator().next(), "queue", BlockingQueue.class)
+				if (TestUtils.getPropertyValue(consumers.iterator().next(), "queue", BlockingQueue.class)
 						.size() > 3) {
 					prefetched.countDown();
 					break;
