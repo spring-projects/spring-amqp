@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -423,9 +422,9 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			template.convertAndSend("nonexistent", "foo" + i);
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Map<?, ?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
 		assertEquals(1, consumers.size());
-		Object consumer = consumers.keySet().iterator().next();
+		Object consumer = consumers.iterator().next();
 
 		// delete the queue and verify we recover again when it is recreated.
 		admin.deleteQueue("nonexistent");
@@ -439,7 +438,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		}
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertEquals(1, consumers.size());
-		assertNotSame(consumer, consumers.keySet().iterator().next());
+		assertNotSame(consumer, consumers.iterator().next());
 	}
 
 	private int getTimeout() {

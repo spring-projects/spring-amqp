@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -147,7 +147,7 @@ public class SimpleMessageListenerContainerLongTests {
 	private void waitForNConsumers(SimpleMessageListenerContainer container, int n, int howLong) throws InterruptedException {
 		int i = 0;
 		while (true) {
-			Map<?, ?> consumers = (Map<?, ?>) TestUtils.getPropertyValue(container, "consumers");
+			Set<?> consumers = (Set<?>) TestUtils.getPropertyValue(container, "consumers");
 			if (n == 0 && consumers == null) {
 				break;
 			}

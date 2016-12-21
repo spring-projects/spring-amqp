@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -165,8 +164,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		boolean waited = latch.await(10, TimeUnit.SECONDS);
 		assertTrue("Timed out waiting for message", waited);
-		Map<?, ?> consumers = TestUtils.getPropertyValue(container, "consumers", Map.class);
-		BlockingQueueConsumer consumer = (BlockingQueueConsumer) consumers.keySet().iterator().next();
+		Set<?> consumers = TestUtils.getPropertyValue(container, "consumers", Set.class);
+		BlockingQueueConsumer consumer = (BlockingQueueConsumer) consumers.iterator().next();
 		admin.deleteQueue(queue1.getName());
 		latch = new CountDownLatch(10);
 		container.setMessageListener(new MessageListenerAdapter(new PojoListener(latch)));
@@ -179,7 +178,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		int n = 0;
 		while (n++ < 100 && newConsumer == consumer) {
 			try {
-				newConsumer = (BlockingQueueConsumer) consumers.keySet().iterator().next();
+				newConsumer = (BlockingQueueConsumer) consumers.iterator().next();
 				if (newConsumer == consumer) {
 					break;
 				}
@@ -451,7 +450,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		// verify properties propagated to consumer
 		BlockingQueueConsumer consumer = (BlockingQueueConsumer) TestUtils
-				.getPropertyValue(container, "consumers", Map.class).keySet().iterator().next();
+				.getPropertyValue(container, "consumers", Set.class).iterator().next();
 		assertEquals(1, TestUtils.getPropertyValue(consumer, "declarationRetries"));
 		assertEquals(100L, TestUtils.getPropertyValue(consumer, "failedDeclarationRetryInterval"));
 		assertEquals(30000L, TestUtils.getPropertyValue(consumer, "retryDeclarationInterval"));
