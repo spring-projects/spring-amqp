@@ -102,7 +102,7 @@ subprojects { subproject ->
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '3.6.5'
 		rabbitmqHttpClientVersion = '1.0.0.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.2.8.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.2.9.RELEASE'
 
 		springRetryVersion = '1.1.3.RELEASE'
 	}
@@ -458,4 +458,3 @@ task dist(dependsOn: assemble) {
 	group = 'Distribution'
 	description = 'Builds -dist, -docs and -schema distribution archives.'
 }
-
