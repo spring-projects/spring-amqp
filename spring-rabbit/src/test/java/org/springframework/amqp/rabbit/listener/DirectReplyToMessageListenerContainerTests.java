@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -54,6 +56,10 @@ public class DirectReplyToMessageListenerContainerTests {
 
 	@Rule
 	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(TEST_RELEASE_CONSUMER_Q);
+
+	@Rule
+	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG, DirectReplyToMessageListenerContainer.class,
+			CachingConnectionFactory.class);
 
 	@After
 	public void tearDown() {

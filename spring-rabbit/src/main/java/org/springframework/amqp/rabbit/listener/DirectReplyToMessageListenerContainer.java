@@ -174,6 +174,9 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 				}
 				for (SimpleConsumer consumer : this.consumers) {
 					Channel candidate = consumer.getChannel();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Direct reply-to channel candidate: " + candidate + ": " + candidate.isOpen());
+					}
 					if (candidate.isOpen() && this.inUseConsumerChannels.putIfAbsent(candidate, consumer) == null) {
 						channelHolder = new ChannelHolder(candidate, consumer.incrementAndGetEpoch());
 						this.whenUsed.put(consumer, System.currentTimeMillis());
