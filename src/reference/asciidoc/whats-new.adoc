@@ -78,6 +78,11 @@ When using an external transaction manager (e.g. JDBC), rule-based rollback is n
 It is also now more flexible when using a transaction advice.
 See <<conditional-rollback>> for more information.
 
+===== Drop off Jackson 1.x support
+
+Deprecated in previous version Jackson `1.x` converters and related components have been deleted in favor of similar components based on the Jackson 2.x.
+See <<json-message-converter>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
