@@ -607,6 +607,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				factoryBean.setTrustStoreType(this.trustStoreType);
 			}
 		}
+		if (this.layout == null) {
+			addError("A layout is required");
+		}
 	}
 
 	/**
@@ -744,6 +747,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 							catch (UnsupportedEncodingException e) {
 								message = new Message(msgBody.getBytes(), amqpProps); //NOSONAR (default charset)
 							}
+						}
+						else {
+							message = new Message(msgBody.getBytes(), amqpProps); //NOSONAR (default charset)
 						}
 
 						message = postProcessMessageBeforeSend(message, event);
