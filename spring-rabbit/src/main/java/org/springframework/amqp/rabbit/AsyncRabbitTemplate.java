@@ -81,6 +81,8 @@ import com.rabbitmq.client.Channel;
  * be the callback.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  */
 public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessageListener, ReturnCallback,
@@ -372,19 +374,17 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(Object object) {
-		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object,
-				(MessagePostProcessor) null);
+		return convertSendAndReceive(this.template.getExchange(), this.template.getRoutingKey(), object,null);
 	}
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String routingKey, Object object) {
-		return convertSendAndReceive(this.template.getExchange(), routingKey, object,
-				(MessagePostProcessor) null);
+		return convertSendAndReceive(this.template.getExchange(), routingKey, object, null);
 	}
 
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object) {
-		return convertSendAndReceive(exchange, routingKey, object, (MessagePostProcessor) null);
+		return convertSendAndReceive(exchange, routingKey, object, null);
 	}
 
 	@Override
@@ -403,7 +403,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	@Override
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor) {
-		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, true);
+		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, null);
 	}
 
 	@Override
@@ -444,21 +444,17 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
 		Assert.state(this.template.getMessageConverter() instanceof SmartMessageConverter,
 				"template's message converter must be a SmartMessageConverter");
-		RabbitConverterFuture<C> future = convertSendAndReceive(exchange, routingKey, object, messagePostProcessor,
-				false);
-		future.setReturnType(responseType);
-		future.startTimer();
-		return future;
+		return convertSendAndReceive(exchange, routingKey, object, messagePostProcessor, responseType);
 	}
 
 	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
-			MessagePostProcessor messagePostProcessor, boolean start) {
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
 		}
 		CorrelationMessagePostProcessor<C> correlationPostProcessor = new CorrelationMessagePostProcessor<>(
-				messagePostProcessor, correlationData);
+				messagePostProcessor, correlationData, responseType);
 		if (this.container != null) {
 			this.template.convertAndSend(exchange, routingKey, object, correlationPostProcessor, correlationData);
 		}
@@ -475,9 +471,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			sendDirect(channelHolder.getChannel(), exchange, routingKey, message, correlationData);
 		}
 		RabbitConverterFuture<C> future = correlationPostProcessor.getFuture();
-		if (start) {
-			future.startTimer();
-		}
+		future.startTimer();
 		return future;
 	}
 
@@ -785,12 +779,15 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		private final CorrelationData correlationData;
 
+		private ParameterizedTypeReference<C> returnType;
+
 		private volatile RabbitConverterFuture<C> future;
 
 		CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
-				CorrelationData correlationData) {
+				CorrelationData correlationData, ParameterizedTypeReference<C> returnType) {
 			this.userPostProcessor = userPostProcessor;
 			this.correlationData = correlationData;
+			this.returnType = returnType;
 		}
 
 		@Override
@@ -805,6 +802,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				this.correlationData.setId(correlationId);
 				this.future.setConfirm(new SettableListenableFuture<>());
 			}
+			this.future.setReturnType(this.returnType);
 			AsyncRabbitTemplate.this.pending.put(correlationId, this.future);
 			return messageToSend;
 		}
