@@ -273,6 +273,7 @@ public class CachingConnectionFactoryIntegrationTests {
 		template.convertAndSend(queue.getName(), "message");
 		String result = (String) template.receiveAndConvert(queue.getName());
 		assertEquals("message", result);
+		template.stop();
 
 	}
 
@@ -304,7 +305,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 		String result = (String) template.receiveAndConvert(queue.getName());
 		assertEquals("message", result);
-
+		template.stop();
 	}
 
 	@Test

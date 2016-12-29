@@ -128,17 +128,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	@After
 	public void cleanUp() {
-		if (connectionFactory != null) {
-			connectionFactory.destroy();
-		}
-
-		if (connectionFactoryWithConfirmsEnabled != null) {
-			connectionFactoryWithConfirmsEnabled.destroy();
-		}
-
-		if (connectionFactoryWithReturnsEnabled != null) {
-			connectionFactoryWithReturnsEnabled.destroy();
-		}
+		this.templateWithConfirmsEnabled.stop();
+		this.templateWithReturnsEnabled.stop();
+		this.connectionFactory.destroy();
+		this.connectionFactoryWithConfirmsEnabled.destroy();
+		this.connectionFactoryWithReturnsEnabled.destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
 

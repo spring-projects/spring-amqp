@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
@@ -68,7 +67,7 @@ public class DirectReplyToMessageListenerContainerTests {
 
 	@Test
 	public void testReleaseConsumerRace() throws Exception {
-		ConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(connectionFactory);
 		final CountDownLatch latch = new CountDownLatch(1);
 		container.setMessageListener(m -> latch.countDown());
@@ -95,6 +94,8 @@ public class DirectReplyToMessageListenerContainerTests {
 		assertThat(inUse.size(), equalTo(1));
 		container.releaseConsumerFor(channel2, false, null);
 		assertThat(inUse.size(), equalTo(0));
+		container.stop();
+		connectionFactory.destroy();
 	}
 
 }

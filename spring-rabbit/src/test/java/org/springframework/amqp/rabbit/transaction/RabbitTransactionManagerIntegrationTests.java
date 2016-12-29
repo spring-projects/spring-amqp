@@ -59,6 +59,7 @@ public class RabbitTransactionManagerIntegrationTests {
 
 	@After
 	public void cleanup() throws Exception {
+		this.template.stop();
 		((DisposableBean) this.template.getConnectionFactory()).destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
