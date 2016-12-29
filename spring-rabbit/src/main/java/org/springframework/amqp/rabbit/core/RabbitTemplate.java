@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -34,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +58,7 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnec
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
@@ -78,6 +78,7 @@ import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.Lifecycle;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
@@ -137,7 +138,7 @@ import com.rabbitmq.client.GetResponse;
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
-		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle {
+		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle, BeanNameAware {
 
 	private static final String RETURN_CORRELATION_KEY = "spring_request_return_correlation";
 
@@ -170,6 +171,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private final Map<ConnectionFactory, DirectReplyToMessageListenerContainer> directReplyToContainers =
 			new HashMap<>();
+
+	private final AtomicInteger containerInstance = new AtomicInteger();
 
 	private volatile String exchange = DEFAULT_EXCHANGE;
 
@@ -223,6 +226,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private volatile boolean isListener;
 
 	private volatile Expression userIdExpression;
+
+	private String beanName = "rabbitTemplate";
+
+	private Executor taskExecutor;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -602,6 +609,20 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		this.userIdExpression = PARSER.parseExpression(userIdExpression);
 	}
 
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
+	/**
+	 * Set a task executor to use when using a {@link DirectReplyToMessageListenerContainer}.
+	 * @param taskExecutor the executor.
+	 * @since 2.0
+	 */
+	public void setTaskExecutor(Executor taskExecutor) {
+		this.taskExecutor = taskExecutor;
+	}
+
 	/**
 	 * Invoked by the container during startup so it can verify the queue is correctly
 	 * configured (if a simple reply queue name is used instead of exchange/routingKey.
@@ -665,38 +686,47 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public void start() {
+	public final void start() {
+		doStart();
+	}
+
+	/**
+	 * Perform additional start actions.
+	 * @since 2.0
+	 */
+	protected void doStart() {
+		// NOSONAR
 	}
 
 	@Override
-	public void stop() {
+	public final void stop() {
 		synchronized (this.directReplyToContainers) {
-			if (this.directReplyToContainers.size() > 0) {
-				Iterator<Entry<ConnectionFactory, DirectReplyToMessageListenerContainer>> iterator =
-						this.directReplyToContainers.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<ConnectionFactory, DirectReplyToMessageListenerContainer> entry = iterator.next();
-					if (entry.getValue().isRunning()) {
-						entry.getValue().stop();
-					}
-					iterator.remove();
-				}
-			}
+			this.directReplyToContainers.values()
+				.stream()
+				.filter(AbstractMessageListenerContainer::isRunning)
+				.forEach(AbstractMessageListenerContainer::stop);
+			this.directReplyToContainers.clear();
 		}
+		doStop();
+	}
+
+	/**
+	 * Perform additional stop actions.
+	 * @since 2.0
+	 */
+	protected void doStop() {
+		// NOSONAR
 	}
 
 	@Override
 	public boolean isRunning() {
 		synchronized (this.directReplyToContainers) {
-			if (this.directReplyToContainers.size() > 0) {
-				for (DirectReplyToMessageListenerContainer container : this.directReplyToContainers.values()) {
-					if (container.isRunning()) {
-						return true;
-					}
-				}
+			synchronized (this.directReplyToContainers) {
+				return this.directReplyToContainers.values()
+						.stream()
+						.anyMatch(AbstractMessageListenerContainer::isRunning);
 			}
 		}
-		return false;
 	}
 
 	private void evaluateFastReplyTo() {
@@ -1534,6 +1564,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (container == null) {
 					container = new DirectReplyToMessageListenerContainer(connectionFactory);
 					container.setMessageListener(this);
+					container.setBeanName(this.beanName + "#" + this.containerInstance.getAndIncrement());
+					if (this.taskExecutor != null) {
+						container.setTaskExecutor(this.taskExecutor);
+					}
 					container.start();
 					this.directReplyToContainers.put(connectionFactory, container);
 					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;

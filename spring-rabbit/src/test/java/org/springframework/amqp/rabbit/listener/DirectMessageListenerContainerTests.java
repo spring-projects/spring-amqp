@@ -147,6 +147,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		template.stop();
 		cf.destroy();
 	}
 
@@ -217,6 +218,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		template.stop();
 		cf.destroy();
 	}
 
@@ -258,6 +260,7 @@ public class DirectMessageListenerContainerTests {
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertTrue(activeConsumerCount(container, 0));
 		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		template.stop();
 		cf.destroy();
 	}
 
@@ -496,6 +499,7 @@ public class DirectMessageListenerContainerTests {
 		});
 		container.releaseConsumerFor(channelHolder, true, "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
 		cf.destroy();
 	}
 

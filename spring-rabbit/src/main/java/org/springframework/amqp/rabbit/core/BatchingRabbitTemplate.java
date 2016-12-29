@@ -95,11 +95,11 @@ public class BatchingRabbitTemplate extends RabbitTemplate implements Lifecycle 
 	}
 
 	@Override
-	public void start() {
+	public void doStart() {
 	}
 
 	@Override
-	public void stop() {
+	public void doStop() {
 		flush();
 	}
 

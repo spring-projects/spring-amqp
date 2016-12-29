@@ -362,7 +362,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	@Override
 	public void destroy() throws Exception {
 		for (ConnectionFactory connectionFactory : this.nodeFactories.values()) {
-			((DisposableBean) connectionFactory).destroy();
+			if (connectionFactory instanceof DisposableBean) {
+				((DisposableBean) connectionFactory).destroy();
+			}
 		}
 		if (this.defaultConnectionFactory instanceof DisposableBean) {
 			((DisposableBean) this.defaultConnectionFactory).destroy();

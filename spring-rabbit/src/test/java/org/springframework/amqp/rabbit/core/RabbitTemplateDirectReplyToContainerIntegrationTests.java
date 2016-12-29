@@ -29,6 +29,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 	protected RabbitTemplate createSendAndReceiveRabbitTemplate(ConnectionFactory connectionFactory) {
 		RabbitTemplate template = super.createSendAndReceiveRabbitTemplate(connectionFactory);
 		template.setUseDirectReplyToContainer(true);
+		template.setBeanName(this.testName.getMethodName() + "SendReceiveRabbitTemplate");
 		return template;
 	}
 
