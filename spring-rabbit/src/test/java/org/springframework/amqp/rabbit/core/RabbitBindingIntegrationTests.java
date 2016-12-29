@@ -65,9 +65,8 @@ public class RabbitBindingIntegrationTests {
 	@After
 	public void cleanUp() {
 		this.brokerIsRunning.removeTestQueues();
-		if (connectionFactory != null) {
-			connectionFactory.destroy();
-		}
+		this.template.stop();
+		this.connectionFactory.destroy();
 	}
 
 	@Test

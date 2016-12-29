@@ -84,9 +84,8 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		if (!repeat.isFinalizing()) {
 			return;
 		}
-		if (connectionFactory != null) {
-			connectionFactory.destroy();
-		}
+		this.template.stop();
+		this.connectionFactory.destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
 

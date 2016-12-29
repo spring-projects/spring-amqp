@@ -98,6 +98,11 @@ public class DirectMessageListenerContainerTests {
 	@ClassRule
 	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(Q1, Q2, EQ1, EQ2, DLQ1);
 
+	private static CachingConnectionFactory adminCf =
+			new CachingConnectionFactory(brokerRunning.getConnectionFactory());
+
+	private static RabbitAdmin admin = new RabbitAdmin(adminCf);
+
 	@Rule
 	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
 			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
@@ -109,6 +114,7 @@ public class DirectMessageListenerContainerTests {
 	@AfterClass
 	public static void tearDown() {
 		brokerRunning.removeTestQueues();
+		adminCf.destroy();
 	}
 
 	@Test
@@ -490,6 +496,7 @@ public class DirectMessageListenerContainerTests {
 		});
 		container.releaseConsumerFor(channelHolder, true, "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		cf.destroy();
 	}
 
 	@Test
@@ -564,8 +571,6 @@ public class DirectMessageListenerContainerTests {
 
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
 		int n = 0;
-		CachingConnectionFactory cf = new CachingConnectionFactory(brokerRunning.getConnectionFactory());
-		RabbitAdmin admin = new RabbitAdmin(cf);
 		Properties queueProperties = admin.getQueueProperties(queue);
 		LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
 		while (n++ < 600
@@ -574,7 +579,6 @@ public class DirectMessageListenerContainerTests {
 			queueProperties = admin.getQueueProperties(queue);
 			LogFactory.getLog(getClass()).debug(queue + " waiting for " + expected + " : " + queueProperties);
 		}
-		cf.destroy();
 		return queueProperties.get(RabbitAdmin.QUEUE_CONSUMER_COUNT).equals(expected);
 	}
 

@@ -55,7 +55,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 	}
 
 	@Test
-	public void testConnect() {
+	public void testConnect() throws Exception {
 		RabbitAdmin admin = new RabbitAdmin(this.lqcf);
 		Queue queue = new Queue(UUID.randomUUID().toString(), false, false, true);
 		admin.declareQueue(queue);
@@ -64,6 +64,7 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		template.convertAndSend("", queue.getName(), "foo");
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));
 		admin.deleteQueue(queue.getName());
+		lqcf.destroy();
 	}
 
 }

@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -76,6 +78,7 @@ import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.context.Lifecycle;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -134,7 +137,7 @@ import com.rabbitmq.client.GetResponse;
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
-		ListenerContainerAware, PublisherCallbackChannel.Listener {
+		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle {
 
 	private static final String RETURN_CORRELATION_KEY = "spring_request_return_correlation";
 
@@ -659,6 +662,41 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
 					.sum();
 		}
+	}
+
+	@Override
+	public void start() {
+	}
+
+	@Override
+	public void stop() {
+		synchronized (this.directReplyToContainers) {
+			if (this.directReplyToContainers.size() > 0) {
+				Iterator<Entry<ConnectionFactory, DirectReplyToMessageListenerContainer>> iterator =
+						this.directReplyToContainers.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Entry<ConnectionFactory, DirectReplyToMessageListenerContainer> entry = iterator.next();
+					if (entry.getValue().isRunning()) {
+						entry.getValue().stop();
+					}
+					iterator.remove();
+				}
+			}
+		}
+	}
+
+	@Override
+	public boolean isRunning() {
+		synchronized (this.directReplyToContainers) {
+			if (this.directReplyToContainers.size() > 0) {
+				for (DirectReplyToMessageListenerContainer container : this.directReplyToContainers.values()) {
+					if (container.isRunning()) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private void evaluateFastReplyTo() {

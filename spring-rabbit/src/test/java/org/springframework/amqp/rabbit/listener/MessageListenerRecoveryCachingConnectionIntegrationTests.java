@@ -416,7 +416,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 			throws InterruptedException {
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		// queue doesn't exist during startup - verify we started, create queue and verify recovery
-		Thread.sleep(5000);
+		Thread.sleep(1000);
 		assertEquals(messageCount, latch.getCount());
 		admin.declareQueue(new Queue("nonexistent"));
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
@@ -430,7 +430,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 
 		// delete the queue and verify we recover again when it is recreated.
 		admin.deleteQueue("nonexistent");
-		Thread.sleep(3000);
+		Thread.sleep(1000);
 		latch = new CountDownLatch(messageCount);
 		container.setMessageListener(new MessageListenerAdapter(new VanillaListener(latch)));
 		assertEquals(messageCount, latch.getCount());
@@ -462,6 +462,8 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
+		container.setRecoveryInterval(100);
+		container.setFailedDeclarationRetryInterval(100);
 		container.afterPropertiesSet();
 		return container;
 	}
