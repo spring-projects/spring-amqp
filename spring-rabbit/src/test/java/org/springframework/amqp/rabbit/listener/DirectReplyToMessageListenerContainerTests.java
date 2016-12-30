@@ -68,7 +68,7 @@ public class DirectReplyToMessageListenerContainerTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 
 		// Populate void MessageListener for wrapping in the DirectReplyToMessageListenerContainer
-		container.setMessageListener(m -> {});
+		container.setMessageListener(m -> { });
 
 		// Extract actual ChannelAwareMessageListener from container
 		// with the inUseConsumerChannels.remove(channel); operation
