@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
  *
  * @author Juergen Hoeller
  * @author Gary Russell
+ *
  * @see MessageListenerAdapter
  */
 @SuppressWarnings("serial")
@@ -37,7 +38,9 @@ public class ListenerExecutionFailedException extends AmqpException {
 	 * Constructor for ListenerExecutionFailedException.
 	 * @param msg the detail message
 	 * @param cause the exception thrown by the listener method
+	 * @deprecated in favor of {@link #ListenerExecutionFailedException(String, Throwable, Message)}
 	 */
+	@Deprecated
 	public ListenerExecutionFailedException(String msg, Throwable cause) {
 		this(msg, cause, null);
 	}
@@ -47,7 +50,6 @@ public class ListenerExecutionFailedException extends AmqpException {
 	 * @param msg the detail message
 	 * @param cause the exception thrown by the listener method
 	 * @param failedMessage the message that failed
-	 *
 	 */
 	public ListenerExecutionFailedException(String msg, Throwable cause, Message failedMessage) {
 		super(msg, cause);
