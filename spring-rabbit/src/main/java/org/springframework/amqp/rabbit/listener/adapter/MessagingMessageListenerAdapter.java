@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.4
  */
 public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageListener {
@@ -166,11 +167,11 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
-					"be invoked with the incoming message", message.getPayload()), ex);
+					"be invoked with the incoming message", message.getPayload()), ex, amqpMessage);
 		}
 		catch (Exception ex) {
 			throw new ListenerExecutionFailedException("Listener method '" +
-					this.handlerMethod.getMethodAsString(message.getPayload()) + "' threw exception", ex);
+					this.handlerMethod.getMethodAsString(message.getPayload()) + "' threw exception", ex, amqpMessage);
 		}
 	}
 
