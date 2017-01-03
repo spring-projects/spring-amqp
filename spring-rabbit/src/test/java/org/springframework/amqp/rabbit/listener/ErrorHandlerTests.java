@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import org.springframework.messaging.handler.annotation.support.MethodArgumentTy
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -49,10 +51,12 @@ public class ErrorHandlerTests {
 		Log logger = spy(TestUtils.getPropertyValue(handler, "logger", Log.class));
 		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(handler).setPropertyValue("logger", logger);
-		handler.handleError(new ListenerExecutionFailedException("intended", new RuntimeException()));
+		handler.handleError(new ListenerExecutionFailedException("intended", new RuntimeException(),
+				mock(org.springframework.amqp.core.Message.class)));
 
 		try {
-			handler.handleError(new ListenerExecutionFailedException("intended", new MessageConversionException("")));
+			handler.handleError(new ListenerExecutionFailedException("intended", new MessageConversionException(""),
+					mock(org.springframework.amqp.core.Message.class)));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -60,7 +64,8 @@ public class ErrorHandlerTests {
 
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
-					new org.springframework.messaging.converter.MessageConversionException("")));
+					new org.springframework.messaging.converter.MessageConversionException(""),
+					mock(org.springframework.amqp.core.Message.class)));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -70,7 +75,8 @@ public class ErrorHandlerTests {
 		MethodParameter mp = new MethodParameter(Foo.class.getMethod("foo", String.class), 0);
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
-					new MethodArgumentNotValidException(message, mp)));
+					new MethodArgumentNotValidException(message, mp),
+					mock(org.springframework.amqp.core.Message.class)));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -78,7 +84,8 @@ public class ErrorHandlerTests {
 
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
-					new MethodArgumentTypeMismatchException(message, mp, "")));
+					new MethodArgumentTypeMismatchException(message, mp, ""),
+					mock(org.springframework.amqp.core.Message.class)));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
