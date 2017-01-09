@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -115,7 +118,9 @@ public class RabbitTemplateTests {
 
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		final RabbitTemplate template = new RabbitTemplate(new CachingConnectionFactory(mockConnectionFactory));
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setChannelTransacted(true);
 
 		txTemplate.execute(status -> {
@@ -128,7 +133,7 @@ public class RabbitTemplateTests {
 		});
 		verify(mockConnectionFactory, Mockito.times(1)).newConnection(any(ExecutorService.class), anyString());
 		// ensure we used the same channel
-		verify(mockConnection, Mockito.times(1)).createChannel();
+		verify(mockConnection, times(1)).createChannel();
 	}
 
 	@Test
@@ -163,7 +168,6 @@ public class RabbitTemplateTests {
 		assertSame(input, message);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test // AMQP-249
 	public void dontHangConsumerThread() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -178,11 +182,13 @@ public class RabbitTemplateTests {
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			return null;
-		}).when(mockChannel).basicConsume(Mockito.anyString(), Mockito.anyBoolean(), Mockito.anyString(),
-				Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyMap(), any(Consumer.class));
-		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		}).when(mockChannel).basicConsume(anyString(), anyBoolean(), anyString(),
+				anyBoolean(), anyBoolean(), isNull(), any(Consumer.class));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setReplyTimeout(1);
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
 		template.doSendAndReceiveWithTemporary("foo", "bar", input, null);
@@ -200,7 +206,9 @@ public class RabbitTemplateTests {
 			throw new AuthenticationFailureException("foo");
 		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
-		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setRetryTemplate(new RetryTemplate());
 		try {
 			template.convertAndSend("foo", "bar", "baz");
@@ -220,7 +228,9 @@ public class RabbitTemplateTests {
 			throw new AuthenticationFailureException("foo");
 		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
-		RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setRetryTemplate(new RetryTemplate());
 
 		final AtomicBoolean recoverInvoked = new AtomicBoolean();

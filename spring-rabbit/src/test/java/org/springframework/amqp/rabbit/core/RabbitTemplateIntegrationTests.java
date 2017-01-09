@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -66,7 +66,6 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpException;
@@ -620,7 +619,7 @@ public class RabbitTemplateIntegrationTests {
 		final AtomicBoolean execConfiguredOk = new AtomicBoolean();
 
 		doAnswer(invocation -> {
-			String log = invocation.getArgumentAt(0, String.class);
+			String log = invocation.getArgument(0);
 			if (log.startsWith("Message received") && Thread.currentThread().getName().startsWith(execName)) {
 				execConfiguredOk.set(true);
 			}
@@ -1308,7 +1307,7 @@ public class RabbitTemplateIntegrationTests {
 			assertThat(e.getCause().getCause(), instanceOf(ShutdownSignalException.class));
 			assertThat(e.getCause().getCause().getMessage(), containsString("404"));
 		}
-		verify(logger, never()).error(org.mockito.Matchers.any());
+		verify(logger, never()).error(any());
 		ArgumentCaptor<Object> logs = ArgumentCaptor.forClass(Object.class);
 		verify(logger, atLeast(2)).debug(logs.capture());
 		boolean queue = false;
@@ -1333,7 +1332,7 @@ public class RabbitTemplateIntegrationTests {
 			message.getMessageProperties().setHeader("cfKey", "foo");
 			return message;
 		});
-		verify(channel1).basicPublish(anyString(), anyString(), Matchers.anyBoolean(), any(BasicProperties.class),
+		verify(channel1).basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class),
 				any(byte[].class));
 
 		Connection connection2 = mock(Connection.class);
@@ -1344,7 +1343,7 @@ public class RabbitTemplateIntegrationTests {
 			message.getMessageProperties().setHeader("cfKey", "bar");
 			return message;
 		});
-		verify(channel1).basicPublish(anyString(), anyString(), Matchers.anyBoolean(), any(BasicProperties.class),
+		verify(channel1).basicPublish(anyString(), anyString(), anyBoolean(), any(BasicProperties.class),
 				any(byte[].class));
 	}
 

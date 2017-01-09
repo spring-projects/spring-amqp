@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ package org.springframework.amqp.rabbit.listener;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -79,7 +79,6 @@ public abstract class ExternalTxManagerTests {
 	 * Verifies that an up-stack RabbitTemplate uses the listener's
 	 * channel (MessageListener).
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testMessageListener() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -88,6 +87,7 @@ public abstract class ExternalTxManagerTests {
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -113,7 +113,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(onlyChannel)
@@ -245,7 +245,6 @@ public abstract class ExternalTxManagerTests {
 	/**
 	 * Verifies that the channel is rolled back after an exception.
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testMessageListenerRollback() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -254,6 +253,7 @@ public abstract class ExternalTxManagerTests {
 		given(channel.isOpen()).willReturn(true);
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -266,7 +266,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(channel)
@@ -312,7 +312,6 @@ public abstract class ExternalTxManagerTests {
 	 * Verifies that an up-stack RabbitTemplate does not use the listener's
 	 * channel when it has its own connection factory.
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testMessageListenerTemplateUsesDifferentConnectionFactory() throws Exception {
 		ConnectionFactory listenerConnectionFactory = mock(ConnectionFactory.class);
@@ -326,8 +325,11 @@ public abstract class ExternalTxManagerTests {
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(
 				listenerConnectionFactory);
+		ExecutorService mockExec = mock(ExecutorService.class);
+		cachingConnectionFactory.setExecutor(mockExec);
 		final CachingConnectionFactory cachingTemplateConnectionFactory = new CachingConnectionFactory(
 				templateConnectionFactory);
+		cachingTemplateConnectionFactory.setExecutor(mockExec);
 
 		given(listenerConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
 				.willReturn(listenerConnection);
@@ -358,7 +360,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(listenerChannel)
@@ -421,7 +423,6 @@ public abstract class ExternalTxManagerTests {
 	 * Verifies that an up-stack RabbitTemplate uses the listener's
 	 * channel (ChannelAwareMessageListener).
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testChannelAwareMessageListener() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -430,6 +431,7 @@ public abstract class ExternalTxManagerTests {
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		singleConnectionFactory.setExecutor(mock(ExecutorService.class));
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -455,7 +457,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(onlyChannel)
@@ -514,7 +516,6 @@ public abstract class ExternalTxManagerTests {
 	 * channel (ChannelAwareMessageListener). exposeListenerChannel=false
 	 * is ignored (ChannelAwareMessageListener).
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testChannelAwareMessageListenerDontExpose() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -523,6 +524,7 @@ public abstract class ExternalTxManagerTests {
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		singleConnectionFactory.setExecutor(mock(ExecutorService.class));
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -548,7 +550,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(onlyChannel)
@@ -608,7 +610,6 @@ public abstract class ExternalTxManagerTests {
 	 * Previously, the wrong channel was bound. See AMQP-260.
 	 * @throws Exception
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testMessageListenerWithRabbitTxManager() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -617,6 +618,7 @@ public abstract class ExternalTxManagerTests {
 		given(onlyChannel.isOpen()).willReturn(true);
 
 		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
 
 		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
 		given(mockConnection.isOpen()).willReturn(true);
@@ -642,7 +644,7 @@ public abstract class ExternalTxManagerTests {
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 
 		willAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumerLatch.countDown();
 			return "consumerTag";
 		}).given(onlyChannel)

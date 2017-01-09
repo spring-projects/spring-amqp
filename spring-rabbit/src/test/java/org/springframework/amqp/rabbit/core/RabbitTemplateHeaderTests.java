@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -74,7 +74,9 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
 		template.expectedQueueNames();
@@ -87,7 +89,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
+			BasicProperties basicProps = invocation.getArgument(3);
 			replyTo.set(basicProps.getReplyTo());
 			if (standardHeader) {
 				correlationId.set(basicProps.getCorrelationId());
@@ -127,7 +129,9 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
 		template.setReplyTimeout(60000);
@@ -140,7 +144,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
+			BasicProperties basicProps = invocation.getArgument(3);
 			replyTo.set(basicProps.getReplyTo());
 			correlationId.set(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -171,7 +175,9 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory scf = new SingleConnectionFactory(mockConnectionFactory);
+		scf.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(scf);
 		String replyTo2 = "replyTo2";
 		template.setReplyAddress(replyTo2);
 		template.expectedQueueNames();
@@ -186,7 +192,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyAddress3 = "replyTo3";
 		doAnswer(invocation -> {
-			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
+			BasicProperties basicProps = invocation.getArgument(3);
 			nestedReplyTo.add(basicProps.getReplyTo());
 			nestedCorrelation.add(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()
@@ -226,7 +232,9 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setCorrelationKey(CORRELATION_HEADER);
 		String replyAddress = "new.replyTo";
 		template.setReplyAddress(replyAddress);
@@ -240,7 +248,7 @@ public class RabbitTemplateHeaderTests {
 		final AtomicReference<String> replyTo = new AtomicReference<String>();
 		final AtomicReference<String> correlationId = new AtomicReference<String>();
 		doAnswer(invocation -> {
-			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
+			BasicProperties basicProps = invocation.getArgument(3);
 			replyTo.set(basicProps.getReplyTo());
 			correlationId.set((String) basicProps.getHeaders().get(CORRELATION_HEADER));
 
@@ -273,7 +281,9 @@ public class RabbitTemplateHeaderTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel);
 
-		final RabbitTemplate template = new RabbitTemplate(new SingleConnectionFactory(mockConnectionFactory));
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		final RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setCorrelationKey(CORRELATION_HEADER);
 		String replyTo2 = "replyTo2";
 		template.setReplyAddress(replyTo2);
@@ -289,7 +299,7 @@ public class RabbitTemplateHeaderTests {
 		final List<String> nestedCorrelation = new ArrayList<String>();
 		final String replyTo3 = "replyTo3";
 		doAnswer(invocation -> {
-			BasicProperties basicProps = invocation.getArgumentAt(3, BasicProperties.class);
+			BasicProperties basicProps = invocation.getArgument(3);
 			nestedReplyTo.add(basicProps.getReplyTo());
 			nestedCorrelation.add(basicProps.getCorrelationId());
 			MessageProperties springProps = new DefaultMessagePropertiesConverter()

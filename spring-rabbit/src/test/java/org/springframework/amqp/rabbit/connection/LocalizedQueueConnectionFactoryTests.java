@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.logging.Log;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 import org.mockito.internal.stubbing.answers.CallsRealMethods;
 
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
@@ -70,7 +69,6 @@ public class LocalizedQueueConnectionFactoryTests {
 
 	private final Map<String, String> consumerTags = new HashMap<String, String>();
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testFailOver() throws Exception {
 		ConnectionFactory defaultConnectionFactory = mockCF("localhost:1234", null);
@@ -119,7 +117,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		assertNotNull(channel);
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(),
 				anyBoolean(), anyMap(),
-				Matchers.any(Consumer.class));
+				any(Consumer.class));
 		verify(logger, atLeast(1)).info(captor.capture());
 		assertTrue(assertLog(captor.getAllValues(), "Queue: q is on node: rabbit@foo at: localhost:1235"));
 
@@ -132,7 +130,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		assertNotNull(channel);
 		verify(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(),
 				anyBoolean(), anyMap(),
-				Matchers.any(Consumer.class));
+				any(Consumer.class));
 		container.stop();
 		verify(logger, atLeast(1)).info(captor.capture());
 		assertTrue(assertLog(captor.getAllValues(), "Queue: q is on node: rabbit@bar at: localhost:1236"));
@@ -176,7 +174,6 @@ public class LocalizedQueueConnectionFactoryTests {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private ConnectionFactory mockCF(final String address, final CountDownLatch latch) throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
@@ -187,7 +184,7 @@ public class LocalizedQueueConnectionFactoryTests {
 		when(channel.isOpen()).thenReturn(true, false);
 		doAnswer(invocation -> {
 			String tag = UUID.randomUUID().toString();
-			consumers.put(address, invocation.getArgumentAt(6, Consumer.class));
+			consumers.put(address, invocation.getArgument(6));
 			consumerTags.put(address, tag);
 			if (latch != null) {
 				latch.countDown();

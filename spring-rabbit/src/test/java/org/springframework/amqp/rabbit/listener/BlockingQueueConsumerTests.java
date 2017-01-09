@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -119,7 +119,6 @@ public class BlockingQueueConsumerTests {
 		testRequeueOrNotDefaultNo(new MessageRejectedWhileStoppingException(), true);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testPrefetchIsSetOnFailedPassiveDeclaration() throws IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -131,7 +130,7 @@ public class BlockingQueueConsumerTests {
 		when(channel.isOpen()).thenReturn(true);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(invocation -> {
-					String arg = invocation.getArgumentAt(0, String.class);
+					String arg = invocation.getArgument(0);
 					if ("good".equals(arg)) {
 						return Mockito.any(AMQP.Queue.DeclareOk.class);
 					}
@@ -154,7 +153,6 @@ public class BlockingQueueConsumerTests {
 		verify(channel).basicQos(20);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testRecoverAfterDeletedQueueAndLostConnection() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);

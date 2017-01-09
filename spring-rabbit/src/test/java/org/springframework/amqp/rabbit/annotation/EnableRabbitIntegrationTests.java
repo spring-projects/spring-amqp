@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -415,7 +414,7 @@ public class EnableRabbitIntegrationTests {
 		foo.setBar("bar");
 		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
 		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
-		assertThat(this.service.foos.get(0), Matchers.instanceOf(Foo2.class));
+		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
 		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
 	}
 
