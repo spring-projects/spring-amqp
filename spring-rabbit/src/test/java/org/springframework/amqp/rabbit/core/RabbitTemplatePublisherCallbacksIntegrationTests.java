@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -293,6 +293,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -326,6 +327,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		ccf.setChannelCacheSize(3);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
@@ -388,10 +390,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
-		final AtomicInteger count = new AtomicInteger();
+		final AtomicLong count = new AtomicLong();
 		doAnswer(invocation -> count.incrementAndGet()).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -428,10 +431,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
-		final AtomicInteger count = new AtomicInteger();
+		final AtomicLong count = new AtomicLong();
 		doAnswer(invocation -> count.incrementAndGet()).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -466,10 +470,11 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
-		final AtomicInteger count = new AtomicInteger();
+		final AtomicLong count = new AtomicLong();
 		doAnswer(invocation -> count.incrementAndGet()).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template1 = new RabbitTemplate(ccf);
 
@@ -527,6 +532,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(channel);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		ccf.setChannelCacheSize(3);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
@@ -650,6 +656,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		doReturn(mockChannel).when(mockConnection).createChannel();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -710,6 +717,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -739,7 +747,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		Listener listener = mock(Listener.class);
 		doAnswer(invocation -> {
-			boolean ack = invocation.getArgumentAt(1, Boolean.class);
+			boolean ack = invocation.getArgument(1);
 			if (!ack) {
 				nacks.incrementAndGet();
 			}

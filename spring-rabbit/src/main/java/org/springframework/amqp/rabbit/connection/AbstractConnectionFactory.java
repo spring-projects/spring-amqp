@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,7 +286,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setExecutor(Executor executor) {
 		boolean isExecutorService = executor instanceof ExecutorService;
 		boolean isThreadPoolTaskExecutor = executor instanceof ThreadPoolTaskExecutor;
-		Assert.isTrue(isExecutorService || isThreadPoolTaskExecutor);
+		Assert.isTrue(isExecutorService || isThreadPoolTaskExecutor,
+				"'executor' must be an 'ExecutorService' or a 'ThreadPoolTaskExecutor'");
 		if (isExecutorService) {
 			this.executorService = (ExecutorService) executor;
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.sameInstance;
@@ -26,8 +27,8 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -49,7 +50,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -201,13 +201,13 @@ public class RabbitAdminTests {
 			verify(logger, times(7)).info(log.capture());
 			List<String> logs = log.getAllValues();
 			Collections.sort(logs);
-			assertThat(logs.get(0), Matchers.containsString("(testex.ad) durable:true, auto-delete:true"));
-			assertThat(logs.get(1), Matchers.containsString("(testex.all) durable:false, auto-delete:true"));
-			assertThat(logs.get(2), Matchers.containsString("(testex.nonDur) durable:false, auto-delete:false"));
-			assertThat(logs.get(3), Matchers.containsString("(testq.ad) durable:true, auto-delete:true, exclusive:false"));
-			assertThat(logs.get(4), Matchers.containsString("(testq.all) durable:false, auto-delete:true, exclusive:true"));
-			assertThat(logs.get(5), Matchers.containsString("(testq.excl) durable:true, auto-delete:false, exclusive:true"));
-			assertThat(logs.get(6), Matchers.containsString("(testq.nonDur) durable:false, auto-delete:false, exclusive:false"));
+			assertThat(logs.get(0), containsString("(testex.ad) durable:true, auto-delete:true"));
+			assertThat(logs.get(1), containsString("(testex.all) durable:false, auto-delete:true"));
+			assertThat(logs.get(2), containsString("(testex.nonDur) durable:false, auto-delete:false"));
+			assertThat(logs.get(3), containsString("(testq.ad) durable:true, auto-delete:true, exclusive:false"));
+			assertThat(logs.get(4), containsString("(testq.all) durable:false, auto-delete:true, exclusive:true"));
+			assertThat(logs.get(5), containsString("(testq.excl) durable:true, auto-delete:false, exclusive:true"));
+			assertThat(logs.get(6), containsString("(testq.nonDur) durable:false, auto-delete:false, exclusive:false"));
 		}
 		finally {
 			cleanQueuesAndExchanges(rabbitAdmin);
@@ -276,6 +276,7 @@ public class RabbitAdminTests {
 		TimeoutException toBeThrown = new TimeoutException("test");
 		doThrow(toBeThrown).when(rabbitConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		RabbitAdmin admin = new RabbitAdmin(ccf);
 		List<DeclarationExceptionEvent> events = new ArrayList<DeclarationExceptionEvent>();
 		admin.setApplicationEventPublisher(new EventPublisher(events));

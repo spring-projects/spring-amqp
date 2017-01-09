@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -168,7 +168,6 @@ public class SimpleMessageListenerContainerTests {
 	/*
 	 * txSize = 2; 4 messages; should get 2 acks (#2 and #4)
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testTxSizeAcks() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -178,7 +177,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumer.get().handleConsumeOk("1");
 			return "1";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -218,7 +217,6 @@ public class SimpleMessageListenerContainerTests {
 	 * txSize = 2; 3 messages; should get 2 acks (#2 and #3)
 	 * after timeout.
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testTxSizeAcksWIthShortSet() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -229,7 +227,7 @@ public class SimpleMessageListenerContainerTests {
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final String consumerTag = "1";
 		doAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumer.get().handleConsumeOk(consumerTag);
 			return consumerTag;
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -277,9 +275,9 @@ public class SimpleMessageListenerContainerTests {
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final AtomicReference<Map<?, ?>> args = new AtomicReference<Map<?, ?>>();
 		doAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumer.get().handleConsumeOk("foo");
-			args.set(invocation.getArgumentAt(5, Map.class));
+			args.set(invocation.getArgument(5));
 			return "foo";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), any(Map.class), any(Consumer.class));
 
@@ -345,7 +343,6 @@ public class SimpleMessageListenerContainerTests {
 		container.stop();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddQueuesAndStartInCycle() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -356,7 +353,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel1);
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(invocation -> {
-			Consumer cons = invocation.getArgumentAt(6, Consumer.class);
+			Consumer cons = invocation.getArgument(6);
 			String consumerTag = "consFoo" + count.incrementAndGet();
 			cons.handleConsumeOk(consumerTag);
 			return consumerTag;
@@ -375,11 +372,10 @@ public class SimpleMessageListenerContainerTests {
 		container.stop();
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void setupMockConsume(Channel channel, final List<Consumer> consumers, final AtomicInteger consumerTag,
 			final CountDownLatch latch) throws IOException {
 		doAnswer(invocation -> {
-			Consumer cons = invocation.getArgumentAt(6, Consumer.class);
+			Consumer cons = invocation.getArgument(6);
 			consumers.add(cons);
 			String actualTag = String.valueOf(consumerTag.getAndIncrement());
 			cons.handleConsumeOk(actualTag);
@@ -391,13 +387,12 @@ public class SimpleMessageListenerContainerTests {
 	protected void setUpMockCancel(Channel channel, final List<Consumer> consumers) throws IOException {
 		final Executor exec = Executors.newCachedThreadPool();
 		doAnswer(invocation -> {
-			final String consTag = invocation.getArgumentAt(0, String.class);
+			final String consTag = invocation.getArgument(0);
 			exec.execute(() -> consumers.get(Integer.parseInt(consTag)).handleCancelOk(consTag));
 			return null;
 		}).when(channel).basicCancel(anyString());
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testWithConnectionPerListenerThread() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
@@ -418,6 +413,7 @@ public class SimpleMessageListenerContainerTests {
 		when(mockConnection2.isOpen()).thenReturn(true);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
 		ccf.setCacheMode(CacheMode.CONNECTION);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(ccf);
@@ -446,7 +442,6 @@ public class SimpleMessageListenerContainerTests {
 		assertEquals("1", ccf.getCacheProperties().get("openConnections"));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testConsumerCancel() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
@@ -456,7 +451,7 @@ public class SimpleMessageListenerContainerTests {
 		when(connection.createChannel(false)).thenReturn(channel);
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		doAnswer(invocation -> {
-			consumer.set(invocation.getArgumentAt(6, Consumer.class));
+			consumer.set(invocation.getArgument(6));
 			consumer.get().handleConsumeOk("foo");
 			return "foo";
 		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
@@ -472,7 +467,8 @@ public class SimpleMessageListenerContainerTests {
 		doReturn(false).when(logger).isDebugEnabled();
 		final CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(invocation -> {
-			if (invocation.getArgumentAt(0, String.class).startsWith("Consumer raised exception")) {
+			String message = invocation.getArgument(0);
+			if (message.startsWith("Consumer raised exception")) {
 				latch.countDown();
 			}
 			return invocation.callRealMethod();
@@ -517,7 +513,7 @@ public class SimpleMessageListenerContainerTests {
 				if (channel != null && channel.getTargetChannel() == mockChannel) {
 					Consumer rabbitConsumer = TestUtils.getPropertyValue(consumer, "consumer", Consumer.class);
 					if (cancel) {
-						rabbitConsumer.handleCancelOk(invocation.getArgumentAt(0, String.class));
+						rabbitConsumer.handleCancelOk(invocation.getArgument(0));
 					}
 					else {
 						rabbitConsumer.handleConsumeOk("foo");

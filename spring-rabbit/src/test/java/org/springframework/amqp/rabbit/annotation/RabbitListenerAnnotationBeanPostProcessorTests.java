@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -27,7 +30,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Iterator;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -185,10 +187,10 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class).close();
 		}
 		catch (BeanCreationException e) {
-			assertThat(e.getCause(), Matchers.instanceOf(IllegalArgumentException.class));
-			assertThat(e.getMessage(), Matchers.allOf(
-					Matchers.containsString("@RabbitListener can't resolve"),
-					Matchers.containsString("as either a String or a Queue")
+			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+			assertThat(e.getMessage(), allOf(
+					containsString("@RabbitListener can't resolve"),
+					containsString("as either a String or a Queue")
 					));
 		}
 	}

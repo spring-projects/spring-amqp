@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -162,7 +162,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
+			listener.set(invocation.getArgument(0));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -198,7 +198,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
+			listener.set(invocation.getArgument(0));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -236,7 +236,7 @@ public class RabbitAdminDeclarationTests {
 		when(channel.queueDeclare("foo", true, false, false, null)).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 		final AtomicReference<ConnectionListener> listener = new AtomicReference<ConnectionListener>();
 		doAnswer(invocation -> {
-			listener.set(invocation.getArgumentAt(0, ConnectionListener.class));
+			listener.set(invocation.getArgument(0));
 			return null;
 		}).when(cf).addConnectionListener(any(ConnectionListener.class));
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -262,7 +262,6 @@ public class RabbitAdminDeclarationTests {
 		verify(channel, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), any(Map.class));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testJavaConfig() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
@@ -273,7 +272,7 @@ public class RabbitAdminDeclarationTests {
 
 		Config.listener2.onCreate(Config.conn2);
 		verify(Config.channel2, never())
-				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull(Map.class));
+				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
 		verify(Config.channel2, never())
 				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
 								anyBoolean(), anyMap());
@@ -337,7 +336,7 @@ public class RabbitAdminDeclarationTests {
 			when(channel1.queueDeclare("foo", true, false, false, null))
 					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(invocation -> {
-				listener1 = invocation.getArgumentAt(0, ConnectionListener.class);
+				listener1 = invocation.getArgument(0);
 				return null;
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;
@@ -351,7 +350,7 @@ public class RabbitAdminDeclarationTests {
 			when(channel2.queueDeclare("foo", true, false, false, null))
 					.thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 			doAnswer(invocation -> {
-				listener2 = invocation.getArgumentAt(0, ConnectionListener.class);
+				listener2 = invocation.getArgument(0);
 				return null;
 			}).when(connectionFactory).addConnectionListener(any(ConnectionListener.class));
 			return connectionFactory;

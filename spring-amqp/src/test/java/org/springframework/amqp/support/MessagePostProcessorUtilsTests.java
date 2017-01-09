@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.support;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -23,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import org.springframework.amqp.AmqpException;
@@ -52,19 +52,19 @@ public class MessagePostProcessorUtilsTests {
 		Collection<MessagePostProcessor> sorted = MessagePostProcessorUtils.sort(Arrays.<MessagePostProcessor>asList(pps));
 		Iterator<MessagePostProcessor> iterator = sorted.iterator();
 		MessagePostProcessor mpp = iterator.next();
-		assertThat(mpp, Matchers.instanceOf(POMPP.class));
+		assertThat(mpp, instanceOf(POMPP.class));
 		assertEquals(2, ((POMPP) mpp).getOrder());
 		mpp = iterator.next();
-		assertThat(mpp, Matchers.instanceOf(POMPP.class));
+		assertThat(mpp, instanceOf(POMPP.class));
 		assertEquals(6, ((POMPP) mpp).getOrder());
 		mpp = iterator.next();
-		assertThat(mpp, Matchers.instanceOf(OMPP.class));
+		assertThat(mpp, instanceOf(OMPP.class));
 		assertEquals(1, ((OMPP) mpp).getOrder());
 		mpp = iterator.next();
-		assertThat(mpp, Matchers.instanceOf(OMPP.class));
+		assertThat(mpp, instanceOf(OMPP.class));
 		assertEquals(3, ((OMPP) mpp).getOrder());
 		mpp = iterator.next();
-		assertThat(mpp, Matchers.instanceOf(MPP.class));
+		assertThat(mpp, instanceOf(MPP.class));
 	}
 
 	class MPP implements MessagePostProcessor {
