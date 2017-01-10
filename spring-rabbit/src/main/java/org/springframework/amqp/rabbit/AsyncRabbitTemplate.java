@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,8 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	private String beanName;
 
 	private TaskScheduler taskScheduler;
+
+	private boolean internalTaskScheduler = true;
 
 	/**
 	 * Construct an instance using the provided arguments. Replies will be
@@ -268,7 +270,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @param taskScheduler the task scheduler
 	 * @see #setReceiveTimeout(long)
 	 */
-	public void setTaskScheduler(TaskScheduler taskScheduler) {
+	public synchronized void setTaskScheduler(TaskScheduler taskScheduler) {
+		Assert.notNull(taskScheduler, "'taskScheduler' cannot be null");
+		this.internalTaskScheduler = false;
 		this.taskScheduler = taskScheduler;
 	}
 
@@ -378,6 +382,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
+		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(correlationId);
@@ -414,7 +419,7 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	@Override
 	public synchronized void start() {
 		if (!this.running) {
-			if (this.taskScheduler == null) {
+			if (this.internalTaskScheduler) {
 				ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 				scheduler.setThreadNamePrefix(getBeanName() == null ? "asyncTemplate-" : (getBeanName() + "-"));
 				scheduler.afterPropertiesSet();
@@ -433,6 +438,10 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
 				future.cancel(true);
 			}
+		}
+		if (this.internalTaskScheduler) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
+			this.taskScheduler = null;
 		}
 		this.running = false;
 	}
@@ -568,8 +577,10 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 			this.correlationId = correlationId;
 			this.requestMessage = requestMessage;
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
-				this.cancelTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new CancelTask(),
-						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+				synchronized (AsyncRabbitTemplate.this) {
+					this.cancelTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new CancelTask(),
+							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+				}
 			}
 			else {
 				this.cancelTask = null;

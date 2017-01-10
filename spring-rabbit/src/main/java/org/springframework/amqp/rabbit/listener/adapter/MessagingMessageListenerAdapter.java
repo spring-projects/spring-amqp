@@ -128,7 +128,8 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 		catch (org.springframework.messaging.converter.MessageConversionException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
 					"be invoked with the incoming message", message.getPayload()),
-					new MessageConversionException("Cannot handle message", ex));
+					new MessageConversionException("Cannot handle message", ex),
+					amqpMessage);
 		}
 		catch (MessagingException ex) {
 			throw new ListenerExecutionFailedException(createMessagingErrorMessage("Listener method could not " +
