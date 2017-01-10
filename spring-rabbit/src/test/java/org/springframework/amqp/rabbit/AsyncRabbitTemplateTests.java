@@ -356,6 +356,7 @@ public class AsyncRabbitTemplateTests {
 		assertEquals(0, TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size());
 		assertTrue(callback.latch.await(10, TimeUnit.SECONDS));
 		assertTrue(future.isCancelled());
+		assertNull(TestUtils.getPropertyValue(this.asyncTemplate, "taskScheduler"));
 
 		/*
 		 * Test there's no harm if the reply is received after the cancel. This
