@@ -117,6 +117,8 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private TaskScheduler taskScheduler;
 
+	private boolean internalTaskScheduler = true;
+
 	/**
 	 * Construct an instance using the provided arguments. Replies will be
 	 * routed to the default exchange using the reply queue name as the routing
@@ -328,8 +330,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @param taskScheduler the task scheduler
 	 * @see #setReceiveTimeout(long)
 	 */
-	public void setTaskScheduler(TaskScheduler taskScheduler) {
-		this.taskScheduler = taskScheduler; // NOSONAR synchronization
+	public synchronized void setTaskScheduler(TaskScheduler taskScheduler) {
+		this.internalTaskScheduler = false;
+		this.taskScheduler = taskScheduler;
 	}
 
 	/**
@@ -352,6 +355,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
+		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
 		CorrelationData correlationData = null;
@@ -449,6 +453,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
+		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
@@ -493,7 +498,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	@Override
 	public synchronized void start() {
 		if (!this.running) {
-			if (this.taskScheduler == null) {
+			if (this.internalTaskScheduler) {
 				ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 				scheduler.setThreadNamePrefix(getBeanName() == null ? "asyncTemplate-" : (getBeanName() + "-"));
 				scheduler.afterPropertiesSet();
@@ -523,6 +528,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
 				future.cancel(true);
 			}
+		}
+		if (this.internalTaskScheduler) {
+			((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
+			this.taskScheduler = null;
 		}
 		this.running = false;
 	}
@@ -713,8 +722,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		void startTimer() {
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
-				this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(), // NOSONAR sync
-						new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+				synchronized (AsyncRabbitTemplate.this.taskScheduler) {
+					this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
+							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
+				}
 			}
 			else {
 				this.timeoutTask = null;
