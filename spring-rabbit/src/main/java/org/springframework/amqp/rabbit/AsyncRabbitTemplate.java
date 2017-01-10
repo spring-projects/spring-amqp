@@ -331,6 +331,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	 * @see #setReceiveTimeout(long)
 	 */
 	public synchronized void setTaskScheduler(TaskScheduler taskScheduler) {
+		Assert.notNull(taskScheduler, "'taskScheduler' cannot be null");
 		this.internalTaskScheduler = false;
 		this.taskScheduler = taskScheduler;
 	}
@@ -722,7 +723,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 		void startTimer() {
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
-				synchronized (AsyncRabbitTemplate.this.taskScheduler) {
+				synchronized (AsyncRabbitTemplate.this) {
 					this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
 							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
 				}
