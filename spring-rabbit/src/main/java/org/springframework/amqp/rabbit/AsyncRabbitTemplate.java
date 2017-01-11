@@ -382,7 +382,6 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
-		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(correlationId);
@@ -578,6 +577,10 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 			this.requestMessage = requestMessage;
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
 				synchronized (AsyncRabbitTemplate.this) {
+					if (!AsyncRabbitTemplate.this.running) {
+						AsyncRabbitTemplate.this.pending.remove(this.correlationId);
+						throw new IllegalStateException("'AsyncRabbitTemplate' must be started.");
+					}
 					this.cancelTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new CancelTask(),
 							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
 				}
