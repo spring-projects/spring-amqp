@@ -356,7 +356,6 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	@Override
 	public RabbitMessageFuture sendAndReceive(String exchange, String routingKey, Message message) {
-		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		String correlationId = getOrSetCorrelationIdAndSetReplyTo(message);
 		RabbitMessageFuture future = new RabbitMessageFuture(correlationId, message);
 		CorrelationData correlationData = null;
@@ -454,7 +453,6 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object object,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<C> responseType) {
-		Assert.state(this.running, "'AsyncRabbitTemplate' must be started.");
 		CorrelationData correlationData = null;
 		if (this.enableConfirms) {
 			correlationData = new CorrelationData(null);
@@ -724,6 +722,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		void startTimer() {
 			if (AsyncRabbitTemplate.this.receiveTimeout > 0) {
 				synchronized (AsyncRabbitTemplate.this) {
+					if (!AsyncRabbitTemplate.this.running) {
+						AsyncRabbitTemplate.this.pending.remove(this.correlationId);
+						throw new IllegalStateException("'AsyncRabbitTemplate' must be started.");
+					}
 					this.timeoutTask = AsyncRabbitTemplate.this.taskScheduler.schedule(new TimeoutTask(),
 							new Date(System.currentTimeMillis() + AsyncRabbitTemplate.this.receiveTimeout));
 				}
