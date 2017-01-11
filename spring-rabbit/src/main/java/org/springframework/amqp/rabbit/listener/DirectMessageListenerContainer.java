@@ -715,7 +715,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						return null;
 					});
 				}
-				catch (Throwable e) {
+				catch (Throwable e) { // NOSONAR - errors are rethrown
 					if (e instanceof WrappedTransactionException) {
 						if (e.getCause() instanceof Error) {
 							throw (Error) e.getCause();

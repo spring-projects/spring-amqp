@@ -68,7 +68,7 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 			try {
 				result = ((RemoteInvocationResult) result).recreate();
 			}
-			catch (Throwable e) {
+			catch (Throwable e) { // NOSONAR
 				throw new AmqpRemoteException(e);
 			}
 		}
