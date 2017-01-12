@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -70,7 +71,7 @@ public class RabbitAdminIntegrationTests {
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	private GenericApplicationContext context;
 
@@ -261,6 +262,10 @@ public class RabbitAdminIntegrationTests {
 		exchange.setInternal(true);
 		rabbitAdmin.declareExchange(exchange);
 
+		Exchange exchange2 = getExchange(exchangeName);
+		assertThat(exchange2, instanceOf(DirectExchange.class));
+		assertTrue(exchange2.isInternal());
+
 		boolean result = rabbitAdmin.deleteExchange(exchangeName);
 
 		assertTrue(result);
@@ -373,7 +378,8 @@ public class RabbitAdminIntegrationTests {
 		DirectExchange exchange = new DirectExchange("test.delayed.exchange");
 		exchange.setDelayed(true);
 		Queue queue = new Queue(UUID.randomUUID().toString(), true, false, false);
-		Binding binding = new Binding(queue.getName(), DestinationType.QUEUE, exchange.getName(), queue.getName(), null);
+		String exchangeName = exchange.getName();
+		Binding binding = new Binding(queue.getName(), DestinationType.QUEUE, exchangeName, queue.getName(), null);
 
 		try {
 			this.rabbitAdmin.declareExchange(exchange);
@@ -406,7 +412,7 @@ public class RabbitAdminIntegrationTests {
 		});
 		MessageProperties properties = new MessageProperties();
 		properties.setDelay(500);
-		template.send(exchange.getName(), queue.getName(),
+		template.send(exchangeName, queue.getName(),
 				MessageBuilder.withBody("foo".getBytes()).andProperties(properties).build());
 		long t1 = System.currentTimeMillis();
 		Message received = template.receive(queue.getName());
@@ -417,8 +423,24 @@ public class RabbitAdminIntegrationTests {
 		assertEquals(Integer.valueOf(1000), received.getMessageProperties().getReceivedDelay());
 		assertThat(System.currentTimeMillis() - t1, greaterThan(950L));
 
+		Exchange exchange2 = getExchange(exchangeName);
+		assertNotNull(exchange2);
+		assertThat(exchange2, instanceOf(DirectExchange.class));
+		assertTrue(exchange2.isDelayed());
+
 		this.rabbitAdmin.deleteQueue(queue.getName());
-		this.rabbitAdmin.deleteExchange(exchange.getName());
+		this.rabbitAdmin.deleteExchange(exchangeName);
+	}
+
+	private Exchange getExchange(String exchangeName) throws InterruptedException {
+		RabbitManagementTemplate rmt = new RabbitManagementTemplate();
+		int n = 0;
+		Exchange exchange = rmt.getExchange(exchangeName);
+		while (n++ < 100 && exchange == null) {
+			Thread.sleep(100);
+			exchange = rmt.getExchange(exchangeName);
+		}
+		return exchange;
 	}
 
 	/**
