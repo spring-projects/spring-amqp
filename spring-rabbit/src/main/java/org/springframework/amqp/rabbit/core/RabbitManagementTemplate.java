@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpManagementOperations;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -259,22 +260,30 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Exchange convert(ExchangeInfo ei) {
+		boolean delayed = false;
+		if (ei.getType().equals("x-delayed-message")) {
+			ei.setType((String) ei.getArguments().get("x-delayed-type"));
+			delayed = true;
+		}
+		AbstractExchange exchange;
 		if (ei.getType().equals("direct")) {
-			return new DirectExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
+			exchange = new DirectExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
 		}
 		else if (ei.getType().equals("fanout")) {
-			return new FanoutExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
+			exchange = new FanoutExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
 		}
 		else if (ei.getType().equals("headers")) {
-			return new HeadersExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
+			exchange = new HeadersExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
 		}
 		else if (ei.getType().equals("topic")) {
-			return new TopicExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
+			exchange = new TopicExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
 		}
 		else {
 			return null;
 		}
-
+		exchange.setDelayed(delayed);
+		exchange.setInternal(ei.isInternal());
+		return exchange;
 	}
 
 	private List<Binding> convertBindingList(List<BindingInfo> bindings) {
