@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.support;
 
+import org.springframework.amqp.support.Correlation;
+
 /**
  * Base class for correlating publisher confirms to sent messages.
  * Use the {@link org.springframework.amqp.rabbit.core.RabbitTemplate}
@@ -26,10 +28,22 @@ package org.springframework.amqp.rabbit.support;
  * @since 1.0.1
  *
  */
-public class CorrelationData {
+public class CorrelationData implements Correlation {
 
 	private volatile String id;
 
+	/**
+	 * Construct an instance with a null Id.
+	 * @since 1.6.7
+	 */
+	public CorrelationData() {
+		super();
+	}
+
+	/**
+	 * Construct an instance with the supplied id.
+	 * @param id the id.
+	 */
 	public CorrelationData(String id) {
 		this.id = id;
 	}
