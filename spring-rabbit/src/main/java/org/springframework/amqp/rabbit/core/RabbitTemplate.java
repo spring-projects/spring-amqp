@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
+import org.springframework.amqp.core.CorrelationAwareMessagePostProcessor;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -794,7 +795,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException {
 		Message messageToSend = convertMessageIfNecessary(message);
-		messageToSend = messagePostProcessor.postProcessMessage(messageToSend);
+		messageToSend = messagePostProcessor instanceof CorrelationAwareMessagePostProcessor
+				? ((CorrelationAwareMessagePostProcessor) messagePostProcessor)
+						.postProcessMessage(messageToSend, correlationData)
+				: messagePostProcessor.postProcessMessage(messageToSend);
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
 
@@ -1194,7 +1198,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) {
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
-			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
+			requestMessage = messagePostProcessor instanceof CorrelationAwareMessagePostProcessor
+					? ((CorrelationAwareMessagePostProcessor) messagePostProcessor)
+							.postProcessMessage(requestMessage, correlationData)
+					: messagePostProcessor.postProcessMessage(requestMessage);
 		}
 		Message replyMessage = doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
 		return replyMessage;
@@ -1496,7 +1503,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
-				messageToUse = processor.postProcessMessage(messageToUse);
+				messageToUse = processor instanceof CorrelationAwareMessagePostProcessor
+						? ((CorrelationAwareMessagePostProcessor) processor)
+								.postProcessMessage(messageToUse, correlationData)
+						: processor.postProcessMessage(messageToUse);
 			}
 		}
 		if (this.userIdExpression != null && messageProperties.getUserId() == null) {

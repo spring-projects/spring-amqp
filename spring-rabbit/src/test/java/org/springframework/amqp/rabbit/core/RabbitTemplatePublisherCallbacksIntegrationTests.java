@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -60,7 +61,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.CorrelationAwareMessagePostProcessor;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -72,8 +75,7 @@ import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
-import org.springframework.amqp.rabbit.test.BrokerRunning;
-import org.springframework.amqp.rabbit.test.BrokerTestUtils;
+import org.springframework.amqp.support.Correlation;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -159,6 +161,21 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				latch.countDown();
 			}
 		});
+		final CountDownLatch mppLatch = new CountDownLatch(10000);
+		MessagePostProcessor mpp = new CorrelationAwareMessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				return message;
+			}
+
+			@Override
+			public Message postProcessMessage(Message message, Correlation correlation) {
+				mppLatch.countDown();
+				return message;
+			}
+
+		};
 		ExecutorService exec = Executors.newCachedThreadPool();
 		for (int i = 0; i < 100; i++) {
 			exec.submit(new Runnable() {
@@ -167,7 +184,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				public void run() {
 					try {
 						for (int i = 0; i < 100; i++) {
-							templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+							templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp,
+									new CorrelationData("abc"));
 						}
 					}
 					catch (Throwable t) {
@@ -179,6 +197,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
 		assertTrue("" + latch.getCount(), latch.await(60, TimeUnit.SECONDS));
+		assertTrue("" + mppLatch.getCount(), latch.await(60, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 		this.templateWithConfirmsEnabled.execute(new ChannelCallback<Void>() {
 
@@ -351,7 +370,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
@@ -386,7 +405,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockChannel1.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 		when(mockChannel2.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
 		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
@@ -464,7 +483,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
 
@@ -508,7 +527,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
@@ -555,7 +574,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
@@ -628,7 +647,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockChannel.isOpen()).thenReturn(true);
 		when(mockChannel.getNextPublishSeqNo()).thenReturn(1L, 2L, 3L, 4L);
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		final PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(mockChannel);
 		when(mockConnection.createChannel()).thenReturn(channel);
@@ -787,7 +806,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		}).when(mockChannel).getNextPublishSeqNo();
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		doReturn(mockChannel).when(mockConnection).createChannel();
 
@@ -869,7 +888,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		}).when(mockChannel2).getNextPublishSeqNo();
 
-		when(mockConnectionFactory.newConnection((ExecutorService) null)).thenReturn(mockConnection);
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
 		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2);
 
