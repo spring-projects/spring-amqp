@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@
 package org.springframework.amqp.core;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.support.Correlation;
 
 /**
  * To be used with the send method of Amqp template classes (such as RabbitTemplate)
  * that convert an object to a message.
  * It allows for further modification of the message after it has been processed
- * by the converter. This is useful for setting of Header and Properties.
+ * by the converter. This is useful for setting of Headers and Properties.
  *
  * <p>This often as an anonymous class within a method implementation.
  * @author Mark Pollack
@@ -31,6 +32,23 @@ import org.springframework.amqp.AmqpException;
 @FunctionalInterface
 public interface MessagePostProcessor {
 
+	/**
+	 * Change (or replace) the message.
+	 * @param message the message.
+	 * @return the message.
+	 * @throws AmqpException an exception.
+	 */
 	Message postProcessMessage(Message message) throws AmqpException;
+
+	/**
+	 * Change (or replace) the message and/or change its correlation data.
+	 * @param message the message.
+	 * @param correlation the correlation data.
+	 * @return the message.
+	 * @since 1.6.7
+	 */
+	default Message postProcessMessage(Message message, Correlation correlation) {
+		return postProcessMessage(message);
+	}
 
 }

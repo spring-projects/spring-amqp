@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -895,7 +895,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void convertAndSend(String exchange, String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException {
 		Message messageToSend = convertMessageIfNecessary(message);
-		messageToSend = messagePostProcessor.postProcessMessage(messageToSend);
+		messageToSend = messagePostProcessor.postProcessMessage(messageToSend, correlationData);
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
 
@@ -1448,7 +1448,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final MessagePostProcessor messagePostProcessor, final CorrelationData correlationData) {
 		Message requestMessage = convertMessageIfNecessary(message);
 		if (messagePostProcessor != null) {
-			requestMessage = messagePostProcessor.postProcessMessage(requestMessage);
+			requestMessage = messagePostProcessor.postProcessMessage(requestMessage, correlationData);
 		}
 		Message replyMessage = doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
 		return replyMessage;
@@ -1792,7 +1792,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
-				messageToUse = processor.postProcessMessage(messageToUse);
+				messageToUse = processor.postProcessMessage(messageToUse, correlationData);
 			}
 		}
 		if (this.userIdExpression != null && messageProperties.getUserId() == null) {

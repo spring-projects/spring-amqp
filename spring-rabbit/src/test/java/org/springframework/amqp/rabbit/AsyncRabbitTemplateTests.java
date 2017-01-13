@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
@@ -91,8 +92,13 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testConvert1Arg() throws Exception {
-		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo");
+		final AtomicBoolean mppCalled = new AtomicBoolean();
+		ListenableFuture<String> future = this.asyncTemplate.convertSendAndReceive("foo", m -> {
+			mppCalled.set(true);
+			return m;
+		});
 		checkConverterResult(future, "FOO");
+		assertTrue(mppCalled.get());
 	}
 
 	@Test
