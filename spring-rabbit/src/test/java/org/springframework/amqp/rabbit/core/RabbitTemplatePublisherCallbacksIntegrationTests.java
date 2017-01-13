@@ -61,7 +61,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.CorrelationAwareMessagePostProcessor;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
@@ -75,6 +77,7 @@ import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
+import org.springframework.amqp.support.Correlation;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
@@ -160,6 +163,21 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				latch.countDown();
 			}
 		});
+		final CountDownLatch mppLatch = new CountDownLatch(10000);
+		MessagePostProcessor mpp = new CorrelationAwareMessagePostProcessor() {
+
+			@Override
+			public Message postProcessMessage(Message message) throws AmqpException {
+				return message;
+			}
+
+			@Override
+			public Message postProcessMessage(Message message, Correlation correlation) {
+				mppLatch.countDown();
+				return message;
+			}
+
+		};
 		ExecutorService exec = Executors.newCachedThreadPool();
 		for (int i = 0; i < 100; i++) {
 			exec.submit(new Runnable() {
@@ -168,7 +186,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 				public void run() {
 					try {
 						for (int i = 0; i < 100; i++) {
-							templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+							templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp,
+									new CorrelationData("abc"));
 						}
 					}
 					catch (Throwable t) {
@@ -180,6 +199,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
 		assertTrue("" + latch.getCount(), latch.await(60, TimeUnit.SECONDS));
+		assertTrue("" + mppLatch.getCount(), latch.await(60, TimeUnit.SECONDS));
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 		this.templateWithConfirmsEnabled.execute(new ChannelCallback<Void>() {
 

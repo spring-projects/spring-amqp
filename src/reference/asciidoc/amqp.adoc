@@ -1006,6 +1006,13 @@ With the `RabbitTemplate` implementation of `AmqpTemplate`, each of the `send()`
 When publisher confirms are enabled, this object is returned in the callback described in <<amqp-template>>.
 This allows the sender to correlate a confirm (ack or nack) with the sent message.
 
+Starting with version 1.6.7, the `CorrelationAwareMessagePostProcessor` interface was introduced, allowing the correlation data to be modified after the message has been converted:
+
+[source, java]
+----
+Message postProcessMessage(Message message, Correlation correlation);
+----
+
 ===== Publisher Returns
 
 When the template's `mandatory` property is 'true' returned messages are provided by the callback described in <<amqp-template>>.

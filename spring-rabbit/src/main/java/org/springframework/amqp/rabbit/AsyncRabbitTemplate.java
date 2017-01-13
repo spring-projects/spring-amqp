@@ -30,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.AmqpReplyTimeoutException;
+import org.springframework.amqp.core.CorrelationAwareMessagePostProcessor;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -40,6 +41,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate.ConfirmCallback;
 import org.springframework.amqp.rabbit.core.RabbitTemplate.ReturnCallback;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.support.Correlation;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
@@ -85,6 +87,9 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 	@SuppressWarnings("rawtypes")
 	private final ConcurrentMap<String, RabbitFuture> pending = new ConcurrentHashMap<String, RabbitFuture>();
+
+	@SuppressWarnings("rawtypes")
+	private final CorrelationMessagePostProcessor messagePostProcessor = new CorrelationMessagePostProcessor();
 
 	private volatile boolean running;
 
@@ -404,15 +409,11 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 	 * @return the {@link RabbitConverterFuture}.
 	 */
 	public <C> RabbitConverterFuture<C> convertSendAndReceive(String exchange, String routingKey, Object message,
-	                                                          MessagePostProcessor messagePostProcessor) {
-		CorrelationData correlationData = null;
-		if (this.enableConfirms) {
-			correlationData = new CorrelationData(null);
-		}
-		CorrelationMessagePostProcessor<C> correlationPostProcessor = new CorrelationMessagePostProcessor<C>(
-				messagePostProcessor, correlationData);
-		this.template.convertAndSend(exchange, routingKey, message, correlationPostProcessor, correlationData);
-		return correlationPostProcessor.getFuture();
+			MessagePostProcessor messagePostProcessor) {
+		AsyncCorrelationData<C> correlationData = new AsyncCorrelationData<C>(messagePostProcessor,
+				this.enableConfirms);
+		this.template.convertAndSend(exchange, routingKey, message, this.messagePostProcessor, correlationData);
+		return correlationData.future;
 	}
 
 	@Override
@@ -662,38 +663,48 @@ public class AsyncRabbitTemplate implements SmartLifecycle, MessageListener, Ret
 
 	}
 
-	private final class CorrelationMessagePostProcessor<C> implements MessagePostProcessor {
+	private final class CorrelationMessagePostProcessor<C> implements CorrelationAwareMessagePostProcessor {
 
-		private final MessagePostProcessor userPostProcessor;
-
-		private final CorrelationData correlationData;
-
-		private volatile RabbitConverterFuture<C> future;
-
-		private CorrelationMessagePostProcessor(MessagePostProcessor userPostProcessor,
-				CorrelationData correlationData) {
-			this.userPostProcessor = userPostProcessor;
-			this.correlationData = correlationData;
+		CorrelationMessagePostProcessor() {
+			super();
 		}
 
 		@Override
 		public Message postProcessMessage(Message message) throws AmqpException {
+			throw new UnsupportedOperationException();
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Message postProcessMessage(Message message, Correlation correlation) throws AmqpException {
 			Message messageToSend = message;
-			if (this.userPostProcessor != null) {
-				messageToSend = this.userPostProcessor.postProcessMessage(message);
+			AsyncCorrelationData<C> correlationData = (AsyncCorrelationData<C>) correlation;
+			if (correlationData.userPostProcessor != null) {
+				messageToSend = correlationData.userPostProcessor.postProcessMessage(message);
 			}
 			String correlationId = getOrSetCorrelationIdAndSetReplyTo(messageToSend);
-			this.future = new RabbitConverterFuture<C>(correlationId, message);
-			if (this.correlationData != null && this.correlationData.getId() == null) {
-				this.correlationData.setId(correlationId);
-				this.future.setConfirm(new SettableListenableFuture<Boolean>());
+			correlationData.future = new RabbitConverterFuture<C>(correlationId, message);
+			if (correlationData.enableConfirms && correlationData.getId() == null) {
+				correlationData.setId(correlationId);
+				correlationData.future.setConfirm(new SettableListenableFuture<Boolean>());
 			}
-			AsyncRabbitTemplate.this.pending.put(correlationId, this.future);
+			AsyncRabbitTemplate.this.pending.put(correlationId, correlationData.future);
 			return messageToSend;
 		}
 
-		private RabbitConverterFuture<C> getFuture() {
-			return this.future;
+	}
+
+	private static class AsyncCorrelationData<C> extends CorrelationData {
+
+		private final MessagePostProcessor userPostProcessor;
+
+		private final boolean enableConfirms;
+
+		private volatile RabbitConverterFuture<C> future;
+
+		AsyncCorrelationData(MessagePostProcessor userPostProcessor, boolean enableConfirms) {
+			this.userPostProcessor = userPostProcessor;
+			this.enableConfirms = enableConfirms;
 		}
 
 	}
