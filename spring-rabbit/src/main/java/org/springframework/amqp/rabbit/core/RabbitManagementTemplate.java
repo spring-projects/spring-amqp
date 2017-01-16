@@ -228,6 +228,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Queue convert(QueueInfo qi) {
+		if (qi == null) {
+			return null;
+		}
 		return new Queue(qi.getName(), qi.isDurable(), qi.isExclusive(), qi.isAutoDelete(),
 				qi.getArguments());
 	}
@@ -239,6 +242,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Exchange convert(ExchangeInfo ei) {
+		if (ei == null) {
+			return null;
+		}
 		boolean delayed = false;
 		if (ei.getType().equals("x-delayed-message")) {
 			ei.setType((String) ei.getArguments().get("x-delayed-type"));
@@ -272,6 +278,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Binding convert(BindingInfo bi) {
+		if (bi == null) {
+			return null;
+		}
 		return new Binding(bi.getDestination(), DestinationType.valueOf(bi.getDestinationType().toUpperCase()),
 				bi.getSource(), bi.getRoutingKey(), bi.getArguments());
 	}
