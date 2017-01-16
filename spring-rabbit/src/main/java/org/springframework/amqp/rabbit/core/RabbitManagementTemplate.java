@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AmqpManagementOperations;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -215,6 +216,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Queue convert(QueueInfo qi) {
+		if (qi == null) {
+			return null;
+		}
 		return new Queue(qi.getName(), qi.isDurable(), qi.isExclusive(), qi.isAutoDelete(),
 				qi.getArguments());
 	}
@@ -231,6 +235,10 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Exchange convert(ExchangeInfo ei) {
+		if (ei == null) {
+			return null;
+		}
+		AbstractExchange exchange;
 		if (ei.getType().equals("direct")) {
 			return new DirectExchange(ei.getName(), ei.isDurable(), ei.isAutoDelete(), ei.getArguments());
 		}
@@ -246,7 +254,6 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 		else {
 			return null;
 		}
-
 	}
 
 	private List<Binding> convertBindingList(List<BindingInfo> bindings) {
@@ -258,6 +265,9 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 	}
 
 	private Binding convert(BindingInfo bi) {
+		if (bi == null) {
+			return null;
+		}
 		return new Binding(bi.getDestination(), DestinationType.valueOf(bi.getDestinationType().toUpperCase()),
 				bi.getSource(), bi.getRoutingKey(), bi.getArguments());
 	}
