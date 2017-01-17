@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -441,10 +441,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public void initialize() {
 
 		if (this.applicationContext == null) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger
-						.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
-			}
+			this.logger.debug("no ApplicationContext has been set, cannot auto-declare Exchanges, Queues, and Bindings");
 			return;
 		}
 
@@ -458,7 +455,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 		@SuppressWarnings("rawtypes")
 		Collection<Collection> collections = this.applicationContext.getBeansOfType(Collection.class, false, false)
-					.values();
+				.values();
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {
@@ -480,7 +477,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		final Collection<Binding> bindings = filterDeclarables(contextBindings);
 
 		for (Exchange exchange : exchanges) {
-			if (!exchange.isDurable() || exchange.isAutoDelete()) {
+			if ((!exchange.isDurable() || exchange.isAutoDelete())  && this.logger.isInfoEnabled()) {
 				this.logger.info("Auto-declaring a non-durable or auto-delete Exchange ("
 						+ exchange.getName()
 						+ ") durable:" + exchange.isDurable() + ", auto-delete:" + exchange.isAutoDelete() + ". "
@@ -490,7 +487,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 
 		for (Queue queue : queues) {
-			if (!queue.isDurable() || queue.isAutoDelete() || queue.isExclusive()) {
+			if ((!queue.isDurable() || queue.isAutoDelete() || queue.isExclusive()) && this.logger.isInfoEnabled()) {
 				this.logger.info("Auto-declaring a non-durable, auto-delete, or exclusive Queue ("
 						+ queue.getName()
 						+ ") durable:" + queue.isDurable() + ", auto-delete:" + queue.isAutoDelete() + ", exclusive:"
@@ -555,7 +552,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					}
 					else {
 						channel.exchangeDeclare(exchange.getName(), exchange.getType(), exchange.isDurable(),
-							exchange.isAutoDelete(), exchange.isInternal(), exchange.getArguments());
+								exchange.isAutoDelete(), exchange.isInternal(), exchange.getArguments());
 					}
 				}
 				catch (IOException e) {
@@ -575,8 +572,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				}
 				try {
 					try {
-						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(), queue.isExclusive(), queue.isAutoDelete(),
-								queue.getArguments());
+						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(),
+								queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
 						declareOks.add(declareOk);
 					}
 					catch (IllegalArgumentException e) {
@@ -597,9 +594,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					logOrRethrowDeclarationException(queue, "queue", e);
 				}
 			}
-			else if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
-			}
+			this.logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
 		}
 		return declareOks.toArray(new DeclareOk[declareOks.size()]);
 	}
@@ -637,11 +632,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher.publishEvent(event);
 		}
-		if (this.ignoreDeclarationExceptions || element.isIgnoreDeclarationExceptions()) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("Failed to declare " + elementType
-						+ (element == null ? "broker-generated" : ": " + element)
+		if (this.ignoreDeclarationExceptions || (element != null && element.isIgnoreDeclarationExceptions())) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to declare " + elementType
+						+ ": " + (element == null ? "broker-generated" : element)
 						+ ", continuing...", t);
+			}
+			else if (this.logger.isWarnEnabled()) {
+				Throwable cause = t;
+				if (t instanceof IOException && t.getCause() != null) {
+					cause = t.getCause();
+				}
+				this.logger.warn("Failed to declare " + elementType
+						+ ": " + (element == null ? "broker-generated" : element)
+						+ ", continuing... " + cause);
 			}
 		}
 		else {
@@ -651,9 +655,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private boolean isDeclaringDefaultExchange(Exchange exchange) {
 		if (isDefaultExchange(exchange.getName())) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Default exchange is pre-declared by server.");
-			}
+			this.logger.debug("Default exchange is pre-declared by server.");
 			return true;
 		}
 		return false;
@@ -661,9 +663,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private boolean isDeletingDefaultExchange(String exchangeName) {
 		if (isDefaultExchange(exchangeName)) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Default exchange cannot be deleted.");
-			}
+			this.logger.debug("Default exchange cannot be deleted.");
 			return true;
 		}
 		return false;
@@ -675,9 +675,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private boolean isDeclaringImplicitQueueBinding(Binding binding) {
 		if (isImplicitQueueBinding(binding)) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("The default exchange is implicitly bound to every queue, with a routing key equal to the queue name.");
-			}
+			this.logger.debug("The default exchange is implicitly bound to every queue," +
+					" with a routing key equal to the queue name.");
 			return true;
 		}
 		return false;
@@ -685,9 +684,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private boolean isRemovingImplicitQueueBinding(Binding binding) {
 		if (isImplicitQueueBinding(binding)) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Cannot remove implicit default exchange binding to queue.");
-			}
+			this.logger.debug("Cannot remove implicit default exchange binding to queue.");
 			return true;
 		}
 		return false;
