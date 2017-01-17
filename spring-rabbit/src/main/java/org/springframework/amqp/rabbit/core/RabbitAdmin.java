@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -589,10 +589,19 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			this.applicationEventPublisher.publishEvent(event);
 		}
 		if (this.ignoreDeclarationExceptions || (element != null && element.isIgnoreDeclarationExceptions())) {
-			if (this.logger.isWarnEnabled()) {
-				this.logger.warn("Failed to declare " + elementType
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to declare " + elementType
 						+ (element == null ? "broker-generated" : ": " + element)
 						+ ", continuing...", t);
+			}
+			else if (this.logger.isWarnEnabled()) {
+				Throwable cause = t;
+				if (t instanceof IOException && t.getCause() != null) {
+					cause = t.getCause();
+				}
+				this.logger.warn("Failed to declare " + elementType
+						+ (element == null ? "broker-generated" : ": " + element)
+						+ ", continuing... " + cause);
 			}
 		}
 		else {
