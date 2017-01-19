@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -154,14 +155,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherConfirmReceived() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(10000);
 		final AtomicInteger acks = new AtomicInteger();
-		templateWithConfirmsEnabled.setConfirmCallback(new ConfirmCallback() {
-
-			@Override
-			public void confirm(CorrelationData correlationData, boolean ack, String cause) {
-				acks.incrementAndGet();
-				latch.countDown();
-			}
+		final AtomicReference<CorrelationData> confirmCorrelation = new AtomicReference<CorrelationData>();
+		this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
+			acks.incrementAndGet();
+			confirmCorrelation.set(correlationData);
+			latch.countDown();
 		});
+		this.templateWithConfirmsEnabled.setCorrelationDataPostProcessor((m, c) -> new CorrelationData("abc"));
 		final CountDownLatch mppLatch = new CountDownLatch(10000);
 		MessagePostProcessor mpp = new CorrelationAwareMessagePostProcessor() {
 
@@ -179,19 +179,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		};
 		ExecutorService exec = Executors.newCachedThreadPool();
 		for (int i = 0; i < 100; i++) {
-			exec.submit(new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						for (int i = 0; i < 100; i++) {
-							templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp,
-									new CorrelationData("abc"));
-						}
+			exec.submit(() -> {
+				try {
+					for (int i1 = 0; i1 < 100; i1++) {
+						templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp);
 					}
-					catch (Throwable t) {
-						t.printStackTrace();
-					}
+				}
+				catch (Throwable t) {
+					t.printStackTrace();
 				}
 			});
 		}
@@ -199,6 +194,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
 		assertTrue("" + latch.getCount(), latch.await(60, TimeUnit.SECONDS));
 		assertTrue("" + mppLatch.getCount(), latch.await(60, TimeUnit.SECONDS));
+		assertNotNull(confirmCorrelation.get());
+		assertEquals("abc", confirmCorrelation.get().getId());
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 		this.templateWithConfirmsEnabled.execute(new ChannelCallback<Void>() {
 
