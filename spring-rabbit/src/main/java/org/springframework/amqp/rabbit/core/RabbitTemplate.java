@@ -210,6 +210,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private volatile Collection<MessagePostProcessor> afterReceivePostProcessors;
 
+	private volatile CorrelationDataPostProcessor correlationDataPostProcessor;
+
 	private volatile boolean isListener;
 
 	private volatile Expression userIdExpression;
@@ -539,6 +541,17 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Assert.notNull(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot be null");
 		Assert.noNullElements(afterReceivePostProcessors, "'afterReceivePostProcessors' cannot have null elements");
 		this.afterReceivePostProcessors = MessagePostProcessorUtils.sort(Arrays.asList(afterReceivePostProcessors));
+	}
+
+	/**
+	 * Set a {@link CorrelationDataPostProcessor} to be invoked before publishing a message.
+	 * Correlation data is used to correlate publisher confirms.
+	 * @param correlationDataPostProcessor the post processor.
+	 * @see #setConfirmCallback(ConfirmCallback)
+	 * @since 1.6.7
+	 */
+	public void setCorrelationDataPostProcessor(CorrelationDataPostProcessor correlationDataPostProcessor) {
+		this.correlationDataPostProcessor = correlationDataPostProcessor;
 	}
 
 	/**
@@ -1494,7 +1507,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			logger.debug("Publishing message on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
 		}
 
-		setupConfirm(channel, correlationData);
 		Message messageToUse = message;
 		MessageProperties messageProperties = messageToUse.getMessageProperties();
 		if (mandatory) {
@@ -1508,6 +1520,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						: processor.postProcessMessage(messageToUse);
 			}
 		}
+		setupConfirm(channel, messageToUse, correlationData);
 		if (this.userIdExpression != null && messageProperties.getUserId() == null) {
 			String userId = this.userIdExpression.getValue(this.evaluationContext, messageToUse, String.class);
 			if (userId != null) {
@@ -1524,9 +1537,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-	private void setupConfirm(Channel channel, CorrelationData correlationData) {
+	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {
 		if (this.confirmCallback != null && channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
+			correlationData = this.correlationDataPostProcessor != null
+					? this.correlationDataPostProcessor.postProcess(message, correlationData)
+					: correlationData;
 			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
 		}
@@ -1535,7 +1551,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	/**
 	 * Check whether the given Channel is locally transacted, that is, whether its transaction is managed by this
 	 * template's Channel handling and not by an external transaction coordinator.
-	 *
 	 * @param channel the Channel to check
 	 * @return whether the given Channel is locally transacted
 	 * @see ConnectionFactoryUtils#isChannelTransactional
