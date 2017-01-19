@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -145,10 +146,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	public void testPublisherConfirmReceived() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(10000);
 		final AtomicInteger acks = new AtomicInteger();
-		templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
+		final AtomicReference<CorrelationData> confirmCorrelation = new AtomicReference<CorrelationData>();
+		this.templateWithConfirmsEnabled.setConfirmCallback((correlationData, ack, cause) -> {
 			acks.incrementAndGet();
+			confirmCorrelation.set(correlationData);
 			latch.countDown();
 		});
+		this.templateWithConfirmsEnabled.setCorrelationDataPostProcessor((m, c) -> new CorrelationData("abc"));
 		final CountDownLatch mppLatch = new CountDownLatch(10000);
 		MessagePostProcessor mpp = new MessagePostProcessor() {
 
@@ -169,8 +173,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			exec.submit(() -> {
 				try {
 					for (int i1 = 0; i1 < 100; i1++) {
-						templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp,
-								new CorrelationData("abc"));
+						templateWithConfirmsEnabled.convertAndSend(ROUTE, (Object) "message", mpp);
 					}
 				}
 				catch (Throwable t) {
@@ -182,6 +185,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
 		assertTrue("" + latch.getCount(), latch.await(60, TimeUnit.SECONDS));
 		assertTrue("" + mppLatch.getCount(), latch.await(60, TimeUnit.SECONDS));
+		assertNotNull(confirmCorrelation.get());
+		assertEquals("abc", confirmCorrelation.get().getId());
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
 		this.templateWithConfirmsEnabled.execute(channel -> {
 			Map<?, ?> listenerMap = TestUtils.getPropertyValue(((ChannelProxy) channel).getTargetChannel(), "listenerForSeq",
