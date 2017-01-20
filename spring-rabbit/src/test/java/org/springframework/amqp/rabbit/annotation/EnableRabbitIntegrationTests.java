@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -95,10 +96,12 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
 import org.springframework.core.convert.ConversionService;
@@ -122,6 +125,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
+import org.springframework.util.MultiValueMap;
 
 import com.rabbitmq.client.Channel;
 
@@ -588,6 +592,20 @@ public class EnableRabbitIntegrationTests {
 		}
 	}
 
+	@Test
+	public void testPrototypeCache() {
+		RabbitListenerAnnotationBeanPostProcessor bpp =
+				this.context.getBean(RabbitListenerAnnotationBeanPostProcessor.class);
+		MultiValueMap<?, ?> methodCache = TestUtils.getPropertyValue(bpp, "methodCache", MultiValueMap.class);
+		assertFalse(methodCache.containsKey(Foo1.class));
+		this.context.getBean("foo1Prototype");
+		assertTrue(methodCache.containsKey(Foo1.class));
+		Object value = methodCache.get(Foo1.class);
+		this.context.getBean("foo1Prototype");
+		assertTrue(methodCache.containsKey(Foo1.class));
+		assertSame(value, methodCache.get(Foo1.class));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -984,6 +1002,12 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public String spelReplyTo() {
 			return "test.sendTo.reply.spel";
+		}
+
+		@Bean
+		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+		public Foo1 foo1Prototype() {
+			return new Foo1();
 		}
 
 		@Bean

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,6 +77,8 @@ import org.springframework.messaging.handler.annotation.support.MessageHandlerMe
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -110,7 +113,7 @@ import org.springframework.util.StringUtils;
  */
 public class RabbitListenerAnnotationBeanPostProcessor
 		implements BeanPostProcessor, Ordered, BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware,
-			SmartInitializingSingleton {
+		SmartInitializingSingleton {
 
 	/**
 	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
@@ -139,6 +142,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private final RabbitListenerEndpointRegistrar registrar = new RabbitListenerEndpointRegistrar();
 
 	private final AtomicInteger counter = new AtomicInteger();
+
+	private final MultiValueMap<Class<?>, Method> methodCache = new LinkedMultiValueMap<>();
+
+	private final MultiValueMap<Method, RabbitListener> annotationCache = new LinkedMultiValueMap<>();
+
+	private final MultiValueMap<Class<?>, RabbitListener> classAnnotationCache = new LinkedMultiValueMap<>();
+
+	private final Map<Class<?>, List<Method>> multiMethodCache = new LinkedHashMap<>();
 
 	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
@@ -249,6 +260,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		// Actually register all listeners
 		this.registrar.afterPropertiesSet();
+
+		// clear the cache - prototype beans will be re-cached.
+		this.classAnnotationCache.clear();
+		this.annotationCache.clear();
+		this.methodCache.clear();
+		this.multiMethodCache.clear();
 	}
 
 
@@ -260,12 +277,37 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
+		if (this.methodCache.get(targetClass) == null) {
+			findMethods(targetClass);
+		}
+		List<RabbitListener> classLevelListeners = this.classAnnotationCache.get(targetClass);
+		List<Method> methods = this.methodCache.get(targetClass);
+		List<Method> multiMethods = this.multiMethodCache.get(targetClass);
+		for (Method method : methods) {
+			List<RabbitListener> listenerAnnotations = this.annotationCache.get(method);
+			if (listenerAnnotations != null) {
+				for (RabbitListener rabbitListener : listenerAnnotations) {
+					processAmqpListener(rabbitListener, method, bean, beanName);
+				}
+			}
+		}
+		if (multiMethods.size() > 0) {
+			processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
+		}
+		return bean;
+	}
+
+	private void findMethods(Class<?> targetClass) {
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
-		final List<Method> multiMethods = new ArrayList<Method>();
+		final MultiValueMap<Method, RabbitListener> annotations = new LinkedMultiValueMap<>();
+		final List<Method> methods = new ArrayList<>();
+		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
-			for (RabbitListener rabbitListener : findListenerAnnotations(method)) {
-				processAmqpListener(rabbitListener, method, bean, beanName);
+			Collection<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
+			if (listenerAnnotations.size() > 0) {
+				methods.add(method);
+				annotations.put(method, new ArrayList<>(listenerAnnotations));
 			}
 			if (hasClassLevelListeners) {
 				RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
@@ -274,17 +316,19 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
-		if (hasClassLevelListeners) {
-			processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
+		this.methodCache.put(targetClass, methods);
+		for (Method method : methods) {
+			this.annotationCache.put(method, annotations.get(method));
 		}
-		return bean;
+		this.classAnnotationCache.put(targetClass, new ArrayList<>(classLevelListeners));
+		this.multiMethodCache.put(targetClass, multiMethods);
 	}
 
 	/*
 	 * AnnotationUtils.getRepeatableAnnotations does not look at interfaces
 	 */
 	private Collection<RabbitListener> findListenerAnnotations(Class<?> clazz) {
-		Set<RabbitListener> listeners = new HashSet<RabbitListener>();
+		Set<RabbitListener> listeners = new HashSet<>();
 		RabbitListener ann = AnnotationUtils.findAnnotation(clazz, RabbitListener.class);
 		if (ann != null) {
 			listeners.add(ann);
@@ -660,7 +704,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 				else {
 					throw new IllegalStateException("Cannot convert from " + value.getClass().getName()
-						+ " to " + typeName);
+							+ " to " + typeName);
 				}
 			}
 		}
