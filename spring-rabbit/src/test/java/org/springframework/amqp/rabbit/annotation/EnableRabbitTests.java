@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,13 @@ package org.springframework.amqp.rabbit.annotation;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import org.hamcrest.core.Is;
 import org.junit.Rule;
@@ -29,10 +34,15 @@ import org.junit.rules.ExpectedException;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.beans.factory.BeanCreationException;
@@ -47,6 +57,8 @@ import org.springframework.messaging.handler.annotation.support.DefaultMessageHa
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.stereotype.Component;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * @author Stephane Nicoll
@@ -166,6 +178,22 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		testRabbitListenerRepeatable(context);
 	}
 
+	@Test
+	public void testProperShutdownOnException() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(
+				ProperShutdownConfig.class,
+				RabbitListenersBean.class,
+				ClassLevelListenersBean.class);
+		RabbitListenerEndpointRegistry listenerEndpointRegistry = context.getBean(RabbitListenerEndpointRegistry.class);
+
+		// Previously this takes 30 seconds to finish (see DefaultLifecycleProcessor#timeoutPerShutdownPhase)
+		// And not all containers has been stopped from the RabbitListenerEndpointRegistry
+		context.close();
+		for (MessageListenerContainer messageListenerContainer : listenerEndpointRegistry.getListenerContainers()) {
+			assertFalse(messageListenerContainer.isRunning());
+		}
+	}
+
 	@EnableRabbit
 	@Configuration
 	static class EnableRabbitSampleConfig {
@@ -188,9 +216,9 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		static class Listener {
 
 			@RabbitListener(bindings =
-					@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true"),
-								exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true"),
-								key = "baz", ignoreDeclarationExceptions = "true"))
+				@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true"),
+					exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true"),
+					key = "baz", ignoreDeclarationExceptions = "true"))
 			public void handle(String foo) {
 				// empty
 			}
@@ -317,6 +345,44 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 		public RabbitListenerContainerTestFactory defaultFactory() {
 			return new RabbitListenerContainerTestFactory();
 		}
+
+	}
+
+	@Configuration
+	@EnableRabbit
+	static class ProperShutdownConfig {
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory containerFactory = new SimpleRabbitListenerContainerFactory() {
+
+				@Override
+				protected SimpleMessageListenerContainer createContainerInstance() {
+					SimpleMessageListenerContainer listenerContainer = spy(super.createContainerInstance());
+
+					willThrow(RuntimeException.class)
+							.given(listenerContainer)
+							.shutdown();
+
+					return listenerContainer;
+				}
+
+			};
+
+			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+
+			Connection connection = mock(Connection.class);
+
+			given(connection.createChannel(anyBoolean()))
+					.willReturn(mock(Channel.class));
+
+			given(connectionFactory.createConnection())
+					.willReturn(connection);
+
+			containerFactory.setConnectionFactory(connectionFactory);
+			return containerFactory;
+		}
+
 	}
 
 	@Component
