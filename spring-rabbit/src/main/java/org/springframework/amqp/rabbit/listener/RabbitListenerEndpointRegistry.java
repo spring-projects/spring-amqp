@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +210,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 					((DisposableBean) listenerContainer).destroy();
 				}
 				catch (Exception ex) {
-					this.logger.warn("Failed to destroy message listener container", ex);
+					this.logger.warn("Failed to destroy listener container [" + listenerContainer + "]", ex);
 				}
 			}
 		}
@@ -248,7 +248,14 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 		Collection<MessageListenerContainer> listenerContainers = getListenerContainers();
 		AggregatingCallback aggregatingCallback = new AggregatingCallback(listenerContainers.size(), callback);
 		for (MessageListenerContainer listenerContainer : listenerContainers) {
-			listenerContainer.stop(aggregatingCallback);
+			try {
+				listenerContainer.stop(aggregatingCallback);
+			}
+			catch (Exception e) {
+				if (this.logger.isWarnEnabled()) {
+					this.logger.warn("Failed to stop listener container [" + listenerContainer + "]", e);
+				}
+			}
 		}
 	}
 
