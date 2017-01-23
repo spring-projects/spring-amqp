@@ -18,7 +18,6 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -199,6 +198,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setFailedDeclarationRetryInterval(100);
 		final List<AmqpEvent> events = new ArrayList<>();
 		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
+		final CountDownLatch eventLatch = new CountDownLatch(4);
 		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
 
 			@Override
@@ -211,7 +211,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 				if (event instanceof ListenerContainerConsumerFailedEvent) {
 					eventRef.set((ListenerContainerConsumerFailedEvent) event);
 				}
-				events.add((AmqpEvent) event);
+				if (event instanceof AmqpEvent) {
+					events.add((AmqpEvent) event);
+					eventLatch.countDown();
+				}
 			}
 
 		});
@@ -274,7 +277,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue("Timed out waiting for message", waited);
 		assertNull(template.receiveAndConvert(queue.getName()));
 		container.stop();
-		assertThat(events.size(), equalTo(4));
+		assertTrue(eventLatch.await(10, TimeUnit.SECONDS));
 		assertThat(events.get(0), instanceOf(AsyncConsumerStartedEvent.class));
 		assertSame(events.get(1), eventRef.get());
 		assertThat(events.get(2), instanceOf(AsyncConsumerRestartedEvent.class));
