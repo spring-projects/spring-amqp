@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -785,6 +785,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				props.setProperty("openConnections", Integer.toString(countOpenConnections()));
 				props.setProperty("idleConnections", Integer.toString(this.idleConnections.size()));
 				props.setProperty("idleConnectionsHighWater",  Integer.toString(this.connectionHighWaterMark.get()));
+				for (ChannelCachingConnectionProxy proxy : this.allocatedConnections) {
+					putConnectionName(props, proxy, ":" + proxy.getLocalPort());
+				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
 										this.allocatedConnectionTransactionalChannels.entrySet()) {
 					int port = entry.getKey().getLocalPort();
@@ -815,9 +818,20 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						.get(ObjectUtils.getIdentityHexString(this.cachedChannelsTransactional)).get()));
 				props.setProperty("idleChannelsNotTxHighWater", Integer.toString(this.channelHighWaterMarks
 						.get(ObjectUtils.getIdentityHexString(this.cachedChannelsNonTransactional)).get()));
+				putConnectionName(props, this.connection, "");
 			}
 		}
 		return props;
+	}
+
+	private void putConnectionName(Properties props, ConnectionProxy connection, String keySuffix) {
+		Connection targetConnection = connection.getTargetConnection();
+		if (targetConnection instanceof SimpleConnection) {
+			String name = ((SimpleConnection) targetConnection).getDelegate().getClientProvidedName();
+			if (name != null) {
+				props.put("connectionName" + keySuffix, name);
+			}
+		}
 	}
 
 	private int countOpenConnections() {
