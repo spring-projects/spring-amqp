@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,8 +56,11 @@ public class CachePropertiesTests {
 	@Autowired
 	private CachingConnectionFactory connectionCf;
 
+	private final AtomicInteger connNumber = new AtomicInteger();
+
 	@Test
 	public void testChannelCache() throws Exception {
+		this.channelCf.setConnectionNameStrategy(cf -> "testChannelCache");
 		Connection c1 = this.channelCf.createConnection();
 		Connection c2 = this.channelCf.createConnection();
 		assertSame(c1, c2);
@@ -71,6 +75,7 @@ public class CachePropertiesTests {
 		ch4.close();
 		ch5.close();
 		Properties props = this.channelCf.getCacheProperties();
+		assertEquals("testChannelCache", props.getProperty("connectionName"));
 		assertEquals("4", props.getProperty("channelCacheSize"));
 		assertEquals("2", props.getProperty("idleChannelsNotTx"));
 		assertEquals("3", props.getProperty("idleChannelsTx"));
@@ -107,6 +112,7 @@ public class CachePropertiesTests {
 
 	@Test
 	public void testConnectionCache() throws Exception {
+		this.connectionCf.setConnectionNameStrategy(cf -> "testConnectionCache" + this.connNumber.getAndIncrement());
 		Connection c1 = this.connectionCf.createConnection();
 		Connection c2 = this.connectionCf.createConnection();
 		Channel ch1 = c1.createChannel(false);
@@ -131,6 +137,8 @@ public class CachePropertiesTests {
 		assertEquals("2", props.getProperty("idleConnectionsHighWater"));
 		int c1Port = c1.getLocalPort();
 		int c2Port = c2.getLocalPort();
+		assertEquals("testConnectionCache0", props.getProperty("connectionName:" + c1Port));
+		assertEquals("testConnectionCache1", props.getProperty("connectionName:" + c2Port));
 		assertEquals("2", props.getProperty("idleChannelsNotTx:" + c1Port));
 		assertEquals("0", props.getProperty("idleChannelsTx:" + c1Port));
 		assertEquals("2", props.getProperty("idleChannelsNotTxHighWater:" + c1Port));
