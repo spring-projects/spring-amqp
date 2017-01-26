@@ -1728,9 +1728,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public void onMessage(Message message) {
 		try {
-			String messageTag;
+			String messageTag = null;
 			if (this.correlationKey == null) { // using standard correlationId property
-				messageTag = new String(message.getMessageProperties().getCorrelationId(), this.encoding);
+				byte[] correlationId = message.getMessageProperties().getCorrelationId();
+				if (correlationId != null) {
+					messageTag = new String(correlationId, this.encoding);
+				}
 			}
 			else {
 				messageTag = (String) message.getMessageProperties()

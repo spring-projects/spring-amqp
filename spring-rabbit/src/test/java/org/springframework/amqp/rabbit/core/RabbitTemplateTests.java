@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -51,6 +53,8 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.retry.RecoveryCallback;
@@ -320,6 +324,16 @@ public class RabbitTemplateTests {
 
 		Mockito.verify(connectionFactory1, Mockito.times(5)).createConnection();
 		Mockito.verify(connectionFactory2, Mockito.times(4)).createConnection();
+	}
+
+	@Test
+	public void testNPEWithNoCorrelationId() {
+		RabbitTemplate template =
+				new RabbitTemplate(mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class));
+		Log logger = spy(TestUtils.getPropertyValue(template, "logger", Log.class));
+		new DirectFieldAccessor(template).setPropertyValue("logger", logger);
+		template.onMessage(new Message("".getBytes(), new MessageProperties()));
+		verify(logger).error("No correlation header in reply");
 	}
 
 }
