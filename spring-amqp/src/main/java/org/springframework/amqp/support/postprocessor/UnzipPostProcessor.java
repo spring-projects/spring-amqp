@@ -45,7 +45,7 @@ public class UnzipPostProcessor extends AbstractDecompressingPostProcessor {
 		ZipInputStream zipper = new ZipInputStream(zipped);
 		ZipEntry entry = zipper.getNextEntry();
 		String entryName = entry.getName();
-		Assert.state("amqp".equals(entryName), "Zip 'entryName' must be equal to 'amqp'");
+		Assert.state("amqp".equals(entryName), () -> "Zip 'entryName' must be 'amqp', not '" + entryName + "'");
 		return zipper;
 	}
 
