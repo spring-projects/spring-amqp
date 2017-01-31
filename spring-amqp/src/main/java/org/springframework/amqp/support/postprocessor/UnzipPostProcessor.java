@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ public class UnzipPostProcessor extends AbstractDecompressingPostProcessor {
 	protected InputStream getDecompressorStream(InputStream zipped) throws IOException {
 		ZipInputStream zipper = new ZipInputStream(zipped);
 		ZipEntry entry = zipper.getNextEntry();
-		Assert.state("amqp".equals(entry.getName()));
+		String entryName = entry.getName();
+		Assert.state("amqp".equals(entryName), "Zip 'entryName' must be equal to 'amqp'");
 		return zipper;
 	}
 
