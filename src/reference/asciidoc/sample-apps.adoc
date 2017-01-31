@@ -324,3 +324,12 @@ public StockServiceGateway stockServiceGateway() {
 If you are no longer running the Server and Client, start them now.
 Try sending a request with the format of '100 TCKR'.
 After a brief artificial delay that simulates "processing" of the request, you should see a confirmation message appear on the Client.
+
+[[spring-rabbit-json]]
+==== Receiving JSON from Non-Spring Applications
+
+Spring applications, when sending JSON, set the `__TypeId__` header to the fully qualified class name to assist the receiving application convert the JSON back to a Java object.
+
+The `spring-rabbit-json` sample explores several techniques to convert the JSON from a non-Spring application.
+
+See also <<json-message-converter>> as well as the http://docs.spring.io/spring-amqp/docs/current/api/index.html?org/springframework/amqp/support/converter/DefaultClassMapper.html[Javadoc for the `DefaultClassMapper`].

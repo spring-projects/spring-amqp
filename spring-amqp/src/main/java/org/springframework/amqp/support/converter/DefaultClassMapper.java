@@ -17,7 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -26,11 +26,15 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
 
 /**
- * Maps to/from JSON using type information in the {@link MessageProperties};
- * the default name of the message property containing the type is '__TypeId__'.
- * An optional property {@link #setDefaultType(Class)}
- * is provided that allows mapping to a statically defined type, if no message property is
- * found in the message properties.
+ * Maps to/from JSON using type information in the {@link MessageProperties}; the default
+ * name of the message property containing the type is
+ * {@value #DEFAULT_CLASSID_FIELD_NAME}. An optional property
+ * {@link #setDefaultType(Class)} is provided that allows mapping to a statically defined
+ * type, if no message property is found in the message properties.
+ * {@link #setIdClassMapping(Map)} can be used to map tokens in the
+ * {@value #DEFAULT_CLASSID_FIELD_NAME} header to classes. If this class is not a
+ * Spring-managed bean, call {@link #afterPropertiesSet()} to set up the class to id
+ * mapping.
  * @author Mark Pollack
  * @author Gary Russell
  *
@@ -45,27 +49,61 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private volatile Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
-	private volatile Class<?> defaultHashtableClass = Hashtable.class;
+	private volatile Class<?> defaultMapClass = LinkedHashMap.class;
 
 	private volatile Class<?> defaultType;
 
 	/**
 	 * The type returned by {@link #toClass(MessageProperties)} if no type information
 	 * is found in the message properties.
-	 * @param defaultType the defaultType to set
+	 * @param defaultType the defaultType to set.
 	 */
 	public void setDefaultType(Class<?> defaultType) {
 		this.defaultType = defaultType;
 	}
 
-	public void setDefaultHashtableClass(Class<?> defaultHashtableClass) {
-		this.defaultHashtableClass = defaultHashtableClass;
+	/**
+	 * Set the type of {@link Map} to use. For outbound messages, set the
+	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code Hashtable}. For inbound messages,
+	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to thi
+	 * class.
+	 * @param defaultMapClass the map class.
+	 * @deprecated use {@link #setDefaultMapClass(Class)}
+	 */
+	@Deprecated
+	public void setDefaultHashtableClass(Class<?> defaultMapClass) {
+		this.defaultMapClass = defaultMapClass;
 	}
 
+	/**
+	 * Set the type of {@link Map} to use. For outbound messages, set the
+	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code HashTable}. For inbound messages,
+	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to this
+	 * class.
+	 * @param defaultMapClass the map class.
+	 * @see #DEFAULT_CLASSID_FIELD_NAME
+	 * @since 2.0
+	 */
+	public void setDefaultMapClass(Class<?> defaultMapClass) {
+		this.defaultMapClass = defaultMapClass;
+	}
+
+	/**
+	 * The name of the header that contains the type id.
+	 * @return {@value #DEFAULT_CLASSID_FIELD_NAME}
+	 * @see #DEFAULT_CLASSID_FIELD_NAME
+	 */
 	public String getClassIdFieldName() {
 		return DEFAULT_CLASSID_FIELD_NAME;
 	}
 
+	/**
+	 * Set a map of type Ids (in the {@value #DEFAULT_CLASSID_FIELD_NAME} header) to
+	 * classes. For outbound messages, if the class is not in this map, the
+	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header is set to the fully qualified
+	 * class name.
+	 * @param idClassMapping the map of IDs to classes.
+	 */
 	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
 		this.idClassMapping = idClassMapping;
 	}
@@ -85,7 +123,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 			return this.idClassMapping.get(classId);
 		}
 		if (classId.equals(DEFAULT_HASHTABLE_TYPE_ID)) {
-			return this.defaultHashtableClass;
+			return this.defaultMapClass;
 		}
 		try {
 			return ClassUtils.forName(classId, getClass().getClassLoader());
@@ -100,6 +138,10 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>Creates the reverse mapping from class to type id.
+	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		validateIdTypeMapping();
@@ -107,6 +149,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private void validateIdTypeMapping() {
 		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
+		this.classIdMapping.clear();
 		for (Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
 			String id = entry.getKey();
 			Class<?> clazz = entry.getValue();

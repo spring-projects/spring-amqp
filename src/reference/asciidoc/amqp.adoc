@@ -2497,6 +2497,31 @@ can configure a static type using the `defaultType` property
 </bean>
 ----
 
+In addition, you can provide custom mappings from the value in the `__TypeId__` header...
+
+[source, java]
+----
+@Bean
+public Jackson2JsonMessageConverter jsonMessageConverter() {
+    Jackson2JsonMessageConverter jsonConverter = new Jackson2JsonMessageConverter();
+    jsonConverter.setClassMapper(classMapper());
+    return jsonConverter;
+}
+
+@Bean
+public DefaultClassMapper classMapper() {
+    DefaultClassMapper classMapper = new DefaultClassMapper();
+    Map<String, Class<?>> idClassMapping = new HashMap<>();
+    idClassMapping.put("foo", Foo.class);
+    idClassMapping.put("bar", Bar.class);
+    classMapper.setIdClassMapping(idClassMapping);
+    return classMapper;
+}
+----
+
+Now, if the sending system sets the header to `foo`, the converter will create a `Foo` object, etc.
+See the <<spring-rabbit-json>> sample application for a complete discusssion about converting messages from non-Spring applications.
+
 ====== Converting from a Message
 
 Inbound messages are converted to objects according to the type information added to headers by the sending system.
