@@ -84,13 +84,13 @@ public class DefaultClassMapperTests {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void shouldReturnHashtableForFieldWithHashtable() {
+	public void shouldReturnLinkedHashMapForFieldWithHashtable() {
 		props.getHeaders().put("__TypeId__", "Hashtable");
 
 		@SuppressWarnings("rawtypes")
 		Class<Hashtable> clazz = (Class<Hashtable>) classMapper.toClass(props);
 
-		assertThat(clazz, equalTo(Hashtable.class));
+		assertThat(clazz, equalTo(LinkedHashMap.class));
 	}
 
 	@Test

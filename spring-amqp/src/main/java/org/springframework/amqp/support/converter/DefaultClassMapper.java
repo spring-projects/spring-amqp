@@ -64,7 +64,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	/**
 	 * Set the type of {@link Map} to use. For outbound messages, set the
-	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code HashTable}. For inbound messages,
+	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code Hashtable}. For inbound messages,
 	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to thi
 	 * class.
 	 * @param defaultMapClass the map class.
