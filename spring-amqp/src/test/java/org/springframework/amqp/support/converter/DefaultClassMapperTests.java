@@ -24,7 +24,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -42,8 +41,9 @@ import org.springframework.amqp.core.MessageProperties;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultClassMapperTests {
+
 	@Spy
-	DefaultClassMapper classMapper = new DefaultClassMapper();
+	private DefaultClassMapper classMapper = new DefaultClassMapper();
 
 	private final MessageProperties props = new MessageProperties();
 
@@ -82,19 +82,17 @@ public class DefaultClassMapperTests {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
-	public void shouldReturnHashtableForFieldWithHashtable() {
+	public void shouldReturnLinkedHashMapForFieldWithHashtable() {
 		props.getHeaders().put("__TypeId__", "Hashtable");
 
-		@SuppressWarnings("rawtypes")
-		Class<Hashtable> clazz = (Class<Hashtable>) classMapper.toClass(props);
+		Class<?> clazz = classMapper.toClass(props);
 
-		assertThat(clazz, equalTo(Hashtable.class));
+		assertThat(clazz, equalTo(LinkedHashMap.class));
 	}
 
 	@Test
-	public void fromClassShouldPopulateWithClassNameByDefailt() {
+	public void fromClassShouldPopulateWithClassNameByDefault() {
 		classMapper.fromClass(SimpleTrade.class, props);
 
 		String className = (String) props.getHeaders().get(
@@ -103,7 +101,7 @@ public class DefaultClassMapperTests {
 	}
 
 	@Test
-	public void shouldUseSpecialnameForClassIfPresent() throws Exception {
+	public void shouldUseSpecialNameForClassIfPresent() throws Exception {
 		classMapper.setIdClassMapping(map("daytrade", SimpleTrade.class));
 		classMapper.afterPropertiesSet();
 

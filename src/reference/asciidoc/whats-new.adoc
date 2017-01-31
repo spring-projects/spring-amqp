@@ -83,6 +83,11 @@ See <<conditional-rollback>> for more information.
 Deprecated in previous versions, Jackson `1.x` converters and related components have now been deleted; use similar components based on Jackson 2.x.
 See <<json-message-converter>> for more information.
 
+===== JSON Message Converter
+
+When the `__TypeId__` is set to `Hashtable` for an inbound JSON message, the default conversion type is now `LinkedHashMap`; previously it was `Hashtable`.
+To revert to a `Hashtable` use `setDefaultMapType` on the `DefaultClassMapper`.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.
