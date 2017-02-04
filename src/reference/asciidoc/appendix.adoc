@@ -555,7 +555,7 @@ For more information see <<template-retry>>.
 
 ===== Caching Connection Factory
 
-The caching connection factory can now be configured to cache `Connection`s and their `Channel`s instead of using a single connection and caching just `Channel`s.
+The caching connection factory can now be configured to cache `Connection`s and their `Channel` s instead of using a single connection and caching just `Channel` s.
 See <<connections>>.
 
 ===== Binding Arguments
@@ -659,4 +659,4 @@ Adds support for Dead Letter Exchanges/Dead Letter Queues.
 
 Adds an option to support adding a message id to logged messages.
 
-Adds an option to allow the specification of a `Charset` name to be used when converting `String`s to `byte[]`.
+Adds an option to allow the specification of a `Charset` name to be used when converting `String` s to `byte[]`.
