@@ -659,4 +659,4 @@ Adds support for Dead Letter Exchanges/Dead Letter Queues.
 
 Adds an option to support adding a message id to logged messages.
 
-Adds an option to allow the specification of a `Charset` name to be used when converting `String`s to `byte[]`.
+Adds an option to allow the specification of a `Charset` name to be used when converting `String` s to `byte[]`.
