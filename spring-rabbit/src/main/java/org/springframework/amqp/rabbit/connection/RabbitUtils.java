@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -56,6 +57,9 @@ public abstract class RabbitUtils {
 			try {
 				connection.close();
 			}
+			catch (AlreadyClosedException ace) {
+				// empty
+			}
 			catch (Exception ex) {
 				logger.debug("Ignoring Connection exception - assuming already closed: " + ex.getMessage(), ex);
 			}
@@ -71,6 +75,9 @@ public abstract class RabbitUtils {
 		if (channel != null) {
 			try {
 				channel.close();
+			}
+			catch (AlreadyClosedException ace) {
+				// empty
 			}
 			catch (IOException ex) {
 				logger.debug("Could not close RabbitMQ Channel", ex);
