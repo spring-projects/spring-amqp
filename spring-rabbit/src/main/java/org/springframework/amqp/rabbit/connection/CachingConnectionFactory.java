@@ -1037,9 +1037,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							catch (Exception e) { }
 							finally {
 								try {
-									if (channel.isOpen()) {
-										channel.close();
-									}
+									channel.close();
 								}
 								catch (IOException e) { }
 								catch (AlreadyClosedException e) { }

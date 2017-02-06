@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.aryEq;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
@@ -114,8 +115,8 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertSame(channel, channel2);
 		verify(mockConnection, never()).close();
 		verify(mockChannel, never()).close();
-
 	}
+
 	@Test
 	public void testWithConnectionFactoryCacheSize() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
@@ -1352,6 +1353,52 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		assertEquals(3, allocatedConnections.size());
 		assertEquals(3, idleConnections.size());
 		assertEquals("0", ccf.getCacheProperties().get("openConnections"));
+	}
+
+	@Test
+	public void testConsumerChannelPhysicallyClosedWhenNotIsOpen() throws Exception {
+		testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(false);
+	}
+
+	@Test
+	public void testConsumerChannelWithPubConfPhysicallyClosedWhenNotIsOpen() throws Exception {
+		testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(true);
+	}
+
+	public void testConsumerChannelPhysicallyClosedWhenNotIsOpenGuts(boolean confirms) throws Exception {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+			com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+			Channel mockChannel = mock(Channel.class);
+
+			when(mockConnectionFactory.newConnection(any(ExecutorService.class))).thenReturn(mockConnection);
+			when(mockConnection.createChannel()).thenReturn(mockChannel);
+			when(mockChannel.isOpen()).thenReturn(true);
+			when(mockConnection.isOpen()).thenReturn(true);
+
+			CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+			ccf.setExecutor(executor);
+			ccf.setPublisherConfirms(confirms);
+			Connection con = ccf.createConnection();
+
+			Channel channel = con.createChannel(false);
+			RabbitUtils.setPhysicalCloseRequired(true);
+			when(mockChannel.isOpen()).thenReturn(false);
+			final CountDownLatch physicalCloseLatch = new CountDownLatch(1);
+			doAnswer(i -> {
+				physicalCloseLatch.countDown();
+				return null;
+			}).when(mockChannel).close();
+			channel.close();
+			con.close(); // should be ignored
+
+			assertTrue(physicalCloseLatch.await(10, TimeUnit.SECONDS));
+		}
+		finally {
+			RabbitUtils.setPhysicalCloseRequired(false);
+			executor.shutdownNow();
+		}
 	}
 
 	private void verifyConnectionIs(com.rabbitmq.client.Connection mockConnection, Object con) {
