@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ import org.springframework.util.xml.DomUtils;
  */
 public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitionParser {
 
+	private static final ThreadLocal<Element> CURRENT_ELEMENT = new ThreadLocal<>();
+
 	private static final String ARGUMENTS_ELEMENT = "exchange-arguments";
 
 	private static final String DURABLE_ATTRIBUTE = "durable";
@@ -64,6 +66,17 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 	}
 
 	@Override
+	protected boolean shouldParseNameAsAliases() {
+		Element element = CURRENT_ELEMENT.get();
+		try {
+			return element == null || !element.hasAttribute(ID_ATTRIBUTE);
+		}
+		finally {
+			CURRENT_ELEMENT.remove();
+		}
+	}
+
+	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 		String exchangeName = element.getAttribute(NAME_ATTRIBUTE);
 		builder.addConstructorArgValue(new TypedStringValue(exchangeName));
@@ -78,6 +91,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		this.parseArguments(element, ARGUMENTS_ELEMENT, parserContext, builder, null);
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
+		CURRENT_ELEMENT.set(element);
 	}
 
 	protected void parseBindings(Element element, ParserContext parserContext, BeanDefinitionBuilder builder,
@@ -108,7 +122,7 @@ public abstract class AbstractExchangeParser extends AbstractSingleBeanDefinitio
 		String exchangeAttribute = binding.getAttribute(BINDING_EXCHANGE_ATTR);
 		boolean hasQueueAttribute = StringUtils.hasText(queueAttribute);
 		boolean hasExchangeAttribute = StringUtils.hasText(exchangeAttribute);
-		if (!(hasQueueAttribute ^ hasExchangeAttribute)) {
+		if (hasQueueAttribute == hasExchangeAttribute) {
 			parserContext.getReaderContext().error("Binding must have exactly one of 'queue' or 'exchange'", binding);
 		}
 		if (hasQueueAttribute) {

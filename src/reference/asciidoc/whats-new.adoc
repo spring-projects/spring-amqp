@@ -88,6 +88,11 @@ See <<json-message-converter>> for more information.
 When the `__TypeId__` is set to `Hashtable` for an inbound JSON message, the default conversion type is now `LinkedHashMap`; previously it was `Hashtable`.
 To revert to a `Hashtable` use `setDefaultMapType` on the `DefaultClassMapper`.
 
+===== XML Parsers
+
+When parsing `Queue` and `Exchange` XML components, the parsers no longer register the `name` attribute value as a bean alias if an `id` attribute is present.
+See <<note-id-name>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

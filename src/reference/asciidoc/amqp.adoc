@@ -3607,6 +3607,25 @@ public Binding binding() {
 }
 ----
 
+[[note-id-name]]
+===== A Note On "id" and "name" Attributes
+
+The `name` attribute on `<rabbit:queue/>` and `<rabbit:exchange/>` elements reflects the name of the entity in the broker.
+For queues, if the `name` is omitted, an anonymous queue is created (see <<anonymous-queue>> below).
+
+In versions prior to 2.0, the `name` was also registered as a bean name alias (similar to `name` on `<bean/>` elements).
+
+This caused two problems:
+
+- it prevented the declaration of a queue and exchange with the same name
+- the alias was not resolved if it contained a SpEL expression (`#{...}`)
+
+Starting with _version 2.0_, if you declare one of these elements with both an `id` _and_ a `name` attribute, the name will no longer be declared as a bean name alias.
+If you wish to declare a queue and exchange with the same `name`, you must provide an `id`.
+
+There is no change if the element has just a `name` attribute, the bean can still be referenced by the `name`, for example in binding declarations, but you still can't reference it if the name contains SpEL - provide an `id` for reference purposes.
+
+
 [[anonymous-queue]]
 ===== AnonymousQueue
 
