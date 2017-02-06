@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ public final class TemplateParserTests {
 		assertNull(dfa.getPropertyValue("correlationKey"));
 		String replyQueue = (String) dfa.getPropertyValue("replyAddress");
 		assertNotNull(replyQueue);
-		Queue queueBean = beanFactory.getBean("reply.queue", Queue.class);
+		Queue queueBean = beanFactory.getBean("replyQId", Queue.class);
 		assertEquals(queueBean.getName(), replyQueue);
 		SimpleMessageListenerContainer container =
 				beanFactory.getBean("withReplyQ.replyListener", SimpleMessageListenerContainer.class);
