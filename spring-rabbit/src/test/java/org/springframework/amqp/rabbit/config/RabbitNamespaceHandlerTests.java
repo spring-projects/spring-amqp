@@ -66,9 +66,8 @@ public final class RabbitNamespaceHandlerTests {
 
 	@Test
 	public void testAliasQueue() throws Exception {
-		Queue queue = beanFactory.getBean("spam", Queue.class);
+		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertNotNull(queue);
-		assertNotSame("spam", queue.getName());
 		assertEquals("bar", queue.getName());
 	}
 
@@ -92,7 +91,7 @@ public final class RabbitNamespaceHandlerTests {
 	public void testBindings() throws Exception {
 		Map<String, Binding> bindings = beanFactory.getBeansOfType(Binding.class);
 		// 4 for each exchange type
-		assertEquals(17, bindings.size());
+		assertEquals(13, bindings.size());
 		for (Map.Entry<String, Binding> bindingEntry : bindings.entrySet()) {
 			Binding binding = bindingEntry.getValue();
 			if ("headers-test".equals(binding.getExchange()) && "bucket".equals(binding.getDestination())) {

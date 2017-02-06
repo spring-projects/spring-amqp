@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,21 +32,40 @@ import org.springframework.util.xml.DomUtils;
  * @author Dave Syer
  * @author Gary Russell
  * @author Felipe Gutierrez
+ * @author Artem Bilan
  *
  */
 public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
+	private static final ThreadLocal<Element> CURRENT_ELEMENT = new ThreadLocal<>();
+
 	/**  Element OR attribute */
 	private static final String ARGUMENTS = "queue-arguments";
+
 	private static final String DURABLE_ATTRIBUTE = "durable";
+
 	private static final String EXCLUSIVE_ATTRIBUTE = "exclusive";
+
 	private static final String AUTO_DELETE_ATTRIBUTE = "auto-delete";
+
 	private static final String REF_ATTRIBUTE = "ref";
+
 	private static final String NAMING_STRATEGY = "naming-strategy";
 
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
 		return true;
+	}
+
+	@Override
+	protected boolean shouldParseNameAsAliases() {
+		Element element = CURRENT_ELEMENT.get();
+		try {
+			return element == null || !element.hasAttribute(ID_ATTRIBUTE);
+		}
+		finally {
+			CURRENT_ELEMENT.remove();
+		}
 	}
 
 	@Override
@@ -124,6 +143,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 		}
 
 		NamespaceUtils.parseDeclarationControls(element, builder);
+		CURRENT_ELEMENT.set(element);
 	}
 
 	private boolean attributeHasIllegalOverride(Element element, String name, String allowed) {
