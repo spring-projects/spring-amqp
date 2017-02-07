@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -1424,6 +1425,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setHost("abc");
 		ccf.setAddresses("");
 		ccf.createConnection();
+		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock).setHost("abc");
 		verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);
@@ -1435,17 +1437,21 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1");
 		ccf.createConnection();
+		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock)
-				.newConnection(isNull(ExecutorService.class), aryEq(new Address[] { new Address("mq1") }), anyString());
+				.newConnection(isNull(ExecutorService.class),
+						aryEq(new Address[] { new Address("mq1") }), anyString());
 		verifyNoMoreInteractions(mock);
 	}
 
 	@Test
 	public void setAddressesTwoHosts() throws Exception {
 		ConnectionFactory mock = mock(com.rabbitmq.client.ConnectionFactory.class);
+		doReturn(true).when(mock).isAutomaticRecoveryEnabled();
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mock);
 		ccf.setAddresses("mq1,mq2");
 		ccf.createConnection();
+		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock).newConnection(isNull(ExecutorService.class),
 				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }), anyString());
 		verifyNoMoreInteractions(mock);
@@ -1462,6 +1468,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.createConnection();
 
 		InOrder order = inOrder(mock);
+		order.verify(mock).isAutomaticRecoveryEnabled();
 		order.verify(mock).setUri(uri);
 		order.verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -371,7 +372,9 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testHardErrorAndReconnectAuto() throws Exception {
-
+		this.connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
+		Log cfLogger = spyOnLogger(this.connectionFactory);
+		willReturn(true).given(cfLogger).isDebugEnabled();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
@@ -540,6 +543,13 @@ public class CachingConnectionFactoryIntegrationTests {
 		factory.createConnection();
 		hangOnClose.set(true);
 		factory.destroy();
+	}
+
+	private Log spyOnLogger(CachingConnectionFactory connectionFactory2) {
+		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory2);
+		Log logger = spy((Log) dfa.getPropertyValue("logger"));
+		dfa.setPropertyValue("logger", logger);
+		return logger;
 	}
 
 }
