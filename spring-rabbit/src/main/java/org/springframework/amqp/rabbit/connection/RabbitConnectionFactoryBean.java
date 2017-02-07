@@ -125,6 +125,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private boolean skipServerCertificateValidation;
 
+	public RabbitConnectionFactoryBean() {
+		this.connectionFactory.setAutomaticRecoveryEnabled(false);
+	}
 
 	/**
 	 * Whether or not Server Side certificate has to be validated or not.
@@ -563,6 +566,27 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 */
 	public void setMetricsCollector(MetricsCollector metricsCollector) {
 		this.connectionFactory.setMetricsCollector(metricsCollector);
+	}
+
+	/**
+	 * Set to true to enable amqp-client automatic recovery. Note: Spring AMQP
+	 * implements its own connection recovery and this is generally not needed.
+	 * @param automaticRecoveryEnabled true to enable.
+	 * @since 1.7.1
+	 */
+	public void setAutomaticRecoveryEnabled(boolean automaticRecoveryEnabled) {
+		this.connectionFactory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled);
+	}
+
+	/**
+	 * Set to true to enable amqp-client topology recovery. Note: if there is a
+	 * Rabbit admin in the application context, Spring AMQP
+	 * implements its own recovery and this is generally not needed.
+	 * @param topologyRecoveryEnabled true to enable.
+	 * @since 1.7.1
+	 */
+	public void setTopologyRecoveryEnabled(boolean topologyRecoveryEnabled) {
+		this.connectionFactory.setTopologyRecoveryEnabled(topologyRecoveryEnabled);
 	}
 
 	@Override

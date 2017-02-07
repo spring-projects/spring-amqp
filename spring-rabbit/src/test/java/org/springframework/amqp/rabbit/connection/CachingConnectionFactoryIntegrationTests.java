@@ -372,6 +372,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Test
 	public void testHardErrorAndReconnectAuto() throws Exception {
+		this.connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
 		Log cfLogger = spyOnLogger(this.connectionFactory);
 		willReturn(true).given(cfLogger).isDebugEnabled();
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
