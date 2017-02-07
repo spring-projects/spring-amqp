@@ -188,7 +188,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @param port the port number
 	 */
 	public CachingConnectionFactory(String hostname, int port) {
-		super(new com.rabbitmq.client.ConnectionFactory());
+		super(newRabbitConnectionFactory());
 		if (!StringUtils.hasText(hostname)) {
 			hostname = getDefaultHostName();
 		}
@@ -202,7 +202,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @since 1.5
 	 */
 	public CachingConnectionFactory(URI uri) {
-		super(new com.rabbitmq.client.ConnectionFactory());
+		super(newRabbitConnectionFactory());
 		setUri(uri);
 	}
 
@@ -229,6 +229,18 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		super(rabbitConnectionFactory);
+		if (rabbitConnectionFactory.isAutomaticRecoveryEnabled()) {
+			logger.warn("***\nAutomatic Recovery is Enabled in the provided connection factory;\n"
+					+ "while Spring AMQP is compatible with this feature, it\n"
+					+ "prefers to use its own recovery mechanisms; when this option is true, you may receive\n"
+					+ "'AutoRecoverConnectionNotCurrentlyOpenException's until the connection is recovered.");
+		}
+	}
+
+	private static com.rabbitmq.client.ConnectionFactory newRabbitConnectionFactory() {
+		com.rabbitmq.client.ConnectionFactory connectionFactory = new com.rabbitmq.client.ConnectionFactory();
+		connectionFactory.setAutomaticRecoveryEnabled(false);
+		return connectionFactory;
 	}
 
 	/**

@@ -8,6 +8,11 @@
 Spring AMQP now uses the new 4.0.x version of the `amqp-client` library provided by the RabbitMQ team.
 This client has auto recovery configured by default; see <<auto-recovery>>.
 
+NOTE: The 4.0.x client enables automatic recovery by default; while compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally isn't needed.
+It is recommended to disable `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` s when the broker is available, but the connection has not yet recovered.
+Starting with _version 1.7.1_, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
+RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` will also have the option disabled by default.
+
 ===== New Listener Container
 
 The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.
