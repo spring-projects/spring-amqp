@@ -147,16 +147,16 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	private void returnOrThrow(org.springframework.amqp.core.Message amqpMessage, Channel channel, Message<?> message,
-			Throwable exToReturn, Exception exToThrow) throws Exception {
+			Throwable throwableToReturn, Exception exceptionToThrow) throws Exception {
 		if (!this.returnExceptions) {
-			throw exToThrow;
+			throw exceptionToThrow;
 		}
 		try {
-			handleResult(new RemoteInvocationResult(exToReturn), amqpMessage, channel, message);
+			handleResult(new RemoteInvocationResult(throwableToReturn), amqpMessage, channel, message);
 		}
 		catch (ReplyFailureException rfe) {
 			if (void.class.equals(this.handlerMethod.getReturnType(message.getPayload()))) {
-				throw exToThrow;
+				throw exceptionToThrow;
 			}
 			else {
 				throw rfe;

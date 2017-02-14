@@ -226,7 +226,7 @@ public class DelegatingInvocableHandler {
 	}
 
 	/**
-	 * Return a the method that will be invoked for this payload.
+	 * Return the method that will be invoked for this payload.
 	 * @param payload the payload.
 	 * @return the method.
 	 * @since 2.0
