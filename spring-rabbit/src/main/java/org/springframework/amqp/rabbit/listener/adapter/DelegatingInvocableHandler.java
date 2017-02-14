@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,17 @@ public class DelegatingInvocableHandler {
 	public String getMethodNameFor(Object payload) {
 		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
 		return handlerForPayload == null ? "no match" : handlerForPayload.getMethod().toGenericString(); //NOSONAR
+	}
+
+	/**
+	 * Return a the method that will be invoked for this payload.
+	 * @param payload the payload.
+	 * @return the method.
+	 * @since 2.0
+	 */
+	public Method getMethodFor(Object payload) {
+		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
+		return handlerForPayload == null ? null : handlerForPayload.getMethod();
 	}
 
 }
