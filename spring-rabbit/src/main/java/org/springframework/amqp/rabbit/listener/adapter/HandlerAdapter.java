@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.listener.adapter;
+
+import java.lang.reflect.Method;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -59,6 +61,22 @@ public class HandlerAdapter {
 		}
 		else {
 			return this.delegatingHandler.getMethodNameFor(payload);
+		}
+	}
+
+	/**
+	 * Return the return type for the method that will be chosen for this payload.
+	 * @param payload the payload.
+	 * @return the return type, or null if no handler found.
+	 * @since 2.0
+	 */
+	public Object getReturnType(Object payload) {
+		if (this.invokerHandlerMethod != null) {
+			return this.invokerHandlerMethod.getMethod().getReturnType();
+		}
+		else {
+			Method method = this.delegatingHandler.getMethodFor(payload);
+			return method == null ? null : method.getReturnType();
 		}
 	}
 
