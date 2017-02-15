@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
@@ -35,11 +36,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -94,20 +95,7 @@ public abstract class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return onlyChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
-			}
-		}).given(mockConnection).createChannel();
+		willAnswer(ensureOneChannelAnswer(onlyChannel, tooManyChannels)).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
@@ -242,11 +230,20 @@ public abstract class ExternalTxManagerTests {
 		container.stop();
 	}
 
+	@Test
+	public void testMessageListenerRollback() throws Exception {
+		testMessageListenerRollbackGuts(true);
+	}
+
+	@Test
+	public void testMessageListenerRollbackDontRequeue() throws Exception {
+		testMessageListenerRollbackGuts(false);
+	}
+
 	/**
 	 * Verifies that the channel is rolled back after an exception.
 	 */
-	@Test
-	public void testMessageListenerRollback() throws Exception {
+	private void testMessageListenerRollbackGuts(boolean expectRequeue) throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		final Channel channel = mock(Channel.class);
@@ -259,6 +256,7 @@ public abstract class ExternalTxManagerTests {
 		given(mockConnection.isOpen()).willReturn(true);
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		willAnswer(ensureOneChannelAnswer(channel, tooManyChannels)).given(mockConnection).createChannel();
 
 		willAnswer(invocation -> channel).given(mockConnection).createChannel();
 
@@ -279,11 +277,19 @@ public abstract class ExternalTxManagerTests {
 			return null;
 		}).given(channel).txRollback();
 
+		final CountDownLatch rejectLatch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			rejectLatch.countDown();
+			return null;
+		}).given(channel).basicReject(anyLong(), anyBoolean());
+
 		final CountDownLatch latch = new CountDownLatch(1);
 		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
 		container.setMessageListener(message -> {
 			latch.countDown();
-			throw new RuntimeException("force rollback");
+			throw expectRequeue
+					? new RuntimeException("force rollback")
+					: new AmqpRejectAndDontRequeueException("force rollback");
 		});
 		container.setQueueNames("queue");
 		container.setChannelTransacted(true);
@@ -305,6 +311,8 @@ public abstract class ExternalTxManagerTests {
 
 		verify(mockConnection, times(1)).createChannel();
 		assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
+		assertTrue(rejectLatch.await(10, TimeUnit.SECONDS));
+		verify(channel).basicReject(anyLong(), eq(expectRequeue));
 		container.stop();
 	}
 
@@ -341,20 +349,7 @@ public abstract class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return listenerChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
-			}
-		}).given(listenerConnection).createChannel();
+		willAnswer(ensureOneChannelAnswer(listenerChannel, tooManyChannels)).given(listenerConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
@@ -438,20 +433,7 @@ public abstract class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return onlyChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
-			}
-		}).given(mockConnection).createChannel();
+		willAnswer(ensureOneChannelAnswer(onlyChannel, tooManyChannels)).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
@@ -531,20 +513,7 @@ public abstract class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return onlyChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
-			}
-		}).given(mockConnection).createChannel();
+		willAnswer(ensureOneChannelAnswer(onlyChannel, tooManyChannels)).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
@@ -625,20 +594,7 @@ public abstract class ExternalTxManagerTests {
 
 		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
 
-		willAnswer(new Answer<Channel>() {
-			boolean done;
-			@Override
-			public Channel answer(InvocationOnMock invocation) throws Throwable {
-				if (!done) {
-					done = true;
-					return onlyChannel;
-				}
-				tooManyChannels.set(new Exception("More than one channel requested"));
-				Channel channel = mock(Channel.class);
-				given(channel.isOpen()).willReturn(true);
-				return channel;
-			}
-		}).given(mockConnection).createChannel();
+		willAnswer(ensureOneChannelAnswer(onlyChannel, tooManyChannels)).given(mockConnection).createChannel();
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
@@ -695,6 +651,21 @@ public abstract class ExternalTxManagerTests {
 		assertEquals(0, channels.size());
 
 		container.stop();
+	}
+
+	private Answer<Channel> ensureOneChannelAnswer(final Channel onlyChannel,
+			final AtomicReference<Exception> tooManyChannels) {
+		final AtomicBoolean done = new AtomicBoolean();
+		return invocation -> {
+			if (!done.get()) {
+				done.set(true);
+				return onlyChannel;
+			}
+			tooManyChannels.set(new Exception("More than one channel requested"));
+			Channel channel = mock(Channel.class);
+			given(channel.isOpen()).willReturn(true);
+			return channel;
+		};
 	}
 
 	protected abstract AbstractMessageListenerContainer createContainer(AbstractConnectionFactory connectionFactory);

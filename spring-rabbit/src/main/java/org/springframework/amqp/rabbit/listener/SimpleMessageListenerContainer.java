@@ -727,14 +727,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				return this.transactionTemplate
 						.execute(status -> {
+							RabbitResourceHolder resourceHolder = new RabbitResourceHolder(consumer.getChannel(),
+									false);
 							ConnectionFactoryUtils.bindResourceToTransaction(
-									new RabbitResourceHolder(consumer.getChannel(), false),
+									resourceHolder,
 									getConnectionFactory(), true);
 							// unbound in ResourceHolderSynchronization.beforeCompletion()
 							try {
 								return doReceiveAndExecute(consumer);
 							}
 							catch (RuntimeException e1) {
+								resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
+										RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e1, logger));
 								throw e1;
 							}
 							catch (Throwable e2) { //NOSONAR
