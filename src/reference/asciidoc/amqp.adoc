@@ -3870,6 +3870,7 @@ The default `FatalExceptionStrategy` logs a warning message when an exception is
 
 Since _version 1.6.3_ a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
 
+[[transactions]]
 ==== Transactions
 
 ===== Introduction
@@ -3961,6 +3962,7 @@ public AbstractMessageListenerContainer container() {
 }
 ----
 
+[[transaction-rollback]]
 ===== A note on Rollback of Received Messages
 
 AMQP transactions only apply to messages and acks sent to the broker, so when there is a rollback of a Spring transaction and a message has been received, what Spring AMQP has to do is not just rollback the transaction, but also manually reject the message (sort of a nack, but that's not what the specification calls it).
@@ -3970,6 +3972,15 @@ For more information about rejecting failed messages, see <<async-listeners>>.
 For more information about RabbitMQ transactions, and their limitations, refer to http://www.rabbitmq.com/semantics.html[RabbitMQ Broker Semantics].
 
 NOTE: Prior to *RabbitMQ 2.7.0*, such messages (and any that are unacked when a channel is closed or aborts) went to the back of the queue on a Rabbit broker, since 2.7.0, rejected messages go to the front of the queue, in a similar manner to JMS rolled back messages.
+
+[NOTE]
+====
+Previously, message requeue on transaction rollback was inconsistent between local transactions and when a `TransactionManager` was provided.
+In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applied (see <<async-listeners>>); with a transaction manager, the message was unconditionally requeued on rollback.
+Starting with __version 2.0__, the behavior is consistent and the normal requeue logic is applied in both cases.
+To revert to the previous behavior, set the container's `alwaysRequeueWithTxManagerRollback` property to `true`.
+See <<containerAttributes>>.
+====
 
 ===== Using the RabbitTransactionManager
 
@@ -4453,6 +4464,15 @@ MessageId
 | When using a stateful retry advice; if a message with a missing `messageId` property is received, it is considered
 fatal for the consumer (it is stopped) by default.
 Set this to false, to discard (or route to a dead-letter queue) such messages.
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
+| alwaysRequeueWithTx
+ManagerRollback
+(N/A)
+
+| Set to `true` to always requeue messages on rollback when a transaction manager is configured.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]

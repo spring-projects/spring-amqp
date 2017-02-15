@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,11 +167,11 @@ public final class ConnectionFactoryUtils {
 		RabbitUtils.closeConnection(resourceHolder.getConnection());
 	}
 
-	public static void bindResourceToTransaction(RabbitResourceHolder resourceHolder,
+	public static RabbitResourceHolder bindResourceToTransaction(RabbitResourceHolder resourceHolder,
 			ConnectionFactory connectionFactory, boolean synched) {
 		if (TransactionSynchronizationManager.hasResource(connectionFactory)
 				|| !TransactionSynchronizationManager.isActualTransactionActive() || !synched) {
-			return;
+			return (RabbitResourceHolder) TransactionSynchronizationManager.getResource(connectionFactory);
 		}
 		TransactionSynchronizationManager.bindResource(connectionFactory, resourceHolder);
 		resourceHolder.setSynchronizedWithTransaction(true);
@@ -179,6 +179,7 @@ public final class ConnectionFactoryUtils {
 			TransactionSynchronizationManager.registerSynchronization(new RabbitResourceSynchronization(resourceHolder,
 					connectionFactory));
 		}
+		return resourceHolder;
 	}
 
 	public static void registerDeliveryTag(ConnectionFactory connectionFactory, Channel channel, Long tag) {

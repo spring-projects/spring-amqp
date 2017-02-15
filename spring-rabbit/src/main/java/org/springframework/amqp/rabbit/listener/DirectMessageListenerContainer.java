@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -698,15 +699,17 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								new TransactionTemplate(this.transactionManager, this.transactionAttribute);
 					}
 					this.transactionTemplate.execute(s -> {
-						RabbitResourceHolder resourceHolder = new RabbitResourceHolder(getChannel(), false);
-						resourceHolder.addDeliveryTag(getChannel(), deliveryTag);
-						ConnectionFactoryUtils.bindResourceToTransaction(resourceHolder,
-								this.connectionFactory, true);
+						RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
+								new RabbitResourceHolder(getChannel(), false), this.connectionFactory, true);
+						if (resourceHolder != null) {
+							resourceHolder.addDeliveryTag(getChannel(), deliveryTag);
+						}
 						// unbound in ResourceHolderSynchronization.beforeCompletion()
 						try {
 							callExecuteListener(message, deliveryTag);
 						}
 						catch (RuntimeException e1) {
+							prepareHolderForRollback(resourceHolder, e1);
 							throw e1;
 						}
 						catch (Throwable e2) { //NOSONAR ok to catch Throwable here because we re-throw it below
@@ -761,6 +764,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					this.logger.error("Failed to invoke listener", e);
 					if (this.transactionManager != null) {
 						if (this.transactionAttribute.rollbackOn(e)) {
+							RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
+									.getResource(getConnectionFactory());
+							if (resourceHolder == null) {
+								/*
+								 * If we don't actually have a transaction, we have to roll back
+								 * manually. See prepareHolderForRollback().
+								 */
+								rollback(deliveryTag, e);
+							}
 							throw e; // encompassing transaction will handle the rollback.
 						}
 						else {
@@ -778,13 +790,19 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) throws IOException {
+			/*
+			 * If we have a TX Manager, but no TX, act like we are locally transacted.
+			 */
+			boolean isLocallyTransacted = channelLocallyTransacted
+					|| (isChannelTransacted()
+							&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 			try {
 				if (this.ackRequired) {
-					if (!isChannelTransacted() || channelLocallyTransacted) {
+					if (!isChannelTransacted() || isLocallyTransacted) {
 						getChannel().basicAck(deliveryTag, false);
 					}
 				}
-				if (channelLocallyTransacted) {
+				if (isLocallyTransacted) {
 					RabbitUtils.commitIfNecessary(getChannel());
 				}
 			}

@@ -195,6 +195,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private ConditionalExceptionLogger exclusiveConsumerExceptionLogger = new DefaultExclusiveConsumerLogger();
 
+	private boolean alwaysRequeueWithTxManagerRollback;
 
 	/**
 	 * {@inheritDoc}
@@ -879,6 +880,28 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set to true to always requeue on transaction rollback with an external
+	 * {@link #setTransactionManager(PlatformTransactionManager) TransactionManager}.
+	 * With earlier releases, when a transaction manager was configured, a transaction
+	 * rollback always requeued the message. This was inconsistent with local transactions
+	 * where the normal {@link #setDefaultRequeueRejected(boolean) defaultRequeueRejected}
+	 * and {@link AmqpRejectAndDontRequeueException} logic was honored to determine whether
+	 * the message was requeued. RabbitMQ does not consider the message delivery to be part
+	 * of the transaction.
+	 * This boolean was introduced in 1.7.1, set to true by default, to be consistent with
+	 * previous behavior. Starting with version 2.0, it is false by default.
+	 * @param alwaysRequeueWithTxManagerRollback true to always requeue on rollback.
+	 * @since 1.7.1.
+	 */
+	public void setAlwaysRequeueWithTxManagerRollback(boolean alwaysRequeueWithTxManagerRollback) {
+		this.alwaysRequeueWithTxManagerRollback = alwaysRequeueWithTxManagerRollback;
+	}
+
+	protected boolean isAlwaysRequeueWithTxManagerRollback() {
+		return this.alwaysRequeueWithTxManagerRollback;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1517,6 +1540,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			cause = cause.getCause();
 		}
 		return false;
+	}
+
+	/**
+	 * A null resource holder is rare, but possible if the transaction attribute caused no
+	 * transaction to be started (e.g. {@code TransactionDefinition.PROPAGATION_NONE}). In
+	 * that case the delivery tags will have been processed manually.
+	 * @param resourceHolder the bound resource holder (if a transaction is active).
+	 * @param exception the exception.
+	 */
+	protected void prepareHolderForRollback(RabbitResourceHolder resourceHolder, RuntimeException exception) {
+		if (resourceHolder != null) {
+			resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
+					RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
+		}
 	}
 
 	@FunctionalInterface

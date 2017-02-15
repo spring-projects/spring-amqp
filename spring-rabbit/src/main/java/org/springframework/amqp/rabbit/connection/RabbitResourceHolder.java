@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,22 +64,23 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private final MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
 
-	private boolean transactional;
+	private final boolean releaseAfterCompletion;
 
-	private boolean releaseAfterCompletion = true;
+	private boolean requeueOnRollback = true; // No need for volatile written/read on the same thread.
 
 	/**
 	 * Create a new RabbitResourceHolder that is open for resources to be added.
 	 */
 	public RabbitResourceHolder() {
+		this.releaseAfterCompletion = true;
 	}
 
 	/**
+	 * Construct an instance for the channel.
 	 * @param channel a channel to add
 	 * @param releaseAfterCompletion true if the channel should be released after completion.
 	 */
 	public RabbitResourceHolder(Channel channel, boolean releaseAfterCompletion) {
-		this();
 		addChannel(channel);
 		this.releaseAfterCompletion = releaseAfterCompletion;
 	}
@@ -97,6 +98,15 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	 */
 	public boolean isReleaseAfterCompletion() {
 		return this.releaseAfterCompletion;
+	}
+
+	/**
+	 * Set to true to requeue a message on rollback; default true.
+	 * @param requeueOnRollback true to requeue
+	 * @since 1.7.1
+	 */
+	public void setRequeueOnRollback(boolean requeueOnRollback) {
+		this.requeueOnRollback = requeueOnRollback;
 	}
 
 	public final void addConnection(Connection connection) {
@@ -196,7 +206,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 			if (this.deliveryTags.containsKey(channel)) {
 				for (Long deliveryTag : this.deliveryTags.get(channel)) {
 					try {
-						channel.basicReject(deliveryTag, true);
+						channel.basicReject(deliveryTag, this.requeueOnRollback);
 					}
 					catch (IOException ex) {
 						throw new AmqpIOException(ex);
@@ -209,10 +219,13 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	}
 
 	/**
+	 * Invalid - always returned false.
 	 * @return true if the channels in this holder are transactional
+	 * @deprecated Not used
 	 */
+	@Deprecated
 	public boolean isChannelTransactional() {
-		return this.transactional;
+		return false;
 	}
 
 }

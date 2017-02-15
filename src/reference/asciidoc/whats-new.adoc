@@ -48,8 +48,15 @@ See <<message-listener-adapter>> for more information.
 
 ===== Listener Container Changes
 
+====== Message Count
+
 Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
 This property only applies when using `basicGet` (e.g. from `RabbitTemplate.receive()` methods) and is now initialized to `null` for container messages.
+
+====== Transaction Rollback behavior
+
+Message requeue on transaction rollback is now consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
 
 ===== Connection Factory Changes
 
