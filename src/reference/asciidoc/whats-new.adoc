@@ -44,6 +44,13 @@ It is also now more flexible when using a transaction advice.
 A new `ConnectionNameStrategy` is now provided to populate the application-specific identification of the target RabbitMQ connection from the `AbstractConnectionFactory`.
 See <<connections>> for more information.
 
+===== Listener Container Changes
+
+====== Transaction Rollback behavior
+
+Message requeue on transaction rollback can now be configured to be consistent, regardless of whether or not a transaction manager is configured.
+See <<transaction-rollback>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

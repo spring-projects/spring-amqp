@@ -40,7 +40,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
-import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -55,6 +54,7 @@ import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
@@ -667,19 +667,7 @@ public class BlockingQueueConsumer {
 				RabbitUtils.rollbackIfNecessary(this.channel);
 			}
 			if (ackRequired) {
-				// We should always requeue if the container was stopping
-				boolean shouldRequeue = this.defaultRequeuRejected ||
-						ex instanceof MessageRejectedWhileStoppingException;
-				Throwable t = ex;
-				while (shouldRequeue && t != null) {
-					if (t instanceof AmqpRejectAndDontRequeueException) {
-						shouldRequeue = false;
-					}
-					t = t.getCause();
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
-				}
+				boolean shouldRequeue = RabbitUtils.shouldRequeue(this.defaultRequeuRejected, ex, logger);
 				for (Long deliveryTag : this.deliveryTags) {
 					// With newer RabbitMQ brokers could use basicNack here...
 					this.channel.basicReject(deliveryTag, shouldRequeue);
@@ -727,18 +715,24 @@ public class BlockingQueueConsumer {
 			return false;
 		}
 
+		/*
+		 * If we have a TX Manager, but no TX, act like we are locally transacted.
+		 */
+		boolean isLocallyTransacted = locallyTransacted
+				|| (this.transactional
+						&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {
 
 			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 
 			if (ackRequired) {
-				if (!this.transactional || locallyTransacted) {
+				if (!this.transactional || isLocallyTransacted) {
 					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 					this.channel.basicAck(deliveryTag, true);
 				}
 			}
 
-			if (locallyTransacted) {
+			if (isLocallyTransacted) {
 				// For manual acks we still need to commit
 				RabbitUtils.commitIfNecessary(this.channel);
 			}

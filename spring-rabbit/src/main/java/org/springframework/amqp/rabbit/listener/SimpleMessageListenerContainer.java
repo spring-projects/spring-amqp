@@ -74,6 +74,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -202,6 +203,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile long lastReceive = System.currentTimeMillis();
 
 	private TransactionTemplate transactionTemplate;
+
+	private boolean alwaysRequeueWithTxManagerRollback = true;
 
 	/**
 	 * Default constructor for convenient dependency injection via setters.
@@ -673,6 +676,24 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
+	 * Set to false to avoid always requeuing on transaction rollback with an external
+	 * {@link #setTransactionManager(PlatformTransactionManager) TransactionManager}.
+	 * By default, when a transaction manager was configured, a transaction
+	 * rollback always requeued\s the message. This is inconsistent with local transactions
+	 * where the normal {@link #setDefaultRequeueRejected(boolean) defaultRequeueRejected}
+	 * and {@link AmqpRejectAndDontRequeueException} logic is honored to determine whether
+	 * the message is requeued. RabbitMQ does not consider the message delivery to be part
+	 * of the transaction.
+	 * This boolean was introduced in 1.7.1, set to true by default, to be consistent with
+	 * previous behavior. Starting with version 2.0, it will be false by default.
+	 * @param alwaysRequeueWithTxManagerRollback false to not always requeue on rollback.
+	 * @since 1.7.1.
+	 */
+	public void setAlwaysRequeueWithTxManagerRollback(boolean alwaysRequeueWithTxManagerRollback) {
+		this.alwaysRequeueWithTxManagerRollback = alwaysRequeueWithTxManagerRollback;
+	}
+
+	/**
 	 * Avoid the possibility of not configuring the CachingConnectionFactory in sync with the number of concurrent
 	 * consumers.
 	 */
@@ -1141,13 +1162,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						.execute(new TransactionCallback<Boolean>() {
 							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
-								ConnectionFactoryUtils.bindResourceToTransaction(
+								RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
 										new RabbitResourceHolder(consumer.getChannel(), false),
 										getConnectionFactory(), true);
 								try {
 									return doReceiveAndExecute(consumer);
 								}
 								catch (RuntimeException e) {
+									prepareHolderForRollback(resourceHolder, e);
 									throw e;
 								}
 								catch (Throwable e) { //NOSONAR
@@ -1164,6 +1186,20 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		return doReceiveAndExecute(consumer);
 
+	}
+
+	/**
+	 * A null resource holder is rare, but possible if the transaction attribute caused no
+	 * transaction to be started (e.g. {@code TransactionDefinition.PROPAGATION_NONE}). In
+	 * that case the delivery tags will have been processed manually.
+	 * @param resourceHolder the bound resource holder (if a transaction is active).
+	 * @param exception the exception.
+	 */
+	private void prepareHolderForRollback(RabbitResourceHolder resourceHolder, RuntimeException exception) {
+		if (resourceHolder != null) {
+			resourceHolder.setRequeueOnRollback(this.alwaysRequeueWithTxManagerRollback ||
+					RabbitUtils.shouldRequeue(this.defaultRequeueRejected, exception, logger));
+		}
 	}
 
 	private boolean doReceiveAndExecute(BlockingQueueConsumer consumer) throws Throwable { //NOSONAR
@@ -1197,7 +1233,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				if (this.transactionManager != null) {
 					if (this.transactionAttribute.rollbackOn(ex)) {
-						consumer.clearDeliveryTags();
+						RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
+								.getResource(getConnectionFactory());
+						if (resourceHolder != null) {
+							consumer.clearDeliveryTags();
+						}
+						else {
+							/*
+							 * If we don't actually have a transaction, we have to roll back
+							 * manually. See prepareHolderForRollback().
+							 */
+							consumer.rollbackOnExceptionIfNecessary(ex);
+						}
 						throw ex; // encompassing transaction will handle the rollback.
 					}
 					else {
