@@ -38,6 +38,7 @@ public class ConnectionFactoryUtilsTests {
 		TransactionSynchronizationManager.setActualTransactionActive(true);
 		ConnectionFactoryUtils.bindResourceToTransaction(h1, connectionFactory, true);
 		assertSame(h1, ConnectionFactoryUtils.bindResourceToTransaction(h2, connectionFactory, true));
+		TransactionSynchronizationManager.clear();
 	}
 
 }
