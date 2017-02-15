@@ -3584,6 +3584,7 @@ The default `FatalExceptionStrategy` logs a warning message when an exception is
 
 Since _version 1.6.3_ a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
 
+[[transactions]]
 ==== Transactions
 
 ===== Introduction
@@ -3675,6 +3676,7 @@ public AbstractMessageListenerContainer container() {
 }
 ----
 
+[[transaction-rollback]]
 ===== A note on Rollback of Received Messages
 
 AMQP transactions only apply to messages and acks sent to the broker, so when there is a rollback of a Spring transaction and a message has been received, what Spring AMQP has to do is not just rollback the transaction, but also manually reject the message (sort of a nack, but that's not what the specification calls it).
@@ -3684,6 +3686,14 @@ For more information about rejecting failed messages, see <<async-listeners>>.
 For more information about RabbitMQ transactions, and their limitations, refer to http://www.rabbitmq.com/semantics.html[RabbitMQ Broker Semantics].
 
 NOTE: Prior to *RabbitMQ 2.7.0*, such messages (and any that are unacked when a channel is closed or aborts) went to the back of the queue on a Rabbit broker, since 2.7.0, rejected messages go to the front of the queue, in a similar manner to JMS rolled back messages.
+
+[NOTE]
+====
+Message requeue on transaction rollback is inconsistent between local transactions and when a `TransactionManager` is provided.
+In the former case, the normal requeue logic (`AmqpRejectAndDontRequeueException` or `defaultRequeueRejected=false`) applies (see <<async-listeners>>); with a transaction manager, the message is unconditionally requeued on rollback.
+Starting with __version 1.7.1__, you can enable the consistent behavior by setting the container's `alwaysRequeueWithTxManagerRollback` property to `false`; it will be `false` by default in 2.0.
+See <<containerAttributes>>.
+====
 
 ===== Using the RabbitTransactionManager
 
@@ -4030,6 +4040,13 @@ an implementation of <<consumerTags, ConsumerTagStrategy>>, enabling the creatio
 
 | Starting with _version 1.6_, `SimpleMessageListenerContainer` has this new property.
 See <<idle-containers>>.
+
+| alwaysRequeueWithTx
+ManagerRollback
+(N/A)
+
+| Set to `true` to always requeue messages on rollback when a transaction manager is configured (default).
+Set to `false` to configure the container to use consistent message rejection behavior regardless of whether a transaction manager is configured.
 
 |===
 
