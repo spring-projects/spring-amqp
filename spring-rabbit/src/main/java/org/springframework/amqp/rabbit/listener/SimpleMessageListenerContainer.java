@@ -727,10 +727,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				return this.transactionTemplate
 						.execute(status -> {
-							RabbitResourceHolder resourceHolder = new RabbitResourceHolder(consumer.getChannel(),
-									false);
-							ConnectionFactoryUtils.bindResourceToTransaction(
-									resourceHolder,
+							RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
+									new RabbitResourceHolder(consumer.getChannel(), false),
 									getConnectionFactory(), true);
 							// unbound in ResourceHolderSynchronization.beforeCompletion()
 							try {

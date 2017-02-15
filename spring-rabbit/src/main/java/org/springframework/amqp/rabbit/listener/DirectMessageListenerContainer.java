@@ -698,10 +698,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								new TransactionTemplate(this.transactionManager, this.transactionAttribute);
 					}
 					this.transactionTemplate.execute(s -> {
-						RabbitResourceHolder resourceHolder = new RabbitResourceHolder(getChannel(), false);
+						RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
+								new RabbitResourceHolder(getChannel(), false), this.connectionFactory, true);
 						resourceHolder.addDeliveryTag(getChannel(), deliveryTag);
-						ConnectionFactoryUtils.bindResourceToTransaction(resourceHolder,
-								this.connectionFactory, true);
 						// unbound in ResourceHolderSynchronization.beforeCompletion()
 						try {
 							callExecuteListener(message, deliveryTag);
