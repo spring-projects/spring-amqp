@@ -56,6 +56,7 @@ import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.NoRollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RollbackRuleAttribute;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;
@@ -232,18 +233,28 @@ public abstract class ExternalTxManagerTests {
 
 	@Test
 	public void testMessageListenerRollback() throws Exception {
-		testMessageListenerRollbackGuts(true);
+		testMessageListenerRollbackGuts(true, TransactionDefinition.PROPAGATION_REQUIRED);
 	}
 
 	@Test
 	public void testMessageListenerRollbackDontRequeue() throws Exception {
-		testMessageListenerRollbackGuts(false);
+		testMessageListenerRollbackGuts(false, TransactionDefinition.PROPAGATION_REQUIRED);
+	}
+
+	@Test
+	public void testMessageListenerRollbackNoBoundTransaction() throws Exception {
+		testMessageListenerRollbackGuts(true, TransactionDefinition.PROPAGATION_NEVER);
+	}
+
+	@Test
+	public void testMessageListenerRollbackDontRequeueNoBoundTransaction() throws Exception {
+		testMessageListenerRollbackGuts(false, TransactionDefinition.PROPAGATION_NEVER);
 	}
 
 	/**
 	 * Verifies that the channel is rolled back after an exception.
 	 */
-	private void testMessageListenerRollbackGuts(boolean expectRequeue) throws Exception {
+	private void testMessageListenerRollbackGuts(boolean expectRequeue, int propagation) throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		Connection mockConnection = mock(Connection.class);
 		final Channel channel = mock(Channel.class);
@@ -282,9 +293,15 @@ public abstract class ExternalTxManagerTests {
 			rejectLatch.countDown();
 			return null;
 		}).given(channel).basicReject(anyLong(), anyBoolean());
+		willAnswer(invocation -> {
+			rejectLatch.countDown();
+			return null;
+		}).given(channel).basicNack(anyLong(), anyBoolean(), anyBoolean());
+
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
+		container.setTransactionAttribute(new DefaultTransactionAttribute(propagation));
 		container.setMessageListener(message -> {
 			latch.countDown();
 			throw expectRequeue
@@ -310,9 +327,101 @@ public abstract class ExternalTxManagerTests {
 		}
 
 		verify(mockConnection, times(1)).createChannel();
-		assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
 		assertTrue(rejectLatch.await(10, TimeUnit.SECONDS));
-		verify(channel).basicReject(anyLong(), eq(expectRequeue));
+
+		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
+			assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
+			verify(channel).basicReject(anyLong(), eq(expectRequeue));
+		}
+		else {
+			verify(channel).basicNack(anyLong(), eq(Boolean.TRUE), eq(expectRequeue));
+		}
+		container.stop();
+	}
+
+	@Test
+	public void testMessageListenerCommit() throws Exception {
+		testMessageListenerCommitGuts(TransactionDefinition.PROPAGATION_REQUIRED);
+	}
+
+	@Test
+	public void testMessageListenerCommitNoBoundTransaction() throws Exception {
+		testMessageListenerCommitGuts(TransactionDefinition.PROPAGATION_NEVER);
+	}
+
+	/**
+	 * Verifies that the channel is committed.
+	 */
+	private void testMessageListenerCommitGuts(int propagation) throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		final Channel channel = mock(Channel.class);
+		given(channel.isOpen()).willReturn(true);
+
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory(mockConnectionFactory);
+		cachingConnectionFactory.setExecutor(mock(ExecutorService.class));
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+
+		final AtomicReference<Exception> tooManyChannels = new AtomicReference<Exception>();
+		willAnswer(ensureOneChannelAnswer(channel, tooManyChannels)).given(mockConnection).createChannel();
+
+		willAnswer(invocation -> channel).given(mockConnection).createChannel();
+
+		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
+
+		willAnswer(invocation -> {
+			consumer.set(invocation.getArgument(6));
+			consumerLatch.countDown();
+			return "consumerTag";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(),
+						any(Consumer.class));
+
+		final CountDownLatch commitLatch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			commitLatch.countDown();
+			return null;
+		}).given(channel).txCommit();
+		final CountDownLatch ackLatch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			ackLatch.countDown();
+			return null;
+		}).given(channel).basicAck(anyLong(), anyBoolean());
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		AbstractMessageListenerContainer container = createContainer(cachingConnectionFactory);
+		container.setTransactionAttribute(new DefaultTransactionAttribute(propagation));
+		container.setMessageListener(message -> {
+			latch.countDown();
+		});
+		container.setQueueNames("queue");
+		container.setChannelTransacted(true);
+		container.setShutdownTimeout(100);
+		container.setTransactionManager(new DummyTxManager());
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+
+		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),
+				new byte[] { 0 });
+
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		Exception e = tooManyChannels.get();
+		if (e != null) {
+			throw e;
+		}
+
+		verify(mockConnection, times(1)).createChannel();
+
+		assertTrue(ackLatch.await(10, TimeUnit.SECONDS));
+		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
+			assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
+		}
+		verify(channel).basicAck(anyLong(), anyBoolean());
 		container.stop();
 	}
 

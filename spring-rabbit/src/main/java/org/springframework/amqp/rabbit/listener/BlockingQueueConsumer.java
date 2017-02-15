@@ -55,6 +55,7 @@ import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
@@ -706,18 +707,24 @@ public class BlockingQueueConsumer {
 			return false;
 		}
 
+		/*
+		 * If we have a TX Manager, but no TX, act like we are locally transacted.
+		 */
+		boolean isLocallyTransacted = locallyTransacted
+				|| (this.transactional
+						&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {
 
 			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 
 			if (ackRequired) {
-				if (!this.transactional || locallyTransacted) {
+				if (!this.transactional || isLocallyTransacted) {
 					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
 					this.channel.basicAck(deliveryTag, true);
 				}
 			}
 
-			if (locallyTransacted) {
+			if (isLocallyTransacted) {
 				// For manual acks we still need to commit
 				RabbitUtils.commitIfNecessary(this.channel);
 			}

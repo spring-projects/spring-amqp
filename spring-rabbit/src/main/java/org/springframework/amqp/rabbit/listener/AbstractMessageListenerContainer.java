@@ -1542,6 +1542,20 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return false;
 	}
 
+	/**
+	 * A null resource holder is rare, but possible if the transaction attribute caused no
+	 * transaction to be started (e.g. {@code TransactionDefinition.PROPAGATION_NONE}). In
+	 * that case the delivery tags will have been processed manually.
+	 * @param resourceHolder the bound resource holder (if a transaction is active).
+	 * @param exception the exception.
+	 */
+	protected void prepareHolderForRollback(RabbitResourceHolder resourceHolder, RuntimeException exception) {
+		if (resourceHolder != null) {
+			resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
+					RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
+		}
+	}
+
 	@FunctionalInterface
 	private interface ContainerDelegate {
 

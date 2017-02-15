@@ -51,6 +51,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -735,8 +736,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								return doReceiveAndExecute(consumer);
 							}
 							catch (RuntimeException e1) {
-								resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
-										RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e1, logger));
+								prepareHolderForRollback(resourceHolder, e1);
 								throw e1;
 							}
 							catch (Throwable e2) { //NOSONAR
@@ -785,7 +785,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				if (getTransactionManager() != null) {
 					if (getTransactionAttribute().rollbackOn(ex)) {
-						consumer.clearDeliveryTags();
+						RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
+								.getResource(getConnectionFactory());
+						if (resourceHolder != null) {
+							consumer.clearDeliveryTags();
+						}
+						else {
+							/*
+							 * If we don't actually have a transaction, we have to roll back
+							 * manually. See prepareHolderForRollback().
+							 */
+							consumer.rollbackOnExceptionIfNecessary(ex);
+						}
 						throw ex; // encompassing transaction will handle the rollback.
 					}
 					else {
