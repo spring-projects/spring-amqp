@@ -329,8 +329,8 @@ public abstract class ExternalTxManagerTests {
 		verify(mockConnection, times(1)).createChannel();
 		assertTrue(rejectLatch.await(10, TimeUnit.SECONDS));
 
+		assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
 		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
-			assertTrue(rollbackLatch.await(10, TimeUnit.SECONDS));
 			verify(channel).basicReject(anyLong(), eq(expectRequeue));
 		}
 		else {
@@ -418,9 +418,7 @@ public abstract class ExternalTxManagerTests {
 		verify(mockConnection, times(1)).createChannel();
 
 		assertTrue(ackLatch.await(10, TimeUnit.SECONDS));
-		if (propagation != TransactionDefinition.PROPAGATION_NEVER) {
-			assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
-		}
+		assertTrue(commitLatch.await(10, TimeUnit.SECONDS));
 		verify(channel).basicAck(anyLong(), anyBoolean());
 		container.stop();
 	}
