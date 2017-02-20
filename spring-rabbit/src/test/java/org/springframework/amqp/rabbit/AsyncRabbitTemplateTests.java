@@ -88,6 +88,9 @@ public class AsyncRabbitTemplateTests {
 	@Autowired
 	private Queue requests;
 
+	@Autowired
+	private AtomicReference<CountDownLatch> latch;
+
 	private final Message fooMessage = new SimpleMessageConverter().toMessage("foo", new MessageProperties());
 
 	@Test
@@ -103,10 +106,13 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testConvert1ArgDirect() throws Exception {
+		this.latch.set(new CountDownLatch(1));
 		ListenableFuture<String> future1 = this.asyncDirectTemplate.convertSendAndReceive("foo");
 		ListenableFuture<String> future2 = this.asyncDirectTemplate.convertSendAndReceive("bar");
+		this.latch.get().countDown();
 		checkConverterResult(future1, "FOO");
 		checkConverterResult(future2, "BAR");
+		this.latch.set(null);
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 						.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
@@ -155,12 +161,15 @@ public class AsyncRabbitTemplateTests {
 
 	@Test
 	public void testMessage1ArgDirect() throws Exception {
+		this.latch.set(new CountDownLatch(1));
 		ListenableFuture<Message> future1 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
 		ListenableFuture<Message> future2 = this.asyncDirectTemplate.sendAndReceive(getFooMessage());
+		this.latch.get().countDown();
 		Message reply1 = checkMessageResult(future1, "FOO");
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply1.getMessageProperties().getConsumerQueue());
 		Message reply2 = checkMessageResult(future2, "FOO");
 		assertEquals(Address.AMQ_RABBITMQ_REPLY_TO, reply2.getMessageProperties().getConsumerQueue());
+		this.latch.set(null);
 		waitForZeroInUseConsumers();
 		assertThat(TestUtils
 					.getPropertyValue(this.asyncDirectTemplate, "directReplyToContainer.consumerCount", Integer.class),
@@ -442,6 +451,11 @@ public class AsyncRabbitTemplateTests {
 	public static class Config {
 
 		@Bean
+		public AtomicReference<CountDownLatch> latch() {
+			return new AtomicReference<>();
+		}
+
+		@Bean
 		public ConnectionFactory connectionFactory() {
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 			connectionFactory.setPublisherConfirms(true);
@@ -503,6 +517,15 @@ public class AsyncRabbitTemplateTests {
 			container.setMessageListener(
 					new MessageListenerAdapter((ReplyingMessageListener<String, String>)
 							message -> {
+								CountDownLatch countDownLatch = latch().get();
+								if (countDownLatch != null) {
+									try {
+										countDownLatch.await(10, TimeUnit.SECONDS);
+									}
+									catch (InterruptedException e) {
+										Thread.currentThread().interrupt();
+									}
+								}
 								if ("sleep".equals(message)) {
 									try {
 										Thread.sleep(500); // time for confirm to be delivered, or timeout to occur
@@ -515,7 +538,6 @@ public class AsyncRabbitTemplateTests {
 									return null;
 								}
 								return message.toUpperCase();
-
 							}));
 			return container;
 		}
