@@ -589,6 +589,14 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.connectionFactory.setTopologyRecoveryEnabled(topologyRecoveryEnabled);
 	}
 
+	/**
+	 * @param channelRpcTimeout continuation timeout for RPC calls in channels
+	 * @see com.rabbitmq.client.ConnectionFactory#ConnectionFactory#setChannelRpcTimeout(int)
+	 */
+	public void setChannelRpcTimeout(int channelRpcTimeout) {
+		this.connectionFactory.setChannelRpcTimeout(channelRpcTimeout);
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;
