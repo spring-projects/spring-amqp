@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.junit;
+
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -43,11 +45,10 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.http.client.Client;
 
 /**
- * <p>
- * A rule that prevents integration tests from failing if the Rabbit broker application is not running or not
- * accessible. If the Rabbit broker is not running in the background all the tests here will simply be skipped because
- * of a violated assumption (showing as successful). Usage:
- * </p>
+ * A rule that prevents integration tests from failing if the Rabbit broker application is
+ * not running or not accessible. If the Rabbit broker is not running in the background
+ * all the tests here will simply be skipped (by default) because of a violated assumption
+ * (showing as successful). Usage:
  *
  * <pre class="code">
  * &#064;Rule
@@ -58,10 +59,16 @@ import com.rabbitmq.http.client.Client;
  * 	// ... test using RabbitTemplate etc.
  * }
  * </pre>
- * <p>
- * The rule can be declared as static so that it only has to check once for all tests in the enclosing test case, but
- * there isn't a lot of overhead in making it non-static.
- * </p>
+ *
+ * The rule can be declared as static so that it only has to check once for all tests in
+ * the enclosing test case, but there isn't a lot of overhead in making it non-static.
+ * <p>Use {@link #isRunningWithEmptyQueues(String...)} to declare and/or purge test queue(s)
+ * when the rule is run.
+ * <p>Call {@link #removeTestQueues(String...)} from an {@code @After} method to remove
+ * those queues (and optionally others).
+ * <p>If you wish to enforce the broker being available, for example, on a CI server,
+ * set the environment variable {@value #BROKER_REQUIRED} to {@code true} and the
+ * tests will fail fast.
  *
  * @see Assume
  * @see AssumptionViolatedException
@@ -103,7 +110,8 @@ public final class BrokerRunning extends TestWatcher {
 	private ConnectionFactory connectionFactory;
 
 	/**
-	 * Ensure the broker is running and has an empty queue with the specified name in the default exchange.
+	 * Ensure the broker is running and has a empty queue(s) with the specified name(s) in the
+	 * default exchange.
 	 *
 	 * @param names the queues to declare for the test.
 	 * @return a new rule that assumes an existing running broker
@@ -131,6 +139,14 @@ public final class BrokerRunning extends TestWatcher {
 	 */
 	public static BrokerRunning isBrokerAndManagementRunning() {
 		return new BrokerRunning(true, false, true);
+	}
+
+	/**
+	 * @return a new rule that assumes an existing broker with the management plugin with
+	 * the provided queues declared (and emptied if needed)..
+	 */
+	public static BrokerRunning isBrokerAndManagementRunningWithEmptyQueues(String...queues) {
+		return new BrokerRunning(true, false, true, queues);
 	}
 
 	private BrokerRunning(boolean assumeOnline, boolean purge, String... queues) {
@@ -228,10 +244,15 @@ public final class BrokerRunning extends TestWatcher {
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Not executing tests because basic connectivity test failed", e);
+			logger.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
 			brokerOnline.put(this.port, false);
-			if (this.assumeOnline && !fatal()) {
-				Assume.assumeNoException(e);
+			if (this.assumeOnline) {
+				if (fatal()) {
+					fail("RabbitMQ Broker is required, but not available");
+				}
+				else {
+					Assume.assumeNoException(e);
+				}
 			}
 		}
 		finally {
@@ -252,6 +273,11 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
+	/**
+	 * Generate the connection id for the connection used by the rule's
+	 * connection factory.
+	 * @return the id.
+	 */
 	public String generateId() {
 		UUID uuid = UUID.randomUUID();
 		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
@@ -264,6 +290,12 @@ public final class BrokerRunning extends TestWatcher {
 		return DEFAULT_QUEUE_NAME.equals(queue);
 	}
 
+	/**
+	 * Remove any test queues that were created by an
+	 * {@link #isRunningWithEmptyQueues(String...)} method.
+	 * @param additionalQueues additional queues to remove that might have been created by
+	 * tests.
+	 */
 	public void removeTestQueues(String... additionalQueues) {
 		List<String> queuesToRemove = Arrays.asList(this.queues);
 		if (additionalQueues != null) {
@@ -292,6 +324,10 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
+	/**
+	 * Delete arbitrary queues from the broker.
+	 * @param queues the queues to delete.
+	 */
 	public void deleteQueues(String... queues) {
 		ConnectionFactory connectionFactory = getConnectionFactory();
 		Connection connection = null;
@@ -314,6 +350,10 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
+	/**
+	 * Delete arbitrary exchanges from the broker.
+	 * @param exchanges the exchanges to delete.
+	 */
 	public void deleteExchanges(String... exchanges) {
 		ConnectionFactory connectionFactory = getConnectionFactory();
 		Connection connection = null;
@@ -336,6 +376,10 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
+	/**
+	 * Get the connection factory used by this rule.
+	 * @return the connection factory.
+	 */
 	public ConnectionFactory getConnectionFactory() {
 		if (this.connectionFactory == null) {
 			this.connectionFactory = new ConnectionFactory();
