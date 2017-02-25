@@ -97,11 +97,24 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	}
 
 	/**
-	 * Set the durable flag.
+	 * Set the durable flag to true.
 	 * @return the builder.
+	 * @deprecated - in 2.0, durable will be true by default
+	 * @see #durable(boolean)
 	 */
+	@Deprecated
 	public ExchangeBuilder durable() {
 		this.durable = true;
+		return this;
+	}
+
+	/**
+	 * Set the durable flag.
+	 * @return the builder.
+	 * @see #durable
+	 */
+	public ExchangeBuilder durable(boolean durable) {
+		this.durable = durable;
 		return this;
 	}
 
