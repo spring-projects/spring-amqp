@@ -3459,6 +3459,10 @@ public Exchange exchange() {
 
 See the javadocs for `org.springframework.amqp.core.QueueBuilder` and `org.springframework.amqp.core.ExchangeBuilder` for more information.
 
+Starting with _version 2.0_, the `ExchangeBuilder` now creates durable exchanges by default, to be consistent with the simple constructors on the individual `AbstractExchange` classes.
+To make a non-durable exchange with the builder, use `.durable(false)` before invoking `.build()`.
+The `durable()` method with no parameter is no longer provided.
+
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, Bindings
 
