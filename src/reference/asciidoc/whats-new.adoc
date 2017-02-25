@@ -13,6 +13,11 @@ It is recommended to disable `amqp-client` automatic recovery, to avoid getting 
 Starting with _version 1.7.1_, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
 RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` will also have the option disabled by default.
 
+===== General Changes
+
+The `ExchangeBuilder` now builds durable exchanges by default.
+See <<builder-api>> for more information.
+
 ===== New Listener Container
 
 The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.

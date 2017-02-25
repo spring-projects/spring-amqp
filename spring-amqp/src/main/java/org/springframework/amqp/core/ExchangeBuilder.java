@@ -31,7 +31,7 @@ public final class ExchangeBuilder extends AbstractBuilder {
 
 	private final String type;
 
-	private boolean durable;
+	private boolean durable = true;
 
 	private boolean autoDelete;
 
@@ -98,10 +98,11 @@ public final class ExchangeBuilder extends AbstractBuilder {
 
 	/**
 	 * Set the durable flag.
+	 * @param durable the durable flag (default true).
 	 * @return the builder.
 	 */
-	public ExchangeBuilder durable() {
-		this.durable = true;
+	public ExchangeBuilder durable(boolean durable) {
+		this.durable = durable;
 		return this;
 	}
 

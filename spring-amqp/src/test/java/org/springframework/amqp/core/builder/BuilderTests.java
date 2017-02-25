@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class BuilderTests {
 
 	@Test
 	public void testExchangeBuilder() {
-		Exchange exchange = ExchangeBuilder.directExchange("foo").autoDelete().delayed().durable().internal()
+		Exchange exchange = ExchangeBuilder.directExchange("foo").autoDelete().delayed().internal()
 				.withArgument("foo", "bar").build();
 		assertThat(exchange, instanceOf(DirectExchange.class));
 		assertTrue(exchange.isAutoDelete());
@@ -74,7 +74,7 @@ public class BuilderTests {
 		assertTrue(exchange.isDelayed());
 		assertThat((String) exchange.getArguments().get("foo"), equalTo("bar"));
 
-		exchange = ExchangeBuilder.topicExchange("foo").build();
+		exchange = ExchangeBuilder.topicExchange("foo").durable(false).build();
 		assertThat(exchange, instanceOf(TopicExchange.class));
 		assertFalse(exchange.isAutoDelete());
 		assertFalse(exchange.isDurable());
@@ -84,14 +84,14 @@ public class BuilderTests {
 		exchange = ExchangeBuilder.fanoutExchange("foo").build();
 		assertThat(exchange, instanceOf(FanoutExchange.class));
 		assertFalse(exchange.isAutoDelete());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isInternal());
 		assertFalse(exchange.isDelayed());
 
 		exchange = ExchangeBuilder.headersExchange("foo").build();
 		assertThat(exchange, instanceOf(HeadersExchange.class));
 		assertFalse(exchange.isAutoDelete());
-		assertFalse(exchange.isDurable());
+		assertTrue(exchange.isDurable());
 		assertFalse(exchange.isInternal());
 		assertFalse(exchange.isDelayed());
 	}
