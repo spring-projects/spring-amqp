@@ -1476,6 +1476,38 @@ public class RabbitTemplateIntegrationTests {
 		assertThat(((AMQP.Connection.Close) shutdownReason).getReplyCode(), equalTo(AMQP.CONNECTION_FORCED));
 	}
 
+	@Test
+	public void testInvoke() {
+		this.template.invoke(t -> {
+			t.execute(c -> {
+				t.execute(channel -> {
+					assertSame(c, channel);
+					return null;
+				});
+				return null;
+			});
+			return null;
+		});
+		ThreadLocal<?> tl = TestUtils.getPropertyValue(this.template, "dedicatedChannels", ThreadLocal.class);
+		assertNull(tl.get());
+	}
+
+	@Test
+	public void waitForConfirms() {
+		this.connectionFactory.setPublisherConfirms(true);
+		this.template.invoke(t -> {
+			t.convertAndSend(ROUTE, "foo");
+			t.convertAndSend(ROUTE, "bar");
+			try {
+				t.waitForConfirmsOrDie(10_000);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			return null;
+		});
+	}
+
 	@SuppressWarnings("serial")
 	private class PlannedException extends RuntimeException {
 

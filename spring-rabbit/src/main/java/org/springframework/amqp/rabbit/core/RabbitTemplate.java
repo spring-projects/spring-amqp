@@ -155,6 +155,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
+	/*
+	 * Not static as normal since we want this TL to be scoped within the template instance.
+	 */
+	private final ThreadLocal<Channel> dedicatedChannels = new ThreadLocal<>();
+
+	private final AtomicInteger activeTemplateCallbacks = new AtomicInteger();
+
 	private final ConcurrentMap<Channel, RabbitTemplate> publisherConfirmChannels =
 			new ConcurrentHashMap<Channel, RabbitTemplate>();
 
@@ -1703,32 +1710,41 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) {
 		Assert.notNull(action, "Callback object must not be null");
-		Channel channel;
+		Channel channel = null;
+		boolean invokeScope = false;
+		if (this.activeTemplateCallbacks.get() > 0) {
+			channel = this.dedicatedChannels.get();
+		}
 		RabbitResourceHolder resourceHolder = null;
 		Connection connection = null; // NOSONAR (close)
-		if (isChannelTransacted()) {
-			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true);
-			channel = resourceHolder.getChannel();
-			if (channel == null) {
-				ConnectionFactoryUtils.releaseResources(resourceHolder);
-				throw new IllegalStateException("Resource holder returned a null channel");
+		if (channel == null) {
+			if (isChannelTransacted()) {
+				resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true);
+				channel = resourceHolder.getChannel();
+				if (channel == null) {
+					ConnectionFactoryUtils.releaseResources(resourceHolder);
+					throw new IllegalStateException("Resource holder returned a null channel");
+				}
+			}
+			else {
+				connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
+				if (connection == null) {
+					throw new IllegalStateException("Connection factory returned a null connection");
+				}
+				try {
+					channel = connection.createChannel(false);
+					if (channel == null) {
+						throw new IllegalStateException("Connection returned a null channel");
+					}
+				}
+				catch (RuntimeException e) {
+					RabbitUtils.closeConnection(connection);
+					throw e;
+				}
 			}
 		}
 		else {
-			connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
-			if (connection == null) {
-				throw new IllegalStateException("Connection factory returned a null connection");
-			}
-			try {
-				channel = connection.createChannel(false);
-				if (channel == null) {
-					throw new IllegalStateException("Connection returned a null channel");
-				}
-			}
-			catch (RuntimeException e) {
-				RabbitUtils.closeConnection(connection);
-				throw e;
-			}
+			invokeScope = true;
 		}
 		try {
 			if (this.confirmsOrReturnsCapable == null) {
@@ -1750,6 +1766,59 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			throw convertRabbitAccessException(ex);
 		}
 		finally {
+			if (!invokeScope) {
+				if (resourceHolder != null) {
+					ConnectionFactoryUtils.releaseResources(resourceHolder);
+				}
+				else {
+					RabbitUtils.closeChannel(channel);
+					RabbitUtils.closeConnection(connection);
+				}
+			}
+		}
+	}
+
+	@Override
+	public <T> T invoke(TemplateCallback<T> action) {
+		final Channel currentChannel = this.dedicatedChannels.get();
+		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
+				+ "' is already associated with this thread");
+		this.activeTemplateCallbacks.incrementAndGet();
+		RabbitResourceHolder resourceHolder = null;
+		Connection connection = null; // NOSONAR (close)
+		Channel channel;
+		if (isChannelTransacted()) {
+			resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(getConnectionFactory(), true);
+			channel = resourceHolder.getChannel();
+			if (channel == null) {
+				ConnectionFactoryUtils.releaseResources(resourceHolder);
+				throw new IllegalStateException("Resource holder returned a null channel");
+			}
+		}
+		else {
+			connection = getConnectionFactory().createConnection(); // NOSONAR - RabbitUtils
+			if (connection == null) {
+				throw new IllegalStateException("Connection factory returned a null connection");
+			}
+			try {
+				channel = connection.createChannel(false);
+				if (channel == null) {
+					throw new IllegalStateException("Connection returned a null channel");
+				}
+				RabbitUtils.setPhysicalCloseRequired(true);
+				this.dedicatedChannels.set(channel);
+			}
+			catch (RuntimeException e) {
+				RabbitUtils.closeConnection(connection);
+				throw e;
+			}
+		}
+		try {
+			return action.doInRabbit(this);
+		}
+		finally {
+			this.activeTemplateCallbacks.decrementAndGet();
+			this.dedicatedChannels.remove();
 			if (resourceHolder != null) {
 				ConnectionFactoryUtils.releaseResources(resourceHolder);
 			}
@@ -1758,6 +1827,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				RabbitUtils.closeConnection(connection);
 			}
 		}
+	}
+
+	@Override
+	public void waitForConfirmsOrDie(long timeout) throws InterruptedException, TimeoutException {
+		Channel channel = this.dedicatedChannels.get();
+		Assert.state(channel != null, "This operation is only available within the scope of an invoke operation");
+		channel.waitForConfirms(timeout);
 	}
 
 	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {

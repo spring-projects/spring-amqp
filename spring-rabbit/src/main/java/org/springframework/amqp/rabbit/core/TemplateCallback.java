@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,24 @@ package org.springframework.amqp.rabbit.core;
 import com.rabbitmq.client.Channel;
 
 /**
- * Basic callback for use in RabbitTemplate.
+ * Callback for using the same channel for multiple RabbitTemplate
+ * operations.
  * @param <T> the type the callback returns.
  *
- * @author Mark Fisher
  * @author Gary Russell
+ * @since 2.0
  */
 @FunctionalInterface
-public interface ChannelCallback<T> {
+public interface TemplateCallback<T> {
 
 	/**
-	 * Execute any number of operations against the supplied RabbitMQ
-	 * {@link Channel}, possibly returning a result.
+	 * Execute any number of operations using a dedicated {@link Channel} as long as those
+	 * operations are performed on the template argument and on the calling thread. The
+	 * channel will be physically closed when the callback exits.
 	 *
-	 * @param channel The channel.
+	 * @param template The template.
 	 * @return The result.
-	 * @throws Exception Not sure what else Rabbit Throws
 	 */
-	T doInRabbit(Channel channel) throws Exception;
+	T doInRabbit(RabbitTemplate template);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.core;
+
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -41,6 +43,28 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if one occurs.
 	 */
 	<T> T execute(ChannelCallback<T> action) throws AmqpException;
+
+	/**
+	 * Invoke the callback and run all operations on the template argument in a dedicated
+	 * thread-bound channel and reliably close the channel afterwards.
+	 * @param action the call back.
+	 * @param <T> the return type.
+	 * @return the result from the
+	 * {@link TemplateCallback#doInRabbit(RabbitTemplate template)}.
+	 * @since 2.0
+	 */
+	<T> T invoke(TemplateCallback<T> action);
+
+	/**
+	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
+	 * factory must be configured for publisher confirms and this method must be called
+	 * within the scope of an {@link #invoke(TemplateCallback)} operation.
+	 * @param timeout the timeout
+	 * @throws InterruptedException if interrupted.
+	 * @throws TimeoutException if timed out.
+	 * @since 2.0
+	 */
+	void waitForConfirmsOrDie(long timeout) throws InterruptedException, TimeoutException;
 
 	/**
 	 * Return the connection factory for this operations.
