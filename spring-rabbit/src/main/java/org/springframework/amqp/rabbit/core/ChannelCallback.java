@@ -20,7 +20,8 @@ import com.rabbitmq.client.Channel;
 
 /**
  * Basic callback for use in RabbitTemplate.
- * @param <T> the return type.
+ * @param <T> the type the callback returns.
+ *
  * @author Mark Fisher
  * @author Gary Russell
  */

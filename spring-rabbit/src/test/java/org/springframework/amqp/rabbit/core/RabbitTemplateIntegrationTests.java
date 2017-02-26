@@ -44,6 +44,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -1474,6 +1476,38 @@ public class RabbitTemplateIntegrationTests {
 		Method shutdownReason = shutdown.get().getReason();
 		assertThat(shutdownReason, instanceOf(AMQP.Connection.Close.class));
 		assertThat(((AMQP.Connection.Close) shutdownReason).getReplyCode(), equalTo(AMQP.CONNECTION_FORCED));
+	}
+
+	@Test
+	public void testInvoke() {
+		this.template.invoke(t -> {
+			t.execute(c -> {
+				t.execute(channel -> {
+					assertSame(c, channel);
+					return null;
+				});
+				return null;
+			});
+			return null;
+		});
+		ThreadLocal<?> tl = TestUtils.getPropertyValue(this.template, "dedicatedChannels", ThreadLocal.class);
+		assertNull(tl.get());
+	}
+
+	@Test
+	public void waitForConfirms() {
+		this.connectionFactory.setPublisherConfirms(true);
+		Collection<?> messages = getMessagesToSend();
+		Boolean result = this.template.invoke(t -> {
+			messages.forEach(m -> t.convertAndSend(ROUTE, m));
+			t.waitForConfirmsOrDie(10_000);
+			return true;
+		});
+		assertTrue(result);
+	}
+
+	private Collection<String> getMessagesToSend() {
+		return Arrays.asList("foo", "bar");
 	}
 
 	@SuppressWarnings("serial")

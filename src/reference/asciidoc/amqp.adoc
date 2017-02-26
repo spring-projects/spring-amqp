@@ -914,6 +914,51 @@ channel on which a message is published is returned to the cache instead of bein
 You can monitor channel usage using the RabbitMQ management plugin; if you see channels being opened/closed rapidly you
 should consider increasing the cache size to reduce overhead on the server.
 
+See also <<scoped-operations>> for a simpler mechanism for waiting for publisher confirms.
+
+[[scoped-operations]]
+===== Scoped Operations
+
+Normally, when using the template, a `Channel` is checked out of the cache (or created), used for the operation, and returned to the cache for reuse.
+In a multi-threaded environment, there is no guarantee that the next operation will use the same channel.
+There may be times, however, where you want to have more control over the use of a channel, and ensure that a number of operations are all performed on the same channel.
+
+Starting with _version 2.0_, a new method `invoke` is provided, with an `OperationsCallback`.
+Any operations performed within the scope of the callback, and on the provided `RabbitOperations` argument, will use the same dedicated `Channel`, which will be closed at the end (not returned to a cache).
+
+[source, java]
+----
+@FunctionalInterface
+public interface OperationsCallback<T> {
+
+    T doInRabbit(RabbitOperations operations);
+
+}
+----
+
+One example of why you might need this is if you wish to use the `waitForConfirms()` method on the underlying `Channel`.
+This method was not previously exposed using the Spring API because the channel is, generally, cached and shared as discussed above.
+The `RabbitTemplate` now provides `waitForConfirms(long timeout)` and `waitForConfirmsOrDie(long timeout)` which delegate to the dedicated channel used within the scope of the `OperationsCallback`.
+The methods cannot be used outside of that scope, for obvious reasons.
+
+Note that a higher-level abstraction which allows you to correlate confirms to requests is provided elsewhere (see <<template-confirms>>).
+You still need to set the connection factory's `publisherConfirms` property to `true` as discussed in that section, but for simple use cases where you just want to wait until all confirms are received, you can use this technique here:
+
+[source, java]
+----
+Collection<?> messages = getMessagesToSend();
+Boolean result = this.template.invoke(t -> {
+    messages.forEach(m -> t.convertAndSend(ROUTE, m));
+    t.waitForConfirmsOrDie(10_000);
+    return true;
+});
+----
+
+NOTE: The above discussion is moot if the template operations are already performed within the scope of an existing transaction.
+For example, when running on a transacted listener container thread and performing operations on a transacted template.
+In that case, the operations will be performed on that channel and committed when the thread returns to the container;
+it is not necessary to use `invoke` in that scenario.
+
 [[template-messaging]]
 ===== Messaging integration
 

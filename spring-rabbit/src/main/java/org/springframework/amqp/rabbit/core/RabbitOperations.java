@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2010 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,43 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if one occurs.
 	 */
 	<T> T execute(ChannelCallback<T> action) throws AmqpException;
+
+	/**
+	 * Invoke the callback and run all operations on the template argument in a dedicated
+	 * thread-bound channel and reliably close the channel afterwards.
+	 * @param action the call back.
+	 * @param <T> the return type.
+	 * @return the result from the
+	 * {@link OperationsCallback#doInRabbit(RabbitOperations operations)}.
+	 * @throws AmqpException if one occurs.
+	 * @since 2.0
+	 */
+	<T> T invoke(OperationsCallback<T> action) throws AmqpException;
+
+	/**
+	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
+	 * factory must be configured for publisher confirms and this method must be called
+	 * within the scope of an {@link #invoke(OperationsCallback)} operation.
+	 * Requires {@code CachingConnectionFactory#setPublisherConfirms(true)}.
+	 * @param timeout the timeout
+	 * @return true if acks and no nacks are received.
+	 * @throws AmqpException if one occurs.
+	 * @since 2.0
+	 * @see com.rabbitmq.client.Channel#waitForConfirms(long)
+	 */
+	boolean waitForConfirms(long timeout) throws AmqpException;
+
+	/**
+	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
+	 * factory must be configured for publisher confirms and this method must be called
+	 * within the scope of an {@link #invoke(OperationsCallback)} operation.
+	 * Requires {@code CachingConnectionFactory#setPublisherConfirms(true)}.
+	 * @param timeout the timeout
+	 * @throws AmqpException if one occurs.
+	 * @since 2.0
+	 * @see com.rabbitmq.client.Channel#waitForConfirmsOrDie(long)
+	 */
+	void waitForConfirmsOrDie(long timeout) throws AmqpException;
 
 	/**
 	 * Return the connection factory for this operations.
@@ -345,5 +382,28 @@ public interface RabbitOperations extends AmqpTemplate {
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
+
+	/**
+	 * Callback for using the same channel for multiple RabbitTemplate
+	 * operations.
+	 * @param <T> the type the callback returns.
+	 *
+	 * @since 2.0
+	 */
+	@FunctionalInterface
+	public interface OperationsCallback<T> {
+
+		/**
+		 * Execute any number of operations using a dedicated
+		 * {@link com.rabbitmq.client.Channel} as long as those operations are performed
+		 * on the template argument and on the calling thread. The channel will be
+		 * physically closed when the callback exits.
+		 *
+		 * @param operations The operations.
+		 * @return The result.
+		 */
+		T doInRabbit(RabbitOperations operations);
+
+	}
 
 }
