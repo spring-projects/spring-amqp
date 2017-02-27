@@ -1712,6 +1712,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
+		// No need to check the thread local if we know that no invokes are in process
 		if (this.activeTemplateCallbacks.get() > 0) {
 			channel = this.dedicatedChannels.get();
 		}
@@ -1779,7 +1780,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public <T> T invoke(TemplateCallback<T> action) {
+	public <T> T invoke(OperationsCallback<T> action) {
 		final Channel currentChannel = this.dedicatedChannels.get();
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
 				+ "' is already associated with this thread");
@@ -1830,10 +1831,35 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public void waitForConfirmsOrDie(long timeout) throws InterruptedException, TimeoutException {
+	public boolean waitForConfirms(long timeout) {
 		Channel channel = this.dedicatedChannels.get();
 		Assert.state(channel != null, "This operation is only available within the scope of an invoke operation");
-		channel.waitForConfirms(timeout);
+		try {
+			return channel.waitForConfirms(timeout);
+		}
+		catch (TimeoutException e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	@Override
+	public void waitForConfirmsOrDie(long timeout) {
+		Channel channel = this.dedicatedChannels.get();
+		Assert.state(channel != null, "This operation is only available within the scope of an invoke operation");
+		try {
+			channel.waitForConfirmsOrDie(timeout);
+		}
+		catch (IOException | TimeoutException e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
 	}
 
 	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {

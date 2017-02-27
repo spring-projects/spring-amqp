@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import java.util.concurrent.TimeoutException;
-
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
@@ -50,21 +48,36 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @param action the call back.
 	 * @param <T> the return type.
 	 * @return the result from the
-	 * {@link TemplateCallback#doInRabbit(RabbitTemplate template)}.
+	 * {@link OperationsCallback#doInRabbit(RabbitTemplate template)}.
+	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
-	<T> T invoke(TemplateCallback<T> action);
+	<T> T invoke(OperationsCallback<T> action) throws AmqpException;
 
 	/**
 	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
 	 * factory must be configured for publisher confirms and this method must be called
-	 * within the scope of an {@link #invoke(TemplateCallback)} operation.
+	 * within the scope of an {@link #invoke(OperationsCallback)} operation.
+	 * Requires {@code CachingConnectionFactory#setPublisherConfirms(true)}.
 	 * @param timeout the timeout
-	 * @throws InterruptedException if interrupted.
-	 * @throws TimeoutException if timed out.
+	 * @return true if acks and no nacks are received.
+	 * @throws AmqpException if one occurs.
 	 * @since 2.0
+	 * @see com.rabbitmq.client.Channel#waitForConfirms(long)
 	 */
-	void waitForConfirmsOrDie(long timeout) throws InterruptedException, TimeoutException;
+	boolean waitForConfirms(long timeout) throws AmqpException;
+
+	/**
+	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
+	 * factory must be configured for publisher confirms and this method must be called
+	 * within the scope of an {@link #invoke(OperationsCallback)} operation.
+	 * Requires {@code CachingConnectionFactory#setPublisherConfirms(true)}.
+	 * @param timeout the timeout
+	 * @throws AmqpException if one occurs.
+	 * @since 2.0
+	 * @see com.rabbitmq.client.Channel#waitForConfirmsOrDie(long)
+	 */
+	void waitForConfirmsOrDie(long timeout) throws AmqpException;
 
 	/**
 	 * Return the connection factory for this operations.
@@ -369,5 +382,27 @@ public interface RabbitOperations extends AmqpTemplate {
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
+
+	/**
+	 * Callback for using the same channel for multiple RabbitTemplate
+	 * operations.
+	 * @param <T> the type the callback returns.
+	 *
+	 * @since 2.0
+	 */
+	@FunctionalInterface
+	public interface OperationsCallback<T> {
+
+		/**
+		 * Execute any number of operations using a dedicated {@link Channel} as long as those
+		 * operations are performed on the template argument and on the calling thread. The
+		 * channel will be physically closed when the callback exits.
+		 *
+		 * @param operations The operations.
+		 * @return The result.
+		 */
+		T doInRabbit(RabbitOperations operations);
+
+	}
 
 }

@@ -44,6 +44,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -1495,17 +1497,17 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void waitForConfirms() {
 		this.connectionFactory.setPublisherConfirms(true);
-		this.template.invoke(t -> {
-			t.convertAndSend(ROUTE, "foo");
-			t.convertAndSend(ROUTE, "bar");
-			try {
-				t.waitForConfirmsOrDie(10_000);
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			return null;
+		Collection<?> messages = getMessagesToSend();
+		Boolean result = this.template.invoke(t -> {
+			messages.forEach(m -> t.convertAndSend(ROUTE, m));
+			t.waitForConfirmsOrDie(10_000);
+			return true;
 		});
+		assertTrue(result);
+	}
+
+	private Collection<String> getMessagesToSend() {
+		return Arrays.asList("foo", "bar");
 	}
 
 	@SuppressWarnings("serial")
