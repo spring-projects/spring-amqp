@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -99,6 +100,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				PublisherCallbackChannelConnectionFactory, SmartLifecycle {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+
+	private static final Set<String> txStarts = new HashSet<String>(Arrays.asList("basicPublish", "basicAck", "basicNack",
+			"basicReject"));
+
+	private static final Set<String> txEnds = new HashSet<String>(Arrays.asList("txCommit", "txRollback"));
 
 	private final ChannelCachingConnectionProxy connection = new ChannelCachingConnectionProxy(null);
 
@@ -860,8 +866,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final ChannelCachingConnectionProxy theConnection;
 
-		private volatile Channel target;
-
 		private final LinkedList<ChannelProxy> channelList;
 
 		private final String channelListIdentity;
@@ -870,7 +874,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final boolean transactional;
 
-		private CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
+		private volatile Channel target;
+
+		private volatile boolean txStarted;
+
+		CachedChannelInvocationHandler(ChannelCachingConnectionProxy connection,
 				Channel target,
 				LinkedList<ChannelProxy> channelList,
 				boolean transactional) {
@@ -934,13 +942,26 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						this.target.close();
 						throw new InvocationTargetException(new AmqpException("PublisherCallbackChannel is closed"));
 					}
+					else if (this.txStarted) {
+						this.txStarted = false;
+						throw new IllegalStateException("Channel closed during transaction");
+					}
 					this.target = null;
 				}
 				synchronized (this.targetMonitor) {
 					if (this.target == null) {
 						this.target = createBareChannel(this.theConnection, this.transactional);
 					}
-					return method.invoke(this.target, args);
+					Object result = method.invoke(this.target, args);
+					if (this.transactional) {
+						if (txStarts.contains(methodName)) {
+							this.txStarted = true;
+						}
+						else if (txEnds.contains(methodName)) {
+							this.txStarted = false;
+						}
+					}
+					return result;
 				}
 			}
 			catch (InvocationTargetException ex) {
@@ -1095,7 +1116,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final AtomicBoolean closeNotified = new AtomicBoolean(false);
 
-		private ChannelCachingConnectionProxy(Connection target) {
+		ChannelCachingConnectionProxy(Connection target) {
 			this.target = target;
 		}
 
@@ -1182,7 +1203,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public int getLocalPort() {
-			Connection target = this.target;
+			Connection target = this.target; // NOSONAR (close)
 			if (target != null) {
 				return target.getLocalPort();
 			}
@@ -1204,6 +1225,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @since 1.5
 	 */
 	private static class DefaultChannelCloseLogger implements ConditionalExceptionLogger {
+
+		DefaultChannelCloseLogger() {
+			super();
+		}
 
 		@Override
 		public void log(Log logger, String message, Throwable t) {
