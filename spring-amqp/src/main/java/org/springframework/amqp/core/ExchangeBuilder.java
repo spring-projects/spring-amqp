@@ -110,6 +110,7 @@ public final class ExchangeBuilder extends AbstractBuilder {
 
 	/**
 	 * Set the durable flag.
+	 * @param durable the durable flag (default false).
 	 * @return the builder.
 	 * @see #durable
 	 */
