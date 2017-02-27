@@ -13,6 +13,7 @@
 		</layout>
 		<addresses>localhost:5672</addresses>
 		<abbreviation>36</abbreviation>
+		<includeCallerData>true</includeCallerData>
 		<applicationId>AmqpAppenderTest</applicationId>
 		<routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
 		<generateId>true</generateId>

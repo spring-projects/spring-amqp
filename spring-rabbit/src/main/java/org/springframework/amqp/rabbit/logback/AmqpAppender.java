@@ -229,6 +229,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	private TargetLengthBasedClassNameAbbreviator abbreviator;
 
+	private boolean includeCallerData;
+
 	public void setRoutingKeyPattern(String routingKeyPattern) {
 		this.routingKeyLayout.setPattern("%nopex{}" + routingKeyPattern);
 	}
@@ -407,6 +409,21 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.clientConnectionProperties = clientConnectionProperties;
 	}
 
+	public boolean isIncludeCallerData() {
+		return this.includeCallerData;
+	}
+
+	/**
+	 * If true, the caller data will be available in the target AMQP message.
+	 * By default no caller data is sent to the RabbitMQ.
+	 * @param includeCallerData include or on caller data
+	 * @since 1.7.1
+	 * @see ILoggingEvent#getCallerData()
+	 */
+	public void setIncludeCallerData(boolean includeCallerData) {
+		this.includeCallerData = includeCallerData;
+	}
+
 	@Override
 	public void start() {
 		super.start();
@@ -462,6 +479,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	@Override
 	protected void append(ILoggingEvent event) {
+		if (isIncludeCallerData()) {
+			event.getCallerData();
+		}
 		this.events.add(new Event(event));
 	}
 
@@ -624,7 +644,6 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		public Event(ILoggingEvent event) {
 			this.event = event;
 			this.properties = this.event.getMDCPropertyMap();
-			this.event.getCallerData();
 		}
 
 		public ILoggingEvent getEvent() {
