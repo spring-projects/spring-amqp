@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,12 +55,12 @@ public class Address {
 	private final String routingKey;
 
 	/**
-	 * Create an Address instance from a structured String in the form
+	 * Create an Address instance from a structured String with the form
 	 *
 	 * <pre class="code">
 	 * (exchange)/(routingKey)
 	 * </pre>
-	 *
+	 * .
 	 * @param address a structured string.
 	 */
 	public Address(String address) {

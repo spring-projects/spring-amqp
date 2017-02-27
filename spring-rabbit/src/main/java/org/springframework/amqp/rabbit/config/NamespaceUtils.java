@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,13 +82,11 @@ public abstract class NamespaceUtils {
 	 * The property name will be the camel-case equivalent of the lower case hyphen separated attribute (e.g. the
 	 * "foo-bar" attribute would match the "fooBar" property).
 	 *
-	 * @see Conventions#attributeNameToPropertyName(String)
-	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be set on the property
-	 *
 	 * @return true if defined.
+	 * @see Conventions#attributeNameToPropertyName(String)
 	 */
 	public static boolean setValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
 			String attributeName) {
@@ -101,7 +99,6 @@ public abstract class NamespaceUtils {
 	 *
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
-	 *
 	 * @return true if defined.
 	 */
 	public static boolean isAttributeDefined(Element element, String attributeName) {
@@ -116,7 +113,6 @@ public abstract class NamespaceUtils {
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a constructor argument
-	 *
 	 * @return true if defined.
 	 */
 	public static boolean addConstructorArgValueIfAttributeDefined(BeanDefinitionBuilder builder, Element element,
@@ -220,15 +216,11 @@ public abstract class NamespaceUtils {
 	 * The property name will be the camel-case equivalent of the lower case hyphen separated attribute (e.g. the
 	 * "foo-bar" attribute would match the "fooBar" property).
 	 *
-	 * @see Conventions#attributeNameToPropertyName(String)
-	 *
 	 * @param builder the bean definition builder to be configured
 	 * @param element the XML element where the attribute should be defined
 	 * @param attributeName the name of the attribute whose value will be used as a bean reference to populate the
 	 * property
-	 *
 	 * @return true if defined.
-	 *
 	 * @see Conventions#attributeNameToPropertyName(String)
 	 */
 	public static boolean setReferenceIfAttributeDefined(BeanDefinitionBuilder builder, Element element,

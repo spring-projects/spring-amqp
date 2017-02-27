@@ -537,7 +537,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final Object message, ParameterizedTypeReference<T> responseType)
+	<T> T convertSendAndReceiveAsType(Object message, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
 	/**
@@ -554,7 +554,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
+	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -572,7 +572,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
+	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -589,7 +589,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final Object message, final MessagePostProcessor messagePostProcessor,
+	<T> T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**
@@ -607,8 +607,8 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final String routingKey, final Object message,
-			final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
 	/**
@@ -627,8 +627,8 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
-	<T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
-			final MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
+	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
+			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
 }

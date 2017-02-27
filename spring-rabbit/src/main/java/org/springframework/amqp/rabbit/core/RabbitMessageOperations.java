@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param message the message to send
+	 * @throws MessagingException a messaging exception.
 	 */
 	void send(String exchange, String routingKey, Message<?> message) throws MessagingException;
 
@@ -53,6 +54,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param payload the Object to use as payload
+	 * @throws MessagingException a messaging exception.
 	 */
 	void convertAndSend(String exchange, String routingKey, Object payload) throws MessagingException;
 
@@ -65,6 +67,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param routingKey the routing key
 	 * @param payload the Object to use as payload
 	 * @param headers headers for the message to send
+	 * @throws MessagingException a messaging exception.
 	 */
 	void convertAndSend(String exchange, String routingKey, Object payload, Map<String, Object> headers)
 			throws MessagingException;
@@ -79,6 +82,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param routingKey the routing key
 	 * @param payload the Object to use as payload
 	 * @param postProcessor the post processor to apply to the message
+	 * @throws MessagingException a messaging exception.
 	 */
 	void convertAndSend(String exchange, String routingKey, Object payload, MessagePostProcessor postProcessor)
 			throws MessagingException;
@@ -94,18 +98,20 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param payload the Object to use as payload
 	 * @param headers headers for the message to send
 	 * @param postProcessor the post processor to apply to the message
+	 * @throws MessagingException a messaging exception.
 	 */
 	void convertAndSend(String exchange, String routingKey, Object payload, Map<String,
 			Object> headers, MessagePostProcessor postProcessor) throws MessagingException;
 
 	/**
 	 * Send a request message to a specific exchange with a specific routing key and
-	 * wait for the reply
+	 * wait for the reply.
 	 * @param exchange the name of the exchange
 	 * @param routingKey the routing key
 	 * @param requestMessage the message to send
 	 * @return the reply, possibly {@code null} if the message could not be received,
 	 * for example due to a timeout
+	 * @throws MessagingException a messaging exception.
 	 */
 	Message<?> sendAndReceive(String exchange, String routingKey, Message<?> requestMessage) throws MessagingException;
 
@@ -121,6 +127,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
+	 * @throws MessagingException a messaging exception.
 	 */
 	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass)
 			throws MessagingException;
@@ -139,6 +146,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
+	 * @throws MessagingException a messaging exception.
 	 */
 	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Map<String, Object> headers,
 			Class<T> targetClass) throws MessagingException;
@@ -157,6 +165,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
+	 * @throws MessagingException a messaging exception.
 	 */
 	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Class<T> targetClass,
 			MessagePostProcessor requestPostProcessor) throws MessagingException;
@@ -177,6 +186,7 @@ public interface RabbitMessageOperations extends MessageSendingOperations<String
 	 * @param <T> return type
 	 * @return the payload of the reply message, possibly {@code null} if the message
 	 * could not be received, for example due to a timeout
+	 * @throws MessagingException a messaging exception.
 	 */
 	<T> T convertSendAndReceive(String exchange, String routingKey, Object request, Map<String, Object> headers,
 			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException;

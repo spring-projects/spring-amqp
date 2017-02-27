@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -258,8 +258,8 @@ public class BlockingQueueConsumer {
 	/**
 	 * Set the number of retries after passive queue declaration fails.
 	 * @param declarationRetries The number of retries, default 3.
-	 * @see #setFailedDeclarationRetryInterval(long)
 	 * @since 1.3.9
+	 * @see #setFailedDeclarationRetryInterval(long)
 	 */
 	public void setDeclarationRetries(int declarationRetries) {
 		this.declarationRetries = declarationRetries;
@@ -268,8 +268,8 @@ public class BlockingQueueConsumer {
 	/**
 	 * Set the interval between passive queue declaration attempts in milliseconds.
 	 * @param failedDeclarationRetryInterval the interval, default 5000.
-	 * @see #setDeclarationRetries(int)
 	 * @since 1.3.9
+	 * @see #setDeclarationRetries(int)
 	 */
 	public void setFailedDeclarationRetryInterval(long failedDeclarationRetryInterval) {
 		this.failedDeclarationRetryInterval = failedDeclarationRetryInterval;
@@ -375,6 +375,9 @@ public class BlockingQueueConsumer {
 	 * If this is a non-POISON non-null delivery simply return it.
 	 * If this is POISON we are in shutdown mode, throw
 	 * shutdown. If delivery is null, we may be in shutdown mode. Check and see.
+	 * @param delivery the delivered message contents.
+	 * @return A message built from the contents.
+	 * @throws InterruptedException if the thread is interrupted.
 	 */
 	private Message handle(Delivery delivery) throws InterruptedException {
 		if ((delivery == null && this.shutdown != null)) {
@@ -698,8 +701,8 @@ public class BlockingQueueConsumer {
 	/**
 	 * Perform a commit or message acknowledgement, as appropriate.
 	 * @param locallyTransacted Whether the channel is locally transacted.
-	 * @throws IOException Any IOException.
 	 * @return true if at least one delivery tag exists.
+	 * @throws IOException Any IOException.
 	 */
 	public boolean commitIfNecessary(boolean locallyTransacted) throws IOException {
 

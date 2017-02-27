@@ -171,6 +171,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	/**
 	 * Invoke the handler, wrapping any exception to a {@link ListenerExecutionFailedException}
 	 * with a dedicated error message.
+	 * @param amqpMessage the raw message.
+	 * @param channel the channel.
+	 * @param message the messaging message.
+	 * @return the result of invoking the handler.
 	 */
 	private Object invokeHandler(org.springframework.amqp.core.Message amqpMessage, Channel channel,
 			Message<?> message) {

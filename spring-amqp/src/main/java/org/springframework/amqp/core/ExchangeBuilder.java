@@ -43,8 +43,8 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	 * Construct an instance of the appropriate type.
 	 * @param name the exchange name
 	 * @param type the type name
-	 * @see ExchangeTypes
 	 * @since 1.6.7
+	 * @see ExchangeTypes
 	 */
 	public ExchangeBuilder(String name, String type) {
 		this.name = name;

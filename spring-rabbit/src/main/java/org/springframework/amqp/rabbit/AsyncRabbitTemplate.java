@@ -656,6 +656,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	/**
 	 * Base class for {@link ListenableFuture}s returned by {@link AsyncRabbitTemplate}.
+	 * @param <T> the type.
 	 * @since 1.6
 	 */
 	public abstract class RabbitFuture<T> extends SettableListenableFuture<T> {
@@ -767,6 +768,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	/**
 	 * A {@link RabbitFuture} with a return type of the template's
 	 * generic parameter.
+	 * @param <C> the type.
 	 * @since 1.6
 	 */
 	public class RabbitConverterFuture<C> extends RabbitFuture<C> implements ListenableFuture<C> {

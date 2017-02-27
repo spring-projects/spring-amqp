@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 
 
 	/**
+	 * Add a delegate converter for the content type.
 	 * @param contentType the content type to check.
 	 * @param messageConverter the {@link MessageConverter} for the content type.
 	 * @since 1.6
@@ -78,6 +79,7 @@ public class ContentTypeDelegatingMessageConverter implements MessageConverter {
 	}
 
 	/**
+	 * Remove the delegate for the content type.
 	 * @param contentType the content type key to remove {@link MessageConverter} from delegates.
 	 * @return the remove {@link MessageConverter}.
 	 */

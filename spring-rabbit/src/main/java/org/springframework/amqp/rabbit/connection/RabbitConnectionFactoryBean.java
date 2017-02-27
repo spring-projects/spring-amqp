@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -316,7 +316,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * Get the key store type - this defaults to PKCS12 if not overridden by
-	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setKeyStoreType}
+	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setKeyStoreType}.
 	 * @return the key store type.
 	 * @since 1.6.2
 	 */
@@ -336,8 +336,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * Set the key store type - overrides
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
 	 * @param keyStoreType the key store type.
-	 * @see java.security.KeyStore#getInstance(String)
 	 * @since 1.6.2
+	 * @see java.security.KeyStore#getInstance(String)
 	 */
 	public void setKeyStoreType(String keyStoreType) {
 		this.keyStoreType = keyStoreType;
@@ -345,7 +345,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * Get the trust store type - this defaults to JKS if not overridden by
-	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setTrustStoreType}
+	 * {@link #setSslPropertiesLocation(Resource)} or {@link #setTrustStoreType}.
 	 * @return the trust store type.
 	 * @since 1.6.2
 	 */
@@ -365,8 +365,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * Set the trust store type - overrides
 	 * the property in {@link #setSslPropertiesLocation(Resource)}.
 	 * @param trustStoreType the trust store type.
-	 * @see java.security.KeyStore#getInstance(String)
 	 * @since 1.6.2
+	 * @see java.security.KeyStore#getInstance(String)
 	 */
 	public void setTrustStoreType(String trustStoreType) {
 		this.trustStoreType = trustStoreType;
@@ -380,8 +380,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * Set the secure random to use when initializing the {@link SSLContext}.
 	 * Defaults to null, in which case the default implementation is used.
 	 * @param secureRandom the secure random.
-	 * @see SSLContext#init(KeyManager[], TrustManager[], SecureRandom)
 	 * @since 1.6.4
+	 * @see SSLContext#init(KeyManager[], TrustManager[], SecureRandom)
 	 */
 	public void setSecureRandom(SecureRandom secureRandom) {
 		this.secureRandom = secureRandom;
@@ -591,8 +591,8 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * @param channelRpcTimeout continuation timeout for RPC calls in channels
-	 * @see com.rabbitmq.client.ConnectionFactory#setChannelRpcTimeout(int)
 	 * @since 2.0
+	 * @see com.rabbitmq.client.ConnectionFactory#setChannelRpcTimeout(int)
 	 */
 	public void setChannelRpcTimeout(int channelRpcTimeout) {
 		this.connectionFactory.setChannelRpcTimeout(channelRpcTimeout);

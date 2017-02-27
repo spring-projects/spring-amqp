@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	/**
-	 * Added to the 3.3.x client
+	 * Added to the 3.3.x client.
 	 * @since 1.3.3
 	 * @deprecated in the 3.5.3 client
 	 */
@@ -189,7 +189,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	/**
-	 * Added to the 3.3.x client
+	 * Added to the 3.3.x client.
 	 * @since 1.3.3
 	 */
 	@Override
@@ -421,7 +421,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	/**
-	 * Added to the 3.3.x client
+	 * Added to the 3.3.x client.
 	 * @since 1.3.3
 	 */
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		this.convertLongLongStrings = convertLongLongStrings;
 	}
 
+	@Override
 	public MessageProperties toMessageProperties(final BasicProperties source, final Envelope envelope,
 			final String charset) {
 		MessageProperties target = new MessageProperties();
@@ -132,6 +133,7 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 		return target;
 	}
 
+	@Override
 	public BasicProperties fromMessageProperties(final MessageProperties source, final String charset) {
 		BasicProperties.Builder target = new BasicProperties.Builder();
 		target.headers(this.convertHeadersIfNecessary(source.getHeaders()))
@@ -175,6 +177,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * Converts a header value to a String if the value type is unsupported by AMQP, also handling values
 	 * nested inside Lists or Maps.
 	 * <p> {@code null} values are passed through, although Rabbit client will throw an IllegalArgumentException.
+	 * @param value the value.
+	 * @return the converted value.
 	 */
 	private Object convertHeaderValueIfNecessary(Object value) {
 		boolean valid = (value instanceof String) || (value instanceof byte[]) || (value instanceof Boolean)
@@ -209,6 +213,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * length-driven threshold. If the length is {@link #longStringLimit} bytes or less, a
 	 * String will be returned, otherwise a DataInputStream is returned or the {@link LongString}
 	 * is returned unconverted if {@link #convertLongLongStrings} is true.
+	 * @param longString the long string.
+	 * @param charset the charset.
+	 * @return the converted string.
 	 */
 	private Object convertLongString(LongString longString, String charset) {
 		try {
@@ -227,6 +234,9 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	/**
 	 * Converts a LongString value using {@link #convertLongString(LongString, String)}, also handling values
 	 * nested in Lists or Maps.
+	 * @param value the value.
+	 * @param charset the charset.
+	 * @return the converted string.
 	 */
 	private Object convertLongStringIfNecessary(Object value, String charset) {
 		if (value instanceof LongString) {

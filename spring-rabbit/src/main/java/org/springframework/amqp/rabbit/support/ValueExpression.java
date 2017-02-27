@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
  */
 public class ValueExpression<V> implements Expression {
 
-	/** Fixed value of this expression */
+	/** Fixed value of this expression. */
 	private final V value;
 
 	private final Class<V> aClass;

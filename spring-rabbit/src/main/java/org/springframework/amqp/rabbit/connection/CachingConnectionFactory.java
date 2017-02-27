@@ -109,13 +109,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private final ChannelCachingConnectionProxy connection = new ChannelCachingConnectionProxy(null);
 
+	/**
+	 * The cache mode.
+	 */
 	public enum CacheMode {
 		/**
-		 * Cache channels - single connection
+		 * Cache channels - single connection.
 		 */
 		CHANNEL,
 		/**
-		 * Cache connections and channels within each connection
+		 * Cache connections and channels within each connection.
 		 */
 		CONNECTION
 	}
@@ -172,7 +175,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
-	/** Synchronization monitor for the shared Connection */
+	/** Synchronization monitor for the shared Connection. */
 	private final Object connectionMonitor = new Object();
 
 	/** Executor used for deferred close if no explicit executor set. */
@@ -324,8 +327,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * <p>
 	 * Since 1.5.5, also applies to getting a connection when the cache mode is CONNECTION.
 	 * @param channelCheckoutTimeout the timeout in milliseconds; default 0 (channel limiting not enabled).
-	 * @see #setConnectionLimit(int)
 	 * @since 1.4.2
+	 * @see #setConnectionLimit(int)
 	 */
 	public void setChannelCheckoutTimeout(long channelCheckoutTimeout) {
 		this.channelCheckoutTimeout = channelCheckoutTimeout;
@@ -727,9 +730,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * Defaults to phase {@link Integer#MIN_VALUE - 1000} so the factory is
 	 * stopped in a very late phase, allowing other beans to use the connection
 	 * to clean up.
-	 * @see #getPhase()
 	 * @param phase the phase.
 	 * @since 1.5.3
+	 * @see #getPhase()
 	 */
 	public void setPhase(int phase) {
 		this.phase = phase;
@@ -1015,8 +1018,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		/**
-		 * GUARDED by channelList
-		 * @param proxy the channel to close
+		 * GUARDED by channelList.
+		 * @param proxy the channel to close.
+		 * @throws Exception an exception.
 		 */
 		private void logicalClose(ChannelProxy proxy) throws Exception {
 			if (this.target == null) {

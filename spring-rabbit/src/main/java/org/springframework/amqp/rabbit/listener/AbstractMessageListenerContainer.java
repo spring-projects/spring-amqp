@@ -629,8 +629,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Return the default requeue rejected.
 	 * @return the boolean.
-	 * @see #setDefaultRequeueRejected(boolean)
 	 * @since 2.0
+	 * @see #setDefaultRequeueRejected(boolean)
 	 */
 	protected boolean isDefaultRequeueRejected() {
 		return this.defaultRequeueRejected;
@@ -1579,6 +1579,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
+	/**
+	 * A runtime exception to wrap a {@link Throwable}.
+	 */
 	@SuppressWarnings("serial")
 	protected static final class WrappedTransactionException extends RuntimeException {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,9 @@ public final class BindingBuilder {
 		return map;
 	}
 
+	/**
+	 * General destination configurer.
+	 */
 	public static final class DestinationConfigurer {
 
 		protected final String name;
@@ -84,6 +87,9 @@ public final class BindingBuilder {
 		}
 	}
 
+	/**
+	 * Headers exchange configurer.
+	 */
 	public static final class HeadersExchangeMapConfigurer {
 
 		protected final DestinationConfigurer destination;
@@ -115,6 +121,9 @@ public final class BindingBuilder {
 			return new HeadersExchangeMapBindingCreator(headerValues, true);
 		}
 
+		/**
+		 * Headers exchange single value binding creator.
+		 */
 		public final class HeadersExchangeSingleValueBindingCreator {
 
 			private final String key;
@@ -139,6 +148,9 @@ public final class BindingBuilder {
 			}
 		}
 
+		/**
+		 * Headers exchange keys binding creator.
+		 */
 		public final class HeadersExchangeKeysBindingCreator {
 
 			private final Map<String, Object> headerMap;
@@ -156,6 +168,9 @@ public final class BindingBuilder {
 			}
 		}
 
+		/**
+		 * Headers exchange map binding creator.
+		 */
 		public final class HeadersExchangeMapBindingCreator {
 
 			private final Map<String, Object> headerMap;
@@ -186,6 +201,9 @@ public final class BindingBuilder {
 		}
 	}
 
+	/**
+	 * Topic exchange routing key configurer.
+	 */
 	public static final class TopicExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
 		TopicExchangeRoutingKeyConfigurer(DestinationConfigurer destination, TopicExchange exchange) {
@@ -203,6 +221,9 @@ public final class BindingBuilder {
 		}
 	}
 
+	/**
+	 * Generic exchange routing key configurer.
+	 */
 	public static final class GenericExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<TopicExchange> {
 
 		GenericExchangeRoutingKeyConfigurer(DestinationConfigurer destination, Exchange exchange) {
@@ -219,6 +240,9 @@ public final class BindingBuilder {
 
 	}
 
+	/**
+	 * Generic argument configurer.
+	 */
 	public static class GenericArgumentsConfigurer {
 
 		private final GenericExchangeRoutingKeyConfigurer configurer;
@@ -241,6 +265,9 @@ public final class BindingBuilder {
 
 	}
 
+	/**
+	 * Direct exchange routing key configurer.
+	 */
 	public static final class DirectExchangeRoutingKeyConfigurer extends AbstractRoutingKeyConfigurer<DirectExchange> {
 
 		DirectExchangeRoutingKeyConfigurer(DestinationConfigurer destination, DirectExchange exchange) {

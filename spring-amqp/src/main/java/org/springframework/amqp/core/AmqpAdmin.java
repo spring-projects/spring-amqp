@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.Properties;
 
 
 /**
- * Specifies a basic set of portable AMQP administrative operations for AMQP &gt; 0.8
+ * Specifies a basic set of portable AMQP administrative operations for AMQP &gt; 0.9.
  *
  * @author Mark Pollack
  * @author Dave Syer
@@ -29,7 +29,7 @@ import java.util.Properties;
 public interface AmqpAdmin {
 
 	/**
-	 * Declare an exchange
+	 * Declare an exchange.
 	 * @param exchange the exchange to declare.
 	 */
 	void declareExchange(Exchange exchange);
@@ -53,33 +53,33 @@ public interface AmqpAdmin {
 	Queue declareQueue();
 
 	/**
-	 * Declare the given queue
-	 * @param queue the queue to declare
+	 * Declare the given queue.
+	 * @param queue the queue to declare.
 	 * @return the name of the queue.
 	 */
 	String declareQueue(Queue queue);
 
 	/**
-	 * Delete a queue, without regard for whether it is in use or has messages on it
-	 * @param queueName the name of the queue
-	 * @return true if the queue existed and was deleted
+	 * Delete a queue, without regard for whether it is in use or has messages on it.
+	 * @param queueName the name of the queue.
+	 * @return true if the queue existed and was deleted.
 	 */
 	boolean deleteQueue(String queueName);
 
 	// Note that nowait option is not readily exposed in Rabbit Java API but is for Rabbit .NET API.
 
 	/**
-	 * Delete a queue
-	 * @param queueName the name of the queue
-	 * @param unused true if the queue should be deleted only if not in use
-	 * @param empty true if the queue should be deleted only if empty
+	 * Delete a queue.
+	 * @param queueName the name of the queue.
+	 * @param unused true if the queue should be deleted only if not in use.
+	 * @param empty true if the queue should be deleted only if empty.
 	 */
 	void deleteQueue(String queueName, boolean unused, boolean empty);
 
 	/**
 	 * Purges the contents of the given queue.
-	 * @param queueName the name of the queue
-	 * @param noWait true to not await completion of the purge
+	 * @param queueName the name of the queue.
+	 * @param noWait true to not await completion of the purge.
 	 */
 	void purgeQueue(String queueName, boolean noWait);
 
@@ -101,7 +101,7 @@ public interface AmqpAdmin {
 	/**
 	 * Returns an implementation-specific Map of properties if the queue exists.
 	 * @param queueName the name of the queue.
-	 * @return the properties or null if the queue doesn't exist
+	 * @return the properties or null if the queue doesn't exist.
 	 */
 	Properties getQueueProperties(String queueName);
 

@@ -53,7 +53,7 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 
 /**
- * RabbitMQ implementation of portable AMQP administrative operations for AMQP &gt;= 0.9.1
+ * RabbitMQ implementation of portable AMQP administrative operations for AMQP &gt;= 0.9.1.
  *
  * @author Mark Pollack
  * @author Mark Fisher
@@ -90,7 +90,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
-	/** Logger available to subclasses */
+	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final RabbitTemplate rabbitTemplate;
@@ -469,6 +469,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	/**
 	 * Remove any instances that should not be declared by this admin.
 	 * @param declarables the collection of {@link Declarable}s.
+	 * @param <T> the declarable type.
 	 * @return a new collection containing {@link Declarable}s that should be declared by this
 	 * admin.
 	 */

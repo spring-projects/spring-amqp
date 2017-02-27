@@ -579,7 +579,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Must hold this.consumersMonitor
+	 * Must hold this.consumersMonitor.
 	 */
 	private void actualShutDown() {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
@@ -619,6 +619,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		// default empty
 	}
 
+	/**
+	 * The consumer object.
+	 */
 	final class SimpleConsumer extends DefaultConsumer {
 
 		private final Log logger = DirectMessageListenerContainer.this.logger;

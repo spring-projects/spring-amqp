@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,8 +127,8 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	/**
 	 * Set the delayed flag.
 	 * @param delayed the delayed.
-	 * @see Exchange#isDelayed()
 	 * @since 1.6
+	 * @see Exchange#isDelayed()
 	 */
 	public void setDelayed(boolean delayed) {
 		this.delayed = delayed;
@@ -142,8 +142,8 @@ public abstract class AbstractExchange extends AbstractDeclarable implements Exc
 	/**
 	 * Set the internal flag.
 	 * @param internal the internal.
-	 * @see Exchange#isInternal()
 	 * @since 1.6
+	 * @see Exchange#isInternal()
 	 */
 	public void setInternal(boolean internal) {
 		this.internal = internal;

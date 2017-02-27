@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,9 +75,10 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	}
 
 	/**
+	 * Return the type precedence.
 	 * @return the precedence.
-	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
 	 * @since 1.6.
+	 * @see #setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence)
 	 */
 	public Jackson2JavaTypeMapper.TypePrecedence getTypePrecedence() {
 		return this.javaTypeMapper.getTypePrecedence();
@@ -133,6 +134,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	}
 
 	/**
+	 * {@inheritDoc}
 	 * @param conversionHint The conversionHint must be a {@link ParameterizedTypeReference}.
 	 */
 	@Override

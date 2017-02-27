@@ -148,8 +148,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * @param uri the URI
-	 * @see com.rabbitmq.client.ConnectionFactory#setUri(URI)
 	 * @since 1.5
+	 * @see com.rabbitmq.client.ConnectionFactory#setUri(URI)
 	 */
 	public void setUri(URI uri) {
 		try {
@@ -162,8 +162,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	/**
 	 * @param uri the URI
-	 * @see com.rabbitmq.client.ConnectionFactory#setUri(String)
 	 * @since 1.5
+	 * @see com.rabbitmq.client.ConnectionFactory#setUri(String)
 	 */
 	public void setUri(String uri) {
 		try {
