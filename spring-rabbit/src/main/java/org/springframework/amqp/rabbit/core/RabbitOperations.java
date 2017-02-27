@@ -48,7 +48,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @param action the call back.
 	 * @param <T> the return type.
 	 * @return the result from the
-	 * {@link OperationsCallback#doInRabbit(RabbitTemplate template)}.
+	 * {@link OperationsCallback#doInRabbit(RabbitOperations operations)}.
 	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
@@ -394,9 +394,10 @@ public interface RabbitOperations extends AmqpTemplate {
 	public interface OperationsCallback<T> {
 
 		/**
-		 * Execute any number of operations using a dedicated {@link Channel} as long as those
-		 * operations are performed on the template argument and on the calling thread. The
-		 * channel will be physically closed when the callback exits.
+		 * Execute any number of operations using a dedicated
+		 * {@link com.rabbitmq.client.Channel} as long as those operations are performed
+		 * on the template argument and on the calling thread. The channel will be
+		 * physically closed when the callback exits.
 		 *
 		 * @param operations The operations.
 		 * @return The result.
