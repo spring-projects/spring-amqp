@@ -1831,7 +1831,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					? this.correlationDataPostProcessor.postProcess(message, correlationData)
 					: correlationData;
 			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
-					new PendingConfirm(correlationData, System.currentTimeMillis()));
+					new PendingConfirm(this.correlationDataPostProcessor != null
+							? this.correlationDataPostProcessor.postProcess(message, correlationData)
+							: correlationData,
+						System.currentTimeMillis()));
 		}
 	}
 
