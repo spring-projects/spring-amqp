@@ -68,8 +68,10 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.AmqpMessageReturnedException;
 import org.springframework.amqp.core.Message;
@@ -125,6 +127,7 @@ import org.springframework.util.ReflectionUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
@@ -196,6 +199,42 @@ public class RabbitTemplateIntegrationTests {
 		this.template.stop();
 		((DisposableBean) template.getConnectionFactory()).destroy();
 		this.brokerIsRunning.removeTestQueues();
+	}
+
+	@Test
+	public void testChannelCloseInTx() throws Exception {
+		this.connectionFactory.setPublisherReturns(false);
+		Channel channel = this.connectionFactory.createConnection().createChannel(true);
+		RabbitResourceHolder holder = new RabbitResourceHolder(channel, true);
+		TransactionSynchronizationManager.bindResource(this.connectionFactory, holder);
+		try {
+			this.template.setChannelTransacted(true);
+			this.template.convertAndSend(ROUTE, "foo");
+			this.template.convertAndSend(UUID.randomUUID().toString(), ROUTE, "xxx"); // force channel close
+			int n = 0;
+			while (n++ < 100 && channel.isOpen()) {
+				Thread.sleep(100);
+			}
+			assertFalse(channel.isOpen());
+			try {
+				this.template.convertAndSend(ROUTE, "bar");
+				fail("Expected Exception");
+			}
+			catch (UncategorizedAmqpException e) {
+				if (e.getCause() instanceof IllegalStateException) {
+					assertThat(e.getCause().getMessage(), equalTo("Channel closed during transaction"));
+				}
+				else {
+					fail("Expected IllegalStateException not" + e.getCause());
+				}
+			}
+			catch (AmqpConnectException e) {
+				assertThat(e.getCause(), instanceOf(AlreadyClosedException.class));
+			}
+		}
+		finally {
+			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
+		}
 	}
 
 	@Test
