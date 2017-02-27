@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -268,6 +268,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 	 * Will extract Content-Type from MessageHeaders and convert it to String if possible
 	 * Required since Content-Type can be represented as org.springframework.http.MediaType
 	 * or org.springframework.util.MimeType.
+	 * @param headers the headers.
+	 * @return the content type.
 	 */
 	private String extractContentTypeAsString(Map<String, Object> headers) {
 		String contentTypeStringValue = null;

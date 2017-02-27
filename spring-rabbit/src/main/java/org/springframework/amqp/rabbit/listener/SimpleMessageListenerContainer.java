@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -371,8 +371,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Set the number of retries after passive queue declaration fails.
 	 * @param declarationRetries The number of retries, default 3.
-	 * @see #setFailedDeclarationRetryInterval(long)
 	 * @since 1.3.9
+	 * @see #setFailedDeclarationRetryInterval(long)
 	 */
 	public void setDeclarationRetries(int declarationRetries) {
 		this.declarationRetries = declarationRetries;

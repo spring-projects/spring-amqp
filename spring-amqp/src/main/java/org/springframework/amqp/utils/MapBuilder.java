@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import java.util.Map;
 
 /**
  * A {@code Builder} pattern implementation for a {@link Map}.
- *
+ * @param <B> the builder type.
+ * @param <K> the key type.
+ * @param <V> the value type.
  * @author Artem Bilan
  * @author Gary Russell
  * @since 2.0

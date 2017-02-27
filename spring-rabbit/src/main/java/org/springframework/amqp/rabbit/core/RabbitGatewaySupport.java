@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import org.springframework.beans.factory.InitializingBean;
  */
 public class RabbitGatewaySupport implements InitializingBean {
 
-	/** Logger available to subclasses */
+	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private RabbitOperations rabbitOperations;
@@ -49,10 +49,9 @@ public class RabbitGatewaySupport implements InitializingBean {
 	/**
 	 * Set the Rabbit connection factory to be used by the gateway.
 	 * Will automatically create a RabbitTemplate for the given ConnectionFactory.
+	 * @param connectionFactory The connection factory.
 	 * @see #createRabbitTemplate
 	 * @see #setConnectionFactory(org.springframework.amqp.rabbit.connection.ConnectionFactory)
-	 *
-	 * @param connectionFactory The connection factory.
 	 */
 	public final void setConnectionFactory(ConnectionFactory connectionFactory) {
 		this.rabbitOperations = createRabbitTemplate(connectionFactory);

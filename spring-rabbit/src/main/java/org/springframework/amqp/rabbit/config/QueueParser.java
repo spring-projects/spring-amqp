@@ -39,7 +39,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 	private static final ThreadLocal<Element> CURRENT_ELEMENT = new ThreadLocal<>();
 
-	/**  Element OR attribute */
+	/**  Element OR attribute. */
 	private static final String ARGUMENTS = "queue-arguments";
 
 	private static final String DURABLE_ATTRIBUTE = "durable";

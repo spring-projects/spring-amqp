@@ -755,7 +755,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	/**
 	 * Resolve the specified value if possible.
-	 *
+	 * @param value the value to resolve.
+	 * @return the resolved value.
 	 * @see ConfigurableBeanFactory#resolveEmbeddedValue
 	 */
 	private String resolve(String value) {

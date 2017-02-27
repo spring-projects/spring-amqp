@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ package org.springframework.amqp.rabbit.connection;
 public interface RoutingConnectionFactory {
 
 	/**
-	 * Returns the {@link ConnectionFactory} bound to given lookup key, or null if one does not exist
+	 * Returns the {@link ConnectionFactory} bound to given lookup key, or null if one does not exist.
 	 * @param key The lookup key to which the {@link ConnectionFactory} is bound
 	 * @return the {@link ConnectionFactory} bound to the given lookup key, or null if one does not exist
 	 */

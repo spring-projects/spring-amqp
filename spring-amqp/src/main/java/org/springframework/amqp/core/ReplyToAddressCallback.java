@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ package org.springframework.amqp.core;
  *
  * <p>This often as an anonymous class within a method implementation.
  *
-* @author Artem Bilan
-* @author Gary Russell
-* @since 1.3
-*/
+ * @param <T> the reply type.
+ * @author Artem Bilan
+ * @author Gary Russell
+ * @since 1.3
+ */
 @FunctionalInterface
 public interface ReplyToAddressCallback<T> {
 

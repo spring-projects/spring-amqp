@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public interface PublisherCallbackChannel extends Channel {
 	String RETURN_CORRELATION_KEY = "spring_listener_return_correlation";
 
 	/**
-	 * Adds a {@link Listener}
+	 * Adds a {@link Listener}.
 	 * @param listener The Listener.
 	 */
 	void addListener(Listener listener);
@@ -50,7 +50,7 @@ public interface PublisherCallbackChannel extends Channel {
 	Collection<PendingConfirm> expire(Listener listener, long cutoffTime);
 
     /**
-     * Get the {@link PendingConfirm}s count
+     * Get the {@link PendingConfirm}s count.
      * @param listener the listener.
      * @return Count of the pending confirms.
      */

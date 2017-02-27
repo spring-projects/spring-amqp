@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 /**
+ * Interface for all exchanges.
+ *
  * @author Mark Fisher
  * @author Gary Russell
  * @author Artem Bilan
@@ -28,28 +30,28 @@ public interface Exchange extends Declarable {
 	/**
 	 * The name of the exchange.
 	 *
-	 * @return the name of the exchange
+	 * @return the name of the exchange.
 	 */
 	String getName();
 
 	/**
 	 * The type of the exchange. See {@link ExchangeTypes} for some well-known examples.
 	 *
-	 * @return the type of the exchange
+	 * @return the type of the exchange.
 	 */
 	String getType();
 
 	/**
-	 * A durable exchange will survive a server restart
+	 * A durable exchange will survive a server restart.
 	 *
-	 * @return true if durable
+	 * @return true if durable.
 	 */
 	boolean isDurable();
 
 	/**
 	 * True if the server should delete the exchange when it is no longer in use (if all bindings are deleted).
 	 *
-	 * @return true if auto-delete
+	 * @return true if auto-delete.
 	 */
 	boolean isAutoDelete();
 
@@ -57,7 +59,7 @@ public interface Exchange extends Declarable {
 	 * A map of arguments used to declare the exchange. These are stored by the broker, but do not necessarily have any
 	 * meaning to the broker (depending on the exchange type).
 	 *
-	 * @return the arguments
+	 * @return the arguments.
 	 */
 	Map<String, Object> getArguments();
 

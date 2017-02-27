@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,7 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	}
 
 	/**
+	 * Set the order.
 	 * @param order the order, default 0.
 	 * @see Ordered
 	 */
@@ -106,6 +107,7 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	}
 
 	/**
+	 * Get the stream.
 	 * @param stream The output stream to write the compressed data to.
 	 * @return the compressor output stream.
 	 * @throws IOException IOException
@@ -113,6 +115,7 @@ public abstract class AbstractCompressingPostProcessor implements MessagePostPro
 	protected abstract OutputStream getCompressorStream(OutputStream stream) throws IOException;
 
 	/**
+	 * Get the encoding.
 	 * @return the content-encoding header.
 	 */
 	protected abstract String getEncoding();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,11 +59,12 @@ import org.springframework.util.Assert;
  *				.build();
  * </pre>
  *
+ * @param <T> The type of {@link MethodInterceptor} returned by the builder's {@link #build()} method.
+ *
  * @author James Carr
  * @author Gary Russell
  * @since 1.3
  *
- * @param <T> The type of {@link MethodInterceptor} returned by the builder's {@link #build()} method.
  */
 public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 
@@ -200,6 +201,9 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 	public abstract T build();
 
 
+	/**
+	 * Builder for a stateful interceptor.
+	 */
 	public static final class StatefulRetryInterceptorBuilder extends RetryInterceptorBuilder<StatefulRetryOperationsInterceptor> {
 
 		private final StatefulRetryOperationsInterceptorFactoryBean factoryBean =
@@ -287,6 +291,9 @@ public abstract class RetryInterceptorBuilder<T extends MethodInterceptor> {
 	}
 
 
+	/**
+	 * Builder for a stateless interceptor.
+	 */
 	public static final class StatelessRetryInterceptorBuilder
 			extends RetryInterceptorBuilder<RetryOperationsInterceptor> {
 

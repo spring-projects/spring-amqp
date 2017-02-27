@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ import org.springframework.retry.support.RetryTemplate;
  * processed using a {@link MessageRecoverer} if one is provided, in a new transaction. If a recoverer is not provided
  * the message will be logged and dropped.
  *
- * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
- * org.springframework.retry.RetryState)
- *
  * @author Dave Syer
  * @author Gary Russell
+ *
+ * @see RetryOperations#execute(org.springframework.retry.RetryCallback, org.springframework.retry.RecoveryCallback,
+ * org.springframework.retry.RetryState)
  *
  */
 public class StatefulRetryOperationsInterceptorFactoryBean extends AbstractRetryOperationsInterceptorFactoryBean {

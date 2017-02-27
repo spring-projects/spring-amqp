@@ -101,8 +101,8 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	/**
 	 * Return the ids of the managed {@link MessageListenerContainer} instance(s).
 	 * @return the ids.
-	 * @see #getListenerContainer(String)
 	 * @since 1.5.2
+	 * @see #getListenerContainer(String)
 	 */
 	public Set<String> getListenerContainerIds() {
 		return Collections.unmodifiableSet(this.listenerContainers.keySet());
@@ -272,6 +272,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	/**
 	 * Start the specified {@link MessageListenerContainer} if it should be started
 	 * on startup or when start is called explicitly after startup.
+	 * @param listenerContainer the container.
 	 * @see MessageListenerContainer#isAutoStartup()
 	 */
 	private void startIfNecessary(MessageListenerContainer listenerContainer) {

@@ -142,7 +142,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private static final String RETURN_CORRELATION_KEY = "spring_request_return_correlation";
 
-	/** Alias for amq.direct default exchange */
+	/** Alias for amq.direct default exchange. */
 	private static final String DEFAULT_EXCHANGE = "";
 
 	private static final String DEFAULT_ROUTING_KEY = "";
@@ -564,8 +564,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * Set a {@link CorrelationDataPostProcessor} to be invoked before publishing a message.
 	 * Correlation data is used to correlate publisher confirms.
 	 * @param correlationDataPostProcessor the post processor.
-	 * @see #setConfirmCallback(ConfirmCallback)
 	 * @since 1.6.7
+	 * @see #setConfirmCallback(ConfirmCallback)
 	 */
 	public void setCorrelationDataPostProcessor(CorrelationDataPostProcessor correlationDataPostProcessor) {
 		this.correlationDataPostProcessor = correlationDataPostProcessor;
@@ -1780,7 +1780,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @param message The Message to send.
 	 * @param mandatory The mandatory flag.
 	 * @param correlationData The correlation data.
-	 * @throws IOException If thrown by RabbitMQ API methods
+	 * @throws Exception If thrown by RabbitMQ API methods
 	 */
 	public void doSend(Channel channel, String exchange, String routingKey, Message message,
 			boolean mandatory, CorrelationData correlationData) throws Exception {

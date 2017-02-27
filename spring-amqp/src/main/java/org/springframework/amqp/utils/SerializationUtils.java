@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 the original author or authors.
+ * Copyright 2006-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public final class SerializationUtils {
 	}
 
 	/**
+	 * Deserialize the bytes.
 	 * @param bytes a serialized object created
 	 * @return the result of deserializing the bytes
 	 */
@@ -71,6 +72,7 @@ public final class SerializationUtils {
 	}
 
 	/**
+	 * Deserialize the stream.
 	 * @param stream an object stream created from a serialized object
 	 * @return the result of deserializing the bytes
 	 */

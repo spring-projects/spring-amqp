@@ -81,8 +81,8 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to this
 	 * class.
 	 * @param defaultMapClass the map class.
-	 * @see #DEFAULT_CLASSID_FIELD_NAME
 	 * @since 2.0
+	 * @see #DEFAULT_CLASSID_FIELD_NAME
 	 */
 	public void setDefaultMapClass(Class<?> defaultMapClass) {
 		this.defaultMapClass = defaultMapClass;

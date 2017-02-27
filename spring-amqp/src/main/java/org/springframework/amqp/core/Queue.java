@@ -93,9 +93,9 @@ public class Queue extends AbstractDeclarable {
 	}
 
 	/**
-	 * A durable queue will survive a server restart
+	 * A durable queue will survive a server restart.
 	 *
-	 * @return true if durable
+	 * @return true if durable.
 	 */
 	public boolean isDurable() {
 		return this.durable;
@@ -104,7 +104,7 @@ public class Queue extends AbstractDeclarable {
 	/**
 	 * True if the server should only send messages to the declarer's connection.
 	 *
-	 * @return true if auto-delete
+	 * @return true if exclusive.
 	 */
 	public boolean isExclusive() {
 		return this.exclusive;
@@ -114,7 +114,7 @@ public class Queue extends AbstractDeclarable {
 	 * True if the server should delete the queue when it is no longer in use (the last consumer is cancelled). A queue
 	 * that never has any consumers will not be deleted automatically.
 	 *
-	 * @return true if auto-delete
+	 * @return true if auto-delete.
 	 */
 	public boolean isAutoDelete() {
 		return this.autoDelete;

@@ -70,14 +70,12 @@ import com.rabbitmq.http.client.Client;
  * set the environment variable {@value #BROKER_REQUIRED} to {@code true} and the
  * tests will fail fast.
  *
- * @see Assume
- * @see AssumptionViolatedException
- *
  * @author Dave Syer
  * @author Gary Russell
  *
  * @since 1.7
- *
+ * @see Assume
+ * @see AssumptionViolatedException
  */
 public final class BrokerRunning extends TestWatcher {
 
@@ -142,6 +140,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
+	 * @param queues the queues.
 	 * @return a new rule that assumes an existing broker with the management plugin with
 	 * the provided queues declared (and emptied if needed)..
 	 */
