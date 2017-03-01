@@ -299,7 +299,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public void setExecutor(Executor executor) {
 		boolean isExecutorService = executor instanceof ExecutorService;
 		boolean isThreadPoolTaskExecutor = executor instanceof ThreadPoolTaskExecutor;
-		Assert.isTrue(isExecutorService || isThreadPoolTaskExecutor);
+		Assert.isTrue(isExecutorService || isThreadPoolTaskExecutor,
+				"The executor must be an 'ExecutorService' or a `ThreadPoolTaskExecutor'");
 		if (isExecutorService) {
 			this.executorService = (ExecutorService) executor;
 		}
