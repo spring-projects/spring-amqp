@@ -19,6 +19,11 @@ The minimum Log4j2 version (for the `AmqpAppender`) is now `2.7`.
 The framework is no longer compatible with previous versions.
 See <<logging>> for more information.
 
+===== Logback Appender
+
+This appender no longer captures caller data (method, line number) by default; it can be re-enabled by setting the `includeCallerData` configuration option.
+See <<logging>> for information about the available log appenders.
+
 ===== Spring Retry upgrade
 
 The minimum Spring Retry version is now `1.2`.

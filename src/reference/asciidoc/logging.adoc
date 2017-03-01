@@ -160,7 +160,7 @@ NOTE: This appender is deprecated and will be removed in _version 2.0_.
     </layout>
     <addresses>foo:5672,bar:5672</addresses>
     <abbreviation>36</abbreviation>
-    <includeCallerData>true</includeCallerData>
+    <includeCallerData>false</includeCallerData>
     <applicationId>myApplication</applicationId>
     <routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
     <generateId>true</generateId>
@@ -171,11 +171,10 @@ NOTE: This appender is deprecated and will be removed in _version 2.0_.
 </appender>
 ----
 
-Starting with _version 1.7.1_, the Logback `AmqpAppender` provides `includeCallerData` option which is `false` by default.
-Extracting caller data can be rather expensive.
-To improve performance, by default, caller data associated with an event is not extracted when the event added to the event queue.
-By default, only "cheap" data like the thread name and the MDC are copied.
-You can direct this appender to include caller data by setting the `includeCallerData` property to `true`.
+Starting with _version 1.7.1_, the Logback `AmqpAppender` provides  an `includeCallerData` option which is `false` by default.
+Extracting caller data can be rather expensive because the log event has to create a throwable and inspect it to determine the calling location.
+Therefore, by default, caller data associated with an event is not extracted when the event added to the event queue.
+You can configure the appender to include caller data by setting the `includeCallerData` property to `true`.
 
 ==== Customizing the Messages
 
