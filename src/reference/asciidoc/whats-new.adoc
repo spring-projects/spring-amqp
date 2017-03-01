@@ -29,6 +29,11 @@ See <<choose-container>> and <<containerAttributes>> for information about choos
 This appender is no longer available due to the end-of-life of log4j.
 See <<logging>> for information about the available log appenders.
 
+===== Logback Appender
+
+This appender no longer captures caller data (method, line number) by default; it can be re-enabled by setting the `includeCallerData` configuration option.
+See <<logging>> for information about the available log appenders.
+
 
 ===== RabbitTemplate Changes
 
