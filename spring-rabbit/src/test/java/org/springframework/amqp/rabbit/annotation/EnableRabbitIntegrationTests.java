@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -215,6 +216,14 @@ public class EnableRabbitIntegrationTests {
 	@Test
 	public void autoSimpleDeclare() {
 		assertEquals("FOOX", rabbitTemplate.convertSendAndReceive("test.simple.declare", "foo"));
+	}
+
+	@Test
+	public void autoSimpleDeclareAnonymousQueue() {
+		final SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) registry
+				.getListenerContainer("anonymousQueue575");
+		assertThat(container.getQueueNames(), arrayWithSize(1));
+		assertEquals("viaAnonymous:foo", rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo"));
 	}
 
 	@Test
@@ -674,6 +683,11 @@ public class EnableRabbitIntegrationTests {
 		@RabbitListener(queuesToDeclare = @Queue(name = "${jjjj:test.simple.declare}", durable = "true"))
 		public String handleWithSimpleDeclare(String foo) {
 			return foo.toUpperCase() + "X";
+		}
+
+		@RabbitListener(queuesToDeclare = @Queue, id = "anonymousQueue575")
+		public String handleWithAnonymousQueueToDeclare(String data) throws Exception {
+			return "viaAnonymous:" + data;
 		}
 
 		@RabbitListener(bindings = @QueueBinding(

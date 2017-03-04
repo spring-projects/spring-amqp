@@ -495,8 +495,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						"@RabbitListener can have only one of 'queues', 'queuesToDeclare', or 'bindings'");
 			}
 			for (int i = 0; i < queuesToDeclare.length; i++) {
-				declareQueue(queuesToDeclare[i]);
-				resolveAsString(resolveExpression(queuesToDeclare[i].value()), result);
+				result.add(declareQueue(queuesToDeclare[i]));
 			}
 		}
 		if (bindings.length > 0) {
