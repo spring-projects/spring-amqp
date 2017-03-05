@@ -18,6 +18,11 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 The `ExchangeBuilder` now builds durable exchanges by default.
 See <<builder-api>> for more information.
 
+===== Deleted classes
+
+`UniquelyNameQueue` is no longer provided. It is unusual to create a durable non auto-delete queue with a unique name.
+This class has been deleted; if you require its functionality, use `new Queue(UUID.randomUUID).toString()`).
+
 ===== New Listener Container
 
 The `DirectMessageListenerContainer` has been added alongside the existing `SimpleMessageListenerContainer`.
