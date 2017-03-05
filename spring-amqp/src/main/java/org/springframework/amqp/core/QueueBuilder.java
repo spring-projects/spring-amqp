@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public final class QueueBuilder extends AbstractBuilder {
 
-	private static final AnonymousQueue.NamingStrategy namingStrategy = new AnonymousQueue.Base64UrlNamingStrategy();
+	private static final AnonymousQueue.NamingStrategy namingStrategy = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT;
 
 	private final String name;
 

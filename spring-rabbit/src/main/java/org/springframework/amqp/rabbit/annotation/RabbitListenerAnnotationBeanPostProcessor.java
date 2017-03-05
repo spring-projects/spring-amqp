@@ -34,6 +34,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.AbstractDeclarable;
 import org.springframework.amqp.core.AbstractExchange;
+import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
@@ -550,7 +551,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		boolean exclusive = false;
 		boolean autoDelete = false;
 		if (!StringUtils.hasText(queueName)) {
-			queueName = UUID.randomUUID().toString();
+			queueName = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName();
 			// default exclusive/autodelete to true when anonymous
 			if (!StringUtils.hasText(bindingQueue.exclusive())
 					|| resolveExpressionAsBoolean(bindingQueue.exclusive())) {

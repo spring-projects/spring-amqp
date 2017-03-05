@@ -96,7 +96,7 @@ public class AnonymousQueue extends Queue {
 		/**
 		 * The default instance - using {@code spring.gen-} as the prefix.
 		 */
-		public static Base64UrlNamingStrategy DEFAULT = new Base64UrlNamingStrategy();
+		public static final Base64UrlNamingStrategy DEFAULT = new Base64UrlNamingStrategy();
 
 		private final String prefix;
 
@@ -140,7 +140,7 @@ public class AnonymousQueue extends Queue {
 		/**
 		 * The default instance.
 		 */
-		public static UUIDNamingStrategy DEFAULT = new UUIDNamingStrategy();
+		public static final UUIDNamingStrategy DEFAULT = new UUIDNamingStrategy();
 
 		@Override
 		public String generateName() {
