@@ -1651,6 +1651,15 @@ Notice `ignoreDeclarationExceptions` on the exchange in the first example.
 This allows, for example, binding to an existing exchange that might have different settings (such as `internal`).
 By default the properties of an existing exchange must match.
 
+Starting with _version 2.0_, you can now bind a queue to an exchange with multiple routing keys:
+
+[source, java]
+----
+...
+    key = { "red", "yellow" }
+...
+----
+
 You can also specify arguments within `@QueueBinding` annotations for queues, exchanges
 and bindings. For example:
 

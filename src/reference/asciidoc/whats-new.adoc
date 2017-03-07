@@ -102,6 +102,9 @@ You can now configure `@RabbitListener` annotations so that any exceptions throw
 You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
 See <<annotation-error-handling>> for more information.
 
+You can now bind a queue with multiple routing keys when using the `@QueueBinding` annotation.
+See <<async-annotation-driven>> for more information.
+
 ===== Container Conditional Rollback
 
 When using an external transaction manager (e.g. JDBC), rule-based rollback is now supported when providing the container with a transaction attribute.

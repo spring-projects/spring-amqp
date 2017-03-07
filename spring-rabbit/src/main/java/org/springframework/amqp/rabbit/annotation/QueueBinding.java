@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
  * with {@code @RabbitListener}.
  *
  * @author Gary Russell
+ * @author Alex Panchenko
  * @since 1.5
  *
  */
@@ -44,8 +45,9 @@ public @interface QueueBinding {
 
 	/**
 	 * @return the routing key or pattern for the binding.
+	 * Multiple elements will result in multiple bindings.
 	 */
-	String key() default "";
+	String[] key() default {};
 
 	/**
 	 * @return true if the declaration exceptions should be ignored.
