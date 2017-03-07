@@ -17,7 +17,9 @@
 package org.springframework.amqp.rabbit.annotation;
 
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -28,10 +30,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
@@ -195,6 +203,33 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		}
 	}
 
+	@Test
+	public void multipleRoutingKeysTestBean() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+				MultipleRoutingKeysTestBean.class);
+
+		RabbitListenerContainerTestFactory factory = context.getBean(RabbitListenerContainerTestFactory.class);
+		assertThat("one container should have been registered", factory.getListenerContainers(), hasSize(1));
+		RabbitListenerEndpoint endpoint = factory.getListenerContainers().get(0).getEndpoint();
+		assertEquals(Collections.singletonList("my_queue"),
+				((AbstractRabbitListenerEndpoint) endpoint).getQueueNames());
+		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
+		queues.sort(Comparator.comparing(Queue::getName));
+		assertThat(queues.stream().map(Queue::getName).collect(Collectors.toList()),
+				contains("my_queue", "secondQueue", "testQueue"));
+		assertEquals(Collections.singletonMap("foo", "bar"), queues.get(0).getArguments());
+
+		assertThat(context.getBeansOfType(org.springframework.amqp.core.Exchange.class).values(), hasSize(1));
+
+		final List<Binding> bindings = new ArrayList<>(context.getBeansOfType(Binding.class).values());
+		assertThat(bindings, hasSize(2));
+		bindings.sort(Comparator.comparing(Binding::getRoutingKey));
+		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=red]", bindings.get(0).toString());
+		assertEquals("Binding [destination=my_queue, exchange=my_exchange, routingKey=yellow]", bindings.get(1).toString());
+
+		context.close();
+	}
+
 	@Component
 	static class SimpleMessageListenerTestBean {
 
@@ -265,6 +300,16 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	static class InvalidValueInAnnotationTestBean {
 
 		@RabbitListener(queues = "#{@testFactory}")
+		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class MultipleRoutingKeysTestBean {
+
+		@RabbitListener(bindings = @QueueBinding(exchange = @Exchange("my_exchange"),
+				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue", arguments = @Argument(name = "foo", value = "bar")),
+				key = {"red", "yellow"}))
 		public void handleIt(String body) {
 		}
 	}
