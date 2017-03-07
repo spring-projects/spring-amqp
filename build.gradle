@@ -24,6 +24,7 @@ apply plugin: 'idea'
 def docsDir = 'src/reference/asciidoc' // Will be default with newer asciidoctor plugin
 
 ext {
+	isTravisBuild = System.getenv().get("TRAVIS") == 'true'
 	linkHomepage = 'https://projects.spring.io/spring-amqp'
 	linkCi       = 'https://build.spring.io/browse/AMQP'
 	linkIssue    = 'https://jira.spring.io/browse/AMQP'
@@ -149,6 +150,10 @@ subprojects { subproject ->
 		jacoco {
 			append = false
 			destinationFile = file("$buildDir/jacoco.exec")
+		}
+		if (isTravisBuild) {
+			// restrict memory usage, so tests don't fail with exit code 137 on travis
+			maxHeapSize = '256m'
 		}
 	}
 
