@@ -45,7 +45,7 @@ public @interface QueueBinding {
 	/**
 	 * @return the routing key or pattern for the binding.
 	 */
-	String key() default "";
+	String[] key() default {};
 
 	/**
 	 * @return true if the declaration exceptions should be ignored.
