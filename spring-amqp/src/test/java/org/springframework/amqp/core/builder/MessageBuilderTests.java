@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ import org.springframework.amqp.core.MessagePropertiesBuilder;
 
 /**
  * @author Gary Russell
+ * @author Alex Panchenko
+ *
  * @since 1.3
  *
  */
@@ -318,7 +320,7 @@ public class MessageBuilderTests {
 		assertEquals("contentEncoding", properties.getContentEncoding());
 		assertEquals(MessageProperties.CONTENT_TYPE_TEXT_PLAIN, properties.getContentType());
 		assertEquals(1, properties.getContentLength());
-		assertEquals("correlationId", new String(properties.getCorrelationId()));
+		assertEquals("correlationId", properties.getCorrelationId());
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT, properties.getDeliveryMode());
 		assertEquals(2, properties.getDeliveryTag());
 		assertEquals("expiration", properties.getExpiration());
@@ -342,7 +344,7 @@ public class MessageBuilderTests {
 		assertEquals("CONTENTENCODING", properties.getContentEncoding());
 		assertEquals(MessageProperties.CONTENT_TYPE_BYTES, properties.getContentType());
 		assertEquals(10, properties.getContentLength());
-		assertEquals("CORRELATIONID", new String(properties.getCorrelationId()));
+		assertEquals("CORRELATIONID", properties.getCorrelationId());
 		assertEquals(MessageDeliveryMode.PERSISTENT, properties.getDeliveryMode());
 		assertEquals(20, properties.getDeliveryTag());
 		assertEquals("EXPIRATION", properties.getExpiration());

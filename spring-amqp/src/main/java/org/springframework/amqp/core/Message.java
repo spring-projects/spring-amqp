@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.amqp.utils.SerializationUtils;
  * @author Oleg Zhurakousky
  * @author Dave Syer
  * @author Gary Russell
+ * @author Alex Panchenko
  */
 public class Message implements Serializable {
 
@@ -60,9 +61,9 @@ public class Message implements Serializable {
 
 	@Override
 	public String toString() {
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		buffer.append("(");
-		buffer.append("Body:'" + this.getBodyContentAsString() + "'");
+		buffer.append("Body:'").append(this.getBodyContentAsString()).append("'");
 		if (this.messageProperties != null) {
 			buffer.append(" ").append(this.messageProperties.toString());
 		}
