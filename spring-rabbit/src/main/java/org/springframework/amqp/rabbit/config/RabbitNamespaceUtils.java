@@ -192,7 +192,7 @@ public final class RabbitNamespaceUtils {
 		String channelTransacted = containerEle.getAttribute(CHANNEL_TRANSACTED_ATTRIBUTE);
 		if (StringUtils.hasText(channelTransacted)) {
 			// Note: a placeholder will pass this test, but if it resolves to true, it will be caught during container initialization
-			if (acknowledgeMode.isAutoAck() && channelTransacted.equalsIgnoreCase("true")) {
+			if (acknowledgeMode == AcknowledgeMode.NONE && channelTransacted.equalsIgnoreCase("true")) {
 				parserContext.getReaderContext().error(
 						"Listener Container - cannot set channel-transacted with acknowledge='NONE'", containerEle);
 			}
