@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 the original author or authors.
+ * Copyright 2010-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,7 +225,7 @@ public class ListenerContainerParserTests {
 	public void testIncompatibleTxAtts() {
 		try {
 			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();
-			fail("Parse exception exptected");
+			fail("Parse exception expected");
 		}
 		catch (BeanDefinitionParsingException e) {
 			assertTrue(e.getMessage().startsWith(
@@ -234,14 +234,18 @@ public class ListenerContainerParserTests {
 	}
 
 	static class TestBean {
+
 		public void handle(String s) {
 		}
+
 	}
 
 	static class TestAdvice implements MethodBeforeAdvice {
+
 		@Override
 		public void before(Method method, Object[] args, Object target) throws Throwable {
 		}
+
 	}
 
 	public static class TestConsumerTagStrategy implements ConsumerTagStrategy {
