@@ -60,9 +60,9 @@ public class Message implements Serializable {
 
 	@Override
 	public String toString() {
-		StringBuffer buffer = new StringBuffer();
+		StringBuilder buffer = new StringBuilder();
 		buffer.append("(");
-		buffer.append("Body:'" + this.getBodyContentAsString() + "'");
+		buffer.append("Body:'").append(this.getBodyContentAsString()).append("'");
 		if (this.messageProperties != null) {
 			buffer.append(" ").append(this.messageProperties.toString());
 		}
