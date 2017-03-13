@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,6 +39,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.Level;
@@ -48,6 +50,7 @@ import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
@@ -240,18 +243,20 @@ public class BlockingQueueConsumerTests {
 	public void testAlwaysCancelAutoRecoverConsumer() throws IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
-		Channel channel = mock(AutorecoveringChannel.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		when(channel.getTargetChannel()).thenReturn(rabbitChannel);
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(anyBoolean())).thenReturn(channel);
-		when(channel.isOpen()).thenReturn(true);
+		when(channel.isOpen()).thenReturn(true, false);
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 						anyMap(), any(Consumer.class))).thenReturn("consumerTag");
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
-				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<>(),
 				AcknowledgeMode.AUTO, true, 2, "test");
 
 		blockingQueueConsumer.setDeclarationRetries(1);
@@ -260,7 +265,6 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(2);
-		when(channel.isOpen()).thenReturn(false);
 		blockingQueueConsumer.stop();
 		verify(channel).basicCancel("consumerTag");
 	}
@@ -269,11 +273,14 @@ public class BlockingQueueConsumerTests {
 	public void testDrainAndReject() throws IOException {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
-		Channel channel = mock(AutorecoveringChannel.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		when(channel.getTargetChannel()).thenReturn(rabbitChannel);
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(anyBoolean())).thenReturn(channel);
-		when(channel.isOpen()).thenReturn(true);
+		final AtomicBoolean isOpen = new AtomicBoolean(true);
+		doReturn(isOpen.get()).when(channel).isOpen();
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -290,7 +297,7 @@ public class BlockingQueueConsumerTests {
 
 		verify(channel).basicQos(2);
 		Consumer consumer = TestUtils.getPropertyValue(blockingQueueConsumer, "consumer", Consumer.class);
-		when(channel.isOpen()).thenReturn(false);
+		isOpen.set(false);
 		blockingQueueConsumer.stop();
 		verify(channel).basicCancel("consumerTag");
 
