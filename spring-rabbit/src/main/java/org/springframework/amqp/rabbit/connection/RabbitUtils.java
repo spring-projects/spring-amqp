@@ -31,6 +31,7 @@ import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * @author Mark Fisher
@@ -116,12 +117,24 @@ public abstract class RabbitUtils {
 	}
 
 	public static void closeMessageConsumer(Channel channel, Collection<String> consumerTags, boolean transactional) {
-		if (!channel.isOpen()) {
+		if (!channel.isOpen() && !(channel instanceof AutorecoveringChannel)) {
 			return;
 		}
 		try {
 			for (String consumerTag : consumerTags) {
-				channel.basicCancel(consumerTag);
+				try {
+					channel.basicCancel(consumerTag);
+				}
+				catch (IOException e) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Error performing 'basicCancel'", e);
+					}
+				}
+				catch (AlreadyClosedException e) {
+					if (logger.isTraceEnabled()) {
+						logger.trace(channel + " is already closed");
+					}
+				}
 			}
 			if (transactional) {
 				/*

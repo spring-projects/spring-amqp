@@ -620,6 +620,9 @@ public class BlockingQueueConsumer {
 	}
 
 	public void stop() {
+		if (this.abortStarted == 0) { // signal handle delivery to use offer
+			this.abortStarted = System.currentTimeMillis();
+		}
 		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
 				&& !this.cancelled.get()) {
 			try {
@@ -809,8 +812,18 @@ public class BlockingQueueConsumer {
 			try {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
-							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) { // NOSONAR
-						// ignore - we're aborting anyway
+							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
+						RabbitUtils.setPhysicalCloseRequired(true);
+						// Defensive - should never happen
+						BlockingQueueConsumer.this.queue.clear();
+						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
+						getChannel().basicCancel(consumerTag);
+						try {
+							getChannel().close();
+						}
+						catch (TimeoutException e) {
+							// no-op
+						}
 					}
 				}
 				else {
