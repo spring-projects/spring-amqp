@@ -812,18 +812,16 @@ public class BlockingQueueConsumer {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
+						RabbitUtils.setPhysicalCloseRequired(true);
+						// Defensive - should never happen
+						BlockingQueueConsumer.this.queue.clear();
+						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
+						getChannel().basicCancel(consumerTag);
 						try {
-							// Defensive - should never happen
-							BlockingQueueConsumer.this.queue.clear();
-							getChannel().basicNack(envelope.getDeliveryTag(), true, true);
-							getChannel().basicCancel(consumerTag);
-							RabbitUtils.setPhysicalCloseRequired(true);
 							getChannel().close();
 						}
-						catch (Exception e) {
-							if (logger.isDebugEnabled()) {
-								logger.debug("Error performing 'basicCancel'", e);
-							}
+						catch (TimeoutException e) {
+							// no-op
 						}
 					}
 				}
