@@ -117,7 +117,9 @@ public abstract class RabbitUtils {
 	}
 
 	public static void closeMessageConsumer(Channel channel, Collection<String> consumerTags, boolean transactional) {
-		if (!channel.isOpen() && !(channel instanceof AutorecoveringChannel)) {
+		if (!channel.isOpen() && !(channel instanceof ChannelProxy
+					&& ((ChannelProxy) channel).getTargetChannel() instanceof AutorecoveringChannel)
+				&& !(channel instanceof AutorecoveringChannel)) {
 			return;
 		}
 		try {
