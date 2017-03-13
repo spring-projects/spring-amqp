@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -358,6 +359,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					.filter(c -> !c.getChannel().isOpen())
 					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
 					.forEach(c -> {
+						try {
+							RabbitUtils.closeMessageConsumer(c.getChannel(),
+									Collections.singletonList(c.getConsumerTag()), isChannelTransacted());
+						}
+						catch (Exception e) {
+							if (logger.isDebugEnabled()) {
+								logger.debug("Error closing consumer " + c, e);
+							}
+						}
 						this.logger.error("Consumer canceled - channel closed " + c);
 						c.cancelConsumer("Consumer " + c + " channel closed");
 					});
