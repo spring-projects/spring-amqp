@@ -640,7 +640,7 @@ public class BlockingQueueConsumer {
 			}
 			catch (Exception e) {
 				if (logger.isDebugEnabled()) {
-					logger.debug("Error closing consumer", e);
+					logger.debug("Error closing consumer " + this, e);
 				}
 			}
 		}
