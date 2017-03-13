@@ -83,7 +83,7 @@ import com.rabbitmq.client.Consumer;
  * @since 2.0
  *
  */
-public class DirectMessageListenerContainerTests {
+public class DirectMessageListenerContainerIntegrationTests {
 
 	private static final String Q1 = "testQ1";
 
@@ -106,7 +106,8 @@ public class DirectMessageListenerContainerTests {
 	@Rule
 	public LogLevelAdjuster adjuster = new LogLevelAdjuster(Level.DEBUG,
 			CachingConnectionFactory.class, DirectReplyToMessageListenerContainer.class,
-			DirectMessageListenerContainer.class, DirectMessageListenerContainerTests.class, BrokerRunning.class);
+			DirectMessageListenerContainer.class, DirectMessageListenerContainerIntegrationTests.class,
+			BrokerRunning.class);
 
 	@Rule
 	public TestName testName = new TestName();
@@ -608,7 +609,7 @@ public class DirectMessageListenerContainerTests {
 
 		@Override
 		public String createConsumerTag(String queue) {
-			return queue + "/" + DirectMessageListenerContainerTests.this.testName.getMethodName() + n++;
+			return queue + "/" + DirectMessageListenerContainerIntegrationTests.this.testName.getMethodName() + n++;
 		}
 
 	}
