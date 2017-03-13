@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -25,12 +27,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -49,12 +53,16 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
+import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * @author Gary Russell
@@ -227,5 +235,77 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
 		Mockito.verify(channel).basicNack(1L, true, expectedRequeue);
 	}
+
+	@Test
+	public void testAlwaysCancelAutoRecoverConsumer() throws IOException {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(AutorecoveringChannel.class);
+
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		when(channel.isOpen()).thenReturn(true);
+		when(channel.queueDeclarePassive(Mockito.anyString()))
+				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class))).thenReturn("consumerTag");
+
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 2, "test");
+
+		blockingQueueConsumer.setDeclarationRetries(1);
+		blockingQueueConsumer.setRetryDeclarationInterval(10);
+		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
+		blockingQueueConsumer.start();
+
+		verify(channel).basicQos(2);
+		when(channel.isOpen()).thenReturn(false);
+		blockingQueueConsumer.stop();
+		verify(channel).basicCancel("consumerTag");
+	}
+
+	@Test
+	public void testDrainAndReject() throws IOException {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(AutorecoveringChannel.class);
+
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		when(channel.isOpen()).thenReturn(true);
+		when(channel.queueDeclarePassive(Mockito.anyString()))
+				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class))).thenReturn("consumerTag");
+
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 2, "test");
+
+		blockingQueueConsumer.setDeclarationRetries(1);
+		blockingQueueConsumer.setRetryDeclarationInterval(10);
+		blockingQueueConsumer.setFailedDeclarationRetryInterval(10);
+		blockingQueueConsumer.start();
+
+		verify(channel).basicQos(2);
+		Consumer consumer = TestUtils.getPropertyValue(blockingQueueConsumer, "consumer", Consumer.class);
+		when(channel.isOpen()).thenReturn(false);
+		blockingQueueConsumer.stop();
+		verify(channel).basicCancel("consumerTag");
+
+		Envelope envelope = new Envelope(1, false, "foo", "bar");
+		BasicProperties props = mock(BasicProperties.class);
+		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
+		envelope = new Envelope(2, false, "foo", "bar");
+		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size(), equalTo(2));
+		envelope = new Envelope(3, false, "foo", "bar");
+		consumer.handleDelivery("consumerTag", envelope, props, new byte[0]);
+		assertThat(TestUtils.getPropertyValue(blockingQueueConsumer, "queue", BlockingQueue.class).size(), equalTo(0));
+		verify(channel).basicNack(3, true, true);
+		verify(channel, times(2)).basicCancel("consumerTag");
+	}
+
 
 }
