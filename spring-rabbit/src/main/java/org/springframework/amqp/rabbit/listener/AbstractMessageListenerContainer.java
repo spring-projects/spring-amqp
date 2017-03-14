@@ -296,7 +296,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to add.
 	 */
 	public final void addQueues(Queue... queues) {
-		this.addQueueNames(collectQueueNames(queues));
+		addQueueNames(collectQueueNames(queues));
 	}
 
 	/**
@@ -316,7 +316,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
 	public final boolean removeQueues(Queue... queues) {
-		return this.removeQueueNames(collectQueueNames(queues));
+		return removeQueueNames(collectQueueNames(queues));
 	}
 
 	/**
