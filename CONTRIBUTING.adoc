@@ -19,7 +19,7 @@ https://help.github.com/articles/using-pull-requests/[Using Pull Requests] first
 == Search JIRA first; create an issue if necessary
 
 Is there already an issue that addresses your concern?  Search the
-https://jira.springsource.org/browse/AMQP[JIRA issue tracker] to see if you can find something similar.
+https://jira.spring.io/browse/AMQP[JIRA issue tracker] to see if you can find something similar.
 If not, please create a new issue before submitting a pull request unless the change is truly trivial, e.g. typo fixes,
 removing compiler warnings, etc.
 
