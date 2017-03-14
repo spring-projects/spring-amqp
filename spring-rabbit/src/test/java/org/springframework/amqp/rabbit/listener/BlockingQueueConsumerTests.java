@@ -249,7 +249,8 @@ public class BlockingQueueConsumerTests {
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
 		when(connection.createChannel(anyBoolean())).thenReturn(channel);
-		when(channel.isOpen()).thenReturn(true, false);
+		final AtomicBoolean isOpen = new AtomicBoolean(true);
+		doReturn(isOpen.get()).when(channel).isOpen();
 		when(channel.queueDeclarePassive(Mockito.anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -265,6 +266,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(2);
+		isOpen.set(false);
 		blockingQueueConsumer.stop();
 		verify(channel).basicCancel("consumerTag");
 	}
