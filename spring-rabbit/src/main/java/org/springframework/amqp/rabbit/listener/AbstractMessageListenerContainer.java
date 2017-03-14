@@ -252,12 +252,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
 	public void setQueues(Queue... queues) {
-		final String[] queueNames = new String[queues.length];
+		setQueueNames(collectQueueNames(queues));
+	}
+
+	private static String[] collectQueueNames(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		String[] queueNames = new String[queues.length];
 		for (int i = 0; i < queues.length; i++) {
-			Assert.notNull(queues[i], "Queue (" + i + ") must not be null.");
 			queueNames[i] = queues[i].getName();
 		}
-		setQueueNames(queueNames);
+		return queueNames;
 	}
 
 	/**
@@ -291,13 +296,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to add.
 	 */
 	public void addQueues(Queue... queues) {
-		Assert.notNull(queues, "'queues' cannot be null");
-		Assert.noNullElements(queues, "'queues' cannot contain null elements");
-		String[] queueNames = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			queueNames[i] = queues[i].getName();
-		}
-		this.addQueueNames(queueNames);
+		this.addQueueNames(collectQueueNames(queues));
 	}
 
 	/**
@@ -317,13 +316,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
 	public boolean removeQueues(Queue... queues) {
-		Assert.notNull(queues, "'queues' cannot be null");
-		Assert.noNullElements(queues, "'queues' cannot contain null elements");
-		String[] queueNames = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			queueNames[i] = queues[i].getName();
-		}
-		return this.removeQueueNames(queueNames);
+		return this.removeQueueNames(collectQueueNames(queues));
 	}
 
 	/**
