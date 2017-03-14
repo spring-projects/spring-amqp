@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,6 +88,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Dave Syer
  * @author James Carr
  * @author Gary Russell
+ * @author Alex Panchenko
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
@@ -245,21 +245,25 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setQueueNames(String... queueName) {
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
-		this.queueNames = new CopyOnWriteArrayList<>(Arrays.asList(queueName));
+		this.queueNames = new CopyOnWriteArrayList<>(queueName);
 	}
 
 	/**
 	 * Set the name of the queue(s) to receive messages from.
 	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
-	public void setQueues(Queue... queues) {
-		List<String> queueNames = new ArrayList<String>(queues.length);
+	public final void setQueues(Queue... queues) {
+		setQueueNames(collectQueueNames(queues));
+	}
+
+	private static String[] collectQueueNames(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		String[] queueNames = new String[queues.length];
 		for (int i = 0; i < queues.length; i++) {
-			Assert.notNull(queues[i], "Queue (" + i + ") must not be null.");
-			queueNames.add(queues[i].getName());
+			queueNames[i] = queues[i].getName();
 		}
-		queueNames = new CopyOnWriteArrayList<>(queueNames);
-		this.queueNames = queueNames;
+		return queueNames;
 	}
 
 	/**
@@ -292,14 +296,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Add queue(s) to this container's list of queues.
 	 * @param queues The queue(s) to add.
 	 */
-	public void addQueues(Queue... queues) {
-		Assert.notNull(queues, "'queues' cannot be null");
-		Assert.noNullElements(queues, "'queues' cannot contain null elements");
-		String[] queueNames = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			queueNames[i] = queues[i].getName();
-		}
-		this.addQueueNames(queueNames);
+	public final void addQueues(Queue... queues) {
+		addQueueNames(collectQueueNames(queues));
 	}
 
 	/**
@@ -318,14 +316,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to remove.
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
-	public boolean removeQueues(Queue... queues) {
-		Assert.notNull(queues, "'queues' cannot be null");
-		Assert.noNullElements(queues, "'queues' cannot contain null elements");
-		String[] queueNames = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			queueNames[i] = queues[i].getName();
-		}
-		return this.removeQueueNames(queueNames);
+	public final boolean removeQueues(Queue... queues) {
+		return removeQueueNames(collectQueueNames(queues));
 	}
 
 	/**

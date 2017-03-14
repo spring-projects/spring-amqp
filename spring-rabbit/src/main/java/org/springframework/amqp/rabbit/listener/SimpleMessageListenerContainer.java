@@ -36,7 +36,6 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -67,6 +66,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Alex Panchenko
+ *
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer {
@@ -302,12 +303,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		this.queuesChanged();
 	}
 
-	@Override
-	public void setQueues(Queue... queues) {
-		super.setQueues(queues);
-		this.queuesChanged();
-	}
-
 	/**
 	 * Add queue(s) to this container's list of queues. The existing consumers
 	 * will be cancelled after they have processed any pre-fetched messages and
@@ -322,19 +317,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * Add queue(s) to this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. The queue must exist to avoid problems when
-	 * restarting the consumers.
-	 * @param queue The queue to add.
-	 */
-	@Override
-	public void addQueues(Queue... queue) {
-		super.addQueues(queue);
-		this.queuesChanged();
-	}
-
-	/**
 	 * Remove queues from this container's list of queues. The existing consumers
 	 * will be cancelled after they have processed any pre-fetched messages and
 	 * new consumers will be created. At least one queue must remain.
@@ -343,23 +325,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	public boolean removeQueueNames(String... queueName) {
 		if (super.removeQueueNames(queueName)) {
-			this.queuesChanged();
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
-
-	/**
-	 * Remove queue(s) from this container's list of queues. The existing consumers
-	 * will be cancelled after they have processed any pre-fetched messages and
-	 * new consumers will be created. At least one queue must remain.
-	 * @param queue The queue to remove.
-	 */
-	@Override
-	public boolean removeQueues(Queue... queue) {
-		if (super.removeQueues(queue)) {
 			this.queuesChanged();
 			return true;
 		}

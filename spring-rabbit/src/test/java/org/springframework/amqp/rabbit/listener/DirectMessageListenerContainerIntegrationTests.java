@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.listener;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -80,6 +81,8 @@ import com.rabbitmq.client.Consumer;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Alex Panchenko
+ *
  * @since 2.0
  *
  */
@@ -211,6 +214,48 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
 		container.removeQueueNames(Q1, Q2, "junk");
+		assertTrue(consumersOnQueue(Q1, 0));
+		assertTrue(consumersOnQueue(Q2, 0));
+		assertTrue(activeConsumerCount(container, 0));
+		container.stop();
+		assertTrue(consumersOnQueue(Q1, 0));
+		assertTrue(consumersOnQueue(Q2, 0));
+		assertTrue(activeConsumerCount(container, 0));
+		assertEquals(0, TestUtils.getPropertyValue(container, "consumersByQueue", MultiValueMap.class).size());
+		template.stop();
+		cf.destroy();
+	}
+
+	@Test
+	public void testQueueManagementQueueInstances() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setThreadNamePrefix("client-");
+		executor.afterPropertiesSet();
+		cf.setExecutor(executor);
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		container.setConsumersPerQueue(2);
+		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
+			if ("foo".equals(in) || "bar".equals(in)) {
+				return in.toUpperCase();
+			}
+			else {
+				return null;
+			}
+		}));
+		container.setBeanName("qManage");
+		container.setConsumerTagStrategy(new Tag());
+		container.afterPropertiesSet();
+		container.setQueues(new Queue(Q1));
+		assertArrayEquals(new String[] { Q1 }, container.getQueueNames());
+		container.start();
+		container.addQueues(new Queue(Q2));
+		assertTrue(consumersOnQueue(Q1, 2));
+		assertTrue(consumersOnQueue(Q2, 2));
+		RabbitTemplate template = new RabbitTemplate(cf);
+		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
+		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
+		container.removeQueues(new Queue(Q1), new Queue(Q2), new Queue("junk"));
 		assertTrue(consumersOnQueue(Q1, 0));
 		assertTrue(consumersOnQueue(Q2, 0));
 		assertTrue(activeConsumerCount(container, 0));

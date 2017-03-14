@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -41,7 +42,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -196,12 +196,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	public void setQueues(Queue... queues) {
-		Assert.state(!isRunning(), "Cannot set queue names while running, use add/remove");
-		super.setQueues(queues);
-	}
-
-	@Override
 	public void addQueueNames(String... queueNames) {
 		try {
 			addQueues(Arrays.stream(queueNames));
@@ -210,18 +204,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			throw new AmqpIOException("Failed to add " + Arrays.asList(queueNames), e.getCause());
 		}
 		super.addQueueNames(queueNames);
-	}
-
-	@Override
-	public void addQueues(Queue... queues) {
-		try {
-			addQueues(Arrays.stream(queues)
-					.map(Queue::getName));
-		}
-		catch (AmqpIOException e) {
-			throw new AmqpIOException("Failed to add " + Arrays.asList(queues), e.getCause());
-		}
-		super.addQueues(queues);
 	}
 
 	private void addQueues(Stream<String> queueNameStream) {
@@ -248,19 +230,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		return super.removeQueueNames(queueNames);
 	}
 
-	@Override
-	public boolean removeQueues(Queue... queues) {
-		removeQueues(Arrays.stream(queues)
-				.map(Queue::getName));
-		return super.removeQueues(queues);
-	}
-
 	private void removeQueues(Stream<String> queueNames) {
 		if (isRunning()) {
 			synchronized (this.consumersMonitor) {
 				checkStartState();
 				queueNames.map(this.consumersByQueue::remove)
-					.filter(consumersOnQueue -> consumersOnQueue != null)
+					.filter(Objects::nonNull)
 					.flatMap(Collection::stream)
 					.forEach(this::cancelConsumer);
 			}
