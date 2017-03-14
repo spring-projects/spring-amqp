@@ -30,6 +30,7 @@ import static org.mockito.Mockito.mock;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -61,7 +62,8 @@ public class DirectMessageListenerContainerMockTests {
 
 		given(connectionFactory.createConnection()).willReturn(connection);
 		given(connection.createChannel(anyBoolean())).willReturn(channel);
-		given(channel.isOpen()).willReturn(true, false);
+		final AtomicBoolean isOpen = new AtomicBoolean(true);
+		willAnswer(i -> isOpen.get()).given(channel).isOpen();
 		given(channel.queueDeclarePassive(Mockito.anyString()))
 				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
@@ -89,6 +91,7 @@ public class DirectMessageListenerContainerMockTests {
 
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		assertThat(qos.get(), equalTo(2));
+		isOpen.set(false);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container.stop();
 	}
