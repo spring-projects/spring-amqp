@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.util.Assert;
@@ -73,27 +72,12 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
-	public final void setQueues(Queue... queues) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public final void addQueueNames(String... queueNames) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public final void addQueues(Queue... queues) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public final boolean removeQueueNames(String... queueNames) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public final boolean removeQueues(Queue... queues) {
 		throw new UnsupportedOperationException();
 	}
 

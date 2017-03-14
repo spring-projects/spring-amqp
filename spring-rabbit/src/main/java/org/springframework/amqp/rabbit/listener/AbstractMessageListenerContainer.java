@@ -251,7 +251,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Set the name of the queue(s) to receive messages from.
 	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
-	public void setQueues(Queue... queues) {
+	public final void setQueues(Queue... queues) {
 		setQueueNames(collectQueueNames(queues));
 	}
 
@@ -295,7 +295,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Add queue(s) to this container's list of queues.
 	 * @param queues The queue(s) to add.
 	 */
-	public void addQueues(Queue... queues) {
+	public final void addQueues(Queue... queues) {
 		this.addQueueNames(collectQueueNames(queues));
 	}
 
@@ -315,7 +315,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to remove.
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
-	public boolean removeQueues(Queue... queues) {
+	public final boolean removeQueues(Queue... queues) {
 		return this.removeQueueNames(collectQueueNames(queues));
 	}
 
