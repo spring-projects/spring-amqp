@@ -4,6 +4,8 @@ sudo: false
 services:
   - rabbitmq
 env:
+  global:
+  - GRADLE_OPTS="-Xmx512m"
   - TERM=dumb
 before_cache:
   - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
