@@ -225,12 +225,21 @@ public class ListenerContainerParserTests {
 	public void testIncompatibleTxAtts() {
 		try {
 			new ClassPathXmlApplicationContext(getClass().getSimpleName() + "-fail-context.xml", getClass()).close();
-			fail("Parse exception exptected");
+			fail("Parse exception expected");
 		}
 		catch (BeanDefinitionParsingException e) {
 			assertTrue(e.getMessage().startsWith(
 				"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
 		}
+	}
+
+	@Test
+	public void AMQP_724_potentialNPE() {
+		final DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+		final XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(bf);
+		reader.setValidating(false);
+		reader.loadBeanDefinitions(new ClassPathResource("AMQP-274-context.xml", getClass()));
+		bf.getBeanDefinition("AMQP-724"); // throws if not found
 	}
 
 	static class TestBean {
