@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -245,7 +244,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setQueueNames(String... queueName) {
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
-		this.queueNames = new CopyOnWriteArrayList<>(Arrays.asList(queueName));
+		this.queueNames = new CopyOnWriteArrayList<>(queueName);
 	}
 
 	/**
@@ -253,13 +252,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
 	public void setQueues(Queue... queues) {
-		List<String> queueNames = new ArrayList<String>(queues.length);
+		final String[] queueNames = new String[queues.length];
 		for (int i = 0; i < queues.length; i++) {
 			Assert.notNull(queues[i], "Queue (" + i + ") must not be null.");
-			queueNames.add(queues[i].getName());
+			queueNames[i] = queues[i].getName();
 		}
-		queueNames = new CopyOnWriteArrayList<>(queueNames);
-		this.queueNames = queueNames;
+		setQueueNames(queueNames);
 	}
 
 	/**
