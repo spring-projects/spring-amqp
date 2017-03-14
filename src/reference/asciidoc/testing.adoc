@@ -279,7 +279,7 @@ Usage:
 public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
 
 @AfterClass
-public void tearDown() {
+public static void tearDown() {
     brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
 }
 ----
