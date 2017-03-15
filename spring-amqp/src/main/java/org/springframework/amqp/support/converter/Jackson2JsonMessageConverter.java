@@ -65,6 +65,15 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	}
 
 	/**
+	 * Return the default json object mapper.
+	 *
+	 * @return {@link com.fasterxml.jackson.databind.ObjectMapper}
+	 */
+	protected ObjectMapper getJsonObjectMapper() {
+		return jsonObjectMapper;
+	}
+
+	/**
 	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
 	 * alternative to injecting a mapper is to extend this class and override
 	 * {@link #initializeJsonObjectMapper()}.
