@@ -103,6 +103,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private String listenerId;
 
+	private String lookupKeyQualifier = "";
+
 	/**
 	 * <p>
 	 * Flag controlling the behaviour of the container with respect to message acknowledgement. The most common usage is
@@ -398,12 +400,49 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
 		if (connectionFactory instanceof RoutingConnectionFactory) {
 			ConnectionFactory targetConnectionFactory = ((RoutingConnectionFactory) connectionFactory)
-					.getTargetConnectionFactory(this.queueNames.toString().replaceAll(" ", ""));
+					.getTargetConnectionFactory(getRoutingLookupKey());
 			if (targetConnectionFactory != null) {
 				return targetConnectionFactory;
 			}
 		}
 		return connectionFactory;
+	}
+
+	/**
+	 * Set a qualifier that will prefix the connection factory lookup key; default none.
+	 * @param lookupKeyQualifier the qualifier
+	 * @since 1.6.9
+	 * @see #getRoutingLookupKey()
+	 */
+	public void setLookupKeyQualifier(String lookupKeyQualifier) {
+		this.lookupKeyQualifier = lookupKeyQualifier;
+	}
+
+	/**
+	 * Return the lookup key if the connection factory is a
+	 * {@link RoutingConnectionFactory}; null otherwise. The routing key is the
+	 * comma-delimited list of queue names with all spaces removed and bracketed by [...],
+	 * optionally prefixed by a qualifier, e.g. "foo[...]".
+	 * @return the key or null.
+	 * @since 1.6.9
+	 * @see #setLookupKeyQualifier(String)
+	 */
+	protected String getRoutingLookupKey() {
+		return super.getConnectionFactory() instanceof RoutingConnectionFactory
+				? (this.lookupKeyQualifier + this.queueNames.toString().replaceAll(" ", ""))
+				: null;
+	}
+
+	/**
+	 * Return the (@link RoutingConnectionFactory} if the connection factory is a
+	 * {@link RoutingConnectionFactory}; null otherwise.
+	 * @return the {@link RoutingConnectionFactory} or null.
+	 * @since 1.6.9
+	 */
+	protected RoutingConnectionFactory getRoutingConnectionFactory() {
+		return super.getConnectionFactory() instanceof RoutingConnectionFactory
+				? (RoutingConnectionFactory) super.getConnectionFactory()
+				: null;
 	}
 
 	/**

@@ -446,9 +446,14 @@ But, if `lenientFallback = false`, an `IllegalStateException` is thrown.
 
 The Namespace support also provides the `send-connection-factory-selector-expression` and `receive-connection-factory-selector-expression` attributes on the `<rabbit:template>` component.
 
-Also starting with _version 1.4_, you can configure a routing connection factory in a `SimpleMessageListenerContainer`.
+Also starting with _version 1.4_, you can configure a routing connection factory in a listener container.
 In that case, the list of queue names is used as the lookup key.
 For example, if you configure the container with `setQueueNames("foo", "bar")`, the lookup key will be `"[foo,bar]"` (no spaces).
+
+Starting with _version 1.6.9_ you can add a qualifier to the lookup key using `setLookupKeyQualifier` on the listener container.
+This would enable, for example, listening to queues with the same name, but in different virtual host (where you would have a connection factory for each).
+
+For example, with lookup key qualifier `foo` and a container listening to queue `bar`, the lookup key you would register the target connection factory with would be `foo[bar]`.
 
 [[queue-affinity]]
 ===== Queue Affinity and the LocalizedQueueConnectionFactory

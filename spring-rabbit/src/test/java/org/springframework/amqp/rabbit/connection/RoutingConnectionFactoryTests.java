@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,42 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
+import com.rabbitmq.client.Channel;
+
 /**
  * @author Artem Bilan
  * @author Josh Chappelle
+ * @author Gary Russell
  * @since 1.3
  */
 public class RoutingConnectionFactoryTests {
@@ -69,9 +83,9 @@ public class RoutingConnectionFactoryTests {
 			connectionFactory.createConnection();
 		}
 
-		Mockito.verify(connectionFactory1, Mockito.times(2)).createConnection();
-		Mockito.verify(connectionFactory2).createConnection();
-		Mockito.verify(defaultConnectionFactory, Mockito.times(2)).createConnection();
+		verify(connectionFactory1, times(2)).createConnection();
+		verify(connectionFactory2).createConnection();
+		verify(defaultConnectionFactory, times(2)).createConnection();
 	}
 
 	@Test
@@ -105,8 +119,8 @@ public class RoutingConnectionFactoryTests {
 		executorService.shutdown();
 		assertTrue(executorService.awaitTermination(10, TimeUnit.SECONDS));
 
-		Mockito.verify(connectionFactory1, Mockito.times(2)).createConnection();
-		Mockito.verify(connectionFactory2).createConnection();
+		verify(connectionFactory1, times(2)).createConnection();
+		verify(connectionFactory2).createConnection();
 	}
 
 	@Test
@@ -114,6 +128,7 @@ public class RoutingConnectionFactoryTests {
 		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
 
 		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+
 			@Override
 			protected Object determineCurrentLookupKey() {
 				return null;
@@ -138,6 +153,7 @@ public class RoutingConnectionFactoryTests {
 	public void testAddTargetConnectionFactoryAddsExistingConnectionListenersToConnectionFactory() {
 
 		AbstractRoutingConnectionFactory routingFactory = new AbstractRoutingConnectionFactory() {
+
 			@Override
 			protected Object determineCurrentLookupKey() {
 				return null;
@@ -148,8 +164,8 @@ public class RoutingConnectionFactoryTests {
 
 		ConnectionFactory targetConnectionFactory = Mockito.mock(ConnectionFactory.class);
 		routingFactory.addTargetConnectionFactory("1", targetConnectionFactory);
-		Mockito.verify(targetConnectionFactory,
-				Mockito.times(2)).addConnectionListener(Mockito.any(ConnectionListener.class));
+		verify(targetConnectionFactory,
+				times(2)).addConnectionListener(any(ConnectionListener.class));
 	}
 
 	@Test
@@ -171,24 +187,62 @@ public class RoutingConnectionFactoryTests {
 		container.afterPropertiesSet();
 		container.start();
 
-		Mockito.verify(connectionFactory1, never()).createConnection();
-		Mockito.verify(connectionFactory2).createConnection();
-		Mockito.verify(defaultConnectionFactory, never()).createConnection();
+		verify(connectionFactory1, never()).createConnection();
+		verify(connectionFactory2).createConnection();
+		verify(defaultConnectionFactory, never()).createConnection();
 
-		Mockito.reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
+		reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
 		container.setQueueNames("baz");
-		Mockito.verify(connectionFactory1).createConnection();
-		Mockito.verify(connectionFactory2, never()).createConnection();
-		Mockito.verify(defaultConnectionFactory, never()).createConnection();
+		verify(connectionFactory1).createConnection();
+		verify(connectionFactory2, never()).createConnection();
+		verify(defaultConnectionFactory, never()).createConnection();
 
-		Mockito.reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
+		reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
 		container.setQueueNames("qux");
-		Mockito.verify(connectionFactory1, never()).createConnection();
-		Mockito.verify(connectionFactory2, never()).createConnection();
-		Mockito.verify(defaultConnectionFactory).createConnection();
+		verify(connectionFactory1, never()).createConnection();
+		verify(connectionFactory2, never()).createConnection();
+		verify(defaultConnectionFactory).createConnection();
 
 		container.stop();
 	}
 
+	@Test
+	public void testWithSMLCAndConnectionListener() throws Exception {
+		ConnectionFactory connectionFactory1 = mock(ConnectionFactory.class);
+		Map<Object, ConnectionFactory> factories = new HashMap<Object, ConnectionFactory>(2);
+		factories.put("xxx[foo]", connectionFactory1);
+
+		final SimpleRoutingConnectionFactory connectionFactory = new SimpleRoutingConnectionFactory();
+
+		final Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		final AtomicReference<Object> connectionMakerKey1 = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(1);
+		willAnswer(i -> {
+			connectionMakerKey1.set(connectionFactory.determineCurrentLookupKey());
+			latch.countDown();
+			return connection;
+		}).given(connectionFactory1).createConnection();
+		connectionFactory.setTargetConnectionFactories(factories);
+
+		final AtomicReference<Object> connectionMakerKey2 = new AtomicReference<>();
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory) {
+
+			@Override
+			protected synchronized void redeclareElementsIfNecessary() {
+				connectionMakerKey2.set(connectionFactory.determineCurrentLookupKey());
+			}
+
+		};
+		container.setQueueNames("foo");
+		container.setLookupKeyQualifier("xxx");
+		container.afterPropertiesSet();
+		container.start();
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
+		assertThat(connectionMakerKey1.get(), equalTo("xxx[foo]"));
+		assertThat(connectionMakerKey2.get(), equalTo("xxx[foo]"));
+	}
 
 }
