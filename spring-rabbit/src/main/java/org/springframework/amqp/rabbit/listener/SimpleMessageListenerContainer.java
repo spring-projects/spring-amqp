@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
@@ -182,6 +183,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile ApplicationEventPublisher applicationEventPublisher;
 
 	private final ContainerDelegate delegate = new ContainerDelegate() {
+
 		@Override
 		public void invokeListener(Channel channel, Message message) throws Exception {
 			SimpleMessageListenerContainer.super.invokeListener(channel, message);
@@ -326,7 +328,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public final void setExclusive(boolean exclusive) {
 		Assert.isTrue(!exclusive || (this.concurrentConsumers == 1
-				&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
+						&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
 				"When the consumer is exclusive, the concurrency must be 1");
 		this.exclusive = exclusive;
 	}
@@ -779,7 +781,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				String[] queueNames = getQueueNames();
 				Assert.state(expectedQueueNames.size() == queueNames.length,
 						"Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
-						+ Arrays.asList(queueNames));
+								+ Arrays.asList(queueNames));
 				boolean found = false;
 				for (String queueName : queueNames) {
 					if (expectedQueueNames.contains(queueName)) {
@@ -1005,7 +1007,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 
-
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
@@ -1120,7 +1121,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 * the declarations are always attempted during restart so the listener will
 	 * fail with a fatal error if mismatches occur.
 	 */
-	private synchronized void redeclareElementsIfNecessary() {
+	protected synchronized void redeclareElementsIfNecessary() {
 		if (this.rabbitAdmin == null) {
 			return;
 		}
@@ -1160,6 +1161,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				return this.transactionTemplate
 						.execute(new TransactionCallback<Boolean>() {
+
 							@Override
 							public Boolean doInTransaction(TransactionStatus status) {
 								RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
@@ -1360,6 +1362,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 			this.consumer.setLocallyTransacted(isChannelLocallyTransacted(null));
 
+			String routingLookupKey = getRoutingLookupKey();
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+			}
+
 			if (this.consumer.getQueueCount() < 1) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Consumer stopping; no queues for " + this.consumer);
@@ -1441,7 +1448,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								if (now > lastReceive + SimpleMessageListenerContainer.this.idleEventInterval
 										&& now > lastAlertAt + SimpleMessageListenerContainer.this.idleEventInterval
 										&& SimpleMessageListenerContainer.this.lastNoMessageAlert
-												.compareAndSet(lastAlertAt, now)) {
+										.compareAndSet(lastAlertAt, now)) {
 									publishIdleContainerEvent(now - lastReceive);
 								}
 							}
@@ -1555,11 +1562,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				restart(this.consumer);
 			}
 
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+			}
 		}
 
 		private void logConsumerException(Throwable t) {
 			if (logger.isDebugEnabled()
-					|| !(t instanceof AmqpConnectException  || t instanceof ConsumerCancelledException)) {
+					|| !(t instanceof AmqpConnectException || t instanceof ConsumerCancelledException)) {
 				logger.warn(
 						"Consumer raised exception, processing can restart if the connection factory supports it",
 						t);
