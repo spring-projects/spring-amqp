@@ -87,9 +87,7 @@ public class BindingBuilderTests {
 	public void headerBinding() {
 		HeadersExchange headersExchange = new HeadersExchange("h");
 		String headerKey = "headerKey";
-		BindingBuilder.HeadersExchangeMapConfigurer toConfigurer = BindingBuilder.
-				bind(queue).to(headersExchange);
-		Binding binding = toConfigurer.where(headerKey).exists();
+		Binding binding = BindingBuilder.bind(queue).to(headersExchange).where(headerKey).exists();
 		assertNotNull(binding);
 		assertEquals(headersExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
