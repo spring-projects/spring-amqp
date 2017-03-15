@@ -16,10 +16,12 @@
 
 package org.springframework.amqp.core;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.Collections;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -27,27 +29,70 @@ import org.junit.Test;
  */
 public class BindingBuilderTests {
 
+	private static Queue queue;
+
+	@BeforeClass
+	public static void setUp() {
+		queue = new Queue("q");
+	}
+
 	@Test
 	public void fanoutBinding() {
-		Binding binding = BindingBuilder.bind(new Queue("q")).to(new FanoutExchange("f"));
+		FanoutExchange fanoutExchange = new FanoutExchange("f");
+		Binding binding = BindingBuilder.bind(queue).to(fanoutExchange);
+		assertEquals(fanoutExchange.getName(), binding.getExchange());
+		assertEquals("", binding.getRoutingKey());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void directBinding() {
-		Binding binding = BindingBuilder.bind(new Queue("q")).to(new DirectExchange("d")).with("r");
+		DirectExchange directExchange = new DirectExchange("d");
+		String routingKey = "r";
+		Binding binding = BindingBuilder.bind(queue).to(directExchange).with(routingKey);
+		assertEquals(directExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
+		assertEquals(routingKey, binding.getRoutingKey());
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void directBindingWithQueueName() {
-		Binding binding = BindingBuilder.bind(new Queue("q")).to(new DirectExchange("d")).withQueueName();
+		DirectExchange directExchange = new DirectExchange("d");
+		Binding binding = BindingBuilder.bind(queue).to(directExchange).withQueueName();
+		assertEquals(directExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
+		assertEquals(queue.getName(), binding.getRoutingKey());
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void topicBinding() {
-		Binding binding = BindingBuilder.bind(new Queue("q")).to(new TopicExchange("t")).with("r");
+		TopicExchange topicExchange = new TopicExchange("t");
+		String routingKey = "r";
+		Binding binding = BindingBuilder.bind(queue).to(topicExchange).with(routingKey);
+		assertEquals(topicExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
+		assertEquals(routingKey, binding.getRoutingKey());
+		assertNotNull(binding);
+	}
+
+	@Test
+	public void headerBinding() {
+		HeadersExchange headersExchange = new HeadersExchange("h");
+		String headerKey = "headerKey";
+		BindingBuilder.HeadersExchangeMapConfigurer toConfigurer = BindingBuilder.
+				bind(queue).to(headersExchange);
+		Binding binding = toConfigurer.where(headerKey).exists();
+		assertEquals(headersExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
+		assertEquals("", binding.getRoutingKey());
 		assertNotNull(binding);
 	}
 
@@ -63,17 +108,31 @@ public class BindingBuilderTests {
 				return "x-custom";
 			}
 		}
+		Object argumentObject = new Object();
+		CustomExchange customExchange = new CustomExchange("c");
+		String routingKey = "r";
 		Binding binding = BindingBuilder.//
-				bind(new Queue("q")).//
-				to(new CustomExchange("f")).//
-				with("r").//
-				and(Collections.<String, Object>singletonMap("k", new Object()));
+				bind(queue).//
+				to(customExchange).//
+				with(routingKey).//
+				and(Collections.<String, Object>singletonMap("k", argumentObject));
+		assertEquals(argumentObject, binding.getArguments().get("k"));
+		assertEquals(customExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
+		assertEquals(queue.getName(), binding.getDestination());
+		assertEquals(routingKey, binding.getRoutingKey());
 		assertNotNull(binding);
 	}
 
 	@Test
 	public void exchangeBinding() {
-		Binding binding = BindingBuilder.bind(new DirectExchange("q")).to(new FanoutExchange("f"));
+		DirectExchange directExchange = new DirectExchange("d");
+		FanoutExchange fanoutExchange = new FanoutExchange("f");
+		Binding binding = BindingBuilder.bind(directExchange).to(fanoutExchange);
+		assertEquals(fanoutExchange.getName(), binding.getExchange());
+		assertEquals(Binding.DestinationType.EXCHANGE, binding.getDestinationType());
+		assertEquals(directExchange.getName(), binding.getDestination());
+		assertEquals("", binding.getRoutingKey());
 		assertNotNull(binding);
 	}
 
