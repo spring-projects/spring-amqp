@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.junit.Test;
 
 /**
  * @author Mark Fisher
+ * @author Artem Yakshin
  */
 public class BindingBuilderTests {
 
@@ -40,11 +41,11 @@ public class BindingBuilderTests {
 	public void fanoutBinding() {
 		FanoutExchange fanoutExchange = new FanoutExchange("f");
 		Binding binding = BindingBuilder.bind(queue).to(fanoutExchange);
+		assertNotNull(binding);
 		assertEquals(fanoutExchange.getName(), binding.getExchange());
 		assertEquals("", binding.getRoutingKey());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
-		assertNotNull(binding);
 	}
 
 	@Test
@@ -52,22 +53,22 @@ public class BindingBuilderTests {
 		DirectExchange directExchange = new DirectExchange("d");
 		String routingKey = "r";
 		Binding binding = BindingBuilder.bind(queue).to(directExchange).with(routingKey);
+		assertNotNull(binding);
 		assertEquals(directExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
 		assertEquals(routingKey, binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 	@Test
 	public void directBindingWithQueueName() {
 		DirectExchange directExchange = new DirectExchange("d");
 		Binding binding = BindingBuilder.bind(queue).to(directExchange).withQueueName();
+		assertNotNull(binding);
 		assertEquals(directExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
 		assertEquals(queue.getName(), binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 	@Test
@@ -75,11 +76,11 @@ public class BindingBuilderTests {
 		TopicExchange topicExchange = new TopicExchange("t");
 		String routingKey = "r";
 		Binding binding = BindingBuilder.bind(queue).to(topicExchange).with(routingKey);
+		assertNotNull(binding);
 		assertEquals(topicExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
 		assertEquals(routingKey, binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 	@Test
@@ -89,11 +90,11 @@ public class BindingBuilderTests {
 		BindingBuilder.HeadersExchangeMapConfigurer toConfigurer = BindingBuilder.
 				bind(queue).to(headersExchange);
 		Binding binding = toConfigurer.where(headerKey).exists();
+		assertNotNull(binding);
 		assertEquals(headersExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
 		assertEquals("", binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 	@Test
@@ -116,12 +117,12 @@ public class BindingBuilderTests {
 				to(customExchange).//
 				with(routingKey).//
 				and(Collections.<String, Object>singletonMap("k", argumentObject));
+		assertNotNull(binding);
 		assertEquals(argumentObject, binding.getArguments().get("k"));
 		assertEquals(customExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.QUEUE, binding.getDestinationType());
 		assertEquals(queue.getName(), binding.getDestination());
 		assertEquals(routingKey, binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 	@Test
@@ -129,11 +130,11 @@ public class BindingBuilderTests {
 		DirectExchange directExchange = new DirectExchange("d");
 		FanoutExchange fanoutExchange = new FanoutExchange("f");
 		Binding binding = BindingBuilder.bind(directExchange).to(fanoutExchange);
+		assertNotNull(binding);
 		assertEquals(fanoutExchange.getName(), binding.getExchange());
 		assertEquals(Binding.DestinationType.EXCHANGE, binding.getDestinationType());
 		assertEquals(directExchange.getName(), binding.getDestination());
 		assertEquals("", binding.getRoutingKey());
-		assertNotNull(binding);
 	}
 
 }
