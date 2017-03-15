@@ -48,6 +48,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.scheduling.TaskScheduler;
@@ -352,7 +353,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					this.consumersToRestart.clear();
 					if (this.started) {
 						if (restartableConsumers.size() > 0) {
-							redeclareElementsIfNecessary();
+							doRedeclareElementsIfNecessary();
 						}
 						for (SimpleConsumer consumer : restartableConsumers) {
 							if (this.logger.isDebugEnabled() && restartableConsumers.size() > 0) {
@@ -377,12 +378,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			processMonitorTask();
 		}, this.monitorInterval);
 		if (queueNames.length > 0) {
-			try {
-				redeclareElementsIfNecessary();
-			}
-			catch (Exception e) {
-				this.logger.error("Failed to redeclare elements", e);
-			}
+			doRedeclareElementsIfNecessary();
 			getTaskExecutor().execute(() -> {
 
 				synchronized (this.consumersMonitor) {
@@ -437,6 +433,24 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	protected void doRedeclareElementsIfNecessary() {
+		String routingLookupKey = getRoutingLookupKey();
+		if (routingLookupKey != null) {
+			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+		}
+		try {
+			redeclareElementsIfNecessary();
+		}
+		catch (Exception e) {
+			this.logger.error("Failed to redeclare elements", e);
+		}
+		finally {
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+			}
+		}
+	}
+
 	/**
 	 * Subclasses can override this to take additional actions when the monitor task runs.
 	 */
@@ -480,6 +494,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			return;
 		}
+		String routingLookupKey = getRoutingLookupKey();
+		if (routingLookupKey != null) {
+			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+		}
 		Connection connection = null; // NOSONAR (close)
 		try {
 			connection = getConnectionFactory().createConnection();
@@ -487,6 +505,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		catch (Exception e) {
 			this.consumersToRestart.add(new SimpleConsumer(null, null, queue));
 			throw new AmqpConnectException(e);
+		}
+		finally {
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+			}
 		}
 		Channel channel = null;
 		SimpleConsumer consumer = null;
