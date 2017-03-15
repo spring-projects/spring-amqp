@@ -41,6 +41,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -862,6 +863,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 			this.consumer.setLocallyTransacted(isChannelLocallyTransacted());
 
+			String routingLookupKey = getRoutingLookupKey();
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+			}
+
 			if (this.consumer.getQueueCount() < 1) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Consumer stopping; no queues for " + this.consumer);
@@ -1056,6 +1062,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				restart(this.consumer);
 			}
 
+			if (routingLookupKey != null) {
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+			}
 		}
 
 		private void logConsumerException(Throwable t) {
