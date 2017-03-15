@@ -70,7 +70,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	 * @return {@link com.fasterxml.jackson.databind.ObjectMapper}
 	 */
 	protected ObjectMapper getJsonObjectMapper() {
-		return jsonObjectMapper;
+		return this.jsonObjectMapper;
 	}
 
 	/**
