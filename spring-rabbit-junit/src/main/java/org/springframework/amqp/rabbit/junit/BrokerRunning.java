@@ -261,7 +261,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
-	 * Set the user for the amqp connection default "guest".
+	 * Set the password for the amqp connection default "guest".
 	 * @param password the password.
 	 * @since 1.7.2
 	 */
@@ -288,7 +288,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
-	 * Set the paswword for the management REST API connection default "guest".
+	 * Set the password for the management REST API connection default "guest".
 	 * @param password the password.
 	 * @since 1.7.2
 	 */
@@ -559,15 +559,15 @@ public final class BrokerRunning extends TestWatcher {
 	 * @since 1.7.2
 	 */
 	public String getAdminUri() {
-		if (StringUtils.hasText(this.adminUri)) {
-			return this.adminUri;
+		if (!StringUtils.hasText(this.adminUri)) {
+			if (!StringUtils.hasText(this.hostName)) {
+				this.adminUri = "http://localhost:15672/api/";
+			}
+			else {
+				this.adminUri = "http://" + this.hostName + ":15672/api/";
+			}
 		}
-		else if (!StringUtils.hasText(this.hostName)) {
-			return "http://localhost:15672/api/";
-		}
-		else {
-			return "http://" + this.hostName + ":15672/api/";
-		}
+		return this.adminUri;
 	}
 
 	private void closeResources(Connection connection, Channel channel) {
