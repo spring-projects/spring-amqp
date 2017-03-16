@@ -1082,7 +1082,10 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-			connectionFactory.setHost("localhost");
+			connectionFactory.setHost(brokerRunning.getHostName());
+			connectionFactory.setPort(brokerRunning.getPort());
+			connectionFactory.setUsername(brokerRunning.getUser());
+			connectionFactory.setPassword(brokerRunning.getPassword());
 			ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 			executor.setThreadNamePrefix("rabbitClientThread-");
 			executor.afterPropertiesSet();
@@ -1303,7 +1306,10 @@ public class EnableRabbitIntegrationTests {
 		@Bean
 		public ConnectionFactory rabbitConnectionFactory() {
 			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-			connectionFactory.setHost("localhost");
+			connectionFactory.setHost(brokerRunning.getHostName());
+			connectionFactory.setPort(brokerRunning.getPort());
+			connectionFactory.setUsername(brokerRunning.getUser());
+			connectionFactory.setPassword(brokerRunning.getPassword());
 			return connectionFactory;
 		}
 

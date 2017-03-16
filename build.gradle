@@ -255,7 +255,10 @@ project('spring-rabbit-junit') {
 		compile "org.springframework:spring-core:$springVersion"
 		compile "junit:junit:$junitVersion"
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
+			exclude group: 'org.springframework', module: 'spring-web'
+		}
+		compile "org.springframework:spring-web:$springVersion"
 
 	}
 
