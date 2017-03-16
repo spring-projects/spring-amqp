@@ -332,8 +332,11 @@ These will override the default settings (`localhost:5672` for amqp and `http://
 
 Changing the host name affects both the amqp and management REST API connection (unless the admin uri is explicitly set).
 
-`BrokerRunning` also provides a `static` method: `setEnvironmentVariables` where you can pass in a map containing these variables; they override system environment variables.
+`BrokerRunning` also provides a `static` method: `setEnvironmentVariableOverrides` where you can pass in a map containing these variables; they override system environment variables.
 This might be useful if you wish to use different configuration for tests in multiple test suites.
+IMPORTANT: The method must be called before invoking any of the `isRunning()` static methods that create the rule instance.
+Variable values will be applied to all instances created after this.
+Invoke `clearEnvironmentVariableOverrides()` to reset the rule to use defaults (including any actual environment variables).
 
 In your test cases, you can use those properties when creating the connection factory:
 

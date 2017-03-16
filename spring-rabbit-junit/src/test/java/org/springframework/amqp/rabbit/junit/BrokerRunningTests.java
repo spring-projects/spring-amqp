@@ -29,7 +29,7 @@ import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Gary Russell
- * @since 5.0
+ * @since 1.7.2
  *
  */
 public class BrokerRunningTests {
@@ -62,7 +62,7 @@ public class BrokerRunningTests {
 		vars.put("RABBITMQ_TEST_PASSWORD", "QUX");
 		vars.put("RABBITMQ_TEST_PORT", "2345");
 		vars.put("RABBITMQ_TEST_USER", "FIZ");
-		BrokerRunning.setEnvironmentVariables(vars);
+		BrokerRunning.setEnvironmentVariableOverrides(vars);
 		BrokerRunning brokerRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 		assertEquals("http://foo/bar", brokerRunning.getAdminUri());
@@ -74,6 +74,8 @@ public class BrokerRunningTests {
 		DirectFieldAccessor dfa = new DirectFieldAccessor(brokerRunning);
 		assertEquals("BAR", dfa.getPropertyValue("adminUser"));
 		assertEquals("FOO", dfa.getPropertyValue("adminPassword"));
+
+		BrokerRunning.clearEnvironmentVariableOverrides();
 	}
 
 }

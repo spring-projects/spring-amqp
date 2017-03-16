@@ -148,12 +148,22 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
-	 * Set environment variables for host, port etc. Will override any real
-	 * environment vars, if present.
+	 * Set environment variable overrides for host, port etc. Will override any real
+	 * environment variables, if present.
+	 * <p><b>The variables will only apply to rule instances that are created after this
+	 * method is called.</b>
+	 * The overrides will remain until
 	 * @param environmentVariables the variables.
 	 */
-	public static void setEnvironmentVariables(Map<String, String> environmentVariables) {
+	public static void setEnvironmentVariableOverrides(Map<String, String> environmentVariables) {
 		environmentOverrides.putAll(environmentVariables);
+	}
+
+	/**
+	 * Clear any environment variable overrides set in {@link #setEnvironmentVariableOverrides(Map)}.
+	 */
+	public static void clearEnvironmentVariableOverrides() {
+		environmentOverrides.clear();
 	}
 
 	/**
