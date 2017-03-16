@@ -79,17 +79,33 @@ import com.rabbitmq.http.client.Client;
  */
 public final class BrokerRunning extends TestWatcher {
 
+	public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
+
+	public static final String BROKER_HOSTNAME = "RABBITMQ_TEST_HOSTNAME";
+
+	public static final String BROKER_PORT = "RABBITMQ_TEST_PORT";
+
+	public static final String BROKER_USER = "RABBITMQ_TEST_USER";
+
+	public static final String BROKER_PW = "RABBITMQ_TEST_PASSWORD";
+
+	public static final String BROKER_ADMIN_USER = "RABBITMQ_TEST_ADMIN_USER";
+
+	public static final String BROKER_ADMIN_PW = "RABBITMQ_TEST_ADMIN_PASSWORD";
+
 	public static final String BROKER_REQUIRED = "RABBITMQ_SERVER_REQUIRED";
 
 	private static final String DEFAULT_QUEUE_NAME = BrokerRunning.class.getName();
 
-	private static Log logger = LogFactory.getLog(BrokerRunning.class);
+	private static final Log logger = LogFactory.getLog(BrokerRunning.class);
 
 	// Static so that we only test once on failure: speeds up test suite
-	private static Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>();
+	private static final Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>();
 
 	// Static so that we only test once on failure
-	private static Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>();
+	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>();
+
+	private static final Map<String, String> environmentOverrides = new HashMap<>();
 
 	private final boolean assumeOnline;
 
@@ -99,13 +115,46 @@ public final class BrokerRunning extends TestWatcher {
 
 	private final String[] queues;
 
-	private final int defaultPort = BrokerTestUtils.getPort();
+	private final int defaultPort = fromEnvironment(BROKER_PORT, null) == null ? BrokerTestUtils.getPort()
+			: Integer.valueOf(fromEnvironment(BROKER_PORT, null));
 
 	private int port;
 
-	private String hostName = null;
+	private String hostName = fromEnvironment(BROKER_HOSTNAME, "localhost");
+
+	private String adminUri = fromEnvironment(BROKER_ADMIN_URI, null);
 
 	private ConnectionFactory connectionFactory;
+
+	private String user = fromEnvironment(BROKER_USER, "guest");
+
+	private String password = fromEnvironment(BROKER_PW, "guest");
+
+	private String adminUser = fromEnvironment(BROKER_ADMIN_USER, "guest");
+
+	private String adminPassword = fromEnvironment(BROKER_ADMIN_PW, "guest");
+
+	private String fromEnvironment(String key, String defaultValue) {
+		String environmentValue = environmentOverrides.get(key);
+		if (!StringUtils.hasText(environmentValue)) {
+			environmentValue = System.getenv(key);
+		}
+		if (StringUtils.hasText(environmentValue)) {
+			return environmentValue;
+		}
+		else {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * Set environment variables for host, port etc. Will override any real
+	 * environment vars, if present.
+	 * @param environmentVariables the variables.
+	 */
+	public static void setEnvironmentVariables(Map<String, String> environmentVariables) {
+		environmentOverrides.putAll(environmentVariables);
+	}
 
 	/**
 	 * Ensure the broker is running and has a empty queue(s) with the specified name(s) in the
@@ -192,6 +241,105 @@ public final class BrokerRunning extends TestWatcher {
 		this.hostName = hostName;
 	}
 
+	/**
+	 * Set the user for the amqp connection default "guest".
+	 * @param user the user.
+	 * @since 1.7.2
+	 */
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	/**
+	 * Set the user for the amqp connection default "guest".
+	 * @param password the password.
+	 * @since 1.7.2
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	/**
+	 * Set the uri for the REST API.
+	 * @param adminUri the uri.
+	 * @since 1.7.2
+	 */
+	public void setAdminUri(String adminUri) {
+		this.adminUri = adminUri;
+	}
+
+	/**
+	 * Set the user for the management REST API connection default "guest".
+	 * @param user the user.
+	 * @since 1.7.2
+	 */
+	public void setAdminUser(String user) {
+		this.adminUser = user;
+	}
+
+	/**
+	 * Set the paswword for the management REST API connection default "guest".
+	 * @param password the password.
+	 * @since 1.7.2
+	 */
+	public void setAdminPassword(String password) {
+		this.adminPassword = password;
+	}
+
+	/**
+	 * Return the port.
+	 * @return the port.
+	 * @since 1.7.2
+	 */
+	public int getPort() {
+		return this.port;
+	}
+
+	/**
+	 * Return the port.
+	 * @return the port.
+	 * @since 1.7.2
+	 */
+	public String getHostName() {
+		return this.hostName;
+	}
+
+	/**
+	 * Return the user.
+	 * @return the user.
+	 * @since 1.7.2
+	 */
+	public String getUser() {
+		return this.user;
+	}
+
+	/**
+	 * Return the password.
+	 * @return the password.
+	 * @since 1.7.2
+	 */
+	public String getPassword() {
+		return this.password;
+	}
+
+	/**
+	 * Return the admin user.
+	 * @return the user.
+	 * @since 1.7.2
+	 */
+	public String getAdminUser() {
+		return this.adminUser;
+	}
+
+	/**
+	 * Return the admin password.
+	 * @return the password.
+	 * @since 1.7.2
+	 */
+	public String getAdminPassword() {
+		return this.adminPassword;
+	}
+
 	@Override
 	public Statement apply(Statement base, Description description) {
 
@@ -235,7 +383,7 @@ public final class BrokerRunning extends TestWatcher {
 			}
 
 			if (this.management) {
-				Client client = new Client("http://localhost:15672/api/", "guest", "guest");
+				Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
 				if (!client.alivenessTest("/")) {
 					throw new RuntimeException("Aliveness test failed for localhost:15672 guest/quest; "
 							+ "management not available");
@@ -389,8 +537,27 @@ public final class BrokerRunning extends TestWatcher {
 				this.connectionFactory.setHost("localhost");
 			}
 			this.connectionFactory.setPort(this.port);
+			this.connectionFactory.setUsername(this.user);
+			this.connectionFactory.setPassword(this.password);
 		}
 		return this.connectionFactory;
+	}
+
+	/**
+	 * Return the admin uri.
+	 * @return the uri.
+	 * @since 1.7.2
+	 */
+	public String getAdminUri() {
+		if (StringUtils.hasText(this.adminUri)) {
+			return this.adminUri;
+		}
+		else if (!StringUtils.hasText(this.hostName)) {
+			return "http://localhost:15672/api/";
+		}
+		else {
+			return "http://" + this.hostName + ":15672/api/";
+		}
 	}
 
 	private void closeResources(Connection connection, Channel channel) {

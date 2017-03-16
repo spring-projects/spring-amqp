@@ -266,9 +266,11 @@ to suspend the test thread.
 
 Spring AMQP _version 1.7_ provides an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit tests.
 
-`BrokerRunning` provides a mechanism to allow tests to succeed when a broker is not running on `localhost`.
+===== BrokerRunning
 
-It also has utility methods to delete queues and exchanges.
+`BrokerRunning` provides a mechanism to allow tests to succeed when a broker is not running (on `localhost`, by default).
+
+It also has utility methods to initialize/empty queues, and delete queues and exchanges.
 
 Usage:
 
@@ -284,10 +286,71 @@ public static void tearDown() {
 }
 ----
 
-Of course, there are times when you want tests to fail if there is no broker, such as a nightly CI build.
+There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
+
+====== Configuring the Rule
+
+There are times when you want tests to fail if there is no broker, such as a nightly CI build.
 To disable the rule at runtime, set an environment variable `RABBITMQ_SERVER_REQUIRED` to `true`.
 
-There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
+You can override the broker properties, such as hostname in several ways:
+
+- Setters
+
+[source, java]
+----
+
+@ClassRule
+public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo", "bar");
+
+static {
+    brokerRunning.setHostName("10.0.0.1")
+}
+
+@AfterClass
+public static void tearDown() {
+    brokerRunning.removeTestQueues("some.other.queue.too") // removes foo, bar as well
+}
+----
+
+- Environment Variables
+
+The following environment variables are provided:
+
+[source, java]
+----
+public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
+public static final String BROKER_HOSTNAME = "RABBITMQ_TEST_HOSTNAME";
+public static final String BROKER_PORT = "RABBITMQ_TEST_PORT";
+public static final String BROKER_USER = "RABBITMQ_TEST_USER";
+public static final String BROKER_PW = "RABBITMQ_TEST_PASSWORD";
+public static final String BROKER_ADMIN_USER = "RABBITMQ_TEST_ADMIN_USER";
+public static final String BROKER_ADMIN_PW = "RABBITMQ_TEST_ADMIN_PASSWORD";
+----
+
+These will override the default settings (`localhost:5672` for amqp and `http://localhost:15672/api/` for the management REST API).
+
+Changing the host name affects both the amqp and management REST API connection (unless the admin uri is explicitly set).
+
+`BrokerRunning` also provides a `static` method: `setEnvironmentVariables` where you can pass in a map containing these variables; they override system environment variables.
+This might be useful if you wish to use different configuration for tests in multiple test suites.
+
+In your test cases, you can use those properties when creating the connection factory:
+
+[source, java]
+----
+@Bean
+public ConnectionFactory rabbitConnectionFactory() {
+    CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+    connectionFactory.setHost(brokerRunning.getHostName());
+    connectionFactory.setPort(brokerRunning.getPort());
+    connectionFactory.setUsername(brokerRunning.getUser());
+    connectionFactory.setPassword(brokerRunning.getPassword());
+    return connectionFactory;
+}
+----
+
+===== LongRunningIntegrationTest
 
 `LongRunningIntegrationTest` is a rule that disables long running tests; you might want to use this on a developer system but ensure that the rule is disabled on, for example, nightly CI builds.
 
