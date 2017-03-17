@@ -331,9 +331,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					this.lastAlertAt = now;
 				}
 			}
-			this.consumers.stream()
-					.filter(c -> !c.getChannel().isOpen())
-					.collect(Collectors.toList()) // needed to avoid ConcurrentModificationException in cancelConsumer()
+			final List<SimpleConsumer> consumersToCancel;
+			synchronized (this.consumersMonitor) {
+				consumersToCancel = this.consumers.stream()
+						.filter(c -> !c.getChannel().isOpen())
+						.collect(Collectors.toList());
+			}
+			consumersToCancel
 					.forEach(c -> {
 						try {
 							RabbitUtils.closeMessageConsumer(c.getChannel(),
