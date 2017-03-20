@@ -17,6 +17,8 @@
 package org.springframework.amqp.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -39,6 +41,23 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		assertEquals(null, properties.getReplyTo());
 		assertEquals(null, properties.getReplyToAddress());
+	}
+
+	@Test
+	public void testDelayHeader() {
+		MessageProperties properties = new MessageProperties();
+		Integer delay = 100;
+		properties.setDelay(delay);
+		assertEquals(delay, properties.getHeaders().get(MessageProperties.X_DELAY));
+		properties.setDelay(null);
+		assertFalse(properties.getHeaders().containsKey(MessageProperties.X_DELAY));
+	}
+
+	@Test
+	public void testContentLengthSet() {
+		MessageProperties properties = new MessageProperties();
+		properties.setContentLength(1L);
+		assertTrue(properties.isContentLengthSet());
 	}
 
 }
