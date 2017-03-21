@@ -107,7 +107,7 @@ public final class BrokerRunning extends TestWatcher {
 	// Static so that we only test once on failure
 	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>();
 
-	private static final Map<String, String> environmentOverrides = new HashMap<>();
+	private static final Map<String, String> environmentOverrides = new HashMap<String, String>();
 
 	private final boolean assumeOnline;
 
