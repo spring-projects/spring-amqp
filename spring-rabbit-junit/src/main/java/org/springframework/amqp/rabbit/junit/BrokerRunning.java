@@ -201,6 +201,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	/**
+	 * @param queues the queues.
 	 * @return a new rule that assumes an existing broker with the management plugin with
 	 * the provided queues declared (and emptied if needed)..
 	 */
