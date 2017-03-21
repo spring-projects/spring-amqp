@@ -131,7 +131,6 @@ subprojects { subproject ->
 		}
 		testCompile "org.springframework:spring-test:$springVersion"
 		testCompile "org.slf4j:slf4j-log4j12:$slf4jVersion" // amqp-client now uses SLF4J
-		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 	}
 
 	// enable all compiler warnings; individual projects may customize further
