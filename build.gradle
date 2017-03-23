@@ -41,6 +41,7 @@ allprojects {
 			maven { url 'https://repo.spring.io/libs-snapshot' }
 		}
 		maven { url 'https://repo.spring.io/libs-release' }
+//		maven { url 'https://repo.spring.io/libs-staging-local' }
 	}
 	apply plugin: 'javadocHotfix'
 }
@@ -91,7 +92,7 @@ subprojects { subproject ->
 		logbackVersion = '1.1.11'
 		mockitoVersion = '2.5.4'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.1.0'
-		rabbitmqHttpClientVersion = '1.1.1.RELEASE'
+		rabbitmqHttpClientVersion = '1.2.0.RELEASE'
 		slf4jVersion = "1.7.21"
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.BUILD-SNAPSHOT'
