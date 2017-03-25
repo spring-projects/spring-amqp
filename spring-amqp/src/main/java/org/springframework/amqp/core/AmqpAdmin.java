@@ -83,7 +83,7 @@ public interface AmqpAdmin {
 	 */
 	void purgeQueue(String queueName, boolean noWait);
 
-	// Binding opertaions
+	// Binding operations
 
 	/**
 	 * Declare a binding of a queue to an exchange.

@@ -85,7 +85,7 @@ The binary JARs and the source code are available in the **libs**. The reference
 
 ## Changelog
 
-Lists of issues addressed per release can be found in [JIRA](https://jira.springsource.org/browse/AMQP#selectedTab=com.atlassian.jira.plugin.system.project%3Aversions-panel).
+Lists of issues addressed per release can be found in [JIRA](https://jira.spring.io/browse/AMQP#selectedTab=com.atlassian.jira.plugin.system.project%3Aversions-panel).
 
 ## Additional Resources
 
