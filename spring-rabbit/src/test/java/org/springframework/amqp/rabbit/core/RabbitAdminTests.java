@@ -246,7 +246,7 @@ public class RabbitAdminTests {
 		admin.deleteExchange("e2");
 		admin.deleteExchange("e3");
 		admin.deleteExchange("e4");
-		assertNull(admin.getQueueProperties(ctx.getBean(Config.class).protypeQueueName));
+		assertNull(admin.getQueueProperties(ctx.getBean(Config.class).prototypeQueueName));
 		ctx.close();
 	}
 
@@ -270,7 +270,7 @@ public class RabbitAdminTests {
 	}
 
 	@Test
-	public void testIgnoreDeclarationExeptionsTimeout() throws Exception {
+	public void testIgnoreDeclarationExceptionsTimeout() throws Exception {
 		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(
 				com.rabbitmq.client.ConnectionFactory.class);
 		TimeoutException toBeThrown = new TimeoutException("test");
@@ -302,7 +302,7 @@ public class RabbitAdminTests {
 	@Configuration
 	public static class Config {
 
-		public String protypeQueueName = UUID.randomUUID().toString();
+		public String prototypeQueueName = UUID.randomUUID().toString();
 
 		@Bean
 		public ConnectionFactory cf() {
@@ -354,7 +354,7 @@ public class RabbitAdminTests {
 		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 		public List<Queue> prototypes() {
 			return Arrays.asList(
-					new Queue(this.protypeQueueName, false, false, true)
+					new Queue(this.prototypeQueueName, false, false, true)
 			);
 		}
 
