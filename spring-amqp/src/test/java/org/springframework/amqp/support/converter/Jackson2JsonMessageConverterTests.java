@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ public class Jackson2JsonMessageConverterTests {
 	public void simpleTradeOverrideMapper() {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializerFactory(BeanSerializerFactory.instance);
-		converter.setJsonObjectMapper(mapper);
+		converter = new Jackson2JsonMessageConverter(mapper);
 
 		Message message = converter.toMessage(trade, new MessageProperties());
 
@@ -311,6 +311,7 @@ public class Jackson2JsonMessageConverterTests {
 			}
 			return true;
 		}
+
 	}
 
 	public static class Bar {
@@ -374,6 +375,7 @@ public class Jackson2JsonMessageConverterTests {
 			}
 			return true;
 		}
+
 	}
 
 }
