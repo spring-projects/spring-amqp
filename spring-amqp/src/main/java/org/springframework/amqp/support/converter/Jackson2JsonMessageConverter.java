@@ -25,6 +25,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -45,14 +46,30 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 
 	private static Log log = LogFactory.getLog(Jackson2JsonMessageConverter.class);
 
-	private ObjectMapper jsonObjectMapper = new ObjectMapper();
+	private final ObjectMapper jsonObjectMapper;
 
 	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
 	private boolean typeMapperSet;
 
+	/**
+	 * Construct with an internal {@link ObjectMapper} instance.
+	 * The {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} is set to false on
+	 * the {@link ObjectMapper}.
+	 */
 	public Jackson2JsonMessageConverter() {
-		initializeJsonObjectMapper();
+		this.jsonObjectMapper = new ObjectMapper();
+		this.jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	/**
+	 * Construct with the provided {@link ObjectMapper} instance.
+	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
+	 * @since 1.7.2
+	 */
+	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper) {
+		Assert.notNull(jsonObjectMapper, "'jsonObjectMapper' must not be null");
+		this.jsonObjectMapper = jsonObjectMapper;
 	}
 
 	public Jackson2JavaTypeMapper getJavaTypeMapper() {
@@ -62,16 +79,6 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	public void setJavaTypeMapper(Jackson2JavaTypeMapper javaTypeMapper) {
 		this.javaTypeMapper = javaTypeMapper;
 		this.typeMapperSet = true;
-	}
-
-	/**
-	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
-	 * alternative to injecting a mapper is to extend this class and override
-	 * {@link #initializeJsonObjectMapper()}.
-	 * @param jsonObjectMapper the object mapper to set
-	 */
-	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
-		this.jsonObjectMapper = jsonObjectMapper;
 	}
 
 	/**
@@ -119,13 +126,6 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 		if (!this.typeMapperSet) {
 			((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setBeanClassLoader(classLoader);
 		}
-	}
-
-	/**
-	 * Subclass and override to customize.
-	 */
-	protected void initializeJsonObjectMapper() {
-		this.jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	@Override
