@@ -368,6 +368,8 @@ For convenience, a factory bean is provided to assist in configuring the connect
 
 NOTE: The 4.0.x client enables automatic recovery by default; while compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally isn't needed.
 It is recommended to disable `amqp-client` automatic recovery, to avoid getting `AutoRecoverConnectionNotCurrentlyOpenException` s when the broker is available, but the connection has not yet recovered.
+You may notice this exception, for example, when a `RetryTemplate` is configured in a `RabbitTemplate`, even when failing over to another broker in a cluster.
+Since the auto recovering connection recovers on a timer, the connection may be recovered faster using Spring AMQP's recovery mechanisms.
 Starting with _version 1.7.1_, Spring AMQP disables it unless you explicitly create your own RabbitMQ connection factory and provide it to the `CachingConnectionFactory`.
 RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBean` will also have the option disabled by default.
 
