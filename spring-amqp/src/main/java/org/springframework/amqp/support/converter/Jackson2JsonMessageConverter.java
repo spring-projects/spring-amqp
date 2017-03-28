@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
+import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -44,14 +45,30 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 
 	private static Log log = LogFactory.getLog(Jackson2JsonMessageConverter.class);
 
-	private ObjectMapper jsonObjectMapper = new ObjectMapper();
+	private ObjectMapper jsonObjectMapper;
 
 	private Jackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
 	private boolean typeMapperSet;
 
+	/**
+	 * Construct with an internal {@link ObjectMapper} instance.
+	 * The {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} is set to false on
+	 * the {@link ObjectMapper}.
+	 */
 	public Jackson2JsonMessageConverter() {
-		initializeJsonObjectMapper();
+		this.jsonObjectMapper = new ObjectMapper();
+		this.jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	/**
+	 * Construct with the provided {@link ObjectMapper} instance.
+	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
+	 * @since 1.7.2
+	 */
+	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper) {
+		Assert.notNull(jsonObjectMapper, "'jsonObjectMapper' must not be null");
+		this.jsonObjectMapper = jsonObjectMapper;
 	}
 
 	public Jackson2JavaTypeMapper getJavaTypeMapper() {
@@ -64,11 +81,11 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	}
 
 	/**
-	 * The {@link com.fasterxml.jackson.databind.ObjectMapper} to use instead of using the default. An
-	 * alternative to injecting a mapper is to extend this class and override
-	 * {@link #initializeJsonObjectMapper()}.
+	 * The {@link ObjectMapper} to use instead of using the default.
 	 * @param jsonObjectMapper the object mapper to set
+	 * @deprecated in favor of {@link Jackson2JsonMessageConverter(ObjectMapper)} constructor
 	 */
+	@Deprecated
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
 		this.jsonObjectMapper = jsonObjectMapper;
 	}
@@ -119,11 +136,12 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 	}
 
-	/**
-	 * Subclass and override to customize.
+	/** Initialize default {@link ObjectMapper} instance.
+	 * @deprecated in favor of {@link Jackson2JsonMessageConverter(ObjectMapper)} constructor
+	 * with externally configured {@link ObjectMapper}.
 	 */
+	@Deprecated
 	protected void initializeJsonObjectMapper() {
-		this.jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	@Override
