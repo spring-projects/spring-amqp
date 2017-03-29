@@ -58,9 +58,9 @@ public @interface Exchange {
 	String type() default ExchangeTypes.DIRECT;
 
 	/**
-	 * @return true if the exchange is to be declared as durable.
+	 * @return false if the exchange is to be declared as non-durable.
 	 */
-	String durable() default "false";
+	String durable() default "true";
 
 	/**
 	 * @return true if the exchange is to be declared as auto-delete.

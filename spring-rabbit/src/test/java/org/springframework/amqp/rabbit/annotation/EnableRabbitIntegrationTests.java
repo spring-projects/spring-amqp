@@ -135,6 +135,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Gary Russell
+ *
  * @since 1.4
  */
 @ContextConfiguration(classes = EnableRabbitIntegrationTests.EnableRabbitConfig.class)
@@ -859,7 +860,7 @@ public class EnableRabbitIntegrationTests {
 						@Argument(name = "x-dead-letter-routing-key", value = "amqp656dlq"),
 						@Argument(name = "test-empty", value = ""),
 						@Argument(name = "test-null", value = "") }),
-				exchange = @Exchange(value = "amq.topic", durable = "true", type = "topic"),
+				exchange = @Exchange(value = "amq.topic", type = "topic"),
 				key = "foo"))
 		public String handleWithDeadLetterDefaultExchange(String foo) {
 			throw new AmqpRejectAndDontRequeueException("dlq");
@@ -1240,7 +1241,7 @@ public class EnableRabbitIntegrationTests {
 
 		@Bean
 		public DirectExchange internal() {
-			DirectExchange directExchange = new DirectExchange("auto.internal", false, true);
+			DirectExchange directExchange = new DirectExchange("auto.internal", true, true);
 			directExchange.setInternal(true);
 			return directExchange;
 		}

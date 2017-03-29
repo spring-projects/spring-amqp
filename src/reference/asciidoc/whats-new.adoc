@@ -16,7 +16,8 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 ===== General Changes
 
 The `ExchangeBuilder` now builds durable exchanges by default.
-See <<builder-api>> for more information.
+The `@Exchange` annotation used within a `@QeueueBinding` also declares durable exchanges by default.
+See <<builder-api>> and <<async-annotation-driven>> for more information.
 
 ===== Deleted classes
 
@@ -103,7 +104,8 @@ You can also configure a `RabbitListenerErrorHandler` to handle exceptions.
 See <<annotation-error-handling>> for more information.
 
 You can now bind a queue with multiple routing keys when using the `@QueueBinding` annotation.
-Also `@QueueBinding.exchange()` now supports custom exchange types.
+Also `@QueueBinding.exchange()` now supports custom exchange types and declares durable exchanges by default.
+
 
 See <<async-annotation-driven>> for more information.
 
