@@ -22,6 +22,8 @@ import java.util.Map;
  * Builder providing a fluent API for building {@link Exchange}s.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  *
  */
@@ -38,6 +40,8 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	private boolean internal;
 
 	private boolean delayed;
+
+	private boolean ignoreDeclarationExceptions;
 
 	/**
 	 * Construct an instance of the appropriate type.
@@ -145,6 +149,16 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		return this;
 	}
 
+	/**
+	 * Switch on ignore exceptions such as mismatched properties when declaring.
+	 * @return the builder.
+	 * @since 2.0
+	 */
+	public ExchangeBuilder ignoreDeclarationExceptions() {
+		this.ignoreDeclarationExceptions = true;
+		return this;
+	}
+
 	public Exchange build() {
 		AbstractExchange exchange;
 		if (ExchangeTypes.DIRECT.equals(this.type)) {
@@ -160,10 +174,11 @@ public final class ExchangeBuilder extends AbstractBuilder {
 			exchange = new HeadersExchange(this.name, this.durable, this.autoDelete, getArguments());
 		}
 		else {
-			throw new IllegalStateException("Invalid type: " + this.type);
+			exchange = new CustomExchange(this.name, this.type, this.durable, this.autoDelete, getArguments());
 		}
 		exchange.setInternal(this.internal);
 		exchange.setDelayed(this.delayed);
+		exchange.setIgnoreDeclarationExceptions(this.ignoreDeclarationExceptions);
 		return exchange;
 	}
 

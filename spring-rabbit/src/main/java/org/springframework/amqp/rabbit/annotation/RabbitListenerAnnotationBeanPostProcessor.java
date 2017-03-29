@@ -31,17 +31,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.ExchangeBuilder;
 import org.springframework.amqp.core.ExchangeTypes;
-import org.springframework.amqp.core.FanoutExchange;
-import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.RabbitListenerConfigUtils;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.listener.MethodRabbitListenerEndpoint;
@@ -76,6 +71,7 @@ import org.springframework.messaging.handler.annotation.support.MessageHandlerMe
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
@@ -101,7 +97,11 @@ import org.springframework.util.StringUtils;
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @author Gary Russell
+ * @author Alex Panchenko
+ * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see RabbitListener
  * @see EnableRabbit
  * @see RabbitListenerConfigurer
@@ -578,28 +578,37 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
 		Assert.isTrue(StringUtils.hasText(exchangeName), () -> "Exchange name required; binding queue " + queueName);
 		String exchangeType = resolveExpressionAsString(bindingExchange.type(), "@Exchange.type");
-		Exchange exchange;
-		if (exchangeType.equals(ExchangeTypes.DIRECT)) {
-			exchange = directExchange(bindingExchange, exchangeName);
+
+		ExchangeBuilder exchangeBuilder = new ExchangeBuilder(exchangeName, exchangeType);
+
+		if (resolveExpressionAsBoolean(bindingExchange.autoDelete())) {
+			exchangeBuilder.autoDelete();
 		}
-		else if (exchangeType.equals(ExchangeTypes.FANOUT)) {
-			exchange = fanoutExchange(bindingExchange, exchangeName);
+
+		if (resolveExpressionAsBoolean(bindingExchange.internal())) {
+			exchangeBuilder.internal();
 		}
-		else if (exchangeType.equals(ExchangeTypes.TOPIC)) {
-			exchange = topicExchange(bindingExchange, exchangeName);
+
+		if (resolveExpressionAsBoolean(bindingExchange.delayed())) {
+			exchangeBuilder.delayed();
 		}
-		else if (exchangeType.equals(ExchangeTypes.HEADERS)) {
-			exchange = headersExchange(bindingExchange, exchangeName);
+
+		if (resolveExpressionAsBoolean(bindingExchange.ignoreDeclarationExceptions())) {
+			exchangeBuilder.ignoreDeclarationExceptions();
 		}
-		else {
-			throw new BeanInitializationException("Unexpected exchange type: " + exchangeType);
+
+		Map<String, Object> arguments = resolveArguments(bindingExchange.arguments());
+
+		if (!CollectionUtils.isEmpty(arguments)) {
+			exchangeBuilder.withArguments(arguments);
 		}
-		AbstractExchange abstractExchange = (AbstractExchange) exchange;
-		abstractExchange.setInternal(resolveExpressionAsBoolean(bindingExchange.internal()));
-		abstractExchange.setDelayed(resolveExpressionAsBoolean(bindingExchange.delayed()));
-		abstractExchange.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingExchange.ignoreDeclarationExceptions()));
-		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(exchangeName + ++this.increment,
-				exchange);
+
+		org.springframework.amqp.core.Exchange exchange =
+				exchangeBuilder.durable(resolveExpressionAsBoolean(bindingExchange.durable()))
+						.build();
+
+		((ConfigurableBeanFactory) this.beanFactory)
+				.registerSingleton(exchangeName + ++this.increment, exchange);
 		final String[] routingKeys;
 		if (exchangeType.equals(ExchangeTypes.FANOUT) || binding.key().length == 0) {
 			routingKeys = new String[] { "" };
@@ -620,38 +629,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			((ConfigurableBeanFactory) this.beanFactory)
 					.registerSingleton(exchangeName + "." + queueName + ++this.increment, actualBinding);
 		}
-	}
-
-	private Exchange directExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
-			String exchangeName) {
-		return new DirectExchange(exchangeName,
-				resolveExpressionAsBoolean(bindingExchange.durable()),
-				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
-				resolveArguments(bindingExchange.arguments()));
-	}
-
-	private Exchange fanoutExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
-			String exchangeName) {
-		return new FanoutExchange(exchangeName,
-				resolveExpressionAsBoolean(bindingExchange.durable()),
-				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
-				resolveArguments(bindingExchange.arguments()));
-	}
-
-	private Exchange topicExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
-			String exchangeName) {
-		return new TopicExchange(exchangeName,
-				resolveExpressionAsBoolean(bindingExchange.durable()),
-				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
-				resolveArguments(bindingExchange.arguments()));
-	}
-
-	private Exchange headersExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
-			String exchangeName) {
-		return new HeadersExchange(exchangeName,
-				resolveExpressionAsBoolean(bindingExchange.durable()),
-				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
-				resolveArguments(bindingExchange.arguments()));
 	}
 
 	private Map<String, Object> resolveArguments(Argument[] arguments) {

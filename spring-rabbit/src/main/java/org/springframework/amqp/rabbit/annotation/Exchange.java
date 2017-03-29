@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import org.springframework.core.annotation.AliasFor;
  * An exchange to which to bind a {@code RabbitListener} queue.
  *
  * @author Gary Russell
- * @since 1.5
+ * @author Alex Panchenko
  *
+ * @since 1.5
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
@@ -48,8 +49,11 @@ public @interface Exchange {
 	String name() default "";
 
 	/**
-	 * The exchange type - only DIRECT, FANOUT TOPIC, and HEADERS exchanges are supported.
+	 * The exchange type, including custom.
+	 * Defaults to {@link ExchangeTypes#DIRECT}.
+	 * If a custom exchange type is used the corresponding plugin is required on the broker.
 	 * @return the exchange type.
+	 * @see ExchangeTypes
 	 */
 	String type() default ExchangeTypes.DIRECT;
 

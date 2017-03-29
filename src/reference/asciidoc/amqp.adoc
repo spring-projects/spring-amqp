@@ -1651,7 +1651,9 @@ In the second example, an anonymous (exclusive, auto-delete) queue will be decla
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 In the third example, a queue with the name retrieved from property `my.queue` will be declared if necessary, with the default binding to the default exchange using the queue name as the routing key.
 
-Only DIRECT, FANOUT, TOPIC and HEADERS, exchange types are supported with this mechanism.
+Since _version 2.0_ the `@Exchange` annotation supports any exchange types, including custom.
+See more information in the https://www.rabbitmq.com/tutorials/amqp-concepts.html[AMQP Concepts] document.
+
 Use normal `@Bean` definitions when more advanced configuration is required.
 
 Notice `ignoreDeclarationExceptions` on the exchange in the first example.
@@ -3527,11 +3529,9 @@ The `durable()` method with no parameter is no longer provided.
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, Bindings
 
-Starting with _version 1.5_, it is now possible to declare multiple entities with one `@Bean`, by returing a
-collection.
+Starting with _version 1.5_, it is now possible to declare multiple entities with one `@Bean`, by returning a collection.
 
-Only collections where the first element is a `Declarable` are considered, and only `Declarable` elements from such
-collections are processed.
+Only collections where the first element is a `Declarable` are considered, and only `Declarable` elements from such collections are processed.
 
 [source, java]
 -----
