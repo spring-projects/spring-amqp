@@ -35,6 +35,7 @@ import org.springframework.amqp.core.AbstractExchange;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
+import org.springframework.amqp.core.CustomExchange;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -578,7 +579,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String exchangeName = resolveExpressionAsString(bindingExchange.value(), "@Exchange.exchange");
 		Assert.isTrue(StringUtils.hasText(exchangeName), () -> "Exchange name required; binding queue " + queueName);
 		String exchangeType = resolveExpressionAsString(bindingExchange.type(), "@Exchange.type");
-		Exchange exchange;
+		final Exchange exchange;
 		if (exchangeType.equals(ExchangeTypes.DIRECT)) {
 			exchange = directExchange(bindingExchange, exchangeName);
 		}
@@ -592,7 +593,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			exchange = headersExchange(bindingExchange, exchangeName);
 		}
 		else {
-			throw new BeanInitializationException("Unexpected exchange type: " + exchangeType);
+			exchange = customExchange(bindingExchange, exchangeName, exchangeType);
 		}
 		AbstractExchange abstractExchange = (AbstractExchange) exchange;
 		abstractExchange.setInternal(resolveExpressionAsBoolean(bindingExchange.internal()));
@@ -649,6 +650,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private Exchange headersExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
 			String exchangeName) {
 		return new HeadersExchange(exchangeName,
+				resolveExpressionAsBoolean(bindingExchange.durable()),
+				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
+				resolveArguments(bindingExchange.arguments()));
+	}
+
+	private Exchange customExchange(org.springframework.amqp.rabbit.annotation.Exchange bindingExchange,
+			String exchangeName, String exchangeType) {
+		return new CustomExchange(exchangeName,
+				exchangeType,
 				resolveExpressionAsBoolean(bindingExchange.durable()),
 				resolveExpressionAsBoolean(bindingExchange.autoDelete()),
 				resolveArguments(bindingExchange.arguments()));
