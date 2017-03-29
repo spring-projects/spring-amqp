@@ -48,7 +48,8 @@ public @interface Exchange {
 	String name() default "";
 
 	/**
-	 * The exchange type - only DIRECT, FANOUT TOPIC, and HEADERS exchanges are supported.
+	 * The exchange type, for the standard exchange types there are constants in {@link ExchangeTypes}.
+	 * If a custom exchange type is used the corresponding plugin is required on the broker.
 	 * @return the exchange type.
 	 */
 	String type() default ExchangeTypes.DIRECT;

@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.CustomExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.MessageListenerTestContainer;
 import org.springframework.amqp.rabbit.config.RabbitListenerContainerTestFactory;
@@ -231,6 +233,20 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		context.close();
 	}
 
+	@Test
+	public void customExhangeTestBean() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+				CustomExchangeTestBean.class);
+
+		final Collection<CustomExchange> exchanges = context.getBeansOfType(CustomExchange.class).values();
+		assertThat(exchanges, hasSize(1));
+		final CustomExchange exchange = exchanges.iterator().next();
+		assertEquals("my_custom_exchange", exchange.getName());
+		assertEquals("custom_type", exchange.getType());
+
+		context.close();
+	}
+
 	@Component
 	static class SimpleMessageListenerTestBean {
 
@@ -311,6 +327,16 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		@RabbitListener(bindings = @QueueBinding(exchange = @Exchange("my_exchange"),
 				value = @org.springframework.amqp.rabbit.annotation.Queue(value = "my_queue", arguments = @Argument(name = "foo", value = "bar")),
 				key = {"${xxxxxxx:red}", "yellow"}))
+		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class CustomExchangeTestBean {
+
+		@RabbitListener(bindings = @QueueBinding(exchange = @Exchange(value = "my_custom_exchange", type = "custom_type"),
+				value = @org.springframework.amqp.rabbit.annotation.Queue,
+				key = "test"))
 		public void handleIt(String body) {
 		}
 	}

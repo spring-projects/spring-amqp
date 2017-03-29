@@ -21,7 +21,7 @@ See <<builder-api>> for more information.
 ===== Deleted classes
 
 `UniquelyNameQueue` is no longer provided. It is unusual to create a durable non auto-delete queue with a unique name.
-This class has been deleted; if you require its functionality, use `new Queue(UUID.randomUUID).toString()`).
+This class has been deleted; if you require its functionality, use `new Queue(UUID.randomUUID().toString())`.
 
 ===== New Listener Container
 
@@ -104,6 +104,8 @@ See <<annotation-error-handling>> for more information.
 
 You can now bind a queue with multiple routing keys when using the `@QueueBinding` annotation.
 See <<async-annotation-driven>> for more information.
+
+All exchange types are supported in `@Exchange.type`.
 
 ===== Container Conditional Rollback
 

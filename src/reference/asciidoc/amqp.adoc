@@ -1651,7 +1651,7 @@ In the second example, an anonymous (exclusive, auto-delete) queue will be decla
 Multiple `QueueBinding` entries can be provided, allowing the listener to listen to multiple queues.
 In the third example, a queue with the name retrieved from property `my.queue` will be declared if necessary, with the default binding to the default exchange using the queue name as the routing key.
 
-Only DIRECT, FANOUT, TOPIC and HEADERS, exchange types are supported with this mechanism.
+Since _version 2.0_ all exchange types are supported here, please use constants from `ExchangeTypes` for the standard DIRECT, FANOUT, TOPIC and HEADERS exchange types.
 Use normal `@Bean` definitions when more advanced configuration is required.
 
 Notice `ignoreDeclarationExceptions` on the exchange in the first example.
