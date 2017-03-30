@@ -545,28 +545,16 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private String declareQueue(org.springframework.amqp.rabbit.annotation.Queue bindingQueue) {
 		String queueName = (String) resolveExpression(bindingQueue.value());
-		boolean exclusive = false;
-		boolean autoDelete = false;
+		boolean isAnonymous = false;
 		if (!StringUtils.hasText(queueName)) {
 			queueName = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName();
-			// default exclusive/autodelete to true when anonymous
-			if (!StringUtils.hasText(bindingQueue.exclusive())
-					|| resolveExpressionAsBoolean(bindingQueue.exclusive())) {
-				exclusive = true;
-			}
-			if (!StringUtils.hasText(bindingQueue.autoDelete())
-					|| resolveExpressionAsBoolean(bindingQueue.autoDelete())) {
-				autoDelete = true;
-			}
-		}
-		else {
-			exclusive = resolveExpressionAsBoolean(bindingQueue.exclusive());
-			autoDelete = resolveExpressionAsBoolean(bindingQueue.autoDelete());
+			// default exclusive/autodelete and non-durable when anonymous
+			isAnonymous = true;
 		}
 		Queue queue = new Queue(queueName,
-				resolveExpressionAsBoolean(bindingQueue.durable()),
-				exclusive,
-				autoDelete,
+				resolveExpressionAsBoolean(bindingQueue.durable(), !isAnonymous),
+				resolveExpressionAsBoolean(bindingQueue.exclusive(), isAnonymous),
+				resolveExpressionAsBoolean(bindingQueue.autoDelete(), isAnonymous),
 				resolveArguments(bindingQueue.arguments()));
 		queue.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingQueue.ignoreDeclarationExceptions()));
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
@@ -701,15 +689,20 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private boolean resolveExpressionAsBoolean(String value) {
+		return resolveExpressionAsBoolean(value, false);
+	}
+
+	private boolean resolveExpressionAsBoolean(String value, boolean defaultValue) {
 		Object resolved = resolveExpression(value);
 		if (resolved instanceof Boolean) {
 			return (Boolean) resolved;
 		}
 		else if (resolved instanceof String) {
-			return Boolean.valueOf((String) resolved);
+			final String s = (String) resolved;
+			return s.isEmpty() ? defaultValue : Boolean.valueOf(s);
 		}
 		else {
-			return false;
+			return defaultValue;
 		}
 	}
 

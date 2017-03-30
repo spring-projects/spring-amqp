@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -48,6 +49,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -224,7 +226,19 @@ public class EnableRabbitIntegrationTests {
 		final SimpleMessageListenerContainer container = (SimpleMessageListenerContainer) registry
 				.getListenerContainer("anonymousQueue575");
 		assertThat(container.getQueueNames(), arrayWithSize(1));
-		assertEquals("viaAnonymous:foo", rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo"));
+		final String queueName = container.getQueueNames()[0];
+		assertEquals("viaAnonymous:foo", rabbitTemplate.convertSendAndReceive(queueName, "foo"));
+		// check queue declaration
+		final List<org.springframework.amqp.core.Queue> queues = context
+				.getBeansOfType(org.springframework.amqp.core.Queue.class).values()
+				.stream()
+				.filter(q -> queueName.equals(q.getName()))
+				.collect(Collectors.toList());
+		assertThat(queues, hasSize(1));
+		final org.springframework.amqp.core.Queue queue = queues.get(0);
+		assertFalse("anonymous queue: non-durable", queue.isDurable());
+		assertTrue("anonymous queue: autoDelete", queue.isAutoDelete());
+		assertTrue("anonymous queue: exclusive", queue.isExclusive());
 	}
 
 	@Test
