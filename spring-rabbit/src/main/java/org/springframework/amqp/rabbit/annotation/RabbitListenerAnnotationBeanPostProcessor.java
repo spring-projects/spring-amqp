@@ -699,7 +699,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		else if (resolved instanceof String) {
 			final String s = (String) resolved;
-			return s.isEmpty() ? defaultValue : Boolean.valueOf(s);
+			return StringUtils.hasText(s) ? Boolean.valueOf(s) : defaultValue;
 		}
 		else {
 			return defaultValue;
