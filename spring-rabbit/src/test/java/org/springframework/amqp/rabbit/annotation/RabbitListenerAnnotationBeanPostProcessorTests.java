@@ -257,24 +257,21 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
 		assertThat(queues, hasSize(4));
 		queues.sort(Comparator.comparing(Queue::getName));
-		{
-			final Queue queue = queues.get(0);
-			assertEquals("my_declared_queue", queue.getName());
-			assertTrue(queue.isDurable());
-			assertFalse(queue.isAutoDelete());
-			assertFalse(queue.isExclusive());
-		}
-		{
-			final Queue queue = queues.get(2);
-			assertThat(queue.getName(), startsWith("spring.gen-"));
-			assertFalse(queue.isDurable());
-			assertTrue(queue.isAutoDelete());
-			assertTrue(queue.isExclusive());
-		}
+
+		final Queue queue0 = queues.get(0);
+		assertEquals("my_declared_queue", queue0.getName());
+		assertTrue(queue0.isDurable());
+		assertFalse(queue0.isAutoDelete());
+		assertFalse(queue0.isExclusive());
+
+		final Queue queue2 = queues.get(2);
+		assertThat(queue2.getName(), startsWith("spring.gen-"));
+		assertFalse(queue2.isDurable());
+		assertTrue(queue2.isAutoDelete());
+		assertTrue(queue2.isExclusive());
 
 		context.close();
 	}
-
 
 	@Component
 	static class SimpleMessageListenerTestBean {
