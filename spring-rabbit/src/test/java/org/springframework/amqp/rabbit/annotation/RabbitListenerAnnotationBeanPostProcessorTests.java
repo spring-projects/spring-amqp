@@ -21,7 +21,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -247,6 +249,30 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		context.close();
 	}
 
+	@Test
+	public void queuesToDeclare() {
+		ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class,
+				QueuesToDeclareTestBean.class);
+
+		final List<Queue> queues = new ArrayList<>(context.getBeansOfType(Queue.class).values());
+		assertThat(queues, hasSize(4));
+		queues.sort(Comparator.comparing(Queue::getName));
+
+		final Queue queue0 = queues.get(0);
+		assertEquals("my_declared_queue", queue0.getName());
+		assertTrue(queue0.isDurable());
+		assertFalse(queue0.isAutoDelete());
+		assertFalse(queue0.isExclusive());
+
+		final Queue queue2 = queues.get(2);
+		assertThat(queue2.getName(), startsWith("spring.gen-"));
+		assertFalse(queue2.isDurable());
+		assertTrue(queue2.isAutoDelete());
+		assertTrue(queue2.isExclusive());
+
+		context.close();
+	}
+
 	@Component
 	static class SimpleMessageListenerTestBean {
 
@@ -338,6 +364,18 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 				value = @org.springframework.amqp.rabbit.annotation.Queue,
 				key = "test"))
 		public void handleIt(String body) {
+		}
+	}
+
+	@Component
+	static class QueuesToDeclareTestBean {
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue)
+		public void handleAnonymous(String body) {
+		}
+
+		@RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue("my_declared_queue"))
+		public void handleName(String body) {
 		}
 	}
 

@@ -17,6 +17,7 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 
 The `ExchangeBuilder` now builds durable exchanges by default.
 The `@Exchange` annotation used within a `@QeueueBinding` also declares durable exchanges by default.
+The `@Queue` annotation used within a `@RabbitListener` by default declares durable queues if named and non-durable if anonymous.
 See <<builder-api>> and <<async-annotation-driven>> for more information.
 
 ===== Deleted classes
