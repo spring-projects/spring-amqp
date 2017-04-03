@@ -68,8 +68,6 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 
 	private ApplicationContext applicationContext;
 
-	private boolean broadcast;
-
 	@Autowired
 	private RabbitListenerEndpointRegistry registry;
 
@@ -81,16 +79,6 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.applicationContext = applicationContext;
-	}
-
-	/**
-	 * Set to true to broadcast send operations when there are multiple listeners on the
-	 * same queue. Otherwise, messages will be sent round-robin.
-	 * Does not apply to send and receive operations.
-	 * @param broadcast true to broadcast.
-	 */
-	public void setBroadcast(boolean broadcast) {
-		this.broadcast = broadcast;
 	}
 
 	@Override
@@ -135,19 +123,10 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 			throw new IllegalArgumentException("No listener for " + routingKey);
 		}
 		try {
-			invokeListener(listeners, message, channel);
+			invoke(listeners.next(), message, channel);
 		}
 		catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
-		}
-	}
-
-	private void invokeListener(Listeners listeners, final Message message, final Channel channel) {
-		if (this.broadcast) {
-			listeners.listeners.forEach(l -> invoke(l, message, channel));
-		}
-		else {
-			invoke(listeners.next(), message, channel);
 		}
 	}
 

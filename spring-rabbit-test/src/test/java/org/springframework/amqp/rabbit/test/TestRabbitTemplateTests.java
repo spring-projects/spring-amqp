@@ -69,13 +69,6 @@ public class TestRabbitTemplateTests {
 		this.template.convertAndSend("bar", "hello4");
 		assertThat(this.config.barIn, equalTo("bar:hello2"));
 		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
-
-		this.template.setBroadcast(true);
-		this.template.convertAndSend("foo", "hello5");
-		assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
-		this.template.convertAndSend("bar", "hello6");
-		assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
 	}
 
 	@Test

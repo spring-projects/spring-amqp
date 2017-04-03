@@ -267,7 +267,7 @@ to suspend the test thread.
 
 The `TestRabbitTemplate` is provided to perform some basic integration testing without the need for a broker.
 When adding it as `@Bean` in your test case, it discovers all the listener containers in the context, either declared as `@Bean`, `<bean/>`s or using the `@RabbitListener` annotation.
-It currently only supports routing by queue name and provides a broadcast mechanism, sending the message to every container that is configured to listen to the queue.
+It currently only supports routing by queue name.
 The template extracts the message listener from the container, and invokes it directly on the test thread.
 Request/Reply messaging (`sendAndReceive` methods) is supported for listeners that return replies.
 
