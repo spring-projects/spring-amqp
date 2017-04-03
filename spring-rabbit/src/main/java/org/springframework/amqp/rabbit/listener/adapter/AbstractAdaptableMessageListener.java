@@ -105,11 +105,21 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	}
 
 	/**
-	 * The encoding to use when inter-converting between byte arrays and Strings in message properties.
-	 * @param encoding the encoding to set
+	 * The encoding to use when inter-converting between byte arrays and Strings in
+	 * message properties.
+	 * @param encoding the encoding to set.
 	 */
 	public void setEncoding(String encoding) {
 		this.encoding = encoding;
+	}
+
+	/**
+	 * The encoding to use when inter-converting between byte arrays and Strings in
+	 * message properties.
+	 * @return encoding the encoding.
+	 */
+	public String getEncoding() {
+		return this.encoding;
 	}
 
 	/**

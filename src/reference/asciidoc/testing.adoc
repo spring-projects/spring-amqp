@@ -80,6 +80,7 @@ doAnswer(new LambdaAnswer<String>(true, new ValueToReturn<String>() {
 })).when(foo).foo(anyString());
 ----
 
+[[test-harness]]
 ==== @RabbitListenerTest and RabbitListenerTestHarness
 
 Annotating one of your `@Configuration` classes with `@RabbitListenerTest` will cause the framework to replace the
@@ -260,6 +261,122 @@ for the result.
 to suspend the test thread.
 
 <5> When the listener throws an exception, it is available in the `throwable` property of the invocation data.
+
+[[test-template]]
+==== TestRabbitTemplate
+
+The `TestRabbitTemplate` is provided to perform some basic integration testing without the need for a broker.
+When adding it as `@Bean` in your test case, it discovers all the listener containers in the context, either declared as `@Bean`, `<bean/>`s or using the `@RabbitListener` annotation.
+It currently only supports routing by queue name.
+The template extracts the message listener from the container, and invokes it directly on the test thread.
+Request/Reply messaging (`sendAndReceive` methods) is supported for listeners that return replies.
+
+Here is a simple test case that uses the template:
+
+[source, java]
+----
+@RunWith(SpringRunner.class)
+public class TestRabbitTemplateTests {
+
+	@Autowired
+	private TestRabbitTemplate template;
+
+	@Autowired
+	private Config config;
+
+	@Test
+	public void testSimpleSends() {
+		this.template.convertAndSend("foo", "hello1");
+		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		this.template.convertAndSend("bar", "hello2");
+		assertThat(this.config.barIn, equalTo("bar:hello2"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:"));
+		this.template.convertAndSend("foo", "hello3");
+		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		this.template.convertAndSend("bar", "hello4");
+		assertThat(this.config.barIn, equalTo("bar:hello2"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
+
+		this.template.setBroadcast(true);
+		this.template.convertAndSend("foo", "hello5");
+		assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
+		this.template.convertAndSend("bar", "hello6");
+		assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
+	}
+
+	@Test
+	public void testSendAndReceive() {
+		assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
+	}
+
+	@Configuration
+	@EnableRabbit
+	public static class Config {
+
+		public String fooIn = "";
+
+		public String barIn = "";
+
+		public String smlc1In = "smlc1:";
+
+		@Bean
+		public TestRabbitTemplate template() throws IOException {
+			return new TestRabbitTemplate(connectionFactory());
+		}
+
+		@Bean
+		public ConnectionFactory connectionFactory() throws IOException {
+			ConnectionFactory factory = mock(ConnectionFactory.class);
+			Connection connection = mock(Connection.class);
+			Channel channel = mock(Channel.class);
+			willReturn(connection).given(factory).createConnection();
+			willReturn(channel).given(connection).createChannel(anyBoolean());
+			given(channel.isOpen()).willReturn(true);
+			return factory;
+		}
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(connectionFactory());
+			return factory;
+		}
+
+		@RabbitListener(queues = "foo")
+		public void foo(String in) {
+			this.fooIn += "foo:" + in;
+		}
+
+		@RabbitListener(queues = "bar")
+		public void bar(String in) {
+			this.barIn += "bar:" + in;
+		}
+
+		@RabbitListener(queues = "baz")
+		public String baz(String in) {
+			return "baz:" + in;
+		}
+
+		@Bean
+		public SimpleMessageListenerContainer smlc1() throws IOException {
+			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+			container.setQueueNames("foo", "bar");
+			container.setMessageListener(new MessageListenerAdapter(new Object() {
+
+				@SuppressWarnings("unused")
+				public void handleMessage(String in) {
+					smlc1In += in;
+				}
+
+			}));
+			return container;
+		}
+
+	}
+
+}
+----
 
 [[junit-rules]]
 ==== JUnit @Rules
