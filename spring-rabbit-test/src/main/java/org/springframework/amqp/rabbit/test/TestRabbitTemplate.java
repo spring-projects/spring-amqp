@@ -85,7 +85,7 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 
 	/**
 	 * Set to true to broadcast send operations when there are multiple listeners on the
-	 * same queue (simulate a fanout exchange). Otherwise, messages will send round-robin.
+	 * same queue. Otherwise, messages will be sent round-robin.
 	 * Does not apply to send and receive operations.
 	 * @param broadcast true to broadcast.
 	 */
