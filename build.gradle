@@ -242,7 +242,7 @@ project('spring-rabbit') {
 project('spring-rabbit-junit') {
 	description = 'Spring Rabbit JUnit Support'
 
-	dependencies {
+	dependencies { // no spring-amqp dependencies allowed
 
 		compile "org.springframework:spring-core:$springVersion"
 		compile "junit:junit:$junitVersion"

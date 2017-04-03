@@ -400,6 +400,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * Return the properties converter.
+	 * @return the converter.
+	 * @since 2.0
+	 */
+	protected MessagePropertiesConverter getMessagePropertiesConverter() {
+		return this.messagePropertiesConverter;
+	}
+
+	/**
 	 * Return the message converter for this template. Useful for clients that want to take advantage of the converter
 	 * in {@link ChannelCallback} implementations.
 	 *
@@ -1916,14 +1925,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				messageProperties.setUserId(userId);
 			}
 		}
-		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
-				.fromMessageProperties(messageProperties, this.encoding);
-		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, messageToUse.getBody());
+		sendToRabbit(channel, exchange, routingKey, mandatory, messageToUse);
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
 			RabbitUtils.commitIfNecessary(channel);
 		}
+	}
+
+	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
+			Message messageToUse) throws IOException {
+		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
+				.fromMessageProperties(messageToUse.getMessageProperties(), this.encoding);
+		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, messageToUse.getBody());
 	}
 
 	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {
