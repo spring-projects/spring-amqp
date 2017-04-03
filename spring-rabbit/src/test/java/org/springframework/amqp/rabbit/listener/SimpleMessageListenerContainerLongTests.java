@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -118,9 +118,9 @@ public class SimpleMessageListenerContainerLongTests {
 
 		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
 		for (int i = 0; i < 20; i++) {
-			AnonymousQueue anonymousQueue = new AnonymousQueue();
-			admin.declareQueue(anonymousQueue);
-			container.addQueueNames(anonymousQueue.getName());
+			Queue queue = new Queue("testAddQueuesAndStartInCycle" + i);
+			admin.declareQueue(queue);
+			container.addQueueNames(queue.getName());
 			if (!container.isRunning()) {
 				container.start();
 			}
@@ -132,6 +132,9 @@ public class SimpleMessageListenerContainerLongTests {
 		}
 		assertEquals(2, container.getActiveConsumerCount());
 		container.stop();
+		for (int i = 0; i < 20; i++) {
+			admin.deleteQueue("testAddQueuesAndStartInCycle" + i);
+		}
 		connectionFactory.destroy();
 	}
 

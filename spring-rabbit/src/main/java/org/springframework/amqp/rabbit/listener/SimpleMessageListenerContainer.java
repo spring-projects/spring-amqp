@@ -292,7 +292,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
 					while (consumerIterator.hasNext() && delta > 0) {
 						BlockingQueueConsumer consumer = consumerIterator.next();
-						consumer.basicCancel();
+						consumer.basicCancel(true);
 						consumerIterator.remove();
 						delta--;
 					}
@@ -870,7 +870,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
 					while (consumerIterator.hasNext()) {
 						BlockingQueueConsumer consumer = consumerIterator.next();
-						consumer.basicCancel();
+						consumer.basicCancel(true);
 						consumerIterator.remove();
 					}
 				}
@@ -1012,7 +1012,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.consumers != null && this.consumers.size() > this.concurrentConsumers) {
 				long now = System.currentTimeMillis();
 				if (this.lastConsumerStopped + this.stopConsumerMinInterval < now) {
-					consumer.basicCancel();
+					consumer.basicCancel(true);
 					this.consumers.remove(consumer);
 					if (logger.isDebugEnabled()) {
 						logger.debug("Idle consumer terminating: " + consumer);
@@ -1033,7 +1033,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					if (logger.isDebugEnabled()) {
 						logger.debug("Queues changed; stopping consumer: " + consumer);
 					}
-					consumer.basicCancel();
+					consumer.basicCancel(true);
 					consumerIterator.remove();
 					count++;
 				}
@@ -1570,13 +1570,23 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		private void logConsumerException(Throwable t) {
 			if (logger.isDebugEnabled()
 					|| !(t instanceof AmqpConnectException || t instanceof ConsumerCancelledException)) {
-				logger.warn(
+				logger.debug(
 						"Consumer raised exception, processing can restart if the connection factory supports it",
 						t);
 			}
 			else {
-				logger.warn("Consumer raised exception, processing can restart if the connection factory supports it. "
-						+ "Exception summary: " + t);
+				if (t instanceof ConsumerCancelledException && this.consumer.isNormalCancel()) {
+					 if (logger.isDebugEnabled()) {
+						 logger.debug(
+							"Consumer raised exception, processing can restart if the connection factory supports it. "
+									+ "Exception summary: " + t);
+					 }
+				}
+				else if (logger.isWarnEnabled()) {
+					logger.warn(
+							"Consumer raised exception, processing can restart if the connection factory supports it. "
+									+ "Exception summary: " + t);
+				}
 			}
 			publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, t);
 		}

@@ -142,6 +142,8 @@ public class BlockingQueueConsumer {
 
 	private volatile long abortStarted;
 
+	private volatile boolean normalCancel;
+
 	/**
 	 * Create a consumer. The consumer must not attempt to use
 	 * the connection factory or communicate with the broker
@@ -333,6 +335,14 @@ public class BlockingQueueConsumer {
 	}
 
 	/**
+	 * Return true if cancellation is expected.
+	 * @return true if expected.
+	 */
+	public boolean isNormalCancel() {
+		return this.normalCancel;
+	}
+
+	/**
 	 * Return the size the queues array.
 	 * @return the count.
 	 */
@@ -341,6 +351,11 @@ public class BlockingQueueConsumer {
 	}
 
 	protected void basicCancel() {
+		basicCancel(false);
+	}
+
+	protected void basicCancel(boolean expected) {
+		this.normalCancel = expected;
 		for (String consumerTag : this.consumerTags.keySet()) {
 			removeConsumer(consumerTag);
 			try {
@@ -794,7 +809,7 @@ public class BlockingQueueConsumer {
 						+ "); " + BlockingQueueConsumer.this);
 			}
 			if (removeConsumer(consumerTag)) {
-				basicCancel();
+				basicCancel(false);
 			}
 		}
 
