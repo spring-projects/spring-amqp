@@ -1934,10 +1934,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
-			Message messageToUse) throws IOException {
+			Message message) throws IOException {
 		BasicProperties convertedMessageProperties = this.messagePropertiesConverter
-				.fromMessageProperties(messageToUse.getMessageProperties(), this.encoding);
-		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, messageToUse.getBody());
+				.fromMessageProperties(message.getMessageProperties(), this.encoding);
+		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
 	}
 
 	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {

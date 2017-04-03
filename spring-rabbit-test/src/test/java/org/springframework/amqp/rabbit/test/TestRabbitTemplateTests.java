@@ -33,7 +33,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,17 +52,30 @@ import com.rabbitmq.client.Channel;
 public class TestRabbitTemplateTests {
 
 	@Autowired
-	private RabbitTemplate template;
+	private TestRabbitTemplate template;
 
 	@Autowired
 	private Config config;
 
 	@Test
 	public void testSimpleSends() {
-		this.template.convertAndSend("foo", "hello");
-		assertThat(this.config.fooIn, equalTo("foo:hello"));
-		this.template.convertAndSend("bar", "hello");
-		assertThat(this.config.barIn, equalTo("bar:hello"));
+		this.template.convertAndSend("foo", "hello1");
+		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		this.template.convertAndSend("bar", "hello2");
+		assertThat(this.config.barIn, equalTo("bar:hello2"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:"));
+		this.template.convertAndSend("foo", "hello3");
+		assertThat(this.config.fooIn, equalTo("foo:hello1"));
+		this.template.convertAndSend("bar", "hello4");
+		assertThat(this.config.barIn, equalTo("bar:hello2"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
+
+		this.template.setBroadcast(true);
+		this.template.convertAndSend("foo", "hello5");
+		assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
+		this.template.convertAndSend("bar", "hello6");
+		assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
+		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
 	}
 
 	@Test
@@ -73,9 +87,11 @@ public class TestRabbitTemplateTests {
 	@EnableRabbit
 	public static class Config {
 
-		public String fooIn;
+		public String fooIn = "";
 
-		public String barIn;
+		public String barIn = "";
+
+		public String smlc1In = "smlc1:";
 
 		@Bean
 		public TestRabbitTemplate template() throws IOException {
@@ -102,17 +118,32 @@ public class TestRabbitTemplateTests {
 
 		@RabbitListener(queues = "foo")
 		public void foo(String in) {
-			this.fooIn = "foo:" + in;
+			this.fooIn += "foo:" + in;
 		}
 
 		@RabbitListener(queues = "bar")
 		public void bar(String in) {
-			this.barIn = "bar:" + in;
+			this.barIn += "bar:" + in;
 		}
 
 		@RabbitListener(queues = "baz")
 		public String baz(String in) {
 			return "baz:" + in;
+		}
+
+		@Bean
+		public SimpleMessageListenerContainer smlc1() throws IOException {
+			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+			container.setQueueNames("foo", "bar");
+			container.setMessageListener(new MessageListenerAdapter(new Object() {
+
+				@SuppressWarnings("unused")
+				public void handleMessage(String in) {
+					smlc1In += in;
+				}
+
+			}));
+			return container;
 		}
 
 	}
