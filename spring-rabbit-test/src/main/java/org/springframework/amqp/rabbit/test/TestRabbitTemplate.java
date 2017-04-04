@@ -177,6 +177,10 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 		else if (listener instanceof MessageListener) {
 			((MessageListener) listener).onMessage(message);
 		}
+		else {
+			// Not really necessary since the container doesn't allow it, but no hurt
+			throw new IllegalStateException("Listener of type " + listener.getClass().getName() + " is not supported");
+		}
 	}
 
 	private static class Listeners {
@@ -189,7 +193,7 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 			this.listeners.add(listener);
 		}
 
-		private Object next() {
+		private synchronized Object next() {
 			if (this.iterator == null || !this.iterator.hasNext()) {
 				this.iterator = this.listeners.iterator();
 			}
