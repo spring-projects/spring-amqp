@@ -101,13 +101,7 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 	}
 
 	private void setupListener(AbstractMessageListenerContainer container, String queue) {
-		Listeners listenersForQueue = this.listeners.get(queue);
-		if (listenersForQueue == null) {
-			this.listeners.put(queue, new Listeners(container.getMessageListener()));
-		}
-		else {
-			listenersForQueue.listeners.add(container.getMessageListener());
-		}
+		this.listeners.computeIfAbsent(queue, v -> new Listeners()).listeners.add(container.getMessageListener());
 	}
 
 	@Override
@@ -189,8 +183,8 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 
 		private volatile Iterator<Object> iterator;
 
-		Listeners(Object listener) {
-			this.listeners.add(listener);
+		Listeners() {
+			super();
 		}
 
 		private synchronized Object next() {
