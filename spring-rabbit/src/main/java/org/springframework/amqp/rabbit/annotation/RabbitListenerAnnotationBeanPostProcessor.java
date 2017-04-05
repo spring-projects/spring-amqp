@@ -20,13 +20,15 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
@@ -77,8 +79,6 @@ import org.springframework.messaging.handler.annotation.support.MessageHandlerMe
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -113,7 +113,7 @@ import org.springframework.util.StringUtils;
  */
 public class RabbitListenerAnnotationBeanPostProcessor
 		implements BeanPostProcessor, Ordered, BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware,
-			SmartInitializingSingleton {
+		SmartInitializingSingleton {
 
 	/**
 	 * The bean name of the default {@link org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory}.
@@ -143,15 +143,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
-	private final MultiValueMap<Class<?>, Method> methodCache = new LinkedMultiValueMap<Class<?>, Method>();
-
-	private final MultiValueMap<Method, RabbitListener> annotationCache =
-			new LinkedMultiValueMap<Method, RabbitListener>();
-
-	private final MultiValueMap<Class<?>, RabbitListener> classAnnotationCache =
-			new LinkedMultiValueMap<Class<?>, RabbitListener>();
-
-	private final Map<Class<?>, List<Method>> multiMethodCache = new LinkedHashMap<Class<?>, List<Method>>();
+	private final ConcurrentMap<Class<?>, TypeMetadata> typeCache = new ConcurrentHashMap<Class<?>, TypeMetadata>();
 
 	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
@@ -264,10 +256,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		this.registrar.afterPropertiesSet();
 
 		// clear the cache - prototype beans will be re-cached.
-		this.classAnnotationCache.clear();
-		this.annotationCache.clear();
-		this.methodCache.clear();
-		this.multiMethodCache.clear();
+		this.typeCache.clear();
 	}
 
 
@@ -279,31 +268,28 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
-		if (this.methodCache.get(targetClass) == null) {
-			findMethods(targetClass);
+
+		TypeMetadata metadata = this.typeCache.get(targetClass);
+		if (metadata == null) {
+			metadata = buildMetadata(targetClass);
+			this.typeCache.putIfAbsent(targetClass, metadata);
 		}
-		List<RabbitListener> classLevelListeners = this.classAnnotationCache.get(targetClass);
-		List<Method> methods = this.methodCache.get(targetClass);
-		List<Method> multiMethods = this.multiMethodCache.get(targetClass);
-		for (Method method : methods) {
-			List<RabbitListener> listenerAnnotations = this.annotationCache.get(method);
-			if (listenerAnnotations != null) {
-				for (RabbitListener rabbitListener : listenerAnnotations) {
-					processAmqpListener(rabbitListener, method, bean, beanName);
-				}
+
+		for (ListenerMethod lm : metadata.listenerMethods) {
+			for (RabbitListener rabbitListener : lm.annotations) {
+				processAmqpListener(rabbitListener, lm.method, bean, beanName);
 			}
 		}
-		if (multiMethods.size() > 0) {
-			processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
+		if (metadata.handlerMethods.length > 0) {
+			processMultiMethodListeners(metadata.classAnnotations, metadata.handlerMethods, bean, beanName);
 		}
 		return bean;
 	}
 
-	private void findMethods(Class<?> targetClass) {
+	private TypeMetadata buildMetadata(Class<?> targetClass) {
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
-		final MultiValueMap<Method, RabbitListener> annotations = new LinkedMultiValueMap<Method, RabbitListener>();
-		final List<Method> methods = new ArrayList<Method>();
+		final List<ListenerMethod> methods = new ArrayList<ListenerMethod>();
 		final List<Method> multiMethods = new ArrayList<Method>();
 		ReflectionUtils.doWithMethods(targetClass, new ReflectionUtils.MethodCallback() {
 
@@ -311,8 +297,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			public void doWith(Method method) throws IllegalArgumentException, IllegalAccessException {
 				Collection<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
 				if (listenerAnnotations.size() > 0) {
-					methods.add(method);
-					annotations.put(method, new ArrayList<RabbitListener>(listenerAnnotations));
+					methods.add(new ListenerMethod(method,
+							listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()])));
 				}
 				if (hasClassLevelListeners) {
 					RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
@@ -320,15 +306,16 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						multiMethods.add(method);
 					}
 				}
-			}
 
+			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
-		this.methodCache.put(targetClass, methods);
-		for (Method method : methods) {
-			this.annotationCache.put(method, annotations.get(method));
+		if (methods.isEmpty() && multiMethods.isEmpty()) {
+			return TypeMetadata.EMPTY;
 		}
-		this.classAnnotationCache.put(targetClass, new ArrayList<RabbitListener>(classLevelListeners));
-		this.multiMethodCache.put(targetClass, multiMethods);
+		return new TypeMetadata(
+				methods.toArray(new ListenerMethod[methods.size()]),
+				multiMethods.toArray(new Method[multiMethods.size()]),
+				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]));
 	}
 
 	/*
@@ -342,7 +329,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		RabbitListeners anns = AnnotationUtils.findAnnotation(clazz, RabbitListeners.class);
 		if (anns != null) {
-			listeners.addAll(Arrays.asList(anns.value()));
+			Collections.addAll(listeners, anns.value());
 		}
 		return listeners;
 	}
@@ -358,12 +345,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		RabbitListeners anns = AnnotationUtils.findAnnotation(method, RabbitListeners.class);
 		if (anns != null) {
-			listeners.addAll(Arrays.asList(anns.value()));
+			Collections.addAll(listeners, anns.value());
 		}
 		return listeners;
 	}
 
-	private void processMultiMethodListeners(Collection<RabbitListener> classLevelListeners, List<Method> multiMethods,
+	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
 			Object bean, String beanName) {
 		List<Method> checkedMethods = new ArrayList<Method>();
 		for (Method method : multiMethods) {
@@ -464,7 +451,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				throw new BeanInitializationException("Could not register rabbit listener endpoint on [" +
-						adminTarget + "] for bean " + beanName + ", no " + RabbitListenerContainerFactory.class.getSimpleName() + " with id '" +
+						adminTarget + "] for bean " + beanName + ", no " +
+						RabbitListenerContainerFactory.class.getSimpleName() + " with id '" +
 						containerFactoryBeanName + "' was found in the application context", ex);
 			}
 		}
@@ -695,7 +683,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 				else {
 					throw new IllegalStateException("Cannot convert from " + value.getClass().getName()
-						+ " to " + typeName);
+							+ " to " + typeName);
 				}
 			}
 		}
@@ -787,6 +775,58 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			defaultFactory.setBeanFactory(RabbitListenerAnnotationBeanPostProcessor.this.beanFactory);
 			defaultFactory.afterPropertiesSet();
 			return defaultFactory;
+		}
+
+	}
+
+	/**
+	 * The metadata holder of the class with {@link RabbitListener}
+	 * and {@link RabbitHandler} annotations.
+	 */
+	private static class TypeMetadata {
+
+		/**
+		 * Methods annotated with {@link RabbitListener}.
+		 */
+		final ListenerMethod[] listenerMethods;
+
+		/**
+		 * Methods annotated with {@link RabbitHandler}.
+		 */
+		final Method[] handlerMethods;
+
+		/**
+		 * Class level {@link RabbitListener} annotations.
+		 */
+		final RabbitListener[] classAnnotations;
+
+		static final TypeMetadata EMPTY = new TypeMetadata();
+
+		private TypeMetadata() {
+			this.listenerMethods = new ListenerMethod[0];
+			this.handlerMethods = new Method[0];
+			this.classAnnotations = new RabbitListener[0];
+		}
+
+		TypeMetadata(ListenerMethod[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners) {
+			this.listenerMethods = methods;
+			this.handlerMethods = multiMethods;
+			this.classAnnotations = classLevelListeners;
+		}
+	}
+
+	/**
+	 * A method annotated with {@link RabbitListener}, together with the annotations.
+	 */
+	private static class ListenerMethod {
+
+		final Method method;
+
+		final RabbitListener[] annotations;
+
+		ListenerMethod(Method method, RabbitListener[] annotations) {
+			this.method = method;
+			this.annotations = annotations;
 		}
 
 	}
