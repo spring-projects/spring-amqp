@@ -22,10 +22,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
@@ -72,8 +73,6 @@ import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -142,13 +141,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
-	private final MultiValueMap<Class<?>, Method> methodCache = new LinkedMultiValueMap<>();
-
-	private final MultiValueMap<Method, RabbitListener> annotationCache = new LinkedMultiValueMap<>();
-
-	private final MultiValueMap<Class<?>, RabbitListener> classAnnotationCache = new LinkedMultiValueMap<>();
-
-	private final Map<Class<?>, List<Method>> multiMethodCache = new LinkedHashMap<>();
+	private final ConcurrentMap<Class<?>, TypeMetadataHolder> typeCache = new ConcurrentHashMap<>();
 
 	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
@@ -261,10 +254,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		this.registrar.afterPropertiesSet();
 
 		// clear the cache - prototype beans will be re-cached.
-		this.classAnnotationCache.clear();
-		this.annotationCache.clear();
-		this.methodCache.clear();
-		this.multiMethodCache.clear();
+		this.typeCache.clear();
 	}
 
 
@@ -276,37 +266,32 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
-		if (this.methodCache.get(targetClass) == null) {
-			findMethods(targetClass);
-		}
-		List<RabbitListener> classLevelListeners = this.classAnnotationCache.get(targetClass);
-		List<Method> methods = this.methodCache.get(targetClass);
-		List<Method> multiMethods = this.multiMethodCache.get(targetClass);
-		for (Method method : methods) {
-			List<RabbitListener> listenerAnnotations = this.annotationCache.get(method);
+		final TypeMetadata metadata = this.typeCache.computeIfAbsent(targetClass, TypeMetadataHolder::new).get();
+		for (Method method : metadata.methods) {
+			RabbitListener[] listenerAnnotations = metadata.annotationCache.get(method);
 			if (listenerAnnotations != null) {
 				for (RabbitListener rabbitListener : listenerAnnotations) {
 					processAmqpListener(rabbitListener, method, bean, beanName);
 				}
 			}
 		}
-		if (multiMethods.size() > 0) {
-			processMultiMethodListeners(classLevelListeners, multiMethods, bean, beanName);
+		if (metadata.multiMethods.length > 0) {
+			processMultiMethodListeners(metadata.classLevelListeners, metadata.multiMethods, bean, beanName);
 		}
 		return bean;
 	}
 
-	private void findMethods(Class<?> targetClass) {
+	private TypeMetadata findMethods(Class<?> targetClass) {
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
-		final MultiValueMap<Method, RabbitListener> annotations = new LinkedMultiValueMap<>();
+		final Map<Method, RabbitListener[]> annotations = new HashMap<>();
 		final List<Method> methods = new ArrayList<>();
 		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
 			Collection<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
 			if (listenerAnnotations.size() > 0) {
 				methods.add(method);
-				annotations.put(method, new ArrayList<>(listenerAnnotations));
+				annotations.put(method, listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()]));
 			}
 			if (hasClassLevelListeners) {
 				RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
@@ -315,12 +300,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
-		this.methodCache.put(targetClass, methods);
-		for (Method method : methods) {
-			this.annotationCache.put(method, annotations.get(method));
-		}
-		this.classAnnotationCache.put(targetClass, new ArrayList<>(classLevelListeners));
-		this.multiMethodCache.put(targetClass, multiMethods);
+		return new TypeMetadata(
+				methods.toArray(new Method[methods.size()]),
+				multiMethods.toArray(new Method[multiMethods.size()]),
+				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]),
+				annotations);
 	}
 
 	/*
@@ -355,7 +339,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return listeners;
 	}
 
-	private void processMultiMethodListeners(Collection<RabbitListener> classLevelListeners, List<Method> multiMethods,
+	private void processMultiMethodListeners(RabbitListener[] classLevelListeners, Method[] multiMethods,
 			Object bean, String beanName) {
 		List<Method> checkedMethods = new ArrayList<Method>();
 		for (Method method : multiMethods) {
@@ -779,4 +763,40 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	}
 
+	private class TypeMetadataHolder {
+		private final Class<?> type;
+		private volatile TypeMetadata value;
+
+		TypeMetadataHolder(Class<?> type) {
+			this.type = type;
+		}
+
+		public TypeMetadata get() {
+			TypeMetadata result = this.value;
+			if (result == null) {
+				synchronized (this) {
+					result = this.value;
+					if (result == null) {
+						result = findMethods(this.type);
+						this.value = result;
+					}
+				}
+			}
+			return result;
+		}
+	}
+
+	private static class TypeMetadata {
+		final Method[] methods;
+		final Method[] multiMethods;
+		final RabbitListener[] classLevelListeners;
+		final Map<Method, RabbitListener[]> annotationCache;
+
+		TypeMetadata(Method[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners, Map<Method, RabbitListener[]> annotationCache) {
+			this.methods = methods;
+			this.multiMethods = multiMethods;
+			this.classLevelListeners = classLevelListeners;
+			this.annotationCache = annotationCache;
+		}
+	}
 }

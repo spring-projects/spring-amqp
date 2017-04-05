@@ -38,6 +38,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
@@ -271,6 +276,42 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		assertTrue(queue2.isExclusive());
 
 		context.close();
+	}
+
+	@Test
+	public void concurrency() throws InterruptedException, ExecutionException {
+		final int concurrencyLevel = 8;
+		final ExecutorService executorService = Executors.newFixedThreadPool(concurrencyLevel);
+		try {
+			for (int i = 0; i < 1000; ++i) {
+				final ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+				try {
+					final Callable<?> task = () -> context.getBeanFactory().createBean(BeanForConcurrencyTesting.class);
+					final List<? extends Future<?>> futures = executorService
+							.invokeAll(Collections.nCopies(concurrencyLevel, task));
+					for (Future<?> future : futures) {
+						future.get();
+					}
+				}
+				finally {
+					context.close();
+				}
+			}
+		}
+		finally {
+			executorService.shutdown();
+		}
+	}
+
+	static class BeanForConcurrencyTesting {
+		public void a() {
+		}
+
+		public void b() {
+		}
+
+		public void c() {
+		}
 	}
 
 	@Component
