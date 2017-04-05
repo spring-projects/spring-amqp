@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.springframework.amqp.rabbit.annotation;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -25,9 +28,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -185,11 +195,49 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 			new AnnotationConfigApplicationContext(Config.class, InvalidValueInAnnotationTestBean.class);
 		}
 		catch (BeanCreationException e) {
-			assertThat(e.getCause(), Matchers.instanceOf(IllegalArgumentException.class));
-			assertThat(e.getMessage(), Matchers.allOf(
-					Matchers.containsString("@RabbitListener can't resolve"),
-					Matchers.containsString("as either a String or a Queue")
-					));
+			assertThat(e.getCause(), instanceOf(IllegalArgumentException.class));
+			assertThat(e.getMessage(), allOf(
+					containsString("@RabbitListener can't resolve"),
+					containsString("as either a String or a Queue")
+			));
+		}
+	}
+
+	@Test
+	@Ignore("To slow and doesn't have 100% confirmation")
+	public void concurrency() throws InterruptedException, ExecutionException {
+		final int concurrencyLevel = 8;
+		final ExecutorService executorService = Executors.newFixedThreadPool(concurrencyLevel);
+		try {
+			for (int i = 0; i < 1000; ++i) {
+				final ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+				try {
+					final Callable<?> task = () -> context.getBeanFactory().createBean(BeanForConcurrencyTesting.class);
+					final List<? extends Future<?>> futures = executorService
+							.invokeAll(Collections.nCopies(concurrencyLevel, task));
+					for (Future<?> future : futures) {
+						future.get();
+					}
+				}
+				finally {
+					context.close();
+				}
+			}
+		}
+		finally {
+			executorService.shutdown();
+		}
+	}
+
+	static class BeanForConcurrencyTesting {
+
+		public void a() {
+		}
+
+		public void b() {
+		}
+
+		public void c() {
 		}
 	}
 
@@ -205,7 +253,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class SimpleMessageListenerWithMixedAnnotationsTestBean {
 
-		@RabbitListener(queues = {"testQueue", "#{mySecondQueue}"})
+		@RabbitListener(queues = { "testQueue", "#{mySecondQueue}" })
 		public void handleIt(String body) {
 		}
 
@@ -225,12 +273,13 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Target(ElementType.METHOD)
 	@Retention(RetentionPolicy.RUNTIME)
 	static @interface FooListener {
+
 	}
 
 	@Component
 	static class MultipleQueueNamesTestBean {
 
-		@RabbitListener(queues = {"metaTestQueue", "#{@myTestQueue.name}"})
+		@RabbitListener(queues = { "metaTestQueue", "#{@myTestQueue.name}" })
 		public void handleIt(String body) {
 		}
 	}
@@ -238,7 +287,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MultipleQueuesTestBean {
 
-		@RabbitListener(queues = {"#{@myTestQueue}", "#{@mySecondQueue}"})
+		@RabbitListener(queues = { "#{@myTestQueue}", "#{@mySecondQueue}" })
 		public void handleIt(String body) {
 		}
 	}
@@ -246,7 +295,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class MixedQueuesAndQueueNamesTestBean {
 
-		@RabbitListener(queues = {"metaTestQueue", "#{@myTestQueue}", "#{@mySecondQueue.name}"})
+		@RabbitListener(queues = { "metaTestQueue", "#{@myTestQueue}", "#{@mySecondQueue.name}" })
 		public void handleIt(String body) {
 		}
 	}
@@ -254,7 +303,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 	@Component
 	static class PropertyResolvingToExpressionTestBean {
 
-		@RabbitListener(queues = {"${myQueueExpression}", "#{@mySecondQueue}"})
+		@RabbitListener(queues = { "${myQueueExpression}", "#{@mySecondQueue}" })
 		public void handleIt(String body) {
 		}
 	}
@@ -303,6 +352,7 @@ public class RabbitListenerAnnotationBeanPostProcessorTests {
 		public Queue mySecondQueue() {
 			return new Queue("secondQueue");
 		}
+
 	}
 
 }
