@@ -126,7 +126,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
-import org.springframework.util.MultiValueMap;
 
 import com.rabbitmq.client.Channel;
 
@@ -606,14 +605,15 @@ public class EnableRabbitIntegrationTests {
 	public void testPrototypeCache() {
 		RabbitListenerAnnotationBeanPostProcessor bpp =
 				this.context.getBean(RabbitListenerAnnotationBeanPostProcessor.class);
-		MultiValueMap<?, ?> methodCache = TestUtils.getPropertyValue(bpp, "methodCache", MultiValueMap.class);
-		assertFalse(methodCache.containsKey(Foo1.class));
+		@SuppressWarnings("unchecked")
+		Map<Class<?>, ?> typeCache = TestUtils.getPropertyValue(bpp, "typeCache", Map.class);
+		assertFalse(typeCache.containsKey(Foo1.class));
 		this.context.getBean("foo1Prototype");
-		assertTrue(methodCache.containsKey(Foo1.class));
-		Object value = methodCache.get(Foo1.class);
+		assertTrue(typeCache.containsKey(Foo1.class));
+		Object value = typeCache.get(Foo1.class);
 		this.context.getBean("foo1Prototype");
-		assertTrue(methodCache.containsKey(Foo1.class));
-		assertSame(value, methodCache.get(Foo1.class));
+		assertTrue(typeCache.containsKey(Foo1.class));
+		assertSame(value, typeCache.get(Foo1.class));
 	}
 
 	interface TxService {
