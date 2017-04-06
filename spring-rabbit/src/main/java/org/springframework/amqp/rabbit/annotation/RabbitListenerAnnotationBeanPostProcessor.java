@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -281,7 +282,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		return bean;
 	}
 
-	private TypeMetadata findMethods(Class<?> targetClass) {
+	private TypeMetadata buildMetadata(Class<?> targetClass) {
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
 		final Map<Method, RabbitListener[]> annotations = new HashMap<>();
@@ -300,6 +301,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				}
 			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
+		if (methods.isEmpty() && multiMethods.isEmpty()) {
+			return TypeMetadata.EMPTY;
+		}
 		return new TypeMetadata(
 				methods.toArray(new Method[methods.size()]),
 				multiMethods.toArray(new Method[multiMethods.size()]),
@@ -777,7 +781,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				synchronized (this) {
 					result = this.value;
 					if (result == null) {
-						result = findMethods(this.type);
+						result = buildMetadata(this.type);
 						this.value = result;
 					}
 				}
@@ -791,6 +795,14 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		final Method[] multiMethods;
 		final RabbitListener[] classLevelListeners;
 		final Map<Method, RabbitListener[]> annotationCache;
+
+		static final TypeMetadata EMPTY = new TypeMetadata();
+
+		private TypeMetadata() {
+			this.multiMethods = this.methods = new Method[0];
+			this.classLevelListeners = new RabbitListener[0];
+			this.annotationCache = Collections.emptyMap();
+		}
 
 		TypeMetadata(Method[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners, Map<Method, RabbitListener[]> annotationCache) {
 			this.methods = methods;
