@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -268,12 +267,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
 		final TypeMetadata metadata = this.typeCache.computeIfAbsent(targetClass, TypeMetadataHolder::new).get();
-		for (Method method : metadata.methods) {
-			RabbitListener[] listenerAnnotations = metadata.annotationCache.get(method);
-			if (listenerAnnotations != null) {
-				for (RabbitListener rabbitListener : listenerAnnotations) {
-					processAmqpListener(rabbitListener, method, bean, beanName);
-				}
+		for (ListenerMethod lm : metadata.methods) {
+			for (RabbitListener rabbitListener : lm.listenerAnnotations) {
+				processAmqpListener(rabbitListener, lm.method, bean, beanName);
 			}
 		}
 		if (metadata.multiMethods.length > 0) {
@@ -285,14 +281,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	private TypeMetadata buildMetadata(Class<?> targetClass) {
 		Collection<RabbitListener> classLevelListeners = findListenerAnnotations(targetClass);
 		final boolean hasClassLevelListeners = classLevelListeners.size() > 0;
-		final Map<Method, RabbitListener[]> annotations = new HashMap<>();
-		final List<Method> methods = new ArrayList<>();
+		final List<ListenerMethod> methods = new ArrayList<>();
 		final List<Method> multiMethods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(targetClass, method -> {
 			Collection<RabbitListener> listenerAnnotations = findListenerAnnotations(method);
 			if (listenerAnnotations.size() > 0) {
-				methods.add(method);
-				annotations.put(method, listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()]));
+				methods.add(new ListenerMethod(method,
+						listenerAnnotations.toArray(new RabbitListener[listenerAnnotations.size()])));
 			}
 			if (hasClassLevelListeners) {
 				RabbitHandler rabbitHandler = AnnotationUtils.findAnnotation(method, RabbitHandler.class);
@@ -305,10 +300,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return TypeMetadata.EMPTY;
 		}
 		return new TypeMetadata(
-				methods.toArray(new Method[methods.size()]),
+				methods.toArray(new ListenerMethod[methods.size()]),
 				multiMethods.toArray(new Method[multiMethods.size()]),
-				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]),
-				annotations);
+				classLevelListeners.toArray(new RabbitListener[classLevelListeners.size()]));
 	}
 
 	/*
@@ -791,24 +785,32 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private static class TypeMetadata {
-		final Method[] methods;
+		final ListenerMethod[] methods;
 		final Method[] multiMethods;
 		final RabbitListener[] classLevelListeners;
-		final Map<Method, RabbitListener[]> annotationCache;
 
 		static final TypeMetadata EMPTY = new TypeMetadata();
 
 		private TypeMetadata() {
-			this.multiMethods = this.methods = new Method[0];
+			this.methods = new ListenerMethod[0];
+			this.multiMethods = new Method[0];
 			this.classLevelListeners = new RabbitListener[0];
-			this.annotationCache = Collections.emptyMap();
 		}
 
-		TypeMetadata(Method[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners, Map<Method, RabbitListener[]> annotationCache) {
+		TypeMetadata(ListenerMethod[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners) {
 			this.methods = methods;
 			this.multiMethods = multiMethods;
 			this.classLevelListeners = classLevelListeners;
-			this.annotationCache = annotationCache;
+		}
+	}
+
+	private static class ListenerMethod {
+		final Method method;
+		final RabbitListener[] listenerAnnotations;
+
+		ListenerMethod(Method method, RabbitListener[] annotations) {
+			this.method = method;
+			this.listenerAnnotations = annotations;
 		}
 	}
 }
