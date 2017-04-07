@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -267,13 +268,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
 		final TypeMetadata metadata = this.typeCache.computeIfAbsent(targetClass, this::buildMetadata);
-		for (ListenerMethod lm : metadata.methods) {
-			for (RabbitListener rabbitListener : lm.listenerAnnotations) {
+		for (ListenerMethod lm : metadata.listenerMethods) {
+			for (RabbitListener rabbitListener : lm.annotations) {
 				processAmqpListener(rabbitListener, lm.method, bean, beanName);
 			}
 		}
-		if (metadata.multiMethods.length > 0) {
-			processMultiMethodListeners(metadata.classLevelListeners, metadata.multiMethods, bean, beanName);
+		if (metadata.handlerMethods.length > 0) {
+			processMultiMethodListeners(metadata.classAnnotations, metadata.handlerMethods, bean, beanName);
 		}
 		return bean;
 	}
@@ -316,7 +317,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		RabbitListeners anns = AnnotationUtils.findAnnotation(clazz, RabbitListeners.class);
 		if (anns != null) {
-			listeners.addAll(Arrays.asList(anns.value()));
+			Collections.addAll(listeners, anns.value());
 		}
 		return listeners;
 	}
@@ -332,7 +333,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		RabbitListeners anns = AnnotationUtils.findAnnotation(method, RabbitListeners.class);
 		if (anns != null) {
-			listeners.addAll(Arrays.asList(anns.value()));
+			Collections.addAll(listeners, anns.value());
 		}
 		return listeners;
 	}
@@ -762,32 +763,44 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	}
 
 	private static class TypeMetadata {
-		final ListenerMethod[] methods;
-		final Method[] multiMethods;
-		final RabbitListener[] classLevelListeners;
+		/**
+		 * Methods annotated with {@link RabbitListener}.
+		 */
+		final ListenerMethod[] listenerMethods;
+		/**
+		 * Methods annotated with {@link RabbitHandler}.
+		 */
+		final Method[] handlerMethods;
+		/**
+		 * Class level {@link RabbitListener} annotations.
+		 */
+		final RabbitListener[] classAnnotations;
 
 		static final TypeMetadata EMPTY = new TypeMetadata();
 
 		private TypeMetadata() {
-			this.methods = new ListenerMethod[0];
-			this.multiMethods = new Method[0];
-			this.classLevelListeners = new RabbitListener[0];
+			this.listenerMethods = new ListenerMethod[0];
+			this.handlerMethods = new Method[0];
+			this.classAnnotations = new RabbitListener[0];
 		}
 
 		TypeMetadata(ListenerMethod[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners) {
-			this.methods = methods;
-			this.multiMethods = multiMethods;
-			this.classLevelListeners = classLevelListeners;
+			this.listenerMethods = methods;
+			this.handlerMethods = multiMethods;
+			this.classAnnotations = classLevelListeners;
 		}
 	}
 
+	/**
+	 * A method annotated with {@link RabbitListener}, together with the annotations.
+	 */
 	private static class ListenerMethod {
 		final Method method;
-		final RabbitListener[] listenerAnnotations;
+		final RabbitListener[] annotations;
 
 		ListenerMethod(Method method, RabbitListener[] annotations) {
 			this.method = method;
-			this.listenerAnnotations = annotations;
+			this.annotations = annotations;
 		}
 	}
 }
