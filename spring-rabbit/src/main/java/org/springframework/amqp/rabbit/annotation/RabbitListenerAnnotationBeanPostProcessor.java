@@ -141,7 +141,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private final AtomicInteger counter = new AtomicInteger();
 
-	private final ConcurrentMap<Class<?>, TypeMetadataHolder> typeCache = new ConcurrentHashMap<>();
+	private final ConcurrentMap<Class<?>, TypeMetadata> typeCache = new ConcurrentHashMap<>();
 
 	private BeanExpressionResolver resolver = new StandardBeanExpressionResolver();
 
@@ -266,7 +266,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	@Override
 	public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
 		Class<?> targetClass = AopUtils.getTargetClass(bean);
-		final TypeMetadata metadata = this.typeCache.computeIfAbsent(targetClass, TypeMetadataHolder::new).get();
+		final TypeMetadata metadata = this.typeCache.computeIfAbsent(targetClass, this::buildMetadata);
 		for (ListenerMethod lm : metadata.methods) {
 			for (RabbitListener rabbitListener : lm.listenerAnnotations) {
 				processAmqpListener(rabbitListener, lm.method, bean, beanName);
@@ -759,29 +759,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			return defaultFactory;
 		}
 
-	}
-
-	private class TypeMetadataHolder {
-		private final Class<?> type;
-		private volatile TypeMetadata value;
-
-		TypeMetadataHolder(Class<?> type) {
-			this.type = type;
-		}
-
-		public TypeMetadata get() {
-			TypeMetadata result = this.value;
-			if (result == null) {
-				synchronized (this) {
-					result = this.value;
-					if (result == null) {
-						result = buildMetadata(this.type);
-						this.value = result;
-					}
-				}
-			}
-			return result;
-		}
 	}
 
 	private static class TypeMetadata {
