@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.amqp.support.converter.MessageConverter;

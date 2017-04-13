@@ -24,6 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.rabbit.listener.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 
