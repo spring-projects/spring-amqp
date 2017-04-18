@@ -109,7 +109,7 @@ public class DelegatingInvocableHandler {
 		if (message.getHeaders().get(AmqpHeaders.REPLY_TO) == null) {
 			Expression replyTo = this.handlerSendTo.get(handler);
 			if (replyTo != null) {
-				result = new MessagingMessageListenerAdapter.ResultHolder(result, replyTo);
+				result = new AbstractAdaptableMessageListener.ResultHolder(result, replyTo);
 			}
 		}
 		return result;
