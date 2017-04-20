@@ -352,9 +352,11 @@ public class BlockingQueueConsumer {
 		for (String consumerTag : this.consumerTags.keySet()) {
 			removeConsumer(consumerTag);
 			try {
-				this.channel.basicCancel(consumerTag);
+				if (this.channel.isOpen()) {
+					this.channel.basicCancel(consumerTag);
+				}
 			}
-			catch (IOException e) {
+			catch (IOException | IllegalStateException e) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Error performing 'basicCancel'", e);
 				}
