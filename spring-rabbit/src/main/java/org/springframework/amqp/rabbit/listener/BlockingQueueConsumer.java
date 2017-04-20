@@ -361,6 +361,11 @@ public class BlockingQueueConsumer {
 					logger.debug("Error performing 'basicCancel'", e);
 				}
 			}
+			catch (IllegalStateException e) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Error performing 'basicCancel'", e);
+				}
+			}
 			catch (AlreadyClosedException e) {
 				if (logger.isTraceEnabled()) {
 					logger.trace(this.channel + " is already closed");
