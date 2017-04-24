@@ -37,6 +37,7 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
@@ -93,7 +94,8 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private ConnectionNameStrategy connectionNameStrategy =
 			connectionFactory -> (this.beanName != null ? this.beanName : "SpringAMQP") +
-					"#" + this.defaultConnectionNameStrategyCounter.getAndIncrement();
+					"#" + ObjectUtils.getIdentityHexString(this) + ":" +
+					this.defaultConnectionNameStrategyCounter.getAndIncrement();
 
 	private volatile String beanName;
 
@@ -344,7 +346,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
 			if (this.logger.isInfoEnabled()) {
-				this.logger.info("Created new connection: " + connection);
+				this.logger.info("Created new connection: " + connectionName + "/" + connection);
 			}
 			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection) {
 				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(this.recoveryListener);
