@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -88,7 +89,8 @@ public abstract class AbstractConnectionFactoryTests {
 		assertEquals(1, called.get());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		verify(logger).info(captor.capture());
-		assertThat(captor.getValue(), containsString("Created new connection: SimpleConnection"));
+		assertThat(captor.getValue(),
+				allOf(containsString("Created new connection: "), containsString("SimpleConnection")));
 
 		con.close();
 		assertEquals(1, called.get());
