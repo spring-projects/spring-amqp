@@ -6,7 +6,7 @@ buildscript {
 		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.1'
 		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.0'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
-		classpath 'io.spring.gradle:dependency-management-plugin:0.6.1.RELEASE'
+		classpath 'io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE'
 		classpath 'io.spring.gradle:spring-io-plugin:0.0.6.RELEASE'
 	}
 }
@@ -88,12 +88,12 @@ subprojects { subproject ->
 		hamcrestVersion = '1.3'
 		jackson2Version = '2.8.5'
 		junitVersion = '4.12'
-		log4jVersion = '2.7'
+		log4jVersion = '2.8.2'
 		logbackVersion = '1.1.11'
-		mockitoVersion = '2.5.4'
+		mockitoVersion = '2.7.22'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.1.0'
 		rabbitmqHttpClientVersion = '1.2.0.RELEASE'
-		slf4jVersion = "1.7.21"
+		slf4jVersion = "1.7.25"
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.0.M5'
 

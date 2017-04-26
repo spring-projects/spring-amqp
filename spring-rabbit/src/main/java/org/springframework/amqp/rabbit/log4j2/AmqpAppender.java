@@ -542,9 +542,12 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean activateOptions() {
 			ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 			if (rabbitConnectionFactory != null) {
-				this.routingKeyLayout = PatternLayout.createLayout(this.routingKeyPattern
-						.replaceAll("%X\\{applicationId\\}", this.applicationId),
-						null, null, null, Charset.forName(this.charset), false, true, null, null);
+				this.routingKeyLayout = PatternLayout.newBuilder()
+						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId\\}", this.applicationId))
+						.withCharset(Charset.forName(this.charset))
+						.withAlwaysWriteExceptions(false)
+						.withNoConsoleNoAnsi(true)
+						.build();
 				this.connectionFactory = new CachingConnectionFactory(createRabbitConnectionFactory());
 				if (this.addresses != null) {
 					this.connectionFactory.setAddresses(this.addresses);

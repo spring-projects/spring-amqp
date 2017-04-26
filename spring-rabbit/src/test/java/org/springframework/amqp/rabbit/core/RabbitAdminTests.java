@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -54,7 +54,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-import org.mockito.internal.stubbing.answers.DoesNothing;
 
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
@@ -84,6 +83,17 @@ import org.springframework.context.support.GenericApplicationContext;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 
+/**
+ * @author Mark Pollack
+ * @author Mark Fisher
+ * @author Dave Syer
+ * @author Gary Russell
+ * @author Artem Bilan
+ * @author Artem Yakshin
+ *
+ * @since 1.4.1
+ *
+ */
 public class RabbitAdminTests {
 
 	@Rule
@@ -194,7 +204,7 @@ public class RabbitAdminTests {
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
 			doReturn(true).when(logger).isInfoEnabled();
-			doAnswer(new DoesNothing()).when(logger).info(anyString());
+			doNothing().when(logger).info(anyString());
 			new DirectFieldAccessor(rabbitAdmin).setPropertyValue("logger", logger);
 			connectionFactory.createConnection().close(); // force declarations
 			ArgumentCaptor<String> log = ArgumentCaptor.forClass(String.class);

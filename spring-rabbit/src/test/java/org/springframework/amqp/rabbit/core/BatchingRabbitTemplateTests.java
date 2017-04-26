@@ -24,7 +24,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -45,7 +45,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.internal.stubbing.answers.DoesNothing;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -72,6 +71,8 @@ import org.springframework.util.StopWatch;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4.1
  *
  */
@@ -307,7 +308,7 @@ public class BatchingRabbitTemplateTests {
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(errorHandler, "logger", Log.class));
 		doReturn(true).when(logger).isWarnEnabled();
-		doAnswer(new DoesNothing()).when(logger).warn(anyString(), any(Throwable.class));
+		doNothing().when(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(errorHandler).setPropertyValue("logger", logger);
 		try {
 			RabbitTemplate template = new RabbitTemplate();
