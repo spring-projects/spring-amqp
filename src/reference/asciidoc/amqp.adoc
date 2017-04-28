@@ -1766,6 +1766,8 @@ public class AppConfig {
 }
 ----
 
+Since _version 2.0_, a `DirectMessageListenerContainerFactory` is also available, which creates `DirectMessageListenerContainer` s.
+
 NOTE: To choose between the `SimpleRabbitListenerContainerFactory` and `DirectRabbitListenerContainerFactory` see <<choose-container>>.
 
 By default, the infrastructure looks for a bean named `rabbitListenerContainerFactory` as the source for the factory to use to create message listener containers.
@@ -1775,11 +1777,12 @@ It is possible to customize the listener container factory to use per annotation
 The default is only required if at least one endpoint is registered without a specific container factory.
 See the javadoc for full details and examples.
 
-If you prefer XML configuration, use the `<rabbit:annotation-driven>` element.
+If you prefer XML configuration, use the `<rabbit:annotation-driven>` element; any beans annotated with `@RabbitListener` will be detected.
+
+For `SimpleRabbitListenerContainer` s:
 
 [source,xml]
 ----
-
 <rabbit:annotation-driven/>
 
 <bean id="rabbitListenerContainerFactory"
@@ -1788,8 +1791,29 @@ If you prefer XML configuration, use the `<rabbit:annotation-driven>` element.
     <property name="concurrentConsumers" value="3"/>
     <property name="maxConcurrentConsumers" value="10"/>
 </bean>
-
 ----
+
+and for `DirectMessageListenerContainer` s:
+
+[source,xml]
+----
+<rabbit:annotation-driven/>
+
+<bean id="rabbitListenerContainerFactory"
+      class="org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory">
+    <property name="connectionFactory" ref="connectionFactory"/>
+    <property name="consumersPerQueue" value="3"/>
+</bean>
+----
+
+Starting with _version 2.0_, the `@RabbitListener` annotation has a `concurrency` property; it supports SpEL expressions (`#{...}`) and property placeholders (`${...}`).
+Its meaning, and allowed values, depend on the container type.
+
+- For the `DirectMessageListenerContainer`, the value must be a single integer value, which sets the `consumersPerQueue` property on the container.
+- For the `SimpleRabbitListenerContainer`, the value can be a single integer value, which sets the `concurrentConsumers` property on the container, or it can have the form `m-n` where `m` is the `concurrentConsumers` property, and `n` is the `maxConcurrentConsumers` property.
+
+In either case, this setting overrides the setting(s) on the factory.
+Previously you had to define different container factories if you had listeners that required different concurrency.
 
 [[async-annotation-conversion]]
 ====== Message Conversion for Annotated Methods
@@ -4260,6 +4284,16 @@ See <<listener-concurrency>>.
 a| image::images/tickmark.png[]
 a|
 
+| concurrency
+(N/A)
+
+| `m-n` The range of concurrent consumers for each listener (min, max).
+If only `n` is provided, `n` is a fixed number of consumers.
+See <<listener-concurrency>>.
+
+a| image::images/tickmark.png[]
+a|
+
 | startConsumerMin
 Interval
 (min-start-interval)
@@ -4577,6 +4611,8 @@ NOTE: Practically, consumers will only be stopped if the whole container is idle
 This is because the broker will share its work across all the active consumers.
 
 A single channel is used by each consumer, regardless of the number of configured queues.
+
+Starting with version _2.0_ the `concurrentConsumers` and `maxConcurrentConsumers` properties can be set with the single property `concurrency`; e.g. `"2-4"`.
 
 ===== DirectMessageListenerContainer
 

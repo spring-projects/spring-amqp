@@ -57,6 +57,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private Integer priority;
 
+	private String concurrency;
+
 	private RabbitAdmin admin;
 
 	private BeanFactory beanFactory;
@@ -173,6 +175,27 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 */
 	public Integer getPriority() {
 		return this.priority;
+	}
+
+	/**
+	 * Set the concurrency of this endpoint; usually overrides any concurrency
+	 * settings on the container factory. Contents depend on container implementation.
+	 * @param concurrency the concurrency.
+	 * @since 2.0
+	 */
+	public void setConcurrency(String concurrency) {
+		this.concurrency = concurrency;
+	}
+
+	/**
+	 * The concurrency of this endpoint; Not used by this abstract class;
+	 * used by subclasses to set the concurrency appropriate for the container type.
+	 * @return the concurrency.
+	 * @since 2.0
+	 */
+	@Override
+	public String getConcurrency() {
+		return this.concurrency;
 	}
 
 	/**

@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -151,12 +152,14 @@ public class EnableRabbitIntegrationTests {
 			"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
 			"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
 			"test.intercepted", "test.intercepted.withReply",
-			"test.invalidPojo", "differentTypes", "test.inheritance", "test.inheritance.class",
+			"test.invalidPojo", "differentTypes", "differentTypes2", "differentTypes3",
+			"test.inheritance", "test.inheritance.class",
 			"test.comma.1", "test.comma.2", "test.comma.3", "test.comma.4", "test,with,commas",
 			"test.converted", "test.converted.list", "test.converted.array", "test.converted.args1",
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
+			"test.simple.direct2",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2");
 
 	@Autowired
@@ -276,6 +279,17 @@ public class EnableRabbitIntegrationTests {
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct", "foo");
 		assertThat(reply, startsWith("FOOfoo"));
 		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("direct"), "consumersPerQueue"),
+				equalTo(2));
+	}
+
+	@Test
+	public void simpleDirectEndpointWithConcurrency() {
+		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct2", "foo");
+		assertThat(reply, startsWith("FOOfoo"));
+		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("directWithConcurrency"),
+				"consumersPerQueue"), equalTo(3));
 	}
 
 	@Test
@@ -338,6 +352,8 @@ public class EnableRabbitIntegrationTests {
 		this.jsonRabbitTemplate.convertAndSend(exchange, routingKey, bar);
 		this.jsonRabbitTemplate.setReceiveTimeout(10000);
 		assertEquals("BAR: barMultiListenerJsonBean", this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel"));
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("multi"), "concurrentConsumers"),
+				equalTo(1));
 	}
 
 	@Test
@@ -430,6 +446,34 @@ public class EnableRabbitIntegrationTests {
 		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
 		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
 		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("different"), "concurrentConsumers"),
+				equalTo(2));
+	}
+
+	@Test
+	public void testDifferentTypesWithConcurrency() throws InterruptedException {
+		Foo1 foo = new Foo1();
+		foo.setBar("bar");
+		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
+		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
+		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+		MessageListenerContainer container = this.registry.getListenerContainer("differentWithConcurrency");
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(3));
+		assertNull(TestUtils.getPropertyValue(container, "maxConcurrentConsumers"));
+	}
+
+	@Test
+	public void testDifferentTypesWithVariableConcurrency() throws InterruptedException {
+		Foo1 foo = new Foo1();
+		foo.setBar("bar");
+		this.jsonRabbitTemplate.convertAndSend("differentTypes", foo);
+		assertTrue(this.service.latch.await(10, TimeUnit.SECONDS));
+		assertThat(this.service.foos.get(0), instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) this.service.foos.get(0)).getBar());
+		MessageListenerContainer container = this.registry.getListenerContainer("differentWithVariableConcurrency");
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(3));
+		assertThat(TestUtils.getPropertyValue(container, "maxConcurrentConsumers"), equalTo(4));
 	}
 
 	@Test
@@ -724,8 +768,15 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
-		@RabbitListener(queues = "test.simple.direct", containerFactory = "directListenerContainerFactory")
-		public String capitalizeDirect(String foo) {
+		@RabbitListener(id = "direct", queues = "test.simple.direct",
+				containerFactory = "directListenerContainerFactory")
+		public String capitalizeDirect1(String foo) {
+			return foo.toUpperCase() + foo + Thread.currentThread().getName();
+		}
+
+		@RabbitListener(id = "directWithConcurrency", queues = "test.simple.direct2", concurrency = "${ffffx:3}",
+				containerFactory = "directListenerContainerFactory")
+		public String capitalizeDirect2(String foo) {
 			return foo.toUpperCase() + foo + Thread.currentThread().getName();
 		}
 
@@ -787,8 +838,22 @@ public class EnableRabbitIntegrationTests {
 
 		private final CountDownLatch latch = new CountDownLatch(1);
 
-		@RabbitListener(queues = "differentTypes", containerFactory = "jsonListenerContainerFactory")
+		@RabbitListener(id = "different", queues = "differentTypes", containerFactory = "jsonListenerContainerFactory")
 		public void handleDifferent(Foo2 foo) {
+			foos.add(foo);
+			latch.countDown();
+		}
+
+		@RabbitListener(id = "differentWithConcurrency", queues = "differentTypes2",
+				containerFactory = "jsonListenerContainerFactory", concurrency = "#{3}")
+		public void handleDifferentWithConcurrency(Foo2 foo) {
+			foos.add(foo);
+			latch.countDown();
+		}
+
+		@RabbitListener(id = "differentWithVariableConcurrency", queues = "differentTypes3",
+				containerFactory = "jsonListenerContainerFactory", concurrency = "3-4")
+		public void handleDifferentWithVariableConcurrency(Foo2 foo) {
 			foos.add(foo);
 			latch.countDown();
 		}
@@ -1060,6 +1125,7 @@ public class EnableRabbitIntegrationTests {
 			messageConverter.setClassMapper(classMapper);
 			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
+			factory.setConcurrentConsumers(2);
 			return factory;
 		}
 
@@ -1273,7 +1339,7 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
-	@RabbitListener(bindings = @QueueBinding
+	@RabbitListener(id = "multi", bindings = @QueueBinding
 			(value = @Queue,
 			exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
 			key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory")
