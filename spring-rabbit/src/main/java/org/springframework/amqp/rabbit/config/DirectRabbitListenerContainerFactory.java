@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
@@ -73,8 +74,8 @@ public class DirectRabbitListenerContainerFactory
 	}
 
 	@Override
-	protected void initializeContainer(DirectMessageListenerContainer instance) {
-		super.initializeContainer(instance);
+	protected void initializeContainer(DirectMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
+		super.initializeContainer(instance, endpoint);
 
 		if (this.taskScheduler != null) {
 			instance.setTaskScheduler(this.taskScheduler);
@@ -82,7 +83,15 @@ public class DirectRabbitListenerContainerFactory
 		if (this.monitorInterval != null) {
 			instance.setMonitorInterval(this.monitorInterval);
 		}
-		if (this.consumersPerQueue != null) {
+		if (endpoint.getConcurrency() != null) {
+			try {
+				instance.setConsumersPerQueue(Integer.parseInt(endpoint.getConcurrency()));
+			}
+			catch (NumberFormatException e) {
+				throw new IllegalStateException("Failed to parse concurrency: " + e.getMessage());
+			}
+		}
+		else if (this.consumersPerQueue != null) {
 			instance.setConsumersPerQueue(this.consumersPerQueue);
 		}
 	}

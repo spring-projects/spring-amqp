@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
 /**
@@ -120,16 +121,20 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	@Override
-	protected void initializeContainer(SimpleMessageListenerContainer instance) {
-		super.initializeContainer(instance);
+	protected void initializeContainer(SimpleMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
+		super.initializeContainer(instance, endpoint);
 
 		if (this.txSize != null) {
 			instance.setTxSize(this.txSize);
 		}
-		if (this.concurrentConsumers != null) {
+		String concurrency = endpoint.getConcurrency();
+		if (concurrency != null) {
+			instance.setConcurrency(concurrency);
+		}
+		else if (this.concurrentConsumers != null) {
 			instance.setConcurrentConsumers(this.concurrentConsumers);
 		}
-		if (this.maxConcurrentConsumers != null) {
+		if ((concurrency == null || !(concurrency.contains("-"))) && this.maxConcurrentConsumers != null) {
 			instance.setMaxConcurrentConsumers(this.maxConcurrentConsumers);
 		}
 		if (this.startConsumerMinInterval != null) {

@@ -328,7 +328,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		instance.setListenerId(endpoint.getId());
 
 		endpoint.setupListenerContainer(instance);
-		initializeContainer(instance);
+		initializeContainer(instance, endpoint);
 
 		return instance;
 	}
@@ -343,9 +343,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * Further initialize the specified container.
 	 * <p>Subclasses can inherit from this method to apply extra
 	 * configuration if necessary.
-	 * @param instance the containe instance to configure.
+	 * @param instance the container instance to configure.
+	 * @param endpoint the endpoint.
 	 */
-	protected void initializeContainer(C instance) {
+	protected void initializeContainer(C instance, RabbitListenerEndpoint endpoint) {
 	}
 
 }

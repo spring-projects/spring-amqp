@@ -402,6 +402,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setMessageHandlerMethodFactory(this.messageHandlerMethodFactory);
 		endpoint.setId(getEndpointId(rabbitListener));
 		endpoint.setQueueNames(resolveQueues(rabbitListener));
+		endpoint.setConcurrency(resolveExpressionAsStringOrInteger(rabbitListener.concurrency(), "concurrency"));
 		String group = rabbitListener.group();
 		if (StringUtils.hasText(group)) {
 			Object resolvedGroup = resolveExpression(group);
@@ -694,6 +695,23 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		Object resolved = resolveExpression(value);
 		if (resolved instanceof String) {
 			return (String) resolved;
+		}
+		else {
+			throw new IllegalStateException("The [" + attribute + "] must resolve to a String. "
+					+ "Resolved to [" + resolved.getClass() + "] for [" + value + "]");
+		}
+	}
+
+	private String resolveExpressionAsStringOrInteger(String value, String attribute) {
+		if (!StringUtils.hasLength(value)) {
+			return null;
+		}
+		Object resolved = resolveExpression(value);
+		if (resolved instanceof String) {
+			return (String) resolved;
+		}
+		else if (resolved instanceof Integer) {
+			return resolved.toString();
 		}
 		else {
 			throw new IllegalStateException("The [" + attribute + "] must resolve to a String. "
