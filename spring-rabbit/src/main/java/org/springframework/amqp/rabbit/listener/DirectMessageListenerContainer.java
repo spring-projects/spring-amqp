@@ -206,16 +206,20 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * Set the number of messages to receive before acknowledging (success).
 	 * A failed message will short-circuit this counter.
 	 * @param messagesPerAck the number of messages.
+	 * @see DirectMessageListenerContainer#setAckTimeout(long)
 	 */
 	public void setMessagesPerAck(int messagesPerAck) {
 		this.messagesPerAck = messagesPerAck;
 	}
 
 	/**
-	 * An approximate timeout; when messagesPerAck is greater than 1 and this time elapses
-	 * since the last ack, without messages arriving, the pending acks will be sent. The
-	 * actual time depends on the {@link #setMonitorInterval(long) monitorInterval}.
+	 * An approximate timeout; when {@link #setMessagesPerAck(int) messagesPerAck} is
+	 * greater than 1, and this time elapses since the last ack, the pending acks will be
+	 * sent either when the next message arrives, or a short time later if no additional
+	 * messages arrive. In that case, the actual time depends on the
+	 * {@link #setMonitorInterval(long) monitorInterval}.
 	 * @param ackTimeout the timeout in milliseconds (default 20000);
+	 * @see #setMessagesPerAck(int)
 	 */
 	public void setAckTimeout(long ackTimeout) {
 		this.ackTimeout = ackTimeout;
