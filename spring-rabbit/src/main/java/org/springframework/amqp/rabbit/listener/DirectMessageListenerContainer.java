@@ -84,7 +84,9 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class DirectMessageListenerContainer extends AbstractMessageListenerContainer {
 
-	private static final int DEFAULT_MONITOR_INTERVAL = 10000;
+	private static final int DEFAULT_MONITOR_INTERVAL = 10_000;
+
+	private static final int DEFAULT_ACK_TIMEOUT = 20_000;
 
 	protected final List<SimpleConsumer> consumers = new LinkedList<>(); // NOSONAR
 
@@ -99,6 +101,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private boolean taskSchedulerSet;
 
 	private long monitorInterval = DEFAULT_MONITOR_INTERVAL;
+
+	private int messagesPerAck;
+
+	private long ackTimeout = DEFAULT_ACK_TIMEOUT;
 
 	private volatile boolean started;
 
@@ -196,6 +202,25 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.setMissingQueuesFatal(missingQueuesFatal);
 	}
 
+	/**
+	 * Set the number of messages to receive before acknowledging (success).
+	 * A failed message will short-circuit this counter.
+	 * @param messagesPerAck the number of messages.
+	 */
+	public void setMessagesPerAck(int messagesPerAck) {
+		this.messagesPerAck = messagesPerAck;
+	}
+
+	/**
+	 * An approximate timeout; when messagesPerAck is > 1 and this time elapses since the
+	 * last ack, without messages arriving, the pending acks will be sent. The actual time
+	 * depends on the {@link #setMonitorInterval(long) monitorInterval}.
+	 * @param ackTimeout the timeout in milliseconds (default 20000);
+	 */
+	public void setAckTimeout(long ackTimeout) {
+		this.ackTimeout = ackTimeout;
+	}
+
 	@Override
 	public void addQueueNames(String... queueNames) {
 		try {
@@ -285,6 +310,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			threadPoolTaskScheduler.afterPropertiesSet();
 			this.taskScheduler = threadPoolTaskScheduler;
 		}
+		if (this.messagesPerAck > 0) {
+			Assert.state(!isChannelTransacted(), "'messagesPerAck' is not allowed with transactions");
+		}
 	}
 
 	@Override
@@ -334,7 +362,18 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			final List<SimpleConsumer> consumersToCancel;
 			synchronized (this.consumersMonitor) {
 				consumersToCancel = this.consumers.stream()
-						.filter(c -> !c.getChannel().isOpen())
+						.filter(c -> {
+							boolean open = c.getChannel().isOpen();
+							if (open && this.messagesPerAck > 1) {
+								try {
+									c.ackIfNecessary(now);
+								}
+								catch (IOException e) {
+									this.logger.error("Exception while sending delayed ack", e);
+								}
+							}
+							return !open;
+						})
 						.collect(Collectors.toList());
 			}
 			consumersToCancel
@@ -612,6 +651,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Canceling " + consumer);
 			}
+			synchronized (consumer) {
+				consumer.canceled = true;
+				if (this.messagesPerAck > 1) {
+					consumer.ackIfNecessary(0L);
+				}
+			}
 			consumer.getChannel().basicCancel(consumer.getConsumerTag());
 		}
 		catch (IOException e) {
@@ -652,11 +697,25 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		private final boolean isRabbitTxManager = this.transactionManager instanceof RabbitTransactionManager;
 
+		private final int messagesPerAck = DirectMessageListenerContainer.this.messagesPerAck;
+
+		private final long ackTimeout = DirectMessageListenerContainer.this.ackTimeout;
+
+		private int pendingAcks;
+
+		private long lastAck = System.currentTimeMillis();
+
+		private long lastDeliveryComplete = this.lastAck;
+
+		private long deliveryTag;
+
 		private volatile String consumerTag;
 
 		private volatile int epoch;
 
 		private volatile TransactionTemplate transactionTemplate;
+
+		private volatile boolean canceled;
 
 		private SimpleConsumer(Connection connection, Channel channel, String queue) {
 			super(channel);
@@ -813,7 +872,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 			try {
 				if (this.ackRequired) {
-					if (!isChannelTransacted() || isLocallyTransacted) {
+					if (this.messagesPerAck > 0) {
+						synchronized (this) {
+							this.deliveryTag = deliveryTag;
+							this.pendingAcks++;
+							this.lastDeliveryComplete = System.currentTimeMillis();
+							ackIfNecessary(this.lastDeliveryComplete);
+						}
+					}
+					else if (!isChannelTransacted() || isLocallyTransacted) {
 						getChannel().basicAck(deliveryTag, false);
 					}
 				}
@@ -826,12 +893,28 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
+		/**
+		 * Send the ack if we've reached the threshold (count or time) or immediately if
+		 * we are processing deliveries after a cancel has been issued.
+		 * @param now the current time.
+		 * @throws IOException if one occurs.
+		 */
+		private synchronized void ackIfNecessary(long now) throws IOException {
+			if (this.pendingAcks >= this.messagesPerAck || (
+					this.pendingAcks > 0 && now - this.lastAck > this.ackTimeout) || this.canceled) {
+				sendAck(now);
+			}
+		}
+
 		private void rollback(long deliveryTag, Exception e) {
 			if (isChannelTransacted()) {
 				RabbitUtils.rollbackIfNecessary(getChannel());
 			}
 			if (this.ackRequired) {
 				try {
+					if (this.pendingAcks > 0) {
+						sendAck(System.currentTimeMillis());
+					}
 					getChannel().basicNack(deliveryTag, true,
 							RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
@@ -842,6 +925,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (isChannelTransacted()) {
 				RabbitUtils.commitIfNecessary(getChannel());
 			}
+		}
+
+		protected synchronized void sendAck(long now) throws IOException {
+			getChannel().basicAck(this.deliveryTag, true);
+			this.lastAck = now;
+			this.pendingAcks = 0;
 		}
 
 		@Override

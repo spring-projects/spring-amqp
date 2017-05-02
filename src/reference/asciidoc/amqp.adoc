@@ -4198,6 +4198,31 @@ If the `prefetchCount` is less than the `txSize`, it will be increased to match 
 a| image::images/tickmark.png[]
 a|
 
+| messagesPerAck
+(N/A)
+
+| The number of messages to receive between acks.
+Use this to reduce the number of acks sent to the broker (at the cost of increasing the possibility of redelivered messages).
+Generally, you should only set this property on high-volume listener containers.
+If this is set, and a message is rejected (exception thrown), pending acks will be acknowledged and the failed message rejected.
+Not allowed with transacted channels.
+Default: ack every message.
+See also `ackTimeout`.
+
+a|
+a| image::images/tickmark.png[]
+
+| ackTimout
+(N/A)
+
+| When `messagesPerAck` is set, this timeout is used an an alternative to send an ack.
+When a new message arrives, the count of unacked messages is compared to `messagesPerAck`, and the time since the last ack is compared to this value; if either condition is true, the message is acknowledged.
+When no new messages arrive, and there are unacked messages, this timeout is approximate since the condition is only checked each `monitorInterval`.
+See also `messagesPerAck`, `monitorInterval`.
+
+a|
+a| image::images/tickmark.png[]
+
 | receiveTimeout
 (receive-timeout)
 
