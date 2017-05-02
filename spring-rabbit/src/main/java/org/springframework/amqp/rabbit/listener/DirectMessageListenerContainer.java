@@ -206,7 +206,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	 * Set the number of messages to receive before acknowledging (success).
 	 * A failed message will short-circuit this counter.
 	 * @param messagesPerAck the number of messages.
-	 * @see DirectMessageListenerContainer#setAckTimeout(long)
+	 * @see #setAckTimeout(long)
 	 */
 	public void setMessagesPerAck(int messagesPerAck) {
 		this.messagesPerAck = messagesPerAck;
@@ -876,7 +876,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 			try {
 				if (this.ackRequired) {
-					if (this.messagesPerAck > 0) {
+					if (this.messagesPerAck > 1) {
 						synchronized (this) {
 							this.deliveryTag = deliveryTag;
 							this.pendingAcks++;

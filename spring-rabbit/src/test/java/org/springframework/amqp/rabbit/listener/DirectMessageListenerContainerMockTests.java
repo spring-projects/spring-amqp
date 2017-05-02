@@ -192,7 +192,7 @@ public class DirectMessageListenerContainerMockTests {
 			latch5.countDown();
 			return null;
 		}).given(channel).basicCancel("consumerTag");
-		Executors.newSingleThreadExecutor().execute(() -> container.stop());
+		Executors.newSingleThreadExecutor().execute(container::stop);
 		assertTrue(latch5.await(10, TimeUnit.SECONDS));
 		// pending acks on stop
 		verify(channel).basicAck(20L, true);

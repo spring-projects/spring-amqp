@@ -4212,10 +4212,10 @@ See also `ackTimeout`.
 a|
 a| image::images/tickmark.png[]
 
-| ackTimout
+| ackTimeout
 (N/A)
 
-| When `messagesPerAck` is set, this timeout is used an an alternative to send an ack.
+| When `messagesPerAck` is set, this timeout is used as an alternative to send an ack.
 When a new message arrives, the count of unacked messages is compared to `messagesPerAck`, and the time since the last ack is compared to this value; if either condition is true, the message is acknowledged.
 When no new messages arrive, and there are unacked messages, this timeout is approximate since the condition is only checked each `monitorInterval`.
 See also `messagesPerAck`, `monitorInterval`.
