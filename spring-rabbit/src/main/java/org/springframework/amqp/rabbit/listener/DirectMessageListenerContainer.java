@@ -212,9 +212,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	/**
-	 * An approximate timeout; when messagesPerAck is > 1 and this time elapses since the
-	 * last ack, without messages arriving, the pending acks will be sent. The actual time
-	 * depends on the {@link #setMonitorInterval(long) monitorInterval}.
+	 * An approximate timeout; when messagesPerAck is greater than 1 and this time elapses
+	 * since the last ack, without messages arriving, the pending acks will be sent. The
+	 * actual time depends on the {@link #setMonitorInterval(long) monitorInterval}.
 	 * @param ackTimeout the timeout in milliseconds (default 20000);
 	 */
 	public void setAckTimeout(long ackTimeout) {
