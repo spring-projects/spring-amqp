@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package org.springframework.amqp.support.converter;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -157,6 +160,21 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 		this.exception.expect(MessageConversionException.class);
 		this.exception.expectCause(instanceOf(IllegalStateException.class));
 		converter.fromMessage(message);
+	}
+
+	@Test
+	public void notConvertible() {
+		class Foo {
+
+		}
+		try {
+			new SimpleMessageConverter().toMessage(new Foo(), new MessageProperties());
+			fail("Expected exception");
+		}
+		catch (IllegalArgumentException e) {
+			assertThat(e.getMessage(), containsString(
+					"SimpleMessageConverter only supports String, byte[] and Serializable payloads, received:"));
+		}
 	}
 
 }
