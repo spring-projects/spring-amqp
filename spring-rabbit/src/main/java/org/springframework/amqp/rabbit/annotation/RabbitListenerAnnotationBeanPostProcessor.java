@@ -810,11 +810,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			this.classAnnotations = new RabbitListener[0];
 		}
 
-		TypeMetadata(ListenerMethod[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners) {
+		TypeMetadata(ListenerMethod[] methods, Method[] multiMethods, RabbitListener[] classLevelListeners) { // NOSONAR
 			this.listenerMethods = methods;
 			this.handlerMethods = multiMethods;
 			this.classAnnotations = classLevelListeners;
 		}
+
 	}
 
 	/**
@@ -826,7 +827,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		final RabbitListener[] annotations;
 
-		ListenerMethod(Method method, RabbitListener[] annotations) {
+		ListenerMethod(Method method, RabbitListener[] annotations) { // NOSONAR
 			this.method = method;
 			this.annotations = annotations;
 		}

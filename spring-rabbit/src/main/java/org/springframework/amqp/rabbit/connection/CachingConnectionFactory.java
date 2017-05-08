@@ -846,7 +846,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	private void putConnectionName(Properties props, ConnectionProxy connection, String keySuffix) {
-		Connection targetConnection = connection.getTargetConnection();
+		Connection targetConnection = connection.getTargetConnection(); // NOSONAR (close())
 		if (targetConnection instanceof SimpleConnection) {
 			String name = ((SimpleConnection) targetConnection).getDelegate().getClientProvidedName();
 			if (name != null) {
