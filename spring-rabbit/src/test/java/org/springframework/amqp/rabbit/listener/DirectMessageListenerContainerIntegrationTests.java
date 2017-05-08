@@ -617,6 +617,28 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertFalse(container.isRunning());
 	}
 
+	@Test
+	public void testDeferredAcks() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
+		final CountDownLatch latch = new CountDownLatch(2);
+		container.setMessageListener(m -> {
+			latch.countDown();
+		});
+		container.setQueueNames(Q1);
+		container.setBeanName("deferredAcks");
+		container.setMessagesPerAck(2);
+		container.afterPropertiesSet();
+		container.start();
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(cf);
+		rabbitTemplate.convertAndSend(Q1, "foo");
+		rabbitTemplate.convertAndSend(Q1, "bar");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		container.stop();
+		cf.stop();
+		cf.destroy();
+	}
+
 	private boolean consumersOnQueue(String queue, int expected) throws Exception {
 		int n = 0;
 		Properties queueProperties = admin.getQueueProperties(queue);

@@ -338,6 +338,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void actualStart() throws Exception {
 		this.aborted = false;
 		this.hasStopped = false;
+		if (getPrefetchCount() < this.messagesPerAck) {
+			setPrefetchCount(this.messagesPerAck);
+		}
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
@@ -905,7 +908,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		 */
 		private synchronized void ackIfNecessary(long now) throws IOException {
 			if (this.pendingAcks >= this.messagesPerAck || (
-					this.pendingAcks > 0 && now - this.lastAck > this.ackTimeout) || this.canceled) {
+					this.pendingAcks > 0 && (now - this.lastAck > this.ackTimeout || this.canceled))) {
 				sendAck(now);
 			}
 		}

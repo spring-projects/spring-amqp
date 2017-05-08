@@ -163,7 +163,7 @@ public class DirectMessageListenerContainerMockTests {
 		container.start();
 
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
-		assertThat(qos.get(), equalTo(2));
+		assertThat(qos.get(), equalTo(10));
 		BasicProperties props = new BasicProperties();
 		byte[] body = new byte[1];
 		for (long i = 1; i < 16; i++) {
