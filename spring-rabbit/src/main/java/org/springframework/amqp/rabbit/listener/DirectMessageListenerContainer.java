@@ -919,8 +919,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			if (this.ackRequired) {
 				try {
-					if (this.pendingAcks > 0) {
-						sendAck(System.currentTimeMillis());
+					if (this.messagesPerAck > 1) {
+						synchronized (this) {
+							if (this.pendingAcks > 0) {
+								sendAck(System.currentTimeMillis());
+							}
+						}
 					}
 					getChannel().basicNack(deliveryTag, true,
 							RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
