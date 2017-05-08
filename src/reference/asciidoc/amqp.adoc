@@ -4172,7 +4172,7 @@ a| image::images/tickmark.png[]
 | The number of messages to accept from the broker in one socket frame.
 The higher this is the faster the messages can be delivered, but the higher the risk of non-sequential processing.
 Ignored if the `acknowledgeMode` is NONE.
-This will be increased, if necessary, to match the `txSize`.
+This will be increased, if necessary, to match the `txSize` or `messagePerAck`.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
@@ -4206,6 +4206,7 @@ Use this to reduce the number of acks sent to the broker (at the cost of increas
 Generally, you should only set this property on high-volume listener containers.
 If this is set, and a message is rejected (exception thrown), pending acks will be acknowledged and the failed message rejected.
 Not allowed with transacted channels.
+If the `prefetchCount` is less than the `messagesPerAck`, it will be increased to match the `messagesPerAck`.
 Default: ack every message.
 See also `ackTimeout`.
 
