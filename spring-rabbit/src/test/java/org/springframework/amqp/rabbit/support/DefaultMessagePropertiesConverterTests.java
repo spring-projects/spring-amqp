@@ -201,8 +201,8 @@ public class DefaultMessagePropertiesConverterTests {
 		assertEquals(MessageDeliveryMode.toInt(MessageDeliveryMode.NON_PERSISTENT), bProps.getDeliveryMode().intValue());
 		props = converter.toMessageProperties(bProps, null, "UTF-8");
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT, props.getReceivedDeliveryMode());
-		assertArrayEquals(strings, (String[]) props.getHeaders().get("strings"));
-		assertEquals("[FooAsAString]", props.getHeaders().get("objects").toString());
+		assertArrayEquals(strings, (Object[]) props.getHeaders().get("strings"));
+		assertEquals("[FooAsAString]", Arrays.asList((Object[]) props.getHeaders().get("objects")).toString());
 		assertNull(props.getDeliveryMode());
 	}
 
