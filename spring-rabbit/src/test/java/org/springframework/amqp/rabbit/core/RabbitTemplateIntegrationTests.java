@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -409,9 +410,21 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveWithPostProcessor() throws Exception {
+		final String[] strings = new String[] { "1", "2" };
 		template.convertAndSend(ROUTE, (Object) "message", message -> {
 			message.getMessageProperties().setContentType("text/other");
 			// message.getMessageProperties().setUserId("foo");
+			MessageProperties props = message.getMessageProperties();
+			props.getHeaders().put("strings", strings);
+			props.getHeaders().put("objects", new Object[] { new Foo(), new Foo() });
+			props.getHeaders().put("bytes", "abc".getBytes());
+			return message;
+		});
+		template.setAfterReceivePostProcessors(message -> {
+			assertEquals(Arrays.asList(strings), message.getMessageProperties().getHeaders().get("strings"));
+			assertEquals(Arrays.asList(new String[] { "FooAsAString", "FooAsAString" }),
+					message.getMessageProperties().getHeaders().get("objects"));
+			assertArrayEquals("abc".getBytes(), (byte[]) message.getMessageProperties().getHeaders().get("bytes"));
 			return message;
 		});
 		String result = (String) template.receiveAndConvert(ROUTE);
@@ -1555,6 +1568,19 @@ public class RabbitTemplateIntegrationTests {
 		@Bean
 		public ConnectionFactory defaultCF() {
 			return mock(ConnectionFactory.class);
+		}
+
+	}
+
+	private static class Foo {
+
+		Foo() {
+			super();
+		}
+
+		@Override
+		public String toString() {
+			return "FooAsAString";
 		}
 
 	}
