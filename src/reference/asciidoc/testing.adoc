@@ -309,7 +309,9 @@ public class TestRabbitTemplateTests {
 	public void testSendAndReceive() {
 		assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
 	}
-
+----
+[source, java]
+----
 	@Configuration
 	@EnableRabbit
 	public static class Config {
