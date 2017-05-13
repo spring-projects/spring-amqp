@@ -4365,7 +4365,7 @@ See <<listener-concurrency>>.
 Default 10.
 
 a| image::images/tickmark.png[]
-a| image::images/tickmark.png[]
+a|
 
 | connectionFactory
 (connection-factory)
