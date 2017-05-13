@@ -185,9 +185,16 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 				|| (value instanceof LongString) || (value instanceof Integer) || (value instanceof Long)
 				|| (value instanceof Float) || (value instanceof Double) || (value instanceof BigDecimal)
 				|| (value instanceof Short) || (value instanceof Byte) || (value instanceof Date)
-				|| (value instanceof List) || (value instanceof Map);
+				|| (value instanceof List) || (value instanceof Map) || (value instanceof Object[]);
 		if (!valid && value != null) {
 			value = value.toString();
+		}
+		else if (value instanceof Object[]) {
+			Object[] writableArray = new Object[((Object[]) value).length];
+			for (int i = 0; i < writableArray.length; i++) {
+				writableArray[i] = convertHeaderValueIfNecessary(((Object[]) value)[i]);
+			}
+			value = writableArray;
 		}
 		else if (value instanceof List<?>) {
 			List<Object> writableList = new ArrayList<Object>(((List<?>) value).size());

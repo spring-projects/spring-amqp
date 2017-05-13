@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -192,12 +193,30 @@ public class DefaultMessagePropertiesConverterTests {
 	public void testInboundDeliveryMode() {
 		DefaultMessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
 		MessageProperties props = new MessageProperties();
+		String[] strings = new String[] { "1", "2" };
+		props.getHeaders().put("strings", strings);
+		props.getHeaders().put("objects", new Object[] { new Foo() });
 		props.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
 		BasicProperties bProps = converter.fromMessageProperties(props, "UTF-8");
 		assertEquals(MessageDeliveryMode.toInt(MessageDeliveryMode.NON_PERSISTENT), bProps.getDeliveryMode().intValue());
 		props = converter.toMessageProperties(bProps, null, "UTF-8");
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT, props.getReceivedDeliveryMode());
+		assertArrayEquals(strings, (Object[]) props.getHeaders().get("strings"));
+		assertEquals("[FooAsAString]", Arrays.asList((Object[]) props.getHeaders().get("objects")).toString());
 		assertNull(props.getDeliveryMode());
+	}
+
+	private static class Foo {
+
+		Foo() {
+			super();
+		}
+
+		@Override
+		public String toString() {
+			return "FooAsAString";
+		}
+
 	}
 
 }
