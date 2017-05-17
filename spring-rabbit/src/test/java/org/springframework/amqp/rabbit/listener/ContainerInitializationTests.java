@@ -20,7 +20,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -30,10 +34,13 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.connection.ShutDownChannelListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -87,9 +94,12 @@ public class ContainerInitializationTests {
 	@Test
 	public void testMismatchedQueueDuringRestart() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config2.class);
+		CountDownLatch[] latches = setUpChannelLatches(context);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
+		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
 		while (n++ < 200 && container.isRunning()) {
@@ -102,9 +112,12 @@ public class ContainerInitializationTests {
 	@Test
 	public void testMismatchedQueueDuringRestartMultiQueue() throws Exception {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config3.class);
+		CountDownLatch[] latches = setUpChannelLatches(context);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.deleteQueue(TEST_MISMATCH);
+		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
 		while (n++ < 200 && container.isRunning()) {
@@ -112,6 +125,21 @@ public class ContainerInitializationTests {
 		}
 		assertFalse(container.isRunning());
 		context.close();
+	}
+
+	private CountDownLatch[] setUpChannelLatches(ApplicationContext context) {
+		CachingConnectionFactory cf = context.getBean(CachingConnectionFactory.class);
+		final CountDownLatch cancelLatch = new CountDownLatch(1);
+		final CountDownLatch mismatchLatch = new CountDownLatch(1);
+		cf.addChannelListener((ShutDownChannelListener) s -> {
+			if (RabbitUtils.isNormalChannelClose(s)) {
+				cancelLatch.countDown();
+			}
+			else if (RabbitUtils.isMismatchedQueueArgs(s)) {
+				mismatchLatch.countDown();
+			}
+		});
+		return new CountDownLatch[] { cancelLatch, mismatchLatch };
 	}
 
 	@Configuration
