@@ -194,7 +194,7 @@ public class AmqpAppender extends AbstractAppender {
 		else if (this.manager.maxSenderRetries > 0) {
 			RetryTemplate retryTemplate = new RetryTemplate();
 			RetryPolicy retryPolicy = new SimpleRetryPolicy(this.manager.maxSenderRetries,
-					Collections.<Class<? extends Throwable>, Boolean> singletonMap(Exception.class, true));
+					Collections.<Class<? extends Throwable>, Boolean>singletonMap(Exception.class, true));
 			retryTemplate.setRetryPolicy(retryPolicy);
 			this.rabbitTemplate.setRetryTemplate(retryTemplate);
 		}
@@ -490,7 +490,7 @@ public class AmqpAppender extends AbstractAppender {
 
 		private void activateOptions() {
 			this.routingKeyLayout = PatternLayout.createLayout(this.routingKeyPattern
-					.replaceAll("%X\\{applicationId\\}", this.applicationId),
+							.replaceAll("%X\\{applicationId\\}", this.applicationId),
 					null, null, null, Charset.forName(this.charset), false, true, null, null);
 			this.connectionFactory = new CachingConnectionFactory();
 			this.connectionFactory.setHost(this.host);
