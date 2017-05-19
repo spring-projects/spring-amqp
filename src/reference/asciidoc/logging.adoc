@@ -149,6 +149,17 @@ NOTE: This appender is deprecated and will be removed in _version 2.0_.
 </Appenders>
 ----
 
+[IMPORTANT]
+====
+Starting with _versions 1.6.10, 1.7.3_, the log4j2 Appender publishes the messages to RabbitMQ on the calling thread by default.
+This is because log4j2 does not create thread-safe events by default.
+If the broker is down, the `maxSenderRetries` will be used to retry, with no delay between retries.
+If you wish to restore the previous behavior of publishing the messages on separate threads (`senderPoolSize`), set the `async` property to `true`.
+However, you will also need to configure log4j2 to use the `DefaultLogEventFactory` instead of the `ReusableLogEventFactory`.
+One way to do that is to set the system property `-Dlog4j2.enable.threadlocals=false`.
+If async publishing is used with the `ReusableLogEventFactory`, events will have a high likelihood of being corrupted due to cross-talk.
+====
+
 ==== Logback Appender
 
 .Example logback.xml Snippet
