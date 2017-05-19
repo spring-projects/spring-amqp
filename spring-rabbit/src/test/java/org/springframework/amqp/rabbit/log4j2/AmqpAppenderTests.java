@@ -96,11 +96,16 @@ public class AmqpAppenderTests {
 		admin.declareBinding(BindingBuilder.bind(queue).to(fanout));
 		Logger logger = LogManager.getLogger("foo");
 		logger.info("foo");
+		logger.info("bar");
 		template.setReceiveTimeout(10000);
 		Message received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
-	}
+		assertEquals("foo\n", new String(received.getBody()));
+		received = template.receive(queue.getName());
+		assertNotNull(received);
+		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
+		assertEquals("bar\n", new String(received.getBody()));	}
 
 	@Test
 	public void testProperties() {
@@ -117,6 +122,7 @@ public class AmqpAppenderTests {
 		// contentType="text/plain" contentEncoding="UTF-8" generateId="true"
 		// deliveryMode="NON_PERSISTENT"
 		// charset="UTF-8"
+		// async="false"
 		// senderPoolSize="3" maxSenderRetries="5">
 		// </RabbitMQ>
 		assertEquals("localhost:5672", TestUtils.getPropertyValue(manager, "addresses"));
@@ -139,6 +145,8 @@ public class AmqpAppenderTests {
 		assertEquals("UTF-8", TestUtils.getPropertyValue(manager, "contentEncoding"));
 		assertEquals(3, TestUtils.getPropertyValue(manager, "senderPoolSize"));
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
+		// change the property to true and this fails and test() randomly fails too.
+		assertFalse(TestUtils.getPropertyValue(manager, "async", Boolean.class));
 	}
 
 	@Test
