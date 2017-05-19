@@ -248,7 +248,7 @@ public class AmqpAppender extends AbstractAppender {
 		return message;
 	}
 
-	private void sendEvent(Event event, Map<?, ?> props) {
+	private void sendEvent(Event event, Map<?, ?> properties) {
 		LogEvent logEvent = event.getEvent();
 		String name = logEvent.getLoggerName();
 		Level level = logEvent.getLevel();
@@ -276,7 +276,7 @@ public class AmqpAppender extends AbstractAppender {
 		amqpProps.setTimestamp(tstamp.getTime());
 
 		// Copy properties in from MDC
-		for (Entry<?, ?> entry : props.entrySet()) {
+		for (Entry<?, ?> entry : properties.entrySet()) {
 			amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
 		}
 		if (logEvent.getSource() != null) {
@@ -309,7 +309,7 @@ public class AmqpAppender extends AbstractAppender {
 				message = new Message(msgBody.toString().getBytes(), amqpProps); //NOSONAR (default charset)
 			}
 			message = postProcessMessageBeforeSend(message, event);
-			rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
+			this.rabbitTemplate.send(this.manager.exchangeName, routingKey, message);
 		}
 		catch (AmqpException e) {
 			int retries = event.incrementRetries();
