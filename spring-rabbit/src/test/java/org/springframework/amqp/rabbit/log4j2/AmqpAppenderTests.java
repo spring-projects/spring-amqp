@@ -102,7 +102,10 @@ public class AmqpAppenderTests {
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
 		assertEquals("foo\n", new String(received.getBody()));
-	}
+		received = template.receive(queue.getName());
+		assertNotNull(received);
+		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
+		assertEquals("bar\n", new String(received.getBody()));	}
 
 	@Test
 	public void testProperties() {
