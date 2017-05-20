@@ -18,10 +18,12 @@ package org.springframework.amqp.rabbit.log4j2;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -47,6 +49,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
+import org.apache.logging.log4j.core.util.Integers;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
@@ -128,8 +131,9 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginElement("Layout") Layout<? extends Serializable> layout,
 			@PluginElement("Filter") Filter filter,
 			@PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
+			@PluginAttribute("uri") URI uri,
 			@PluginAttribute("host") String host,
-			@PluginAttribute("port") int port,
+			@PluginAttribute("port") String port,
 			@PluginAttribute("addresses") String addresses,
 			@PluginAttribute("user") String user,
 			@PluginAttribute("password") String password,
@@ -166,8 +170,9 @@ public class AmqpAppender extends AbstractAppender {
 			theLayout = PatternLayout.createDefaultLayout();
 		}
 		AmqpManager manager = new AmqpManager(configuration.getLoggerContext(), name);
+		manager.uri = uri;
 		manager.host = host;
-		manager.port = port;
+		Optional.ofNullable(port).ifPresent(v -> manager.port = Integers.parseInt(v));
 		manager.addresses = addresses;
 		manager.username = user;
 		manager.password = password;
@@ -414,7 +419,12 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * RabbitMQ host to connect to.
 		 */
-		private String host = "localhost";
+		private URI uri;
+
+		/**
+		 * RabbitMQ host to connect to.
+		 */
+		private String host;
 
 		/**
 		 * A comma-delimited list of broker addresses: host:port[,host:port]*.
@@ -424,22 +434,22 @@ public class AmqpAppender extends AbstractAppender {
 		/**
 		 * RabbitMQ virtual host to connect to.
 		 */
-		private String virtualHost = "/";
+		private String virtualHost;
 
 		/**
 		 * RabbitMQ port to connect to.
 		 */
-		private int port = 5672;
+		private Integer port;
 
 		/**
 		 * RabbitMQ user to connect as.
 		 */
-		private String username = "guest";
+		private String username;
 
 		/**
 		 * RabbitMQ password for this user.
 		 */
-		private String password = "guest";
+		private String password;
 
 		/**
 		 * Use an SSL connection.
@@ -589,11 +599,15 @@ public class AmqpAppender extends AbstractAppender {
 		 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
 		 */
 		protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
-			factoryBean.setHost(this.host);
-			factoryBean.setPort(this.port);
-			factoryBean.setUsername(this.username);
-			factoryBean.setPassword(this.password);
-			factoryBean.setVirtualHost(this.virtualHost);
+
+			Optional.ofNullable(this.host).ifPresent(factoryBean::setHost);
+			Optional.ofNullable(this.port).ifPresent(factoryBean::setPort);
+			Optional.ofNullable(this.username).ifPresent(factoryBean::setUsername);
+			Optional.ofNullable(this.password).ifPresent(factoryBean::setPassword);
+			Optional.ofNullable(this.virtualHost).ifPresent(factoryBean::setVirtualHost);
+			// overrides all preceding items when set
+			Optional.ofNullable(this.uri).ifPresent(factoryBean::setUri);
+
 			if (this.useSsl) {
 				factoryBean.setUseSSL(true);
 				if (this.sslAlgorithm != null) {

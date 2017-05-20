@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.log4j2;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
+import com.rabbitmq.client.ConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -81,7 +83,7 @@ public class AmqpAppenderTests {
 		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
 		LOGGER_CONTEXT.reconfigure();
 		brokerRunning.deleteQueues("log4jTest", "log4j2Test");
-		brokerRunning.deleteExchanges("log4j2Test");
+		brokerRunning.deleteExchanges("log4j2Test", "log4j2Test_uri");
 	}
 
 	@Test
@@ -139,6 +141,21 @@ public class AmqpAppenderTests {
 		assertEquals("UTF-8", TestUtils.getPropertyValue(manager, "contentEncoding"));
 		assertEquals(3, TestUtils.getPropertyValue(manager, "senderPoolSize"));
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
+	}
+
+	@Test
+	public void testUriProperties() {
+		Logger logger = LogManager.getLogger("bar");
+		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("rabbitmq_uri");
+		Object manager = TestUtils.getPropertyValue(appender, "manager");
+		assertEquals("amqp://guest:guest@localhost:5672/", TestUtils.getPropertyValue(manager, "uri").toString());
+
+		assertNull(TestUtils.getPropertyValue(manager, "host"));
+		assertNull(TestUtils.getPropertyValue(manager, "port"));
+		assertNull(TestUtils.getPropertyValue(manager, "username"));
+		assertNull(TestUtils.getPropertyValue(manager, "password"));
+		assertNull(TestUtils.getPropertyValue(manager, "virtualHost"));
 	}
 
 	@Test
@@ -277,11 +294,11 @@ public class AmqpAppenderTests {
 	}
 
 	private void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {
-		verify(bean).setHost("localhost");
-		verify(bean).setPort(5672);
-		verify(bean).setUsername("guest");
-		verify(bean).setPassword("guest");
-		verify(bean).setVirtualHost("/");
+		verify(bean, never()).setHost("localhost");
+		verify(bean, never()).setPort(5672);
+		verify(bean, never()).setUsername("guest");
+		verify(bean, never()).setPassword("guest");
+		verify(bean, never()).setVirtualHost("/");
 	}
 
 }
