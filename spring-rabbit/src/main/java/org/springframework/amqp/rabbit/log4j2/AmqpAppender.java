@@ -24,7 +24,6 @@ import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -48,8 +47,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-
 import org.apache.logging.log4j.core.util.Integers;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
@@ -80,11 +79,10 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Stephen Oakey
  * @author Artem Bilan
- *
  * @since 1.6
  */
-@Plugin(name = "RabbitMQ", category = "Core", elementType = "appender", printObject = true)
-public class AmqpAppender extends AbstractAppender {
+@Plugin(name = "RabbitMQ", category = "Core", elementType = "appender", printObject = true) public class AmqpAppender
+		extends AbstractAppender {
 
 	/**
 	 * Key name for the application id (if there is one set via the appender config) in the message properties.
@@ -127,45 +125,30 @@ public class AmqpAppender extends AbstractAppender {
 		this.manager = manager;
 	}
 
-	@PluginFactory
-	public static AmqpAppender createAppender(
-			@PluginConfiguration final Configuration configuration,
-			@PluginAttribute("name") String name,
-			@PluginElement("Layout") Layout<? extends Serializable> layout,
-			@PluginElement("Filter") Filter filter,
-			@PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
-			@PluginAttribute("uri") URI uri,
-			@PluginAttribute("host") String host,
-			@PluginAttribute("port") String port,
-			@PluginAttribute("addresses") String addresses,
-			@PluginAttribute("user") String user,
-			@PluginAttribute("password") String password,
-			@PluginAttribute("virtualHost") String virtualHost,
-			@PluginAttribute("useSsl") boolean useSsl,
-			@PluginAttribute("sslAlgorithm") String sslAlgorithm,
+	@PluginFactory public static AmqpAppender createAppender(@PluginConfiguration final Configuration configuration,
+			@PluginAttribute("name") String name, @PluginElement("Layout") Layout<? extends Serializable> layout,
+			@PluginElement("Filter") Filter filter, @PluginAttribute("ignoreExceptions") boolean ignoreExceptions,
+			@PluginAttribute("uri") URI uri, @PluginAttribute("host") String host, @PluginAttribute("port") String port,
+			@PluginAttribute("addresses") String addresses, @PluginAttribute("user") String user,
+			@PluginAttribute("password") String password, @PluginAttribute("virtualHost") String virtualHost,
+			@PluginAttribute("useSsl") boolean useSsl, @PluginAttribute("sslAlgorithm") String sslAlgorithm,
 			@PluginAttribute("sslPropertiesLocation") String sslPropertiesLocation,
 			@PluginAttribute("keyStore") String keyStore,
 			@PluginAttribute("keyStorePassphrase") String keyStorePassphrase,
-			@PluginAttribute("keyStoreType") String keyStoreType,
-			@PluginAttribute("trustStore") String trustStore,
+			@PluginAttribute("keyStoreType") String keyStoreType, @PluginAttribute("trustStore") String trustStore,
 			@PluginAttribute("trustStorePassphrase") String trustStorePassphrase,
 			@PluginAttribute("trustStoreType") String trustStoreType,
 			@PluginAttribute("senderPoolSize") int senderPoolSize,
 			@PluginAttribute("maxSenderRetries") int maxSenderRetries,
 			@PluginAttribute("applicationId") String applicationId,
 			@PluginAttribute("routingKeyPattern") String routingKeyPattern,
-			@PluginAttribute("generateId") boolean generateId,
-			@PluginAttribute("deliveryMode") String deliveryMode,
-			@PluginAttribute("exchange") String exchange,
-			@PluginAttribute("exchangeType") String exchangeType,
-			@PluginAttribute("declareExchange") boolean declareExchange,
-			@PluginAttribute("durable") boolean durable,
-			@PluginAttribute("autoDelete") boolean autoDelete,
-			@PluginAttribute("contentType") String contentType,
+			@PluginAttribute("generateId") boolean generateId, @PluginAttribute("deliveryMode") String deliveryMode,
+			@PluginAttribute("exchange") String exchange, @PluginAttribute("exchangeType") String exchangeType,
+			@PluginAttribute("declareExchange") boolean declareExchange, @PluginAttribute("durable") boolean durable,
+			@PluginAttribute("autoDelete") boolean autoDelete, @PluginAttribute("contentType") String contentType,
 			@PluginAttribute("contentEncoding") String contentEncoding,
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
-			@PluginAttribute("async") boolean async,
-			@PluginAttribute("charset") String charset) {
+			@PluginAttribute("async") boolean async, @PluginAttribute("charset") String charset) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
@@ -232,8 +215,7 @@ public class AmqpAppender extends AbstractAppender {
 		}
 	}
 
-	@Override
-	public void append(LogEvent event) {
+	@Override public void append(LogEvent event) {
 		Event appenderEvent = new Event(event, event.getContextData().toMap());
 		if (this.manager.async) {
 			this.events.add(appenderEvent);
@@ -247,7 +229,7 @@ public class AmqpAppender extends AbstractAppender {
 	 * Subclasses may modify the final message before sending.
 	 *
 	 * @param message The message.
-	 * @param event The event.
+	 * @param event   The event.
 	 * @return The modified message.
 	 */
 	public Message postProcessMessageBeforeSend(Message message, Event event) {
@@ -286,11 +268,8 @@ public class AmqpAppender extends AbstractAppender {
 			amqpProps.setHeader(entry.getKey().toString(), entry.getValue());
 		}
 		if (logEvent.getSource() != null) {
-			amqpProps.setHeader(
-					"location",
-					String.format("%s.%s()[%s]", logEvent.getSource().getClassName(),
-							logEvent.getSource().getMethodName(),
-							logEvent.getSource().getLineNumber()));
+			amqpProps.setHeader("location", String.format("%s.%s()[%s]", logEvent.getSource().getClassName(),
+					logEvent.getSource().getMethodName(), logEvent.getSource().getLineNumber()));
 		}
 
 		StringBuilder msgBody;
@@ -300,14 +279,12 @@ public class AmqpAppender extends AbstractAppender {
 		try {
 			synchronized (this.layoutMutex) {
 				msgBody = new StringBuilder(new String(getLayout().toByteArray(logEvent), "UTF-8"));
-				routingKey = new String(this.manager.routingKeyLayout.toByteArray(logEvent),
-						"UTF-8");
+				routingKey = new String(this.manager.routingKeyLayout.toByteArray(logEvent), "UTF-8");
 			}
 			Message message = null;
 			if (this.manager.charset != null) {
 				try {
-					message = new Message(msgBody.toString().getBytes(this.manager.charset),
-							amqpProps);
+					message = new Message(msgBody.toString().getBytes(this.manager.charset), amqpProps);
 				}
 				catch (UnsupportedEncodingException e) { /* fall back to default */ }
 			}
@@ -323,16 +300,15 @@ public class AmqpAppender extends AbstractAppender {
 				// Schedule a retry based on the number of times I've tried to re-send this
 				this.manager.retryTimer.schedule(new TimerTask() {
 
-					@Override
-					public void run() {
+					@Override public void run() {
 						AmqpAppender.this.events.add(event);
 					}
 
 				}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
 			}
 			else {
-				getHandler().error("Could not send log message " + logEvent.getMessage()
-						+ " after " + this.manager.maxSenderRetries + " retries", logEvent, e);
+				getHandler().error("Could not send log message " + logEvent.getMessage() + " after "
+						+ this.manager.maxSenderRetries + " retries", logEvent, e);
 			}
 		}
 		catch (Exception e) {
@@ -345,8 +321,7 @@ public class AmqpAppender extends AbstractAppender {
 	 */
 	protected class EventSender implements Runnable {
 
-		@Override
-		public void run() {
+		@Override public void run() {
 			try {
 				// We leave the loop when thread is interrupted by the ExecutorService.shutdownNow()
 				while (true) {
@@ -578,17 +553,15 @@ public class AmqpAppender extends AbstractAppender {
 			if (rabbitConnectionFactory != null) {
 				this.routingKeyLayout = PatternLayout.newBuilder()
 						.withPattern(this.routingKeyPattern.replaceAll("%X\\{applicationId\\}", this.applicationId))
-						.withCharset(Charset.forName(this.charset))
-						.withAlwaysWriteExceptions(false)
-						.withNoConsoleNoAnsi(true)
-						.build();
+						.withCharset(Charset.forName(this.charset)).withAlwaysWriteExceptions(false)
+						.withNoConsoleNoAnsi(true).build();
 				this.connectionFactory = new CachingConnectionFactory(createRabbitConnectionFactory());
 				if (this.addresses != null) {
 					this.connectionFactory.setAddresses(this.addresses);
 				}
 				if (this.clientConnectionProperties != null) {
-					LogAppenderUtils.updateClientConnectionProperties(this.connectionFactory,
-							this.clientConnectionProperties);
+					LogAppenderUtils
+							.updateClientConnectionProperties(this.connectionFactory, this.clientConnectionProperties);
 				}
 				setUpExchangeDeclaration();
 				this.senderPool = Executors.newCachedThreadPool();
@@ -610,8 +583,7 @@ public class AmqpAppender extends AbstractAppender {
 				return factoryBean.getObject();
 			}
 			catch (Exception e) {
-				LOGGER.error("Failed to create customized Rabbit ConnectionFactory.",
-						e);
+				LOGGER.error("Failed to create customized Rabbit ConnectionFactory.", e);
 				return null;
 			}
 		}
@@ -653,8 +625,7 @@ public class AmqpAppender extends AbstractAppender {
 			}
 		}
 
-		@Override
-		protected boolean releaseSub(long timeout, TimeUnit timeUnit) {
+		@Override protected boolean releaseSub(long timeout, TimeUnit timeUnit) {
 			this.retryTimer.cancel();
 			this.senderPool.shutdownNow();
 			this.connectionFactory.destroy();
