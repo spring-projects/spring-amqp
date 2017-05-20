@@ -432,10 +432,10 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.net.URI)
 	 */
 	public void setUri(URI uri) {
-		try{
+		try {
 			this.connectionFactory.setUri(uri);
 		}
-		catch( URISyntaxException | NoSuchAlgorithmException | KeyManagementException e ){
+		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
 			throw new IllegalArgumentException(String.format("Unable to set uri: {}", e.getLocalizedMessage()), e);
 		}
 	}
@@ -444,11 +444,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * @param uriString the uri.
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.lang.String)
 	 */
-	public void setUri(String uriString) throws URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-		try{
+	public void setUri(String uriString) {
+		try {
 			this.connectionFactory.setUri(uriString);
 		}
-		catch( URISyntaxException | NoSuchAlgorithmException | KeyManagementException e ){
+		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
 			throw new IllegalArgumentException(String.format("Unable to set uri: {}", e.getLocalizedMessage()), e);
 		}
 	}
