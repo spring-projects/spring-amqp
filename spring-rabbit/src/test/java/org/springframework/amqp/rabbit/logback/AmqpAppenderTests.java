@@ -25,14 +25,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  *
