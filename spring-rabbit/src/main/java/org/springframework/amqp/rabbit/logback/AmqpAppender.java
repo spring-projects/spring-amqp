@@ -17,9 +17,11 @@
 package org.springframework.amqp.rabbit.logback;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -83,6 +85,8 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Artem Bilan
  * @author Gary Russell
  * @author Stephen Oakey
+ * @author Dominique Villard
+ *
  * @since 1.4
  */
 public class AmqpAppender extends AppenderBase<ILoggingEvent> {
@@ -178,27 +182,32 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * RabbitMQ host to connect to.
 	 */
-	private String host = "localhost";
+	private URI uri;
+
+	/**
+	 * RabbitMQ host to connect to.
+	 */
+	private String host;
 
 	/**
 	 * RabbitMQ virtual host to connect to.
 	 */
-	private String virtualHost = "/";
+	private String virtualHost;
 
 	/**
 	 * RabbitMQ port to connect to.
 	 */
-	private int port = 5672;
+	private Integer port;
 
 	/**
 	 * RabbitMQ user to connect as.
 	 */
-	private String username = "guest";
+	private String username;
 
 	/**
 	 * RabbitMQ password for this user.
 	 */
-	private String password = "guest";
+	private String password;
 
 	/**
 	 * Use an SSL connection.
@@ -288,6 +297,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.routingKeyLayout.setPattern("%nopex{}" + routingKeyPattern);
 	}
 
+	public URI getUri() {
+		return this.uri;
+	}
+
+	public void setUri(URI uri) {
+		this.uri = uri;
+	}
+
 	public String getHost() {
 		return this.host;
 	}
@@ -296,11 +313,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.host = host;
 	}
 
-	public int getPort() {
+	public Integer getPort() {
 		return this.port;
 	}
 
-	public void setPort(int port) {
+	public void setPort(Integer port) {
 		this.port = port;
 	}
 
@@ -600,11 +617,15 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * @param factoryBean the {@link RabbitConnectionFactoryBean}.
 	 */
 	protected void configureRabbitConnectionFactory(RabbitConnectionFactoryBean factoryBean) {
-		factoryBean.setHost(this.host);
-		factoryBean.setPort(this.port);
-		factoryBean.setUsername(this.username);
-		factoryBean.setPassword(this.password);
-		factoryBean.setVirtualHost(this.virtualHost);
+
+		Optional.ofNullable(this.host).ifPresent(factoryBean::setHost);
+		Optional.ofNullable(this.port).ifPresent(factoryBean::setPort);
+		Optional.ofNullable(this.username).ifPresent(factoryBean::setUsername);
+		Optional.ofNullable(this.password).ifPresent(factoryBean::setPassword);
+		Optional.ofNullable(this.virtualHost).ifPresent(factoryBean::setVirtualHost);
+		// overrides all preceding items when set
+		Optional.ofNullable(this.uri).ifPresent(factoryBean::setUri);
+
 		if (this.useSsl) {
 			factoryBean.setUseSSL(true);
 			if (this.sslAlgorithm != null) {

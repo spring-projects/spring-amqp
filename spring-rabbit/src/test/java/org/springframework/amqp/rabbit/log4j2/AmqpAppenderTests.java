@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +61,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * @author Gary Russell
  * @author Stephen Oakey
  * @author Artem Bilan
+ * @author Dominique Villard
  *
  * @since 1.6
  */
@@ -83,7 +85,7 @@ public class AmqpAppenderTests {
 		LOGGER_CONTEXT.setConfigLocation(ORIGINAL_LOGGER_CONFIG);
 		LOGGER_CONTEXT.reconfigure();
 		brokerRunning.deleteQueues("log4jTest", "log4j2Test");
-		brokerRunning.deleteExchanges("log4j2Test");
+		brokerRunning.deleteExchanges("log4j2Test", "log4j2Test_uri");
 	}
 
 	@Test
@@ -151,6 +153,21 @@ public class AmqpAppenderTests {
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
 		// change the property to true and this fails and test() randomly fails too.
 		assertFalse(TestUtils.getPropertyValue(manager, "async", Boolean.class));
+	}
+
+	@Test
+	public void testUriProperties() {
+		Logger logger = LogManager.getLogger("bar");
+		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("rabbitmq_uri");
+		Object manager = TestUtils.getPropertyValue(appender, "manager");
+		assertEquals("amqp://guest:guest@localhost:5672/", TestUtils.getPropertyValue(manager, "uri").toString());
+
+		assertNull(TestUtils.getPropertyValue(manager, "host"));
+		assertNull(TestUtils.getPropertyValue(manager, "port"));
+		assertNull(TestUtils.getPropertyValue(manager, "username"));
+		assertNull(TestUtils.getPropertyValue(manager, "password"));
+		assertNull(TestUtils.getPropertyValue(manager, "virtualHost"));
 	}
 
 	@Test
@@ -289,11 +306,11 @@ public class AmqpAppenderTests {
 	}
 
 	private void verifyDefaultHostProperties(RabbitConnectionFactoryBean bean) {
-		verify(bean).setHost("localhost");
-		verify(bean).setPort(5672);
-		verify(bean).setUsername("guest");
-		verify(bean).setPassword("guest");
-		verify(bean).setVirtualHost("/");
+		verify(bean, never()).setHost("localhost");
+		verify(bean, never()).setPort(5672);
+		verify(bean, never()).setUsername("guest");
+		verify(bean, never()).setPassword("guest");
+		verify(bean, never()).setVirtualHost("/");
 	}
 
 }

@@ -15,10 +15,22 @@
 			async="false"
 			senderPoolSize="3" maxSenderRetries="5">
 		</RabbitMQ>
+		<RabbitMQ name="rabbitmq_uri"
+			uri="amqp://guest:guest@localhost:5672/"
+			exchange="log4j2Test_uri" exchangeType="fanout" declareExchange="true" durable="true" autoDelete="false"
+			applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
+			contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
+			charset="UTF-8"
+			clientConnectionProperties="bar:foo,baz:qux"
+			senderPoolSize="3" maxSenderRetries="5">
+		</RabbitMQ>
 	</Appenders>
 	<Loggers>
 		<Logger name="foo" level="info">
 			<AppenderRef ref="rabbitmq" />
+		</Logger>
+		<Logger name="bar" level="info">
+			<AppenderRef ref="rabbitmq_uri" />
 		</Logger>
 		<Root>
 			<AppenderRef ref="STDOUT" />

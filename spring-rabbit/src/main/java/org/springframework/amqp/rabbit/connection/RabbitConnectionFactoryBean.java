@@ -68,6 +68,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * @author Heath Abelson
  * @author Arnaud Cogoluègnes
  * @author Hareendran
+ * @author Dominique Villard
  *
  * @since 1.4
  */
@@ -143,9 +144,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * This would be used if useSSL is set to true and should only be used on dev or Qa regions
 	 * skipServerCertificateValidation should <b> never be set to true in production</b>
 	 * @param skipServerCertificateValidation Flag to override Server side certificate checks;
-	 * if set to {@code true} {@link com.rabbitmq.client.NullTrustManager} would be used.
+	 * if set to {@code true} {@link com.rabbitmq.client.TrustEverythingTrustManager} would be used.
 	 * @since 1.6.6
-	 * @see com.rabbitmq.client.NullTrustManager
+	 * @see com.rabbitmq.client.TrustEverythingTrustManager
 	 */
 	public void setSkipServerCertificateValidation(boolean skipServerCertificateValidation) {
 		this.skipServerCertificateValidation = skipServerCertificateValidation;
@@ -429,24 +430,28 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * @param uri the uri.
-	 * @throws URISyntaxException invalid syntax.
-	 * @throws NoSuchAlgorithmException no such algorithm.
-	 * @throws KeyManagementException key management.
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.net.URI)
 	 */
-	public void setUri(URI uri) throws URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-		this.connectionFactory.setUri(uri);
+	public void setUri(URI uri) {
+		try {
+			this.connectionFactory.setUri(uri);
+		}
+		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+			throw new IllegalArgumentException("Unable to set uri", e);
+		}
 	}
 
 	/**
 	 * @param uriString the uri.
-	 * @throws URISyntaxException invalid syntax.
-	 * @throws NoSuchAlgorithmException no such algorithm.
-	 * @throws KeyManagementException key management.
 	 * @see com.rabbitmq.client.ConnectionFactory#setUri(java.lang.String)
 	 */
-	public void setUri(String uriString) throws URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-		this.connectionFactory.setUri(uriString);
+	public void setUri(String uriString) {
+		try {
+			this.connectionFactory.setUri(uriString);
+		}
+		catch (URISyntaxException | NoSuchAlgorithmException | KeyManagementException e) {
+			throw new IllegalArgumentException("Unable to set uri", e);
+		}
 	}
 
 	/**
