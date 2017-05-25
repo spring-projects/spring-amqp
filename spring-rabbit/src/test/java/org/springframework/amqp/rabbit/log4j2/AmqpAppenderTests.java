@@ -16,9 +16,11 @@
 
 package org.springframework.amqp.rabbit.log4j2;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -101,11 +103,13 @@ public class AmqpAppenderTests {
 		Message received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
-		assertEquals("foo\n", new String(received.getBody()));
+		// Cross-platform string comparison. Windows expects \n\r in the end of line
+		assertThat(new String(received.getBody()), startsWith("foo"));
 		received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
-		assertEquals("bar\n", new String(received.getBody()));	}
+		assertThat(new String(received.getBody()), startsWith("bar"));
+	}
 
 	@Test
 	public void testProperties() {
