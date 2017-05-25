@@ -308,6 +308,11 @@ public class AmqpAppender extends AbstractAppender {
 		}
 	}
 
+	public void stop() {
+		super.stop();
+		this.manager.release();
+	}
+
 	/**
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
