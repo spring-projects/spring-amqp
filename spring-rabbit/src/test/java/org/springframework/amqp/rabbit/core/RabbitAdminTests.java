@@ -29,13 +29,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willReturn;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -64,6 +66,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
@@ -80,6 +83,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.support.GenericApplicationContext;
 
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 
@@ -203,8 +207,8 @@ public class RabbitAdminTests {
 			rabbitAdmin.setApplicationContext(ctx);
 			rabbitAdmin.afterPropertiesSet();
 			Log logger = spy(TestUtils.getPropertyValue(rabbitAdmin, "logger", Log.class));
-			doReturn(true).when(logger).isInfoEnabled();
-			doNothing().when(logger).info(anyString());
+			willReturn(true).given(logger).isInfoEnabled();
+			willDoNothing().given(logger).info(anyString());
 			new DirectFieldAccessor(rabbitAdmin).setPropertyValue("logger", logger);
 			connectionFactory.createConnection().close(); // force declarations
 			ArgumentCaptor<String> log = ArgumentCaptor.forClass(String.class);
@@ -284,7 +288,7 @@ public class RabbitAdminTests {
 		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(
 				com.rabbitmq.client.ConnectionFactory.class);
 		TimeoutException toBeThrown = new TimeoutException("test");
-		doThrow(toBeThrown).when(rabbitConnectionFactory).newConnection(any(ExecutorService.class), anyString());
+		willThrow(toBeThrown).given(rabbitConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
 		RabbitAdmin admin = new RabbitAdmin(ccf);
@@ -307,6 +311,32 @@ public class RabbitAdminTests {
 		assertSame(toBeThrown, events.get(3).getThrowable().getCause());
 
 		assertSame(events.get(3), admin.getLastDeclarationExceptionEvent());
+	}
+
+	@Test
+	public void testWithinInvoke() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		given(connectionFactory.createConnection()).willReturn(connection);
+		Channel channel1 = mock(Channel.class);
+		Channel channel2 = mock(Channel.class);
+		given(connection.createChannel(false)).willReturn(channel1, channel2);
+		DeclareOk declareOk = mock(DeclareOk.class);
+		given(channel1.queueDeclare()).willReturn(declareOk);
+		given(declareOk.getQueue()).willReturn("foo");
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(template);
+		template.invoke(o -> {
+			admin.declareQueue();
+			admin.declareQueue();
+			admin.declareQueue();
+			admin.declareQueue();
+			return null;
+		});
+		verify(connection, times(1)).createChannel(false);
+		verify(channel1, times(4)).queueDeclare();
+		verify(channel1, times(1)).close();
+		verifyZeroInteractions(channel2);
 	}
 
 	@Configuration

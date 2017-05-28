@@ -961,6 +961,8 @@ Boolean result = this.template.invoke(t -> {
 });
 ----
 
+If you wish `RabbitAdmin` operations to be invoked on the same channel, within the scope of the `OperationsCallback`, the admin must have been constructed using the same `RabbitTemplate` that was used for the `invoke` operation.
+
 NOTE: The above discussion is moot if the template operations are already performed within the scope of an existing transaction.
 For example, when running on a transacted listener container thread and performing operations on a transacted template.
 In that case, the operations will be performed on that channel and committed when the thread returns to the container;
@@ -3249,6 +3251,8 @@ public interface AmqpAdmin {
 
 }
 ----
+
+Also see <<scoped-operations>>.
 
 The `getQueueProperties()` method returns some limited information about the queue (message count and consumer count).
 The keys for the properties returned are available as constants in the `RabbitTemplate` (`QUEUE_NAME`,
