@@ -111,10 +111,28 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
 
+	/**
+	 * Construct an instance using the provided {@link ConnectionFactory}.
+	 * @param rabbitTemplate the template.
+	 */
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
-		this.connectionFactory = connectionFactory;
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
+		this.connectionFactory = connectionFactory;
 		this.rabbitTemplate = new RabbitTemplate(connectionFactory);
+	}
+
+	/**
+	 * Construct an instance using the provided {@link RabbitTemplate}. Use this constructor
+	 * when, for example, you want the admin operations to be performed within the scope
+	 * of the provided template's {@code invoke()} method.
+	 * @param rabbitTemplate the template.
+	 * @since 2.0
+	 */
+	public RabbitAdmin(RabbitTemplate rabbitTemplate) {
+		Assert.notNull(rabbitTemplate, "RabbitTemplate must not be null");
+		Assert.notNull(rabbitTemplate.getConnectionFactory(), "RabbitTemplate's ConnectionFactory must not be null");
+		this.connectionFactory = rabbitTemplate.getConnectionFactory();
+		this.rabbitTemplate = rabbitTemplate;
 	}
 
 	public void setAutoStartup(boolean autoStartup) {
