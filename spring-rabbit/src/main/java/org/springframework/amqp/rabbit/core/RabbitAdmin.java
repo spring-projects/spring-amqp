@@ -113,7 +113,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	/**
 	 * Construct an instance using the provided {@link ConnectionFactory}.
-	 * @param rabbitTemplate the template.
+	 * @param connectionFactory the connection factory - must not be null.
 	 */
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
 		Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
@@ -122,10 +122,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	/**
-	 * Construct an instance using the provided {@link RabbitTemplate}. Use this constructor
-	 * when, for example, you want the admin operations to be performed within the scope
-	 * of the provided template's {@code invoke()} method.
-	 * @param rabbitTemplate the template.
+	 * Construct an instance using the provided {@link RabbitTemplate}. Use this
+	 * constructor when, for example, you want the admin operations to be performed within
+	 * the scope of the provided template's {@code invoke()} method.
+	 * @param rabbitTemplate the template - must not be null and must have a connection
+	 * factory.
 	 * @since 2.0
 	 */
 	public RabbitAdmin(RabbitTemplate rabbitTemplate) {
