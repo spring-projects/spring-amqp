@@ -99,6 +99,7 @@ public class ContainerInitializationTests {
 		admin.deleteQueue(TEST_MISMATCH);
 		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		latches[2].countDown(); // let container thread continue to enable restart
 		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
@@ -117,6 +118,7 @@ public class ContainerInitializationTests {
 		admin.deleteQueue(TEST_MISMATCH);
 		assertTrue(latches[0].await(20, TimeUnit.SECONDS));
 		admin.declareQueue(new Queue(TEST_MISMATCH, false, false, true));
+		latches[2].countDown(); // let container thread continue to enable restart
 		assertTrue(latches[1].await(20, TimeUnit.SECONDS));
 		SimpleMessageListenerContainer container = context.getBean(SimpleMessageListenerContainer.class);
 		int n = 0;
@@ -131,15 +133,22 @@ public class ContainerInitializationTests {
 		CachingConnectionFactory cf = context.getBean(CachingConnectionFactory.class);
 		final CountDownLatch cancelLatch = new CountDownLatch(1);
 		final CountDownLatch mismatchLatch = new CountDownLatch(1);
+		final CountDownLatch preventContainerRedeclareQueueLatch = new CountDownLatch(1);
 		cf.addChannelListener((ShutDownChannelListener) s -> {
 			if (RabbitUtils.isNormalChannelClose(s)) {
 				cancelLatch.countDown();
+				try {
+					preventContainerRedeclareQueueLatch.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			}
 			else if (RabbitUtils.isMismatchedQueueArgs(s)) {
 				mismatchLatch.countDown();
 			}
 		});
-		return new CountDownLatch[] { cancelLatch, mismatchLatch };
+		return new CountDownLatch[] { cancelLatch, mismatchLatch, preventContainerRedeclareQueueLatch };
 	}
 
 	@Configuration
