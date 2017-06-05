@@ -111,4 +111,10 @@ public abstract class AmqpHeaders {
 	 */
 	public static final String CONSUMER_QUEUE = PREFIX + "consumerQueue";
 
+	/**
+	 * The received raw message before conversion; this header usually only appears in
+	 * an {@link org.springframework.messaging.support.ErrorMessage}.
+	 */
+	public static final String RAW_MESSAGE = PREFIX + "raw_message";
+
 }
