@@ -103,7 +103,7 @@ subprojects { subproject ->
 		rabbitmqHttpClientVersion = '1.1.1.RELEASE'
 		slf4jVersion = "1.7.21"
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.7.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.9.RELEASE'
 
 		springRetryVersion = '1.2.0.RELEASE'
 	}
@@ -115,7 +115,7 @@ subprojects { subproject ->
 	}
 
 	jacoco {
-		toolVersion = "0.7.7.201606060606"
+		toolVersion = "0.7.8"
 	}
 
 	// dependencies that are common across all java projects
