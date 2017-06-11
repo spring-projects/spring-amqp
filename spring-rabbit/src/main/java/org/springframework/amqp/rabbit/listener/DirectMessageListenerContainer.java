@@ -586,9 +586,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						"Exclusive consumer failure", e.getCause());
 				publishConsumerFailedEvent("Consumer raised exception, attempting restart", false, e);
 			}
-			else if (this.logger.isDebugEnabled()) {
-				this.logger.debug(
-						"Queue not present or basicConsume failed, scheduling consumer " + consumer + " for restart");
+			else if (e.getCause() instanceof ShutdownSignalException
+					&& RabbitUtils.isPassiveDeclarationChannelClose((ShutdownSignalException) e.getCause())) {
+				this.logger.error("Queue not present, scheduling consumer " + consumer + " for restart", e);
+			}
+			else if (this.logger.isWarnEnabled()) {
+				this.logger.warn("basicConsume failed, scheduling consumer " + consumer + " for restart", e);
 			}
 			this.consumersToRestart.add(consumer);
 			consumer = null;

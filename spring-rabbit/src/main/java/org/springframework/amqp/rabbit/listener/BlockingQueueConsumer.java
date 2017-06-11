@@ -624,7 +624,7 @@ public class BlockingQueueConsumer {
 			}
 			catch (IOException e) {
 				if (logger.isWarnEnabled()) {
-					logger.warn("Failed to declare queue:" + queueName);
+					logger.warn("Failed to declare queue: " + queueName);
 				}
 				if (!this.channel.isOpen()) {
 					throw new AmqpIOException(e);
