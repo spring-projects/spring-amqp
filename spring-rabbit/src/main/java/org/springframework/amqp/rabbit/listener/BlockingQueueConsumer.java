@@ -632,6 +632,9 @@ public class BlockingQueueConsumer {
 				if (failures == null) {
 					failures = new DeclarationException(e);
 				}
+				else {
+					failures.addSuppressed(e);
+				}
 				failures.addFailedQueue(queueName);
 			}
 		}
