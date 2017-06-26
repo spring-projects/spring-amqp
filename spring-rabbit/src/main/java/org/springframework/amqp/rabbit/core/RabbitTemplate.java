@@ -1834,6 +1834,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			else {
 				RabbitUtils.closeChannel(channel);
+				if (!(channel instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
+					RabbitUtils.isPhysicalCloseRequired();
+				}
 				RabbitUtils.closeConnection(connection);
 			}
 		}

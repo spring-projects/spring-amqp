@@ -661,6 +661,9 @@ public class BlockingQueueConsumer {
 		}
 		RabbitUtils.setPhysicalCloseRequired(true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
+		if (!(this.channel instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
+			RabbitUtils.isPhysicalCloseRequired();
+		}
 		this.deliveryTags.clear();
 		this.consumer = null;
 		this.queue.clear(); // in case we still have a client thread blocked
@@ -839,6 +842,12 @@ public class BlockingQueueConsumer {
 						}
 						catch (TimeoutException e) {
 							// no-op
+						}
+						finally {
+							if (!(getChannel() instanceof ChannelProxy)) {
+								// clear the TL flag if the channel is not a proxy
+								RabbitUtils.isPhysicalCloseRequired();
+							}
 						}
 					}
 				}

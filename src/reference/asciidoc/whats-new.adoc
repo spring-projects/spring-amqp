@@ -78,6 +78,12 @@ This property only applies when using `basicGet` (e.g. from `RabbitTemplate.rece
 Message requeue on transaction rollback is now consistent, regardless of whether or not a transaction manager is configured.
 See <<transaction-rollback>> for more information.
 
+====== Shutdown Behavior
+
+If the container threads do not respond to a shutdown within `shutdownTimeout`, the channel(s) will be forced closed, by default.
+See <<containerAttributes>> for more information.
+
+
 ===== Connection Factory Changes
 
 The connection and channel listener interfaces now provide a mechanism to obtain information about exceptions.

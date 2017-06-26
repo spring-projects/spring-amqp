@@ -42,6 +42,7 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -610,10 +611,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
+		LinkedList<SimpleConsumer> canceledConsumers = null;
 		boolean waitForConsumers = false;
 		synchronized (this.consumersMonitor) {
 			if (this.started || this.aborted) {
-				actualShutDown();
+				// Copy in the same order to avoid ConcurrentModificationException during remove in the cancelConsumer().
+				canceledConsumers = new LinkedList<>(this.consumers);
+				actualShutDown(canceledConsumers);
 				waitForConsumers = true;
 			}
 		}
@@ -624,6 +628,15 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				else {
 					this.logger.info("Consumers not finished.");
+					if (isForceCloseChannel()) {
+						canceledConsumers.forEach(consumer -> {
+							String eventMessage = "Closing channel for unresponsive consumer: " + consumer;
+							if (logger.isWarnEnabled()) {
+								logger.warn(eventMessage);
+							}
+							consumer.cancelConsumer(eventMessage);
+						});
+					}
 				}
 			}
 			catch (InterruptedException e) {
@@ -641,12 +654,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	/**
 	 * Must hold this.consumersMonitor.
+	 * @param consumers a copy of this.consumers.
 	 */
-	private void actualShutDown() {
+	private void actualShutDown(List<SimpleConsumer> consumers) {
 		Assert.state(getTaskExecutor() != null, "Cannot shut down if not initialized");
 		this.logger.debug("Shutting down");
-		// Copy in the same order to avoid ConcurrentModificationException during remove in the cancelConsumer().
-		new LinkedList<>(this.consumers).forEach(this::cancelConsumer);
+		consumers.forEach(this::cancelConsumer);
 		this.consumers.clear();
 		this.consumersByQueue.clear();
 		this.logger.debug("All consumers canceled");
@@ -985,6 +998,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		private void finalizeConsumer() {
 			RabbitUtils.setPhysicalCloseRequired(true);
 			RabbitUtils.closeChannel(getChannel());
+			if (!(getChannel() instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
+				RabbitUtils.isPhysicalCloseRequired();
+			}
 			RabbitUtils.closeConnection(this.connection);
 			DirectMessageListenerContainer.this.cancellationLock.release(this);
 			consumerRemoved(this);
