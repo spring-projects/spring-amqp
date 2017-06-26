@@ -1815,7 +1815,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
 				}
-				RabbitUtils.setPhysicalCloseRequired(true);
+				RabbitUtils.setPhysicalCloseRequired(channel, true);
 				this.dedicatedChannels.set(channel);
 			}
 			catch (RuntimeException e) {

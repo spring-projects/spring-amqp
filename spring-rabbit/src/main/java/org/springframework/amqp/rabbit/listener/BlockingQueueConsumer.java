@@ -659,7 +659,7 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Closing Rabbit Channel: " + this.channel);
 		}
-		RabbitUtils.setPhysicalCloseRequired(true);
+		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 		this.deliveryTags.clear();
 		this.consumer = null;
@@ -829,7 +829,7 @@ public class BlockingQueueConsumer {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
-						RabbitUtils.setPhysicalCloseRequired(true);
+						RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
 						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
