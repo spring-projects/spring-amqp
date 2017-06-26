@@ -105,6 +105,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private String lookupKeyQualifier = "";
 
+	private boolean forceCloseChannel;
 	/**
 	 * <p>
 	 * Flag controlling the behaviour of the container with respect to message acknowledgement. The most common usage is
@@ -415,6 +416,25 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setLookupKeyQualifier(String lookupKeyQualifier) {
 		this.lookupKeyQualifier = lookupKeyQualifier;
+	}
+
+	/**
+	 * Force close the channel if the consumer threads don't respond to a shutdown.
+	 * @return true to force close.
+	 * @since 1.7.4
+	 */
+	protected boolean isForceCloseChannel() {
+		return this.forceCloseChannel;
+	}
+
+	/**
+	 * Set to true to force close the channel if the consumer threads don't respond to a
+	 * shutdown. Default: false (will default to true in 2.0).
+	 * @param forceCloseChannel true to force close.
+	 * @since 1.7.4
+	 */
+	public void setForceCloseChannel(boolean forceCloseChannel) {
+		this.forceCloseChannel = forceCloseChannel;
 	}
 
 	/**

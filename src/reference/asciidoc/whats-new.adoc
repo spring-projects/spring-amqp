@@ -29,6 +29,12 @@ See <<logging>> for information about the available log appenders.
 The minimum Spring Retry version is now `1.2`.
 The framework is no longer compatible with previous versions.
 
+====== Shutdown Behavior
+
+You can now set `forceCloseChannel` to `true` so that, if the container threads do not respond to a shutdown within `shutdownTimeout`, the channel(s) will be forced closed,
+causing any unacked messages to be requeued.
+See <<containerAttributes>> for more information.
+
 ===== FasterXML Jackson upgrade
 
 The minimum Jackson version is now `2.8`.

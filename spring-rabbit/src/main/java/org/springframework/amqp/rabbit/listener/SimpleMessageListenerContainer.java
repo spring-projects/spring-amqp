@@ -17,11 +17,13 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -865,12 +867,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		try {
+			List<BlockingQueueConsumer> canceledConsumers = new ArrayList<BlockingQueueConsumer>();
 			synchronized (this.consumersMonitor) {
 				if (this.consumers != null) {
 					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
 					while (consumerIterator.hasNext()) {
 						BlockingQueueConsumer consumer = consumerIterator.next();
 						consumer.basicCancel(true);
+						canceledConsumers.add(consumer);
 						consumerIterator.remove();
 					}
 				}
@@ -882,6 +886,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				logger.info("Workers not finished.");
+				if (isForceCloseChannel()) {
+					for (BlockingQueueConsumer consumer : canceledConsumers) {
+						consumer.stop();
+					}
+				}
 			}
 		}
 		catch (InterruptedException e) {

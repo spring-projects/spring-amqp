@@ -3795,7 +3795,15 @@ This will be increased, if necessary, to match the `txSize`.
 | When a container shuts down (e.g.
 if its enclosing `ApplicationContext` is closed) it waits for in-flight messages to be processed up to this limit.
 Defaults to 5 seconds.
-After the limit is reached, if the channel is not transacted messages will be discarded.
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
+| forceCloseChannel
+(N/A)
+
+| If the consumers don't respond to a shutdown within `shutdownTimeout`, if this is `true`, the channel will be closed, causing any unacked messages to be requeued.
+Default `false`.
 
 | txSize
 (transaction-size)

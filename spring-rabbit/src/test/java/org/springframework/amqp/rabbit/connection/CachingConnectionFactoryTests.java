@@ -516,13 +516,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 					.availablePermits());
 
 		channel1 = con.createChannel(false);
-		RabbitUtils.setPhysicalCloseRequired(true);
+		RabbitUtils.setPhysicalCloseRequired(channel1, true);
 		assertEquals(0,
 				((Semaphore) TestUtils.getPropertyValue(ccf, "checkoutPermits", Map.class).values().iterator().next())
 					.availablePermits());
 
 		channel1.close();
-		RabbitUtils.setPhysicalCloseRequired(false);
+		RabbitUtils.setPhysicalCloseRequired(channel1, false);
 		con.close();
 		verify(mockChannel1).close();
 		verify(mockConnection1, never()).close();
@@ -1386,7 +1386,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			Connection con = ccf.createConnection();
 
 			Channel channel = con.createChannel(false);
-			RabbitUtils.setPhysicalCloseRequired(true);
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
 			when(mockChannel.isOpen()).thenReturn(false);
 			final CountDownLatch physicalCloseLatch = new CountDownLatch(1);
 			doAnswer(i -> {
@@ -1399,7 +1399,6 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 			assertTrue(physicalCloseLatch.await(10, TimeUnit.SECONDS));
 		}
 		finally {
-			RabbitUtils.setPhysicalCloseRequired(false);
 			executor.shutdownNow();
 		}
 	}
