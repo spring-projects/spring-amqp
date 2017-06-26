@@ -173,10 +173,13 @@ public abstract class RabbitUtils {
 
 	/**
 	 * Sets a ThreadLocal indicating the channel MUST be physically closed.
-	 * @param b true if the channel must be closed.
+	 * @param channel the channel.
+	 * @param b true if the channel must be closed (if it's a proxy).
 	 */
-	public static void setPhysicalCloseRequired(boolean b) {
-		physicalCloseRequired.set(b);
+	public static void setPhysicalCloseRequired(Channel channel, boolean b) {
+		if (channel instanceof ChannelProxy) {
+			physicalCloseRequired.set(b);
+		}
 	}
 
 	/**

@@ -42,7 +42,6 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -996,11 +995,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		private void finalizeConsumer() {
-			RabbitUtils.setPhysicalCloseRequired(true);
+			RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 			RabbitUtils.closeChannel(getChannel());
-			if (!(getChannel() instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
-				RabbitUtils.isPhysicalCloseRequired();
-			}
 			RabbitUtils.closeConnection(this.connection);
 			DirectMessageListenerContainer.this.cancellationLock.release(this);
 			consumerRemoved(this);

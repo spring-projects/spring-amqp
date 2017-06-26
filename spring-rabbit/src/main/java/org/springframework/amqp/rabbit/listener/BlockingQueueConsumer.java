@@ -659,11 +659,8 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Closing Rabbit Channel: " + this.channel);
 		}
-		RabbitUtils.setPhysicalCloseRequired(true);
+		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
-		if (!(this.channel instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
-			RabbitUtils.isPhysicalCloseRequired();
-		}
 		this.deliveryTags.clear();
 		this.consumer = null;
 		this.queue.clear(); // in case we still have a client thread blocked
@@ -832,7 +829,7 @@ public class BlockingQueueConsumer {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
 					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
-						RabbitUtils.setPhysicalCloseRequired(true);
+						RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
 						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
@@ -842,12 +839,6 @@ public class BlockingQueueConsumer {
 						}
 						catch (TimeoutException e) {
 							// no-op
-						}
-						finally {
-							if (!(getChannel() instanceof ChannelProxy)) {
-								// clear the TL flag if the channel is not a proxy
-								RabbitUtils.isPhysicalCloseRequired();
-							}
 						}
 					}
 				}

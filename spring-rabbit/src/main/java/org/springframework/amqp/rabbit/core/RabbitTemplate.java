@@ -1815,7 +1815,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
 				}
-				RabbitUtils.setPhysicalCloseRequired(true);
+				RabbitUtils.setPhysicalCloseRequired(channel, true);
 				this.dedicatedChannels.set(channel);
 			}
 			catch (RuntimeException e) {
@@ -1834,9 +1834,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			else {
 				RabbitUtils.closeChannel(channel);
-				if (!(channel instanceof ChannelProxy)) { // clear the TL flag if the channel is not a proxy
-					RabbitUtils.isPhysicalCloseRequired();
-				}
 				RabbitUtils.closeConnection(connection);
 			}
 		}
