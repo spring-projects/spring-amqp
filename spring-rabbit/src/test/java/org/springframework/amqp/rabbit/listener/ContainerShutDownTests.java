@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.AfterClass;
 import org.junit.ClassRule;
@@ -67,8 +68,9 @@ public class ContainerShutDownTests {
 		container.setShutdownTimeout(500);
 		container.setQueueNames("test.shutdown");
 		final CountDownLatch latch = new CountDownLatch(1);
+		final AtomicBoolean testEnded = new AtomicBoolean();
 		container.setMessageListener(m -> {
-			while (true) {
+			while (!testEnded.get()) {
 				try {
 					latch.countDown();
 					Thread.sleep(100);
@@ -89,6 +91,7 @@ public class ContainerShutDownTests {
 		assertThat(channels.size(), equalTo(1));
 
 		cf.destroy();
+		testEnded.set(true);
 	}
 
 }
