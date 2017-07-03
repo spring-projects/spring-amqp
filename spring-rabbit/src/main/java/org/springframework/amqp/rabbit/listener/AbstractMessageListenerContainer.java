@@ -276,11 +276,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.queueNames.toArray(new String[this.queueNames.size()]);
 	}
 
-	protected String[] getRequiredQueueNames() {
-		Assert.state(this.queueNames.size() > 0, "Queue names must not be empty.");
-		return getQueueNames();
-	}
-
 	protected Set<String> getQueueNamesAsSet() {
 		return new HashSet<String>(this.queueNames);
 	}
