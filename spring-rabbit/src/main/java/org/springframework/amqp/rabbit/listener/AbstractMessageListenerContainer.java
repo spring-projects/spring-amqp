@@ -170,6 +170,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.queueNames.toArray(new String[this.queueNames.size()]);
 	}
 
+	/**
+	 * @deprecated since 1.7.x; you can now start the container without queues.
+	 * @return the queue(s).
+	 * @throws IllegalStateException if no queues are defined.
+	 */
+	@Deprecated
 	protected String[] getRequiredQueueNames() {
 		Assert.state(this.queueNames.size() > 0, "Queue names must not be empty.");
 		return getQueueNames();
