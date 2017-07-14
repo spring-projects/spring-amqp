@@ -31,6 +31,8 @@ import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4.2
  *
  */
@@ -39,8 +41,10 @@ public class ContentTypeDelegatingMessageConverterTests {
 	@Test
 	public void testDelegationOutbound() {
 		ContentTypeDelegatingMessageConverter converter = new ContentTypeDelegatingMessageConverter();
-		converter.addDelegate("foo/bar", new Jackson2JsonMessageConverter());
-		converter.addDelegate(MessageProperties.CONTENT_TYPE_JSON, new Jackson2JsonMessageConverter());
+		Jackson2JsonMessageConverter messageConverter =
+				new Jackson2JsonMessageConverter(ContentTypeDelegatingMessageConverterTests.class.getPackage().getName());
+		converter.addDelegate("foo/bar", messageConverter);
+		converter.addDelegate(MessageProperties.CONTENT_TYPE_JSON, messageConverter);
 		MessageProperties props = new MessageProperties();
 		Foo foo = new Foo();
 		foo.setFoo("bar");
