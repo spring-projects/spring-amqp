@@ -44,10 +44,12 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Gary Russell
+ * @author Artem Bilan
  */
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultJackson2JavaTypeMapperTests {
+
 	@Spy
 	DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 

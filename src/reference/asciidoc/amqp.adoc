@@ -2342,7 +2342,7 @@ for convenience.
 If you inject a custom type mapper, you should set the property on the mapper instead.
 
 NOTE: When converting from the `Message`, an incoming `MessageProperties.getContentType()` must be JSON-compliant (the logic `contentType.contains("json")` is used).
-Otherwise, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is - as a `byte[]``.
+Otherwise, a `WARN` log message `Could not convert incoming message with content-type [...]`, is emitted and `message.getBody()` is returned as is - as a `byte[]`.
 So, to meet the `Jackson2JsonMessageConverter` requirements on the consumer side, the producer must add the `contentType` message property, e.g. as `application/json`, `text/x-json` or simply use the `Jackson2JsonMessageConverter`, which will set the header automatically.
 
 [source, java]
@@ -2379,6 +2379,12 @@ This type inference can only be achieved when the `@RabbitListener` annotation i
 With class-level `@RabbitListener`, the converted type is used to select which `@RabbitHandler` method to invoke.
 For this reason, the infrastructure provides the `targetObject` message property which can be used by a custom
 converter to determine the type.
+====
+
+[IMPORTANT]
+====
+Starting with _version 1.6.11_, the `Jackson2JsonMessageConverter` and, therefore, `DefaultJackson2JavaTypeMapper` (`DefaultClassMapper`) provide the `trustedPackages` option to overcome https://pivotal.io/security/cve-2017-4995[Serialization Gadgets] vulnerability.
+By default, for backward compatiblity the `Jackson2JsonMessageConverter` trusts all packages - use `*` for the option.
 ====
 
 ===== MarshallingMessageConverter
