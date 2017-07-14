@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Spy;
@@ -44,10 +45,12 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Gary Russell
+ * @author Artem Bilan
  */
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultJackson2JavaTypeMapperTests {
+
 	@Spy
 	DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
 
@@ -58,6 +61,11 @@ public class DefaultJackson2JavaTypeMapperTests {
 
 	@SuppressWarnings("rawtypes")
 	private final Class<HashMap> mapClass = HashMap.class;
+
+	@Before
+	public void setup() {
+		this.javaTypeMapper.setTrustedPackages("org.springframework.amqp.support.converter");
+	}
 
 	@Test
 	public void getAnObjectWhenClassIdNotPresent() {
