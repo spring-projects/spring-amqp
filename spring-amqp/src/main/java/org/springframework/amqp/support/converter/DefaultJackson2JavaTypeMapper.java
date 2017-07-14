@@ -16,6 +16,11 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -35,7 +40,31 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 		implements Jackson2JavaTypeMapper, ClassMapper {
 
+	private static final List<String> TRUSTED_PACKAGES =
+			Arrays.asList(
+					"java.util",
+					"java.lang"
+			);
+
+	private final Set<String> trustedPackages = new LinkedHashSet<String>(TRUSTED_PACKAGES);
+
 	private volatile TypePrecedence typePrecedence = TypePrecedence.INFERRED;
+
+
+	/**
+	 * Construct an instance that trusts all packages.
+	 */
+	public DefaultJackson2JavaTypeMapper() {
+		this("*");
+	}
+
+	/**
+	 * Construct an instance that trusts certain packages, "*" means all.
+	 * @param trustedPackages the packages to trust.
+	 */
+	public DefaultJackson2JavaTypeMapper(String... trustedPackages) {
+		setTrustedPackages(trustedPackages);
+	}
 
 	/**
 	 * Return the precedence.
@@ -70,6 +99,29 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	public void setTypePrecedence(TypePrecedence typePrecedence) {
 		Assert.notNull(typePrecedence, "'typePrecedence' cannot be null");
 		this.typePrecedence = typePrecedence;
+	}
+
+	/**
+	 * Specify a set of packages to trust during deserialization.
+	 * The asterisk ({@code *}) means trust all.
+	 * @param trustedPackages the trusted Java packages for deserialization
+	 * @since 1.6.11
+	 */
+	public final void setTrustedPackages(String... trustedPackages) {
+		if (trustedPackages != null) {
+			for (String whiteListClass : trustedPackages) {
+				if ("*".equals(whiteListClass)) {
+					this.trustedPackages.clear();
+					break;
+				}
+				else {
+					if (this.trustedPackages.size() == 0) {
+						this.trustedPackages.addAll(TRUSTED_PACKAGES);
+					}
+					this.trustedPackages.add(whiteListClass);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -112,17 +164,39 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 		if (getIdClassMapping().containsKey(classId)) {
 			return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
 		}
+		else {
+			try {
+				if (!isTrustedPackage(classId)) {
+					throw new IllegalArgumentException("The class '" + classId + "' is not in the trusted packages: " +
+							this.trustedPackages + ". " +
+							"If you believe this class is safe to deserialize, please provide its name. " +
+							"If the serialization is only done by a trusted source, you can also enable trust all (*).");
+				}
+				else {
+					return TypeFactory.defaultInstance()
+							.constructType(ClassUtils.forName(classId, getClassLoader()));
+				}
+			}
+			catch (ClassNotFoundException e) {
+				throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);
+			}
+			catch (LinkageError e) {
+				throw new MessageConversionException("failed to resolve class name. Linkage error [" + classId + "]", e);
+			}
+		}
+	}
 
-		try {
-			return TypeFactory.defaultInstance()
-					.constructType(ClassUtils.forName(classId, getClassLoader()));
+	private boolean isTrustedPackage(String requestedType) {
+		if (!this.trustedPackages.isEmpty()) {
+			String packageName = ClassUtils.getPackageName(requestedType).replaceFirst("\\[L", "");
+			for (String trustedPackage : this.trustedPackages) {
+				if (packageName.equals(trustedPackage)) {
+					return true;
+				}
+			}
+			return false;
 		}
-		catch (ClassNotFoundException e) {
-			throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);
-		}
-		catch (LinkageError e) {
-			throw new MessageConversionException("failed to resolve class name. Linkage error [" + classId + "]", e);
-		}
+		return true;
 	}
 
 	@Override

@@ -52,23 +52,36 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	private boolean typeMapperSet;
 
 	/**
+	 * Construct with an internal {@link ObjectMapper} instance and trusted packed to all ({@code *}).
+	 * @since 1.6.11
+	 */
+	public Jackson2JsonMessageConverter() {
+		this("*");
+	}
+
+	/**
 	 * Construct with an internal {@link ObjectMapper} instance.
 	 * The {@link DeserializationFeature#FAIL_ON_UNKNOWN_PROPERTIES} is set to false on
 	 * the {@link ObjectMapper}.
+	 * @param trustedPackages the trusted Java packages for deserialization
+	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public Jackson2JsonMessageConverter() {
-		this.jsonObjectMapper = new ObjectMapper();
+	public Jackson2JsonMessageConverter(String... trustedPackages) {
+		this(new ObjectMapper(), trustedPackages);
 		this.jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
+	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.7.2
+	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper) {
+	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper, String... trustedPackages) {
 		Assert.notNull(jsonObjectMapper, "'jsonObjectMapper' must not be null");
 		this.jsonObjectMapper = jsonObjectMapper;
+		((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
 	}
 
 	public Jackson2JavaTypeMapper getJavaTypeMapper() {
@@ -83,7 +96,8 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 	/**
 	 * The {@link ObjectMapper} to use instead of using the default.
 	 * @param jsonObjectMapper the object mapper to set
-	 * @deprecated in favor of {@link Jackson2JsonMessageConverter(ObjectMapper)} constructor
+	 * @deprecated in favor of {@link #Jackson2JsonMessageConverter(ObjectMapper,
+	 * String...)} constructor
 	 */
 	@Deprecated
 	public void setJsonObjectMapper(ObjectMapper jsonObjectMapper) {
@@ -136,9 +150,10 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter {
 		}
 	}
 
-	/** Initialize default {@link ObjectMapper} instance.
-	 * @deprecated in favor of {@link Jackson2JsonMessageConverter(ObjectMapper)} constructor
-	 * with externally configured {@link ObjectMapper}.
+	/**
+	 * Initialize default {@link ObjectMapper} instance.
+	 * @deprecated in favor of {@link #Jackson2JsonMessageConverter(ObjectMapper,
+	 * String...)} constructor with externally configured {@link ObjectMapper}.
 	 */
 	@Deprecated
 	protected void initializeJsonObjectMapper() {
