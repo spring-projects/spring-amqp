@@ -80,7 +80,14 @@ public class ContainerShutDownTests {
 				}
 			}
 		});
+		final CountDownLatch startLatch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof AsyncConsumerStartedEvent) {
+				startLatch.countDown();
+			}
+		});
 		container.start();
+		assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend("test.shutdown", "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
