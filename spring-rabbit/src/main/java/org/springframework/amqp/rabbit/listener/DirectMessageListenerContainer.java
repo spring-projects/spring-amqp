@@ -604,6 +604,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				if (this.logger.isInfoEnabled()) {
 					this.logger.info(consumer + " started");
 				}
+				if (getApplicationEventPublisher() != null) {
+					getApplicationEventPublisher().publishEvent(new AsyncConsumerStartedEvent(this, consumer));
+				}
 			}
 		}
 	}
