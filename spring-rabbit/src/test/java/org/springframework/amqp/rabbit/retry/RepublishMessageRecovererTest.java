@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -30,11 +31,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 
 /**
  * @author James Carr
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.3
  */
 @RunWith(MockitoJUnitRunner.class)
@@ -111,5 +115,24 @@ public class RepublishMessageRecovererTest {
 		assertEquals("the.original.exchange",
 				message.getMessageProperties().getHeaders().get("x-original-exchange"));
 	}
+
+	@Test
+	public void shouldRemapDeliveryMode() {
+		message.getMessageProperties().setDeliveryMode(null);
+		message.getMessageProperties().setReceivedDeliveryMode(MessageDeliveryMode.PERSISTENT);
+		recoverer = new RepublishMessageRecoverer(amqpTemplate, "error") {
+
+			protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
+				message.getMessageProperties().setDeliveryMode(message.getMessageProperties().getReceivedDeliveryMode());
+				return null;
+			}
+
+		};
+
+		recoverer.recover(message, cause);
+
+		assertEquals(MessageDeliveryMode.PERSISTENT, message.getMessageProperties().getDeliveryMode());
+	}
+
 
 }

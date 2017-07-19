@@ -95,6 +95,7 @@ public class ListenerContainerParserTests {
 		assertEquals(Long.valueOf(5555), TestUtils.getPropertyValue(container, "recoveryBackOff.interval", Long.class));
 		assertFalse(TestUtils.getPropertyValue(container, "exclusive", Boolean.class));
 		assertFalse(TestUtils.getPropertyValue(container, "missingQueuesFatal", Boolean.class));
+		assertFalse(TestUtils.getPropertyValue(container, "possibleAuthenticationFailureFatal", Boolean.class));
 		assertTrue(TestUtils.getPropertyValue(container, "autoDeclare", Boolean.class));
 		assertEquals(5, TestUtils.getPropertyValue(container, "declarationRetries"));
 		assertEquals(1000L, TestUtils.getPropertyValue(container, "failedDeclarationRetryInterval"));

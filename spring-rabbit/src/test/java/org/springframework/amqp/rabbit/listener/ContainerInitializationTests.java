@@ -75,7 +75,7 @@ public class ContainerInitializationTests {
 		catch (ApplicationContextException e) {
 			assertThat(e.getCause().getCause(), instanceOf(IllegalStateException.class));
 			assertThat(e.getMessage(), containsString("When 'mismatchedQueuesFatal' is 'true', there must be "
-				+ "exactly one RabbitAdmin in the context or you must inject one into this container; found: 0"));
+					+ "exactly one RabbitAdmin in the context or you must inject one into this container; found: 0"));
 		}
 	}
 
