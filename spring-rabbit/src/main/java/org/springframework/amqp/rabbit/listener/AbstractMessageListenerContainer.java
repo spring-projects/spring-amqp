@@ -1037,6 +1037,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				this.lifecycleMonitor.notifyAll();
 			}
 			initializeProxy(this.delegate);
+			checkMissingQueuesFatalFromProperty();
+			checkPossibleAuthenticationFailureFatalFromProperty();
 			doInitialize();
 			if (!this.isExposeListenerChannel() && this.transactionManager != null) {
 				logger.warn("exposeListenerChannel=false is ignored when using a TransactionManager");
@@ -1090,10 +1092,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @throws Exception Any Exception.
 	 */
-	protected void doInitialize() throws Exception {
-		checkMissingQueuesFatalFromProperty();
-		checkPossibleAuthenticationFailureFatalFromProperty();
-	}
+	protected abstract void doInitialize() throws Exception;
 
 	/**
 	 * Close the registered invokers.
@@ -1634,15 +1633,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				if (applicationContext != null) {
 					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
 					String missingQueuesFatal = properties.getProperty("mlc.missing.queues.fatal");
+
+					if (!StringUtils.hasText(missingQueuesFatal)) {
+						missingQueuesFatal = properties.getProperty("smlc.missing.queues.fatal");
+					}
+
 					if (StringUtils.hasText(missingQueuesFatal)) {
 						setMissingQueuesFatal(Boolean.parseBoolean(missingQueuesFatal));
 					}
 				}
 			}
 			catch (BeansException be) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("No global properties bean");
-				}
+				logger.debug("No global properties bean");
 			}
 		}
 	}
@@ -1661,9 +1663,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 			catch (BeansException be) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("No global properties bean");
-				}
+				logger.debug("No global properties bean");
 			}
 		}
 	}

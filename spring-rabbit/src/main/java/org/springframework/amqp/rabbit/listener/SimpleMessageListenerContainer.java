@@ -410,6 +410,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return true;
 	}
 
+	@Override
+	protected void doInitialize() throws Exception {
+
+	}
+
 	@ManagedMetric(metricType = MetricType.GAUGE)
 	public int getActiveConsumerCount() {
 		return this.cancellationLock.getCount();

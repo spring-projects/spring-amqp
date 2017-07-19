@@ -265,9 +265,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			synchronized (this.consumersMonitor) {
 				checkStartState();
 				queueNames.map(this.consumersByQueue::remove)
-					.filter(Objects::nonNull)
-					.flatMap(Collection::stream)
-					.forEach(this::cancelConsumer);
+						.filter(Objects::nonNull)
+						.flatMap(Collection::stream)
+						.forEach(this::cancelConsumer);
 			}
 		}
 	}
@@ -308,8 +308,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doInitialize() throws Exception {
-		super.doInitialize();
-
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");
@@ -894,9 +892,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			/*
 			 * If we have a TX Manager, but no TX, act like we are locally transacted.
 			 */
-			boolean isLocallyTransacted = channelLocallyTransacted
-					|| (isChannelTransacted()
-							&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
+			boolean isLocallyTransacted =
+					channelLocallyTransacted ||
+							(isChannelTransacted() &&
+									TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 			try {
 				if (this.ackRequired) {
 					if (this.messagesPerAck > 1) {
