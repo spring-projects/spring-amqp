@@ -207,17 +207,14 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 			return this.defaultMapClass;
 		}
 		try {
-			Class<?> aClass = ClassUtils.forName(classId, getClass().getClassLoader());
-			Package packageToCheck = aClass.getPackage();
-			if (packageToCheck == null || isTrustedPackage(packageToCheck.getName())) {
-				return aClass;
-			}
-			else {
-				throw new IllegalArgumentException("The class with id '" + classId + "' and name '" +
-						aClass.getName() + "' is not in the trusted packages: " +
+			if (!isTrustedPackage(classId)) {
+				throw new IllegalArgumentException("The class '" + classId + "' is not in the trusted packages: " +
 						this.trustedPackages + ". " +
 						"If you believe this class is safe to deserialize, please provide its name. " +
 						"If the serialization is only done by a trusted source, you can also enable trust all (*).");
+			}
+			else {
+				return ClassUtils.forName(classId, getClass().getClassLoader());
 			}
 		}
 		catch (ClassNotFoundException e) {
@@ -230,16 +227,16 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 		}
 	}
 
-	private boolean isTrustedPackage(String packageName) {
+	private boolean isTrustedPackage(String requestedType) {
 		if (!this.trustedPackages.isEmpty()) {
+			String packageName = ClassUtils.getPackageName(requestedType).replaceFirst("\\[L", "");
 			for (String trustedPackage : this.trustedPackages) {
-				if (packageName.equals(trustedPackage) || packageName.startsWith(trustedPackage + ".")) {
+				if (packageName.equals(trustedPackage)) {
 					return true;
 				}
 			}
 			return false;
 		}
-
 		return true;
 	}
 

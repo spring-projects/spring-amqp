@@ -143,14 +143,21 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	}
 
 	private JavaType getClassIdType(String classId) {
-		JavaType javaType;
 		if (getIdClassMapping().containsKey(classId)) {
-			javaType = TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
+			return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
 		}
 		else {
 			try {
-				javaType = TypeFactory.defaultInstance()
-						.constructType(ClassUtils.forName(classId, getClassLoader()));
+				if (!isTrustedPackage(classId)) {
+					throw new IllegalArgumentException("The class '" + classId + "' is not in the trusted packages: " +
+							this.trustedPackages + ". " +
+							"If you believe this class is safe to deserialize, please provide its name. " +
+							"If the serialization is only done by a trusted source, you can also enable trust all (*).");
+				}
+				else {
+					return TypeFactory.defaultInstance()
+							.constructType(ClassUtils.forName(classId, getClassLoader()));
+				}
 			}
 			catch (ClassNotFoundException e) {
 				throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);
@@ -159,30 +166,18 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 				throw new MessageConversionException("failed to resolve class name. Linkage error [" + classId + "]", e);
 			}
 		}
-
-		Package packageToCheck = javaType.getRawClass().getPackage();
-		if (packageToCheck == null || isTrustedPackage(packageToCheck.getName())) {
-			return javaType;
-		}
-		else {
-			throw new IllegalArgumentException("The class with id '" + classId + "' and name '" +
-					javaType.getRawClass().getName() + "' is not in the trusted packages: " +
-					this.trustedPackages + ". " +
-					"If you believe this class is safe to deserialize, please provide its name. " +
-					"If the serialization is only done by a trusted source, you can also enable trust all (*).");
-		}
 	}
 
-	private boolean isTrustedPackage(String packageName) {
+	private boolean isTrustedPackage(String requestedType) {
 		if (!this.trustedPackages.isEmpty()) {
+			String packageName = ClassUtils.getPackageName(requestedType).replaceFirst("\\[L", "");
 			for (String trustedPackage : this.trustedPackages) {
-				if (packageName.equals(trustedPackage) || packageName.startsWith(trustedPackage + ".")) {
+				if (packageName.equals(trustedPackage)) {
 					return true;
 				}
 			}
 			return false;
 		}
-
 		return true;
 	}
 
