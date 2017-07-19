@@ -85,6 +85,8 @@ public final class RabbitNamespaceUtils {
 
 	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
 
+	private static final String POSSIBLE_AUTHENTICATION_FAILURE_FATAL = "possible-authentication-failure-fatal";
+
 	private static final String MISMATCHED_QUEUES_FATAL = "mismatched-queues-fatal";
 
 	private static final String AUTO_DECLARE = "auto-declare";
@@ -243,6 +245,12 @@ public final class RabbitNamespaceUtils {
 		String missingQueuesFatal = containerEle.getAttribute(MISSING_QUEUES_FATAL);
 		if (StringUtils.hasText(missingQueuesFatal)) {
 			containerDef.getPropertyValues().add("missingQueuesFatal", new TypedStringValue(missingQueuesFatal));
+		}
+
+		String possibleAuthenticationFailureFatal = containerEle.getAttribute(POSSIBLE_AUTHENTICATION_FAILURE_FATAL);
+		if (StringUtils.hasText(possibleAuthenticationFailureFatal)) {
+			containerDef.getPropertyValues().add("possibleAuthenticationFailureFatal",
+					new TypedStringValue(possibleAuthenticationFailureFatal));
 		}
 
 		String mismatchedQueuesFatal = containerEle.getAttribute(MISMATCHED_QUEUES_FATAL);

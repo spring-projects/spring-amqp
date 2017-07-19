@@ -308,6 +308,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doInitialize() throws Exception {
+		super.doInitialize();
+
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");

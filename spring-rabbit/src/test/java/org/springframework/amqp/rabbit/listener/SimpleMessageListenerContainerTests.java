@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -56,6 +57,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
@@ -81,6 +83,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 
 
 /**
@@ -501,6 +504,26 @@ public class SimpleMessageListenerContainerTests {
 			Thread.sleep(100);
 		}
 		assertThat(n, lessThanOrEqualTo(100));
+	}
+
+	@Test
+	public void testPossibleAuthenticationFailureNotFatal() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+
+		given(connectionFactory.createConnection())
+				.willThrow(new AmqpAuthenticationException(new PossibleAuthenticationFailureException("intentional")));
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConnectionFactory(connectionFactory);
+		container.setQueueNames("foo");
+		container.setPossibleAuthenticationFailureFatal(false);
+
+		container.start();
+
+		assertTrue(container.isActive());
+		assertTrue(container.isRunning());
+
+		container.destroy();
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

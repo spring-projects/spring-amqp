@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -62,6 +63,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.postprocessor.MessagePostProcessorUtils;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
@@ -92,7 +94,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
-				ApplicationEventPublisherAware {
+		ApplicationEventPublisherAware {
 
 	static final int DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL = 5000;
 
@@ -138,6 +140,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private boolean missingQueuesFatal = true;
 
 	private boolean missingQueuesFatalSet;
+
+	private boolean possibleAuthenticationFailureFatal = true;
+
+	private boolean possibleAuthenticationFailureFatalSet;
 
 	private boolean autoDeclare = true;
 
@@ -200,6 +206,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private String lookupKeyQualifier = "";
 
 	private boolean forceCloseChannel = true;
+
 	/**
 	 * {@inheritDoc}
 	 * @since 1.5
@@ -867,6 +874,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.mismatchedQueuesFatal;
 	}
 
+
+	public void setPossibleAuthenticationFailureFatal(boolean possibleAuthenticationFailureFatal) {
+		this.possibleAuthenticationFailureFatal = possibleAuthenticationFailureFatal;
+		this.possibleAuthenticationFailureFatalSet = true;
+	}
+
+	public boolean isPossibleAuthenticationFailureFatal() {
+		return this.possibleAuthenticationFailureFatal;
+	}
+
+
+	protected boolean isPossibleAuthenticationFailureFatalSet() {
+		return this.possibleAuthenticationFailureFatalSet;
+	}
+
 	/**
 	 * Set to true to automatically declare elements (queues, exchanges, bindings)
 	 * in the application context during container start().
@@ -1068,7 +1090,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @throws Exception Any Exception.
 	 */
-	protected abstract void doInitialize() throws Exception;
+	protected void doInitialize() throws Exception {
+		checkMissingQueuesFatalFromProperty();
+		checkPossibleAuthenticationFailureFatalFromProperty();
+	}
 
 	/**
 	 * Close the registered invokers.
@@ -1233,7 +1258,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 					if (length < 0 || length > byteBuffer.remaining()) {
 						throw new ListenerExecutionFailedException("Bad batched message received",
 								new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
-										message);
+								message);
 					}
 					byte[] body = new byte[length];
 					byteBuffer.get(body);
@@ -1256,7 +1281,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				else {
 					throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
 							new AmqpRejectAndDontRequeueException("Not retryable; rejecting and not requeuing", ex),
-									messageIn);
+							messageIn);
 				}
 			}
 			handleListenerException(ex);
@@ -1336,10 +1361,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				 * will be committed in the finally block.
 				 */
 				if (isChannelLocallyTransacted() &&
-							!TransactionSynchronizationManager.isActualTransactionActive()) {
-						resourceHolder.setSynchronizedWithTransaction(true);
-						TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
-								resourceHolder);
+						!TransactionSynchronizationManager.isActualTransactionActive()) {
+					resourceHolder.setSynchronizedWithTransaction(true);
+					TransactionSynchronizationManager.bindResource(this.getConnectionFactory(),
+							resourceHolder);
 					boundHere = true;
 				}
 			}
@@ -1599,6 +1624,47 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		if (resourceHolder != null) {
 			resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
 					RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
+		}
+	}
+
+	private void checkMissingQueuesFatalFromProperty() {
+		if (!isMissingQueuesFatalSet()) {
+			try {
+				ApplicationContext applicationContext = getApplicationContext();
+				if (applicationContext != null) {
+					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
+					String missingQueuesFatal = properties.getProperty("mlc.missing.queues.fatal");
+					if (StringUtils.hasText(missingQueuesFatal)) {
+						setMissingQueuesFatal(Boolean.parseBoolean(missingQueuesFatal));
+					}
+				}
+			}
+			catch (BeansException be) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("No global properties bean");
+				}
+			}
+		}
+	}
+
+	private void checkPossibleAuthenticationFailureFatalFromProperty() {
+		if (!isPossibleAuthenticationFailureFatal()) {
+			try {
+				ApplicationContext applicationContext = getApplicationContext();
+				if (applicationContext != null) {
+					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
+					String possibleAuthenticationFailureFatal =
+							properties.getProperty("mlc.possible.authentication.failure.fatal");
+					if (StringUtils.hasText(possibleAuthenticationFailureFatal)) {
+						setPossibleAuthenticationFailureFatal(Boolean.parseBoolean(possibleAuthenticationFailureFatal));
+					}
+				}
+			}
+			catch (BeansException be) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("No global properties bean");
+				}
+			}
 		}
 	}
 

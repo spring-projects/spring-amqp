@@ -4460,7 +4460,36 @@ You can also use a properties bean to set the property globally for all containe
 [source,xml]
 ----
 <util:properties id="spring.amqp.global.properties">
-    <prop key="smlc.missing.queues.fatal">false</prop>
+    <prop key="mlc.missing.queues.fatal">false</prop>
+</util:properties>
+----
+
+This global property will not be applied to any containers that have an explicit `missingQueuesFatal` property set.
+
+The default retry properties (3 retries at 5 second intervals) can be overridden using the properties below.
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
+| possibleAuthenticationFailureFatal
+(possible-authentication-failure-fatal)
+
+a| When set to `true` (default), if a `PossibleAuthenticationFailureException` is thrown during connection, it is considered fatal.
+This causes the application context to fail to initialize during startup.
+
+Since _version 2.0_.
+
+When set to `false`, after making the 3 retries, the container will go into recovery mode, as with other problems, such as the broker being down.
+The container will attempt to recover according to the `recoveryInterval` property.
+During each recovery attempt, each consumer will again try 4 times to start.
+This process will continue indefinitely.
+
+You can also use a properties bean to set the property globally for all containers, as follows:
+
+[source,xml]
+----
+<util:properties id="spring.amqp.global.properties">
+    <prop key="mlc.possible.authentication.failure.fatal">false</prop>
 </util:properties>
 ----
 

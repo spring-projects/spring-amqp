@@ -23,13 +23,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -49,18 +49,16 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
@@ -224,7 +222,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	public final void setExclusive(boolean exclusive) {
 		Assert.isTrue(!exclusive || (this.concurrentConsumers == 1
-				&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
+						&& (this.maxConcurrentConsumers == null || this.maxConcurrentConsumers == 1)),
 				"When the consumer is exclusive, the concurrency must be 1");
 		super.setExclusive(exclusive);
 	}
@@ -412,16 +410,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return true;
 	}
 
-	/**
-	 * Creates the specified number of concurrent consumers, in the form of a Rabbit Channel plus associated
-	 * MessageConsumer.
-	 * @throws Exception Any Exception.
-	 */
-	@Override
-	protected void doInitialize() throws Exception {
-		checkMissingQueuesFatalFromProperty();
-	}
-
 	@ManagedMetric(metricType = MetricType.GAUGE)
 	public int getActiveConsumerCount() {
 		return this.cancellationLock.getCount();
@@ -440,7 +428,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				String[] queueNames = getQueueNames();
 				Assert.state(expectedQueueNames.size() == queueNames.length,
 						"Listener expects us to be listening on '" + expectedQueueNames + "'; our queues: "
-						+ Arrays.asList(queueNames));
+								+ Arrays.asList(queueNames));
 				boolean found = false;
 				for (String queueName : queueNames) {
 					if (expectedQueueNames.contains(queueName)) {
@@ -561,26 +549,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		return count;
 	}
 
-	private void checkMissingQueuesFatalFromProperty() {
-		if (!isMissingQueuesFatalSet()) {
-			try {
-				ApplicationContext applicationContext = getApplicationContext();
-				if (applicationContext != null) {
-					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
-					String missingQueuesFatal = properties.getProperty("smlc.missing.queues.fatal");
-					if (StringUtils.hasText(missingQueuesFatal)) {
-						setMissingQueuesFatal(Boolean.parseBoolean(missingQueuesFatal));
-					}
-				}
-			}
-			catch (BeansException be) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("No global properties bean");
-				}
-			}
-		}
-	}
-
 	protected void addAndStartConsumers(int delta) {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
@@ -628,7 +596,6 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 	}
-
 
 
 	private void considerStoppingAConsumer(BlockingQueueConsumer consumer) {
@@ -938,7 +905,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 				catch (FatalListenerStartupException ex) {
-					throw ex;
+					if (isPossibleAuthenticationFailureFatal()) {
+						throw ex;
+					}
+					else {
+						Throwable possibleAuthException = ex.getCause().getCause();
+						if (possibleAuthException == null ||
+								!(possibleAuthException instanceof PossibleAuthenticationFailureException)) {
+							throw ex;
+						}
+						else {
+							this.start.countDown();
+							handleStartupFailure(this.consumer.getBackOffExecution());
+							throw possibleAuthException;
+						}
+					}
 				}
 				catch (Throwable t) { //NOSONAR
 					this.start.countDown();
@@ -987,7 +968,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 								if (now > lastReceive + idleEventInterval
 										&& now > lastAlertAt + idleEventInterval
 										&& SimpleMessageListenerContainer.this.lastNoMessageAlert
-												.compareAndSet(lastAlertAt, now)) {
+										.compareAndSet(lastAlertAt, now)) {
 									publishIdleContainerEvent(now - lastReceive);
 								}
 							}
@@ -1036,6 +1017,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				// Fatal, but no point re-throwing, so just abort.
 				aborted = true;
 				publishConsumerFailedEvent("Consumer received fatal exception during processing", true, ex);
+			}
+			catch (PossibleAuthenticationFailureException ex) {
+				logger.error("Consumer received fatal=" + isPossibleAuthenticationFailureFatal() +
+						" exception during processing", ex);
+				if (isPossibleAuthenticationFailureFatal()) {
+					this.startupException =
+							new FatalListenerStartupException("Authentication failure",
+									new AmqpAuthenticationException(ex));
+					// Fatal, but no point re-throwing, so just abort.
+					aborted = true;
+				}
+				publishConsumerFailedEvent("Consumer received PossibleAuthenticationFailure during startup", aborted, ex);
 			}
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
@@ -1115,11 +1108,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				if (t instanceof ConsumerCancelledException && this.consumer.isNormalCancel()) {
-					 if (logger.isDebugEnabled()) {
-						 logger.debug(
-							"Consumer raised exception, processing can restart if the connection factory supports it. "
-									+ "Exception summary: " + t);
-					 }
+					if (logger.isDebugEnabled()) {
+						logger.debug(
+								"Consumer raised exception, processing can restart if the connection factory supports it. "
+										+ "Exception summary: " + t);
+					}
 				}
 				else if (logger.isWarnEnabled()) {
 					logger.warn(

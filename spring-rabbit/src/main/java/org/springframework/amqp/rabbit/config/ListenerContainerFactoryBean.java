@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,8 @@ import org.springframework.util.backoff.BackOff;
  * A Factory bean to create a listener container.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -126,6 +128,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 	private RabbitAdmin rabbitAdmin;
 
 	private Boolean missingQueuesFatal;
+
+	private Boolean possibleAuthenticationFailureFatal;
 
 	private Boolean mismatchedQueuesFatal;
 
@@ -300,6 +304,10 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.missingQueuesFatal = missingQueuesFatal;
 	}
 
+	public void setPossibleAuthenticationFailureFatal(Boolean possibleAuthenticationFailureFatal) {
+		this.possibleAuthenticationFailureFatal = possibleAuthenticationFailureFatal;
+	}
+
 	public void setMismatchedQueuesFatal(boolean mismatchedQueuesFatal) {
 		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
 	}
@@ -470,8 +478,11 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 			if (this.rabbitAdmin != null) {
 				container.setRabbitAdmin(this.rabbitAdmin);
 			}
-			if (this.mismatchedQueuesFatal != null) {
+			if (this.missingQueuesFatal != null) {
 				container.setMissingQueuesFatal(this.missingQueuesFatal);
+			}
+			if (this.possibleAuthenticationFailureFatal != null) {
+				container.setPossibleAuthenticationFailureFatal(this.possibleAuthenticationFailureFatal);
 			}
 			if (this.mismatchedQueuesFatal != null) {
 				container.setMismatchedQueuesFatal(this.mismatchedQueuesFatal);
