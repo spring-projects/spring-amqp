@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 the original author or authors.
+ * Copyright 2010-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,7 @@ public class ListenerContainerParserTests {
 		assertEquals(1235L, ReflectionTestUtils.getField(container, "idleEventInterval"));
 		assertEquals("container1", container.getListenerId());
 		assertTrue(TestUtils.getPropertyValue(container, "mismatchedQueuesFatal", Boolean.class));
+		assertFalse(TestUtils.getPropertyValue(container, "possibleAuthenticationFailureFatal", Boolean.class));
 	}
 
 	@Test

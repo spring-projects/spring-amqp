@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,8 @@ public final class RabbitNamespaceUtils {
 	private static final String MISSING_QUEUES_FATAL = "missing-queues-fatal";
 
 	private static final String MISMATCHED_QUEUES_FATAL = "mismatched-queues-fatal";
+
+	private static final String POSSIBLE_AUTHENTICATION_FAILURE_FATAL = "possible-authentication-failure-fatal";
 
 	private static final String AUTO_DECLARE = "auto-declare";
 
@@ -223,7 +225,7 @@ public final class RabbitNamespaceUtils {
 			if (StringUtils.hasText(recoveryBackOff)) {
 				parserContext.getReaderContext()
 						.error("'" + RECOVERY_INTERVAL + "' and '" + RECOVERY_BACK_OFF + "' are mutually exclusive",
-						containerEle);
+								containerEle);
 			}
 			containerDef.getPropertyValues().add("recoveryInterval", new TypedStringValue(recoveryInterval));
 		}
@@ -239,6 +241,12 @@ public final class RabbitNamespaceUtils {
 		String mismatchedQueuesFatal = containerEle.getAttribute(MISMATCHED_QUEUES_FATAL);
 		if (StringUtils.hasText(mismatchedQueuesFatal)) {
 			containerDef.getPropertyValues().add("mismatchedQueuesFatal", new TypedStringValue(mismatchedQueuesFatal));
+		}
+
+		String possibleAuthenticationFailureFatal = containerEle.getAttribute(POSSIBLE_AUTHENTICATION_FAILURE_FATAL);
+		if (StringUtils.hasText(possibleAuthenticationFailureFatal)) {
+			containerDef.getPropertyValues().add("possibleAuthenticationFailureFatal",
+					new TypedStringValue(possibleAuthenticationFailureFatal));
 		}
 
 		String autoDeclare = containerEle.getAttribute(AUTO_DECLARE);

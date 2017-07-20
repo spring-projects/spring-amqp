@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
@@ -57,6 +58,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
@@ -82,6 +84,7 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 
 
 /**
@@ -155,6 +158,7 @@ public class SimpleMessageListenerContainerTests {
 	public void testLazyConsumerCount() throws Exception {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory) {
+
 			@Override
 			protected void doStart() throws Exception {
 				// do nothing
@@ -485,9 +489,9 @@ public class SimpleMessageListenerContainerTests {
 		Channel mockChannel2 = mock(Channel.class);
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString()))
-			.thenReturn(mockConnection1)
-			.thenReturn(mockConnection2)
-			.thenReturn(null);
+				.thenReturn(mockConnection1)
+				.thenReturn(mockConnection2)
+				.thenReturn(null);
 		when(mockConnection1.createChannel()).thenReturn(mockChannel1).thenReturn(null);
 		when(mockConnection2.createChannel()).thenReturn(mockChannel2).thenReturn(null);
 		when(mockChannel1.isOpen()).thenReturn(true);
@@ -506,9 +510,9 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch1 = new CountDownLatch(2);
 		CountDownLatch latch2 = new CountDownLatch(2);
 		doAnswer(messageToConsumer(mockChannel1, container, false, latch1))
-		.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel2, container, false, latch1))
-			.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel1, container, true, latch2)).when(mockChannel1).basicCancel(anyString());
 		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
 
@@ -600,6 +604,26 @@ public class SimpleMessageListenerContainerTests {
 			Thread.sleep(100);
 		}
 		assertThat(n, lessThanOrEqualTo(10));
+	}
+
+	@Test
+	public void testPossibleAuthenticationFailureNotFatal() {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+
+		given(connectionFactory.createConnection())
+				.willThrow(new AmqpAuthenticationException(new PossibleAuthenticationFailureException("intentional")));
+
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+		container.setConnectionFactory(connectionFactory);
+		container.setQueueNames("foo");
+		container.setPossibleAuthenticationFailureFatal(false);
+
+		container.start();
+
+		assertTrue(container.isActive());
+		assertTrue(container.isRunning());
+
+		container.destroy();
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

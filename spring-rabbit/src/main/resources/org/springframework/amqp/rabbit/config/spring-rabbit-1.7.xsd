@@ -796,6 +796,16 @@
 				]]></xsd:documentation>
 			</xsd:annotation>
 		</xsd:attribute>
+		<xsd:attribute name="possible-authentication-failure-fatal" type="xsd:string">
+			<xsd:annotation>
+				<xsd:documentation><![CDATA[
+	When set to `true` (default), if a `PossibleAuthenticationFailureException` is thrown during connection,
+	it is considered fatal. This causes the application context to fail to initialize during startup.
+	When set to `false`, after making the 3 retries, the container will go into recovery mode, as with other problems,
+	such as the broker being down. The container will attempt to recover according to the `recoveryInterval` property.
+				]]></xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
 		<xsd:attribute name="declaration-retries" type="xsd:string">
 			<xsd:annotation>
 				<xsd:documentation><![CDATA[

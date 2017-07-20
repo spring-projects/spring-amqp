@@ -16,7 +16,7 @@
 			max-concurrency="6" receive-timeout="9876" recovery-interval="5555" missing-queues-fatal="false"
 			min-start-interval="1234" min-stop-interval="2345" min-consecutive-active="12" min-consecutive-idle="34"
 			declaration-retries="5" failed-declaration-retry-interval="1000" missing-queue-retry-interval="30000"
-			consumer-tag-strategy="tagger">
+			consumer-tag-strategy="tagger" possible-authentication-failure-fatal="false">
 		<rabbit:listener id="container1" queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
 	</rabbit:listener-container>
 

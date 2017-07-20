@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
 
+import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
@@ -86,6 +87,7 @@ import org.springframework.util.backoff.BackOffExecution;
 import org.springframework.util.backoff.FixedBackOff;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.PossibleAuthenticationFailureException;
 import com.rabbitmq.client.ShutdownSignalException;
 
 /**
@@ -179,6 +181,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile boolean autoDeclare = true;
 
 	private volatile boolean mismatchedQueuesFatal = false;
+
+	private boolean possibleAuthenticationFailureFatal = true;
 
 	private volatile ConsumerTagStrategy consumerTagStrategy;
 
@@ -529,6 +533,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setMismatchedQueuesFatal(boolean mismatchedQueuesFatal) {
 		this.mismatchedQueuesFatal = mismatchedQueuesFatal;
+	}
+
+	/**
+	 * Prevent the container to fail during initialization if a
+	 * {@link com.rabbitmq.client.PossibleAuthenticationFailureException} is thrown.
+	 * Default true.
+	 * @param possibleAuthenticationFailureFatal false do not fail initialization when this condition occurs.
+	 * @since 1.7.4
+	 */
+	public void setPossibleAuthenticationFailureFatal(boolean possibleAuthenticationFailureFatal) {
+		this.possibleAuthenticationFailureFatal = possibleAuthenticationFailureFatal;
 	}
 
 	/**
@@ -1409,7 +1424,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					}
 				}
 				catch (FatalListenerStartupException ex) {
-					throw ex;
+					if (SimpleMessageListenerContainer.this.possibleAuthenticationFailureFatal) {
+						throw ex;
+					}
+					else {
+						Throwable possibleAuthException = ex.getCause().getCause();
+						if (possibleAuthException == null ||
+								!(possibleAuthException instanceof PossibleAuthenticationFailureException)) {
+							throw ex;
+						}
+						else {
+							this.start.countDown();
+							handleStartupFailure(this.consumer.getBackOffExecution());
+							throw possibleAuthException;
+						}
+					}
 				}
 				catch (Throwable t) { //NOSONAR
 					this.start.countDown();
@@ -1509,6 +1538,19 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				aborted = true;
 				publishConsumerFailedEvent("Consumer received fatal exception during processing", true, ex);
 			}
+			catch (PossibleAuthenticationFailureException ex) {
+				logger.error("Consumer received fatal=" +
+						SimpleMessageListenerContainer.this.possibleAuthenticationFailureFatal +
+						" exception during processing", ex);
+				if (SimpleMessageListenerContainer.this.possibleAuthenticationFailureFatal) {
+					this.startupException =
+							new FatalListenerStartupException("Authentication failure",
+									new AmqpAuthenticationException(ex));
+					// Fatal, but no point re-throwing, so just abort.
+					aborted = true;
+				}
+				publishConsumerFailedEvent("Consumer received PossibleAuthenticationFailure during startup", aborted, ex);
+			}
 			catch (ShutdownSignalException e) {
 				if (RabbitUtils.isNormalShutdown(e)) {
 					if (logger.isDebugEnabled()) {
@@ -1587,11 +1629,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			else {
 				if (t instanceof ConsumerCancelledException && this.consumer.isNormalCancel()) {
-					 if (logger.isDebugEnabled()) {
-						 logger.debug(
-							"Consumer raised exception, processing can restart if the connection factory supports it. "
-									+ "Exception summary: " + t);
-					 }
+					if (logger.isDebugEnabled()) {
+						logger.debug(
+								"Consumer raised exception, processing can restart if the connection factory supports it. "
+										+ "Exception summary: " + t);
+					}
 				}
 				else if (logger.isWarnEnabled()) {
 					logger.warn(
