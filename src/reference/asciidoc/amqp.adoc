@@ -4816,11 +4816,14 @@ The `MessageRecover` is called when all retries have been exhausted.
 The `RejectAndDontRequeueRecoverer` does exactly that.
 The default `MessageRecoverer` simply consumes the errant message and emits a WARN message.
 
-Starting with _version 1.3_, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after
-retries are exhausted:
+Starting with _version 1.3_, a new `RepublishMessageRecoverer` is provided, to allow publishing of failed messages after retries are exhausted:
 
 When a recoverer consumes the final exception, the message is ACK'd and won't be sent to the Dead Letter Exchange, if any.
 
+NOTE: When `RepublishMessageRecoverer` is used on the consumer side, the received message has `deliveryMode` in the `receivedDeliveryMode` message property, the `deliveryMode` is this case is `null`.
+That means a `NON_PERSISTENT` delivery mode on the Broker.
+Starting with _version 2.0_, the `RepublishMessageRecoverer` can be configured for the `deliveryMode` to set into the message to republish if it is `null`.
+By default it uses `MessageProperties` default value - `MessageDeliveryMode.PERSISTENT`.
 
 [source,java]
 ----
@@ -4833,9 +4836,21 @@ RetryOperationsInterceptor interceptor() {
 }
 ----
 
-The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the
-exception message, stack trace, original exchange and routing key.
+The `RepublishMessageRecoverer` publishes the message with additional information in message headers, such as the exception message, stack trace, original exchange and routing key.
 Additional headers can be added by creating a subclass and overriding `additionalHeaders()`.
+The `deliveryMode` (or any other properties) can be changed in the `additionalHeaders()`, too:
+
+[source,java]
+----
+RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate, "error") {
+
+    protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
+        message.getMessageProperties().setDeliveryMode(message.getMessageProperties().getReceivedDeliveryMode());
+        return null;
+    }
+
+};
+----
 
 ===== Exception Classification for Retry
 

@@ -48,9 +48,8 @@ public class RepublishMessageRecovererTest {
 
 	private final Throwable cause = new Exception(new Exception("I am Error. When all else fails use fire."));
 
-	private
 	@Mock
-	AmqpTemplate amqpTemplate;
+	private AmqpTemplate amqpTemplate;
 
 	private RepublishMessageRecoverer recoverer;
 
@@ -134,5 +133,15 @@ public class RepublishMessageRecovererTest {
 		assertEquals(MessageDeliveryMode.PERSISTENT, message.getMessageProperties().getDeliveryMode());
 	}
 
+	@Test
+	public void setDeliveryModeIfNull() {
+		this.message.getMessageProperties().setDeliveryMode(null);
+		this.recoverer = new RepublishMessageRecoverer(amqpTemplate, "error");
+
+		this.recoverer.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+		recoverer.recover(this.message, this.cause);
+
+		assertEquals(MessageDeliveryMode.NON_PERSISTENT, this.message.getMessageProperties().getDeliveryMode());
+	}
 
 }
