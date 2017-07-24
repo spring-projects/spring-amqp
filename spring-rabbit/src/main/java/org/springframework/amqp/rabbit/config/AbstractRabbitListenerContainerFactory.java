@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
@@ -97,6 +98,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private Boolean autoStartup;
 
 	private Integer phase;
+
+	private MessagePostProcessor[] afterReceivePostProcessors;
 
 	protected final AtomicInteger counter = new AtomicInteger();
 
@@ -260,6 +263,14 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.phase = phase;
 	}
 
+	/**
+	 * @param afterReceivePostProcessors the post processors.
+	 * @see AbstractMessageListenerContainer#setAfterReceivePostProcessors(MessagePostProcessor...)
+	 */
+	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
+		this.afterReceivePostProcessors = afterReceivePostProcessors;
+	}
+
 
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
@@ -324,6 +335,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		}
 		if (this.phase != null) {
 			instance.setPhase(this.phase);
+		}
+		if (this.afterReceivePostProcessors != null) {
+			instance.setAfterReceivePostProcessors(this.afterReceivePostProcessors);
 		}
 		instance.setListenerId(endpoint.getId());
 
