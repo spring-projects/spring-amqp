@@ -193,6 +193,14 @@ public class SimpleRabbitListenerContainerFactory
 	}
 
 	/**
+	 * @return the advice chain that was set. Defaults to {@code null}.
+	 * @since 1.7.4
+	 */
+	public Advice[] getAdviceChain() {
+		return this.adviceChain;
+	}
+
+	/**
 	 * @param recoveryInterval The recovery interval.
 	 * @see SimpleMessageListenerContainer#setRecoveryInterval
 	 */
