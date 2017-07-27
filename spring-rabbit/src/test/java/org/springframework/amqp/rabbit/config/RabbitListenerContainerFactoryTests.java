@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
@@ -49,6 +50,8 @@ import org.springframework.util.backoff.ExponentialBackOff;
 /**
  * @author Stephane Nicoll
  * @author Artem Bilan
+ * @author Joris Kuipers
+ *
  */
 public class RabbitListenerContainerFactoryTests {
 
@@ -107,6 +110,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setMissingQueuesFatal(true);
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
 
+		assertArrayEquals(new Advice[] {advice}, this.factory.getAdviceChain());
+
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
 		endpoint.setMessageListener(this.messageListener);
@@ -161,6 +166,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setMonitorInterval(1234L);
 		this.direct.setConsumersPerQueue(42);
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
+
+		assertArrayEquals(new Advice[] {advice}, this.direct.getAdviceChain());
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 

@@ -46,9 +46,11 @@ import org.springframework.util.backoff.FixedBackOff;
 /**
  * Base {@link RabbitListenerContainerFactory} for Spring's base container implementation.
  * @param <C> the container type.
+ *
  * @author Stephane Nicoll
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Joris Kuipers
  *
  * @since 1.4
  *
@@ -173,6 +175,14 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 */
 	public void setDefaultRequeueRejected(Boolean requeueRejected) {
 		this.defaultRequeueRejected = requeueRejected;
+	}
+
+	/**
+	 * @return the advice chain that was set. Defaults to {@code null}.
+	 * @since 1.7.4
+	 */
+	public Advice[] getAdviceChain() {
+		return this.adviceChain;
 	}
 
 	/**
