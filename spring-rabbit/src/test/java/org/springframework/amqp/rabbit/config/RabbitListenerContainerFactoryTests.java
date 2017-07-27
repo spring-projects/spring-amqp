@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
@@ -107,6 +108,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setMissingQueuesFatal(true);
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
 
+		assertArrayEquals(new Advice[] {advice}, this.factory.getAdviceChain());
+
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
 		endpoint.setMessageListener(this.messageListener);
@@ -161,6 +164,8 @@ public class RabbitListenerContainerFactoryTests {
 		this.direct.setMonitorInterval(1234L);
 		this.direct.setConsumersPerQueue(42);
 		this.direct.setAfterReceivePostProcessors(afterReceivePostProcessor);
+
+		assertArrayEquals(new Advice[] {advice}, this.direct.getAdviceChain());
 
 		SimpleRabbitListenerEndpoint endpoint = new SimpleRabbitListenerEndpoint();
 
