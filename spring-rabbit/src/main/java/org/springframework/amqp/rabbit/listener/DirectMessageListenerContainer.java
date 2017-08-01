@@ -554,7 +554,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		catch (Exception e) {
 			this.consumersToRestart.add(new SimpleConsumer(null, null, queue));
-			throw new AmqpConnectException(e);
+				throw e instanceof AmqpConnectException
+						? (AmqpConnectException) e
+						: new AmqpConnectException(e);
 		}
 		finally {
 			if (routingLookupKey != null) {
@@ -576,7 +578,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		catch (AmqpApplicationContextClosedException e) {
 			throw new AmqpConnectException(e);
 		}
-		catch (IOException e) {
+		catch (IOException | AmqpConnectException e) {
 			RabbitUtils.closeChannel(channel);
 			RabbitUtils.closeConnection(connection);
 
