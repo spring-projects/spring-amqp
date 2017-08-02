@@ -573,7 +573,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			consumer.consumerTag = channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 					(getConsumerTagStrategy() != null
 							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
-					false, isExclusive(), getConsumerArguments(), consumer);
+					isNoLocal(), isExclusive(), getConsumerArguments(), consumer);
 		}
 		catch (AmqpApplicationContextClosedException e) {
 			throw new AmqpConnectException(e);
