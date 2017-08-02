@@ -646,7 +646,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		int actualPrefetchCount = getPrefetchCount() > this.txSize ? getPrefetchCount() : this.txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), getMessagePropertiesConverter(),
 				this.cancellationLock, getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount,
-				isDefaultRequeueRejected(), getConsumerArguments(), isExclusive(), queues);
+				isDefaultRequeueRejected(), getConsumerArguments(), isNoLocal(), isExclusive(), queues);
 		if (this.declarationRetries != null) {
 			consumer.setDeclarationRetries(this.declarationRetries);
 		}

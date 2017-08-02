@@ -103,6 +103,8 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Map<String, Object> consumerArgs;
 
+	private Boolean noLocal;
+
 	private Boolean exclusive;
 
 	private Boolean defaultRequeueRejected;
@@ -250,6 +252,10 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	public void setConsumerArguments(Map<String, Object> args) {
 		this.consumerArgs = args;
+	}
+
+	public void setNoLocal(Boolean noLocal) {
+		this.noLocal = noLocal;
 	}
 
 	public void setExclusive(boolean exclusive) {
@@ -441,6 +447,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 			}
 			if (this.consumerArgs != null) {
 				container.setConsumerArguments(this.consumerArgs);
+			}
+			if (this.noLocal != null) {
+				container.setNoLocal(this.noLocal);
 			}
 			if (this.exclusive != null) {
 				container.setExclusive(this.exclusive);

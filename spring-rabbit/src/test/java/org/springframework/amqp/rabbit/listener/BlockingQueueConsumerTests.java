@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
@@ -46,7 +47,6 @@ import org.apache.logging.log4j.Level;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -137,13 +137,13 @@ public class BlockingQueueConsumerTests {
 		Channel channel = mock(Channel.class);
 
 		when(connectionFactory.createConnection()).thenReturn(connection);
-		when(connection.createChannel(Mockito.anyBoolean())).thenReturn(channel);
+		when(connection.createChannel(anyBoolean())).thenReturn(channel);
 		when(channel.isOpen()).thenReturn(true);
-		when(channel.queueDeclarePassive(Mockito.anyString()))
+		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> {
 					String arg = invocation.getArgument(0);
 					if ("good".equals(arg)) {
-						return Mockito.any(AMQP.Queue.DeclareOk.class);
+						return any(AMQP.Queue.DeclareOk.class);
 					}
 					else {
 						throw new IOException();
@@ -162,6 +162,27 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(20);
+	}
+
+	@Test
+	public void testNoLocalConsumerConfiguration() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		when(channel.isOpen()).thenReturn(true);
+
+		final String queue = "testQ";
+		final boolean noLocal = true;
+
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 1, true, null, noLocal, false, queue);
+		blockingQueueConsumer.start();
+		verify(channel).basicConsume(eq(queue), eq(AcknowledgeMode.AUTO.isAutoAck()), eq(""), eq(noLocal), eq(false), anyMap(), any(Consumer.class));
+		blockingQueueConsumer.stop();
 	}
 
 	@Test
@@ -236,7 +257,7 @@ public class BlockingQueueConsumerTests {
 		deliveryTags.add(1L);
 		dfa.setPropertyValue("deliveryTags", deliveryTags);
 		blockingQueueConsumer.rollbackOnExceptionIfNecessary(ex);
-		Mockito.verify(channel).basicNack(1L, true, expectedRequeue);
+		verify(channel).basicNack(1L, true, expectedRequeue);
 	}
 
 	@Test
@@ -251,7 +272,7 @@ public class BlockingQueueConsumerTests {
 		when(connection.createChannel(anyBoolean())).thenReturn(channel);
 		final AtomicBoolean isOpen = new AtomicBoolean(true);
 		doReturn(isOpen.get()).when(channel).isOpen();
-		when(channel.queueDeclarePassive(Mockito.anyString()))
+		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 						anyMap(), any(Consumer.class))).thenReturn("consumerTag");
@@ -283,7 +304,7 @@ public class BlockingQueueConsumerTests {
 		when(connection.createChannel(anyBoolean())).thenReturn(channel);
 		final AtomicBoolean isOpen = new AtomicBoolean(true);
 		doReturn(isOpen.get()).when(channel).isOpen();
-		when(channel.queueDeclarePassive(Mockito.anyString()))
+		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
 		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 						anyMap(), any(Consumer.class))).thenReturn("consumerTag");

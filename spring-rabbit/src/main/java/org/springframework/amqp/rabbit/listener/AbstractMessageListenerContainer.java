@@ -189,6 +189,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private volatile boolean exclusive;
 
+	private volatile boolean noLocal;
+
 	private volatile boolean defaultRequeueRejected = true;
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
@@ -664,6 +666,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected boolean isExclusive() {
 		return this.exclusive;
+	}
+
+	/**
+	 * Set to true for an no-local consumer.
+	 * @param noLocal true for an no-local consumer.
+	 */
+	public void setNoLocal(boolean noLocal) {
+		this.noLocal = noLocal;
+	}
+
+	/**
+	 * Return whether the consumers should be no-local.
+	 * @return true for no-local consumers.
+	 */
+	protected boolean isNoLocal() {
+		return noLocal;
 	}
 
 	/**
