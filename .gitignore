@@ -12,6 +12,7 @@
 .checkstyle
 bin
 build
+out
 .DS_Store
 .springBeans
 erl_crash.dump

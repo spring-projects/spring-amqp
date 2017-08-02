@@ -77,6 +77,7 @@ import com.rabbitmq.utility.Utility;
  * @author Casper Mout
  * @author Artem Bilan
  * @author Alex Panchenko
+ * @author Johno Crawford
  */
 public class BlockingQueueConsumer {
 
@@ -114,6 +115,8 @@ public class BlockingQueueConsumer {
 	private final ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter;
 
 	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+
+	private final boolean noLocal;
 
 	private final boolean exclusive;
 
@@ -226,10 +229,36 @@ public class BlockingQueueConsumer {
 	 * @param queues The queues.
 	 */
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
+								 MessagePropertiesConverter messagePropertiesConverter,
+								 ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
+								 boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
+								 Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
+		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
+				prefetchCount, defaultRequeueRejected, consumerArgs, false, exclusive, queues);
+	}
+
+	/**
+	 * Create a consumer. The consumer must not attempt to use
+	 * the connection factory or communicate with the broker
+	 * until it is started.
+	 * @param connectionFactory The connection factory.
+	 * @param messagePropertiesConverter The properties converter.
+	 * @param activeObjectCounter The active object counter; used during shutdown.
+	 * @param acknowledgeMode The acknowledge mode.
+	 * @param transactional Whether the channel is transactional.
+	 * @param prefetchCount The prefetch count.
+	 * @param defaultRequeueRejected true to reject requeued messages.
+	 * @param consumerArgs The consumer arguments (e.g. x-priority).
+	 * @param noLocal true if the consumer is to be no-local.
+	 * @param exclusive true if the consumer is to be exclusive.
+	 * @param queues The queues.
+	 * @since 1.7.4
+	 */
+	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-			Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
+			Map<String, Object> consumerArgs, boolean noLocal, boolean exclusive, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
@@ -240,6 +269,7 @@ public class BlockingQueueConsumer {
 		if (consumerArgs != null && consumerArgs.size() > 0) {
 			this.consumerArgs.putAll(consumerArgs);
 		}
+		this.noLocal = noLocal;
 		this.exclusive = exclusive;
 		this.queues = Arrays.copyOf(queues, queues.length);
 		this.queue = new LinkedBlockingQueue<Delivery>(prefetchCount);
@@ -591,7 +621,7 @@ public class BlockingQueueConsumer {
 
 	private void consumeFromQueue(String queue) throws IOException {
 		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(),
-				(this.tagStrategy != null ? this.tagStrategy.createConsumerTag(queue) : ""), false, this.exclusive,
+				(this.tagStrategy != null ? this.tagStrategy.createConsumerTag(queue) : ""), this.noLocal, this.exclusive,
 				this.consumerArgs, this.consumer);
 		if (consumerTag != null) {
 			this.consumerTags.put(consumerTag, queue);
