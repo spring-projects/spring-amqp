@@ -78,6 +78,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  *
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Nicolas Ristock
  *
  * @since 2.0
  *
@@ -595,8 +596,14 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			else if (this.logger.isWarnEnabled()) {
 				this.logger.warn("basicConsume failed, scheduling consumer " + consumer + " for restart", e);
 			}
-			this.consumersToRestart.add(consumer);
-			consumer = null;
+
+			if (consumer == null) {
+				this.consumersToRestart.add(new SimpleConsumer(null, null, queue));
+			}
+			else {
+				this.consumersToRestart.add(consumer);
+				consumer = null;
+			}
 		}
 		synchronized (this.consumersMonitor) {
 			if (consumer != null) {
