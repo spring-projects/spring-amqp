@@ -96,6 +96,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Dave Syer
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Johno Crawford
  * @since 1.0
  */
 public class SimpleMessageListenerContainer extends AbstractMessageListenerContainer
@@ -141,6 +142,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private volatile int concurrentConsumers = 1;
 
 	private volatile Integer maxConcurrentConsumers;
+
+	private volatile boolean noLocal;
 
 	private volatile boolean exclusive;
 
@@ -326,6 +329,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.isTrue(!this.exclusive || maxConcurrentConsumers == 1,
 				"When the consumer is exclusive, the concurrency must be 1");
 		this.maxConcurrentConsumers = maxConcurrentConsumers;
+	}
+
+	/**
+	 * Set to true for an no-local consumer.
+	 * @param noLocal true for an no-local consumer.
+	 */
+	public final void setNoLocal(boolean noLocal) {
+		this.noLocal = noLocal;
 	}
 
 	/**
@@ -1079,7 +1090,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		int actualPrefetchCount = this.prefetchCount > this.txSize ? this.prefetchCount : this.txSize;
 		consumer = new BlockingQueueConsumer(getConnectionFactory(), this.messagePropertiesConverter, this.cancellationLock,
 				getAcknowledgeMode(), isChannelTransacted(), actualPrefetchCount, this.defaultRequeueRejected,
-				this.consumerArgs, this.exclusive, queues);
+				this.consumerArgs, this.noLocal, this.exclusive, queues);
 		if (this.declarationRetries != null) {
 			consumer.setDeclarationRetries(this.declarationRetries);
 		}

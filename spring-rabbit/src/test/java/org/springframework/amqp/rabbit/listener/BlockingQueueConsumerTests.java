@@ -22,6 +22,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
@@ -72,6 +74,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 /**
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Johno Crawford
  * @since 1.0.1
  *
  */
@@ -169,6 +172,29 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(20);
+	}
+
+	@Test
+	public void testNoLocalConsumerConfiguration() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel = mock(Channel.class);
+
+		when(connectionFactory.createConnection()).thenReturn(connection);
+		when(connection.createChannel(anyBoolean())).thenReturn(channel);
+		when(channel.isOpen()).thenReturn(true);
+
+		final String queue = "testQ";
+		final boolean noLocal = true;
+
+		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
+				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
+				AcknowledgeMode.AUTO, true, 1, true, null, noLocal, false, queue);
+		blockingQueueConsumer.start();
+		verify(channel)
+				.basicConsume(eq(queue), eq(AcknowledgeMode.AUTO.isAutoAck()), eq(""), eq(noLocal),
+						eq(false), anyMap(), any(Consumer.class));
+		blockingQueueConsumer.stop();
 	}
 
 	@SuppressWarnings("unchecked")
