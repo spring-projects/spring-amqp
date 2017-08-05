@@ -554,7 +554,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			connection = getConnectionFactory().createConnection();
 		}
 		catch (Exception e) {
-			this.consumersToRestart.add(new SimpleConsumer(null, null, queue));
+			addConsumerToRestart(new SimpleConsumer(null, null, queue));
 				throw e instanceof AmqpConnectException
 						? (AmqpConnectException) e
 						: new AmqpConnectException(e);
@@ -598,10 +598,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 
 			if (consumer == null) {
-				this.consumersToRestart.add(new SimpleConsumer(null, null, queue));
+				addConsumerToRestart(new SimpleConsumer(null, null, queue));
 			}
 			else {
-				this.consumersToRestart.add(consumer);
+				addConsumerToRestart(consumer);
 				consumer = null;
 			}
 		}
@@ -699,6 +699,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		finally {
 			this.consumers.remove(consumer);
 			consumerRemoved(consumer);
+		}
+	}
+
+	private void addConsumerToRestart(SimpleConsumer consumer) {
+		if (this.started) {
+			this.consumersToRestart.add(consumer);
 		}
 	}
 
@@ -1002,7 +1008,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					list.remove(this);
 				}
 				DirectMessageListenerContainer.this.consumers.remove(this);
-				DirectMessageListenerContainer.this.consumersToRestart.add(this);
+				addConsumerToRestart(this);
 			}
 			finalizeConsumer();
 		}
