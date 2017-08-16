@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ import ch.qos.logback.core.Layout;
  *
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Nicolas Ristock
+ *
  * @since 1.4
  */
 public class AmqpAppender extends AppenderBase<ILoggingEvent> {
@@ -94,6 +96,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Key name for the logger level name in the message properties
 	 */
 	public static final String CATEGORY_LEVEL = "level";
+
+
+	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_NAME = "thread";
 
 	/**
 	 * Name of the exchange to publish log events to.
@@ -482,6 +490,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		if (isIncludeCallerData()) {
 			event.getCallerData();
 		}
+		event.getThreadName();
 		this.events.add(new Event(event));
 	}
 
@@ -550,6 +559,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
+					amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());

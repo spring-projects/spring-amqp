@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,7 @@ import org.springframework.amqp.rabbit.support.LogAppenderUtils;
  * @author Jon Brisbin
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Nicolas Ristock
  */
 @Deprecated
 public class AmqpAppender extends AppenderSkeleton {
@@ -133,6 +134,11 @@ public class AmqpAppender extends AppenderSkeleton {
 	 * Key name for the logger level name in the message properties
 	 */
 	public static final String CATEGORY_LEVEL = "level";
+
+	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_NAME = "thread";
 
 	/**
 	 * Name of the exchange to publish log events to.
@@ -559,6 +565,7 @@ public class AmqpAppender extends AppenderSkeleton {
 						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
+					amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());

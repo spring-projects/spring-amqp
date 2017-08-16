@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.logback;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,6 +51,8 @@ import ch.qos.logback.classic.Logger;
 
 /**
  * @author Artem Bilan
+ * @author Nicolas Ristock
+ *
  * @since 1.4
  */
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -118,6 +121,10 @@ public class AmqpAppenderIntegrationTests {
 		assertThat(location, instanceOf(String.class));
 		assertThat((String) location,
 				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()"));
+		Object threadName = messageProperties.getHeaders().get("thread");
+		assertNotNull(threadName);
+		assertThat(threadName, instanceOf(String.class));
+		assertThat(threadName, is(Thread.currentThread().getName()));
 		assertEquals("bar", messageProperties.getHeaders().get("foo"));
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 package org.springframework.amqp.rabbit.log4j2.test;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
@@ -42,6 +45,7 @@ import org.springframework.amqp.utils.test.TestUtils;
 
 /**
  * @author Gary Russell
+ * @author Nicolas Ristock
  *
  * @since 1.6
  */
@@ -66,6 +70,10 @@ public class AmqpAppenderTests {
 		Message received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
+		Object threadName = received.getMessageProperties().getHeaders().get("thread");
+		assertNotNull(threadName);
+		assertThat(threadName, instanceOf(String.class));
+		assertThat(threadName, is(Thread.currentThread().getName()));
 	}
 
 	@Test
