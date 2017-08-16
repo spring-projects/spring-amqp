@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.logback;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -118,6 +119,10 @@ public class AmqpAppenderIntegrationTests {
 		assertThat(location, instanceOf(String.class));
 		assertThat((String) location,
 				startsWith("org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests.testAppenderWithProps()"));
+		Object threadName = messageProperties.getHeaders().get("thread");
+		assertNotNull(threadName);
+		assertThat(threadName, instanceOf(String.class));
+		assertThat(threadName, is(Thread.currentThread().getName()));
 		assertEquals("bar", messageProperties.getHeaders().get("foo"));
 	}
 
