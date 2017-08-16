@@ -80,6 +80,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Stephen Oakey
  * @author Artem Bilan
  * @author Dominique Villard
+ * @author Nicolas Ristock
  *
  * @since 1.6
  */
@@ -100,6 +101,11 @@ public class AmqpAppender extends AbstractAppender {
 	 * Key name for the logger level name in the message properties.
 	 */
 	public static final String CATEGORY_LEVEL = "level";
+
+	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_NAME = "thread";
 
 	/**
 	 * Tha manager.
@@ -266,6 +272,7 @@ public class AmqpAppender extends AbstractAppender {
 			amqpProps.setContentEncoding(this.manager.contentEncoding);
 		}
 		amqpProps.setHeader(CATEGORY_NAME, name);
+		amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 		amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 		if (this.manager.generateId) {
 			amqpProps.setMessageId(UUID.randomUUID().toString());

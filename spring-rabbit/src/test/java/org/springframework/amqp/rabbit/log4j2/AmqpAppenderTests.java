@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.log4j2;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -62,6 +64,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * @author Stephen Oakey
  * @author Artem Bilan
  * @author Dominique Villard
+ * @author Nicolas Ristock
  *
  * @since 1.6
  */
@@ -111,6 +114,10 @@ public class AmqpAppenderTests {
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
 		assertThat(new String(received.getBody()), startsWith("bar"));
+		Object threadName = received.getMessageProperties().getHeaders().get("thread");
+		assertNotNull(threadName);
+		assertThat(threadName, instanceOf(String.class));
+		assertThat(threadName, is(Thread.currentThread().getName()));
 	}
 
 	@Test

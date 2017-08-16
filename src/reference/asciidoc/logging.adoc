@@ -205,6 +205,22 @@ You can configure the appender to include caller data by setting the `includeCal
 
 ==== Customizing the Messages
 
+By default AMQP appenders populates these message properties:
+* deliveryMode
+* contentType
+* contentEncoding if configured
+* messageId if `generateId` is configured
+* timestamp of the log event
+* appId if applicationId is configured
+
+In addition they populate headers:
+* categoryName of the log event
+* level of the log event
+* thread the name of the thread where log event happened
+* location the stack trace of the log event call
+* copy of all the MDC properties
+
+
 Each of the appenders can be subclassed, allowing you to modify the messages before publishing.
 
 .Customizing the Log Messages

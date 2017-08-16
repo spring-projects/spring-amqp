@@ -85,6 +85,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gary Russell
  * @author Stephen Oakey
  * @author Dominique Villard
+ * @author Nicolas Ristock
  *
  * @since 1.4
  */
@@ -104,6 +105,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * Key name for the logger level name in the message properties
 	 */
 	public static final String CATEGORY_LEVEL = "level";
+
+	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_NAME = "thread";
 
 	/**
 	 * Name of the exchange to publish log events to.
@@ -678,6 +684,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		if (isIncludeCallerData()) {
 			event.getCallerData();
 		}
+		event.getThreadName();
 		this.events.add(new Event(event));
 	}
 
@@ -739,6 +746,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
+					amqpProps.setHeader(THREAD_NAME, logEvent.getThreadName());
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());
