@@ -594,7 +594,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					logOrRethrowDeclarationException(queue, "queue", e);
 				}
 			}
-			this.logger.debug("Queue with name that starts with 'amq.' cannot be declared.");
+			else if (this.logger.isDebugEnabled()) {
+				this.logger.debug(queue.getName() + ": Queue with name that starts with 'amq.' cannot be declared.");
+			}
 		}
 		return declareOks.toArray(new DeclareOk[declareOks.size()]);
 	}
