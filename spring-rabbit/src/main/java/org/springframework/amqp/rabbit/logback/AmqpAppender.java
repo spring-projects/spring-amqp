@@ -95,6 +95,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 */
 	public static final String CATEGORY_LEVEL = "level";
 
+
+	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_HEADER_KEY = "thread";
+
 	/**
 	 * Name of the exchange to publish log events to.
 	 */
@@ -482,6 +488,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		if (isIncludeCallerData()) {
 			event.getCallerData();
 		}
+		event.getThreadName();
 		this.events.add(new Event(event));
 	}
 
@@ -550,6 +557,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
+					amqpProps.setHeader(THREAD_HEADER_KEY, logEvent.getThreadName());
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());

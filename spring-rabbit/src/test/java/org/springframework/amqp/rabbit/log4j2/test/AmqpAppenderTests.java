@@ -16,9 +16,12 @@
 
 package org.springframework.amqp.rabbit.log4j2.test;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
@@ -66,6 +69,10 @@ public class AmqpAppenderTests {
 		Message received = template.receive(queue.getName());
 		assertNotNull(received);
 		assertEquals("testAppId.foo.INFO", received.getMessageProperties().getReceivedRoutingKey());
+		Object threadName = received.getMessageProperties().getHeaders().get("thread");
+		assertNotNull(threadName);
+		assertThat(threadName, instanceOf(String.class));
+		assertThat(threadName, is(Thread.currentThread().getName()));
 	}
 
 	@Test

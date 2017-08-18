@@ -135,6 +135,11 @@ public class AmqpAppender extends AppenderSkeleton {
 	public static final String CATEGORY_LEVEL = "level";
 
 	/**
+	 * Key name for the thread name in the message properties.
+	 */
+	public static final String THREAD_HEADER_KEY = "thread";
+
+	/**
 	 * Name of the exchange to publish log events to.
 	 */
 	private String exchangeName = "logs";
@@ -559,6 +564,7 @@ public class AmqpAppender extends AppenderSkeleton {
 						amqpProps.setContentEncoding(AmqpAppender.this.contentEncoding);
 					}
 					amqpProps.setHeader(CATEGORY_NAME, name);
+					amqpProps.setHeader(THREAD_HEADER_KEY, logEvent.getThreadName());
 					amqpProps.setHeader(CATEGORY_LEVEL, level.toString());
 					if (AmqpAppender.this.generateId) {
 						amqpProps.setMessageId(UUID.randomUUID().toString());
