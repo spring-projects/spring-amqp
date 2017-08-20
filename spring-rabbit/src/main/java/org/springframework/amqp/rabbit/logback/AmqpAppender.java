@@ -57,6 +57,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
+
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
@@ -544,6 +545,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	public void setAbbreviation(int len) {
 		this.abbreviator = new TargetLengthBasedClassNameAbbreviator(len);
+	}
+
+	/**
+	 * Return the number of events waiting to be sent.
+	 * @return the number of events waiting to be sent.
+	 */
+	public int getQueuedEventCount() {
+		return this.events.size();
 	}
 
 	/**
