@@ -354,6 +354,14 @@ public class AmqpAppender extends AbstractAppender {
 	}
 
 	/**
+	 * Returns the number of events waiting to be send.
+	 * @return the number of events waiting to be send.
+	 */
+	public int getQueuedEventCount() {
+		return this.events.size();
+	}
+
+	/**
 	 * Helper class to actually send LoggingEvents asynchronously.
 	 */
 	protected class EventSender implements Runnable {
