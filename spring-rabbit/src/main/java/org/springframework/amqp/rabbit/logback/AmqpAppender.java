@@ -408,6 +408,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	/**
+	 * Return the number of events waiting to be sent.
+	 * @return the number of events waiting to be sent.
+	 */
+	public int getQueuedEventCount() {
+		return this.events.size();
+	}
+
+	/**
 	 * Set additional client connection properties to be added to the rabbit connection,
 	 * with the form {@code key:value[,key:value]...}.
 	 * @param clientConnectionProperties the properties.
