@@ -56,6 +56,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -65,6 +66,7 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -285,6 +287,65 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		verify(mockConnection, never()).close();
 		verify(mockChannel1, never()).close();
+
+		ccf.destroy();
+	}
+
+	@Test
+	public void testCheckoutLimitWithFailures() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		final com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel1 = mock(Channel.class);
+		final AtomicBoolean brokerDown = new AtomicBoolean();
+		doAnswer(i -> {
+			if (brokerDown.get()) {
+				throw new AmqpConnectException(null);
+			}
+			return mockConnection;
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
+		when(mockConnection.createChannel()).thenReturn(mockChannel1);
+		doAnswer(i -> {
+			return !brokerDown.get();
+		}).when(mockConnection).isOpen();
+
+		// Called during physical close
+		doAnswer(i -> {
+			return !brokerDown.get();
+		}).when(mockChannel1).isOpen();
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setChannelCacheSize(1);
+		ccf.setChannelCheckoutTimeout(10);
+
+		Connection con = ccf.createConnection();
+
+		Channel channel1 = con.createChannel(false);
+
+		try {
+			con.createChannel(false);
+			fail("Exception expected");
+		}
+		catch (AmqpTimeoutException e) { }
+
+		// should be ignored, and added last into channel cache.
+		channel1.close();
+
+		// remove first entry in cache (channel1)
+		Channel ch1 = con.createChannel(false);
+
+		assertSame(ch1, channel1);
+
+		ch1.close();
+
+		brokerDown.set(true);
+		try {
+			con.createChannel(false);
+			fail("Exception expected");
+		}
+		catch (AmqpConnectException e) { }
+		brokerDown.set(false);
+		ch1 = con.createChannel(false);
+		ch1.close();
 
 		ccf.destroy();
 	}
