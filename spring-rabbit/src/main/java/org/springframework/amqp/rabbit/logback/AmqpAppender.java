@@ -57,6 +57,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.Layout;
+import ch.qos.logback.core.encoder.Encoder;
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
@@ -293,6 +294,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	private boolean generateId = false;
 
 	private Layout<ILoggingEvent> layout;
+
+	private Encoder<ILoggingEvent> encoder;
 
 	private TargetLengthBasedClassNameAbbreviator abbreviator;
 
@@ -542,6 +545,14 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 		this.layout = layout;
 	}
 
+	public Encoder<ILoggingEvent> getEncoder() {
+		return this.encoder;
+	}
+
+	public void setEncoder(final Encoder<ILoggingEvent> encoder) {
+		this.encoder = encoder;
+	}
+
 	public void setAbbreviation(int len) {
 		this.abbreviator = new TargetLengthBasedClassNameAbbreviator(len);
 	}
@@ -658,8 +669,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 				factoryBean.setTrustStoreType(this.trustStoreType);
 			}
 		}
-		if (this.layout == null) {
-			addError("A layout is required");
+		if (this.layout == null && this.encoder == null) {
+			addError("Either a layout or encoder is required");
+		}
+
+		if (this.layout != null && this.encoder != null) {
+			addError("Only one of layout or encoder is possible");
 		}
 	}
 
@@ -777,7 +792,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 								"location",
 								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
 					}
-					String msgBody;
+					byte[] msgBody;
 					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(logEvent);
 					// Set applicationId, if we're using one
 					if (AmqpAppender.this.applicationId != null) {
@@ -786,27 +801,16 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 					if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
 						((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
-						msgBody = AmqpAppender.this.layout.doLayout(logEvent);
+						msgBody = encodeMessage(logEvent);
 						((LoggingEvent) logEvent).setLoggerName(name);
 					}
 					else {
-						msgBody = AmqpAppender.this.layout.doLayout(logEvent);
+						msgBody = encodeMessage(logEvent);
 					}
 
 					// Send a message
 					try {
-						Message message = null;
-						if (AmqpAppender.this.charset != null) {
-							try {
-								message = new Message(msgBody.getBytes(AmqpAppender.this.charset), amqpProps);
-							}
-							catch (UnsupportedEncodingException e) {
-								message = new Message(msgBody.getBytes(), amqpProps); //NOSONAR (default charset)
-							}
-						}
-						else {
-							message = new Message(msgBody.getBytes(), amqpProps); //NOSONAR (default charset)
-						}
+						Message message = new Message(msgBody, amqpProps);
 
 						message = postProcessMessageBeforeSend(message, event);
 						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
@@ -831,6 +835,25 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+			}
+		}
+
+		private byte[] encodeMessage(ILoggingEvent logEvent) {
+			if (AmqpAppender.this.encoder != null) {
+				return AmqpAppender.this.encoder.encode(logEvent);
+			}
+
+			String msgBody = AmqpAppender.this.layout.doLayout(logEvent);
+			if (AmqpAppender.this.charset != null) {
+				try {
+					return msgBody.getBytes(AmqpAppender.this.charset);
+				}
+				catch (UnsupportedEncodingException e) {
+					return msgBody.getBytes(); //NOSONAR (default charset)
+				}
+			}
+			else {
+				return msgBody.getBytes(); //NOSONAR (default charset)
 			}
 		}
 	}
