@@ -16,8 +16,11 @@
 
 package org.springframework.amqp.rabbit.logback;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -37,6 +40,9 @@ import org.slf4j.MDC;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,13 +65,19 @@ import ch.qos.logback.classic.Logger;
 public class AmqpAppenderIntegrationTests {
 
 	/* logback will automatically find lockback-test.xml */
-	private final static Logger log = (Logger) LoggerFactory.getLogger(AmqpAppenderIntegrationTests.class);
+	private static final Logger log = (Logger) LoggerFactory.getLogger(AmqpAppenderIntegrationTests.class);
 
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	@Autowired
 	private ApplicationContext applicationContext;
+
+	@Autowired
+	private RabbitTemplate template;
+
+	@Autowired
+	private Queue encodedQueue;
 
 	private SimpleMessageListenerContainer listenerContainer;
 
@@ -140,6 +152,21 @@ public class AmqpAppenderIntegrationTests {
 		assertEquals(0xe0, body[body.length - 5 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 4 - lineSeparatorExtraBytes] & 0xff);
 		assertEquals(0xbf, body[body.length - 3 - lineSeparatorExtraBytes] & 0xff);
+	}
+
+	@Test
+	public void testWithEncoder() {
+		this.applicationContext.getBean(SingleConnectionFactory.class).createConnection().close();
+		Logger log = (Logger) LoggerFactory.getLogger("encoded");
+		log.info("foo");
+		log.info("bar");
+		Message received = this.template.receive(this.encodedQueue.getName());
+		assertNotNull(received);
+		assertThat(new String(received.getBody()), containsString("%d %p %t [%c] - <%m>%n"));
+		assertThat(received.getMessageProperties().getAppId(), equalTo("AmqpAppenderTest"));
+		assertNotNull(this.template.receive(this.encodedQueue.getName()));
+		assertThat(new String(this.template.receive(this.encodedQueue.getName()).getBody()),
+				not(containsString("%d %p %t [%c] - <%m>%n")));
 	}
 
 	public static class EnhancedAppender extends AmqpAppender {

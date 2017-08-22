@@ -203,6 +203,8 @@ Extracting caller data can be rather expensive because the log event has to crea
 Therefore, by default, caller data associated with an event is not extracted when the event added to the event queue.
 You can configure the appender to include caller data by setting the `includeCallerData` property to `true`.
 
+Starting with _version 2.0.0_, the Logback `AmqpAppender` supports https://logback.qos.ch/manual/encoders.html[Logback encoders] with the `encoder` option. The `encoder` and `layout` options are mutually exclusive.
+
 ==== Customizing the Messages
 
 By default AMQP appenders populates these message properties:
