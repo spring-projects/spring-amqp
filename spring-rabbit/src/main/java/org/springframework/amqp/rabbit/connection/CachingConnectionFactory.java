@@ -401,8 +401,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
+		Semaphore checkoutPermits = null;
 		if (this.channelCheckoutTimeout > 0) {
-			Semaphore checkoutPermits = this.checkoutPermits.get(connection);
+			checkoutPermits = this.checkoutPermits.get(connection);
 			if (checkoutPermits != null) {
 				try {
 					if (!checkoutPermits.tryAcquire(this.channelCheckoutTimeout, TimeUnit.MILLISECONDS)) {
@@ -482,7 +483,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		if (channel == null) {
-			channel = getCachedChannelProxy(connection, channelList, transactional);
+			try {
+				channel = getCachedChannelProxy(connection, channelList, transactional);
+			}
+			catch (RuntimeException e) {
+				if (checkoutPermits != null) {
+					checkoutPermits.release();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Could not get channel; released permit for " + connection + ", remaining:"
+							+ checkoutPermits.availablePermits());
+					}
+				}
+				throw e;
+			}
 		}
 		return channel;
 	}
