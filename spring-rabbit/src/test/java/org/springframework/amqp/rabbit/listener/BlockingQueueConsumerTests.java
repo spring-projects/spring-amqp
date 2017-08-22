@@ -22,11 +22,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -174,6 +174,7 @@ public class BlockingQueueConsumerTests {
 		verify(channel).basicQos(20);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testNoLocalConsumerConfiguration() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
