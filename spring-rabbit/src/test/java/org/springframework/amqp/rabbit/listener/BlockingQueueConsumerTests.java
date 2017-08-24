@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
@@ -175,6 +174,7 @@ public class BlockingQueueConsumerTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testNoLocalConsumerConfiguration() throws Exception {
 		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 		Connection connection = mock(Connection.class);
@@ -193,7 +193,7 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 		verify(channel)
 				.basicConsume(eq(queue), eq(AcknowledgeMode.AUTO.isAutoAck()), eq(""), eq(noLocal),
-						eq(false), anyMap(), any(Consumer.class));
+						eq(false), any(Map.class), any(Consumer.class));
 		blockingQueueConsumer.stop();
 	}
 

@@ -16,15 +16,18 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -67,6 +70,8 @@ import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -489,6 +494,24 @@ public class CachingConnectionFactoryIntegrationTests {
 				com.rabbitmq.client.Connection.class);
 		assertEquals(CF_INTEGRATION_CONNECTION_NAME, rabbitConnection.getClientProperties().get("connection_name"));
 		this.connectionFactory.destroy();
+	}
+
+	@Test
+	public void testDestroy() {
+		Connection connection1 = this.connectionFactory.createConnection();
+		this.connectionFactory.destroy();
+		Connection connection2 = this.connectionFactory.createConnection();
+		assertSame(connection1, connection2);
+		ApplicationContext context = mock(ApplicationContext.class);
+		this.connectionFactory.setApplicationContext(context);
+		this.connectionFactory.onApplicationEvent(new ContextClosedEvent(context));
+		this.connectionFactory.destroy();
+		try {
+			connection2 = this.connectionFactory.createConnection();
+		}
+		catch (IllegalStateException e) {
+			assertThat(e.getMessage(), containsString("is closed"));
+		}
 	}
 
 	@Test
