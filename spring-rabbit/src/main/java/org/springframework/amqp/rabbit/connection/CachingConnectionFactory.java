@@ -54,7 +54,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
@@ -98,7 +97,7 @@ import com.rabbitmq.client.ShutdownSignalException;
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
-				PublisherCallbackChannelConnectionFactory, SmartLifecycle {
+				PublisherCallbackChannelConnectionFactory {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
 
@@ -168,10 +167,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private volatile boolean contextStopped;
 
 	private volatile boolean stopped;
-
-	private volatile boolean running;
-
-	private int phase = Integer.MIN_VALUE + 1000;
 
 	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
@@ -680,14 +675,22 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * Close the underlying shared connection. The provider of this ConnectionFactory needs to care for proper shutdown.
+	 * Close the underlying shared connection. Use {@link #resetConnection()} to close the
+	 * connection while the application is still running.
 	 * <p>
-	 * As this bean implements DisposableBean, a bean factory will automatically invoke this on destruction of its
-	 * cached singletons.
+	 * As this bean implements DisposableBean, a bean factory will automatically invoke
+	 * this on destruction of its cached singletons.
+	 * <p>
+	 * If called after the context is closed, the connection factory can no longer server
+	 * up connections.
 	 */
 	@Override
 	public final void destroy() {
 		resetConnection();
+		if (this.contextStopped) {
+			this.stopped = true;
+			this.deferredCloseExecutor.shutdownNow();
+		}
 	}
 
 	/**
@@ -709,60 +712,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			this.connectionHighWaterMark.set(0);
 		}
-	}
-
-	@Override
-	public void start() {
-		this.running = true;
-	}
-
-	@Override
-	public boolean isRunning() {
-		return this.running;
-	}
-
-	@Override
-	public int getPhase() {
-		return this.phase;
-	}
-
-	/**
-	 * Defaults to phase {@link Integer#MIN_VALUE - 1000} so the factory is
-	 * stopped in a very late phase, allowing other beans to use the connection
-	 * to clean up.
-	 * @param phase the phase.
-	 * @since 1.5.3
-	 * @see #getPhase()
-	 */
-	public void setPhase(int phase) {
-		this.phase = phase;
-	}
-
-	@Override
-	public boolean isAutoStartup() {
-		return true;
-	}
-
-	/**
-	 * Stop the connection factory to prevent its connection from being used.
-	 * Note: ignored unless the application context is in the process of being stopped.
-	 */
-	@Override
-	public void stop() {
-		if (this.contextStopped) {
-			this.running = false;
-			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
-		}
-		else {
-			logger.warn("stop() is ignored unless the application context is being stopped");
-		}
-	}
-
-	@Override
-	public void stop(Runnable callback) {
-		stop();
-		callback.run();
 	}
 
 	/*
