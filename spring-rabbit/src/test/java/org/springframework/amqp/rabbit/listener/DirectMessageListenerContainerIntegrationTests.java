@@ -571,7 +571,6 @@ public class DirectMessageListenerContainerIntegrationTests {
 
 		cf.addConnectionListener(connection -> {
 			cf.onApplicationEvent(new ContextClosedEvent(context));
-			cf.stop();
 			cf.destroy();
 		});
 
@@ -608,7 +607,6 @@ public class DirectMessageListenerContainerIntegrationTests {
 		new RabbitTemplate(cf).convertAndSend(Q1, "foo");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		cf.onApplicationEvent(new ContextClosedEvent(context));
-		cf.stop();
 		cf.destroy();
 		int n = 0;
 		while (n++ < 100 && container.isRunning()) {
@@ -635,7 +633,6 @@ public class DirectMessageListenerContainerIntegrationTests {
 		rabbitTemplate.convertAndSend(Q1, "bar");
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		container.stop();
-		cf.stop();
 		cf.destroy();
 	}
 
