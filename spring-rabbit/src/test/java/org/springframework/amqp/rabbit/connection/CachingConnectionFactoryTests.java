@@ -31,6 +31,7 @@ import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -58,6 +59,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
@@ -72,6 +74,7 @@ import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * @author Mark Pollack
@@ -1494,6 +1497,32 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		channel.close(); // physically closed and removed from the cache  before, so void "close".
 		Channel channel2 = con.createChannel(false);
 		assertNotSame(channel, channel2);
+	}
+
+	@Test
+	@Ignore // Test to verify log message is suppressed after patch to CCF
+	public void testReturnsNormalCloseDeferredClose() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		when(mockConnection.isOpen()).thenReturn(true);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		when(mockChannel.isOpen()).thenReturn(true);
+		doThrow(new ShutdownSignalException(true, false, new com.rabbitmq.client.AMQP.Connection.Close.Builder()
+				.replyCode(200)
+				.replyText("OK")
+				.build(), null)).when(mockChannel).close();
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setPublisherReturns(true);
+		ccf.setExecutor(Executors.newSingleThreadExecutor());
+		Connection conn = ccf.createConnection();
+		Channel channel = conn.createChannel(false);
+		RabbitUtils.setPhysicalCloseRequired(channel, true);
+		channel.close();
+		Thread.sleep(6000);
 	}
 
 }

@@ -1089,6 +1089,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 								catch (IOException e) { }
 								catch (AlreadyClosedException e) { }
 								catch (TimeoutException e) { }
+								catch (ShutdownSignalException e) {
+									if (!RabbitUtils.isNormalShutdown(e)) {
+										logger.debug("Unexpected exception on deferred close", e);
+									}
+								}
 							}
 						}
 
