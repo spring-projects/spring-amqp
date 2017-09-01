@@ -286,21 +286,20 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		final com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
 		Channel mockChannel1 = mock(Channel.class);
 		final AtomicBoolean brokerDown = new AtomicBoolean();
+
 		doAnswer(i -> {
 			if (brokerDown.get()) {
 				throw new AmqpConnectException(null);
 			}
 			return mockConnection;
-		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
+		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class));
+
 		when(mockConnection.createChannel()).thenReturn(mockChannel1);
-		doAnswer(i -> {
-			return !brokerDown.get();
-		}).when(mockConnection).isOpen();
+
+		doAnswer(i -> !brokerDown.get()).when(mockConnection).isOpen();
 
 		// Called during physical close
-		doAnswer(i -> {
-			return !brokerDown.get();
-		}).when(mockChannel1).isOpen();
+		doAnswer(i -> !brokerDown.get()).when(mockChannel1).isOpen();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setChannelCacheSize(1);
