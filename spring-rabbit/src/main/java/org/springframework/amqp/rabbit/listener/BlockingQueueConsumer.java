@@ -459,7 +459,9 @@ public class BlockingQueueConsumer {
 	 * @throws ShutdownSignalException if the connection is shut down while waiting
 	 */
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
-		logger.trace("Retrieving delivery for " + this);
+		if (logger.isTraceEnabled()) {
+		    logger.trace("Retrieving delivery for " + this);
+        }
 		return handle(this.queue.take());
 	}
 
@@ -471,8 +473,8 @@ public class BlockingQueueConsumer {
 	 * @throws ShutdownSignalException if the connection is shut down while waiting
 	 */
 	public Message nextMessage(long timeout) throws InterruptedException, ShutdownSignalException {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Retrieving delivery for " + this);
+		if (logger.isTraceEnabled()) {
+			logger.trace("Retrieving delivery for " + this);
 		}
 		checkShutdown();
 		if (this.missingQueues.size() > 0) {
