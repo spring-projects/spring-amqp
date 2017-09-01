@@ -104,7 +104,7 @@ public class CachingConnectionFactoryIntegrationTests {
 	@After
 	public void close() {
 		if (!this.connectionFactory.getVirtualHost().equals("non-existent")) {
-			new RabbitAdmin(this.connectionFactory).deleteQueue(CF_INTEGRATION_TEST_QUEUE);
+			this.brokerIsRunning.removeTestQueues();
 		}
 		assertEquals("bar", connectionFactory.getRabbitConnectionFactory().getClientProperties().get("foo"));
 		connectionFactory.destroy();
