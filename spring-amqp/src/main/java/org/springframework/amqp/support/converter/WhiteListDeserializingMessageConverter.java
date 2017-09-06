@@ -17,7 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,11 +51,11 @@ public abstract class WhiteListDeserializingMessageConverter extends AbstractMes
 	/**
 	 * Add package/class patterns to the white list.
 	 * @param patterns the patterns to add.
-	 * @see #setWhiteListPatterns(List)
 	 * @since 1.5.7
+	 * @see #setWhiteListPatterns(List)
 	 */
 	public void addWhiteListPatterns(String... patterns) {
-		this.whiteListPatterns.addAll(Arrays.asList(patterns));
+		Collections.addAll(this.whiteListPatterns, patterns);
 	}
 
 	protected void checkWhiteList(Class<?> clazz) throws IOException {
