@@ -16,17 +16,23 @@
 
 package org.springframework.amqp.core;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.Date;
 
 import org.junit.Test;
 
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
 
 /**
@@ -87,4 +93,27 @@ public class MessageTests {
 		assertEquals(new String(message.getBody()), new String(out.getBody()));
 		assertEquals(message.toString(), out.toString());
 	}
+
+	@Test
+	public void fooNotDeserialized() {
+		Message message = new SimpleMessageConverter().toMessage(new Foo(), new MessageProperties());
+		assertThat(message.toString(), not(containsString("aFoo")));
+		Message listMessage = new SimpleMessageConverter().toMessage(Collections.singletonList(new Foo()),
+				new MessageProperties());
+		assertThat(listMessage.toString(), not(containsString("aFoo")));
+		Message.addWhiteListPatterns(Foo.class.getName());
+		assertThat(message.toString(), containsString("aFoo"));
+		assertThat(listMessage.toString(), containsString("aFoo"));
+	}
+
+	@SuppressWarnings("serial")
+	public static class Foo implements Serializable {
+
+		@Override
+		public String toString() {
+			return "aFoo";
+		}
+
+	}
+
 }
