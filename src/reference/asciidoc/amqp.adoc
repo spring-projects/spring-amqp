@@ -22,7 +22,7 @@ If you are not, then have a look at the resources listed in <<resources>>
 
 ===== Message
 
-The 0-8 and 0-9-1 AMQP specifications do not define a Message class or interface.
+The 0-9-1 AMQP specification does not define a Message class or interface.
 Instead, when performing an operation such as `basicPublish()`, the content is passed as a byte-array argument and additional properties are passed in as separate arguments.
 Spring AMQP defines a Message class as part of a more general AMQP domain model representation.
 The purpose of the Message class is to simply encapsulate the body and properties within a single instance so that the API can in turn be simpler.
@@ -54,6 +54,16 @@ public class Message {
 The `MessageProperties` interface defines several common properties such as 'messageId', 'timestamp', 'contentType', and several more.
 Those properties can also be extended with user-defined 'headers' by calling the `setHeader(String
       key, Object value)` method.
+
+[IMPORTANT]
+----
+Starting with versions `1.5.7, 1.6.11, 1.7.4, 2.0.0`, if a message body is a serialized `Serializable` java object, it is no longer deserialized (by default) when performing `toString()` operations (such as in log messages).
+This is to prevent unsafe deserialization.
+By default, only `java.util` and `java.lang` classes are deserialized.
+To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addWhiteListPatterns(...)`.
+A simple `*` wildcard is supported, for example `com.foo.*, *.MyClass`.
+Bodies that cannot be deserialized will be represented by `byte[<size>]` in log messages.
+----
 
 ===== Exchange
 

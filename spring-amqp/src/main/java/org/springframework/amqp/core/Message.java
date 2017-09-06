@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.amqp.support.converter.SerializerMessageConverter;
 
 /**
  * The 0-8 and 0-9-1 AMQP specifications do not define an Message class or interface. Instead, when performing an
@@ -41,6 +41,12 @@ public class Message implements Serializable {
 
 	private static final String ENCODING = Charset.defaultCharset().name();
 
+	private static final SerializerMessageConverter SERIALIZER_MESSAGE_CONVERTER = new SerializerMessageConverter();
+
+	static {
+		SERIALIZER_MESSAGE_CONVERTER.setWhiteListPatterns(Arrays.asList("java.util.*", "java.lang.*"));
+	}
+
 	private final MessageProperties messageProperties;
 
 	private final byte[] body;
@@ -48,6 +54,22 @@ public class Message implements Serializable {
 	public Message(byte[] body, MessageProperties messageProperties) { //NOSONAR
 		this.body = body; //NOSONAR
 		this.messageProperties = messageProperties;
+	}
+
+	/**
+	 * Add patterns to the white list of permissable package/class name patterns for
+	 * deserialization in {@link #toString()}.
+	 * The patterns will be applied in order until a match is found.
+	 * A class can be fully qualified or a wildcard '*' is allowed at the
+	 * beginning or end of the class name.
+	 * Examples: {@code com.foo.*}, {@code *.MyClass}.
+	 * By default, only {@code java.util} and {@code java.lang} classes will be
+	 * deserialized.
+	 * @param patterns the patterns.
+	 * @since 1.5.7
+	 */
+	public static void addWhiteListPatterns(String... patterns) {
+		SERIALIZER_MESSAGE_CONVERTER.addWhiteListPatterns(patterns);
 	}
 
 	public byte[] getBody() {
@@ -77,7 +99,7 @@ public class Message implements Serializable {
 		try {
 			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SerializationUtils.deserialize(this.body).toString();
+				return SERIALIZER_MESSAGE_CONVERTER.fromMessage(this).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
