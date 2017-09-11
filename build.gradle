@@ -93,7 +93,7 @@ subprojects { subproject ->
 		commonsIoVersion = '2.4'
 		hamcrestVersion = '1.3'
 		jacksonVersion = '1.9.13'
-		jackson2Version = '2.8.4'
+		jackson2Version = '2.8.10'
 		junitVersion = '4.12'
 		log4jVersion = '1.2.17'
 		log4j2Version = '2.7'
@@ -101,9 +101,9 @@ subprojects { subproject ->
 		mockitoVersion = '1.10.19'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.0.3'
 		rabbitmqHttpClientVersion = '1.1.1.RELEASE'
-		slf4jVersion = "1.7.21"
+		slf4jVersion = "1.7.25"
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.10.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '4.3.11.RELEASE'
 
 		springRetryVersion = '1.2.0.RELEASE'
 	}
