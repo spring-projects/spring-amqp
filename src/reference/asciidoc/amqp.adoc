@@ -63,7 +63,7 @@ By default, only `java.util` and `java.lang` classes are deserialized.
 To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addWhiteListPatterns(...)`.
 A simple `*` wildcard is supported, for example `com.foo.*, *.MyClass`.
 Bodies that cannot be deserialized will be represented by `byte[<size>]` in log messages.
-----
+====
 
 ===== Exchange
 
@@ -1454,6 +1454,10 @@ The annotated endpoint infrastructure creates a message listener container behin
 In the example above, `myQueue` must already exist and be bound to some exchange.
 Starting with _version 1.5.0_, the queue can be declared and bound automatically, as long as a `RabbitAdmin` exists
 in the application context.
+
+NOTE: Property placeholders (`${some.property}`) or SpEL expressions (`#{someExpression}`) can be specified for the annotation properties (`queues` etc).
+See <<annotation-multiple-queues>> for an example of why you might use SpEL instead of a property placeholder.
+
 
 [source,java]
 ----
