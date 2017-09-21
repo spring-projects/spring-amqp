@@ -56,8 +56,8 @@ Those properties can also be extended with user-defined 'headers' by calling the
       key, Object value)` method.
 
 [IMPORTANT]
-----
-Starting with versions `1.5.7, 1.6.11, 1.7.4, 2.0.0`, if a message body is a serialized `Serializable` java object, it is no longer deserialized (by default) when performing `toString()` operations (such as in log messages).
+====
+Starting with versions `1.5.7`, `1.6.11`, `1.7.4`, `2.0.0`, if a message body is a serialized `Serializable` java object, it is no longer deserialized (by default) when performing `toString()` operations (such as in log messages).
 This is to prevent unsafe deserialization.
 By default, only `java.util` and `java.lang` classes are deserialized.
 To revert to the previous behavior, you can add allowable class/package patterns by invoking `Message.addWhiteListPatterns(...)`.
