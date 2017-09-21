@@ -73,10 +73,18 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	}
 
 	/**
+	 * Construct with the provided {@link ObjectMapper} instance and trusted packed to all ({@code *}).
+	 * @since 1.7.2
+	 */
+	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper) {
+		this(jsonObjectMapper, "*");
+	}
+
+	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param jsonObjectMapper the {@link ObjectMapper} to use.
 	 * @param trustedPackages the trusted Java packages for deserialization
-	 * @since 1.7.2
+	 * @since 1.7.4
 	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
 	 */
 	public Jackson2JsonMessageConverter(ObjectMapper jsonObjectMapper, String... trustedPackages) {
