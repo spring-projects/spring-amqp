@@ -6,6 +6,7 @@
  * either express or implied. See the License for the specific language governing permissions and limitations under the
  * License.
  */
+
 package org.springframework.amqp.support.converter;
 
 import java.util.Collections;
@@ -13,79 +14,95 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.ClassUtils;
 
 /**
  * @author Mark Pollack
  * @author Sam Nelson
  * @author Andreas Asplund
  */
-public abstract class AbstractJavaTypeMapper implements InitializingBean {
-    public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
-    public static final String DEFAULT_CONTENT_CLASSID_FIELD_NAME = "__ContentTypeId__";
-    public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
+public abstract class AbstractJavaTypeMapper implements InitializingBean, BeanClassLoaderAware {
 
-    private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
-    private final Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
+	public static final String DEFAULT_CLASSID_FIELD_NAME = "__TypeId__";
 
-    public String getClassIdFieldName() {
-        return DEFAULT_CLASSID_FIELD_NAME;
-    }
+	public static final String DEFAULT_CONTENT_CLASSID_FIELD_NAME = "__ContentTypeId__";
 
-    public String getContentClassIdFieldName() {
-        return DEFAULT_CONTENT_CLASSID_FIELD_NAME;
-    }
+	public static final String DEFAULT_KEY_CLASSID_FIELD_NAME = "__KeyTypeId__";
 
-    public String getKeyClassIdFieldName() {
-        return DEFAULT_KEY_CLASSID_FIELD_NAME;
-    }
+	private Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
 
-    public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
-        this.idClassMapping = idClassMapping;
-    }
+	private final Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
 
-    protected void addHeader(MessageProperties properties, String headerName,
-                           Class<?> clazz) {
-        if (classIdMapping.containsKey(clazz)) {
-            properties.getHeaders().put(headerName, classIdMapping.get(clazz));
-        }
-        else {
-            properties.getHeaders().put(headerName, clazz.getName());
-        }
-    }
+	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
-    protected String retrieveHeader(MessageProperties properties,
-                                  String headerName) {
-        Map<String, Object> headers = properties.getHeaders();
-        Object classIdFieldNameValue = headers.get(headerName);
-        String classId = null;
-        if (classIdFieldNameValue != null) {
-            classId = classIdFieldNameValue.toString();
-        }
-        if (classId == null) {
-            throw new MessageConversionException(
-                    "failed to convert Message content. Could not resolve "
-                            + headerName + " in header");
-        }
-        return classId;
-    }
+	public String getClassIdFieldName() {
+		return DEFAULT_CLASSID_FIELD_NAME;
+	}
 
-    private void validateIdTypeMapping() {
-        Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
-        for (Map.Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
-            String id = entry.getKey();
-            Class<?> clazz = entry.getValue();
-            finalIdClassMapping.put(id, clazz);
-            classIdMapping.put(clazz, id);
-        }
-        this.idClassMapping = finalIdClassMapping;
-    }
+	public String getContentClassIdFieldName() {
+		return DEFAULT_CONTENT_CLASSID_FIELD_NAME;
+	}
 
-    public Map<String, Class<?>> getIdClassMapping() {
-        return Collections.unmodifiableMap(idClassMapping);
-    }
+	public String getKeyClassIdFieldName() {
+		return DEFAULT_KEY_CLASSID_FIELD_NAME;
+	}
 
-    public void afterPropertiesSet() throws Exception {
-        validateIdTypeMapping();
-    }
+	public void setIdClassMapping(Map<String, Class<?>> idClassMapping) {
+		this.idClassMapping = idClassMapping;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	protected ClassLoader getClassLoader() {
+		return this.classLoader;
+	}
+
+	protected void addHeader(MessageProperties properties, String headerName, Class<?> clazz) {
+		if (this.classIdMapping.containsKey(clazz)) {
+			properties.getHeaders().put(headerName, this.classIdMapping.get(clazz));
+		}
+		else {
+			properties.getHeaders().put(headerName, clazz.getName());
+		}
+	}
+
+	protected String retrieveHeader(MessageProperties properties,
+			String headerName) {
+		Map<String, Object> headers = properties.getHeaders();
+		Object classIdFieldNameValue = headers.get(headerName);
+		String classId = null;
+		if (classIdFieldNameValue != null) {
+			classId = classIdFieldNameValue.toString();
+		}
+		if (classId == null) {
+			throw new MessageConversionException(
+					"failed to convert Message content. Could not resolve "
+							+ headerName + " in header");
+		}
+		return classId;
+	}
+
+	private void validateIdTypeMapping() {
+		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
+		for (Map.Entry<String, Class<?>> entry : idClassMapping.entrySet()) {
+			String id = entry.getKey();
+			Class<?> clazz = entry.getValue();
+			finalIdClassMapping.put(id, clazz);
+			classIdMapping.put(clazz, id);
+		}
+		this.idClassMapping = finalIdClassMapping;
+	}
+
+	public Map<String, Class<?>> getIdClassMapping() {
+		return Collections.unmodifiableMap(idClassMapping);
+	}
+
+	public void afterPropertiesSet() throws Exception {
+		validateIdTypeMapping();
+	}
 }
