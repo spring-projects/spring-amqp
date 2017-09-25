@@ -192,7 +192,7 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 			}
 			String correlationIdString = amqpMessageProperties.getCorrelationIdString();
 			if (StringUtils.hasText(correlationIdString)) {
-				headers.put(AmqpHeaders.CORRELATION_ID, correlationId);
+				headers.put(AmqpHeaders.CORRELATION_ID, correlationIdString);
 			}
 			MessageDeliveryMode receivedDeliveryMode = amqpMessageProperties.getReceivedDeliveryMode();
 			if (receivedDeliveryMode != null) {

@@ -166,6 +166,15 @@ public class SimpleAmqpHeaderMapperTests {
 		assertEquals("consumer.queue", headerMap.get(AmqpHeaders.CONSUMER_QUEUE));
 	}
 
+	@Test
+	public void toHeadersCorrelationIdString() {
+		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
+		MessageProperties amqpProperties = new MessageProperties();
+		amqpProperties.setCorrelationIdString("123");
+		Map<String, Object> headerMap = headerMapper.toHeaders(amqpProperties);
+		assertEquals("123", headerMap.get(AmqpHeaders.CORRELATION_ID));
+	}
+
 	@Test // INT-2090
 	public void jsonTypeIdNotOverwritten() {
 		SimpleAmqpHeaderMapper headerMapper = new SimpleAmqpHeaderMapper();
