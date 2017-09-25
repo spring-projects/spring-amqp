@@ -1,29 +1,91 @@
 /*
- * Copyright 2002-2013 the original author or authors. Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License. You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and limitations under the
- * License.
+ * Copyright 2002-2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package org.springframework.amqp.support.converter;
+
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.util.ClassUtils;
-
 /**
  * @author Mark Pollack
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author Gary Russell
  */
-public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implements Jackson2JavaTypeMapper, ClassMapper {
+public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
+		implements Jackson2JavaTypeMapper, ClassMapper {
 
+	private static final List<String> TRUSTED_PACKAGES =
+			Arrays.asList(
+					"java.util",
+					"java.lang"
+			);
+
+	private final Set<String> trustedPackages = new LinkedHashSet<String>(TRUSTED_PACKAGES);
+
+	/**
+	 * Construct an instance that trusts all packages.
+	 */
+	public DefaultJackson2JavaTypeMapper() {
+		this("*");
+	}
+
+	/**
+	 * Construct an instance that trusts certain packages, "*" means all.
+	 * @param trustedPackages the packages to trust.
+	 */
+	public DefaultJackson2JavaTypeMapper(String... trustedPackages) {
+		setTrustedPackages(trustedPackages);
+	}
+
+	/**
+	 * Specify a set of packages to trust during deserialization.
+	 * The asterisk ({@code *}) means trust all.
+	 * @param trustedPackages the trusted Java packages for deserialization
+	 * @since 1.6.11
+	 */
+	public final void setTrustedPackages(String... trustedPackages) {
+		if (trustedPackages != null) {
+			for (String whiteListClass : trustedPackages) {
+				if ("*".equals(whiteListClass)) {
+					this.trustedPackages.clear();
+					break;
+				}
+				else {
+					if (this.trustedPackages.size() == 0) {
+						this.trustedPackages.addAll(TRUSTED_PACKAGES);
+					}
+					this.trustedPackages.add(whiteListClass);
+				}
+			}
+		}
+	}
+
+	@Override
 	public JavaType toJavaType(MessageProperties properties) {
 		JavaType classType = getClassIdType(retrieveHeader(properties,
 				getClassIdFieldName()));
@@ -49,42 +111,63 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper implem
 
 	private JavaType getClassIdType(String classId) {
 		if (getIdClassMapping().containsKey(classId)) {
-            return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
+			return TypeFactory.defaultInstance().constructType(getIdClassMapping().get(classId));
 		}
-
-		try {
-			return TypeFactory.defaultInstance().constructType(ClassUtils.forName(classId, getClass()
-					.getClassLoader()));
-		} catch (ClassNotFoundException e) {
-			throw new MessageConversionException(
-					"failed to resolve class name. Class not found [" + classId
-							+ "]", e);
-		} catch (LinkageError e) {
-			throw new MessageConversionException(
-					"failed to resolve class name. Linkage error [" + classId
-							+ "]", e);
+		else {
+			try {
+				if (!isTrustedPackage(classId)) {
+					throw new IllegalArgumentException("The class '" + classId + "' is not in the trusted packages: " +
+							this.trustedPackages + ". " +
+							"If you believe this class is safe to deserialize, please provide its name. " +
+							"If the serialization is only done by a trusted source, you can also enable trust all (*).");
+				}
+				else {
+					return TypeFactory.defaultInstance()
+							.constructType(ClassUtils.forName(classId, getClassLoader()));
+				}
+			}
+			catch (ClassNotFoundException e) {
+				throw new MessageConversionException("failed to resolve class name. Class not found [" + classId + "]", e);
+			}
+			catch (LinkageError e) {
+				throw new MessageConversionException("failed to resolve class name. Linkage error [" + classId + "]", e);
+			}
 		}
 	}
 
+	private boolean isTrustedPackage(String requestedType) {
+		if (!this.trustedPackages.isEmpty()) {
+			String packageName = ClassUtils.getPackageName(requestedType).replaceFirst("\\[L", "");
+			for (String trustedPackage : this.trustedPackages) {
+				if (packageName.equals(trustedPackage)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+
+	@Override
 	public void fromJavaType(JavaType javaType, MessageProperties properties) {
 		addHeader(properties, getClassIdFieldName(), javaType.getRawClass());
 
 		if (javaType.isContainerType() && !javaType.isArrayType()) {
-			addHeader(properties, getContentClassIdFieldName(), javaType
-					.getContentType().getRawClass());
+			addHeader(properties, getContentClassIdFieldName(), javaType.getContentType().getRawClass());
 		}
 
 		if (javaType.getKeyType() != null) {
-			addHeader(properties, getKeyClassIdFieldName(), javaType
-					.getKeyType().getRawClass());
+			addHeader(properties, getKeyClassIdFieldName(), javaType.getKeyType().getRawClass());
 		}
 	}
 
+	@Override
 	public void fromClass(Class<?> clazz, MessageProperties properties) {
 		fromJavaType(TypeFactory.defaultInstance().constructType(clazz), properties);
 
 	}
 
+	@Override
 	public Class<?> toClass(MessageProperties properties) {
 		return toJavaType(properties).getRawClass();
 	}

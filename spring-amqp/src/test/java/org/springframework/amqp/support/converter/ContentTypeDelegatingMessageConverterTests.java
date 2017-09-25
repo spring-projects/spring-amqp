@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,12 @@ public class ContentTypeDelegatingMessageConverterTests {
 	@Test
 	public void testDelegationOutbound() {
 		ContentTypeDelegatingMessageConverter converter = new ContentTypeDelegatingMessageConverter();
-		converter.addDelgate("foo/bar", new Jackson2JsonMessageConverter());
-		converter.addDelgate(MessageProperties.CONTENT_TYPE_JSON, new Jackson2JsonMessageConverter());
+		DefaultJackson2JavaTypeMapper javaTypeMapper = new DefaultJackson2JavaTypeMapper();
+		javaTypeMapper.setTrustedPackages(ContentTypeDelegatingMessageConverterTests.class.getPackage().getName());
+		Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+		messageConverter.setJavaTypeMapper(javaTypeMapper);
+		converter.addDelgate("foo/bar", messageConverter);
+		converter.addDelgate(MessageProperties.CONTENT_TYPE_JSON, messageConverter);
 		MessageProperties props = new MessageProperties();
 		Foo foo = new Foo();
 		foo.setFoo("bar");
@@ -78,6 +82,7 @@ public class ContentTypeDelegatingMessageConverterTests {
 		public void setFoo(String foo) {
 			this.foo = foo;
 		}
+
 	}
 
 }
