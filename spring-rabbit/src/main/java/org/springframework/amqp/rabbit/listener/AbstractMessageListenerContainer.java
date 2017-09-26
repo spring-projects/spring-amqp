@@ -92,6 +92,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Alex Panchenko
  * @author Johno Crawford
+ * @author Arnaud Cogoluègnes
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
@@ -101,7 +102,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	public static final boolean DEFAULT_DEBATCHING_ENABLED = true;
 
-	public static final int DEFAULT_PREFETCH_COUNT = 1;
+	public static final int DEFAULT_PREFETCH_COUNT = 250;
 
 	/**
 	 * The default recovery interval: 5000 ms = 5 seconds.

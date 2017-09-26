@@ -4198,6 +4198,7 @@ a| image::images/tickmark.png[]
 The higher this is the faster the messages can be delivered, but the higher the risk of non-sequential processing.
 Ignored if the `acknowledgeMode` is NONE.
 This will be increased, if necessary, to match the `txSize` or `messagePerAck`.
+Defaults to 250 since 2.0; set to 1 to revert to previous behavior.
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]

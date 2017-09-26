@@ -64,6 +64,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 /**
  * @author Gary Russell
+ * @author Arnaud Cogoluègnes
  * @since 1.1.2
  *
  */
@@ -141,6 +142,7 @@ public class MissingIdRetryTests {
 		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
 		ConnectionFactory connectionFactory = ctx.getBean(ConnectionFactory.class);
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		container.setPrefetchCount(1);
 		container.setMessageListener(new MessageListenerAdapter(new POJO()));
 		container.setQueueNames("retry.test.queue");
 
