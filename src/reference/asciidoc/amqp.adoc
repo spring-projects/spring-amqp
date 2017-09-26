@@ -1336,6 +1336,25 @@ if (received) {
 IMPORTANT: Spring AMQP also supports annotated-listener endpoints through the use of the `@RabbitListener` annotation and provides an open infrastructure to register endpoints programmatically.
 This is by far the most convenient way to setup an asynchronous consumer, see <<async-annotation-driven>> for more details.
 
+[IMPORTANT]
+====
+The prefetch default value used to be 1, which could lead to under-utilization of efficient consumers.
+Starting with _version 2.0_, the default prefetch value is now 250, which should keep consumers busy in most common scenarios and
+thus improve throughput.
+
+There are nevertheless scenarios where the prefetch value should
+be low: for example, with large messages, especially if the processing is slow (messages could add up
+to a large amount of memory in the client process), and if strict message ordering is necessary
+(the prefetch value should be set back to 1 in this case).
+
+Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+
+See <<containerAttributes>>.
+
+For more background about prefetch, see this post about https://www.rabbitmq.com/blog/2014/04/14/finding-bottlenecks-with-rabbitmq-3-3/[consumer utilization in RabbitMQ]
+and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
+====
+
 ====== Message Listener
 
 For asynchronous Message reception, a dedicated component (not the `AmqpTemplate`) is involved.
@@ -4194,11 +4213,18 @@ a| image::images/tickmark.png[]
 | prefetchCount
 (prefetch)
 
-| The number of messages to accept from the broker in one socket frame.
+a| The number of messages to accept from the broker in one socket frame.
 The higher this is the faster the messages can be delivered, but the higher the risk of non-sequential processing.
 Ignored if the `acknowledgeMode` is NONE.
 This will be increased, if necessary, to match the `txSize` or `messagePerAck`.
 Defaults to 250 since 2.0; set to 1 to revert to previous behavior.
+
+IMPORTANT: There are scenarios where the prefetch value should
+be low: for example, with large messages, especially if the processing is slow (messages could add up
+to a large amount of memory in the client process), and if strict message ordering is necessary
+(the prefetch value should be set back to 1 in this case).
+Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+
 
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
