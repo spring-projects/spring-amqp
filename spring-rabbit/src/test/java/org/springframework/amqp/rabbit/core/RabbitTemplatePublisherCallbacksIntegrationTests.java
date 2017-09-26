@@ -90,6 +90,7 @@ import com.rabbitmq.client.ConnectionFactory;
  * @author Gunar Hillert
  * @author Artem Bilan
  * @author Rolf Arne Corneliussen
+ * @author Arnaud Cogoluègnes
  * @since 1.1
  *
  */
@@ -610,9 +611,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		channel.basicQos(3, false);
 		verify(mockChannel).basicQos(3, false);
-
-		doReturn(true).when(mockChannel).flowBlocked();
-		assertTrue(channel.flowBlocked());
 
 	}
 

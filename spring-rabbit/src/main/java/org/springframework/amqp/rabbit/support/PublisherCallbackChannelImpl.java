@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -50,13 +51,18 @@ import com.rabbitmq.client.AMQP.Tx.RollbackOk;
 import com.rabbitmq.client.AMQP.Tx.SelectOk;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BuiltinExchangeType;
+import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Command;
+import com.rabbitmq.client.ConfirmCallback;
 import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.ConsumerShutdownSignalCallback;
+import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.Method;
+import com.rabbitmq.client.ReturnCallback;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -66,6 +72,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * confirms from multiple channels.
  *
  * @author Gary Russell
+ * @author Arnaud Cogoluègnes
  * @since 1.0.1
  *
  */
@@ -132,18 +139,6 @@ public class PublisherCallbackChannelImpl
 		this.delegate.close(closeCode, closeMessage);
 	}
 
-	/**
-	 * Added to the 3.3.x client.
-	 * @since 1.3.3
-	 * @deprecated in the 3.5.3 client
-	 */
-	@Override
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	public boolean flowBlocked() {
-		return this.delegate.flowBlocked();
-	}
-
 	@Override
 	public void abort() throws IOException {
 		this.delegate.abort();
@@ -152,24 +147,6 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void abort(int closeCode, String closeMessage) throws IOException {
 		this.delegate.abort(closeCode, closeMessage);
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public void addFlowListener(com.rabbitmq.client.FlowListener listener) {
-		this.delegate.addFlowListener(listener);
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public boolean removeFlowListener(com.rabbitmq.client.FlowListener listener) {
-		return this.delegate.removeFlowListener(listener);
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public void clearFlowListeners() {
-		this.delegate.clearFlowListeners();
 	}
 
 	@Override
@@ -408,16 +385,103 @@ public class PublisherCallbackChannelImpl
 		return this.delegate.basicConsume(queue, callback);
 	}
 
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, DeliverCallback deliverCallback, CancelCallback cancelCallback) throws IOException {
+		return this.delegate.basicConsume(queue, deliverCallback, cancelCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, DeliverCallback deliverCallback, ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, deliverCallback, shutdownSignalCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, DeliverCallback deliverCallback, CancelCallback cancelCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, deliverCallback, cancelCallback, shutdownSignalCallback);
+	}
+
 	@Override
 	public String basicConsume(String queue, boolean autoAck, Consumer callback)
 			throws IOException {
 		return this.delegate.basicConsume(queue, autoAck, callback);
 	}
 
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, DeliverCallback deliverCallback, CancelCallback cancelCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, deliverCallback, cancelCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, DeliverCallback deliverCallback, ConsumerShutdownSignalCallback shutdownSignalCallback)
+			throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, deliverCallback, shutdownSignalCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, DeliverCallback deliverCallback, CancelCallback cancelCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, deliverCallback, cancelCallback, shutdownSignalCallback);
+	}
+
 	@Override
 	public String basicConsume(String queue, boolean autoAck,
 			String consumerTag, Consumer callback) throws IOException {
 		return this.delegate.basicConsume(queue, autoAck, consumerTag, callback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, DeliverCallback deliverCallback, CancelCallback cancelCallback)
+			throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, deliverCallback, cancelCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, DeliverCallback deliverCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, deliverCallback, shutdownSignalCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, DeliverCallback deliverCallback, CancelCallback cancelCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, deliverCallback, cancelCallback, shutdownSignalCallback);
 	}
 
 	/**
@@ -430,6 +494,36 @@ public class PublisherCallbackChannelImpl
 		return this.delegate.basicConsume(queue, autoAck, arguments, callback);
 	}
 
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, Map<String, Object> arguments, DeliverCallback deliverCallback, CancelCallback cancelCallback)
+			throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, arguments, deliverCallback, cancelCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, Map<String, Object> arguments, DeliverCallback deliverCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, arguments, deliverCallback, shutdownSignalCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, Map<String, Object> arguments, DeliverCallback deliverCallback, CancelCallback cancelCallback,
+			ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, arguments, deliverCallback, cancelCallback, shutdownSignalCallback);
+	}
+
 	@Override
 	public String basicConsume(String queue, boolean autoAck,
 			String consumerTag, boolean noLocal, boolean exclusive,
@@ -437,6 +531,36 @@ public class PublisherCallbackChannelImpl
 			throws IOException {
 		return this.delegate.basicConsume(queue, autoAck, consumerTag, noLocal,
 				exclusive, arguments, callback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, boolean noLocal, boolean exclusive, Map<String, Object> arguments,
+			DeliverCallback deliverCallback, CancelCallback cancelCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, noLocal, exclusive, arguments, deliverCallback, cancelCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, boolean noLocal, boolean exclusive, Map<String, Object> arguments,
+			DeliverCallback deliverCallback, ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, noLocal, exclusive, arguments, deliverCallback, shutdownSignalCallback);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public String basicConsume(String queue, boolean autoAck, String consumerTag, boolean noLocal, boolean exclusive, Map<String, Object> arguments,
+			DeliverCallback deliverCallback, CancelCallback cancelCallback, ConsumerShutdownSignalCallback shutdownSignalCallback) throws IOException {
+		return this.delegate.basicConsume(queue, autoAck, consumerTag, noLocal, exclusive, arguments, deliverCallback, cancelCallback, shutdownSignalCallback);
 	}
 
 	@Override
@@ -518,6 +642,11 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
+	public ConfirmListener addConfirmListener(ConfirmCallback ackCallback, ConfirmCallback nackCallback) {
+		return this.delegate.addConfirmListener(ackCallback, nackCallback);
+	}
+
+	@Override
 	public boolean removeConfirmListener(ConfirmListener listener) {
 		return this.delegate.removeConfirmListener(listener);
 	}
@@ -530,6 +659,15 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void addReturnListener(ReturnListener listener) {
 		this.delegate.addReturnListener(listener);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public ReturnListener addReturnListener(ReturnCallback returnCallback) {
+		return this.delegate.addReturnListener(returnCallback);
 	}
 
 	@Override
@@ -596,6 +734,15 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public long consumerCount(String queue) throws IOException {
 		return this.delegate.consumerCount(queue);
+	}
+
+	/**
+	 * Added to the 5.0.x client.
+	 * @since 2.0
+	 */
+	@Override
+	public CompletableFuture<Command> asyncCompletableRpc(Method method) throws IOException {
+		return this.delegate.asyncCompletableRpc(method);
 	}
 
 	@Override
