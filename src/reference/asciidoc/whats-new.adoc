@@ -68,6 +68,21 @@ See <<message-listener-adapter>> for more information.
 
 ===== Listener Container Changes
 
+====== Prefetch default value
+
+The prefetch default value used to be 1, which could lead to under-utilization of efficient consumers.
+The default prefetch value is now 250, which should keep consumers busy in most common scenarios and
+thus improve throughput.
+
+IMPORTANT: There are nevertheless scenarios where the prefetch value should
+be low: for example, with large messages, especially if the processing is slow (messages could add up
+to a large amount of memory in the client process), and if strict message ordering is necessary
+(the prefetch value should be set back to 1 in this case).
+Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+
+For more background about prefetch, see this post about https://www.rabbitmq.com/blog/2014/04/14/finding-bottlenecks-with-rabbitmq-3-3/[consumer utilization in RabbitMQ]
+and this post about https://www.rabbitmq.com/blog/2012/05/11/some-queuing-theory-throughput-latency-and-bandwidth/[queuing theory].
+
 ====== Message Count
 
 Previously, `MessageProperties.getMessageCount()` returned `0` for messages emitted by the container.
