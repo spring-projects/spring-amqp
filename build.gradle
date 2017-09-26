@@ -198,6 +198,20 @@ subprojects { subproject ->
 		archives javadocJar
 	}
 
+	jar {
+		manifest {
+			attributes(
+					'Implementation-Version': version,
+					'Created-By': "JDK ${System.properties['java.version']} (${System.properties['java.specification.vendor']})",
+					'Implementation-Title': subproject.name,
+					'Implementation-Vendor-Id': subproject.group,
+					'Implementation-Vendor': 'Pivotal Software, Inc.',
+					'Implementation-URL': linkHomepage,
+					'Automatic-Module-Name': subproject.name.replace('-', '.')  // for Jigsaw
+			)
+		}
+	}
+
 	check.dependsOn javadoc
 	build.dependsOn jacocoTestReport
 
