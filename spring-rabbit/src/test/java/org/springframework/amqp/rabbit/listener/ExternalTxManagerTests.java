@@ -216,8 +216,9 @@ public abstract class ExternalTxManagerTests {
 
 		transactionManager.rolledBack = false;
 		transactionManager.latch = new CountDownLatch(1);
+		container.setAfterReceivePostProcessors(m -> null);
 		container.setMessageListener(m -> {
-			throw new ImmediateAcknowledgeAmqpException("foo");
+			// NOSONAR
 		});
 		commitLatch.set(new CountDownLatch(1));
 		consumer.get().handleDelivery("qux", new Envelope(1, false, "foo", "bar"), new BasicProperties(),

@@ -863,7 +863,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			catch (ImmediateAcknowledgeAmqpException e) {
 				if (this.logger.isDebugEnabled()) {
-					this.logger.debug("User requested ack for failed delivery: " + deliveryTag);
+					this.logger.debug("User requested ack for failed delivery '"
+							+ e.getMessage() + "': "
+							+ deliveryTag);
 				}
 				handleAck(deliveryTag, channelLocallyTransacted);
 			}

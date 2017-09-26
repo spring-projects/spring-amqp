@@ -98,6 +98,9 @@ See <<transaction-rollback>> for more information.
 If the container threads do not respond to a shutdown within `shutdownTimeout`, the channel(s) will be forced closed, by default.
 See <<containerAttributes>> for more information.
 
+====== After Receive Message Post Processors
+
+If a `MessagePostProcessor` in the `afterReceiveMessagePostProcessors` property returns `null`, the message is discarded (and acknowledged if appropriate).
 
 ===== Connection Factory Changes
 
