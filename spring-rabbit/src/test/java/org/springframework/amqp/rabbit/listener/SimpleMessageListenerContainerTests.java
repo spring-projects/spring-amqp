@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -58,9 +59,11 @@ import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -524,6 +527,34 @@ public class SimpleMessageListenerContainerTests {
 		assertTrue(container.isRunning());
 
 		container.destroy();
+	}
+
+	@Test
+	public void testNullMPP() throws Exception {
+		class Container extends SimpleMessageListenerContainer {
+
+			@Override
+			public void executeListener(Channel channel, Message messageIn) throws Exception {
+				super.executeListener(channel, messageIn);
+			}
+
+		}
+		Container container = new Container();
+		container.setMessageListener(m -> {
+			// NOSONAR
+		});
+		container.setAfterReceivePostProcessors(m -> null);
+		container.setConnectionFactory(mock(ConnectionFactory.class));
+		container.afterPropertiesSet();
+		container.start();
+		try {
+			container.executeListener(null, MessageBuilder.withBody("foo".getBytes()).build());
+			fail("Expected exception");
+		}
+		catch (ImmediateAcknowledgeAmqpException e) {
+			// NOSONAR
+		}
+		container.stop();
 	}
 
 	private Answer<Object> messageToConsumer(final Channel mockChannel, final SimpleMessageListenerContainer container,

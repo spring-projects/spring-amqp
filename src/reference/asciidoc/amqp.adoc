@@ -4699,6 +4699,16 @@ a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
+| afterReceivePostProcessors
+(N/A)
+
+| An array of `MessagePostProcessor` s which are invoked, before invoking the listener.
+Post processors can implement `PriorityOrdered`, `Ordered`; the array is sorted with un-ordered members invoked last.
+If a post processor returns `null`, the message is discarded (and acknowledged, if appropriate).
+
+a| image::images/tickmark.png[]
+a| image::images/tickmark.png[]
+
 |===
 
 [[listener-concurrency]]

@@ -1265,6 +1265,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			if (this.afterReceivePostProcessors != null) {
 				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
 					message = processor.postProcessMessage(message);
+					if (message == null) {
+						throw new ImmediateAcknowledgeAmqpException(
+								"Message Post Processor returned 'null', discarding message");
+					}
 				}
 			}
 			Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
