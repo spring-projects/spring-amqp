@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -88,6 +87,7 @@ import com.rabbitmq.client.Channel;
  * @author Gunnar Hillert
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.3
  *
  */
@@ -225,16 +225,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue("Timed out waiting for message", waited);
 		BlockingQueueConsumer newConsumer = consumer;
 		int n = 0;
-		while (n++ < 100 && newConsumer == consumer) {
-			try {
-				newConsumer = (BlockingQueueConsumer) consumers.iterator().next();
-				if (newConsumer == consumer) {
-					break;
-				}
-			}
-			catch (NoSuchElementException e) {
-				// race; hasNext() won't help
-			}
+		while (n++ < 100 && consumers.iterator().hasNext() && newConsumer == consumer) {
+			newConsumer = (BlockingQueueConsumer) consumers.iterator().next();
 			Thread.sleep(100);
 		}
 		assertTrue("Failed to restart consumer", n < 100);
