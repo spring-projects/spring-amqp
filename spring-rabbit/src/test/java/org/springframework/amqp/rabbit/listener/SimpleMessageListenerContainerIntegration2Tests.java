@@ -225,10 +225,10 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue("Timed out waiting for message", waited);
 		BlockingQueueConsumer newConsumer = consumer;
 		int n = 0;
-		while (n++ < 100 && newConsumer == consumer) {
+		while (n++ < 100) {
 			try {
 				newConsumer = (BlockingQueueConsumer) consumers.iterator().next();
-				if (newConsumer == consumer) {
+				if (newConsumer != consumer) {
 					break;
 				}
 			}
