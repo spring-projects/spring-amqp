@@ -71,6 +71,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private String group;
 
+	private Boolean autoStartup;
+
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		this.beanFactory = beanFactory;
@@ -226,6 +228,21 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 */
 	public void setGroup(String group) {
 		this.group = group;
+	}
+
+
+	/**
+	 * Override the default autoStartup property.
+	 * @param autoStartup the autoStartup.
+	 * @since 2.0
+	 */
+	public void setAutoStartup(Boolean autoStartup) {
+		this.autoStartup = autoStartup;
+	}
+
+	@Override
+	public Boolean getAutoStartup() {
+		return this.autoStartup;
 	}
 
 	@Override

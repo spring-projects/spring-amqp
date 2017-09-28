@@ -133,6 +133,8 @@ Also `@QueueBinding.exchange()` now supports custom exchange types and declares 
 
 You can now set the `concurrency` of the listener container at the annotation level rather than having to configure a different container factory for different concurrency settings.
 
+You can now set the `autoStartup` property of the listener container at the annotation level, overriding the default setting in the container factory.
+
 See <<async-annotation-driven>> for more information.
 
 ===== Container Conditional Rollback

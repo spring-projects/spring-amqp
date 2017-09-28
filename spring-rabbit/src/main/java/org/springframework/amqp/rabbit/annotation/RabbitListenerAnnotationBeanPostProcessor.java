@@ -410,6 +410,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				endpoint.setGroup((String) resolvedGroup);
 			}
 		}
+		String autoStartup = rabbitListener.autoStartup();
+		if (StringUtils.hasText(autoStartup)) {
+			endpoint.setAutoStartup(resolveExpressionAsBoolean(autoStartup));
+		}
 
 		endpoint.setExclusive(rabbitListener.exclusive());
 		String priority = resolve(rabbitListener.priority());
