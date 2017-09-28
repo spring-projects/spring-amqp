@@ -340,7 +340,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.applicationEventPublisher != null) {
 			instance.setApplicationEventPublisher(this.applicationEventPublisher);
 		}
-		if (this.autoStartup != null) {
+		if (endpoint.getAutoStartup() != null) {
+			instance.setAutoStartup(endpoint.getAutoStartup());
+		}
+		else if (this.autoStartup != null) {
 			instance.setAutoStartup(this.autoStartup);
 		}
 		if (this.phase != null) {

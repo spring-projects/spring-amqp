@@ -276,11 +276,13 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void simpleDirectEndpoint() {
+		MessageListenerContainer container = this.registry.getListenerContainer("direct");
+		assertFalse(container.isRunning());
+		container.start();
 		String reply = (String) rabbitTemplate.convertSendAndReceive("test.simple.direct", "foo");
 		assertThat(reply, startsWith("FOOfoo"));
 		assertThat(reply, containsString("rabbitClientThread-")); // container runs on client thread
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("direct"), "consumersPerQueue"),
-				equalTo(2));
+		assertThat(TestUtils.getPropertyValue(container, "consumersPerQueue"), equalTo(2));
 	}
 
 	@Test
@@ -768,7 +770,7 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase();
 		}
 
-		@RabbitListener(id = "direct", queues = "test.simple.direct",
+		@RabbitListener(id = "direct", queues = "test.simple.direct", autoStartup = "${no.property.here:false}",
 				containerFactory = "directListenerContainerFactory")
 		public String capitalizeDirect1(String foo) {
 			return foo.toUpperCase() + foo + Thread.currentThread().getName();

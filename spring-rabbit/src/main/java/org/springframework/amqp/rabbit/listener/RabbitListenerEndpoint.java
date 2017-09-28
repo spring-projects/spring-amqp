@@ -49,6 +49,13 @@ public interface RabbitListenerEndpoint {
 	String getConcurrency();
 
 	/**
+	 * Override of the default autoStartup property.
+	 * @return the autoStartup.
+	 * @since 2.0
+	 */
+	Boolean getAutoStartup();
+
+	/**
 	 * Setup the specified message listener container with the model
 	 * defined by this endpoint.
 	 * <p>This endpoint must provide the requested missing option(s) of
