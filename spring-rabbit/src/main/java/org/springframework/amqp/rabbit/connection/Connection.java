@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package org.springframework.amqp.rabbit.connection;
 
 import org.springframework.amqp.AmqpException;
 
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 
 /**
  * @author Dave Syer
  * @author Gary Russell
- *
+ * @author Artem Bilan
  */
 public interface Connection {
 
@@ -57,5 +58,24 @@ public interface Connection {
 	 * @return the local port if the underlying connection supports it.
 	 */
 	int getLocalPort();
+
+
+	/**
+	 * Add a {@link BlockedListener}.
+	 * @param listener the listener to add
+	 * @since 2.0
+	 * @see com.rabbitmq.client.Connection#addBlockedListener(BlockedListener)
+	 */
+	void addBlockedListener(BlockedListener listener);
+
+	/**
+	 * Remove a {@link BlockedListener}.
+	 * @param listener the listener to remove
+	 * @return <code><b>true</b></code> if the listener was found and removed,
+	 * <code><b>false</b></code> otherwise
+	 * @since 2.0
+	 * @see com.rabbitmq.client.Connection#removeBlockedListener(BlockedListener)
+	 */
+	boolean removeBlockedListener(BlockedListener listener);
 
 }

@@ -35,12 +35,19 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.Address;
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
@@ -52,7 +59,10 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Artem Bilan
  *
  */
-public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware {
+public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
+		ApplicationContextAware, ApplicationEventPublisherAware, ApplicationListener<ContextClosedEvent> {
+
+	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
 
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
@@ -84,20 +94,24 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	};
 
-	private volatile ExecutorService executorService;
+	private ExecutorService executorService;
 
-	private volatile Address[] addresses;
+	private Address[] addresses;
 
-	public static final int DEFAULT_CLOSE_TIMEOUT = 30000;
-
-	private volatile int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
+	private int closeTimeout = DEFAULT_CLOSE_TIMEOUT;
 
 	private ConnectionNameStrategy connectionNameStrategy =
 			connectionFactory -> (this.beanName != null ? this.beanName : "SpringAMQP") +
 					"#" + ObjectUtils.getIdentityHexString(this) + ":" +
 					this.defaultConnectionNameStrategyCounter.getAndIncrement();
 
-	private volatile String beanName;
+	private String beanName;
+
+	private ApplicationContext applicationContext;
+
+	private ApplicationEventPublisher applicationEventPublisher;
+
+	private volatile boolean contextStopped;
 
 	/**
 	 * Create a new AbstractConnectionFactory for the given target ConnectionFactory.
@@ -106,6 +120,35 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	public AbstractConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
 		Assert.notNull(rabbitConnectionFactory, "Target ConnectionFactory must not be null");
 		this.rabbitConnectionFactory = rabbitConnectionFactory;
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		this.applicationContext = applicationContext;
+	}
+
+	protected ApplicationContext getApplicationContext() {
+		return this.applicationContext;
+	}
+
+	@Override
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
+	}
+
+	protected ApplicationEventPublisher getApplicationEventPublisher() {
+		return this.applicationEventPublisher;
+	}
+
+	@Override
+	public void onApplicationEvent(ContextClosedEvent event) {
+		if (getApplicationContext() == event.getApplicationContext()) {
+			this.contextStopped = true;
+		}
+	}
+
+	protected boolean getContextStopped() {
+		return this.contextStopped;
 	}
 
 	/**
@@ -351,6 +394,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 			if (this.recoveryListener != null && rabbitConnection instanceof AutorecoveringConnection) {
 				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(this.recoveryListener);
 			}
+
+			if (this.applicationEventPublisher != null) {
+				connection.addBlockedListener(new ConnectionBlockedListener(connection, this.applicationEventPublisher));
+			}
+
 			return connection;
 		}
 		catch (IOException | TimeoutException e) {
@@ -384,6 +432,29 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		else {
 			return super.toString();
 		}
+	}
+
+	private static final class ConnectionBlockedListener implements BlockedListener {
+
+		private final Connection connection;
+
+		private final ApplicationEventPublisher applicationEventPublisher;
+
+		ConnectionBlockedListener(Connection connection, ApplicationEventPublisher applicationEventPublisher) {
+			this.connection = connection;
+			this.applicationEventPublisher = applicationEventPublisher;
+		}
+
+		@Override
+		public void handleBlocked(String reason) throws IOException {
+			this.applicationEventPublisher.publishEvent(new ConnectionBlockedEvent(this.connection, reason));
+		}
+
+		@Override
+		public void handleUnblocked() throws IOException {
+			this.applicationEventPublisher.publishEvent(new ConnectionUnblockedEvent(this.connection));
+		}
+
 	}
 
 }

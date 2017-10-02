@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.NetworkConnection;
 import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
@@ -31,9 +32,9 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  *
  * @author Dave Syer
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.0
- *
  */
 public class SimpleConnection implements Connection, NetworkConnection {
 
@@ -104,6 +105,16 @@ public class SimpleConnection implements Connection, NetworkConnection {
 			return ((NetworkConnection) this.delegate).getLocalPort();
 		}
 		return 0;
+	}
+
+	@Override
+	public void addBlockedListener(BlockedListener listener) {
+		this.delegate.addBlockedListener(listener);
+	}
+
+	@Override
+	public boolean removeBlockedListener(BlockedListener listener) {
+		return this.delegate.removeBlockedListener(listener);
 	}
 
 	@Override

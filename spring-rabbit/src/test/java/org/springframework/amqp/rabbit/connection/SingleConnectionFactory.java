@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.List;
 import org.springframework.amqp.AmqpException;
 import org.springframework.util.StringUtils;
 
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 
 /**
@@ -33,6 +34,7 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Steve Powell
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public class SingleConnectionFactory extends AbstractConnectionFactory {
 
@@ -164,7 +166,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 	 * useful for allowing application code to handle a special framework Connection just like an ordinary Connection
 	 * from a Rabbit ConnectionFactory.
 	 */
-	private class SharedConnectionProxy implements Connection, ConnectionProxy {
+	private class SharedConnectionProxy implements ConnectionProxy {
 
 		private volatile Connection target;
 
@@ -172,6 +174,7 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 			this.target = target;
 		}
 
+		@Override
 		public Channel createChannel(boolean transactional) {
 			if (!isOpen()) {
 				synchronized (this) {
@@ -187,6 +190,17 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 			return channel;
 		}
 
+		@Override
+		public void addBlockedListener(BlockedListener listener) {
+			this.target.addBlockedListener(listener);
+		}
+
+		@Override
+		public boolean removeBlockedListener(BlockedListener listener) {
+			return this.target.removeBlockedListener(listener);
+		}
+
+		@Override
 		public void close() {
 		}
 
@@ -198,10 +212,12 @@ public class SingleConnectionFactory extends AbstractConnectionFactory {
 			this.target = null;
 		}
 
+		@Override
 		public boolean isOpen() {
 			return target != null && target.isOpen();
 		}
 
+		@Override
 		public Connection getTargetConnection() {
 			return target;
 		}

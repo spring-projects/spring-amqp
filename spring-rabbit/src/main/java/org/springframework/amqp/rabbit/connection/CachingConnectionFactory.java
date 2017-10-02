@@ -49,12 +49,7 @@ import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.util.Assert;
@@ -62,6 +57,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AlreadyClosedException;
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
@@ -96,8 +92,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
-		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
-				PublisherCallbackChannelConnectionFactory {
+		implements InitializingBean, ShutdownListener, PublisherCallbackChannelConnectionFactory {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
 
@@ -122,25 +117,25 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		CONNECTION
 	}
 
-	private final Set<ChannelCachingConnectionProxy> allocatedConnections =
-			new HashSet<ChannelCachingConnectionProxy>();
+	private final Set<ChannelCachingConnectionProxy> allocatedConnections = new HashSet<>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-		allocatedConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+		allocatedConnectionNonTransactionalChannels = new HashMap<>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-		allocatedConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+		allocatedConnectionTransactionalChannels = new HashMap<>();
 
-	private final BlockingDeque<ChannelCachingConnectionProxy> idleConnections =
-			new LinkedBlockingDeque<ChannelCachingConnectionProxy>();
+	private final BlockingDeque<ChannelCachingConnectionProxy> idleConnections = new LinkedBlockingDeque<>();
 
-	private final Map<Connection, Semaphore> checkoutPermits = new HashMap<Connection, Semaphore>();
+	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<>();
 
-	private final Map<String, AtomicInteger> channelHighWaterMarks = new HashMap<String, AtomicInteger>();
+	private final LinkedList<ChannelProxy> cachedChannelsTransactional = new LinkedList<>();
+
+	private final Map<Connection, Semaphore> checkoutPermits = new HashMap<>();
+
+	private final Map<String, AtomicInteger> channelHighWaterMarks = new HashMap<>();
 
 	private final AtomicInteger connectionHighWaterMark = new AtomicInteger();
-
-	private ApplicationContext applicationContext;
 
 	private volatile long channelCheckoutTimeout = 0;
 
@@ -152,10 +147,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile int connectionLimit = Integer.MAX_VALUE;
 
-	private final LinkedList<ChannelProxy> cachedChannelsNonTransactional = new LinkedList<ChannelProxy>();
-
-	private final LinkedList<ChannelProxy> cachedChannelsTransactional = new LinkedList<ChannelProxy>();
-
 	private volatile boolean active = true;
 
 	private volatile boolean publisherConfirms;
@@ -163,8 +154,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private volatile boolean publisherReturns;
 
 	private volatile boolean initialized;
-
-	private volatile boolean contextStopped;
 
 	private volatile boolean stopped;
 
@@ -388,18 +377,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			getConnectionListener().onShutDown(cause);
 		}
 
-	}
-
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
-	}
-
-	@Override
-	public void onApplicationEvent(ContextClosedEvent event) {
-		if (this.applicationContext == event.getApplicationContext()) {
-			this.contextStopped = true;
-		}
 	}
 
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
@@ -700,7 +677,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	@Override
 	public final void destroy() {
 		resetConnection();
-		if (this.contextStopped) {
+		if (getContextStopped()) {
 			this.stopped = true;
 			this.deferredCloseExecutor.shutdownNow();
 		}
@@ -1087,23 +1064,36 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	}
 
-	private class ChannelCachingConnectionProxy implements Connection, ConnectionProxy { // NOSONAR - final (tests spy)
-
-		private volatile Connection target;
+	private class ChannelCachingConnectionProxy implements ConnectionProxy { // NOSONAR - final (tests spy)
 
 		private final AtomicBoolean closeNotified = new AtomicBoolean(false);
+
+		private volatile Connection target;
 
 		ChannelCachingConnectionProxy(Connection target) {
 			this.target = target;
 		}
 
 		private Channel createBareChannel(boolean transactional) {
+			Assert.state(this.target != null, "Can't create channel - no target connection.");
 			return this.target.createChannel(transactional);
 		}
 
 		@Override
 		public Channel createChannel(boolean transactional) {
 			return getChannel(this, transactional);
+		}
+
+		@Override
+		public void addBlockedListener(BlockedListener listener) {
+			Assert.state(this.target != null, "Can't add blocked listener - no target connection.");
+			this.target.addBlockedListener(listener);
+		}
+
+		@Override
+		public boolean removeBlockedListener(BlockedListener listener) {
+			Assert.state(this.target != null, "Can't remove blocked listener - no target connection.");
+			return this.target.removeBlockedListener(listener);
 		}
 
 		@Override
@@ -1114,7 +1104,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					 * Only connectionCacheSize open idle connections are allowed.
 					 */
 					if (!CachingConnectionFactory.this.idleConnections.contains(this)) {
-						if (!this.target.isOpen()
+						if (!isOpen()
 								|| countOpenIdleConnections() >= CachingConnectionFactory.this.connectionCacheSize) {
 							if (logger.isDebugEnabled()) {
 								logger.debug("Completely closing connection '" + this + "'");
