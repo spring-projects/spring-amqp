@@ -1348,6 +1348,8 @@ to a large amount of memory in the client process), and if strict message orderi
 (the prefetch value should be set back to 1 in this case).
 
 Also, with low-volume messaging and multiple consumers (including concurrency within a single listener container instance), you may wish to reduce the prefetch to get a more even distribution of messages across consumers.
+It is also recomended to use `prefetch = 1` with the `MANUAL` ack mode.
+The `basicAck` is async operation and if something wrong happens on the Broker (double ack for the same delivery tag, for example), you end up with processed subsequent messages in the batch, but unacked on the Broker and other consumer may see them.
 
 See <<containerAttributes>>.
 

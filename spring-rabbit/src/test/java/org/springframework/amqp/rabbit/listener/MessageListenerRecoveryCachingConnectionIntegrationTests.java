@@ -63,6 +63,8 @@ import com.rabbitmq.client.Channel;
  * @author Dave Syer
  * @author Gunnar Hillert
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -459,6 +461,7 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setMessageListener(new MessageListenerAdapter(listener));
 		container.setQueueNames(queueName);
+		container.setPrefetchCount(1);
 		container.setConcurrentConsumers(concurrentConsumers);
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
@@ -483,22 +486,19 @@ public class MessageListenerRecoveryCachingConnectionIntegrationTests {
 		@Override
 		public void onMessage(Message message, Channel channel) throws Exception {
 			String value = new String(message.getBody());
-			try {
-				logger.debug("Acking: " + value);
+			logger.debug("Acking: " + value);
+			channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+			if (failed.compareAndSet(false, true)) {
+				// intentional error (causes exception on connection thread):
 				channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-				if (failed.compareAndSet(false, true)) {
-					// intentional error (causes exception on connection thread):
-					channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-				}
 			}
-			finally {
-				if (this.received.add(value)) {
-					latch.countDown();
-				}
-				else {
-					logger.debug(value + " already received, redelivered="
-							+ message.getMessageProperties().isRedelivered());
-				}
+
+			if (this.received.add(value)) {
+				latch.countDown();
+			}
+			else {
+				logger.debug(value + " already received, redelivered="
+						+ message.getMessageProperties().isRedelivered());
 			}
 		}
 	}
