@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,18 @@
 package org.springframework.amqp.rabbit.connection;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,13 +40,21 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.rabbitmq.client.BlockedListener;
+import com.rabbitmq.client.impl.AMQCommand;
+import com.rabbitmq.client.impl.AMQConnection;
+import com.rabbitmq.client.impl.AMQImpl;
+
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5.3
  *
  */
@@ -62,6 +78,56 @@ public class ConnectionFactoryLifecycleTests {
 		catch (AmqpApplicationContextClosedException e) {
 			assertThat(e.getMessage(), containsString("The ApplicationContext is closed"));
 		}
+	}
+
+	@Test
+	public void testBlockedConnection() throws Exception {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Config.class);
+
+		AtomicReference<ConnectionBlockedEvent> blockedConnectionEvent = new AtomicReference<>();
+		AtomicReference<ConnectionUnblockedEvent> unblockedConnectionEvent = new AtomicReference<>();
+
+		context.addApplicationListener((ApplicationListener<ConnectionBlockedEvent>) blockedConnectionEvent::set);
+
+		context.addApplicationListener((ApplicationListener<ConnectionUnblockedEvent>) unblockedConnectionEvent::set);
+
+		CachingConnectionFactory cf = context.getBean(CachingConnectionFactory.class);
+
+		CountDownLatch blockedConnectionLatch = new CountDownLatch(1);
+		CountDownLatch unblockedConnectionLatch = new CountDownLatch(1);
+
+		Connection connection = cf.createConnection();
+		connection.addBlockedListener(new BlockedListener() {
+
+			@Override
+			public void handleBlocked(String reason) throws IOException {
+				blockedConnectionLatch.countDown();
+			}
+
+			@Override
+			public void handleUnblocked() throws IOException {
+				unblockedConnectionLatch.countDown();
+			}
+
+		});
+
+		AMQConnection amqConnection = TestUtils.getPropertyValue(connection, "target.delegate", AMQConnection.class);
+		amqConnection.processControlCommand(new AMQCommand(new AMQImpl.Connection.Blocked("Test connection blocked")));
+
+		assertTrue(blockedConnectionLatch.await(10, TimeUnit.SECONDS));
+
+		ConnectionBlockedEvent connectionBlockedEvent = blockedConnectionEvent.get();
+		assertNotNull(connectionBlockedEvent);
+		assertEquals("Test connection blocked", connectionBlockedEvent.getReason());
+		assertSame(TestUtils.getPropertyValue(connection, "target"), connectionBlockedEvent.getConnection());
+
+		amqConnection.processControlCommand(new AMQCommand(new AMQImpl.Connection.Unblocked()));
+
+		assertTrue(unblockedConnectionLatch.await(10, TimeUnit.SECONDS));
+
+		ConnectionUnblockedEvent connectionUnblockedEvent = unblockedConnectionEvent.get();
+		assertNotNull(connectionUnblockedEvent);
+		assertSame(TestUtils.getPropertyValue(connection, "target"), connectionUnblockedEvent.getConnection());
 	}
 
 	@Configuration

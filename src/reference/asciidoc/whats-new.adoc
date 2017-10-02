@@ -158,6 +158,12 @@ To revert to a `Hashtable` use `setDefaultMapType` on the `DefaultClassMapper`.
 When parsing `Queue` and `Exchange` XML components, the parsers no longer register the `name` attribute value as a bean alias if an `id` attribute is present.
 See <<note-id-name>> for more information.
 
+===== Blocked Connection
+The `com.rabbitmq.client.BlockedListener` can now be injected into the `org.springframework.amqp.rabbit.connection.Connection` object.
+Also the `ConnectionBlockedEvent` and `ConnectionUnblockedEvent` events are emitted by the `ConnectionFactory`, when the connection is blocked or unblocked by the Broker.
+
+See <<connections>> for more information.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

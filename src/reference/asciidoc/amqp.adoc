@@ -361,6 +361,18 @@ The `ConnectionFactory` argument can be used to distinguish target connection na
 By default a `beanName` of the `AbstractConnectionFactory` and an internal counter are used to generate `connection_name`.
 The `<rabbit:connection-factory>` namespace component is also supplied with the `connection-name-strategy` attribute.
 
+
+The connection might be blocked for interaction from the Broker according to the https://www.rabbitmq.com/memory.html[Memory Alarm].
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
+In addition the `AbstractConnectionFactory` emits a `ConnectionBlockedEvent` and `ConnectionUnblockedEvent`, respectively, via its internal `BlockedListener` implementation.
+These allow you to provide application logic to react appropriately to problems on the broker and take some corrective actions for example.
+
+IMPORTANT:  When the application is configured with a single `CachingConnectionFactory`, as it is by default with Spring Boot auto-configuration, the application will stop working when the connection is blocked by the Broker.
+And when it is blocked by the Broker, any its clients stop to work.
+If we have producers and consumers in the same application, we may end up with a deadlock  when producers are blocking the connection because there are no resources on the Broker anymore and consumers can't free them because the connection is blocked.
+To mitigate the problem, there is just enough to have one more separate `CachingConnectionFactory` instance with the same options - one for producers and one for consumers.
+The separate `CachingConnectionFactory` isn't recommended for transactional producers, since they should reuse a `Channel` associated with the consumer transactions.
+
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
 
@@ -587,6 +599,8 @@ public interface ConnectionListener {
 
 }
 ----
+
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
 
 .ChannelListener
 [source, java]
@@ -1220,7 +1234,8 @@ It supports sending messages to a single exchange/routing key. It has properties
 The `SimpleBatchingStrategy` formats the batch by preceding each embedded message with a 4 byte binary length.
 This is communicated to the receiving system by setting the `springBatchFormat` message property to `lengthHeader4`.
 
-IMPORTANT: Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header). Rejecting any message from a batch will cause the entire batch to be rejected.
+IMPORTANT: Batched messages are automatically de-batched by listener containers (using the `springBatchFormat` message header).
+Rejecting any message from a batch will cause the entire batch to be rejected.
 
 
 [[receiving-messages]]
