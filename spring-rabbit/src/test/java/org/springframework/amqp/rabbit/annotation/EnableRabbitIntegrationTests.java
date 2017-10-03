@@ -580,7 +580,7 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void testMeta() throws Exception {
-		rabbitTemplate.convertSendAndReceive("test.metaFanout", "", "foo");
+		this.rabbitTemplate.convertAndSend("test.metaFanout", "", "foo");
 		assertTrue(this.metaListener.latch.await(10, TimeUnit.SECONDS));
 	}
 
@@ -765,7 +765,7 @@ public class EnableRabbitIntegrationTests {
 			return foo + ":" + queue;
 		}
 
-		@RabbitListener(queues = "test.simple", group = "testGroup")
+		@RabbitListener(queues = "test.#{'${my.queue.suffix:SIMPLE}'.toLowerCase()}", group = "testGroup")
 		public String capitalize(String foo) {
 			return foo.toUpperCase();
 		}
