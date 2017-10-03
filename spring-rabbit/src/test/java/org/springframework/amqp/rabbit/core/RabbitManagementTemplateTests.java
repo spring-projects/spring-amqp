@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -48,6 +49,8 @@ import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5
  *
  */
@@ -202,6 +205,18 @@ public class RabbitManagementTemplateTests {
 
 		admin.deleteQueue(queue1.getName());
 		admin.deleteQueue(queue2.getName());
+	}
+
+	@Test
+	public void testDeleteExchange() {
+		String exchangeName = "testExchange";
+		Exchange testExchange = new DirectExchange(exchangeName);
+		this.template.addExchange(testExchange);
+		Exchange exchangeToAssert = this.template.getExchange(exchangeName);
+		assertEquals(testExchange.getName(), exchangeToAssert.getName());
+		assertEquals(testExchange.getType(), exchangeToAssert.getType());
+		this.template.deleteExchange(testExchange);
+		assertNull(this.template.getExchange(exchangeName));
 	}
 
 }

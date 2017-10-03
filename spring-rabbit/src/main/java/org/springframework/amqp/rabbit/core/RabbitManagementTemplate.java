@@ -44,6 +44,8 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  * directly.
  *
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.5
  *
  */
@@ -178,7 +180,7 @@ public class RabbitManagementTemplate implements AmqpManagementOperations {
 
 	@Override
 	public void deleteExchange(Exchange exchange) {
-		this.rabbitClient.deleteQueue(DEFAULT_VHOST, exchange.getName());
+		deleteExchange(DEFAULT_VHOST, exchange);
 	}
 
 	@Override
