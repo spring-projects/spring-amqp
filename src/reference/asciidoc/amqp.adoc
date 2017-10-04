@@ -363,16 +363,15 @@ The `<rabbit:connection-factory>` namespace component is also supplied with the 
 
 
 The connection might be blocked for interaction from the Broker according to the https://www.rabbitmq.com/memory.html[Memory Alarm].
-Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with the `com.rabbitmq.client.BlockedListener` s to to be notified for connection block and unblock events.
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
 In addition the `AbstractConnectionFactory` emits a `ConnectionBlockedEvent` and `ConnectionUnblockedEvent`, respectively, via its internal `BlockedListener` implementation.
-These can be useful in application logic to react appropriately to the problems on the Broker and perform some maintenance actions for example.
+These allow you to provide application logic to react appropriately to problems on the broker and take some corrective actions for example.
 
-IMPORTANT: When single `CachingConnectionFactory` is used in the application, e.g. in case of auto-configuration by Spring Boot, it is important to understand that by default it provides a single shared connection instance.
+IMPORTANT:  When the application is configured with a single `CachingConnectionFactory`, as it is by default with Spring Boot auto-configuration, the application will stop working when the connection is blocked by the Broker.
 And when it is blocked by the Broker, any its clients stop to work.
-If we deal with producers and consumers in the same application, we may end up with the dead lock situation when producers are blocking connection because no resources on Broker any more and consumers can't free them because connection is blocked.
+If we have producers and consumers in the same application, we may end up with a deadlock  when producers are blocking the connection because there are no resources on the Broker anymore and consumers can't free them because the connection is blocked.
 To mitigate the problem, there is just enough to have one more separate `CachingConnectionFactory` instance with the same options - one for producers and one for consumers.
-At the same time this isn't recommended if we use transactional producer and it is important to let that producer to reuse a `Channel` associated with the consumer transaction.
-
+The separate `CachingConnectionFactory` isn't recommended for transactional producers, since they should reuse a `Channel` associated with the consumer transactions.
 
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
@@ -601,7 +600,7 @@ public interface ConnectionListener {
 }
 ----
 
-Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with the `com.rabbitmq.client.BlockedListener` s to to be notified for connection block and unblock events.
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
 
 .ChannelListener
 [source, java]
