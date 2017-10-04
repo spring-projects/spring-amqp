@@ -30,6 +30,8 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
  * @author Stephane Nicoll
  * @author Gary Russell
  * @author Artem Bilan
+ * @author Dustin Schultz
+ *
  * @since 1.4
  */
 public class SimpleRabbitListenerContainerFactory
@@ -50,6 +52,8 @@ public class SimpleRabbitListenerContainerFactory
 	private Integer consecutiveIdleTrigger;
 
 	private Long receiveTimeout;
+
+	private Boolean deBatchingEnabled;
 
 	/**
 	 * @param txSize the transaction size.
@@ -115,6 +119,16 @@ public class SimpleRabbitListenerContainerFactory
 		this.receiveTimeout = receiveTimeout;
 	}
 
+	/**
+	 * Determine whether or not the container should de-batch batched
+	 * messages (true) or call the listener with the batch (false). Default: true.
+	 * @param deBatchingEnabled whether or not to disable de-batching of messages.
+	 * @see SimpleMessageListenerContainer#setDeBatchingEnabled(boolean)
+	 */
+	public void setDeBatchingEnabled(final Boolean deBatchingEnabled) {
+		this.deBatchingEnabled = deBatchingEnabled;
+	}
+
 	@Override
 	protected SimpleMessageListenerContainer createContainerInstance() {
 		return new SimpleMessageListenerContainer();
@@ -151,6 +165,9 @@ public class SimpleRabbitListenerContainerFactory
 		}
 		if (this.receiveTimeout != null) {
 			instance.setReceiveTimeout(this.receiveTimeout);
+		}
+		if (this.deBatchingEnabled != null) {
+			instance.setDeBatchingEnabled(this.deBatchingEnabled);
 		}
 	}
 
