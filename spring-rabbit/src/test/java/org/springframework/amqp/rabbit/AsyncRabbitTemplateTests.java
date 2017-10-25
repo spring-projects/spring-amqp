@@ -69,6 +69,8 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.6
  */
 @ContextConfiguration
@@ -360,6 +362,8 @@ public class AsyncRabbitTemplateTests {
 		TheCallback callback = new TheCallback();
 		future.addCallback(callback);
 		assertEquals(1, TestUtils.getPropertyValue(this.asyncTemplate, "pending", Map.class).size());
+		this.asyncTemplate.stop();
+		// Second stop() to be sure that it is idempotent
 		this.asyncTemplate.stop();
 		try {
 			future.get(10, TimeUnit.SECONDS);

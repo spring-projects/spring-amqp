@@ -527,10 +527,10 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				future.setNackCause("AsyncRabbitTemplate was stopped while waiting for reply");
 				future.cancel(true);
 			}
-		}
-		if (this.internalTaskScheduler) {
-			((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
-			this.taskScheduler = null;
+			if (this.internalTaskScheduler) {
+				((ThreadPoolTaskScheduler) this.taskScheduler).destroy();
+				this.taskScheduler = null;
+			}
 		}
 		this.running = false;
 	}
