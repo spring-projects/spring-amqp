@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -379,11 +380,18 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 			com.rabbitmq.client.Connection rabbitConnection;
 			if (this.addresses != null) {
+				if (this.logger.isInfoEnabled()) {
+					this.logger.info("Attempting to connect to: " + Arrays.toString(this.addresses));
+				}
 				rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, this.addresses,
 						connectionName);
 
 			}
 			else {
+				if (this.logger.isInfoEnabled()) {
+					this.logger.info("Attempting to connect to: " + this.rabbitConnectionFactory.getHost()
+							+ ":" + this.rabbitConnectionFactory.getPort());
+				}
 				rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
 			}
 
