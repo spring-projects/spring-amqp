@@ -88,7 +88,9 @@ public abstract class AbstractConnectionFactoryTests {
 		Connection con = connectionFactory.createConnection();
 		assertEquals(1, called.get());
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(logger).info(captor.capture());
+		verify(logger, times(2)).info(captor.capture());
+		assertThat(captor.getAllValues().get(0),
+				containsString("Attempting to connect to: null:0"));
 		assertThat(captor.getValue(),
 				allOf(containsString("Created new connection: "), containsString("SimpleConnection")));
 
@@ -105,6 +107,19 @@ public abstract class AbstractConnectionFactoryTests {
 
 		verify(mockConnectionFactory, times(1)).newConnection(any(ExecutorService.class), anyString());
 
+		connectionFactory.setAddresses("foo:5672,bar:5672");
+		con = connectionFactory.createConnection();
+		assertEquals(1, called.get());
+		captor = ArgumentCaptor.forClass(String.class);
+		verify(logger, times(4)).info(captor.capture());
+		assertThat(captor.getAllValues().get(2),
+				containsString("Attempting to connect to: [foo:5672, bar:5672]"));
+		assertThat(captor.getValue(),
+				allOf(containsString("Created new connection: "), containsString("SimpleConnection")));
+
+		con.close();
+		connectionFactory.destroy();
+		assertEquals(0, called.get());
 	}
 
 	@Test
