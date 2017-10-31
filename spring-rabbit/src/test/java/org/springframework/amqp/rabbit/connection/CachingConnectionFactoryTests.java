@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -1490,6 +1491,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.createConnection();
 		verify(mock).isAutomaticRecoveryEnabled();
 		verify(mock).setHost("abc");
+		Log logger = TestUtils.getPropertyValue(ccf, "logger", Log.class);
+		if (logger.isInfoEnabled()) {
+			verify(mock).getHost();
+			verify(mock).getPort();
+		}
 		verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);
 	}
@@ -1533,6 +1539,11 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		InOrder order = inOrder(mock);
 		order.verify(mock).isAutomaticRecoveryEnabled();
 		order.verify(mock).setUri(uri);
+		Log logger = TestUtils.getPropertyValue(ccf, "logger", Log.class);
+		if (logger.isInfoEnabled()) {
+			order.verify(mock).getHost();
+			order.verify(mock).getPort();
+		}
 		order.verify(mock).newConnection(any(ExecutorService.class), anyString());
 		verifyNoMoreInteractions(mock);
 	}
