@@ -26,8 +26,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -169,6 +174,19 @@ public class AmqpAppenderIntegrationTests {
 				not(containsString("%d %p %t [%c] - <%m>%n")));
 	}
 
+	@Test
+	public void customQueueIsUsedIfProvided() throws Exception {
+		this.applicationContext.getBean(SingleConnectionFactory.class).createConnection().close();
+		Logger log = (Logger) LoggerFactory.getLogger("customQueue");
+
+		String testMessage = String.valueOf(ThreadLocalRandom.current().nextLong());
+		log.info(testMessage);
+
+		BlockingQueue<AmqpAppender.Event> appenderQueue =
+				((CustomQueueAppender) log.getAppender("AMQPWithCustomQueue")).mockedQueue;
+		verify(appenderQueue).add(argThat(arg -> arg.getEvent().getMessage().equals(testMessage)));
+	}
+
 	public static class EnhancedAppender extends AmqpAppender {
 
 		private String foo;
@@ -194,6 +212,17 @@ public class AmqpAppenderIntegrationTests {
 			clientProperties.put("foo", this.foo.toUpperCase());
 		}
 
+	}
+
+	public static class CustomQueueAppender extends AmqpAppender {
+		private BlockingQueue<Event> mockedQueue;
+
+		@Override
+		@SuppressWarnings("unchecked")
+		protected BlockingQueue<Event> createEventQueue() {
+			mockedQueue = mock(BlockingQueue.class);
+			return mockedQueue;
+		}
 	}
 
 }

@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,6 +41,7 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.appender.AbstractManager;
+import org.apache.logging.log4j.core.async.BlockingQueueFactory;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
@@ -120,7 +122,7 @@ public class AmqpAppender extends AbstractAppender {
 	/**
 	 * Where LoggingEvents are queued to send.
 	 */
-	private final LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
+	private final BlockingQueue<Event> events;
 
 	/**
 	 * Used to synchronize access to pattern layouts.
@@ -128,9 +130,10 @@ public class AmqpAppender extends AbstractAppender {
 	private final Object layoutMutex = new Object();
 
 	public AmqpAppender(String name, Filter filter, Layout<? extends Serializable> layout, boolean ignoreExceptions,
-			AmqpManager manager) {
+			AmqpManager manager, BlockingQueue<Event> eventQueue) {
 		super(name, filter, layout, ignoreExceptions);
 		this.manager = manager;
+		this.events = eventQueue;
 	}
 
 	@PluginFactory
@@ -171,7 +174,9 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("contentEncoding") String contentEncoding,
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("async") boolean async,
-			@PluginAttribute("charset") String charset) {
+			@PluginAttribute("charset") String charset,
+			@PluginAttribute(value = "bufferSize", defaultInt = Integer.MAX_VALUE) int bufferSize,
+			@PluginElement(BlockingQueueFactory.ELEMENT_TYPE) BlockingQueueFactory<Event> blockingQueueFactory) {
 		if (name == null) {
 			LOGGER.error("No name for AmqpAppender");
 		}
@@ -212,7 +217,16 @@ public class AmqpAppender extends AbstractAppender {
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		manager.async = async;
-		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager);
+
+		BlockingQueue<Event> eventQueue;
+		if (blockingQueueFactory == null) {
+			eventQueue = new LinkedBlockingQueue<>(bufferSize);
+		}
+		else {
+			eventQueue = blockingQueueFactory.create(bufferSize);
+		}
+
+		AmqpAppender appender = new AmqpAppender(name, filter, theLayout, ignoreExceptions, manager, eventQueue);
 		if (manager.activateOptions()) {
 			appender.startSenders();
 			return appender;

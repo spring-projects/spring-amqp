@@ -302,3 +302,34 @@ Of course, for simple String properties like this example, the previous techniqu
 richer properties (such as adding a `Map` or numeric property).
 
 With log4j2, subclasses are not supported, due to the way log4j2 uses static factory methods.
+
+==== Providing a Custom Queue Implementation
+
+AmqpAppender uses a BlockingQueue to asynchronously publish logging events to RabbitMQ. By default a LinkedBlockingQueue is used.
+However, it is possible to supply any kind of custom BlockingQueue implementation.
+
+.logback
+[source, java]
+----
+public class MyEnhancedAppender extends AmqpAppender {
+    @Override
+    protected BlockingQueue<Event> createEventQueue() {
+        return new ArrayBlockingQueue();
+    }
+
+}
+----
+
+The Log4j2 appender supports usage of a
+https://logging.apache.org/log4j/2.x/manual/appenders.html#BlockingQueueFactory[BlockingQueueFactory].
+
+.log4j2
+[source, xml]
+----
+<Appenders>
+    ...
+    <RabbitMQ name="rabbitmq" bufferSize="10" ... >
+        <ArrayBlockingQueue/>
+    </RabbitMQ>
+</Appenders>
+----
