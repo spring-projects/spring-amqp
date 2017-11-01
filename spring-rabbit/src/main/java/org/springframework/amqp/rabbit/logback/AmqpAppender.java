@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -148,7 +149,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	/**
 	 * Where LoggingEvents are queued to send.
 	 */
-	private final LinkedBlockingQueue<Event> events = new LinkedBlockingQueue<Event>();
+	private BlockingQueue<Event> events;
 
 	/**
 	 * The pool of senders.
@@ -596,6 +597,8 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 
 	@Override
 	public void start() {
+		this.events = createEventQueue();
+
 		ConnectionFactory rabbitConnectionFactory = createRabbitConnectionFactory();
 		if (rabbitConnectionFactory != null) {
 			super.start();
@@ -689,6 +692,16 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * @since 1.5.6
 	 */
 	protected void updateConnectionClientProperties(Map<String, Object> clientProperties) {
+	}
+
+	/**
+	 * Subclasses can override this method to inject a custom queue implementation.
+	 *
+	 * @return the queue to use for queueing logging events before processing them.
+	 * @since 2.0.1
+	 */
+	protected BlockingQueue<Event> createEventQueue() {
+		return new LinkedBlockingQueue<>();
 	}
 
 	@Override
@@ -835,10 +848,12 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 						if (retries < AmqpAppender.this.maxSenderRetries) {
 							// Schedule a retry based on the number of times I've tried to re-send this
 							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
+
 								@Override
 								public void run() {
 									AmqpAppender.this.events.add(event);
 								}
+
 							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
 						}
 						else {
