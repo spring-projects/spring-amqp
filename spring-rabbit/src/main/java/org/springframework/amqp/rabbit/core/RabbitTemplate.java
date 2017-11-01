@@ -240,6 +240,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private Executor taskExecutor;
 
+	private boolean userCorrelationId;
+
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
 	 */
@@ -650,6 +652,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public void setTaskExecutor(Executor taskExecutor) {
 		this.taskExecutor = taskExecutor;
+	}
+
+	/**
+	 * Set to true to use correlation id provided by the message instead of generating
+	 * the correlation id for request/reply scenarios. The correlation id must be unique
+	 * for all in-process requests to avoid cross talk.
+	 * <p>
+	 * <b>Users must therefore take create care to ensure uniqueness.</b>
+	 * @param userCorrelationId true to use user correlation data.
+	 */
+	public void setUserCorrelationId(boolean userCorrelationId) {
+		this.userCorrelationId = userCorrelationId;
 	}
 
 	/**
@@ -1525,7 +1539,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return this.execute(channel -> {
 			final PendingReply pendingReply = new PendingReply();
 			String messageTag = String.valueOf(RabbitTemplate.this.messageTagProvider.incrementAndGet());
-			RabbitTemplate.this.replyHolder.put(messageTag, pendingReply);
+			RabbitTemplate.this.replyHolder.putIfAbsent(messageTag, pendingReply);
 
 			Assert.isNull(message.getMessageProperties().getReplyTo(),
 					"Send-and-receive methods can only be used if the Message does not already have a replyTo property.");
@@ -1618,7 +1632,24 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final CorrelationData correlationData, Channel channel) throws Exception { // NOSONAR
 		final PendingReply pendingReply = new PendingReply();
 		String messageTag = String.valueOf(this.messageTagProvider.incrementAndGet());
-		this.replyHolder.put(messageTag, pendingReply);
+		if (this.userCorrelationId) {
+			String correlationId;
+			if (this.correlationKey != null) {
+				correlationId = (String) message.getMessageProperties().getHeaders().get(this.correlationKey);
+			}
+			else {
+				correlationId = message.getMessageProperties().getCorrelationId();
+			}
+			if (correlationId == null) {
+				this.replyHolder.put(messageTag, pendingReply);
+			}
+			else {
+				this.replyHolder.put(correlationId, pendingReply);
+			}
+		}
+		else {
+			this.replyHolder.put(messageTag, pendingReply);
+		}
 		saveAndSetProperties(message, pendingReply, messageTag);
 
 		if (logger.isDebugEnabled()) {
@@ -1645,23 +1676,25 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					+ RabbitTemplate.this.replyAddress);
 		}
 		message.getMessageProperties().setReplyTo(this.replyAddress);
-		String savedCorrelation = null;
-		if (this.correlationKey == null) { // using standard correlationId property
-			String correlationId = message.getMessageProperties().getCorrelationId();
-			if (correlationId != null) {
-				savedCorrelation = correlationId;
+		if (!this.userCorrelationId) {
+			String savedCorrelation = null;
+			if (this.correlationKey == null) { // using standard correlationId property
+				String correlationId = message.getMessageProperties().getCorrelationId();
+				if (correlationId != null) {
+					savedCorrelation = correlationId;
+				}
 			}
-		}
-		else {
-			savedCorrelation = (String) message.getMessageProperties()
-					.getHeaders().get(this.correlationKey);
-		}
-		pendingReply.setSavedCorrelation(savedCorrelation);
-		if (this.correlationKey == null) { // using standard correlationId property
-			message.getMessageProperties().setCorrelationId(messageTag);
-		}
-		else {
-			message.getMessageProperties().setHeader(this.correlationKey, messageTag);
+			else {
+				savedCorrelation = (String) message.getMessageProperties()
+						.getHeaders().get(this.correlationKey);
+			}
+			pendingReply.setSavedCorrelation(savedCorrelation);
+			if (this.correlationKey == null) { // using standard correlationId property
+				message.getMessageProperties().setCorrelationId(messageTag);
+			}
+			else {
+				message.getMessageProperties().setHeader(this.correlationKey, messageTag);
+			}
 		}
 	}
 
@@ -2166,22 +2199,24 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void restoreProperties(Message message, PendingReply pendingReply) {
-		// Restore the inbound correlation data
-		String savedCorrelation = pendingReply.getSavedCorrelation();
-		if (this.correlationKey == null) {
-			if (savedCorrelation == null) {
-				message.getMessageProperties().setCorrelationId(null);
+		if (!this.userCorrelationId) {
+			// Restore the inbound correlation data
+			String savedCorrelation = pendingReply.getSavedCorrelation();
+			if (this.correlationKey == null) {
+				if (savedCorrelation == null) {
+					message.getMessageProperties().setCorrelationId(null);
+				}
+				else {
+					message.getMessageProperties().setCorrelationId(savedCorrelation);
+				}
 			}
 			else {
-				message.getMessageProperties().setCorrelationId(savedCorrelation);
-			}
-		}
-		else {
-			if (savedCorrelation != null) {
-				message.getMessageProperties().setHeader(this.correlationKey, savedCorrelation);
-			}
-			else {
-				message.getMessageProperties().getHeaders().remove(this.correlationKey);
+				if (savedCorrelation != null) {
+					message.getMessageProperties().setHeader(this.correlationKey, savedCorrelation);
+				}
+				else {
+					message.getMessageProperties().getHeaders().remove(this.correlationKey);
+				}
 			}
 		}
 		// Restore any inbound replyTo
