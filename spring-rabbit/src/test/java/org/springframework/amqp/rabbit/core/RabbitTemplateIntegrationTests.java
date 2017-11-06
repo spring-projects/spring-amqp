@@ -654,6 +654,50 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
+	public void testAtomicSendAndReceiveUserCorrelation() throws Exception {
+		final CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
+		cachingConnectionFactory.setHost("localhost");
+		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
+		template.setRoutingKey(ROUTE);
+		template.setQueue(ROUTE);
+		final AtomicReference<String> remoteCorrelationId = new AtomicReference<>();
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		// Set up a consumer to respond to our producer
+		Future<Message> received = executor.submit(() -> {
+			Message message = null;
+			message = template.receive(10000);
+			assertNotNull("No message received", message);
+			remoteCorrelationId.set(message.getMessageProperties().getCorrelationId());
+			template.send(message.getMessageProperties().getReplyTo(), message);
+			return message;
+		});
+		RabbitAdmin admin = new RabbitAdmin(cachingConnectionFactory);
+		Queue replyQueue = admin.declareQueue();
+		template.setReplyAddress(replyQueue.getName());
+		template.setUserCorrelationId(true);
+		template.setReplyTimeout(10000);
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cachingConnectionFactory);
+		container.setQueues(replyQueue);
+		container.setMessageListener(template);
+		container.afterPropertiesSet();
+		container.start();
+		MessageProperties messageProperties = new MessageProperties();
+		messageProperties.setCorrelationId("myCorrelationId");
+		Message message = new Message("test-message".getBytes(), messageProperties);
+		Message reply = template.sendAndReceive(message);
+		assertEquals(new String(message.getBody()), new String(received.get(1000, TimeUnit.MILLISECONDS).getBody()));
+		assertNotNull("Reply is expected", reply);
+		assertThat(remoteCorrelationId.get(), equalTo("myCorrelationId"));
+		assertEquals(new String(message.getBody()), new String(reply.getBody()));
+		// Message was consumed so nothing left on queue
+		reply = template.receive();
+		assertEquals(null, reply);
+		template.stop();
+		container.stop();
+		cachingConnectionFactory.destroy();
+	}
+
+	@Test
 	public void testAtomicSendAndReceiveExternalExecutor() throws Exception {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
 		connectionFactory.setHost("localhost");
