@@ -2975,6 +2975,11 @@ Of course, the client and server must use the same header for correlation data.
 NOTE: Spring AMQP version 1.1 used a custom property `spring_reply_correlation` for this data.
 If you wish to revert to this behavior with the current version, perhaps to maintain compatibility with another application using 1.1, you must set the attribute to `spring_reply_correlation`.
 
+By default, the template will generate its own correlation id (ignoring any user-supplied value).
+If you wish to use your own correlationId, set the `RabbitTemplate` 's `userCorrelationId` property to `true`.
+
+IMPORTANT: The correlationId must be unique to avoid the possibility of wrong reply being returned for a request.
+
 [[reply-listener]]
 ===== Reply Listener Container
 
