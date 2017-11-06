@@ -201,7 +201,7 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 			else {
 				if (log.isWarnEnabled()) {
 					log.warn("Could not convert incoming message with content-type ["
-							+ contentType + "]");
+							+ contentType + "], 'json' keyword missing.");
 				}
 			}
 		}
