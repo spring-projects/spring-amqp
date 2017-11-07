@@ -25,6 +25,23 @@
 		<foo>bar</foo>
 	</appender>
 
+	<appender name="AMQPWithCustomQueue"
+			  class="org.springframework.amqp.rabbit.logback.AmqpAppenderIntegrationTests$CustomQueueAppender">
+		<layout>
+			<pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
+		</layout>
+		<addresses>localhost:5672</addresses>
+		<abbreviation>36</abbreviation>
+		<includeCallerData>true</includeCallerData>
+		<applicationId>AmqpAppenderTest</applicationId>
+		<routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
+		<generateId>true</generateId>
+		<charset>UTF-8</charset>
+		<durable>false</durable>
+		<deliveryMode>NON_PERSISTENT</deliveryMode>
+		<declareExchange>true</declareExchange>
+	</appender>
+
 	<appender name="AMQPWithEncoder" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
 		<encoder>
 			<pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
@@ -49,6 +66,10 @@
 
 	<logger name="encoded" level="DEBUG" additivity="false">
 		<appender-ref ref="AMQPWithEncoder"/>
+	</logger>
+
+	<logger name="customQueue" level="DEBUG" additivity="false">
+		<appender-ref ref="AMQPWithCustomQueue"/>
 	</logger>
 
 	<root level="INFO">

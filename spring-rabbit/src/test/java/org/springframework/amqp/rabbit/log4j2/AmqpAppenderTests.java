@@ -36,6 +36,8 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -160,6 +162,21 @@ public class AmqpAppenderTests {
 		assertEquals(5, TestUtils.getPropertyValue(manager, "maxSenderRetries"));
 		// change the property to true and this fails and test() randomly fails too.
 		assertFalse(TestUtils.getPropertyValue(manager, "async", Boolean.class));
+
+		assertEquals(10, TestUtils.getPropertyValue(appender, "events.items", Object[].class).length);
+
+		Object events = TestUtils.getPropertyValue(appender, "events");
+		assertEquals(ArrayBlockingQueue.class, events.getClass());
+	}
+
+	@Test
+	public void testAmqpAppenderEventQueueTypeDefaultsToLinkedBlockingQueue() throws Exception {
+		Logger logger = LogManager.getLogger("default_queue_logger");
+		AmqpAppender appender = (AmqpAppender) TestUtils.getPropertyValue(logger, "context.configuration.appenders",
+				Map.class).get("rabbitmq_default_queue");
+
+		Object events = TestUtils.getPropertyValue(appender, "events");
+		assertEquals(LinkedBlockingQueue.class, events.getClass());
 	}
 
 	@Test

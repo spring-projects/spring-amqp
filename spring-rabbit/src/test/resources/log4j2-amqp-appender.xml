@@ -13,7 +13,15 @@
 			charset="UTF-8"
 			clientConnectionProperties="foo:bar,baz:qux"
 			async="false"
-			senderPoolSize="3" maxSenderRetries="5">
+			senderPoolSize="3" maxSenderRetries="5"
+			bufferSize="10">
+			<ArrayBlockingQueue />
+		</RabbitMQ>
+		<RabbitMQ name="rabbitmq_default_queue"
+			addresses="localhost:5672"
+			host="localhost" port="5672" user="guest" password="guest" applicationId="testAppId" charset="UTF-8"
+			routingKeyPattern="%X{applicationId}.%c.%p"
+			exchange="log4j2Test_default_queue" deliveryMode="NON_PERSISTENT">
 		</RabbitMQ>
 		<RabbitMQ name="rabbitmq_uri"
 			uri="amqp://guest:guest@localhost:5672/"
@@ -28,6 +36,9 @@
 	<Loggers>
 		<Logger name="foo" level="info">
 			<AppenderRef ref="rabbitmq" />
+		</Logger>
+		<Logger name="default_queue_logger" level="info">
+			<AppenderRef ref="rabbitmq_default_queue"/>
 		</Logger>
 		<Logger name="bar" level="info">
 			<AppenderRef ref="rabbitmq_uri" />
