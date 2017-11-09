@@ -2068,7 +2068,7 @@ Starting with _version 1.5_, you can now assign a `group` to the container on th
 This provides a mechanism to get a reference to a subset of containers; adding a `group` attribute causes a
 bean of type `Collection<MessageListenerContainer>` to be registered with the context with the group name.
 
-
+[[threading]]
 ===== Threading and Asynchronous Consumers
 
 A number of different threads are involved with asynchronous consumers.
@@ -3884,7 +3884,24 @@ See <<listener-concurrency>>.
 Must be greater than or equal to 'concurrentConsumers'.
 See <<listener-concurrency>>.
 
-| startConsumerMinInterval
+| concurrency
+(N/A)
+
+| `m-n` The range of concurrent consumers for each listener (min, max).
+If only `n` is provided, `n` is a fixed number of consumers.
+See <<listener-concurrency>>.
+
+| consumerStartTimeout
+(N/A)
+
+| The time in milliseconds to wait for a consumer thread to start.
+If this time elapses an error log is written; an example of when this might happen is if a `taskExecutor` was configured that has insufficient threads to support the container `concurrentConsumers`.
+
+See <<threading>>.
+Default 60000 (60 seconds).
+
+| startConsumerMin
+Interval
 (min-start-interval)
 
 | The time in milliseconds which must elapse before each new consumer is started on demand.

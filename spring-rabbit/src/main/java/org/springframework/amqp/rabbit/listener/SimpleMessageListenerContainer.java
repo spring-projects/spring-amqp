@@ -106,6 +106,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private static final long DEFAULT_STOP_CONSUMER_MIN_INTERVAL = 60000;
 
+	private static final long DEFAULT_CONSUMER_START_TIMEOUT = 60000L;
+
 	private static final int DEFAULT_CONSECUTIVE_ACTIVE_TRIGGER = 10;
 
 	private static final int DEFAULT_CONSECUTIVE_IDLE_TRIGGER = 10;
@@ -217,6 +219,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	private boolean alwaysRequeueWithTxManagerRollback = true;
 
+	private long consumerStartTimeout = DEFAULT_CONSUMER_START_TIMEOUT;
 	/**
 	 * Default constructor for convenient dependency injection via setters.
 	 */
@@ -721,6 +724,18 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	 */
 	public void setAlwaysRequeueWithTxManagerRollback(boolean alwaysRequeueWithTxManagerRollback) {
 		this.alwaysRequeueWithTxManagerRollback = alwaysRequeueWithTxManagerRollback;
+	}
+
+	/**
+	 * When starting a consumer, if this time (ms) elapses before the consumer starts, an
+	 * error log is written; one possible cause would be if the
+	 * {@link #setTaskExecutor(java.util.concurrent.Executor) taskExecutor} has
+	 * insufficient threads to support the container concurrency. Default 60000.
+	 * @param consumerStartTimeout the timeout.
+	 * @since 1.7.5
+	 */
+	public void setConsumerStartTimeout(long consumerStartTimeout) {
+		this.consumerStartTimeout = consumerStartTimeout;
 	}
 
 	/**
@@ -1381,8 +1396,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		private FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
-			this.start.await(60000L, TimeUnit.MILLISECONDS); //NOSONAR - ignore return value
+		private FatalListenerStartupException getStartupException() throws TimeoutException,
+					InterruptedException {
+			if (!this.start.await(
+					SimpleMessageListenerContainer.this.consumerStartTimeout, TimeUnit.MILLISECONDS)) {
+				logger.error("Consumer failed to start in "
+						+ SimpleMessageListenerContainer.this.consumerStartTimeout
+						+ " milliseconds; does the task executor have enough threads to support the container "
+						+ "concurrency?");
+			}
 			return this.startupException;
 		}
 
