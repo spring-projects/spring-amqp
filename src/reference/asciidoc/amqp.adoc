@@ -4402,6 +4402,18 @@ See <<listener-concurrency>>.
 a| image::images/tickmark.png[]
 a|
 
+| consumerStartTimeout
+(N/A)
+
+| The time in milliseconds to wait for a consumer thread to start.
+If this time elapses an error log is written; an example of when this might happen is if a `taskExecutor` was configured that has insufficient threads to support the container `concurrentConsumers`.
+
+See <<threading>>.
+Default 60000 (60 seconds).
+
+a| image::images/tickmark.png[]
+a|
+
 | startConsumerMin
 Interval
 (min-start-interval)
