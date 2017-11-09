@@ -79,6 +79,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
@@ -566,6 +567,24 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(this.container.isRunning());
 		this.container.stop();
+	}
+
+	@Test
+	public void testTooSmallExecutor() {
+		this.container = createContainer((MessageListener) (m) -> { }, false, this.queue.getName());
+		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+		exec.initialize();
+		this.container.setTaskExecutor(exec);
+		this.container.setConcurrentConsumers(2);
+		this.container.setConsumerStartTimeout(100);
+		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
+		new DirectFieldAccessor(container).setPropertyValue("logger", logger);
+		this.container.start();
+		this.container.stop();
+		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+		verify(logger).error(captor.capture());
+		assertThat(captor.getValue(), equalTo("Consumer failed to start in 100 milliseconds; does the task "
+				+ "executor have enough threads to support the container concurrency?"));
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
