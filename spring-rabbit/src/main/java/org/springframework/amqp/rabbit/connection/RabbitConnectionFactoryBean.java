@@ -648,11 +648,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			String keyStoreType = getKeyStoreType();
 			String trustStoreType = getTrustStoreType();
 			char[] keyPassphrase = null;
-			if (StringUtils.hasText(keyStorePassword)) {
+			if (keyStorePassword != null) {
 				keyPassphrase = keyStorePassword.toCharArray();
 			}
 			char[] trustPassphrase = null;
-			if (StringUtils.hasText(trustStorePassword)) {
+			if (trustStorePassword != null) {
 				trustPassphrase = trustStorePassword.toCharArray();
 			}
 			KeyManager[] keyManagers = null;
