@@ -69,6 +69,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * @author Arnaud Cogoluègnes
  * @author Hareendran
  * @author Dominique Villard
+ * @author Zachary DeLuca
  *
  * @since 1.4
  */
@@ -648,11 +649,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			String keyStoreType = getKeyStoreType();
 			String trustStoreType = getTrustStoreType();
 			char[] keyPassphrase = null;
-			if (StringUtils.hasText(keyStorePassword)) {
+			if (keyStorePassword != null) {
 				keyPassphrase = keyStorePassword.toCharArray();
 			}
 			char[] trustPassphrase = null;
-			if (StringUtils.hasText(trustStorePassword)) {
+			if (trustStorePassword != null) {
 				trustPassphrase = trustStorePassword.toCharArray();
 			}
 			KeyManager[] keyManagers = null;
