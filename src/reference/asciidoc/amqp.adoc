@@ -1588,7 +1588,7 @@ Batched messages are automatically de-batched by listener containers (using the 
 See <<template-batching>> for more information about batching.
 
 [[consumer-events]]
-===== Consumer Failure Events
+===== Consumer Events
 
 The containers publish application events whenever a listener
 (consumer) experiences a failure of some kind.
@@ -1612,6 +1612,15 @@ event, a `WARN` log is issued. To change this logging behavior, provide a custom
 See also <<channel-close-logging>>.
 
 Fatal errors are always logged at `ERROR` level; this it not modifiable.
+
+Several other events are published at various stages of the container lifecycle:
+
+- `AsyncConsumerStartedEvent` (when the consumer is started)
+- `AsyncConsumerRestartedEvent` (when the consumer is restarted after a failure - `SimpleMessageListenerContainer` only)
+- `AsyncConsumerTerminatedEvent` (when a consumer is stopped normally)
+- `AsyncConsumerStoppedEvent` (when the consumer is stopped - `SimpleMessageListenerContainer` only)
+- `ConsumeOkEvent` (when a `consumeOk` is received from the broker, contains the queue name and `consumerTag`)
+- `ListenerContainerIdleEvent` (see <<idle-containers>>)
 
 [[consumerTags]]
 ===== Consumer Tags
