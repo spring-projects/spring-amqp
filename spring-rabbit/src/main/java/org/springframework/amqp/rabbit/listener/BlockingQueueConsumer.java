@@ -55,6 +55,7 @@ import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
@@ -144,6 +145,8 @@ public class BlockingQueueConsumer {
 	private long shutdownTimeout;
 
 	private boolean locallyTransacted;
+
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	private volatile long abortStarted;
 
@@ -346,6 +349,10 @@ public class BlockingQueueConsumer {
 	 */
 	public void setLocallyTransacted(boolean locallyTransacted) {
 		this.locallyTransacted = locallyTransacted;
+	}
+
+	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	/**
@@ -633,6 +640,9 @@ public class BlockingQueueConsumer {
 		}
 		else {
 			logger.error("Null consumer tag received for queue " + queue);
+		}
+		if (this.applicationEventPublisher != null) {
+			this.applicationEventPublisher.publishEvent(new ConsumeOkEvent(this, queue, consumerTag));
 		}
 	}
 

@@ -986,6 +986,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("New " + this + " consumeOk");
 			}
+			if (getApplicationEventPublisher() != null) {
+				getApplicationEventPublisher().publishEvent(new ConsumeOkEvent(this, getQueue(), consumerTag));
+			}
 		}
 
 		@Override

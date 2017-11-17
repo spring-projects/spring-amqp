@@ -532,17 +532,22 @@ public class DirectMessageListenerContainerIntegrationTests {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
 		container.setBeanName("releaseCancel");
+		final CountDownLatch consumeLatch = new CountDownLatch(1);
+		final CountDownLatch releaseLatch = new CountDownLatch(1);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof ListenerContainerConsumerTerminatedEvent) {
+				releaseLatch.countDown();
+			}
+			else if (e instanceof ConsumeOkEvent) {
+				consumeLatch.countDown();
+			}
+		});
 		container.afterPropertiesSet();
 		container.start();
 		ChannelHolder channelHolder = container.getChannelHolder();
-		final CountDownLatch latch = new CountDownLatch(1);
-		container.setApplicationEventPublisher(e -> {
-			if (e instanceof ListenerContainerConsumerTerminatedEvent) {
-				latch.countDown();
-			}
-		});
+		assertTrue(consumeLatch.await(10, TimeUnit.SECONDS));
 		container.releaseConsumerFor(channelHolder, true, "foo");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertTrue(releaseLatch.await(10, TimeUnit.SECONDS));
 		container.stop();
 		cf.destroy();
 	}

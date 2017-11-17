@@ -677,6 +677,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		consumer.setBackOffExecution(getRecoveryBackOff().start());
 		consumer.setShutdownTimeout(getShutdownTimeout());
+		consumer.setApplicationEventPublisher(getApplicationEventPublisher());
 		return consumer;
 	}
 
@@ -1083,6 +1084,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (Error e) { //NOSONAR
 				// ok to catch Error - we're aborting so will stop
 				logger.error("Consumer thread error, thread abort.", e);
+				logConsumerException(e);
 				aborted = true;
 			}
 			catch (Throwable t) { //NOSONAR
