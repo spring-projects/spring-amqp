@@ -124,6 +124,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
+import org.springframework.validation.annotation.Validated;
 
 import com.rabbitmq.client.Channel;
 
@@ -1172,7 +1173,7 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitHandler
 		@SendTo("#{sendToRepliesBean}")
-		public String bar(Bar bar) {
+		public String bar(@Validated Bar bar) {
 			return "BAR: " + bar.field;
 		}
 
@@ -1182,7 +1183,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitHandler
-		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Validated @Payload Qux qux) {
 			return "QUX: " + qux.field + ": " + rk;
 		}
 
