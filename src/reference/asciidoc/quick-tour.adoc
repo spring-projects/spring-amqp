@@ -34,8 +34,6 @@ Annotation-based listeners and the `RabbitMessagingTemplate` require Spring Fram
 
 The minimum `amqp-client` java client library version is 4.0.0.
 
-Note the this refers to the java client library; generally, it will work with older broker versions.
-
 ===== Very, Very Quick
 
 Using plain, imperative Java to send and receive a message:

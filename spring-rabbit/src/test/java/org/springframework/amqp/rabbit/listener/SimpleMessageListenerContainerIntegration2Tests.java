@@ -280,10 +280,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertNull(template.receiveAndConvert(queue.getName()));
 		container.stop();
 		assertTrue(eventLatch.await(10, TimeUnit.SECONDS));
+		assertThat(events.size(), equalTo(8));
 		assertThat(events.get(0), instanceOf(AsyncConsumerStartedEvent.class));
-		assertSame(events.get(1), eventRef.get());
-		assertThat(events.get(2), instanceOf(AsyncConsumerRestartedEvent.class));
-		assertThat(events.get(3), instanceOf(AsyncConsumerStoppedEvent.class));
+		assertThat(events.get(1), instanceOf(ConsumeOkEvent.class));
+		assertThat(events.get(2), instanceOf(ConsumeOkEvent.class));
+		assertSame(events.get(3), eventRef.get());
+		assertThat(events.get(4), instanceOf(AsyncConsumerRestartedEvent.class));
+		assertThat(events.get(5), instanceOf(ConsumeOkEvent.class));
+		assertThat(events.get(6), instanceOf(ConsumeOkEvent.class));
+		assertThat(events.get(7), instanceOf(AsyncConsumerStoppedEvent.class));
 	}
 
 	@Test
@@ -332,13 +337,25 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		context.refresh();
 		container1.setApplicationContext(context);
 		container1.setExclusive(true);
+		final CountDownLatch consumeLatch1 = new CountDownLatch(1);
+		container1.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof ConsumeOkEvent) {
+					consumeLatch1.countDown();
+				}
+			}
+
+			@Override
+			public void publishEvent(Object event) {
+
+			}
+
+		});
 		container1.afterPropertiesSet();
 		container1.start();
-		int n = 0;
-		while (n++ < 100 && container1.getActiveConsumerCount() < 1) {
-			Thread.sleep(100);
-		}
-		assertTrue(n < 100);
+		assertTrue(consumeLatch1.await(10, TimeUnit.SECONDS));
 		CountDownLatch latch2 = new CountDownLatch(1000);
 		SimpleMessageListenerContainer container2 = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container2.setMessageListener(new MessageListenerAdapter(new PojoListener(latch2)));
@@ -347,18 +364,22 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.setRecoveryInterval(1000);
 		container2.setExclusive(true); // not really necessary, but likely people will make all consumers exclusive.
 		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
+		final CountDownLatch consumeLatch2 = new CountDownLatch(1);
 		container2.setApplicationEventPublisher(new ApplicationEventPublisher() {
-
-			@Override
-			public void publishEvent(Object event) {
-				//NOSONAR
-			}
 
 			@Override
 			public void publishEvent(ApplicationEvent event) {
 				if (event instanceof ListenerContainerConsumerFailedEvent) {
 					eventRef.set((ListenerContainerConsumerFailedEvent) event);
 				}
+				else if (event instanceof ConsumeOkEvent) {
+					consumeLatch2.countDown();
+				}
+			}
+
+			@Override
+			public void publishEvent(Object event) {
+
 			}
 
 		});
@@ -374,6 +395,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertEquals(1000, latch2.getCount());
 		container1.stop();
 		// container 2 should recover and process the next batch of messages
+		assertTrue(consumeLatch2.await(10, TimeUnit.SECONDS));
 		for (int i = 0; i < 1000; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -594,6 +616,38 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		verify(logger).error(captor.capture());
 		assertThat(captor.getValue(), equalTo("Consumer failed to start in 100 milliseconds; does the task "
 				+ "executor have enough threads to support the container concurrency?"));
+	}
+
+	@Test
+	public void testErrorStopsContainer() throws Exception {
+		this.container = createContainer((MessageListener) (m) -> {
+			throw new Error("testError");
+		}, false, this.queue.getName());
+		final CountDownLatch latch = new CountDownLatch(1);
+		this.container.setApplicationEventPublisher(new ApplicationEventPublisher() {
+
+			@Override
+			public void publishEvent(ApplicationEvent event) {
+				if (event instanceof ListenerContainerConsumerFailedEvent) {
+					latch.countDown();
+				}
+			}
+
+			@Override
+			public void publishEvent(Object event) {
+
+			}
+
+		});
+		this.container.setDefaultRequeueRejected(false);
+		this.container.start();
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		int n = 0;
+		while (n++ < 100 && this.container.isRunning()) {
+			Thread.sleep(100);
+		}
+		assertFalse(this.container.isRunning());
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {
