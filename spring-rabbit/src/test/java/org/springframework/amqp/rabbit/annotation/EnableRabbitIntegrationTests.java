@@ -110,6 +110,7 @@ import org.springframework.core.PriorityOrdered;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.converter.GenericMessageConverter;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -1325,7 +1326,7 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitHandler
 		@SendTo("#{sendToRepliesBean}")
-		public String bar(Bar bar) {
+		public String bar(@NonNull Bar bar) {
 			return "BAR: " + bar.field;
 		}
 
@@ -1335,7 +1336,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitHandler
-		public String qux(@Header("amqp_receivedRoutingKey") String rk, @Payload Qux qux) {
+		public String qux(@Header("amqp_receivedRoutingKey") String rk, @NonNull @Payload Qux qux) {
 			return "QUX: " + qux.field + ": " + rk;
 		}
 
