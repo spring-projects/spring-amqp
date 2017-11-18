@@ -200,7 +200,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container.setFailedDeclarationRetryInterval(100);
 		final List<AmqpEvent> events = new ArrayList<>();
 		final AtomicReference<ListenerContainerConsumerFailedEvent> eventRef = new AtomicReference<>();
-		final CountDownLatch eventLatch = new CountDownLatch(4);
+		final CountDownLatch eventLatch = new CountDownLatch(8);
 		container.setApplicationEventPublisher(new ApplicationEventPublisher() {
 
 			@Override
