@@ -27,11 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -126,6 +129,11 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	private final AtomicLong lastNoMessageAlert = new AtomicLong();
 
 	private volatile int prefetchCount = DEFAULT_PREFETCH_COUNT;
+
+	private final AtomicReference<Thread> containerStoppingForAbort = new AtomicReference<Thread>();
+
+	private final BlockingQueue<ListenerContainerConsumerFailedEvent> abortEvents =
+			new LinkedBlockingQueue<ListenerContainerConsumerFailedEvent>();
 
 	private volatile long startConsumerMinInterval = DEFAULT_START_CONSUMER_MIN_INTERVAL;
 
@@ -862,12 +870,13 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		checkMismatchedQueues();
 		super.doStart();
 		synchronized (this.consumersMonitor) {
+			if (this.consumers != null) {
+				throw new IllegalStateException("A stopped container should not have consumers");
+			}
 			int newConsumers = initializeConsumers();
 			if (this.consumers == null) {
-				if (logger.isInfoEnabled()) {
-					logger.info("Consumers were initialized and then cleared " +
-							"(presumably the container was stopped concurrently)");
-				}
+				logger.info("Consumers were initialized and then cleared " +
+						"(presumably the container was stopped concurrently)");
 				return;
 			}
 			if (newConsumers <= 0) {
@@ -902,8 +911,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	protected void doShutdown() {
-
-		if (!this.isRunning()) {
+		Thread thread = this.containerStoppingForAbort.get();
+		if (thread != null && !thread.equals(Thread.currentThread())) {
+			logger.info("Shutdown ignored - container is stopping due to an aborted consumer");
 			return;
 		}
 
@@ -917,7 +927,14 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 						consumer.basicCancel(true);
 						canceledConsumers.add(consumer);
 						consumerIterator.remove();
+						if (consumer.declaring) {
+							consumer.thread.interrupt();
+						}
 					}
+				}
+				else {
+					logger.info("Shutdown ignored - container is already stopped");
+					return;
 				}
 			}
 			logger.info("Waiting for workers to finish.");
@@ -941,6 +958,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		synchronized (this.consumersMonitor) {
 			this.consumers = null;
+			this.cancellationLock.deactivate();
 		}
 
 	}
@@ -1136,6 +1154,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 					// we haven't counted down yet)
 					this.cancellationLock.release(consumer);
 					this.consumers.remove(consumer);
+					if (!isActive()) {
+						// Do not restart - container is stopping
+						return;
+					}
 					BlockingQueueConsumer newConsumer = createBlockingQueueConsumer();
 					newConsumer.setBackOffExecution(consumer.getBackOffExecution());
 					consumer = newConsumer;
@@ -1398,7 +1420,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
 		private FatalListenerStartupException getStartupException() throws TimeoutException,
-					InterruptedException {
+				InterruptedException {
 			if (!this.start.await(
 					SimpleMessageListenerContainer.this.consumerStartTimeout, TimeUnit.MILLISECONDS)) {
 				logger.error("Consumer failed to start in "
@@ -1411,6 +1433,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 		@Override
 		public void run() {
+			if (!isActive()) {
+				return;
+			}
 
 			boolean aborted = false;
 
@@ -1609,7 +1634,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			catch (Error e) { //NOSONAR
 				// ok to catch Error - we're aborting so will stop
 				logger.error("Consumer thread error, thread abort.", e);
-				logConsumerException(e);
+				publishConsumerFailedEvent("Consumer threw an Error", true, e);
 				aborted = true;
 			}
 			catch (Throwable t) { //NOSONAR
@@ -1640,9 +1665,25 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				catch (AmqpException e) {
 					logger.info("Could not cancel message consumer", e);
 				}
-				if (aborted) {
+				if (aborted && SimpleMessageListenerContainer.this.containerStoppingForAbort
+						.compareAndSet(null, Thread.currentThread())) {
 					logger.error("Stopping container from aborted consumer");
 					stop();
+					SimpleMessageListenerContainer.this.containerStoppingForAbort.set(null);
+					ListenerContainerConsumerFailedEvent event = null;
+					do {
+						try {
+							event = SimpleMessageListenerContainer.this.abortEvents.poll(5, TimeUnit.SECONDS);
+							if (event != null) {
+								publishConsumerFailedEvent(
+										event.getReason(), event.isFatal(), event.getThrowable());
+							}
+						}
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+					}
+					while (event != null);
 				}
 			}
 			else {
@@ -1680,10 +1721,21 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		private void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
-			if (SimpleMessageListenerContainer.this.applicationEventPublisher != null) {
-				SimpleMessageListenerContainer.this.applicationEventPublisher
-						.publishEvent(new ListenerContainerConsumerFailedEvent(SimpleMessageListenerContainer.this,
-								reason, t, fatal));
+			if (!fatal || !isRunning()) {
+				if (SimpleMessageListenerContainer.this.applicationEventPublisher != null) {
+					SimpleMessageListenerContainer.this.applicationEventPublisher
+							.publishEvent(new ListenerContainerConsumerFailedEvent(
+									SimpleMessageListenerContainer.this, reason, t, fatal));
+				}
+			}
+			else {
+				try {
+					SimpleMessageListenerContainer.this.abortEvents
+							.put(new ListenerContainerConsumerFailedEvent(this, reason, t, fatal));
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 

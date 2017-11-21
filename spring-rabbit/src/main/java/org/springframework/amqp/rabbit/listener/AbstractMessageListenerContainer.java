@@ -547,11 +547,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Stop the shared Connection, call {@link #doShutdown()}, and close this container.
 	 */
 	public void shutdown() {
-		logger.debug("Shutting down Rabbit listener container");
 		synchronized (this.lifecycleMonitor) {
+			if (!isActive()) {
+				logger.info("Shutdown ignored - container is not active already");
+				return;
+			}
 			this.active = false;
 			this.lifecycleMonitor.notifyAll();
 		}
+
+		logger.debug("Shutting down Rabbit listener container");
 
 		// Shut down the invokers.
 		try {
@@ -602,6 +607,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	@Override
 	public void start() {
+		if (isRunning()) {
+			return;
+		}
 		if (!this.initialized) {
 			synchronized (this.lifecycleMonitor) {
 				if (!this.initialized) {

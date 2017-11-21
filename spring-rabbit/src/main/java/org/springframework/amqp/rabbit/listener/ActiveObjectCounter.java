@@ -24,12 +24,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * A mechanism to keep track of active objects.
+ * @param <T> the object type.
+ *
  * @author Dave Syer
+ * @author Artem Bilan
  *
  */
 public class ActiveObjectCounter<T> {
 
 	private final ConcurrentMap<T, CountDownLatch> locks = new ConcurrentHashMap<T, CountDownLatch>();
+
+	private volatile boolean active = true;
 
 	public void add(T object) {
 		CountDownLatch lock = new CountDownLatch(1);
@@ -71,6 +77,15 @@ public class ActiveObjectCounter<T> {
 
 	public void reset() {
 		this.locks.clear();
+		this.active = true;
+	}
+
+	public void deactivate() {
+		this.active = false;
+	}
+
+	public boolean isActive() {
+		return this.active;
 	}
 
 }
