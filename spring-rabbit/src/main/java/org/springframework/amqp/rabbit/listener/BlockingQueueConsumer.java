@@ -65,7 +65,10 @@ import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.Recoverable;
+import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 import com.rabbitmq.utility.Utility;
 
 /**
@@ -80,7 +83,7 @@ import com.rabbitmq.utility.Utility;
  * @author Alex Panchenko
  * @author Johno Crawford
  */
-public class BlockingQueueConsumer {
+public class BlockingQueueConsumer implements RecoveryListener {
 
 	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
@@ -151,6 +154,10 @@ public class BlockingQueueConsumer {
 	private volatile long abortStarted;
 
 	private volatile boolean normalCancel;
+
+	volatile Thread thread;
+
+	volatile boolean declaring;
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -413,7 +420,8 @@ public class BlockingQueueConsumer {
 
 	protected boolean cancelled() {
 		return this.cancelled.get() || (this.abortStarted > 0 &&
-				this.abortStarted + this.shutdownTimeout > System.currentTimeMillis());
+				this.abortStarted + this.shutdownTimeout > System.currentTimeMillis())
+				|| !this.activeObjectCounter.isActive();
 	}
 
 	/**
@@ -552,10 +560,14 @@ public class BlockingQueueConsumer {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
 		}
+
+		this.thread = Thread.currentThread();
+
 		try {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
 					this.transactional);
 			this.channel = this.resourceHolder.getChannel();
+			addRecoveryListener();
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -566,7 +578,11 @@ public class BlockingQueueConsumer {
 
 		// mirrored queue might be being moved
 		int passiveDeclareRetries = this.declarationRetries;
+		this.declaring = true;
 		do {
+			if (cancelled()) {
+				break;
+			}
 			try {
 				attemptPassiveDeclarations();
 				if (passiveDeclareRetries < this.declarationRetries && logger.isInfoEnabled()) {
@@ -582,7 +598,10 @@ public class BlockingQueueConsumer {
 							Thread.sleep(this.failedDeclarationRetryInterval);
 						}
 						catch (InterruptedException e1) {
+							this.declaring = false;
 							Thread.currentThread().interrupt();
+							this.activeObjectCounter.release(this);
+							throw RabbitExceptionTranslator.convertRabbitAccessException(e1);
 						}
 					}
 				}
@@ -595,15 +614,17 @@ public class BlockingQueueConsumer {
 					this.lastRetryDeclaration = System.currentTimeMillis();
 				}
 				else {
+					this.declaring = false;
 					this.activeObjectCounter.release(this);
 					throw new QueuesNotAvailableException("Cannot prepare queue for listener. "
 							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 				}
 			}
 		}
-		while (passiveDeclareRetries-- > 0);
+		while (passiveDeclareRetries-- > 0 && !cancelled());
+		this.declaring = false;
 
-		if (!this.acknowledgeMode.isAutoAck()) {
+		if (!this.acknowledgeMode.isAutoAck() && !cancelled()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
 			// will send blocks of 100 messages)
 			try {
@@ -617,14 +638,29 @@ public class BlockingQueueConsumer {
 
 
 		try {
-			for (String queueName : this.queues) {
-				if (!this.missingQueues.contains(queueName)) {
-					consumeFromQueue(queueName);
+			if (!cancelled()) {
+				for (String queueName : this.queues) {
+					if (!this.missingQueues.contains(queueName)) {
+						consumeFromQueue(queueName);
+					}
 				}
 			}
 		}
 		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	/**
+	 * Add a listener if necessary so we can immediately close an autorecovered
+	 * channel if necessary since the async consumer will no longer exist.
+	 */
+	private void addRecoveryListener() {
+		if (this.channel instanceof ChannelProxy) {
+			if (((ChannelProxy) this.channel).getTargetChannel() instanceof AutorecoveringChannel) {
+				((AutorecoveringChannel) ((ChannelProxy) this.channel).getTargetChannel())
+						.addRecoveryListener(this);
+			}
 		}
 	}
 
@@ -801,6 +837,25 @@ public class BlockingQueueConsumer {
 
 		return true;
 
+	}
+
+	@Override
+	public void handleRecovery(Recoverable recoverable) {
+		// should never get here
+		handleRecoveryStarted(recoverable);
+	}
+
+	@Override
+	public void handleRecoveryStarted(Recoverable recoverable) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Closing an autorecovered channel: " + recoverable);
+		}
+		try {
+			((Channel) recoverable).close();
+		}
+		catch (IOException | TimeoutException e) {
+			logger.debug("Error closing an autorecovered channel");
+		}
 	}
 
 	@Override
