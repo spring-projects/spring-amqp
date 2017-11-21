@@ -1139,6 +1139,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	@Override
 	public void start() {
+		if (isRunning()) {
+			return;
+		}
 		if (!this.initialized) {
 			synchronized (this.lifecycleMonitor) {
 				if (!this.initialized) {
@@ -1500,7 +1503,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return e;
 	}
 
-	protected final void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
+	protected void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher
 					.publishEvent(t == null ? new ListenerContainerConsumerTerminatedEvent(this, reason) :
