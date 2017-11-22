@@ -420,7 +420,8 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 	protected boolean cancelled() {
 		return this.cancelled.get() || (this.abortStarted > 0 &&
-				this.abortStarted + this.shutdownTimeout > System.currentTimeMillis());
+				this.abortStarted + this.shutdownTimeout > System.currentTimeMillis())
+				|| !this.activeObjectCounter.isActive();
 	}
 
 	/**
@@ -559,7 +560,9 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Starting consumer " + this);
 		}
+
 		this.thread = Thread.currentThread();
+
 		try {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
 					this.transactional);
@@ -577,6 +580,9 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		int passiveDeclareRetries = this.declarationRetries;
 		this.declaring = true;
 		do {
+			if (cancelled()) {
+				break;
+			}
 			try {
 				attemptPassiveDeclarations();
 				if (passiveDeclareRetries < this.declarationRetries && logger.isInfoEnabled()) {
@@ -615,10 +621,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 				}
 			}
 		}
-		while (passiveDeclareRetries-- > 0);
+		while (passiveDeclareRetries-- > 0 && !cancelled());
 		this.declaring = false;
 
-		if (!this.acknowledgeMode.isAutoAck()) {
+		if (!this.acknowledgeMode.isAutoAck() && !cancelled()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
 			// will send blocks of 100 messages)
 			try {
@@ -632,9 +638,11 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 
 		try {
-			for (String queueName : this.queues) {
-				if (!this.missingQueues.contains(queueName)) {
-					consumeFromQueue(queueName);
+			if (!cancelled()) {
+				for (String queueName : this.queues) {
+					if (!this.missingQueues.contains(queueName)) {
+						consumeFromQueue(queueName);
+					}
 				}
 			}
 		}
