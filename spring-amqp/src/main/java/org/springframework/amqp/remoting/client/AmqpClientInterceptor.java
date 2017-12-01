@@ -66,12 +66,12 @@ public class AmqpClientInterceptor extends RemoteAccessor implements MethodInter
 					remoteInvocation.getMethodName() +
 					"' with arguments '" +
 					Arrays.asList(remoteInvocation.getArguments()) +
-					"' - perhaps a timeout in the template?", null);
+					"' - perhaps a timeout in the template?", null); // NOSONAR (null)
 		}
 		else if (!(rawResult instanceof RemoteInvocationResult)) {
 			throw new RemoteProxyFailureException("Expected a result of type "
 					+ RemoteInvocationResult.class.getCanonicalName() + " but found "
-					+ rawResult.getClass().getCanonicalName(), null);
+					+ rawResult.getClass().getCanonicalName(), null); // NOSONAR (null)
 		}
 
 		RemoteInvocationResult result = (RemoteInvocationResult) rawResult;
