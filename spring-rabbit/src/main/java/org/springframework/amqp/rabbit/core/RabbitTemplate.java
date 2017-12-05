@@ -1565,6 +1565,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					if (logger.isTraceEnabled()) {
 						logger.trace("Message received " + reply);
 					}
+					if (RabbitTemplate.this.afterReceivePostProcessors != null) {
+						for (MessagePostProcessor processor : RabbitTemplate.this.afterReceivePostProcessors) {
+							reply = processor.postProcessMessage(reply);
+						}
+					}
 					pendingReply.reply(reply);
 				}
 
@@ -1610,6 +1615,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					container.setBeanName(this.beanName + "#" + this.containerInstance.getAndIncrement());
 					if (this.taskExecutor != null) {
 						container.setTaskExecutor(this.taskExecutor);
+					}
+					if (this.afterReceivePostProcessors != null) {
+						container.setAfterReceivePostProcessors(this.afterReceivePostProcessors
+								.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
 					}
 					container.start();
 					this.directReplyToContainers.put(connectionFactory, container);

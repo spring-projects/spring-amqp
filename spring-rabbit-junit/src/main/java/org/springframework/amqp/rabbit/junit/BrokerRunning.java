@@ -549,6 +549,7 @@ public final class BrokerRunning extends TestWatcher {
 			this.connectionFactory.setPort(this.port);
 			this.connectionFactory.setUsername(this.user);
 			this.connectionFactory.setPassword(this.password);
+			this.connectionFactory.setAutomaticRecoveryEnabled(false);
 		}
 		return this.connectionFactory;
 	}
