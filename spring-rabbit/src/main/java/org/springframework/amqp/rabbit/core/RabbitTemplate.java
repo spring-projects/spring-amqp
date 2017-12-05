@@ -792,7 +792,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	public void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor,
-				CorrelationData correlationData)
+			CorrelationData correlationData)
 			throws AmqpException {
 		convertAndSend(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
@@ -808,7 +808,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Message messageToSend = convertMessageIfNecessary(message);
 		messageToSend = messagePostProcessor instanceof CorrelationAwareMessagePostProcessor
 				? ((CorrelationAwareMessagePostProcessor) messagePostProcessor)
-						.postProcessMessage(messageToSend, correlationData)
+				.postProcessMessage(messageToSend, correlationData)
 				: messagePostProcessor.postProcessMessage(messageToSend);
 		send(exchange, routingKey, messageToSend, correlationData);
 	}
@@ -954,7 +954,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
-										  final String replyRoutingKey) throws AmqpException {
+			final String replyRoutingKey) throws AmqpException {
 		return this.receiveAndReply(queueName, callback, new ReplyToAddressCallback<S>() {
 
 			@Override
@@ -973,13 +973,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
-										  ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
 	@SuppressWarnings("unchecked")
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
-											 final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return this.execute(new ChannelCallback<Boolean>() {
 
 			@SuppressWarnings("deprecation")
@@ -1212,7 +1212,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (messagePostProcessor != null) {
 			requestMessage = messagePostProcessor instanceof CorrelationAwareMessagePostProcessor
 					? ((CorrelationAwareMessagePostProcessor) messagePostProcessor)
-							.postProcessMessage(requestMessage, correlationData)
+					.postProcessMessage(requestMessage, correlationData)
 					: messagePostProcessor.postProcessMessage(requestMessage);
 		}
 		Message replyMessage = doSendAndReceive(exchange, routingKey, requestMessage, correlationData);
@@ -1279,12 +1279,17 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 					@Override
 					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-											   byte[] body) throws IOException {
+							byte[] body) throws IOException {
 						MessageProperties messageProperties = RabbitTemplate.this.messagePropertiesConverter
 								.toMessageProperties(properties, envelope, RabbitTemplate.this.encoding);
 						Message reply = new Message(body, messageProperties);
 						if (logger.isTraceEnabled()) {
 							logger.trace("Message received " + reply);
+						}
+						if (RabbitTemplate.this.afterReceivePostProcessors != null) {
+							for (MessagePostProcessor processor : RabbitTemplate.this.afterReceivePostProcessors) {
+								reply = processor.postProcessMessage(reply);
+							}
 						}
 						pendingReply.reply(reply);
 					}
@@ -1300,7 +1305,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					try {
 						channel.basicCancel(consumerTag);
 					}
-					catch (Exception e) { }
+					catch (Exception e) {
+					}
 				}
 				return reply;
 			}
@@ -1310,7 +1316,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData) {
 		Assert.state(this.isListener, "RabbitTemplate is not configured as MessageListener - "
-							+ "cannot use a 'replyAddress': " + this.replyAddress);
+				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(new ChannelCallback<Message>() {
 
 			@SuppressWarnings("deprecation")
@@ -1516,7 +1522,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
 				messageToUse = processor instanceof CorrelationAwareMessagePostProcessor
 						? ((CorrelationAwareMessagePostProcessor) processor)
-								.postProcessMessage(messageToUse, correlationData)
+						.postProcessMessage(messageToUse, correlationData)
 						: processor.postProcessMessage(messageToUse);
 			}
 		}
@@ -1564,6 +1570,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private Message buildMessageFromDelivery(com.rabbitmq.client.QueueingConsumer.Delivery delivery) {
 		return buildMessage(delivery.getEnvelope(), delivery.getProperties(), delivery.getBody(), -1);
 	}
+
 	private Message buildMessageFromResponse(GetResponse response) {
 		return buildMessage(response.getEnvelope(), response.getProps(), response.getBody(), response.getMessageCount());
 	}
@@ -1640,7 +1647,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		else {
 			throw new IllegalStateException(
 					"Channel does not support confirms or returns; " +
-					"is the connection factory configured for confirms or returns?");
+							"is the connection factory configured for confirms or returns?");
 		}
 	}
 
@@ -1663,7 +1670,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			String routingKey,
 			BasicProperties properties,
 			byte[] body)
-		throws IOException {
+			throws IOException {
 
 		ReturnCallback returnCallback = this.returnCallback;
 		if (returnCallback == null) {
@@ -1766,7 +1773,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				else {
 					if (savedCorrelation != null) {
 						message.getMessageProperties().setHeader(this.correlationKey,
-							savedCorrelation);
+								savedCorrelation);
 					}
 					else {
 						message.getMessageProperties().getHeaders().remove(this.correlationKey);
