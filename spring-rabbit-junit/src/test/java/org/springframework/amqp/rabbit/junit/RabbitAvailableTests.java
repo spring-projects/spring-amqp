@@ -34,9 +34,7 @@ import com.rabbitmq.client.ConnectionFactory;
 public class RabbitAvailableTests {
 
 	@Test
-	public void test() throws Exception {
-		ConnectionFactory connectionFactory = new ConnectionFactory();
-		connectionFactory.setHost("localhost");
+	public void test(ConnectionFactory connectionFactory) throws Exception {
 		Connection conn = connectionFactory.newConnection();
 		Channel channel = conn.createChannel();
 		DeclareOk declareOk = channel.queueDeclarePassive("rabbitAvailableTests.queue");

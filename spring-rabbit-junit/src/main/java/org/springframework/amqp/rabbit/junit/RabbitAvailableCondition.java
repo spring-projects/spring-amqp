@@ -25,7 +25,12 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.util.AnnotationUtils;
+
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * Looks for {@code @RabbitAvailable} annotated classes and disables
@@ -35,7 +40,7 @@ import org.junit.platform.commons.util.AnnotationUtils;
  * @since 2.0.2
  *
  */
-public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCallback {
+public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCallback, ParameterResolver {
 
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@RabbitAvailable is not present");
@@ -78,8 +83,25 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 		}
 	}
 
+	@Override
+	public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+			throws ParameterResolutionException {
+		return parameterContext.getParameter().getType().equals(ConnectionFactory.class);
+	}
+
+	@Override
+	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext context)
+			throws ParameterResolutionException {
+		return getParentStore(context).get("brokerRunning", BrokerRunning.class).getConnectionFactory();
+	}
+
 	private Store getStore(ExtensionContext context) {
 		return context.getStore(Namespace.create(getClass(), context));
+	}
+
+	private Store getParentStore(ExtensionContext context) {
+		ExtensionContext parent = context.getParent().get();
+		return parent.getStore(Namespace.create(getClass(), parent));
 	}
 
 }
