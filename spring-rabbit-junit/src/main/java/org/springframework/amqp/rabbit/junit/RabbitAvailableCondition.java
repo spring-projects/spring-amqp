@@ -92,7 +92,12 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 	@Override
 	public Object resolveParameter(ParameterContext parameterContext, ExtensionContext context)
 			throws ParameterResolutionException {
-		return getParentStore(context).get("brokerRunning", BrokerRunning.class).getConnectionFactory();
+		// in parent for method injection, Composite key causes a store miss
+		BrokerRunning brokerRunning =
+				getParentStore(context).get("brokerRunning", BrokerRunning.class) == null
+					? getStore(context).get("brokerRunning", BrokerRunning.class)
+					: getParentStore(context).get("brokerRunning", BrokerRunning.class);
+		return brokerRunning.getConnectionFactory();
 	}
 
 	private Store getStore(ExtensionContext context) {
