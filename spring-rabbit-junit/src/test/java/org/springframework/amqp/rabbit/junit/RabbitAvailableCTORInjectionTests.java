@@ -35,8 +35,8 @@ public class RabbitAvailableCTORInjectionTests {
 
 	private final ConnectionFactory connectionFactory;
 
-	public RabbitAvailableCTORInjectionTests(ConnectionFactory connectionFactory) {
-		this.connectionFactory = connectionFactory;
+	public RabbitAvailableCTORInjectionTests(BrokerRunning brokerRunning) {
+		this.connectionFactory = brokerRunning.getConnectionFactory();
 	}
 
 	@Test

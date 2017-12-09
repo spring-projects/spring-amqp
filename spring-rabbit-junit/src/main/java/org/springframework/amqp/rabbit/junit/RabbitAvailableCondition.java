@@ -86,7 +86,8 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 	@Override
 	public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
 			throws ParameterResolutionException {
-		return parameterContext.getParameter().getType().equals(ConnectionFactory.class);
+		Class<?> type = parameterContext.getParameter().getType();
+		return type.equals(ConnectionFactory.class) || type.equals(BrokerRunning.class);
 	}
 
 	@Override
@@ -97,7 +98,9 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 				getParentStore(context).get("brokerRunning", BrokerRunning.class) == null
 					? getStore(context).get("brokerRunning", BrokerRunning.class)
 					: getParentStore(context).get("brokerRunning", BrokerRunning.class);
-		return brokerRunning.getConnectionFactory();
+		Class<?> type = parameterContext.getParameter().getType();
+		return type.equals(ConnectionFactory.class) ? brokerRunning.getConnectionFactory()
+				: brokerRunning;
 	}
 
 	private Store getStore(ExtensionContext context) {
