@@ -18,10 +18,7 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.AfterClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -30,41 +27,37 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
+import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Gary Russell
  * @since 1.7.6
  *
  */
-@RunWith(SpringRunner.class)
+@RabbitAvailable(queues = {
+		RabbitTemplateMPPIntegrationTests.QUEUE,
+		RabbitTemplateMPPIntegrationTests.REPLIES })
+@SpringJUnitConfig
 @DirtiesContext(classMode = ClassMode.AFTER_EACH_TEST_METHOD)
 public class RabbitTemplateMPPIntegrationTests {
 
-	private static final String QUEUE = "mpp.tests";
+	public static final String QUEUE = "mpp.tests";
 
-	private static final String REPLIES = "mpp.tests.replies";
-
-	@ClassRule
-	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(QUEUE, REPLIES);
+	public static final String REPLIES = "mpp.tests.replies";
 
 	@Autowired
 	private RabbitTemplate template;
 
 	@Autowired
 	private Config config;
-
-	@AfterClass
-	public static void tearDown() {
-		brokerIsRunning.removeTestQueues();
-	}
 
 	@Test // 2.0.x only
 	public void testMPPsAppliedDirectReplyToContainerTests() {
@@ -119,7 +112,8 @@ public class RabbitTemplateMPPIntegrationTests {
 
 		@Bean
 		public CachingConnectionFactory cf() {
-			return new CachingConnectionFactory(brokerIsRunning.getConnectionFactory());
+			return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning()
+					.getConnectionFactory());
 		}
 
 		@Bean

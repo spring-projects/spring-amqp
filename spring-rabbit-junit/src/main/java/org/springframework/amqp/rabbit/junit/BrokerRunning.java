@@ -443,7 +443,7 @@ public final class BrokerRunning extends TestWatcher {
 		return channel;
 	}
 
-	private boolean fatal() {
+	public static boolean fatal() {
 		String serversRequired = System.getenv(BROKER_REQUIRED);
 		if (Boolean.parseBoolean(serversRequired)) {
 			logger.error("RABBITMQ IS REQUIRED BUT NOT AVAILABLE");

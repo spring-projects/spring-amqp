@@ -33,6 +33,7 @@ import org.junit.platform.commons.util.AnnotationUtils;
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
+ * JUnit5 {@link ExecutionCondition}.
  * Looks for {@code @RabbitAvailable} annotated classes and disables
  * if found the broker is not available.
  *
@@ -44,6 +45,8 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 
 	private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled(
 			"@RabbitAvailable is not present");
+
+	private static final ThreadLocal<BrokerRunning> brokerRunningHolder = new ThreadLocal<>();
 
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
@@ -62,12 +65,16 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 					}
 				}
 				brokerRunning.isUp();
+				brokerRunningHolder.set(brokerRunning);
 				Store store = getStore(context);
 				store.put("brokerRunning", brokerRunning);
 				store.put("queuesToDelete", queues);
 				return ConditionEvaluationResult.enabled("RabbitMQ is available");
 			}
 			catch (Exception e) {
+				if (BrokerRunning.fatal()) {
+					throw new IllegalStateException("Required RabbitMQ is not available");
+				}
 				return ConditionEvaluationResult.disabled("RabbitMQ is not available");
 			}
 		}
@@ -76,6 +83,7 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 
 	@Override
 	public void afterAll(ExtensionContext context) throws Exception {
+		brokerRunningHolder.remove();
 		Store store = getStore(context);
 		BrokerRunning brokerRunning = store.remove("brokerRunning", BrokerRunning.class);
 		if (brokerRunning != null) {
@@ -110,6 +118,10 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 	private Store getParentStore(ExtensionContext context) {
 		ExtensionContext parent = context.getParent().get();
 		return parent.getStore(Namespace.create(getClass(), parent));
+	}
+
+	public static BrokerRunning getBrokerRunning() {
+		return brokerRunningHolder.get();
 	}
 
 }
