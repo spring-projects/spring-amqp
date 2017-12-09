@@ -19,6 +19,8 @@ package org.springframework.amqp.rabbit.junit;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -367,38 +369,8 @@ public final class BrokerRunning extends TestWatcher {
 		Channel channel = null;
 
 		try {
-			connection = connectionFactory.newConnection();
-			connection.setId(generateId());
-			channel = connection.createChannel();
-
-			for (String queueName : this.queues) {
-
-				if (this.purge) {
-					logger.debug("Deleting queue: " + queueName);
-					// Delete completely - gets rid of consumers and bindings as well
-					channel.queueDelete(queueName);
-				}
-
-				if (isDefaultQueue(queueName)) {
-					// Just for test probe.
-					channel.queueDelete(queueName);
-				}
-				else {
-					channel.queueDeclare(queueName, true, false, false, null);
-				}
-			}
-			brokerOffline.put(this.port, false);
-			if (!this.assumeOnline) {
-				Assume.assumeTrue(brokerOffline.get(this.port));
-			}
-
-			if (this.management) {
-				Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
-				if (!client.alivenessTest("/")) {
-					throw new RuntimeException("Aliveness test failed for localhost:15672 guest/quest; "
-							+ "management not available");
-				}
-			}
+			connection = getConnection(connectionFactory);
+			channel = createQueues(connection);
 		}
 		catch (Exception e) {
 			logger.warn("Not executing tests because basic connectivity test failed: " + e.getMessage());
@@ -417,6 +389,58 @@ public final class BrokerRunning extends TestWatcher {
 		}
 
 		return super.apply(base, description);
+	}
+
+	public void isUp() throws Exception {
+		Connection connection = getConnectionFactory().newConnection();
+		Channel channel = null;
+		try {
+			channel = createQueues(connection);
+		}
+		finally {
+			closeResources(connection, channel);
+		}
+	}
+
+	private Connection getConnection(ConnectionFactory connectionFactory) throws IOException, TimeoutException {
+		Connection connection = connectionFactory.newConnection();
+		connection.setId(generateId());
+		return connection;
+	}
+
+	private Channel createQueues(Connection connection) throws IOException, MalformedURLException, URISyntaxException {
+		Channel channel;
+		channel = connection.createChannel();
+
+		for (String queueName : this.queues) {
+
+			if (this.purge) {
+				logger.debug("Deleting queue: " + queueName);
+				// Delete completely - gets rid of consumers and bindings as well
+				channel.queueDelete(queueName);
+			}
+
+			if (isDefaultQueue(queueName)) {
+				// Just for test probe.
+				channel.queueDelete(queueName);
+			}
+			else {
+				channel.queueDeclare(queueName, true, false, false, null);
+			}
+		}
+		brokerOffline.put(this.port, false);
+		if (!this.assumeOnline) {
+			Assume.assumeTrue(brokerOffline.get(this.port));
+		}
+
+		if (this.management) {
+			Client client = new Client(getAdminUri(), this.adminUser, this.adminPassword);
+			if (!client.alivenessTest("/")) {
+				throw new RuntimeException("Aliveness test failed for localhost:15672 guest/quest; "
+						+ "management not available");
+			}
+		}
+		return channel;
 	}
 
 	private boolean fatal() {
@@ -465,7 +489,7 @@ public final class BrokerRunning extends TestWatcher {
 		Channel channel = null;
 
 		try {
-			connection = connectionFactory.newConnection();
+			connection = getConnection(connectionFactory);
 			connection.setId(generateId() + ".queueDelete");
 			channel = connection.createChannel();
 
@@ -491,7 +515,7 @@ public final class BrokerRunning extends TestWatcher {
 		Channel channel = null;
 
 		try {
-			connection = connectionFactory.newConnection();
+			connection = getConnection(connectionFactory);
 			connection.setId(generateId() + ".queueDelete");
 			channel = connection.createChannel();
 
@@ -517,7 +541,7 @@ public final class BrokerRunning extends TestWatcher {
 		Channel channel = null;
 
 		try {
-			connection = connectionFactory.newConnection();
+			connection = getConnection(connectionFactory);
 			connection.setId(generateId() + ".exchangeDelete");
 			channel = connection.createChannel();
 
