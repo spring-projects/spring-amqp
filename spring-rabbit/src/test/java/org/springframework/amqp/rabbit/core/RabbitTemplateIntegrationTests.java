@@ -238,6 +238,37 @@ public class RabbitTemplateIntegrationTests {
 		finally {
 			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
 		}
+		channel.close();
+	}
+
+	@Test
+	@DirtiesContext
+	public void testTemplateUsesPublisherConnectionUnlessInTx() throws Exception {
+		this.connectionFactory.destroy();
+		this.template.setUsePublisherConnection(true);
+		this.template.convertAndSend("dummy", "foo");
+		assertNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		assertNotNull(TestUtils.getPropertyValue(
+				this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		this.connectionFactory.destroy();
+		assertNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		assertNull(TestUtils.getPropertyValue(
+				this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		Channel channel = this.connectionFactory.createConnection().createChannel(true);
+		assertNotNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		RabbitResourceHolder holder = new RabbitResourceHolder(channel, true);
+		TransactionSynchronizationManager.bindResource(this.connectionFactory, holder);
+		try {
+			this.template.setChannelTransacted(true);
+			this.template.convertAndSend("dummy", "foo");
+			assertNotNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+			assertNull(TestUtils.getPropertyValue(
+					this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		}
+		finally {
+			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
+		}
+		channel.close();
 	}
 
 	@Test

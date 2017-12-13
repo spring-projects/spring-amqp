@@ -72,6 +72,22 @@ public final class ConnectionFactoryUtils {
 	 */
 	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
 			final boolean synchedLocalTransactionAllowed) {
+		return getTransactionalResourceHolder(connectionFactory, synchedLocalTransactionAllowed, false);
+	}
+
+	/**
+	 * Obtain a RabbitMQ Channel that is synchronized with the current transaction, if any.
+	 * @param connectionFactory the ConnectionFactory to obtain a Channel for
+	 * @param synchedLocalTransactionAllowed whether to allow for a local RabbitMQ transaction that is synchronized with
+	 * a Spring-managed transaction (where the main transaction might be a JDBC-based one for a specific DataSource, for
+	 * example), with the RabbitMQ transaction committing right after the main transaction. If not allowed, the given
+	 * ConnectionFactory needs to handle transaction enlistment underneath the covers.
+	 * @param publisherConnectionIfPossible obtain a connection from a separate publisher connection
+	 * if possible.
+	 * @return the transactional Channel, or <code>null</code> if none found
+	 */
+	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
+			final boolean synchedLocalTransactionAllowed, final boolean publisherConnectionIfPossible) {
 
 		return doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
 
@@ -87,7 +103,8 @@ public final class ConnectionFactoryUtils {
 
 			@Override
 			public Connection createConnection() throws IOException {
-				return connectionFactory.createConnection();
+				return publisherConnectionIfPossible ? connectionFactory.createPublisherConnection()
+						: connectionFactory.createConnection();
 			}
 
 			@Override

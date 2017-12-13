@@ -242,6 +242,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private boolean userCorrelationId;
 
+	private boolean usePublisherConnection;
+
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
 	 */
@@ -535,7 +537,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * Add a {@link RecoveryCallback} which is used for the {@code retryTemplate.execute}.
 	 * If {@link #retryTemplate} isn't provided {@link #recoveryCallback} is ignored.
 	 * {@link RecoveryCallback} should produce result compatible with
-	 * {@link #execute(ChannelCallback, ConnectionFactory)} return type.
+	 * {@link #execute(ChannelCallback)} return type.
 	 * @param recoveryCallback The retry recoveryCallback.
 	 * @since 1.4
 	 */
@@ -664,6 +666,28 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public void setUserCorrelationId(boolean userCorrelationId) {
 		this.userCorrelationId = userCorrelationId;
+	}
+
+	/**
+	 * True if separate publisher connection(s) are used.
+	 * @return true or false.
+	 * @since 1.7.5
+	 * @see #setUsePublisherConnection(boolean)
+	 */
+	public boolean isUsePublisherConnection() {
+		return this.usePublisherConnection;
+	}
+
+	/**
+	 * To avoid deadlocked connections, it is generally recommended to use
+	 * a separate connection for publishers and consumers (except when a publisher
+	 * is participating in a consumer transaction). Default 'false'; will change
+	 * to 'true' in 2.1.
+	 * @param usePublisherConnection true to use a publisher connection.
+	 * @since 1.7.6
+	 */
+	public void setUsePublisherConnection(boolean usePublisherConnection) {
+		this.usePublisherConnection = usePublisherConnection;
 	}
 
 	/**
@@ -843,7 +867,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					RabbitTemplate.this.evaluationContext, message, Boolean.class),
 					correlationData);
 			return null;
-		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message),
+				this.usePublisherConnection);
 	}
 
 	private ConnectionFactory obtainTargetConnectionFactory(Expression expression, Object rootObject) {
@@ -983,7 +1008,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return RabbitTemplate.this.buildMessageFromResponse(response);
 			}
 			return null;
-		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
+		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName), false);
 		logReceived(message);
 		return message;
 	}
@@ -1121,7 +1146,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return sendReply(callback, replyToAddressCallback, channel, receiveMessage);
 			}
 			return false;
-		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
+		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName),
+				this.usePublisherConnection);
 	}
 
 	private Message receiveForReply(final String queueName, Channel channel, Message receiveMessage) throws Exception {
@@ -1584,7 +1610,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 			return reply;
-		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message),
+				this.usePublisherConnection);
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
@@ -1593,7 +1620,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				+ "cannot use a 'replyAddress': " + this.replyAddress);
 		return this.execute(channel -> {
 			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);
-		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message),
+				this.usePublisherConnection);
 	}
 
 	private Message doSendAndReceiveWithDirect(String exchange, String routingKey, Message message,
@@ -1726,15 +1754,23 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <T> T execute(ChannelCallback<T> action) {
-		return execute(action, getConnectionFactory());
+		return execute(action, getConnectionFactory(), false);
+	}
+
+	@Override
+	public <T> T execute(ChannelCallback<T> action, boolean publisherConnectionIfPossible) {
+		return execute(action, getConnectionFactory(), publisherConnectionIfPossible);
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
+	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory,
+			final boolean publisherConnectionIfPossible) {
 		if (this.retryTemplate != null) {
 			try {
 				return this.retryTemplate.execute(
-						(RetryCallback<T, Exception>) context -> RabbitTemplate.this.doExecute(action, connectionFactory),
+						(RetryCallback<T, Exception>) context ->
+							RabbitTemplate.this.doExecute(action, connectionFactory,
+									publisherConnectionIfPossible),
 						(RecoveryCallback<T>) this.recoveryCallback);
 			}
 			catch (Exception e) {
@@ -1745,12 +1781,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		else {
-			return doExecute(action, connectionFactory);
+			return doExecute(action, connectionFactory, publisherConnectionIfPossible);
 		}
 	}
 
 
-	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) {
+	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory,
+			boolean publisherConnectionIfPossible) {
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
@@ -1762,7 +1799,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Connection connection = null; // NOSONAR (close)
 		if (channel == null) {
 			if (isChannelTransacted()) {
-				resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(connectionFactory, true);
+				resourceHolder = ConnectionFactoryUtils.
+						getTransactionalResourceHolder(connectionFactory, true, publisherConnectionIfPossible);
 				channel = resourceHolder.getChannel();
 				if (channel == null) {
 					ConnectionFactoryUtils.releaseResources(resourceHolder);
@@ -1770,7 +1808,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 			else {
-				connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
+				if (publisherConnectionIfPossible) {
+					connection = connectionFactory.createPublisherConnection(); // NOSONAR - RabbitUtils
+				}
+				else {
+					connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
+				}
 				if (connection == null) {
 					throw new IllegalStateException("Connection factory returned a null connection");
 				}
