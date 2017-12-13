@@ -72,6 +72,22 @@ public final class ConnectionFactoryUtils {
 	 */
 	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
 			final boolean synchedLocalTransactionAllowed) {
+		return getTransactionalResourceHolder(connectionFactory, synchedLocalTransactionAllowed, false);
+	}
+
+	/**
+	 * Obtain a RabbitMQ Channel that is synchronized with the current transaction, if any.
+	 * @param connectionFactory the ConnectionFactory to obtain a Channel for
+	 * @param synchedLocalTransactionAllowed whether to allow for a local RabbitMQ transaction that is synchronized with
+	 * a Spring-managed transaction (where the main transaction might be a JDBC-based one for a specific DataSource, for
+	 * example), with the RabbitMQ transaction committing right after the main transaction. If not allowed, the given
+	 * ConnectionFactory needs to handle transaction enlistment underneath the covers.
+	 * @param publisherConnectionIfPossible obtain a connection from a separate publisher connection
+	 * if possible.
+	 * @return the transactional Channel, or <code>null</code> if none found
+	 */
+	public static RabbitResourceHolder getTransactionalResourceHolder(final ConnectionFactory connectionFactory,
+			final boolean synchedLocalTransactionAllowed, final boolean publisherConnectionIfPossible) {
 
 		return doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
 
@@ -87,7 +103,8 @@ public final class ConnectionFactoryUtils {
 
 			@Override
 			public Connection createConnection() throws IOException {
-				return connectionFactory.createConnection();
+				return ConnectionFactoryUtils.createConnection(connectionFactory,
+						publisherConnectionIfPossible);
 			}
 
 			@Override
@@ -191,6 +208,24 @@ public final class ConnectionFactoryUtils {
 		if (resourceHolder != null) {
 			resourceHolder.addDeliveryTag(channel, tag);
 		}
+	}
+
+	/**
+	 * Create a connection with this connection factory and/or its publisher factory.
+	 * @param connectionFactory the connection factory.
+	 * @param publisherConnectionIfPossible true to use the publisher factory, if present.
+	 * @return the connection.
+	 * @since 2.0.2
+	 */
+	public static Connection createConnection(final ConnectionFactory connectionFactory,
+			final boolean publisherConnectionIfPossible) {
+		if (publisherConnectionIfPossible) {
+			ConnectionFactory publisherFactory = connectionFactory.getPublisherConnectionFactory();
+			if (publisherFactory != null) {
+				return publisherFactory.createConnection();
+			}
+		}
+		return connectionFactory.createConnection();
 	}
 
 	/**

@@ -130,6 +130,43 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 	}
 
 	@Test
+	public void testPublisherConnection() throws Exception {
+		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
+		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		when(mockChannel.isOpen()).thenReturn(true);
+		when(mockConnection.isOpen()).thenReturn(true);
+
+		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
+		ccf.setExecutor(mock(ExecutorService.class));
+		Connection con = ccf.getPublisherConnectionFactory().createConnection();
+
+		Channel channel = con.createChannel(false);
+		channel.close(); // should be ignored, and placed into channel cache.
+		con.close(); // should be ignored
+
+		Connection con2 = ccf.getPublisherConnectionFactory().createConnection();
+		/*
+		 * will retrieve same channel object that was just put into channel cache
+		 */
+		Channel channel2 = con2.createChannel(false);
+		channel2.close(); // should be ignored
+		con2.close(); // should be ignored
+
+		assertSame(con, con2);
+		assertSame(channel, channel2);
+		verify(mockConnection, never()).close();
+		verify(mockChannel, never()).close();
+
+		assertNull(TestUtils.getPropertyValue(ccf, "connection.target"));
+		assertNotNull(TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection.target"));
+		assertSame(con, TestUtils.getPropertyValue(ccf, "publisherConnectionFactory.connection"));
+	}
+
+	@Test
 	public void testWithConnectionFactoryCacheSize() throws Exception {
 		com.rabbitmq.client.ConnectionFactory mockConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
 		com.rabbitmq.client.Connection mockConnection = mock(com.rabbitmq.client.Connection.class);

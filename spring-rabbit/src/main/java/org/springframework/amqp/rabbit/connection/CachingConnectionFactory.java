@@ -137,6 +137,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private final AtomicInteger connectionHighWaterMark = new AtomicInteger();
 
+	private final CachingConnectionFactory publisherConnectionFactory;
+
 	private volatile long channelCheckoutTimeout = 0;
 
 	private volatile CacheMode cacheMode = CacheMode.CHANNEL;
@@ -175,28 +177,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * Create a new CachingConnectionFactory given a host name
-	 * and port.
+	 * Create a new CachingConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
-	 * @param port the port number
 	 */
-	public CachingConnectionFactory(String hostname, int port) {
-		super(newRabbitConnectionFactory());
-		if (!StringUtils.hasText(hostname)) {
-			hostname = getDefaultHostName();
-		}
-		setHost(hostname);
-		setPort(port);
-	}
-
-	/**
-	 * Create a new CachingConnectionFactory given a {@link URI}.
-	 * @param uri the amqp uri configuring the connection
-	 * @since 1.5
-	 */
-	public CachingConnectionFactory(URI uri) {
-		super(newRabbitConnectionFactory());
-		setUri(uri);
+	public CachingConnectionFactory(String hostname) {
+		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
 	}
 
 	/**
@@ -209,11 +194,32 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * Create a new CachingConnectionFactory given a host name.
+	 * Create a new CachingConnectionFactory given a host name
+	 * and port.
 	 * @param hostname the host name to connect to
+	 * @param port the port number
 	 */
-	public CachingConnectionFactory(String hostname) {
-		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
+	public CachingConnectionFactory(String hostname, int port) {
+		super(newRabbitConnectionFactory());
+		if (!StringUtils.hasText(hostname)) {
+			hostname = getDefaultHostName();
+		}
+		setHost(hostname);
+		setPort(port);
+		this.publisherConnectionFactory = new CachingConnectionFactory(getRabbitConnectionFactory(), true);
+		setPublisherConnectionFactory(this.publisherConnectionFactory);
+	}
+
+	/**
+	 * Create a new CachingConnectionFactory given a {@link URI}.
+	 * @param uri the amqp uri configuring the connection
+	 * @since 1.5
+	 */
+	public CachingConnectionFactory(URI uri) {
+		super(newRabbitConnectionFactory());
+		setUri(uri);
+		this.publisherConnectionFactory = new CachingConnectionFactory(getRabbitConnectionFactory(), true);
+		setPublisherConnectionFactory(this.publisherConnectionFactory);
 	}
 
 	/**
@@ -221,12 +227,30 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @param rabbitConnectionFactory the target ConnectionFactory
 	 */
 	public CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory) {
+		this(rabbitConnectionFactory, false);
+	}
+
+	/**
+	 * Create a new CachingConnectionFactory for the given target ConnectionFactory.
+	 * @param rabbitConnectionFactory the target ConnectionFactory
+	 * @param isPublisherFactory true if this is the publisher sub-factory.
+	 */
+	private CachingConnectionFactory(com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory,
+			boolean isPublisherFactory) {
 		super(rabbitConnectionFactory);
-		if (rabbitConnectionFactory.isAutomaticRecoveryEnabled()) {
-			logger.warn("***\nAutomatic Recovery is Enabled in the provided connection factory;\n"
+		if (!isPublisherFactory) {
+			if (rabbitConnectionFactory.isAutomaticRecoveryEnabled()) {
+				logger.warn("***\nAutomatic Recovery is Enabled in the provided connection factory;\n"
 					+ "while Spring AMQP is compatible with this feature, it\n"
 					+ "prefers to use its own recovery mechanisms; when this option is true, you may receive\n"
 					+ "'AutoRecoverConnectionNotCurrentlyOpenException's until the connection is recovered.");
+			}
+			this.publisherConnectionFactory = new CachingConnectionFactory(getRabbitConnectionFactory(),
+					true);
+			setPublisherConnectionFactory(this.publisherConnectionFactory);
+		}
+		else {
+			this.publisherConnectionFactory = null;
 		}
 	}
 
@@ -246,6 +270,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setChannelCacheSize(int sessionCacheSize) {
 		Assert.isTrue(sessionCacheSize >= 1, "Channel cache size must be 1 or higher");
 		this.channelCacheSize = sessionCacheSize;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setChannelCacheSize(sessionCacheSize);
+		}
 	}
 
 	public int getChannelCacheSize() {
@@ -260,6 +287,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		Assert.isTrue(!this.initialized, "'cacheMode' cannot be changed after initialization.");
 		Assert.notNull(cacheMode, "'cacheMode' must not be null.");
 		this.cacheMode = cacheMode;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setCacheMode(cacheMode);
+		}
 	}
 
 	public int getConnectionCacheSize() {
@@ -269,6 +299,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setConnectionCacheSize(int connectionCacheSize) {
 		Assert.isTrue(connectionCacheSize >= 1, "Connection cache size must be 1 or higher.");
 		this.connectionCacheSize = connectionCacheSize;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setConnectionCacheSize(connectionCacheSize);
+		}
 	}
 
 	/**
@@ -282,6 +315,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setConnectionLimit(int connectionLimit) {
 		Assert.isTrue(connectionLimit >= 1, "Connection limit must be 1 or higher.");
 		this.connectionLimit = connectionLimit;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setConnectionLimit(connectionLimit);
+		}
 	}
 
 	@Override
@@ -296,10 +332,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	public void setPublisherReturns(boolean publisherReturns) {
 		this.publisherReturns = publisherReturns;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setPublisherReturns(publisherReturns);
+		}
 	}
 
 	public void setPublisherConfirms(boolean publisherConfirms) {
 		this.publisherConfirms = publisherConfirms;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setPublisherConfirms(publisherConfirms);
+		}
 	}
 
 	/**
@@ -316,6 +358,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	public void setChannelCheckoutTimeout(long channelCheckoutTimeout) {
 		this.channelCheckoutTimeout = channelCheckoutTimeout;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setChannelCheckoutTimeout(channelCheckoutTimeout);
+		}
 	}
 
 	/**
@@ -329,6 +374,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void setCloseExceptionLogger(ConditionalExceptionLogger closeExceptionLogger) {
 		Assert.notNull(closeExceptionLogger, "'closeExceptionLogger' cannot be null");
 		this.closeExceptionLogger = closeExceptionLogger;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setCloseExceptionLogger(closeExceptionLogger);
+		}
 	}
 
 	@Override
@@ -339,6 +387,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					"When the cache mode is 'CHANNEL', the connection cache size cannot be configured.");
 		}
 		initCacheWaterMarks();
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.afterPropertiesSet();
+		}
 	}
 
 	private void initCacheWaterMarks() {
@@ -350,7 +401,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void setConnectionListeners(List<? extends ConnectionListener> listeners) {
-		super.setConnectionListeners(listeners);
+		super.setConnectionListeners(listeners); // handles publishing sub-factory
 		// If the connection is already alive we assume that the new listeners want to be notified
 		if (this.connection.target != null) {
 			this.getConnectionListener().onCreate(this.connection);
@@ -359,7 +410,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	@Override
 	public void addConnectionListener(ConnectionListener listener) {
-		super.addConnectionListener(listener);
+		super.addConnectionListener(listener); // handles publishing sub-factory
 		// If the connection is already alive we assume that the new listener wants to be notified
 		if (this.connection.target != null) {
 			listener.onCreate(this.connection);
@@ -676,6 +727,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	@Override
 	public final void destroy() {
+		super.destroy();
 		resetConnection();
 		if (getContextStopped()) {
 			this.stopped = true;
@@ -701,6 +753,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				count.set(0);
 			}
 			this.connectionHighWaterMark.set(0);
+		}
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.resetConnection();
 		}
 	}
 
@@ -782,6 +837,19 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		return props;
+	}
+
+	/**
+	 * Return the cache properties from the underlying publisher sub-factory.
+	 * @return the properties.
+	 * @since 2.0.2
+	 */
+	@ManagedAttribute
+	public Properties getPublisherConnectionFactoryCacheProperties() {
+		if (this.publisherConnectionFactory != null) {
+			return this.publisherConnectionFactory.getCacheProperties();
+		}
+		return new Properties();
 	}
 
 	private void putConnectionName(Properties props, ConnectionProxy connection, String keySuffix) {

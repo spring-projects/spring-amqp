@@ -1028,6 +1028,14 @@ Examples:
 
 The first example is a literal expression; the second obtains the `username` property from a connection factory bean in the application context.
 
+[[separate-connection]]
+===== Using a Separate Connection
+
+Starting with _version 2.0.2_, set the `usePublisherConnection` property to `true` to use a different connection to that used by listener containers, when possible.
+This is to avoid consumers being blocked when a producer is blocked for any reason.
+The `CachingConnectionFactory` now maintains a second internal connection factory for this purpose.
+If the rabbit template is running in a transaction started by the listener container, the container's channel is used, regardless of this setting.
+
 [[sending-messages]]
 ==== Sending messages
 

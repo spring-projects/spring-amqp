@@ -3,6 +3,12 @@
 
 ==== Changes in 2.0 Since 1.7
 
+===== CachingConnectionFactory
+
+Starting with _version 2.0.2_, the `RabbitTemplate` can be configured to use a different connection to that used by listener containers.
+This is to avoid deadlocked consumers when producers are blocked for any reason.
+See <<separate-connection>> for more information.
+
 ===== AMQP Client library
 
 Spring AMQP now uses the new 5.0.x version of the `amqp-client` library provided by the RabbitMQ team.

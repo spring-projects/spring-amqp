@@ -170,10 +170,10 @@ public class RabbitTemplateIntegrationTests {
 
 	private CachingConnectionFactory connectionFactory;
 
-	private RabbitTemplate template;
+	protected RabbitTemplate template;
 
 	@Autowired
-	private RabbitTemplate routingTemplate;
+	protected RabbitTemplate routingTemplate;
 
 	@Autowired
 	private ConnectionFactory cf1;
@@ -238,6 +238,37 @@ public class RabbitTemplateIntegrationTests {
 		finally {
 			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
 		}
+		channel.close();
+	}
+
+	@Test
+	@DirtiesContext
+	public void testTemplateUsesPublisherConnectionUnlessInTx() throws Exception {
+		this.connectionFactory.destroy();
+		this.template.setUsePublisherConnection(true);
+		this.template.convertAndSend("dummy", "foo");
+		assertNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		assertNotNull(TestUtils.getPropertyValue(
+				this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		this.connectionFactory.destroy();
+		assertNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		assertNull(TestUtils.getPropertyValue(
+				this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		Channel channel = this.connectionFactory.createConnection().createChannel(true);
+		assertNotNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+		RabbitResourceHolder holder = new RabbitResourceHolder(channel, true);
+		TransactionSynchronizationManager.bindResource(this.connectionFactory, holder);
+		try {
+			this.template.setChannelTransacted(true);
+			this.template.convertAndSend("dummy", "foo");
+			assertNotNull(TestUtils.getPropertyValue(this.connectionFactory, "connection.target"));
+			assertNull(TestUtils.getPropertyValue(
+					this.connectionFactory, "publisherConnectionFactory.connection.target"));
+		}
+		finally {
+			TransactionSynchronizationManager.unbindResource(this.connectionFactory);
+		}
+		channel.close();
 	}
 
 	@Test
@@ -444,6 +475,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveUndeliverable() throws Exception {
+		this.connectionFactory.setBeanName("testSendAndReceiveUndeliverable");
 		template.setMandatory(true);
 		try {
 			template.convertSendAndReceive(ROUTE + "xxxxxxxx", "undeliverable");
@@ -1036,25 +1068,27 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test
-	public void testReceiveAndReplyBlocking() {
+	public void testReceiveAndReplyBlocking() throws Exception {
 		testReceiveAndReply(10000);
 	}
 
 	@Test
-	public void testReceiveAndReplyNonBlocking() {
+	public void testReceiveAndReplyNonBlocking() throws Exception {
 		testReceiveAndReply(0);
 	}
 
-	private void testReceiveAndReply(long timeout) {
+	private void testReceiveAndReply(long timeout) throws Exception {
 		this.template.setQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		this.template.convertAndSend(ROUTE, "test");
 		template.setReceiveTimeout(timeout);
 
-		boolean received = this.template.receiveAndReply((ReceiveAndReplyMessageCallback) message -> {
-			message.getMessageProperties().setHeader("foo", "bar");
-			return message;
-		});
+		boolean received = receiveAndReply();
+		int n = 0;
+		while (timeout == 0 && !received && n++ < 100) {
+			Thread.sleep(100);
+			received = receiveAndReply();
+		}
 		assertTrue(received);
 
 		Message receive = this.template.receive();
@@ -1174,6 +1208,13 @@ public class RabbitTemplateIntegrationTests {
 			assertTrue(e.getCause().getCause() instanceof ClassCastException);
 		}
 
+	}
+
+	private boolean receiveAndReply() {
+		return this.template.receiveAndReply((ReceiveAndReplyMessageCallback) message -> {
+			message.getMessageProperties().setHeader("foo", "bar");
+			return message;
+		});
 	}
 
 	@Test

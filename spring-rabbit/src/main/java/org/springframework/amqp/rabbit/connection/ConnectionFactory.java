@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.lang.Nullable;
 
 /**
  * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection Connections}.
@@ -45,5 +46,14 @@ public interface ConnectionFactory {
 	boolean removeConnectionListener(ConnectionListener listener);
 
 	void clearConnectionListeners();
+
+	/**
+	 * Return a separate connection factory for publishers (if implemented).
+	 * @return the publisher connection factory, or null.
+	 * @since 2.0.2
+	 */
+	default @Nullable ConnectionFactory getPublisherConnectionFactory() {
+		return null;
+	}
 
 }
