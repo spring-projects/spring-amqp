@@ -134,7 +134,6 @@ subprojects { subproject ->
 		testRuntime "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
 
 		// To support JUnit 4 tests
-		testCompile "junit:junit:${junit4Version}"
 		testRuntime "org.junit.vintage:junit-vintage-engine:${junitVintageVersion}"
 
 		// To avoid compiler warnings about @API annotations in JUnit code
