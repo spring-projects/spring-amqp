@@ -825,10 +825,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		if (this.replyAddress == null || Address.AMQ_RABBITMQ_REPLY_TO.equals(this.replyAddress)) {
 			try {
-				execute(channel -> {
+				doExecute(channel -> {
 					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 					return null;
-				});
+				}, true);
 				return true;
 			}
 			catch (Exception e) {
@@ -1026,7 +1026,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Message receive(final String queueName, final long timeoutMillis) {
-		Message message = execute(channel -> {
+		Message message = doExecute(channel -> {
 			Delivery delivery = consumeDelivery(channel, queueName, timeoutMillis);
 			if (delivery == null) {
 				return null;
@@ -1045,7 +1045,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				return buildMessageFromDelivery(delivery);
 			}
-		});
+		}, false);
 		logReceived(message);
 		return message;
 	}
@@ -1628,6 +1628,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			CorrelationData correlationData) {
 		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
 				this.sendConnectionFactorySelectorExpression, message);
+		if (connectionFactory.getPublisherConnectionFactory() != null) {
+			connectionFactory = connectionFactory.getPublisherConnectionFactory();
+		}
 		DirectReplyToMessageListenerContainer container = this.directReplyToContainers.get(connectionFactory);
 		if (container == null) {
 			synchronized (this.directReplyToContainers) {
@@ -1754,11 +1757,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <T> T execute(ChannelCallback<T> action) {
-		return execute(action, getConnectionFactory(), false);
+		return doExecute(action, false);
 	}
 
-	@Override
-	public <T> T execute(ChannelCallback<T> action, boolean publisherConnectionIfPossible) {
+	private <T> T doExecute(ChannelCallback<T> action, boolean publisherConnectionIfPossible) {
 		return execute(action, getConnectionFactory(), publisherConnectionIfPossible);
 	}
 
