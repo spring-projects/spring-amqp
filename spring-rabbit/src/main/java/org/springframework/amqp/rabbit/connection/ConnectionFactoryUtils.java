@@ -103,8 +103,8 @@ public final class ConnectionFactoryUtils {
 
 			@Override
 			public Connection createConnection() throws IOException {
-				return publisherConnectionIfPossible ? connectionFactory.createPublisherConnection()
-						: connectionFactory.createConnection();
+				return ConnectionFactoryUtils.createConnection(connectionFactory,
+						publisherConnectionIfPossible);
 			}
 
 			@Override
@@ -208,6 +208,24 @@ public final class ConnectionFactoryUtils {
 		if (resourceHolder != null) {
 			resourceHolder.addDeliveryTag(channel, tag);
 		}
+	}
+
+	/**
+	 * Create a connection with this connection factory and/or its publisher factory.
+	 * @param connectionFactory the connection factory.
+	 * @param publisherConnectionIfPossible true to use the publisher factory, if present.
+	 * @return the connection.
+	 * @since 1.7.6
+	 */
+	public static Connection createConnection(final ConnectionFactory connectionFactory,
+			final boolean publisherConnectionIfPossible) {
+		if (publisherConnectionIfPossible) {
+			ConnectionFactory publisherFactory = connectionFactory.getPublisherConnectionFactory();
+			if (publisherFactory != null) {
+				return publisherFactory.createConnection();
+			}
+		}
+		return connectionFactory.createConnection();
 	}
 
 	/**

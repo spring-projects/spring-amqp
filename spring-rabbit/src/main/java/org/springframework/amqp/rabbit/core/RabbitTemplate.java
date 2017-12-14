@@ -1808,12 +1808,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 			}
 			else {
-				if (publisherConnectionIfPossible) {
-					connection = connectionFactory.createPublisherConnection(); // NOSONAR - RabbitUtils
-				}
-				else {
-					connection = connectionFactory.createConnection(); // NOSONAR - RabbitUtils
-				}
+				connection = ConnectionFactoryUtils.createConnection(connectionFactory,
+						publisherConnectionIfPossible); // NOSONAR - RabbitUtils closes
 				if (connection == null) {
 					throw new IllegalStateException("Connection factory returned a null connection");
 				}

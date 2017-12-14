@@ -432,6 +432,11 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return this.publisherConnectionFactory != null;
 	}
 
+	@Override
+	public ConnectionFactory getPublisherConnectionFactory() {
+		return this.publisherConnectionFactory;
+	}
+
 	protected final Connection createBareConnection() {
 		try {
 			String connectionName = this.connectionNameStrategy.obtainNewConnectionName(this);

@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.connection;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.lang.Nullable;
 
 /**
  * An interface based ConnectionFactory for creating {@link com.rabbitmq.client.Connection Connections}.
@@ -47,13 +48,12 @@ public interface ConnectionFactory {
 	void clearConnectionListeners();
 
 	/**
-	 * Return a separate connection for publishers (if implemented).
-	 * @return the connection.
-	 * @throws AmqpException an exception.
+	 * Return a separate connection factory for publishers (if implemented).
+	 * @return the publisher connection factory, or null.
 	 * @since 2.0.2
 	 */
-	default Connection createPublisherConnection() throws AmqpException {
-		return createConnection();
+	default @Nullable ConnectionFactory getPublisherConnectionFactory() {
+		return null;
 	}
 
 }

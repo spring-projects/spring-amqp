@@ -142,13 +142,13 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
-		Connection con = ccf.createPublisherConnection();
+		Connection con = ccf.getPublisherConnectionFactory().createConnection();
 
 		Channel channel = con.createChannel(false);
 		channel.close(); // should be ignored, and placed into channel cache.
 		con.close(); // should be ignored
 
-		Connection con2 = ccf.createPublisherConnection();
+		Connection con2 = ccf.getPublisherConnectionFactory().createConnection();
 		/*
 		 * will retrieve same channel object that was just put into channel cache
 		 */

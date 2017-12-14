@@ -672,13 +672,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return null;
 	}
 
-	@Override
-	public final Connection createPublisherConnection() throws AmqpException {
-		return this.publisherConnectionFactory != null
-				? this.publisherConnectionFactory.createConnection()
-				: createConnection();
-	}
-
 	/*
 	 * Iterate over the idle connections looking for an open one. If there are no idle,
 	 * return null, if there are no open idle, return the first closed idle so it can
