@@ -170,10 +170,10 @@ public class RabbitTemplateIntegrationTests {
 
 	private CachingConnectionFactory connectionFactory;
 
-	private RabbitTemplate template;
+	protected RabbitTemplate template;
 
 	@Autowired
-	private RabbitTemplate routingTemplate;
+	protected RabbitTemplate routingTemplate;
 
 	@Autowired
 	private ConnectionFactory cf1;
@@ -475,6 +475,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testSendAndReceiveUndeliverable() throws Exception {
+		this.connectionFactory.setBeanName("testSendAndReceiveUndeliverable");
 		template.setMandatory(true);
 		try {
 			template.convertSendAndReceive(ROUTE + "xxxxxxxx", "undeliverable");

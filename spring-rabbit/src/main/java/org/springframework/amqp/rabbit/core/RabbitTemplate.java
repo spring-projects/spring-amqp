@@ -828,7 +828,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				doExecute(channel -> {
 					channel.queueDeclarePassive(Address.AMQ_RABBITMQ_REPLY_TO);
 					return null;
-				}, true);
+				}, this.usePublisherConnection);
 				return true;
 			}
 			catch (Exception e) {
@@ -1628,7 +1628,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			CorrelationData correlationData) {
 		ConnectionFactory connectionFactory = obtainTargetConnectionFactory(
 				this.sendConnectionFactorySelectorExpression, message);
-		if (connectionFactory.getPublisherConnectionFactory() != null) {
+		if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
 			connectionFactory = connectionFactory.getPublisherConnectionFactory();
 		}
 		DirectReplyToMessageListenerContainer container = this.directReplyToContainers.get(connectionFactory);
@@ -1758,6 +1758,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public <T> T execute(ChannelCallback<T> action) {
 		return doExecute(action, false);
+	}
+
+	@Override
+	public <T> T execute(ChannelCallback<T> action, boolean publisherConnectionIfPossible) {
+		return doExecute(action, publisherConnectionIfPossible);
 	}
 
 	private <T> T doExecute(ChannelCallback<T> action, boolean publisherConnectionIfPossible) {
