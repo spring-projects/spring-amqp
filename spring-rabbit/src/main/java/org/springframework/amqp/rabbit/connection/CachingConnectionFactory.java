@@ -842,7 +842,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/**
 	 * Return the cache properties from the underlying publisher sub-factory.
 	 * @return the properties.
-	 * @since 1.7.6
+	 * @since 2.0.2
 	 */
 	@ManagedAttribute
 	public Properties getPublisherConnectionFactoryCacheProperties() {

@@ -20,7 +20,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 
 /**
  * @author Gary Russell
- * @since 1.7.6
+ * @since 2.0.2
  *
  */
 public class RabbitTemplateDirectReplyToContainerIntegrationPubCFTests

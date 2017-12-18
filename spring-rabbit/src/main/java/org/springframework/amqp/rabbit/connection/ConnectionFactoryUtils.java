@@ -215,7 +215,7 @@ public final class ConnectionFactoryUtils {
 	 * @param connectionFactory the connection factory.
 	 * @param publisherConnectionIfPossible true to use the publisher factory, if present.
 	 * @return the connection.
-	 * @since 1.7.6
+	 * @since 2.0.2
 	 */
 	public static Connection createConnection(final ConnectionFactory connectionFactory,
 			final boolean publisherConnectionIfPossible) {

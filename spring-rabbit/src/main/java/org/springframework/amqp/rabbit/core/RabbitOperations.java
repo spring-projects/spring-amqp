@@ -43,21 +43,6 @@ public interface RabbitOperations extends AmqpTemplate {
 	<T> T execute(ChannelCallback<T> action) throws AmqpException;
 
 	/**
-	 * Execute the callback with a channel and reliably close the channel afterwards.
-	 * @param action the call back.
-	 * @param publisherConnectionIfPossible true to use a separate publisher connection if possible.
-	 * @param <T> the return type.
-	 * @return the result from the
-	 * {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
-	 * @throws AmqpException if one occurs.
-	 * @since 2.0.2
-	 */
-	default <T> T execute(ChannelCallback<T> action, boolean publisherConnectionIfPossible)
-			throws AmqpException {
-		return execute(action);
-	}
-
-	/**
 	 * Invoke the callback and run all operations on the template argument in a dedicated
 	 * thread-bound channel and reliably close the channel afterwards.
 	 * @param action the call back.

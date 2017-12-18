@@ -416,7 +416,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		this.connectionNameStrategy = connectionNameStrategy;
 		if (this.publisherConnectionFactory != null) {
 			this.publisherConnectionFactory.setConnectionNameStrategy(
-					cf -> connectionNameStrategy + PUBLISHER_SUFFIX);
+					cf -> connectionNameStrategy.obtainNewConnectionName(cf) + PUBLISHER_SUFFIX);
 		}
 	}
 
