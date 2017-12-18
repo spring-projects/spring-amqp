@@ -22,8 +22,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
+import org.springframework.messaging.handler.invocation.MethodArgumentResolutionException;
 import org.springframework.util.ErrorHandler;
 
 /**
@@ -103,8 +105,14 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 		@Override
 		public boolean isFatal(Throwable t) {
-			if (t instanceof ListenerExecutionFailedException
-					&& isCauseFatal(t.getCause())) {
+			Throwable cause = t.getCause();
+			while (cause instanceof MessagingException
+					&& !(cause instanceof
+							org.springframework.messaging.converter.MessageConversionException)
+					&& !(cause instanceof MethodArgumentResolutionException)) {
+				cause = cause.getCause();
+			}
+			if (t instanceof ListenerExecutionFailedException && isCauseFatal(cause)) {
 				if (this.logger.isWarnEnabled()) {
 					this.logger.warn(
 							"Fatal message conversion error; message rejected; "
@@ -119,8 +127,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		private boolean isCauseFatal(Throwable cause) {
 			return cause instanceof MessageConversionException
 					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
-					|| cause instanceof MethodArgumentNotValidException
-					|| cause instanceof MethodArgumentTypeMismatchException
+					|| cause instanceof MethodArgumentResolutionException
 					|| cause instanceof NoSuchMethodException
 					|| cause instanceof ClassCastException
 					|| isUserCauseFatal(cause);

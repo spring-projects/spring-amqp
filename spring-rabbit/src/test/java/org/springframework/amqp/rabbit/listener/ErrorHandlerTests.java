@@ -27,12 +27,14 @@ import org.apache.commons.logging.Log;
 import org.junit.Test;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.core.MethodParameter;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHandlingException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 
@@ -90,6 +92,39 @@ public class ErrorHandlerTests {
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
 		}
+	}
+
+	@Test
+	public void testSimple() {
+		Throwable cause = new ClassCastException();
+		try {
+			doTest(cause);
+			fail("Expected exception");
+		}
+		catch (AmqpRejectAndDontRequeueException e) {
+			// noop
+		}
+	}
+
+	@Test
+	public void testMessagingException() {
+		Throwable cause = new MessageHandlingException(null, "test",
+				new MessageHandlingException(null, "test", new ClassCastException()));
+		try {
+			doTest(cause);
+			fail("Expected exception");
+		}
+		catch (AmqpRejectAndDontRequeueException e) {
+			// noop
+		}
+	}
+
+	private void doTest(Throwable cause) {
+		ConditionalRejectingErrorHandler handler = new ConditionalRejectingErrorHandler();
+		handler.handleError(
+				new ListenerExecutionFailedException("test", cause,
+						new org.springframework.amqp.core.Message(new byte[0],
+				new MessageProperties())));
 	}
 
 	private static class Foo {
