@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -55,6 +56,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
@@ -64,6 +66,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
+import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
@@ -608,6 +611,32 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 			Thread.sleep(100);
 		}
 		assertFalse(this.container.isRunning());
+	}
+
+	@Test
+	public void testManualAckWithClosedChannel() throws Exception {
+		final AtomicReference<IllegalStateException> exc = new AtomicReference<>();
+		final CountDownLatch latch = new CountDownLatch(1);
+		this.container = createContainer((ChannelAwareMessageListener) (m, c) -> {
+			if (exc.get() == null) {
+				((CachingConnectionFactory) this.template.getConnectionFactory()).resetConnection();
+			}
+			try {
+				c.basicAck(m.getMessageProperties().getDeliveryTag(), false);
+			}
+			catch (IllegalStateException e) {
+				exc.set(e);
+			}
+			latch.countDown();
+		}, false, this.queue.getName());
+		this.container.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		this.container.afterPropertiesSet();
+		this.container.start();
+		this.template.convertAndSend(this.queue.getName(), "foo");
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		this.container.stop();
+		assertNotNull(exc.get());
+		assertThat(exc.get().getMessage(), equalTo("Channel closed; cannot ack/nack"));
 	}
 
 	private boolean containerStoppedForAbortWithBadListener() throws InterruptedException {

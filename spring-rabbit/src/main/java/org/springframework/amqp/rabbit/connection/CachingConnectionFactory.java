@@ -96,8 +96,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
 
-	private static final Set<String> txStarts = new HashSet<>(Arrays.asList("basicPublish", "basicAck", "basicNack",
-			"basicReject"));
+	private static final Set<String> txStarts = new HashSet<>(Arrays.asList("basicPublish", "basicAck",
+			"basicNack", "basicReject"));
+
+	private static final Set<String> ackMethods = new HashSet<>(Arrays.asList("basicAck",
+			"basicNack", "basicReject"));
 
 	private static final Set<String> txEnds = new HashSet<>(Arrays.asList("txCommit", "txRollback"));
 
@@ -957,11 +960,17 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (this.target == null || !this.target.isOpen()) {
 					if (this.target instanceof PublisherCallbackChannel) {
 						this.target.close();
-						throw new InvocationTargetException(new AmqpException("PublisherCallbackChannel is closed"));
+						throw new InvocationTargetException(
+								new AmqpException("PublisherCallbackChannel is closed"));
 					}
 					else if (this.txStarted) {
 						this.txStarted = false;
-						throw new IllegalStateException("Channel closed during transaction");
+						throw new InvocationTargetException(
+								new IllegalStateException("Channel closed during transaction"));
+					}
+					else if (ackMethods.contains(methodName)) {
+						throw new InvocationTargetException(
+								new IllegalStateException("Channel closed; cannot ack/nack"));
 					}
 					this.target = null;
 				}
