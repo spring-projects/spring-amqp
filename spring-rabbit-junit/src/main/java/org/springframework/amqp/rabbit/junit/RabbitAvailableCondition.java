@@ -30,6 +30,8 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.util.AnnotationUtils;
 
+import org.springframework.util.Assert;
+
 import com.rabbitmq.client.ConnectionFactory;
 
 /**
@@ -106,6 +108,7 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 				getParentStore(context).get("brokerRunning", BrokerRunning.class) == null
 					? getStore(context).get("brokerRunning", BrokerRunning.class)
 					: getParentStore(context).get("brokerRunning", BrokerRunning.class);
+		Assert.state(brokerRunning != null, "Could not find brokerRunning instance");
 		Class<?> type = parameterContext.getParameter().getType();
 		return type.equals(ConnectionFactory.class) ? brokerRunning.getConnectionFactory()
 				: brokerRunning;

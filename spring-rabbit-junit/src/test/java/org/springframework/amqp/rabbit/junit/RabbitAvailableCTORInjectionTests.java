@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.junit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +41,8 @@ public class RabbitAvailableCTORInjectionTests {
 	}
 
 	@Test
-	public void test() throws Exception {
+	public void test(ConnectionFactory cf) throws Exception {
+		assertSame(cf, this.connectionFactory);
 		Connection conn = this.connectionFactory.newConnection();
 		Channel channel = conn.createChannel();
 		DeclareOk declareOk = channel.queueDeclarePassive("rabbitAvailableTests.queue");

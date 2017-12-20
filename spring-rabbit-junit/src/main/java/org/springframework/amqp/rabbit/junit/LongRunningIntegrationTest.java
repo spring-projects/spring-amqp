@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,21 @@ public class LongRunningIntegrationTest extends TestWatcher {
 
 	private final static Log logger = LogFactory.getLog(LongRunningIntegrationTest.class);
 
-	private static final String RUN_LONG_PROP = "RUN_LONG_INTEGRATION_TESTS";
+	public static final String RUN_LONG_INTEGRATION_TESTS = "RUN_LONG_INTEGRATION_TESTS";
 
 	private boolean shouldRun = false;
 
 	public LongRunningIntegrationTest() {
-		for (String value: new String[] { System.getenv(RUN_LONG_PROP), System.getProperty(RUN_LONG_PROP) }) {
+		this(RUN_LONG_INTEGRATION_TESTS);
+	}
+
+	/**
+	 * Check using a custom variable/property name.
+	 * @param property the variable/property name.
+	 * @since 2.0.2
+	 */
+	public LongRunningIntegrationTest(String property) {
+		for (String value: new String[] { System.getenv(property), System.getProperty(property) }) {
 			if (Boolean.parseBoolean(value)) {
 				this.shouldRun = true;
 				break;
@@ -56,6 +65,14 @@ public class LongRunningIntegrationTest extends TestWatcher {
 		}
 		Assume.assumeTrue(this.shouldRun);
 		return super.apply(base, description);
+	}
+
+	/**
+	 * Return true if the test should run.
+	 * @return true to run.
+	 */
+	public boolean isShouldRun() {
+		return this.shouldRun;
 	}
 
 }
