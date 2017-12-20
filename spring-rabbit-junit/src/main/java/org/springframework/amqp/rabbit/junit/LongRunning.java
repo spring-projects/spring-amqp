@@ -25,8 +25,9 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Classes or methods annotated with this will not run if the environment variable
- * or system property {@code RUN_LONG_INTEGRATION_TESTS} is not present or not true.
+ * Test classes annotated with this will not run if an environment variable or system
+ * property (default {@code RUN_LONG_INTEGRATION_TESTS}) is not present or does not have
+ * the value that {@link Boolean#parseBoolean(String)} evaluates to {@code true}.
  *
  * @author Gary Russell
  * @since 2.0.2
@@ -43,6 +44,6 @@ public @interface LongRunning {
 	 * should run.
 	 * @return the name of the variable/property.
 	 */
-	String value() default "";
+	String value() default LongRunningIntegrationTest.RUN_LONG_INTEGRATION_TESTS;
 
 }

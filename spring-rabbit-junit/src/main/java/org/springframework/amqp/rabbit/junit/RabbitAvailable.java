@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Classes or methods annotated with this will not run if there is no broker on localhost.
+ * Test classes annotated with this will not run if there is no broker on localhost.
  *
  * @author Gary Russell
  * @since 2.0.2

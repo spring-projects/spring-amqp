@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.junit;
 
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -27,13 +26,8 @@ import org.junit.jupiter.api.Test;
 @LongRunning("LongRunningIntegrationTestsConditionTests")
 public class LongRunningIntegrationTestsConditionTests {
 
-	@Nested
-	public class NestedTests {
-
-		@Test
-		public void test() {
-		}
-
+	@Test
+	public void test() {
 	}
 
 }

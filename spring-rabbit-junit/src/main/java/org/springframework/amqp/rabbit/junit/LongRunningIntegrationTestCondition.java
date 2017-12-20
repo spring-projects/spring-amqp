@@ -49,8 +49,8 @@ public class LongRunningIntegrationTestCondition implements ExecutionCondition {
 				property = LongRunningIntegrationTest.RUN_LONG_INTEGRATION_TESTS;
 			}
 			LongRunningIntegrationTest lrit = new LongRunningIntegrationTest(property);
-			return lrit.isShouldRun() ? ConditionEvaluationResult.enabled("Long running tests required")
-					: ConditionEvaluationResult.disabled("Long running tests skipped");
+			return lrit.isShouldRun() ? ConditionEvaluationResult.enabled("Long running tests must run")
+					: ConditionEvaluationResult.disabled("Long running tests are skipped");
 		}
 		return ENABLED;
 	}
