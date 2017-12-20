@@ -8,6 +8,7 @@ buildscript {
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath 'io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE'
 		classpath 'io.spring.gradle:spring-io-plugin:0.0.8.RELEASE'
+		classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.2'
 	}
 }
 
@@ -87,7 +88,10 @@ subprojects { subproject ->
 	ext {
 		hamcrestVersion = '1.3'
 		jackson2Version = '2.9.1'
-		junitVersion = '4.12'
+		junit4Version = '4.12'
+		junitJupiterVersion = '5.0.2'
+		junitPlatformVersion = '1.0.2'
+		junitVintageVersion = '4.12.2'
 		log4jVersion = '2.8.2'
 		logbackVersion = '1.2.3'
 		mockitoVersion = '2.11.0'
@@ -112,7 +116,7 @@ subprojects { subproject ->
 
 	// dependencies that are common across all java projects
 	dependencies {
-		testCompile ("junit:junit:$junitVersion") {
+		testCompile ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		testCompile "org.apache.logging.log4j:log4j-core:$log4jVersion"
@@ -123,6 +127,18 @@ subprojects { subproject ->
 		testCompile "org.springframework:spring-test:$springVersion"
 		testCompile "org.slf4j:slf4j-log4j12:$slf4jVersion" // amqp-client now uses SLF4J
 		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
+
+		testCompile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+		testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
+		testRuntime "org.junit.platform:junit-platform-commons:${junitPlatformVersion}"
+		testRuntime "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
+
+		// To support JUnit 4 tests
+		testRuntime "org.junit.vintage:junit-vintage-engine:${junitVintageVersion}"
+
+		// To avoid compiler warnings about @API annotations in JUnit code
+		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
+
 	}
 
 	// enable all compiler warnings; individual projects may customize further
@@ -265,12 +281,15 @@ project('spring-rabbit-junit') {
 	dependencies { // no spring-amqp dependencies allowed
 
 		compile "org.springframework:spring-core:$springVersion"
-		compile "junit:junit:$junitVersion"
+		compile "junit:junit:$junit4Version"
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
 		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
 		compile "org.springframework:spring-web:$springVersion"
+		compile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
+		compile "org.junit.platform:junit-platform-commons:${junitPlatformVersion}"
+		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
 	}
 
@@ -282,7 +301,7 @@ project('spring-rabbit-test') {
 	dependencies {
 
 		compile project(":spring-rabbit")
-		compile ("junit:junit:$junitVersion") {
+		compile ("junit:junit:$junit4Version") {
 			exclude group: 'org.hamcrest', module: 'hamcrest-core'
 		}
 		compile "org.hamcrest:hamcrest-all:$hamcrestVersion"

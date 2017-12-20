@@ -278,112 +278,113 @@ Here is a simple test case that uses the template:
 @RunWith(SpringRunner.class)
 public class TestRabbitTemplateTests {
 
-	@Autowired
-	private TestRabbitTemplate template;
+    @Autowired
+    private TestRabbitTemplate template;
 
-	@Autowired
-	private Config config;
+    @Autowired
+    private Config config;
 
-	@Test
-	public void testSimpleSends() {
-		this.template.convertAndSend("foo", "hello1");
-		assertThat(this.config.fooIn, equalTo("foo:hello1"));
-		this.template.convertAndSend("bar", "hello2");
-		assertThat(this.config.barIn, equalTo("bar:hello2"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:"));
-		this.template.convertAndSend("foo", "hello3");
-		assertThat(this.config.fooIn, equalTo("foo:hello1"));
-		this.template.convertAndSend("bar", "hello4");
-		assertThat(this.config.barIn, equalTo("bar:hello2"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
+    @Test
+    public void testSimpleSends() {
+        this.template.convertAndSend("foo", "hello1");
+        assertThat(this.config.fooIn, equalTo("foo:hello1"));
+        this.template.convertAndSend("bar", "hello2");
+        assertThat(this.config.barIn, equalTo("bar:hello2"));
+        assertThat(this.config.smlc1In, equalTo("smlc1:"));
+        this.template.convertAndSend("foo", "hello3");
+        assertThat(this.config.fooIn, equalTo("foo:hello1"));
+        this.template.convertAndSend("bar", "hello4");
+        assertThat(this.config.barIn, equalTo("bar:hello2"));
+        assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4"));
 
-		this.template.setBroadcast(true);
-		this.template.convertAndSend("foo", "hello5");
-		assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
-		this.template.convertAndSend("bar", "hello6");
-		assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
-		assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
-	}
+        this.template.setBroadcast(true);
+        this.template.convertAndSend("foo", "hello5");
+        assertThat(this.config.fooIn, equalTo("foo:hello1foo:hello5"));
+        this.template.convertAndSend("bar", "hello6");
+        assertThat(this.config.barIn, equalTo("bar:hello2bar:hello6"));
+        assertThat(this.config.smlc1In, equalTo("smlc1:hello3hello4hello5hello6"));
+    }
 
-	@Test
-	public void testSendAndReceive() {
-		assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
-	}
+    @Test
+    public void testSendAndReceive() {
+        assertThat(this.template.convertSendAndReceive("baz", "hello"), equalTo("baz:hello"));
+    }
 ----
 [source, java]
 ----
-	@Configuration
-	@EnableRabbit
-	public static class Config {
+    @Configuration
+    @EnableRabbit
+    public static class Config {
 
-		public String fooIn = "";
+        public String fooIn = "";
 
-		public String barIn = "";
+        public String barIn = "";
 
-		public String smlc1In = "smlc1:";
+        public String smlc1In = "smlc1:";
 
-		@Bean
-		public TestRabbitTemplate template() throws IOException {
-			return new TestRabbitTemplate(connectionFactory());
-		}
+        @Bean
+        public TestRabbitTemplate template() throws IOException {
+            return new TestRabbitTemplate(connectionFactory());
+        }
 
-		@Bean
-		public ConnectionFactory connectionFactory() throws IOException {
-			ConnectionFactory factory = mock(ConnectionFactory.class);
-			Connection connection = mock(Connection.class);
-			Channel channel = mock(Channel.class);
-			willReturn(connection).given(factory).createConnection();
-			willReturn(channel).given(connection).createChannel(anyBoolean());
-			given(channel.isOpen()).willReturn(true);
-			return factory;
-		}
+        @Bean
+        public ConnectionFactory connectionFactory() throws IOException {
+            ConnectionFactory factory = mock(ConnectionFactory.class);
+            Connection connection = mock(Connection.class);
+            Channel channel = mock(Channel.class);
+            willReturn(connection).given(factory).createConnection();
+            willReturn(channel).given(connection).createChannel(anyBoolean());
+            given(channel.isOpen()).willReturn(true);
+            return factory;
+        }
 
-		@Bean
-		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
-			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-			factory.setConnectionFactory(connectionFactory());
-			return factory;
-		}
+        @Bean
+        public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() throws IOException {
+            SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+            factory.setConnectionFactory(connectionFactory());
+            return factory;
+        }
 
-		@RabbitListener(queues = "foo")
-		public void foo(String in) {
-			this.fooIn += "foo:" + in;
-		}
+        @RabbitListener(queues = "foo")
+        public void foo(String in) {
+            this.fooIn += "foo:" + in;
+        }
 
-		@RabbitListener(queues = "bar")
-		public void bar(String in) {
-			this.barIn += "bar:" + in;
-		}
+        @RabbitListener(queues = "bar")
+        public void bar(String in) {
+            this.barIn += "bar:" + in;
+        }
 
-		@RabbitListener(queues = "baz")
-		public String baz(String in) {
-			return "baz:" + in;
-		}
+        @RabbitListener(queues = "baz")
+        public String baz(String in) {
+            return "baz:" + in;
+        }
 
-		@Bean
-		public SimpleMessageListenerContainer smlc1() throws IOException {
-			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-			container.setQueueNames("foo", "bar");
-			container.setMessageListener(new MessageListenerAdapter(new Object() {
+        @Bean
+        public SimpleMessageListenerContainer smlc1() throws IOException {
+            SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+            container.setQueueNames("foo", "bar");
+            container.setMessageListener(new MessageListenerAdapter(new Object() {
 
-				@SuppressWarnings("unused")
-				public void handleMessage(String in) {
-					smlc1In += in;
-				}
+                @SuppressWarnings("unused")
+                public void handleMessage(String in) {
+                    smlc1In += in;
+                }
 
-			}));
-			return container;
-		}
+            }));
+            return container;
+        }
 
-	}
+    }
 
 }
 ----
 
-[[junit-rules]]
-==== JUnit @Rules
+[[junit4-rules]]
+==== JUnit4 @Rules
 
-Spring AMQP _version 1.7_ provides an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit tests.
+Spring AMQP _version 1.7_ and later provide an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit4 tests.
+See <<junit5-conditions>> for JUnit5 testing.
 
 ===== BrokerRunning
 
@@ -407,6 +408,7 @@ public static void tearDown() {
 
 There are several `isRunning...` static methods such as `isBrokerAndManagementRunning()` which verifies the broker has the management plugin enabled.
 
+[[brokerRunning-configure]]
 ====== Configuring the Rule
 
 There are times when you want tests to fail if there is no broker, such as a nightly CI build.
@@ -485,3 +487,159 @@ public LongRunningIntegrationTest longTests = new LongRunningIntegrationTest();
 ----
 
 To disable the rule at runtime, set an environment variable `RUN_LONG_INTEGRATION_TESTS` to `true`.
+
+[[junit5-conditions]]
+==== JUnit5 Conditions
+
+Version _2.0.2_ introduced support for JUnit5.
+
+===== @RabbitAvailable Annotation
+
+This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit4-rules>>; it is processed by the `RabbitAvailableCondition`.
+
+The annotation has two properties:
+
+* `queues` - an array of queues that will be declared (and purged) before each test and deleted when all tests are complete.
+* `management` - set to `true` if your tests also require the management plugin installed on the broker.
+
+It is used to check if the broker is available and skip the tests if not.
+As discussed in <<brokerRunning-configure>> the environment variable `RABBITMQ_SERVER_REQUIRED`, if `true` will cause the tests to fail fast if there is no broker.
+The condition can be configured using environment variables as discussed in <<brokerRunning-configure>>.
+
+In addition, the `RabbitAvailableCondition` supports argument resolution for parameterized test constructors and methods.
+Two argument types are supported `BrokerRunning` (the instance) and `ConnectionFactory` - the `BrokerRunning` 's RabbitMQ connection factory.
+
+Here is an example of each:
+
+[source, java]
+----
+@RabbitAvailable(queues = "rabbitAvailableTests.queue")
+public class RabbitAvailableCTORInjectionTests {
+
+    private final ConnectionFactory connectionFactory;
+
+    public RabbitAvailableCTORInjectionTests(BrokerRunning brokerRunning) {
+        this.connectionFactory = brokerRunning.getConnectionFactory();
+    }
+
+    @Test
+    public void test(ConnectionFactory cf) throws Exception {
+        assertSame(cf, this.connectionFactory);
+        Connection conn = this.connectionFactory.newConnection();
+        Channel channel = conn.createChannel();
+        DeclareOk declareOk = channel.queueDeclarePassive("rabbitAvailableTests.queue");
+        assertEquals(0, declareOk.getConsumerCount());
+        channel.close();
+        conn.close();
+    }
+
+}
+----
+
+This test is in the framework itself and verifies the argument injection and that the condition created the queue properly.
+
+A practical user test might be:
+
+[source, java]
+----
+@RabbitAvailable(queues = "rabbitAvailableTests.queue")
+public class RabbitAvailableCTORInjectionTests {
+
+    private final CachingConnectionFactory connectionFactory;
+
+    public RabbitAvailableCTORInjectionTests(BrokerRunning brokerRunning) {
+        this.connectionFactory =
+            new CachingConnectionFactory(brokerRunning.getConnectionFactory());
+    }
+
+    @Test
+    public void test() throws Exception {
+        RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
+        ...
+    }
+}
+----
+
+When using a Spring annotation application context within a test class, it is also possible to get a reference to the condition's connection factory via a static method `RabbitAvailableCondition.getBrokerRunning()`.
+Here is another test from the framework that demonstrates the usage:
+
+[source, java]
+----
+@RabbitAvailable(queues = {
+        RabbitTemplateMPPIntegrationTests.QUEUE,
+        RabbitTemplateMPPIntegrationTests.REPLIES })
+@SpringJUnitConfig
+@DirtiesContext(classMode = ClassMode.AFTER_EACH_TEST_METHOD)
+public class RabbitTemplateMPPIntegrationTests {
+
+    public static final String QUEUE = "mpp.tests";
+
+    public static final String REPLIES = "mpp.tests.replies";
+
+    @Autowired
+    private RabbitTemplate template;
+
+    @Autowired
+    private Config config;
+
+    @Test
+    public void test() {
+
+        ...
+
+    }
+
+    @Configuration
+    @EnableRabbit
+    public static class Config {
+
+        @Bean
+        public CachingConnectionFactory cf() {
+            return new CachingConnectionFactory(RabbitAvailableCondition
+                    .getBrokerRunning()
+                    .getConnectionFactory());
+        }
+
+        @Bean
+        public RabbitTemplate template() {
+
+            ...
+
+        }
+
+        @Bean
+        public SimpleRabbitListenerContainerFactory
+                            rabbitListenerContainerFactory() {
+
+            ...
+
+        }
+
+        @RabbitListener(queues = QUEUE)
+        public byte[] foo(byte[] in) {
+            return in;
+        }
+
+    }
+
+}
+----
+
+===== @LongRunning Annotation
+
+Similar to the `LongRunningIntegrationTest` JUnit4 `@Rule`, this annotation causes tests to be skipped unless an environment variable (or system property) is set to `true`.
+
+[source, java]
+----
+@RabbitAvailable(queues = SimpleMessageListenerContainerLongTests.QUEUE)
+@LongRunning
+public class SimpleMessageListenerContainerLongTests {
+
+    public static final String QUEUE = "SimpleMessageListenerContainerLongTests.queue";
+
+...
+
+}
+----
+
+By default, the variable is `RUN_LONG_INTEGRATION_TESTS` but the variable name can be specified in the annotation's `value` attribute.

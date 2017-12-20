@@ -4569,7 +4569,8 @@ The default retry properties (3 retries at 5 second intervals) can be overridden
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
-| possibleAuthenticationFailureFatal
+| possibleAuthentication
+FailureFatal
 (possible-authentication-failure-fatal)
 
 a| When set to `true` (default), if a `PossibleAuthenticationFailureException` is thrown during connection, it is considered fatal.
@@ -4587,7 +4588,10 @@ You can also use a properties bean to set the property globally for all containe
 [source,xml]
 ----
 <util:properties id="spring.amqp.global.properties">
-    <prop key="mlc.possible.authentication.failure.fatal">false</prop>
+    <prop
+     key="mlc.possible.authentication.failure.fatal">
+     false
+    </prop>
 </util:properties>
 ----
 
@@ -4750,7 +4754,8 @@ a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 a| image::images/tickmark.png[]
 
-| afterReceivePostProcessors
+| afterReceive
+PostProcessors
 (N/A)
 
 | An array of `MessagePostProcessor` s which are invoked, before invoking the listener.
@@ -4955,7 +4960,8 @@ The `deliveryMode` (or any other properties) can be changed in the `additionalHe
 RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate, "error") {
 
     protected Map<? extends String, ? extends Object> additionalHeaders(Message message, Throwable cause) {
-        message.getMessageProperties().setDeliveryMode(message.getMessageProperties().getReceivedDeliveryMode());
+        message.getMessageProperties()
+            .setDeliveryMode(message.getMessageProperties().getReceivedDeliveryMode());
         return null;
     }
 

@@ -23,20 +23,20 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.junit.LongRunningIntegrationTest;
+import org.springframework.amqp.rabbit.junit.LongRunning;
+import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
  * @author Gary Russell
@@ -44,19 +44,19 @@ import org.springframework.test.util.ReflectionTestUtils;
  * @since 1.2.1
  *
  */
+@RabbitAvailable(queues = SimpleMessageListenerContainerLongTests.QUEUE)
+@LongRunning
 public class SimpleMessageListenerContainerLongTests {
+
+	public static final String QUEUE = "SimpleMessageListenerContainerLongTests.queue";
 
 	private final Log logger = LogFactory.getLog(SimpleMessageListenerContainerLongTests.class);
 
-	@Rule
-	public LongRunningIntegrationTest longTest = new LongRunningIntegrationTest();
+	private final SingleConnectionFactory connectionFactory;
 
-	@Rule
-	public BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("foo");
 
-	@After
-	public void tearDown() {
-		this.brokerRunning.removeTestQueues();
+	public SimpleMessageListenerContainerLongTests(ConnectionFactory connectionFactory) {
+		this.connectionFactory = new SingleConnectionFactory(connectionFactory);
 	}
 
 	@Test
@@ -70,11 +70,11 @@ public class SimpleMessageListenerContainerLongTests {
 	}
 
 	private void testChangeConsumerCountGuts(boolean transacted) throws Exception {
-		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory);
+		SimpleMessageListenerContainer container =
+				new SimpleMessageListenerContainer(this.connectionFactory);
 		try {
 			container.setMessageListener(new MessageListenerAdapter(this));
-			container.setQueueNames("foo");
+			container.setQueueNames(QUEUE);
 			container.setAutoStartup(false);
 			container.setConcurrentConsumers(2);
 			container.setChannelTransacted(transacted);
@@ -85,9 +85,9 @@ public class SimpleMessageListenerContainerLongTests {
 			container.setConcurrentConsumers(1);
 			waitForNConsumers(container, 1);
 			container.setMaxConcurrentConsumers(3);
-			RabbitTemplate template = new RabbitTemplate(singleConnectionFactory);
+			RabbitTemplate template = new RabbitTemplate(this.connectionFactory);
 			for (int i = 0; i < 20; i++) {
-				template.convertAndSend("foo", "foo");
+				template.convertAndSend(QUEUE, "foo");
 			}
 			waitForNConsumers(container, 2);		// increased consumers due to work
 			waitForNConsumers(container, 1, 20000); // should stop the extra consumer after 10 seconds idle
@@ -95,7 +95,7 @@ public class SimpleMessageListenerContainerLongTests {
 			waitForNConsumers(container, 3);
 			container.stop();
 			waitForNConsumers(container, 0);
-			singleConnectionFactory.destroy();
+			this.connectionFactory.destroy();
 		}
 		finally {
 			container.stop();
@@ -104,13 +104,13 @@ public class SimpleMessageListenerContainerLongTests {
 
 	@Test
 	public void testAddQueuesAndStartInCycle() throws Exception {
-		final SingleConnectionFactory connectionFactory = new SingleConnectionFactory("localhost");
-		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
+				this.connectionFactory);
 		container.setMessageListener((MessageListener) message -> { });
 		container.setConcurrentConsumers(2);
 		container.afterPropertiesSet();
 
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
 		for (int i = 0; i < 20; i++) {
 			Queue queue = new Queue("testAddQueuesAndStartInCycle" + i);
 			admin.declareQueue(queue);
