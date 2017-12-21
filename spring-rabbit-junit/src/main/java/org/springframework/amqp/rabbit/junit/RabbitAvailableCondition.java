@@ -28,8 +28,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.platform.commons.util.AnnotationUtils;
 
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -53,13 +53,13 @@ public class RabbitAvailableCondition implements ExecutionCondition, AfterAllCal
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
 		Optional<AnnotatedElement> element = context.getElement();
-		Optional<RabbitAvailable> rabbit = AnnotationUtils.findAnnotation(element, RabbitAvailable.class);
-		if (rabbit.isPresent()) {
+		RabbitAvailable rabbit = AnnotationUtils.findAnnotation(element.get(), RabbitAvailable.class);
+		if (rabbit != null) {
 			try {
-				String[] queues = rabbit.get().queues();
+				String[] queues = rabbit.queues();
 				BrokerRunning brokerRunning = getStore(context).get("brokerRunning", BrokerRunning.class);
 				if (brokerRunning == null) {
-					if (rabbit.get().management()) {
+					if (rabbit.management()) {
 						brokerRunning = BrokerRunning.isBrokerAndManagementRunningWithEmptyQueues(queues);
 					}
 					else {

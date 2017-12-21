@@ -22,8 +22,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.platform.commons.util.AnnotationUtils;
 
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,9 +42,9 @@ public class LongRunningIntegrationTestCondition implements ExecutionCondition {
 	@Override
 	public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
 		Optional<AnnotatedElement> element = context.getElement();
-		Optional<LongRunning> longRunning = AnnotationUtils.findAnnotation(element, LongRunning.class);
-		if (longRunning.isPresent()) {
-			String property = longRunning.get().value();
+		LongRunning longRunning = AnnotationUtils.findAnnotation(element.get(), LongRunning.class);
+		if (longRunning != null) {
+			String property = longRunning.value();
 			if (!StringUtils.hasText(property)) {
 				property = LongRunningIntegrationTest.RUN_LONG_INTEGRATION_TESTS;
 			}

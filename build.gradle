@@ -130,7 +130,6 @@ subprojects { subproject ->
 
 		testCompile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
 		testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
-		testRuntime "org.junit.platform:junit-platform-commons:${junitPlatformVersion}"
 		testRuntime "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
 
 		// To support JUnit 4 tests
@@ -287,8 +286,7 @@ project('spring-rabbit-junit') {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
 		compile "org.springframework:spring-web:$springVersion"
-		compile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
-		compile "org.junit.platform:junit-platform-commons:${junitPlatformVersion}"
+		compile ("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}", optional)
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
 	}
