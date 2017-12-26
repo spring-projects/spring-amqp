@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.listener;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -68,7 +67,6 @@ import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -317,15 +315,13 @@ public class DirectMessageListenerContainerIntegrationTests {
 		container.setQueueNames(EQ1, EQ2);
 		final List<Long> times = new ArrayList<>();
 		final CountDownLatch latch1 = new CountDownLatch(2);
-		final AtomicReference<ApplicationEvent> failEvent = new AtomicReference<>();
 		final CountDownLatch latch2 = new CountDownLatch(2);
 		container.setApplicationEventPublisher(event -> {
 			if (event instanceof ListenerContainerIdleEvent) {
 				times.add(System.currentTimeMillis());
 				latch1.countDown();
 			}
-			else {
-				failEvent.set((ApplicationEvent) event);
+			else if (event instanceof ListenerContainerConsumerTerminatedEvent) {
 				latch2.countDown();
 			}
 		});
@@ -339,8 +335,6 @@ public class DirectMessageListenerContainerIntegrationTests {
 		assertThat(times.get(1) - times.get(0), greaterThanOrEqualTo(50L));
 		brokerRunning.deleteQueues(EQ1, EQ2);
 		assertTrue(latch2.await(10, TimeUnit.SECONDS));
-		assertNotNull(failEvent.get());
-		assertThat(failEvent.get(), instanceOf(ListenerContainerConsumerTerminatedEvent.class));
 		container.stop();
 		cf.destroy();
 	}
