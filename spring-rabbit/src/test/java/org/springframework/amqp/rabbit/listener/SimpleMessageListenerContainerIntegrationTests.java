@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,6 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	@After
 	public void clear() throws Exception {
 		// Wait for broker communication to finish before trying to stop container
-		Thread.sleep(300L);
 		logger.debug("Shutting down at end of test");
 		if (container != null) {
 			container.shutdown();
@@ -255,11 +254,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 			assertTrue("Timed out waiting for message", waited);
 		}
 		finally {
-			// Wait for broker communication to finish before trying to stop
-			// container
-			Thread.sleep(300L);
 			container.shutdown();
-			Thread.sleep(300L);
 		}
 		if (acknowledgeMode.isTransactionAllowed()) {
 			assertNotNull(template.receiveAndConvert(queue.getName()));
@@ -297,6 +292,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		container.setChannelTransacted(transactional);
 		container.setAcknowledgeMode(acknowledgeMode);
 		container.setBeanName("integrationTestContainer");
+		container.setReceiveTimeout(50);
 		// requires RabbitMQ 3.2.x
 //		container.setConsumerArguments(Collections. <String, Object> singletonMap("x-priority", Integer.valueOf(10)));
 		if (externalTransaction) {
