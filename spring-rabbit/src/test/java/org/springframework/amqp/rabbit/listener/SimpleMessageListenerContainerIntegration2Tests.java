@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,8 +130,6 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@After
 	public void clear() throws Exception {
-		// Wait for broker communication to finish before trying to stop container
-		Thread.sleep(300L);
 		logger.debug("Shutting down at end of test");
 		if (container != null) {
 			container.shutdown();
@@ -144,12 +142,18 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	public void testChangeQueues() throws Exception {
 		CountDownLatch latch = new CountDownLatch(30);
 		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
+		this.container.setApplicationEventPublisher(e -> {
+			if (e instanceof AsyncConsumerStoppedEvent) {
+				consumerLatch.countDown();
+			}
+		});
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 			template.convertAndSend(queue1.getName(), i + "foo");
 		}
 		container.addQueueNames(queue1.getName());
-		Thread.sleep(1100); // allow current consumer to time out and terminate
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
 		for (int i = 0; i < 10; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
 		}
@@ -665,6 +669,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		if (queueNames != null) {
 			container.setQueueNames(queueNames);
 		}
+		container.setReceiveTimeout(50);
 		container.afterPropertiesSet();
 		if (start) {
 			container.start();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,6 +127,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 			}
 			throw new RuntimeException("bar");
 		});
+		container.setReceiveTimeout(50);
 		container.start();
 		Log logger = spy(TestUtils.getPropertyValue(container, "logger", Log.class));
 		doReturn(true).when(logger).isWarnEnabled();
@@ -217,6 +218,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		admin.declareBinding(BindingBuilder.bind(dlq).to(dle).with(testQueueName));
 
 		container.setQueueNames(testQueueName);
+		container.setReceiveTimeout(50);
 		container.afterPropertiesSet();
 		container.start();
 
@@ -297,6 +299,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.setTxSize(messageCount);
 		container.setQueueNames(queue.getName());
 		container.setErrorHandler(errorHandler);
+		container.setReceiveTimeout(50);
 		container.afterPropertiesSet();
 		container.start();
 
