@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -275,7 +275,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 		cf.setExecutor(executor);
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(cf);
 		container.setQueueNames(Q1, Q2);
-		container.setConsumersPerQueue(2);
+		container.setConsumersPerQueue(4);
 		container.setMessageListener(new MessageListenerAdapter((ReplyingMessageListener<String, String>) in -> {
 			if ("foo".equals(in) || "bar".equals(in)) {
 				return in.toUpperCase();
@@ -291,8 +291,8 @@ public class DirectMessageListenerContainerIntegrationTests {
 		RabbitTemplate template = new RabbitTemplate(cf);
 		assertEquals("FOO", template.convertSendAndReceive(Q1, "foo"));
 		assertEquals("BAR", template.convertSendAndReceive(Q2, "bar"));
-		assertTrue(consumersOnQueue(Q1, 2));
-		assertTrue(consumersOnQueue(Q2, 2));
+		assertTrue(consumersOnQueue(Q1, 4));
+		assertTrue(consumersOnQueue(Q2, 4));
 		container.setConsumersPerQueue(1);
 		assertTrue(consumersOnQueue(Q1, 1));
 		assertTrue(consumersOnQueue(Q2, 1));
