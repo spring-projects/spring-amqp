@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
@@ -284,11 +285,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
 				if (consumerList != null && consumerList.size() > newCount) {
-					int currentCount = consumerList.size();
-					for (int i = newCount; i < currentCount; i++) {
-						SimpleConsumer consumer = consumerList.remove(i);
-						cancelConsumer(consumer);
-					}
+					IntStream.range(newCount, consumerList.size())
+							.mapToObj(i -> consumerList.remove(0))
+							.forEach(this::cancelConsumer);
 				}
 			}
 		}
@@ -555,9 +554,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		catch (Exception e) {
 			addConsumerToRestart(new SimpleConsumer(null, null, queue));
-				throw e instanceof AmqpConnectException
-						? (AmqpConnectException) e
-						: new AmqpConnectException(e);
+			throw e instanceof AmqpConnectException
+					? (AmqpConnectException) e
+					: new AmqpConnectException(e);
 		}
 		finally {
 			if (routingLookupKey != null) {
