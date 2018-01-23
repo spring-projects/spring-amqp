@@ -21,9 +21,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -55,6 +58,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.Cache
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -115,11 +119,14 @@ public class RabbitAdminDeclarationTests {
 		final List<Channel> mockChannels = new ArrayList<Channel>();
 
 		doAnswer(new Answer<com.rabbitmq.client.Connection>() {
+
 			private int connectionNumber;
+
 			@Override
 			public com.rabbitmq.client.Connection answer(InvocationOnMock invocation) throws Throwable {
 				com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
 				doAnswer(new Answer<Channel>() {
+
 					private int channelNumber;
 
 					@Override
@@ -154,7 +161,7 @@ public class RabbitAdminDeclarationTests {
 		ccf.createConnection().close();
 		ccf.destroy();
 
-		assertEquals("Admin should not have created a channel", 0,  mockChannels.size());
+		assertEquals("Admin should not have created a channel", 0, mockChannels.size());
 	}
 
 	@Test
@@ -234,7 +241,7 @@ public class RabbitAdminDeclarationTests {
 
 		verify(channel, never()).queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
 		verify(channel, never())
-			.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
+				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
 		verify(channel, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), any(Map.class));
 	}
 
@@ -275,7 +282,7 @@ public class RabbitAdminDeclarationTests {
 
 		verify(channel, never()).queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
 		verify(channel, never())
-			.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
+				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(), anyBoolean(), any(Map.class));
 		verify(channel, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), any(Map.class));
 	}
 
@@ -293,7 +300,7 @@ public class RabbitAdminDeclarationTests {
 				.queueDeclare(eq("foo"), anyBoolean(), anyBoolean(), anyBoolean(), isNull(Map.class));
 		verify(Config.channel2, never())
 				.exchangeDeclare(eq("bar"), eq("direct"), anyBoolean(), anyBoolean(),
-								anyBoolean(), anyMap());
+						anyBoolean(), anyMap());
 		verify(Config.channel2, never()).queueBind(eq("foo"), eq("bar"), eq("foo"), anyMap());
 		context.close();
 	}
@@ -308,7 +315,7 @@ public class RabbitAdminDeclarationTests {
 		assertEquals(2, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1);
 		assertEquals(1, queue.getDeclaringAdmins().size());
-		queue.setAdminsThatShouldDeclare(new Object[] {null});
+		queue.setAdminsThatShouldDeclare(new Object[] { null });
 		assertEquals(0, queue.getDeclaringAdmins().size());
 		queue.setAdminsThatShouldDeclare(admin1, admin2);
 		assertEquals(2, queue.getDeclaringAdmins().size());
@@ -329,6 +336,26 @@ public class RabbitAdminDeclarationTests {
 		catch (IllegalArgumentException e) {
 			assertThat(e.getMessage(), containsString("'admins' cannot contain null elements"));
 		}
+	}
+
+	@Test
+	public void testNoOpWhenNothingToDeclare() throws Exception {
+		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+		Channel channel = mock(Channel.class, "channel1");
+		given(channel.isOpen()).willReturn(true);
+		willReturn(connection).given(cf).newConnection(any(ExecutorService.class), anyString());
+		given(connection.isOpen()).willReturn(true);
+		given(connection.createChannel()).willReturn(channel);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
+		ccf.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		RabbitAdmin admin = new RabbitAdmin(rabbitTemplate.getConnectionFactory());
+		ApplicationContext ac = mock(ApplicationContext.class);
+		admin.setApplicationContext(ac);
+		admin.afterPropertiesSet();
+		ccf.createConnection();
+		verify(connection, never()).createChannel();
 	}
 
 	@Configuration

@@ -268,6 +268,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			@Override
 			public void run() {
 				templateWithConfirmsEnabled.execute(new ChannelCallback<Object>() {
+
 					@Override
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
@@ -325,6 +326,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
 		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
+
 			@Override
 			public void returnedMessage(Message message, int replyCode,
 					String replyText, String exchange, String routingKey) {
@@ -345,6 +347,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final List<Message> returns = new ArrayList<Message>();
 		templateWithReturnsEnabled.setReturnCallback(new ReturnCallback() {
+
 			@Override
 			public void returnedMessage(Message message, int replyCode,
 					String replyText, String exchange, String routingKey) {
@@ -434,6 +437,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			@Override
 			public void run() {
 				template.execute(new ChannelCallback<Object>() {
+
 					@Override
 					public Object doInRabbit(Channel channel) throws Exception {
 						try {
@@ -443,9 +447,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 							Thread.currentThread().interrupt();
 						}
 						template.doSend(channel, "", ROUTE,
-							new SimpleMessageConverter().toMessage("message", new MessageProperties()),
-							false,
-							new CorrelationData("def"));
+								new SimpleMessageConverter().toMessage("message", new MessageProperties()),
+								false,
+								new CorrelationData("def"));
 						threadSentLatch.countDown();
 						return null;
 					}
@@ -488,10 +492,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>() {
+
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
-			} }).when(mockChannel).getNextPublishSeqNo();
+			}
+		}).when(mockChannel).getNextPublishSeqNo();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setPublisherConfirms(true);
@@ -533,6 +539,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>() {
+
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
@@ -580,6 +587,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		final AtomicInteger count = new AtomicInteger();
 		doAnswer(new Answer<Object>() {
+
 			@Override
 			public Object answer(InvocationOnMock invocation) throws Throwable {
 				return count.incrementAndGet();
@@ -681,6 +689,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
 			@Override
 			public void run() {
 				template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
@@ -689,6 +698,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			}
 		});
 		Executors.newSingleThreadExecutor().execute(new Runnable() {
+
 			@Override
 			public void run() {
 				try {
@@ -921,7 +931,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 					try {
 						template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
 					}
-					catch (AmqpException e) { }
+					catch (AmqpException e) {
+					}
 				}
 				sentAll.countDown();
 			}
