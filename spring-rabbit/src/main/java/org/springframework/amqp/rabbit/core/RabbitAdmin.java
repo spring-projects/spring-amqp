@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -475,6 +475,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 		}
 
+		if (exchanges.size() == 0 && queues.size() == 0 && bindings.size() == 0) {
+			this.logger.debug("Nothing to declare");
+			return;
+		}
 		this.rabbitTemplate.execute(channel -> {
 			declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
 			declareQueues(channel, queues.toArray(new Queue[queues.size()]));
