@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -25,6 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -32,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -48,15 +52,18 @@ import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.retry.support.RetryTemplate;
@@ -74,6 +81,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.impl.AMQImpl;
+import com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk;
 
 /**
  * @author Gary Russell
@@ -325,6 +333,67 @@ public class RabbitTemplateTests {
 
 		Mockito.verify(connectionFactory1, Mockito.times(5)).createConnection();
 		Mockito.verify(connectionFactory2, Mockito.times(4)).createConnection();
+	}
+
+	@Test
+	public void testNestedTxBinding() throws Exception {
+		ConnectionFactory cf = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		Channel channel1 = mock(Channel.class, "channel1");
+		given(channel1.isOpen()).willReturn(true);
+		Channel channel2 = mock(Channel.class, "channel2");
+		given(channel2.isOpen()).willReturn(true);
+		willReturn(connection).given(cf).newConnection(any(ExecutorService.class), anyString());
+		given(connection.isOpen()).willReturn(true);
+		given(connection.createChannel()).willReturn(channel1, channel2);
+		DeclareOk dok = new DeclareOk("foo", 0, 0);
+		willReturn(dok).given(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
+		ccf.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		rabbitTemplate.setChannelTransacted(true);
+		RabbitAdmin admin = new RabbitAdmin(rabbitTemplate);
+		ApplicationContext ac = mock(ApplicationContext.class);
+		willReturn(Collections.singletonMap("foo", new Queue("foo"))).given(ac).getBeansOfType(Queue.class);
+		admin.setApplicationContext(ac);
+		admin.afterPropertiesSet();
+		AtomicReference<Channel> templateChannel = new AtomicReference<>();
+		new TransactionTemplate(new TestTransactionManager()).execute(s -> {
+			return rabbitTemplate.execute(c -> {
+				templateChannel.set(c);
+				return true;
+			});
+		});
+		verify(channel1).txSelect();
+		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		assertThat(((ChannelProxy) templateChannel.get()).getTargetChannel(), equalTo(channel1));
+		verify(channel1).txCommit();
+	}
+
+	@SuppressWarnings("serial")
+	private class TestTransactionManager extends AbstractPlatformTransactionManager {
+
+		TestTransactionManager() {
+			super();
+		}
+
+		@Override
+		protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
+		}
+
+		@Override
+		protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
+		}
+
+		@Override
+		protected Object doGetTransaction() throws TransactionException {
+			return new Object();
+		}
+
+		@Override
+		protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+		}
+
 	}
 
 }

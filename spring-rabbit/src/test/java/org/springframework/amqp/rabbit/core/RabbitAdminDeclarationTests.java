@@ -24,8 +24,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -55,6 +58,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.Cache
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -311,6 +315,26 @@ public class RabbitAdminDeclarationTests {
 		catch (IllegalArgumentException e) {
 			assertThat(e.getMessage(), containsString("'admins' cannot contain null elements"));
 		}
+	}
+
+	@Test
+	public void testNoOpWhenNothingToDeclare() throws Exception {
+		com.rabbitmq.client.ConnectionFactory cf = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+		Channel channel = mock(Channel.class, "channel1");
+		given(channel.isOpen()).willReturn(true);
+		willReturn(connection).given(cf).newConnection(any(ExecutorService.class), anyString());
+		given(connection.isOpen()).willReturn(true);
+		given(connection.createChannel()).willReturn(channel);
+		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
+		ccf.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
+		RabbitAdmin admin = new RabbitAdmin(rabbitTemplate);
+		ApplicationContext ac = mock(ApplicationContext.class);
+		admin.setApplicationContext(ac);
+		admin.afterPropertiesSet();
+		ccf.createConnection();
+		verify(connection, never()).createChannel();
 	}
 
 	@Configuration
