@@ -1136,9 +1136,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return execute(channel -> {
-			Message receiveMessage = null;
-
-			receiveMessage = receiveForReply(queueName, channel, receiveMessage);
+			Message receiveMessage = receiveForReply(queueName, channel);
 			if (receiveMessage != null) {
 				return sendReply(callback, replyToAddressCallback, channel, receiveMessage);
 			}
@@ -1146,9 +1144,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
-	private Message receiveForReply(final String queueName, Channel channel, Message receiveMessage) throws Exception {
+	private Message receiveForReply(final String queueName, Channel channel) throws Exception {
 		boolean channelTransacted = isChannelTransacted();
 		boolean channelLocallyTransacted = isChannelLocallyTransacted(channel);
+		Message receiveMessage = null;
 		if (RabbitTemplate.this.receiveTimeout == 0) {
 			GetResponse response = channel.basicGet(queueName, !channelTransacted);
 			// Response can be null in the case that there is no message on the queue.
