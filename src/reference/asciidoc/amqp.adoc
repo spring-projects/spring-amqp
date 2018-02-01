@@ -530,7 +530,7 @@ so the logic of looking up the node has little value.
 
 Here is an example configuration, using Spring Boot's RabbitProperties to configure the factories:
 
-[source, xml]
+[source, java]
 ----
 @Autowired
 private RabbitProperties props;
