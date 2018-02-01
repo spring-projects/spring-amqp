@@ -1206,15 +1206,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		catch (TimeoutException e) {
 			// no result in time
 		}
-		try {
-			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
-				channel.basicCancel(consumer.getConsumerTag());
-			}
-		}
-		catch (Exception e) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Failed to cancel consumer: " + consumer, e);
-			}
+		if (exception == null || !(exception instanceof ConsumerCancelledException)) {
+			cancelConsumerQuietly(channel, consumer);
 		}
 		if (exception != null) {
 			if (exception instanceof RuntimeException) {
@@ -1601,14 +1594,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			finally {
 				this.replyHolder.remove(messageTag);
-				try {
-					channel.basicCancel(consumerTag);
-				}
-				catch (Exception e) {
-				}
+				cancelConsumerQuietly(channel, consumer);
 			}
 			return reply;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+	}
+
+	private void cancelConsumerQuietly(Channel channel, DefaultConsumer consumer) {
+		try {
+            channel.basicCancel(consumer.getConsumerTag());
+        }
+        catch (Exception e) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to cancel consumer: " + consumer, e);
+			}
+        }
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
