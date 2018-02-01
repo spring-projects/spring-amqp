@@ -1184,7 +1184,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis) throws Exception {
 		Delivery delivery = null;
-		Throwable exception = null;
+		RuntimeException exception = null;
 		CompletableFuture<Delivery> future = new CompletableFuture<>();
 		DefaultConsumer consumer = createConsumer(queueName, channel, future,
 				timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
@@ -1197,8 +1197,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		catch (ExecutionException e) {
-			this.logger.error("Consumer failed to receive message: " + consumer, e.getCause());
-			exception = e.getCause();
+			Throwable cause = e.getCause();
+			this.logger.error("Consumer failed to receive message: " + consumer, cause);
+			exception = RabbitExceptionTranslator.convertRabbitAccessException(cause);
+			throw exception;
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -1206,18 +1208,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		catch (TimeoutException e) {
 			// no result in time
 		}
-		if (exception == null || !(exception instanceof ConsumerCancelledException)) {
-			cancelConsumerQuietly(channel, consumer);
-		}
-		if (exception != null) {
-			if (exception instanceof RuntimeException) {
-				throw (RuntimeException) exception;
-			}
-			else if (exception instanceof Error) {
-				throw (Error) exception;
-			}
-			else  {
-				throw new AmqpException(exception);
+		finally {
+			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
+				cancelConsumerQuietly(channel, consumer);
 			}
 		}
 		return delivery;
