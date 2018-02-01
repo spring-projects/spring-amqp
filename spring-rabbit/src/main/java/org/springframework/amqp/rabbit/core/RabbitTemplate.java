@@ -788,11 +788,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public boolean isRunning() {
 		synchronized (this.directReplyToContainers) {
-			synchronized (this.directReplyToContainers) {
-				return this.directReplyToContainers.values()
-						.stream()
-						.anyMatch(AbstractMessageListenerContainer::isRunning);
-			}
+			return this.directReplyToContainers.values()
+					.stream()
+					.anyMatch(AbstractMessageListenerContainer::isRunning);
 		}
 	}
 
