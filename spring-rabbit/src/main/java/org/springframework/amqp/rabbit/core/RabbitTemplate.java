@@ -1627,25 +1627,23 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (this.usePublisherConnection && connectionFactory.getPublisherConnectionFactory() != null) {
 			connectionFactory = connectionFactory.getPublisherConnectionFactory();
 		}
-		DirectReplyToMessageListenerContainer container = this.directReplyToContainers.get(connectionFactory);
-		if (container == null) {
-			synchronized (this.directReplyToContainers) {
-				container = this.directReplyToContainers.get(connectionFactory);
-				if (container == null) {
-					container = new DirectReplyToMessageListenerContainer(connectionFactory);
-					container.setMessageListener(this);
-					container.setBeanName(this.beanName + "#" + this.containerInstance.getAndIncrement());
-					if (this.taskExecutor != null) {
-						container.setTaskExecutor(this.taskExecutor);
-					}
-					if (this.afterReceivePostProcessors != null) {
-						container.setAfterReceivePostProcessors(this.afterReceivePostProcessors
-								.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
-					}
-					container.start();
-					this.directReplyToContainers.put(connectionFactory, container);
-					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
+		DirectReplyToMessageListenerContainer container;
+		synchronized (this.directReplyToContainers) {
+			container = this.directReplyToContainers.get(connectionFactory);
+			if (container == null) {
+				container = new DirectReplyToMessageListenerContainer(connectionFactory);
+				container.setMessageListener(this);
+				container.setBeanName(this.beanName + "#" + this.containerInstance.getAndIncrement());
+				if (this.taskExecutor != null) {
+					container.setTaskExecutor(this.taskExecutor);
 				}
+				if (this.afterReceivePostProcessors != null) {
+					container.setAfterReceivePostProcessors(this.afterReceivePostProcessors
+							.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
+				}
+				container.start();
+				this.directReplyToContainers.put(connectionFactory, container);
+				this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
 			}
 		}
 		ChannelHolder channelHolder = container.getChannelHolder();
