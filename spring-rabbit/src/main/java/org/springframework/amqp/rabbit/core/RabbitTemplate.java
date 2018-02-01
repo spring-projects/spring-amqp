@@ -728,13 +728,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public Collection<CorrelationData> getUnconfirmed(long age) {
 		Set<CorrelationData> unconfirmed = new HashSet<>();
-		synchronized (this.publisherConfirmChannels) {
-			long cutoffTime = System.currentTimeMillis() - age;
-			for (Channel channel : this.publisherConfirmChannels.keySet()) {
-				Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
-				for (PendingConfirm confirm : confirms) {
-					unconfirmed.add(confirm.getCorrelationData());
-				}
+		long cutoffTime = System.currentTimeMillis() - age;
+		for (Channel channel : this.publisherConfirmChannels.keySet()) {
+			Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
+			for (PendingConfirm confirm : confirms) {
+				unconfirmed.add(confirm.getCorrelationData());
 			}
 		}
 		return unconfirmed.size() > 0 ? unconfirmed : null;
@@ -746,12 +744,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @since 2.0
 	 */
 	public int getUnconfirmedCount() {
-		synchronized (this.publisherConfirmChannels) {
-			return this.publisherConfirmChannels.keySet()
-					.stream()
-					.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
-					.sum();
-		}
+		return this.publisherConfirmChannels.keySet()
+				.stream()
+				.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
+				.sum();
 	}
 
 	@Override
