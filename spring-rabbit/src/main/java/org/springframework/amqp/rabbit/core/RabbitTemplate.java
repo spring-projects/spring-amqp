@@ -342,8 +342,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @param replyAddress the replyAddress to set
 	 */
 	public void setReplyAddress(String replyAddress) {
-		this.replyAddress = replyAddress;
-		this.evaluatedFastReplyTo = false;
+		synchronized (this) {
+			this.replyAddress = replyAddress;
+			this.evaluatedFastReplyTo = false;
+		}
 	}
 
 	/**
