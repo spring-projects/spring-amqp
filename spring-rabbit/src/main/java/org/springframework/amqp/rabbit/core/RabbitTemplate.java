@@ -342,11 +342,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * exchange and routing key.
 	 * @param replyAddress the replyAddress to set
 	 */
-	public void setReplyAddress(String replyAddress) {
-		synchronized (this) {
-			this.replyAddress = replyAddress;
-			this.evaluatedFastReplyTo = false;
-		}
+	public synchronized void setReplyAddress(String replyAddress) {
+		this.replyAddress = replyAddress;
+		this.evaluatedFastReplyTo = false;
 	}
 
 	/**
