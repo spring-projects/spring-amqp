@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -64,6 +65,8 @@ public class DelegatingInvocableHandler {
 	private final ConcurrentMap<Class<?>, InvocableHandlerMethod> cachedHandlers =
 			new ConcurrentHashMap<Class<?>, InvocableHandlerMethod>();
 
+	private final InvocableHandlerMethod defaultHandler;
+
 	private final Map<InvocableHandlerMethod, Expression> handlerSendTo =
 			new HashMap<InvocableHandlerMethod, Expression>();
 
@@ -82,7 +85,23 @@ public class DelegatingInvocableHandler {
 	 */
 	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers, Object bean,
 			BeanExpressionResolver beanExpressionResolver, BeanExpressionContext beanExpressionContext) {
+		this(handlers, null, bean, beanExpressionResolver, beanExpressionContext);
+	}
+
+	/**
+	 * Construct an instance with the supplied handlers for the bean.
+	 * @param handlers the handlers.
+	 * @param defaultHandler the default handler.
+	 * @param bean the bean.
+	 * @param beanExpressionResolver the resolver.
+	 * @param beanExpressionContext the context.
+	 * @since 2.0.3
+	 */
+	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers,
+			@Nullable InvocableHandlerMethod defaultHandler, Object bean, BeanExpressionResolver beanExpressionResolver,
+			BeanExpressionContext beanExpressionContext) {
 		this.handlers = new ArrayList<InvocableHandlerMethod>(handlers);
+		this.defaultHandler = defaultHandler;
 		this.bean = bean;
 		this.resolver = beanExpressionResolver;
 		this.beanExpressionContext = beanExpressionContext;
@@ -178,13 +197,19 @@ public class DelegatingInvocableHandler {
 		for (InvocableHandlerMethod handler : this.handlers) {
 			if (matchHandlerMethod(payloadClass, handler)) {
 				if (result != null) {
-					throw new AmqpException("Ambiguous methods for payload type: " + payloadClass + ": " +
-							result.getMethod().getName() + " and " + handler.getMethod().getName());
+					boolean resultIsDefault = result.equals(this.defaultHandler);
+					if (!handler.equals(this.defaultHandler) && !resultIsDefault) {
+						throw new AmqpException("Ambiguous methods for payload type: " + payloadClass + ": " +
+								result.getMethod().getName() + " and " + handler.getMethod().getName());
+					}
+					if (!resultIsDefault) {
+						continue; // otherwise replace the result with the actual match
+					}
 				}
 				result = handler;
 			}
 		}
-		return result;
+		return result != null ? result : this.defaultHandler;
 	}
 
 	protected boolean matchHandlerMethod(Class<? extends Object> payloadClass, InvocableHandlerMethod handler) {
@@ -235,6 +260,10 @@ public class DelegatingInvocableHandler {
 	public Method getMethodFor(Object payload) {
 		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
 		return handlerForPayload == null ? null : handlerForPayload.getMethod();
+	}
+
+	public boolean hasDefaultHandler() {
+		return this.defaultHandler != null;
 	}
 
 }
