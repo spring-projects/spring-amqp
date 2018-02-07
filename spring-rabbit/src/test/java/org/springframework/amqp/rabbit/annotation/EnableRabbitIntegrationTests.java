@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -318,6 +318,10 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void multiListener() {
+		Foo foo = new Foo();
+		foo.field = "foo";
+		assertEquals("FOO: foo handled by default handler",
+				rabbitTemplate.convertSendAndReceive("multi.exch", "multi.rk", foo));
 		Bar bar = new Bar();
 		bar.field = "bar";
 		rabbitTemplate.convertAndSend("multi.exch", "multi.rk", bar);
@@ -1338,6 +1342,14 @@ public class EnableRabbitIntegrationTests {
 		@RabbitHandler
 		public String qux(@Header("amqp_receivedRoutingKey") String rk, @NonNull @Payload Qux qux) {
 			return "QUX: " + qux.field + ": " + rk;
+		}
+
+		@RabbitHandler(isDefault = true)
+		public String defaultHandler(@Payload Object payload) {
+			if (payload instanceof Foo) {
+				return "FOO: " + ((Foo) payload).field + " handled by default handler";
+			}
+			return payload.toString() + " handled by default handler";
 		}
 
 	}
