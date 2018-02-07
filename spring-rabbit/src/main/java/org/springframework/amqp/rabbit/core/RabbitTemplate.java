@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,6 +135,7 @@ import com.rabbitmq.client.GetResponse;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Ernest Sadykov
+ * @author Mark Norkin
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
@@ -341,7 +342,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * exchange and routing key.
 	 * @param replyAddress the replyAddress to set
 	 */
-	public void setReplyAddress(String replyAddress) {
+	public synchronized void setReplyAddress(String replyAddress) {
 		this.replyAddress = replyAddress;
 		this.evaluatedFastReplyTo = false;
 	}
@@ -726,13 +727,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public Collection<CorrelationData> getUnconfirmed(long age) {
 		Set<CorrelationData> unconfirmed = new HashSet<>();
-		synchronized (this.publisherConfirmChannels) {
-			long cutoffTime = System.currentTimeMillis() - age;
-			for (Channel channel : this.publisherConfirmChannels.keySet()) {
-				Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
-				for (PendingConfirm confirm : confirms) {
-					unconfirmed.add(confirm.getCorrelationData());
-				}
+		long cutoffTime = System.currentTimeMillis() - age;
+		for (Channel channel : this.publisherConfirmChannels.keySet()) {
+			Collection<PendingConfirm> confirms = ((PublisherCallbackChannel) channel).expire(this, cutoffTime);
+			for (PendingConfirm confirm : confirms) {
+				unconfirmed.add(confirm.getCorrelationData());
 			}
 		}
 		return unconfirmed.size() > 0 ? unconfirmed : null;
@@ -744,12 +743,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @since 2.0
 	 */
 	public int getUnconfirmedCount() {
-		synchronized (this.publisherConfirmChannels) {
-			return this.publisherConfirmChannels.keySet()
-					.stream()
-					.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
-					.sum();
-		}
+		return this.publisherConfirmChannels.keySet()
+				.stream()
+				.mapToInt(channel -> ((PublisherCallbackChannel) channel).getPendingConfirmsCount(this))
+				.sum();
 	}
 
 	@Override
@@ -788,11 +785,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public boolean isRunning() {
 		synchronized (this.directReplyToContainers) {
-			synchronized (this.directReplyToContainers) {
-				return this.directReplyToContainers.values()
-						.stream()
-						.anyMatch(AbstractMessageListenerContainer::isRunning);
-			}
+			return this.directReplyToContainers.values()
+					.stream()
+					.anyMatch(AbstractMessageListenerContainer::isRunning);
 		}
 	}
 
@@ -1138,9 +1133,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return execute(channel -> {
-			Message receiveMessage = null;
-
-			receiveMessage = receiveForReply(queueName, channel, receiveMessage);
+			Message receiveMessage = receiveForReply(queueName, channel);
 			if (receiveMessage != null) {
 				return sendReply(callback, replyToAddressCallback, channel, receiveMessage);
 			}
@@ -1148,9 +1141,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
 	}
 
-	private Message receiveForReply(final String queueName, Channel channel, Message receiveMessage) throws Exception {
+	private Message receiveForReply(final String queueName, Channel channel) throws Exception {
 		boolean channelTransacted = isChannelTransacted();
 		boolean channelLocallyTransacted = isChannelLocallyTransacted(channel);
+		Message receiveMessage = null;
 		if (RabbitTemplate.this.receiveTimeout == 0) {
 			GetResponse response = channel.basicGet(queueName, !channelTransacted);
 			// Response can be null in the case that there is no message on the queue.
@@ -1189,7 +1183,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private Delivery consumeDelivery(Channel channel, String queueName, long timeoutMillis) throws Exception {
 		Delivery delivery = null;
-		Throwable exception = null;
+		RuntimeException exception = null;
 		CompletableFuture<Delivery> future = new CompletableFuture<>();
 		DefaultConsumer consumer = createConsumer(queueName, channel, future,
 				timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
@@ -1202,8 +1196,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		catch (ExecutionException e) {
-			this.logger.error("Consumer failed to receive message: " + consumer, e.getCause());
-			exception = e.getCause();
+			Throwable cause = e.getCause();
+			this.logger.error("Consumer failed to receive message: " + consumer, cause);
+			exception = RabbitExceptionTranslator.convertRabbitAccessException(cause);
+			throw exception;
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -1211,25 +1207,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		catch (TimeoutException e) {
 			// no result in time
 		}
-		try {
+		finally {
 			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
-				channel.basicCancel(consumer.getConsumerTag());
-			}
-		}
-		catch (Exception e) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Failed to cancel consumer: " + consumer, e);
-			}
-		}
-		if (exception != null) {
-			if (exception instanceof RuntimeException) {
-				throw (RuntimeException) exception;
-			}
-			else if (exception instanceof Error) {
-				throw (Error) exception;
-			}
-			else  {
-				throw new AmqpException(exception);
+				cancelConsumerQuietly(channel, consumer);
 			}
 		}
 		return delivery;
@@ -1606,14 +1586,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			finally {
 				this.replyHolder.remove(messageTag);
-				try {
-					channel.basicCancel(consumerTag);
-				}
-				catch (Exception e) {
-				}
+				cancelConsumerQuietly(channel, consumer);
 			}
 			return reply;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
+	}
+
+	private void cancelConsumerQuietly(Channel channel, DefaultConsumer consumer) {
+		try {
+            channel.basicCancel(consumer.getConsumerTag());
+        }
+        catch (Exception e) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Failed to cancel consumer: " + consumer, e);
+			}
+        }
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
