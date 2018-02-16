@@ -2233,10 +2233,10 @@ This is best described using an example:
 [source, java]
 ----
 @RabbitListener(id="multi", queues = "someQueue")
+@SendTo("my.reply.queue")
 public class MultiListenerBean {
 
     @RabbitHandler
-    @SendTo("my.reply.queue")
     public String bar(Bar bar) {
         ...
     }
@@ -2251,6 +2251,11 @@ public class MultiListenerBean {
         ...
     }
 
+    @RabbitHandler(isDefault = true)
+    public String defaultMethod(Object object) {
+        ...
+    }
+
 }
 ----
 
@@ -2259,7 +2264,9 @@ It is important to understand that the system must be able to identify a unique 
 The type is checked for assignability to a single parameter that has no annotations, or is annotated with the `@Payload` annotation.
 Notice that the same method signatures apply as discussed in the method-level `@RabbitListener` described above.
 
-Notice that the `@SendTo` must be specified on each method (if needed); it is not supported at the class level.
+Starting with _version 2.0.3_, a `@RabbitHandler` method can be designated as the default method which is invoked if there is no match on other methods.
+At most one method can be so designated.
+
 
 [[repeatable-rabbit-listener]]
 ====== @Repeatable @RabbitListener
