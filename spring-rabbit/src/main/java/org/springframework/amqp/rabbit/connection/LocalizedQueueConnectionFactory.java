@@ -366,9 +366,6 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 				((DisposableBean) connectionFactory).destroy();
 			}
 		}
-		if (this.defaultConnectionFactory instanceof DisposableBean) {
-			((DisposableBean) this.defaultConnectionFactory).destroy();
-		}
 	}
 
 }
