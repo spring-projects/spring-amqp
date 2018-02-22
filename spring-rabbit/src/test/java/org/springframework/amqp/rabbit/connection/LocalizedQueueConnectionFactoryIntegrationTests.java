@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.UUID;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -41,9 +42,11 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 
 	private LocalizedQueueConnectionFactory lqcf;
 
+	private CachingConnectionFactory defaultConnectionFactory;
+
 	@Before
 	public void setup() {
-		ConnectionFactory defaultConnectionFactory = new CachingConnectionFactory("localhost");
+		this.defaultConnectionFactory = new CachingConnectionFactory("localhost");
 		String[] addresses = new String[] { "localhost:9999", "localhost:5672" };
 		String[] adminUris = new String[] { "http://localhost:15672", "http://localhost:15672" };
 		String[] nodes = new String[] { "foo@bar", "rabbit@localhost" };
@@ -52,6 +55,12 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		String password = "guest";
 		this.lqcf = new LocalizedQueueConnectionFactory(defaultConnectionFactory, addresses,
 				adminUris, nodes, vhost, username, password, false, null);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		this.lqcf.destroy();
+		this.defaultConnectionFactory.destroy();
 	}
 
 	@Test
@@ -64,7 +73,6 @@ public class LocalizedQueueConnectionFactoryIntegrationTests {
 		template.convertAndSend("", queue.getName(), "foo");
 		assertEquals("foo", template.receiveAndConvert(queue.getName()));
 		admin.deleteQueue(queue.getName());
-		lqcf.destroy();
 	}
 
 }
