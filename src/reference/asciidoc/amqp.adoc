@@ -348,17 +348,17 @@ Here's an example with a custom thread factory that prefixes thread names with `
 
 Starting with _version 2.0_ a `ConnectionNameStrategy` is provided for the injection into the `AbstractionConnectionFactory`.
 The generated name is used for the application-specific identification of the target RabbitMQ connection.
-The connection name is displayed in the management UI if RabbitMQ server supports it.
+The connection name is displayed in the management UI if the RabbitMQ server supports it.
 This value doesn't have to be unique and cannot be used as a connection identifier e.g. in HTTP API requests.
 This value is supposed to be human-readable and is a part of `ClientProperties` under `connection_name` key.
-Can be used as a simple Lambda:
+A simple Lambda can be used:
 [source, java]
 ----
 connectionFactory.setConnectionNameStrategy(connectionFactory -> "MY_CONNECTION");
 ----
 
 The `ConnectionFactory` argument can be used to distinguish target connection names by some logic.
-By default a `beanName` of the `AbstractConnectionFactory` and an internal counter are used to generate `connection_name`.
+By default, the `beanName` of the `AbstractConnectionFactory`, a hex String representing the object, and an internal counter are used to generate the `connection_name`.
 The `<rabbit:connection-factory>` namespace component is also supplied with the `connection-name-strategy` attribute.
 
 
@@ -372,6 +372,10 @@ And when it is blocked by the Broker, any its clients stop to work.
 If we have producers and consumers in the same application, we may end up with a deadlock  when producers are blocking the connection because there are no resources on the Broker anymore and consumers can't free them because the connection is blocked.
 To mitigate the problem, there is just enough to have one more separate `CachingConnectionFactory` instance with the same options - one for producers and one for consumers.
 The separate `CachingConnectionFactory` isn't recommended for transactional producers, since they should reuse a `Channel` associated with the consumer transactions.
+
+Starting with _version 2.0.2_, the `RabbitTemplate` has a configuration option to automatically use a second connection factory, unless transactions are being used.
+See <<separate-connection>> for more information.
+The `ConnectionNameStrategy` for the publisher connection is the same as the primary strategy with `.publisher` appended to the result of calling the method.
 
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
