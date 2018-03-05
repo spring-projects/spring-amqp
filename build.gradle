@@ -173,7 +173,6 @@ subprojects { subproject ->
 			// restrict memory usage, so tests don't fail with exit code 137 on travis
 			maxHeapSize = '256m'
 		}
-		useJUnitPlatform()
 	}
 
 	task testAll(type: Test, dependsOn: check)
@@ -184,10 +183,6 @@ subprojects { subproject ->
 		}
 	}
 
-	testAll {
-		useJUnitPlatform()
-	}
-
 	tasks.withType(Test).all {
 		// suppress all console output during testing unless running `gradle -i`
 		logging.captureStandardOutput(LogLevel.INFO)
@@ -196,6 +191,7 @@ subprojects { subproject ->
 		if (name ==~ /(springIo.*)|(testAll)/) {
 			systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
 		}
+		useJUnitPlatform()
 	}
 
 	task sourcesJar(type: Jar) {
