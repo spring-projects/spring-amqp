@@ -89,9 +89,9 @@ subprojects { subproject ->
 		hamcrestVersion = '1.3'
 		jackson2Version = '2.9.1'
 		junit4Version = '4.12'
-		junitJupiterVersion = '5.0.2'
-		junitPlatformVersion = '1.0.2'
-		junitVintageVersion = '4.12.2'
+		junitJupiterVersion = '5.1.0'
+		junitPlatformVersion = '1.1.0'
+		junitVintageVersion = '5.1.0'
 		log4jVersion = '2.8.2'
 		logbackVersion = '1.2.3'
 		mockitoVersion = '2.11.0'
@@ -128,12 +128,12 @@ subprojects { subproject ->
 		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 
-		testCompile "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
-		testRuntime "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
-		testRuntime "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
+		testCompile "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+		testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
+		testRuntime "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
 
 		// To support JUnit 4 tests
-		testRuntime "org.junit.vintage:junit-vintage-engine:${junitVintageVersion}"
+		testRuntime "org.junit.vintage:junit-vintage-engine:$junitVintageVersion"
 
 		// To avoid compiler warnings about @API annotations in JUnit code
 		testCompileOnly 'org.apiguardian:apiguardian-api:1.0.0'
@@ -173,6 +173,7 @@ subprojects { subproject ->
 			// restrict memory usage, so tests don't fail with exit code 137 on travis
 			maxHeapSize = '256m'
 		}
+		useJUnitPlatform()
 	}
 
 	task testAll(type: Test, dependsOn: check)
@@ -181,6 +182,10 @@ subprojects { subproject ->
 		if (graph.hasTask(testAll)) {
 			test.enabled = false
 		}
+	}
+
+	testAll {
+		useJUnitPlatform()
 	}
 
 	tasks.withType(Test).all {
@@ -286,7 +291,7 @@ project('spring-rabbit-junit') {
 			exclude group: 'org.springframework', module: 'spring-web'
 		}
 		compile "org.springframework:spring-web:$springVersion"
-		compile ("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}", optional)
+		compile ("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion", optional)
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
 	}
