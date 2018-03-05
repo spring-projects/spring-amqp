@@ -8,7 +8,6 @@ buildscript {
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath 'io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE'
 		classpath 'io.spring.gradle:spring-io-plugin:0.0.8.RELEASE'
-		classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.2'
 	}
 }
 
