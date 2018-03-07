@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -684,9 +684,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		else {
 			logger.error("Null consumer tag received for queue " + queue);
 		}
-		if (this.applicationEventPublisher != null) {
-			this.applicationEventPublisher.publishEvent(new ConsumeOkEvent(this, queue, consumerTag));
-		}
 	}
 
 	private void attemptPassiveDeclarations() {
@@ -885,7 +882,12 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		public void handleConsumeOk(String consumerTag) {
 			super.handleConsumeOk(consumerTag);
 			if (logger.isDebugEnabled()) {
-				logger.debug("ConsumeOK : " + BlockingQueueConsumer.this);
+				logger.debug("ConsumeOK: " + BlockingQueueConsumer.this);
+			}
+			if (BlockingQueueConsumer.this.applicationEventPublisher != null) {
+				String queueName = BlockingQueueConsumer.this.consumerTags.get(consumerTag);
+				BlockingQueueConsumer.this.applicationEventPublisher
+						.publishEvent(new ConsumeOkEvent(this, queueName, consumerTag));
 			}
 		}
 
