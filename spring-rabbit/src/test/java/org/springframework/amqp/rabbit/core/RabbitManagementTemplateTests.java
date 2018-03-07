@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Binding;
@@ -208,6 +209,7 @@ public class RabbitManagementTemplateTests {
 	}
 
 	@Test
+	@Ignore // incompatible with 3.7 broker and current hop client
 	public void testDeleteExchange() {
 		String exchangeName = "testExchange";
 		Exchange testExchange = new DirectExchange(exchangeName);
