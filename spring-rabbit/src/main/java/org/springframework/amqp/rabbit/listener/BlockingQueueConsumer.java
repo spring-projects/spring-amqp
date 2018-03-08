@@ -63,6 +63,7 @@ import org.springframework.util.backoff.BackOffExecution;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.Recoverable;
@@ -239,10 +240,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 	 * @param queues The queues.
 	 */
 	public BlockingQueueConsumer(ConnectionFactory connectionFactory,
-								 MessagePropertiesConverter messagePropertiesConverter,
-								 ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
-								 boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-								 Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
+			MessagePropertiesConverter messagePropertiesConverter,
+			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
+			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
+			Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
 		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
 				prefetchCount, defaultRequeueRejected, consumerArgs, false, exclusive, queues);
 	}
@@ -475,8 +476,8 @@ public class BlockingQueueConsumer implements RecoveryListener {
 	 */
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
 		if (logger.isTraceEnabled()) {
-		    logger.trace("Retrieving delivery for " + this);
-        }
+			logger.trace("Retrieving delivery for " + this);
+		}
 		return handle(this.queue.take());
 	}
 
@@ -666,8 +667,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 	private void consumeFromQueue(String queue) throws IOException {
 		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(),
-				(this.tagStrategy != null ? this.tagStrategy.createConsumerTag(queue) : ""), this.noLocal, this.exclusive,
-				this.consumerArgs, this.consumer);
+				(this.tagStrategy != null ? this.tagStrategy.createConsumerTag(queue) : ""), this.noLocal,
+				this.exclusive, this.consumerArgs,
+				new ConsumerDecorator(queue, this.consumer, this.applicationEventPublisher));
+
 		if (consumerTag != null) {
 			this.consumerTags.put(consumerTag, queue);
 			if (logger.isDebugEnabled()) {
@@ -810,7 +813,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		 */
 		boolean isLocallyTransacted = locallyTransacted
 				|| (this.transactional
-						&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
+				&& TransactionSynchronizationManager.getResource(this.connectionFactory) == null);
 		try {
 
 			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
@@ -873,11 +876,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			super.handleConsumeOk(consumerTag);
 			if (logger.isDebugEnabled()) {
 				logger.debug("ConsumeOK: " + BlockingQueueConsumer.this);
-			}
-			if (BlockingQueueConsumer.this.applicationEventPublisher != null) {
-				String queueName = BlockingQueueConsumer.this.consumerTags.get(consumerTag);
-				BlockingQueueConsumer.this.applicationEventPublisher
-						.publishEvent(new ConsumeOkEvent(this, queueName, consumerTag));
 			}
 		}
 
@@ -948,6 +946,52 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
+		}
+
+	}
+
+	private static final class ConsumerDecorator implements Consumer {
+
+		private final String queue;
+
+		private final Consumer delegate;
+
+		private final ApplicationEventPublisher applicationEventPublisher;
+
+		ConsumerDecorator(String queue, Consumer delegate, ApplicationEventPublisher applicationEventPublisher) {
+			this.queue = queue;
+			this.delegate = delegate;
+			this.applicationEventPublisher = applicationEventPublisher;
+		}
+
+
+		public void handleConsumeOk(String consumerTag) {
+			this.delegate.handleConsumeOk(consumerTag);
+			if (this.applicationEventPublisher != null) {
+				this.applicationEventPublisher.publishEvent(new ConsumeOkEvent(this.delegate, this.queue, consumerTag));
+			}
+		}
+
+		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
+			this.delegate.handleShutdownSignal(consumerTag, sig);
+		}
+
+		public void handleCancel(String consumerTag) throws IOException {
+			this.delegate.handleCancel(consumerTag);
+		}
+
+		public void handleCancelOk(String consumerTag) {
+			this.delegate.handleCancelOk(consumerTag);
+		}
+
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+				byte[] body) throws IOException {
+
+			this.delegate.handleDelivery(consumerTag, envelope, properties, body);
+		}
+
+		public void handleRecoverOk(String consumerTag) {
+			this.delegate.handleRecoverOk(consumerTag);
 		}
 
 	}

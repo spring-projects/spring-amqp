@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -92,6 +93,7 @@ import com.rabbitmq.client.Channel;
  * @author Gunnar Hillert
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.3
  *
  */
@@ -277,7 +279,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		assertThat(events.size(), equalTo(8));
 		assertThat(events.get(0), instanceOf(AsyncConsumerStartedEvent.class));
 		assertThat(events.get(1), instanceOf(ConsumeOkEvent.class));
+		ConsumeOkEvent consumeOkEvent = (ConsumeOkEvent) events.get(1);
+		assertThat(consumeOkEvent.getQueue(), isOneOf(this.queue.getName(), this.queue1.getName()));
 		assertThat(events.get(2), instanceOf(ConsumeOkEvent.class));
+		consumeOkEvent = (ConsumeOkEvent) events.get(2);
+		assertThat(consumeOkEvent.getQueue(), isOneOf(this.queue.getName(), this.queue1.getName()));
 		assertSame(events.get(3), eventRef.get());
 		assertThat(events.get(4), instanceOf(AsyncConsumerRestartedEvent.class));
 		assertThat(events.get(5), instanceOf(ConsumeOkEvent.class));

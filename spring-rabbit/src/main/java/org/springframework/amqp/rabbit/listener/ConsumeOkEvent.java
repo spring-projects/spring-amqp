@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import org.springframework.amqp.event.AmqpEvent;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.7.5
  *
  */
@@ -34,6 +36,24 @@ public class ConsumeOkEvent extends AmqpEvent {
 		super(source);
 		this.queue = queue;
 		this.consumerTag = consumerTag;
+	}
+
+	/**
+	 * Obtain the queue name a consumer has been subscribed.
+	 * @return the queue name a consumer subscribed.
+	 * @since 1.7.7
+	 */
+	public String getQueue() {
+		return this.queue;
+	}
+
+	/**
+	 * Obtain the consumer tag assigned to the consumer.
+	 * @return the consumer tag for subscription.
+	 * @since 1.7.7
+	 */
+	public String getConsumerTag() {
+		return this.consumerTag;
 	}
 
 	@Override
