@@ -958,6 +958,8 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 		private final ApplicationEventPublisher applicationEventPublisher;
 
+		private String consumerTag;
+
 		ConsumerDecorator(String queue, Consumer delegate, ApplicationEventPublisher applicationEventPublisher) {
 			this.queue = queue;
 			this.delegate = delegate;
@@ -966,6 +968,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 
 		public void handleConsumeOk(String consumerTag) {
+			this.consumerTag = consumerTag;
 			this.delegate.handleConsumeOk(consumerTag);
 			if (this.applicationEventPublisher != null) {
 				this.applicationEventPublisher.publishEvent(new ConsumeOkEvent(this.delegate, this.queue, consumerTag));
@@ -992,6 +995,13 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 		public void handleRecoverOk(String consumerTag) {
 			this.delegate.handleRecoverOk(consumerTag);
+		}
+
+		@Override
+		public String toString() {
+			return "ConsumerDecorator{" + "queue='" + this.queue + '\'' +
+					", consumerTag='" + this.consumerTag + '\'' +
+					'}';
 		}
 
 	}

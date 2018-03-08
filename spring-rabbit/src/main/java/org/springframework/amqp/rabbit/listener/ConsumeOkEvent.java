@@ -19,6 +19,9 @@ package org.springframework.amqp.rabbit.listener;
 import org.springframework.amqp.event.AmqpEvent;
 
 /**
+ * An {@link AmqpEvent} emitted by the listener container
+ * when consumer is subscribed to the queue.
+ *
  * @author Gary Russell
  * @author Artem Bilan
  *
@@ -32,6 +35,13 @@ public class ConsumeOkEvent extends AmqpEvent {
 
 	private final String consumerTag;
 
+	/**
+	 * Instantiate a {@link ConsumeOkEvent} based on the provided
+	 * consumer, queue and consumer tag.
+	 * @param source the consumer subscribed to the queue
+	 * @param queue the queue to consume
+	 * @param consumerTag the tag indicate a consumer subscription
+	 */
 	public ConsumeOkEvent(Object source, String queue, String consumerTag) {
 		super(source);
 		this.queue = queue;
