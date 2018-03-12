@@ -370,6 +370,7 @@ public class EnableRabbitIntegrationTests {
 		Message request = MessageTestUtils.createTextMessage("foo", properties);
 		Message reply = rabbitTemplate.sendAndReceive("test.header", request);
 		assertEquals("prefix-FOO", MessageTestUtils.extractText(reply));
+		assertEquals(reply.getMessageProperties().getHeaders().get("replyMPPApplied"), Boolean.TRUE);
 	}
 
 	@Test
@@ -1105,6 +1106,10 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setReceiveTimeout(10L);
+			factory.setReplyPostProcessor(m -> {
+				m.getMessageProperties().getHeaders().put("replyMPPApplied", true);
+				return m;
+			});
 			return factory;
 		}
 

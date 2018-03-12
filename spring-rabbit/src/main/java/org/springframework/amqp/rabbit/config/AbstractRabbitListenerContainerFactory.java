@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.RabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
@@ -102,6 +103,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private Integer phase;
 
 	private MessagePostProcessor[] afterReceivePostProcessors;
+
+	private MessagePostProcessor replyPostProcessor;
 
 	protected final AtomicInteger counter = new AtomicInteger();
 
@@ -274,13 +277,23 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
+	 * Set post processors which will be applied after the Message is received.
 	 * @param afterReceivePostProcessors the post processors.
+	 * @since 2.0
 	 * @see AbstractMessageListenerContainer#setAfterReceivePostProcessors(MessagePostProcessor...)
 	 */
 	public void setAfterReceivePostProcessors(MessagePostProcessor... afterReceivePostProcessors) {
 		this.afterReceivePostProcessors = afterReceivePostProcessors;
 	}
 
+	/**
+	 * Set a post processor that will be applied before sending replies.
+	 * @param replyPostProcessor the post processor.
+	 * @since 2.0.3
+	 */
+	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
+		this.replyPostProcessor = replyPostProcessor;
+	}
 
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
@@ -355,6 +368,11 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		instance.setListenerId(endpoint.getId());
 
 		endpoint.setupListenerContainer(instance);
+		if (this.replyPostProcessor != null
+				&& instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
+			((AbstractAdaptableMessageListener) instance.getMessageListener())
+					.setReplyPostProcessor(this.replyPostProcessor);
+		}
 		initializeContainer(instance, endpoint);
 
 		return instance;
