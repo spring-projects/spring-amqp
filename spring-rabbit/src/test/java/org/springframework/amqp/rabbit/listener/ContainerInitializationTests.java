@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class ContainerInitializationTests {
 		catch (ApplicationContextException e) {
 			assertThat(e.getCause().getCause(), instanceOf(IllegalStateException.class));
 			assertThat(e.getMessage(), containsString("When 'mismatchedQueuesFatal' is 'true', there must be "
-					+ "exactly one RabbitAdmin in the context or you must inject one into this container; found: 0"));
+					+ "exactly one AmqpAdmin in the context or you must inject one into this container; found: 0"));
 		}
 	}
 

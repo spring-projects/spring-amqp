@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ public @interface RabbitListener {
 	String returnExceptions() default "";
 
 	/**
-	 * Set an {@link org.springframework.amqp.rabbit.listener.RabbitListenerErrorHandler}
+	 * Set an {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler}
 	 * to invoke if the listener method throws an exception.
 	 * @return the error handler.
 	 * @since 2.0

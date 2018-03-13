@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@
 
 package org.springframework.amqp.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-import org.springframework.amqp.support.converter.SerializerMessageConverter;
+import org.springframework.amqp.utils.SerializationUtils;
+import org.springframework.util.Assert;
 
 /**
  * The 0-8 and 0-9-1 AMQP specifications do not define an Message class or interface. Instead, when performing an
@@ -42,11 +46,8 @@ public class Message implements Serializable {
 
 	private static final String ENCODING = Charset.defaultCharset().name();
 
-	private static final SerializerMessageConverter SERIALIZER_MESSAGE_CONVERTER = new SerializerMessageConverter();
-
-	static {
-		SERIALIZER_MESSAGE_CONVERTER.setWhiteListPatterns(Arrays.asList("java.util.*", "java.lang.*"));
-	}
+	private static final Set<String> whiteListPatterns = new LinkedHashSet<String>(
+			Arrays.asList("java.util.*", "java.lang.*"));
 
 	private final MessageProperties messageProperties;
 
@@ -70,7 +71,8 @@ public class Message implements Serializable {
 	 * @since 1.5.7
 	 */
 	public static void addWhiteListPatterns(String... patterns) {
-		SERIALIZER_MESSAGE_CONVERTER.addWhiteListPatterns(patterns);
+		Assert.notNull(patterns, "'patterns' cannot be null");
+		whiteListPatterns.addAll(Arrays.asList(patterns));
 	}
 
 	public byte[] getBody() {
@@ -100,7 +102,8 @@ public class Message implements Serializable {
 		try {
 			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
-				return SERIALIZER_MESSAGE_CONVERTER.fromMessage(this).toString();
+				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
+						getClass().getClassLoader()).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)

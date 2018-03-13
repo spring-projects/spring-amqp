@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,6 +42,7 @@ import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -50,7 +52,6 @@ import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.SimpleResourceHolder;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -59,6 +60,7 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -510,18 +512,33 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	private void checkMissingQueues(String[] queueNames) {
 		if (isMissingQueuesFatal()) {
-			RabbitAdmin checkAdmin = getRabbitAdmin();
+			AmqpAdmin checkAdmin = getAmqpAdmin();
 			if (checkAdmin == null) {
 				/*
 				 * Checking queue existence doesn't require an admin in the context or injected into
 				 * the container. If there's no such admin, just create a local one here.
+				 * Use reflection to avoid class tangles.
 				 */
-				checkAdmin = new RabbitAdmin(getConnectionFactory());
+				try {
+					Class<?> clazz = ClassUtils.forName("org.springframework.amqp.rabbit.core.RabbitAdmin",
+							getClass().getClassLoader());
+
+					@SuppressWarnings("unchecked")
+					Constructor<AmqpAdmin> ctor = (Constructor<AmqpAdmin>) clazz
+							.getConstructor(ConnectionFactory.class);
+					checkAdmin = ctor.newInstance(getConnectionFactory());
+					setAmqpAdmin(checkAdmin);
+				}
+				catch (Exception e) {
+					this.logger.error("Failed to create a RabbitAdmin", e);
+				}
 			}
-			for (String queue : queueNames) {
-				Properties queueProperties = checkAdmin.getQueueProperties(queue);
-				if (queueProperties == null && isMissingQueuesFatal()) {
-					throw new IllegalStateException("At least one of the configured queues is missing");
+			if (checkAdmin != null) {
+				for (String queue : queueNames) {
+					Properties queueProperties = checkAdmin.getQueueProperties(queue);
+					if (queueProperties == null && isMissingQueuesFatal()) {
+						throw new IllegalStateException("At least one of the configured queues is missing");
+					}
 				}
 			}
 		}
@@ -962,7 +979,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						}
 					}
 					getChannel().basicNack(deliveryTag, true,
-							RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
+							ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), e, this.logger));
 				}
 				catch (IOException e1) {
 					this.logger.error("Failed to nack message", e1);

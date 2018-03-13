@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
@@ -41,7 +42,10 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 1.4
+ *
  * @see MethodRabbitListenerEndpoint
  * @see SimpleRabbitListenerEndpoint
  */
@@ -49,9 +53,9 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private String id;
 
-	private final Collection<Queue> queues = new ArrayList<Queue>();
+	private final Collection<Queue> queues = new ArrayList<>();
 
-	private final Collection<String> queueNames = new ArrayList<String>();
+	private final Collection<String> queueNames = new ArrayList<>();
 
 	private boolean exclusive;
 
@@ -59,7 +63,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private String concurrency;
 
-	private RabbitAdmin admin;
+	private AmqpAdmin admin;
 
 	private BeanFactory beanFactory;
 
@@ -204,15 +208,15 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * Set the {@link RabbitAdmin} instance to use.
 	 * @param admin the {@link RabbitAdmin} instance.
 	 */
-	public void setAdmin(RabbitAdmin admin) {
+	public void setAdmin(AmqpAdmin admin) {
 		this.admin = admin;
 	}
 
 	/**
-	 * @return the {@link RabbitAdmin} instance to use or {@code null} if
+	 * @return the {@link AmqpAdmin} instance to use or {@code null} if
 	 * none is configured.
 	 */
-	public RabbitAdmin getAdmin() {
+	public AmqpAdmin getAdmin() {
 		return this.admin;
 	}
 
@@ -271,7 +275,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		}
 
 		if (getAdmin() != null) {
-			container.setRabbitAdmin(getAdmin());
+			container.setAmqpAdmin(getAdmin());
 		}
 		setupMessageListener(listenerContainer);
 	}

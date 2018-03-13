@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -49,8 +50,7 @@ import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.connection.RoutingConnectionFactory;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerExecutionException;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
@@ -93,6 +93,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Alex Panchenko
  * @author Johno Crawford
  * @author Arnaud Cogoluègnes
+ * @author Artem Bilan
  */
 public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		implements MessageListenerContainer, ApplicationContextAware, BeanNameAware, DisposableBean,
@@ -137,7 +138,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private RabbitAdmin rabbitAdmin;
+	private AmqpAdmin amqpAdmin;
 
 	private boolean missingQueuesFatal = true;
 
@@ -841,20 +842,45 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return this.messagePropertiesConverter;
 	}
 
-	protected RabbitAdmin getRabbitAdmin() {
-		return this.rabbitAdmin;
+	/**
+	 * Return the admin.
+	 * @return the admin.
+	 * @deprecated in favor of {@link #getAmqpAdmin()}
+	 */
+	@Deprecated
+	protected AmqpAdmin getRabbitAdmin() {
+		return getAmqpAdmin();
+	}
+
+	protected AmqpAdmin getAmqpAdmin() {
+		return this.amqpAdmin;
 	}
 
 	/**
-	 * Set the {@link RabbitAdmin}, used to declare any auto-delete queues, bindings
+	 * Set the {@link AmqpAdmin}, used to declare any auto-delete queues, bindings
 	 * etc when the container is started. Only needed if those queues use conditional
 	 * declaration (have a 'declared-by' attribute). If not specified, an internal
 	 * admin will be used which will attempt to declare all elements not having a
 	 * 'declared-by' attribute.
-	 * @param rabbitAdmin The admin.
+	 * @param amqpAdmin the AmqpAdmin to use
+	 * @since 2.1
 	 */
-	public final void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
-		this.rabbitAdmin = rabbitAdmin;
+	public void setAmqpAdmin(AmqpAdmin amqpAdmin) {
+		this.amqpAdmin = amqpAdmin;
+	}
+
+	/**
+	 * Set the {@link AmqpAdmin}, used to declare any auto-delete queues, bindings
+	 * etc when the container is started. Only needed if those queues use conditional
+	 * declaration (have a 'declared-by' attribute). If not specified, an internal
+	 * admin will be used which will attempt to declare all elements not having a
+	 * 'declared-by' attribute.
+	 * @param amqpAdmin The admin.
+	 * @deprecated in favor of {@link #setAmqpAdmin(AmqpAdmin)}
+	 */
+	@Deprecated
+	public final void setRabbitAdmin(AmqpAdmin amqpAdmin) {
+		setAmqpAdmin(amqpAdmin);
 	}
 
 	/**
@@ -1530,22 +1556,22 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void configureAdminIfNeeded() {
-		if (this.rabbitAdmin == null && this.getApplicationContext() != null) {
-			Map<String, RabbitAdmin> admins = this.getApplicationContext().getBeansOfType(RabbitAdmin.class);
+		if (this.amqpAdmin == null && this.getApplicationContext() != null) {
+			Map<String, AmqpAdmin> admins = this.getApplicationContext().getBeansOfType(AmqpAdmin.class);
 			if (admins.size() == 1) {
-				this.rabbitAdmin = admins.values().iterator().next();
+				this.amqpAdmin = admins.values().iterator().next();
 			}
 			else {
 				if (isAutoDeclare() || isMismatchedQueuesFatal()) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("For 'autoDeclare' and 'mismatchedQueuesFatal' to work, there must be exactly one "
-								+ "RabbitAdmin in the context or you must inject one into this container; found: "
+								+ "AmqpAdmin in the context or you must inject one into this container; found: "
 								+ admins.size() + " for container " + this.toString());
 					}
 				}
 				if (isMismatchedQueuesFatal()) {
 					throw new IllegalStateException("When 'mismatchedQueuesFatal' is 'true', there must be exactly "
-							+ "one RabbitAdmin in the context or you must inject one into this container; found: "
+							+ "one AmqpAdmin in the context or you must inject one into this container; found: "
 							+ admins.size() + " for container " + this.toString());
 				}
 			}
@@ -1553,9 +1579,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void checkMismatchedQueues() {
-		if (this.mismatchedQueuesFatal && this.rabbitAdmin != null) {
+		if (this.mismatchedQueuesFatal && this.amqpAdmin != null) {
 			try {
-				this.rabbitAdmin.initialize();
+				this.amqpAdmin.initialize();
 			}
 			catch (AmqpConnectException e) {
 				logger.info("Broker not available; cannot check queue declarations");
@@ -1572,7 +1598,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Use {@link RabbitAdmin#initialize()} to redeclare everything if necessary.
+	 * Use {@link AmqpAdmin#initialize()} to redeclare everything if necessary.
 	 * Since auto deletion of a queue can cause upstream elements
 	 * (bindings, exchanges) to be deleted too, everything needs to be redeclared if
 	 * a queue is missing.
@@ -1589,8 +1615,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * fail with a fatal error if mismatches occur.
 	 */
 	protected synchronized void redeclareElementsIfNecessary() {
-		RabbitAdmin rabbitAdmin = getRabbitAdmin();
-		if (rabbitAdmin == null || !isAutoDeclare()) {
+		AmqpAdmin amqpAdmin = getAmqpAdmin();
+		if (amqpAdmin == null || !isAutoDeclare()) {
 			return;
 		}
 		try {
@@ -1601,11 +1627,11 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 					Queue queue = entry.getValue();
 					if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
-							rabbitAdmin.getQueueProperties(queue.getName()) == null)) {
+							amqpAdmin.getQueueProperties(queue.getName()) == null)) {
 						if (logger.isDebugEnabled()) {
 							logger.debug("Redeclaring context exchanges, queues, bindings.");
 						}
-						rabbitAdmin.initialize();
+						amqpAdmin.initialize();
 						return;
 					}
 				}
@@ -1654,7 +1680,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected void prepareHolderForRollback(RabbitResourceHolder resourceHolder, RuntimeException exception) {
 		if (resourceHolder != null) {
 			resourceHolder.setRequeueOnRollback(isAlwaysRequeueWithTxManagerRollback() ||
-					RabbitUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
+					ContainerUtils.shouldRequeue(isDefaultRequeueRejected(), exception, logger));
 		}
 	}
 

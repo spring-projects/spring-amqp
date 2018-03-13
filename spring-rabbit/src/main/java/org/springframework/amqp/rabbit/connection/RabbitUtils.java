@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,14 +39,13 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  * @author Mark Fisher
  * @author Mark Pollack
  * @author Gary Russell
+ * @author Artem Bilan
  */
 public abstract class RabbitUtils {
 
-	public static final int DEFAULT_PORT = AMQP.PROTOCOL.PORT;
-
 	private static final Log logger = LogFactory.getLog(RabbitUtils.class);
 
-	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<Boolean>();
+	private static final ThreadLocal<Boolean> physicalCloseRequired = new ThreadLocal<>();
 
 	/**
 	 * Close the given RabbitMQ Connection and ignore any thrown exception. This is useful for typical
@@ -159,7 +158,6 @@ public abstract class RabbitUtils {
 
 	/**
 	 * Declare to that broker that a channel is going to be used transactionally, and convert exceptions that arise.
-	 *
 	 * @param channel the channel to use
 	 */
 	public static void declareTransactional(Channel channel) {
@@ -324,10 +322,15 @@ public abstract class RabbitUtils {
 	 * @param logger the logger to use for debug.
 	 * @return true to requeue.
 	 * @since 2.0
+	 * @deprecated in favor of {@code ContainerUtils#shouldRequeue(boolean, Throwable, Log)}.
 	 */
+	@Deprecated
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
+		logger.warn("Use ContainerUtils.shouldRequeue()");
+		// compare class by name to avoid tangle
 		boolean shouldRequeue = defaultRequeueRejected ||
-				throwable instanceof MessageRejectedWhileStoppingException;
+				throwable.getClass().getName().equals(
+						"org.springframework.amqp.rabbit.listener.MessageRejectedWhileStoppingException");
 		Throwable t = throwable;
 		while (shouldRequeue && t != null) {
 			if (t instanceof AmqpRejectAndDontRequeueException) {

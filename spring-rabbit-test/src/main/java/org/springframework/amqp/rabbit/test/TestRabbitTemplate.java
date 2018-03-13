@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,11 +33,11 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.BeansException;
@@ -57,6 +56,7 @@ import com.rabbitmq.client.Envelope;
  * It does not currently support publisher confirms/returns.
  *
  * @author Gary Russell
+ *
  * @since 2.0
  *
  */
@@ -111,7 +111,8 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 
 	@Override
 	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
-			Message message) throws IOException {
+			Message message) {
+
 		Listeners listeners = this.listeners.get(routingKey);
 		if (listeners == null) {
 			throw new IllegalArgumentException("No listener for " + routingKey);
@@ -193,6 +194,7 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 			}
 			return this.iterator.next();
 		}
+
 	}
 
 }

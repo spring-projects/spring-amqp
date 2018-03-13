@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -486,7 +486,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 				container.setMessagePropertiesConverter(this.messagePropertiesConverter);
 			}
 			if (this.rabbitAdmin != null) {
-				container.setRabbitAdmin(this.rabbitAdmin);
+				container.setAmqpAdmin(this.rabbitAdmin);
 			}
 			if (this.missingQueuesFatal != null) {
 				container.setMissingQueuesFatal(this.missingQueuesFatal);
@@ -562,23 +562,6 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		}
 	}
 
-	/**
-	 * The container type.
-	 */
-	public enum Type {
-
-		/**
-		 * {@link SimpleMessageListenerContainer}.
-		 */
-		simple,
-
-		/**
-		 * {@link DirectMessageListenerContainer}.
-		 */
-		direct
-
-	}
-
 	@Override
 	public void start() {
 		if (this.container != null) {
@@ -613,6 +596,23 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		if (this.container != null) {
 			this.container.stop(callback);
 		}
+	}
+
+	/**
+	 * The container type.
+	 */
+	public enum Type {
+
+		/**
+		 * {@link SimpleMessageListenerContainer}.
+		 */
+		simple,
+
+		/**
+		 * {@link DirectMessageListenerContainer}.
+		 */
+		direct
+
 	}
 
 }
