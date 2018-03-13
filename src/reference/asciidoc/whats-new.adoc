@@ -141,6 +141,8 @@ You can now set the `concurrency` of the listener container at the annotation le
 
 You can now set the `autoStartup` property of the listener container at the annotation level, overriding the default setting in the container factory.
 
+You can now set after receive and before send (reply) `MessagePostProcessor` s in the `RabbitListener` container factories.
+
 See <<async-annotation-driven>> for more information.
 
 Starting with _version 2.0.3_, one of the `@RabbitHandler` s on a class-level `@RabbitListener` can be designated as the default.
