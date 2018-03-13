@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.amqp.rabbit.listener.adapter;
+
+import java.util.Arrays;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -88,7 +90,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	private String encoding = DEFAULT_ENCODING;
 
-	private MessagePostProcessor replyPostProcessor;
+	private MessagePostProcessor[] beforeSendReplyPostProcessors;
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -173,12 +175,21 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	}
 
 	/**
-	 * Set a post processor to process the reply immediately before {@code Channel#basicPublish()}.
-	 * Often used to compress the data.
+	 * Set a post processor to process the reply immediately before
+	 * {@code Channel#basicPublish()}. Often used to compress the data.
 	 * @param replyPostProcessor the reply post processor.
+	 * @deprecated in favor of
+	 * {@link #setBeforeSendReplyPostProcessors(MessagePostProcessor...)}.
 	 */
+	@Deprecated
 	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
-		this.replyPostProcessor = replyPostProcessor;
+		this.beforeSendReplyPostProcessors = new MessagePostProcessor[] { replyPostProcessor };
+	}
+
+	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
+		Assert.noNullElements(beforeSendReplyPostProcessors, "'replyPostProcessors' must not have any null elements");
+		this.beforeSendReplyPostProcessors = Arrays.copyOf(beforeSendReplyPostProcessors,
+				beforeSendReplyPostProcessors.length);
 	}
 
 	/**
@@ -414,12 +425,11 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @see #postProcessResponse(Message, Message)
 	 */
 	protected void sendResponse(Channel channel, Address replyTo, Message messageIn) throws Exception {
-		Message message;
-		if (this.replyPostProcessor == null) {
-			message = messageIn;
-		}
-		else {
-			message = this.replyPostProcessor.postProcessMessage(messageIn);
+		Message message = messageIn;
+		if (this.beforeSendReplyPostProcessors != null) {
+			for (MessagePostProcessor postProcessor : this.beforeSendReplyPostProcessors) {
+				message = postProcessor.postProcessMessage(message);
+			}
 		}
 		postProcessChannel(channel, message);
 

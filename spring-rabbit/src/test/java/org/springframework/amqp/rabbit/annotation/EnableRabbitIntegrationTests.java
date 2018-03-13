@@ -1106,7 +1106,7 @@ public class EnableRabbitIntegrationTests {
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
 			factory.setReceiveTimeout(10L);
-			factory.setReplyPostProcessor(m -> {
+			factory.setBeforeSendReplyPostProcessors(m -> {
 				m.getMessageProperties().getHeaders().put("replyMPPApplied", true);
 				return m;
 			});

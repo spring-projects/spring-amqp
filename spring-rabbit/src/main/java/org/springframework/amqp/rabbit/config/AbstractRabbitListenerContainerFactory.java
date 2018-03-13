@@ -104,7 +104,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private MessagePostProcessor[] afterReceivePostProcessors;
 
-	private MessagePostProcessor replyPostProcessor;
+	private MessagePostProcessor[] beforeSendReplyPostProcessors;
 
 	protected final AtomicInteger counter = new AtomicInteger();
 
@@ -287,12 +287,12 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * Set a post processor that will be applied before sending replies.
-	 * @param replyPostProcessor the post processor.
+	 * Set post processors that will be applied before sending replies.
+	 * @param beforeSendReplyPostProcessors the post processors.
 	 * @since 2.0.3
 	 */
-	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
-		this.replyPostProcessor = replyPostProcessor;
+	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
+		this.beforeSendReplyPostProcessors = beforeSendReplyPostProcessors;
 	}
 
 	@Override
@@ -368,10 +368,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		instance.setListenerId(endpoint.getId());
 
 		endpoint.setupListenerContainer(instance);
-		if (this.replyPostProcessor != null
+		if (this.beforeSendReplyPostProcessors != null
 				&& instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
 			((AbstractAdaptableMessageListener) instance.getMessageListener())
-					.setReplyPostProcessor(this.replyPostProcessor);
+					.setBeforeSendReplyPostProcessors(this.beforeSendReplyPostProcessors);
 		}
 		initializeContainer(instance, endpoint);
 

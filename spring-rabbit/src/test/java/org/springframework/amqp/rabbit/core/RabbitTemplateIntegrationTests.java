@@ -1382,7 +1382,7 @@ public class RabbitTemplateIntegrationTests {
 				return message.toUpperCase();
 			}
 		});
-		messageListener.setReplyPostProcessor(new GZipPostProcessor());
+		messageListener.setBeforeSendReplyPostProcessors(new GZipPostProcessor());
 		container.setMessageListener(messageListener);
 		container.setReceiveTimeout(100);
 		container.afterPropertiesSet();
