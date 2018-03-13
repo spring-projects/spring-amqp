@@ -183,9 +183,14 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	@Deprecated
 	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
-		this.beforeSendReplyPostProcessors = new MessagePostProcessor[] { replyPostProcessor };
+		setBeforeSendReplyPostProcessors(replyPostProcessor);
 	}
 
+	/**
+	 * Set post processors that will be applied before sending replies.
+	 * @param beforeSendReplyPostProcessors the post processors.
+	 * @since 2.0.3
+	 */
 	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
 		Assert.noNullElements(beforeSendReplyPostProcessors, "'replyPostProcessors' must not have any null elements");
 		this.beforeSendReplyPostProcessors = Arrays.copyOf(beforeSendReplyPostProcessors,

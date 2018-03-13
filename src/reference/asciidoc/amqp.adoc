@@ -1846,6 +1846,8 @@ It is possible to customize the listener container factory to use per annotation
 The default is only required if at least one endpoint is registered without a specific container factory.
 See the javadoc for full details and examples.
 
+The container factories provide methods for adding `MessagePostProcessor` s that will be applied after receiving messages (before invoking the listener) and before sending replies.
+
 If you prefer XML configuration, use the `<rabbit:annotation-driven>` element; any beans annotated with `@RabbitListener` will be detected.
 
 For `SimpleRabbitListenerContainer` s:
