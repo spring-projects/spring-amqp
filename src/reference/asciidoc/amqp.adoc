@@ -1408,6 +1408,8 @@ public interface ChannelAwareMessageListener {
 }
 ----
 
+IMPORTANT: In _version 2.1_, this interface moved from package `o.s.amqp.rabbit.core` to `o.s.amqp.rabbit.listener.api`.
+
 [[message-listener-adapter]]
 ====== MessageListenerAdapter
 
@@ -2363,6 +2365,8 @@ The stack trace of the server exception will be synthesized by merging the serve
 
 IMPORTANT: This mechanism will generally only work with the default `SimpleMessageConverter`, which uses Java serialization; exceptions are generally not "Jackson-friendly" so can't be serialized to JSON.
 If you are using JSON, consider using an `errorHandler` to return some other Jackson-friendly `Error` object when an exception is thrown.
+
+IMPORTANT: In _version 2.1_, this interface moved from package `o.s.amqp.rabbit.listener` to `o.s.amqp.rabbit.listener.api`.
 
 ====== Container Management
 

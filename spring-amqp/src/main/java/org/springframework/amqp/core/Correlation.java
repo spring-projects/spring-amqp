@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.support;
+package org.springframework.amqp.core;
 
 /**
  * A marker interface for data used to correlate information about sent messages.

@@ -17,7 +17,6 @@
 package org.springframework.amqp.core;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.support.Correlation;
 
 /**
  * Used in several places in the framework, such as

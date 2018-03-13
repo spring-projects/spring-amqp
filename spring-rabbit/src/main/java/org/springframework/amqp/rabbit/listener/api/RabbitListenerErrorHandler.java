@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.listener;
+package org.springframework.amqp.rabbit.listener.api;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;

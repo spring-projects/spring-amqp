@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import org.springframework.amqp.support.Correlation;
+import org.springframework.amqp.core.Correlation;
 
 /**
  * Base class for correlating publisher confirms to sent messages.

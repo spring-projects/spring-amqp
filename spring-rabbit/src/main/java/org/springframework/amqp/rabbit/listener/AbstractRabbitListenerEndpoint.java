@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
@@ -59,7 +60,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 
 	private String concurrency;
 
-	private RabbitAdmin admin;
+	private AmqpAdmin admin;
 
 	private BeanFactory beanFactory;
 
@@ -204,15 +205,15 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	 * Set the {@link RabbitAdmin} instance to use.
 	 * @param admin the {@link RabbitAdmin} instance.
 	 */
-	public void setAdmin(RabbitAdmin admin) {
+	public void setAdmin(AmqpAdmin admin) {
 		this.admin = admin;
 	}
 
 	/**
-	 * @return the {@link RabbitAdmin} instance to use or {@code null} if
+	 * @return the {@link AmqpAdmin} instance to use or {@code null} if
 	 * none is configured.
 	 */
-	public RabbitAdmin getAdmin() {
+	public AmqpAdmin getAdmin() {
 		return this.admin;
 	}
 

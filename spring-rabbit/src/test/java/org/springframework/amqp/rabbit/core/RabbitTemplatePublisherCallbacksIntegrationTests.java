@@ -60,6 +60,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
@@ -74,7 +75,6 @@ import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.PendingConfirm;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel.Listener;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
-import org.springframework.amqp.support.Correlation;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;

@@ -763,7 +763,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 				OptionalLong deliveryTag = this.deliveryTags.stream().mapToLong(l -> l).max();
 				if (deliveryTag.isPresent()) {
 					this.channel.basicNack(deliveryTag.getAsLong(), true,
-							RabbitUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
+							ContainerUtils.shouldRequeue(this.defaultRequeueRejected, ex, logger));
 				}
 				if (this.transactional) {
 					// Need to commit the reject (=nack)
@@ -967,6 +967,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		}
 
 
+		@Override
 		public void handleConsumeOk(String consumerTag) {
 			this.consumerTag = consumerTag;
 			this.delegate.handleConsumeOk(consumerTag);
@@ -975,24 +976,29 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			}
 		}
 
+		@Override
 		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
 			this.delegate.handleShutdownSignal(consumerTag, sig);
 		}
 
+		@Override
 		public void handleCancel(String consumerTag) throws IOException {
 			this.delegate.handleCancel(consumerTag);
 		}
 
+		@Override
 		public void handleCancelOk(String consumerTag) {
 			this.delegate.handleCancelOk(consumerTag);
 		}
 
+		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
 				byte[] body) throws IOException {
 
 			this.delegate.handleDelivery(consumerTag, envelope, properties, body);
 		}
 
+		@Override
 		public void handleRecoverOk(String consumerTag) {
 			this.delegate.handleRecoverOk(consumerTag);
 		}

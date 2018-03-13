@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.util.PatternMatchUtils;
+import org.springframework.amqp.utils.SerializationUtils;
 
 /**
  * MessageConverters that potentially use Java deserialization.
@@ -59,20 +59,7 @@ public abstract class WhiteListDeserializingMessageConverter extends AbstractMes
 	}
 
 	protected void checkWhiteList(Class<?> clazz) throws IOException {
-		if (this.whiteListPatterns.isEmpty()) {
-			return;
-		}
-		if (clazz.isArray() || clazz.isPrimitive() || clazz.equals(String.class)
-				|| Number.class.isAssignableFrom(clazz)) {
-			return;
-		}
-		String className = clazz.getName();
-		for (String pattern : this.whiteListPatterns) {
-			if (PatternMatchUtils.simpleMatch(pattern, className)) {
-				return;
-			}
-		}
-		throw new SecurityException("Attempt to deserialize unauthorized " + clazz);
+		SerializationUtils.checkWhiteList(clazz, this.whiteListPatterns);
 	}
 
 }

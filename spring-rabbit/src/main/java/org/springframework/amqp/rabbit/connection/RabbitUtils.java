@@ -324,21 +324,11 @@ public abstract class RabbitUtils {
 	 * @param logger the logger to use for debug.
 	 * @return true to requeue.
 	 * @since 2.0
+	 * @deprecated in favor of {@code ContainerUtils#shouldRequeue(boolean, Throwable, Log)}.
 	 */
+	@Deprecated
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
-		boolean shouldRequeue = defaultRequeueRejected ||
-				throwable instanceof MessageRejectedWhileStoppingException;
-		Throwable t = throwable;
-		while (shouldRequeue && t != null) {
-			if (t instanceof AmqpRejectAndDontRequeueException) {
-				shouldRequeue = false;
-			}
-			t = t.getCause();
-		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
-		}
-		return shouldRequeue;
+		throw new UnsupportedOperationException("Use ContainerUtils");
 	}
 
 }
