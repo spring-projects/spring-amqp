@@ -1,7 +1,7 @@
 [[whats-new]]
 === What's New
 
-==== Changes in 2.1 Since 2.1
+==== Changes in 2.1 Since 2.0
 
 ===== AMQP Client library
 

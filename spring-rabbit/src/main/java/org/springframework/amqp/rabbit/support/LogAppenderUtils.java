@@ -16,6 +16,10 @@
 
 package org.springframework.amqp.rabbit.support;
 
+import java.lang.reflect.Method;
+
+import org.springframework.util.ClassUtils;
+
 /**
  * Utility methods for log appenders.
  *
@@ -27,6 +31,25 @@ package org.springframework.amqp.rabbit.support;
  */
 @Deprecated
 public final class LogAppenderUtils {
+
+	private static final Method util;
+
+	static {
+		Method method;
+		try {
+			Class<?> utils = ClassUtils.forName(
+					"org.springframework.amqp.rabbit.connection.ConnectionFactoryConfigurationUtils",
+					LogAppenderUtils.class.getClassLoader());
+			Class<?> abstractCF = ClassUtils.forName(
+					"org.springframework.amqp.rabbit.connection.AbstractConnectionFactory",
+					LogAppenderUtils.class.getClassLoader());
+			method = utils.getDeclaredMethod("updateClientConnectionProperties", abstractCF, String.class);
+		}
+		catch (Exception e) {
+			method = null;
+		}
+		util = method;
+	}
 
 	private LogAppenderUtils() {
 		super();
@@ -41,7 +64,22 @@ public final class LogAppenderUtils {
 	public static void updateClientConnectionProperties(Object connectionFactory,
 			String clientConnectionProperties) {
 
-		throw new UnsupportedOperationException("Use ConnectionFactoryConfigurationUtils");
+		try {
+			util.invoke(null, connectionFactory, clientConnectionProperties);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to set properties", e);
+		}
 	}
+
+	/* Tested as follows:
+		@Test
+		public void foo() {
+			AbstractConnectionFactory cf = mock(AbstractConnectionFactory.class);
+			given(cf.getRabbitConnectionFactory()).willReturn(mock(com.rabbitmq.client.ConnectionFactory.class));
+			LogAppenderUtils.updateClientConnectionProperties(cf, "foo:bar");
+			verify(cf).getRabbitConnectionFactory();
+		}
+	 */
 
 }

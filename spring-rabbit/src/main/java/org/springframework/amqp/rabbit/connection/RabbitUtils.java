@@ -328,7 +328,23 @@ public abstract class RabbitUtils {
 	 */
 	@Deprecated
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
-		throw new UnsupportedOperationException("Use ContainerUtils");
+		logger.warn("Use ContainerUtils.shouldRequeue()");
+		// compare class by name to avoid tangle
+		boolean shouldRequeue = defaultRequeueRejected ||
+				throwable.getClass().getName().equals(
+						"org.springframework.amqp.rabbit.listener.MessageRejectedWhileStoppingException");
+		Throwable t = throwable;
+		while (shouldRequeue && t != null) {
+			if (t instanceof AmqpRejectAndDontRequeueException) {
+				shouldRequeue = false;
+			}
+			t = t.getCause();
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Rejecting messages (requeue=" + shouldRequeue + ")");
+		}
+		return shouldRequeue;
+
 	}
 
 }
