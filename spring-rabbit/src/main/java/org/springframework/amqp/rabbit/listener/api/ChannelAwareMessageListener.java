@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.core;
+package org.springframework.amqp.rabbit.listener.api;
 
 import org.springframework.amqp.core.Message;
 

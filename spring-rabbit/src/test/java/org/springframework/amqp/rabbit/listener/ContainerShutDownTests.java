@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.AfterClass;
 import org.junit.ClassRule;
@@ -68,16 +67,14 @@ public class ContainerShutDownTests {
 		container.setShutdownTimeout(500);
 		container.setQueueNames("test.shutdown");
 		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicBoolean testEnded = new AtomicBoolean();
+		final CountDownLatch testEnded = new CountDownLatch(1);
 		container.setMessageListener(m -> {
-			while (!testEnded.get()) {
-				try {
-					latch.countDown();
-					Thread.sleep(100);
-				}
-				catch (InterruptedException e) {
-					// Thread.currentThread().interrupt(); // eat it
-				}
+			try {
+				latch.countDown();
+				testEnded.await(30, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		});
 		final CountDownLatch startLatch = new CountDownLatch(1);
@@ -86,19 +83,24 @@ public class ContainerShutDownTests {
 				startLatch.countDown();
 			}
 		});
-		container.start();
-		assertTrue(startLatch.await(10, TimeUnit.SECONDS));
-		RabbitTemplate template = new RabbitTemplate(cf);
-		template.convertAndSend("test.shutdown", "foo");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		Connection connection = cf.createConnection();
-		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap", Map.class);
-		assertThat(channels.size(), equalTo(2));
-		container.stop();
-		assertThat(channels.size(), equalTo(1));
+		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap",
+				Map.class);
+		container.start();
+		try {
+			assertTrue(startLatch.await(30, TimeUnit.SECONDS));
+			RabbitTemplate template = new RabbitTemplate(cf);
+			template.convertAndSend("test.shutdown", "foo");
+			assertTrue(latch.await(30, TimeUnit.SECONDS));
+			assertThat(channels.size(), equalTo(2));
+		}
+		finally {
+			container.stop();
+			assertThat(channels.size(), equalTo(1));
 
-		cf.destroy();
-		testEnded.set(true);
+			cf.destroy();
+			testEnded.countDown();
+		}
 	}
 
 }

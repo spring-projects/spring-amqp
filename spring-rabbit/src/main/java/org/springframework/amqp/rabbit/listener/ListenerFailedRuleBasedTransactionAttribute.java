@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.transaction;
+package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute;

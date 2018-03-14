@@ -89,8 +89,8 @@ public class ListenFromAutoDeleteQueueTests {
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 		this.listenerContainer1.stop();
-		RabbitAdmin admin = spy(TestUtils.getPropertyValue(this.listenerContainer1, "rabbitAdmin", RabbitAdmin.class));
-		new DirectFieldAccessor(this.listenerContainer1).setPropertyValue("rabbitAdmin", admin);
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(this.listenerContainer1, "amqpAdmin", RabbitAdmin.class));
+		new DirectFieldAccessor(this.listenerContainer1).setPropertyValue("amqpAdmin", admin);
 		this.listenerContainer1.start();
 		template.convertAndSend("testContainerWithAutoDeleteQueues", "anon", "foo");
 		assertNotNull(queue.poll(10, TimeUnit.SECONDS));
@@ -117,8 +117,8 @@ public class ListenFromAutoDeleteQueueTests {
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container3",
 				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();
-		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "rabbitAdmin", RabbitAdmin.class));
-		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "amqpAdmin", RabbitAdmin.class));
+		new DirectFieldAccessor(listenerContainer).setPropertyValue("amqpAdmin", admin);
 		int n = 0;
 		while (admin.getQueueProperties(this.expiringQueue.getName()) != null && n < 100) {
 			Thread.sleep(100);
@@ -139,8 +139,8 @@ public class ListenFromAutoDeleteQueueTests {
 		SimpleMessageListenerContainer listenerContainer = context.getBean("container4",
 				SimpleMessageListenerContainer.class);
 		listenerContainer.stop();
-		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "rabbitAdmin", RabbitAdmin.class));
-		new DirectFieldAccessor(listenerContainer).setPropertyValue("rabbitAdmin", admin);
+		RabbitAdmin admin = spy(TestUtils.getPropertyValue(listenerContainer, "amqpAdmin", RabbitAdmin.class));
+		new DirectFieldAccessor(listenerContainer).setPropertyValue("amqpAdmin", admin);
 		listenerContainer = spy(listenerContainer);
 
 		//Prevent a long 'passiveDeclare' process

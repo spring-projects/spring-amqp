@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.amqp.rabbit.support;
 
-import java.util.Map;
+import java.lang.reflect.Method;
 
-import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
+import org.springframework.util.ClassUtils;
 
 /**
  * Utility methods for log appenders.
@@ -26,11 +26,33 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
  * @author Gary Russell
  * @since 1.5.6
  *
+ * @deprecated in favor of {@code ConnectionFactoryConfigurationUtils}.
+ *
  */
+@Deprecated
 public final class LogAppenderUtils {
 
+	private static final Method util;
+
+	static {
+		Method method;
+		try {
+			Class<?> utils = ClassUtils.forName(
+					"org.springframework.amqp.rabbit.connection.ConnectionFactoryConfigurationUtils",
+					LogAppenderUtils.class.getClassLoader());
+			Class<?> abstractCF = ClassUtils.forName(
+					"org.springframework.amqp.rabbit.connection.AbstractConnectionFactory",
+					LogAppenderUtils.class.getClassLoader());
+			method = utils.getDeclaredMethod("updateClientConnectionProperties", abstractCF, String.class);
+		}
+		catch (Exception e) {
+			method = null;
+		}
+		util = method;
+	}
+
 	private LogAppenderUtils() {
-		// empty
+		super();
 	}
 
 	/**
@@ -39,21 +61,25 @@ public final class LogAppenderUtils {
 	 * @param connectionFactory the connection factory.
 	 * @param clientConnectionProperties the properties.
 	 */
-	public static void updateClientConnectionProperties(AbstractConnectionFactory connectionFactory,
+	public static void updateClientConnectionProperties(Object connectionFactory,
 			String clientConnectionProperties) {
-		if (clientConnectionProperties != null) {
-			String[] props = clientConnectionProperties.split(",");
-			if (props.length > 0) {
-				Map<String, Object> clientProps = connectionFactory.getRabbitConnectionFactory()
-						.getClientProperties();
-				for (String prop : props) {
-					String[] aProp = prop.split(":");
-					if (aProp.length == 2) {
-						clientProps.put(aProp[0].trim(), aProp[1].trim());
-					}
-				}
-			}
+
+		try {
+			util.invoke(null, connectionFactory, clientConnectionProperties);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to set properties", e);
 		}
 	}
+
+	/* Tested as follows:
+		@Test
+		public void foo() {
+			AbstractConnectionFactory cf = mock(AbstractConnectionFactory.class);
+			given(cf.getRabbitConnectionFactory()).willReturn(mock(com.rabbitmq.client.ConnectionFactory.class));
+			LogAppenderUtils.updateClientConnectionProperties(cf, "foo:bar");
+			verify(cf).getRabbitConnectionFactory();
+		}
+	 */
 
 }

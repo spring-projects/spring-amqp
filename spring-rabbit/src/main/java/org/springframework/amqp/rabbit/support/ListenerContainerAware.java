@@ -19,7 +19,7 @@ package org.springframework.amqp.rabbit.support;
 import java.util.Collection;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 
 /**
  * {@link MessageListener}s and {@link ChannelAwareMessageListener}s that also implement this

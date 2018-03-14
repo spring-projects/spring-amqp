@@ -208,7 +208,7 @@ public @interface RabbitListener {
 	String returnExceptions() default "";
 
 	/**
-	 * Set an {@link org.springframework.amqp.rabbit.listener.RabbitListenerErrorHandler}
+	 * Set an {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler}
 	 * to invoke if the listener method throws an exception.
 	 * @return the error handler.
 	 * @since 2.0

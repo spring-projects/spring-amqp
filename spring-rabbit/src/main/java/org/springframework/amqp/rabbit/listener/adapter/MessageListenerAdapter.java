@@ -27,7 +27,7 @@ import org.springframework.amqp.AmqpIllegalStateException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -123,7 +123,7 @@ import com.rabbitmq.client.Channel;
  * @see #setResponseRoutingKey(String)
  * @see #setMessageConverter
  * @see org.springframework.amqp.support.converter.SimpleMessageConverter
- * @see org.springframework.amqp.rabbit.core.ChannelAwareMessageListener
+ * @see org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener
  * @see org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer#setMessageListener
  */
 public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
