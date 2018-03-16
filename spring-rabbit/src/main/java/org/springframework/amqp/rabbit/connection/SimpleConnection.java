@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import com.rabbitmq.client.BlockedListener;
@@ -55,6 +56,7 @@ public class SimpleConnection implements Connection, NetworkConnection {
 		try {
 			Channel channel = this.delegate.createChannel();
 			if (transactional) {
+				Assert.state(channel != null, "Can't start the transaction  - channel is null.");
 				// Just created so we want to start the transaction
 				channel.txSelect();
 			}
