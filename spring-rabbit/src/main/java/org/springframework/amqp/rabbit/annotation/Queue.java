@@ -56,7 +56,7 @@ public @interface Queue {
 
 	/**
 	 * Specifies if this queue should be exclusive.
-	 * By default it queue name is provided it is not exclusive.
+	 * By default if queue name is provided it is not exclusive.
 	 * @return true if the queue is to be declared as exclusive.
 	 * @see org.springframework.amqp.core.Queue#isExclusive()
 	 */
@@ -64,7 +64,7 @@ public @interface Queue {
 
 	/**
 	 * Specifies if this queue should be auto deleted when not used.
-	 * By default it queue name is provided it is not auto-deleted.
+	 * By default if queue name is provided it is not auto-deleted.
 	 * @return true if the queue is to be declared as auto-delete.
 	 * @see org.springframework.amqp.core.Queue#isAutoDelete()
 	 */
