@@ -820,7 +820,7 @@ Using `@Configuration`:
 [source,java]
 ----
 @Bean
-public AmqpTemplate rabbitTemplate();
+public AmqpTemplate rabbitTemplate() {
     RabbitTemplate template = new RabbitTemplate(connectionFactory());
     RetryTemplate retryTemplate = new RetryTemplate();
     ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
