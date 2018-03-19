@@ -55,8 +55,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	public Channel createChannel(boolean transactional) {
 		try {
 			Channel channel = this.delegate.createChannel();
-			Assert.state(channel != null, "Can't create channel - no channel is available.");
 			if (transactional) {
+				Assert.state(channel != null, "Can't start the transaction - no channel is available.");
 				// Just created so we want to start the transaction
 				channel.txSelect();
 			}
