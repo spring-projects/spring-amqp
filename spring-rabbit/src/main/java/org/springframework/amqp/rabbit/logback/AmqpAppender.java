@@ -540,7 +540,7 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * @return The modified message.
 	 * @since 1.4
 	 */
-	public Message postProcessMessageBeforeSend(Message message, Event event) {
+	protected Message postProcessMessageBeforeSend(Message message, Event event) {
 		return message;
 	}
 
