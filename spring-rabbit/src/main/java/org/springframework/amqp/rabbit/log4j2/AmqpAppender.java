@@ -231,7 +231,7 @@ public class AmqpAppender extends AbstractAppender {
 	 * @param event The event.
 	 * @return The modified message.
 	 */
-	public Message postProcessMessageBeforeSend(Message message, Event event) {
+	protected Message postProcessMessageBeforeSend(Message message, Event event) {
 		return message;
 	}
 
