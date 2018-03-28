@@ -568,6 +568,14 @@ public class MessageProperties implements Serializable {
 		if (!Arrays.equals(this.correlationId, other.correlationId)) {
 			return false;
 		}
+		if (this.correlationIdString == null) {
+			if (other.correlationIdString != null) {
+				return false;
+			}
+		}
+		else if (!this.correlationIdString.equals(other.correlationIdString)) {
+			return false;
+		}
 		if (this.deliveryMode != other.deliveryMode) {
 			return false;
 		}

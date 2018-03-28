@@ -17,6 +17,7 @@
 package org.springframework.amqp.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -39,6 +40,13 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		assertEquals(null, properties.getReplyTo());
 		assertEquals(null, properties.getReplyToAddress());
+	}
+
+	@Test
+	public void tesNoNullPointerInEquals() {
+		MessageProperties mp = new MessageProperties();
+		MessageProperties mp2 = new MessageProperties();
+		assertTrue(mp.equals(mp2));
 	}
 
 }
