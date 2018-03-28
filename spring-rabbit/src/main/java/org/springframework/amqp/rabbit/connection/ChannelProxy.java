@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,5 +41,14 @@ public interface ChannelProxy extends Channel {
 	 * @since 1.5
 	 */
 	boolean isTransactional();
+
+	/**
+	 * Return true if confirms are selected on this channel.
+	 * @return true if confirms selected.
+	 * @since 2.1
+	 */
+	default boolean isConfirmSelected() {
+		return false;
+	}
 
 }

@@ -96,6 +96,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConfirmListener;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
@@ -1848,6 +1849,22 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public <T> T invoke(OperationsCallback<T> action) {
+		return invoke(action, null, null);
+	}
+
+	/**
+	 * Invoke operations on the same channel.
+	 * If callbacks are needed, both callbacks must be supplied.
+	 * @param action the callback.
+	 * @param acks a confirm callback for acks.
+	 * @param nacks a confirm callback for nacks.
+	 * @param <T> the return type.
+	 * @return the result of the action method.
+	 * @since 2.1
+	 */
+	public <T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
+			com.rabbitmq.client.ConfirmCallback nacks) {
+
 		final Channel currentChannel = this.dedicatedChannels.get();
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
 				+ "' is already associated with this thread");
@@ -1881,10 +1898,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				throw e;
 			}
 		}
+		ConfirmListener listener = null;
+		if (acks != null && nacks != null && channel instanceof ChannelProxy
+				&& ((ChannelProxy) channel).isConfirmSelected()) {
+			listener = channel.addConfirmListener(acks, nacks);
+		}
 		try {
 			return action.doInRabbit(this);
 		}
 		finally {
+			if (listener != null) {
+				channel.removeConfirmListener(listener);
+			}
 			this.activeTemplateCallbacks.decrementAndGet();
 			this.dedicatedChannels.remove();
 			if (resourceHolder != null) {
@@ -2004,8 +2029,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			correlationData = this.correlationDataPostProcessor != null
 					? this.correlationDataPostProcessor.postProcess(message, correlationData)
 					: correlationData;
-			publisherCallbackChannel.addPendingConfirm(this, channel.getNextPublishSeqNo(),
+			long nextPublishSeqNo = channel.getNextPublishSeqNo();
+			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
+			publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
+		}
+		else if (channel instanceof ChannelProxy && ((ChannelProxy) channel).isConfirmSelected()) {
+			long nextPublishSeqNo = channel.getNextPublishSeqNo();
+			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 		}
 	}
 

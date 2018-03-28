@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,34 +142,35 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private final CachingConnectionFactory publisherConnectionFactory;
 
-	private volatile long channelCheckoutTimeout = 0;
-
-	private volatile CacheMode cacheMode = CacheMode.CHANNEL;
-
-	private volatile int channelCacheSize = DEFAULT_CHANNEL_CACHE_SIZE;
-
-	private volatile int connectionCacheSize = 1;
-
-	private volatile int connectionLimit = Integer.MAX_VALUE;
-
-	private volatile boolean active = true;
-
-	private volatile boolean publisherConfirms;
-
-	private volatile boolean publisherReturns;
-
-	private volatile boolean initialized;
-
-	private volatile boolean stopped;
-
-	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
-
 	/** Synchronization monitor for the shared Connection. */
 	private final Object connectionMonitor = new Object();
 
 	/** Executor used for deferred close if no explicit executor set. */
 	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
 
+	private long channelCheckoutTimeout = 0;
+
+	private CacheMode cacheMode = CacheMode.CHANNEL;
+
+	private int channelCacheSize = DEFAULT_CHANNEL_CACHE_SIZE;
+
+	private int connectionCacheSize = 1;
+
+	private int connectionLimit = Integer.MAX_VALUE;
+
+	private boolean publisherConfirms;
+
+	private boolean simplePublisherConfirms;
+
+	private boolean publisherReturns;
+
+	private ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
+
+	private volatile boolean active = true;
+
+	private volatile boolean initialized;
+
+	private volatile boolean stopped;
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -340,11 +341,37 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 	}
 
+	/**
+	 * Use full publisher confirms, with correlation data and a callback for each message.
+	 * @param publisherConfirms true for full publisher returns,
+	 * @since 1.1
+	 * @see #setSimplePublisherConfirms(boolean)
+	 */
 	public void setPublisherConfirms(boolean publisherConfirms) {
+		Assert.isTrue(!this.simplePublisherConfirms, "Cannot set both publisherConfirms and simplePublisherConfirms");
 		this.publisherConfirms = publisherConfirms;
 		if (this.publisherConnectionFactory != null) {
 			this.publisherConnectionFactory.setPublisherConfirms(publisherConfirms);
 		}
+	}
+
+	/**
+	 * Use simple publisher confirms where the template simply waits for completion.
+	 * @param simplePublisherConfirms true for confirms.
+	 * @since 2.1
+	 * @see #setPublisherConfirms(boolean)
+	 */
+	public void setSimplePublisherConfirms(boolean simplePublisherConfirms) {
+		Assert.isTrue(!this.publisherConfirms, "Cannot set both publisherConfirms and simplePublisherConfirms");
+		this.simplePublisherConfirms = simplePublisherConfirms;
+		if (this.publisherConnectionFactory != null) {
+			this.publisherConnectionFactory.setSimplePublisherConfirms(simplePublisherConfirms);
+		}
+	}
+
+	@Override
+	public boolean isSimplePublisherConfirms() {
+		return this.simplePublisherConfirms;
 	}
 
 	/**
@@ -583,7 +610,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private Channel doCreateBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		Channel channel = connection.createBareChannel(transactional);
-		if (this.publisherConfirms) {
+		if (this.publisherConfirms || this.simplePublisherConfirms) {
 			try {
 				channel.confirmSelect();
 			}
@@ -894,6 +921,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final boolean transactional;
 
+		private volatile boolean confirmSelected = CachingConnectionFactory.this.simplePublisherConfirms;
+
 		private volatile Channel target;
 
 		private volatile boolean txStarted;
@@ -955,6 +984,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			else if (methodName.equals("isTransactional")) {
 				return this.transactional;
+			}
+			else if (methodName.equals("isConfirmSelected")) {
+				return this.confirmSelected;
 			}
 			try {
 				if (this.target == null || !this.target.isOpen()) {
