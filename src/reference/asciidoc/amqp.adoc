@@ -3392,7 +3392,7 @@ The RabbitMQ implementation of this interface is RabbitAdmin which when configur
 ----
 
 When the `CachingConnectionFactory` cache mode is `CHANNEL` (the default), the `RabbitAdmin` implementation does automatic lazy declaration of `Queues`, `Exchanges` and `Bindings` declared in the same `ApplicationContext`.
-These components will be declared as s0on as a `Connection` is opened to the broker.
+These components will be declared as soon as a `Connection` is opened to the broker.
 There are some namespace features that make this very convenient, e.g.
 in the Stocks sample application we have:
 
