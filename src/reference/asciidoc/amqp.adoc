@@ -578,6 +578,8 @@ When such a channel is obtained, the client can register a `PublisherCallbackCha
 The `PublisherCallbackChannel` implementation contains logic to route a confirm/return to the appropriate listener.
 These features are explained further in the following sections.
 
+Also see `simplePublisherConfirms` in <<scoped-operations>>.
+
 TIP: For some more background information, please see the following blog post by the RabbitMQ team titled http://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/[Introducing Publisher Confirms].
 
 [[connection-channel-listeners]]
@@ -977,7 +979,7 @@ The `RabbitTemplate` now provides `waitForConfirms(long timeout)` and `waitForCo
 The methods cannot be used outside of that scope, for obvious reasons.
 
 Note that a higher-level abstraction which allows you to correlate confirms to requests is provided elsewhere (see <<template-confirms>>).
-You still need to set the connection factory's `publisherConfirms` property to `true` as discussed in that section, but for simple use cases where you just want to wait until all confirms are received, you can use this technique here:
+If you only want to wait until the broker has confirmed delivery, you can use this simple technique:
 
 [source, java]
 ----
@@ -995,6 +997,37 @@ NOTE: The above discussion is moot if the template operations are already perfor
 For example, when running on a transacted listener container thread and performing operations on a transacted template.
 In that case, the operations will be performed on that channel and committed when the thread returns to the container;
 it is not necessary to use `invoke` in that scenario.
+
+When using confirms in this way, much of the infrastructure set up for correlating confirms to requests is not really needed.
+Starting with _version 2.1_, the connection factory supports a new property `simplePublisherConfirms`.
+When this is `true` the infrastructure is avoided and the confirm processing will be more efficient.
+
+Furthermore, the `RabbitTemplate` sets the property `publisherSequenceNumber` in the sent message `MessageProperties`.
+If you wish to check (or log, etc) specific confirmations, you can do so with an overloaded `invoke` method:
+
+[source, java]
+----
+public <T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
+        com.rabbitmq.client.ConfirmCallback nacks);
+----
+
+NOTE: These `ConfirmCallback` objects (for acks and nacks) are the Rabbit client callbacks, not the template callback.
+
+Example:
+
+[source, java]
+----
+Collection<?> messages = getMessagesToSend();
+Boolean result = this.template.invoke(t -> {
+    messages.forEach(m -> t.convertAndSend(ROUTE, m));
+    t.waitForConfirmsOrDie(10_000);
+    return true;
+}, (tag, multiple) -> {
+        log.info("Ack: " + tag + ":" + multiple);
+}, (tag, multiple) -> {
+        log.info("Nack: " + tag + ":" + multiple);
+}));
+----
 
 [[template-messaging]]
 ===== Messaging integration
