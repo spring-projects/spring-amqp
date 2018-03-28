@@ -1427,12 +1427,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
-			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
-		return convertSendAndReceiveAsType(exchange, routingKey, message, null, correlationData, responseType);
-	}
-
-	@Override
 	public <T> T convertSendAndReceiveAsType(final Object message, final MessagePostProcessor messagePostProcessor,
 			ParameterizedTypeReference<T> responseType) throws AmqpException {
 		return convertSendAndReceiveAsType(message, messagePostProcessor, null, responseType);
@@ -1848,20 +1842,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public <T> T invoke(OperationsCallback<T> action) {
-		return invoke(action, null, null);
-	}
-
-	/**
-	 * Invoke operations on the same channel.
-	 * If callbacks are needed, both callbacks must be supplied.
-	 * @param action the callback.
-	 * @param acks a confirm callback for acks.
-	 * @param nacks a confirm callback for nacks.
-	 * @param <T> the return type.
-	 * @return the result of the action method.
-	 * @since 2.1
-	 */
 	public <T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
 			com.rabbitmq.client.ConfirmCallback nacks) {
 
