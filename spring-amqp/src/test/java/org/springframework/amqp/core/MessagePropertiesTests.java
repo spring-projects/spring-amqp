@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,12 @@ import org.junit.Test;
 /**
  * @author Dave Syer
  * @author Artem Yakshin
+ * @author Artem Bilan
  *
  */
 public class MessagePropertiesTests {
+
+
 
 	@Test
 	public void testReplyTo() throws Exception {
@@ -59,6 +62,13 @@ public class MessagePropertiesTests {
 		MessageProperties properties = new MessageProperties();
 		properties.setContentLength(1L);
 		assertTrue(properties.isContentLengthSet());
+	}
+
+	@Test
+	public void tesNoNullPointerInEquals() {
+		MessageProperties mp = new MessageProperties();
+		MessageProperties mp2 = new MessageProperties();
+		assertTrue(mp.equals(mp2));
 	}
 
 }

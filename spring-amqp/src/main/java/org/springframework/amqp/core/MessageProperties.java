@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -590,9 +590,16 @@ public class MessageProperties implements Serializable {
 		else if (!this.contentType.equals(other.contentType)) {
 			return false;
 		}
-		if (!this.correlationId.equals(other.correlationId)) {
+
+		if (this.correlationId == null) {
+			if (other.correlationId != null) {
+				return false;
+			}
+		}
+		else if (!this.correlationId.equals(other.correlationId)) {
 			return false;
 		}
+
 		if (this.deliveryMode != other.deliveryMode) {
 			return false;
 		}
