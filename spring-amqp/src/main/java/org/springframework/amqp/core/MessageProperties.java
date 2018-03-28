@@ -120,6 +120,8 @@ public class MessageProperties implements Serializable {
 
 	private volatile boolean finalRetryForMessageWithNoId;
 
+	private volatile long publishSequenceNumber;
+
 	private volatile transient Type inferredArgumentType;
 
 	private volatile transient Method targetMethod;
@@ -458,6 +460,24 @@ public class MessageProperties implements Serializable {
 
 	public void setFinalRetryForMessageWithNoId(boolean finalRetryForMessageWithNoId) {
 		this.finalRetryForMessageWithNoId = finalRetryForMessageWithNoId;
+	}
+
+	/**
+	 * Return the publish sequence number if publisher confirms are enabled; set by the template.
+	 * @return the sequence number.
+	 * @since 2.1
+	 */
+	public long getPublishSequenceNumber() {
+		return this.publishSequenceNumber;
+	}
+
+	/**
+	 * Set the publish sequence number, if publisher confirms are enabled; set by the template.
+	 * @param publishSequenceNumber the sequence number.
+	 * @since 2.1
+	 */
+	public void setPublishSequenceNumber(long publishSequenceNumber) {
+		this.publishSequenceNumber = publishSequenceNumber;
 	}
 
 	/**
