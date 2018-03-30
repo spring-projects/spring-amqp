@@ -452,7 +452,6 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * Declares all the exchanges, queues and bindings in the enclosing application context, if any. It should be safe
 	 * (but unnecessary) to call this method more than once.
 	 */
-	@Override
 	public void initialize() {
 
 		if (this.applicationContext == null) {
