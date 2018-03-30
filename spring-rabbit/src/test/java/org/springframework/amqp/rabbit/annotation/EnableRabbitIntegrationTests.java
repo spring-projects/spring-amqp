@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -160,7 +161,7 @@ public class EnableRabbitIntegrationTests {
 			"test.converted.args2", "test.converted.message", "test.notconverted.message",
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
-			"test.simple.direct2",
+			"test.simple.direct2", "test.generic.list", "test.generic.map",
 			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2");
 
 	@Autowired
@@ -669,6 +670,17 @@ public class EnableRabbitIntegrationTests {
 		assertSame(value, typeCache.get(Foo1.class));
 	}
 
+	@Test
+	public void testGenericReturnTypes() {
+		Object returned = this.jsonRabbitTemplate.convertSendAndReceive("",  "test.generic.list", new JsonObject("baz"));
+		assertThat(returned, instanceOf(List.class));
+		assertThat(((List<?>) returned).get(0), instanceOf(JsonObject.class));
+
+		returned = this.jsonRabbitTemplate.convertSendAndReceive("",  "test.generic.map", new JsonObject("baz"));
+		assertThat(returned, instanceOf(Map.class));
+		assertThat(((Map<?, ?>) returned).get("key"), instanceOf(JsonObject.class));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -955,6 +967,43 @@ public class EnableRabbitIntegrationTests {
 			throw new Exception("return this");
 		}
 
+		@RabbitListener(queues = "test.generic.list", containerFactory = "simpleJsonListenerContainerFactory")
+		public List<JsonObject> genericList(JsonObject in) {
+			return Collections.singletonList(in);
+		}
+
+		@RabbitListener(queues = "test.generic.map", containerFactory = "simpleJsonListenerContainerFactory")
+		public Map<String, JsonObject> genericMap(JsonObject in) {
+			return Collections.singletonMap("key", in);
+		}
+
+	}
+
+	public static class JsonObject {
+
+		private String bar;
+
+		public JsonObject() {
+			super();
+		}
+
+		public JsonObject(String bar) {
+			this.bar = bar;
+		}
+
+		public String getBar() {
+			return this.bar;
+		}
+
+		public void setBar(String bar) {
+			this.bar = bar;
+		}
+
+		@Override
+		public String toString() {
+			return "JsonObject [bar=" + this.bar + "]";
+		}
+
 	}
 
 	public static class Foo1 {
@@ -1147,7 +1196,9 @@ public class EnableRabbitIntegrationTests {
 			factory.setConnectionFactory(rabbitConnectionFactory());
 			factory.setErrorHandler(errorHandler());
 			factory.setConsumerTagStrategy(consumerTagStrategy());
-			factory.setMessageConverter(new Jackson2JsonMessageConverter());
+			Jackson2JsonMessageConverter messageConverter = new Jackson2JsonMessageConverter();
+			messageConverter.getJavaTypeMapper().addTrustedPackages("*");
+			factory.setMessageConverter(messageConverter);
 			factory.setReceiveTimeout(10L);
 			return factory;
 		}

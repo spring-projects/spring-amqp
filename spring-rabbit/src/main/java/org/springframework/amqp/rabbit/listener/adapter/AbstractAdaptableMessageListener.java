@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 
 import org.apache.commons.logging.Log;
@@ -274,10 +275,10 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getReplyToAddress(Message, Object, Object)
+	 * @see #getReplyToAddress(Message, Object, InvocationResult)
 	 * @see #sendResponse
 	 */
-	protected void handleResult(Object resultArg, Message request, Channel channel) throws Exception {
+	protected void handleResult(InvocationResult resultArg, Message request, Channel channel) throws Exception {
 		handleResult(resultArg, request, channel, null);
 	}
 
@@ -292,18 +293,19 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getReplyToAddress(Message, Object, Object)
+	 * @see #getReplyToAddress(Message, Object, InvocationResult)
 	 * @see #sendResponse
 	 */
-	protected void handleResult(Object resultArg, Message request, Channel channel, Object source) throws Exception {
+	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source)
+			throws Exception {
+
 		if (channel != null) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Listener method returned result [" + resultArg
 						+ "] - generating response message for it");
 			}
 			try {
-				Object result = resultArg instanceof ResultHolder ? ((ResultHolder) resultArg).result : resultArg;
-				Message response = buildMessage(channel, result);
+				Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
 				postProcessResponse(request, response);
 				Address replyTo = getReplyToAddress(request, source, resultArg);
 				sendResponse(channel, replyTo, response);
@@ -324,16 +326,17 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	/**
 	 * Build a Rabbit message to be sent as response based on the given result object.
-	 * @param channel the Rabbit Channel to operate on
-	 * @param result the content of the message, as returned from the listener method
-	 * @return the Rabbit <code>Message</code> (never <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
+	 * @param channel the Rabbit Channel to operate on.
+	 * @param result the content of the message, as returned from the listener method.
+	 * @param genericType the generic type to populate type headers.
+	 * @return the Rabbit <code>Message</code> (never <code>null</code>).
+	 * @throws Exception if thrown by Rabbit API methods.
 	 * @see #setMessageConverter
 	 */
-	protected Message buildMessage(Channel channel, Object result) throws Exception {
+	protected Message buildMessage(Channel channel, Object result, Type genericType) throws Exception {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof Message)) {
-			return converter.toMessage(result, new MessageProperties());
+			return converter.toMessage(result, new MessageProperties(), genericType);
 		}
 		else {
 			if (!(result instanceof Message)) {
@@ -383,17 +386,17 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @see org.springframework.amqp.core.Message#getMessageProperties()
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
-	protected Address getReplyToAddress(Message request, Object source, Object result) throws Exception {
+	protected Address getReplyToAddress(Message request, Object source, InvocationResult result) throws Exception {
 		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
 			if (this.responseAddress == null && this.responseExchange != null) {
 				this.responseAddress = new Address(this.responseExchange, this.responseRoutingKey);
 			}
-			if (result instanceof ResultHolder) {
-				replyTo = evaluateReplyTo(request, source, result, ((ResultHolder) result).sendTo);
+			if (result.getSendTo() != null) {
+				replyTo = evaluateReplyTo(request, source, result.getReturnValue(), result.getSendTo());
 			}
 			else if (this.responseExpression != null) {
-				replyTo = evaluateReplyTo(request, source, result, this.responseExpression);
+				replyTo = evaluateReplyTo(request, source, result.getReturnValue(), this.responseExpression);
 			}
 			else if (this.responseAddress == null) {
 				throw new AmqpException(
@@ -461,27 +464,6 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	protected void postProcessChannel(Channel channel, Message response) throws Exception {
-	}
-
-	/**
-	 * Result holder.
-	 */
-	public static final class ResultHolder {
-
-		private final Object result;
-
-		private final Expression sendTo;
-
-		public ResultHolder(Object result, Expression sendTo) {
-			this.result = result;
-			this.sendTo = sendTo;
-		}
-
-		@Override
-		public String toString() {
-			return this.result.toString();
-		}
-
 	}
 
 	/**

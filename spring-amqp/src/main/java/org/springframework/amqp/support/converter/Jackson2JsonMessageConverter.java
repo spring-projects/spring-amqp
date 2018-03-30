@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.support.converter;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -224,6 +225,13 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 	@Override
 	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties)
 			throws MessageConversionException {
+		return createMessage(objectToConvert, messageProperties, null);
+	}
+
+	@Override
+	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties, Type genericType)
+			throws MessageConversionException {
+
 		byte[] bytes;
 		try {
 			String jsonString = this.jsonObjectMapper
@@ -239,14 +247,12 @@ public class Jackson2JsonMessageConverter extends AbstractJsonMessageConverter i
 		messageProperties.setContentLength(bytes.length);
 
 		if (getClassMapper() == null) {
-			getJavaTypeMapper().fromJavaType(this.jsonObjectMapper.constructType(objectToConvert.getClass()),
-					messageProperties);
-
+			getJavaTypeMapper().fromJavaType(this.jsonObjectMapper.constructType(
+					genericType == null ? objectToConvert.getClass() : genericType), messageProperties);
 		}
 		else {
 			getClassMapper().fromClass(objectToConvert.getClass(),
 					messageProperties);
-
 		}
 
 		return new Message(bytes, messageProperties);

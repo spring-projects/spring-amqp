@@ -122,17 +122,17 @@ public class DelegatingInvocableHandler {
 	 * @throws Exception raised if no suitable argument resolver can be found,
 	 * or the method raised an exception.
 	 */
-	public Object invoke(Message<?> message, Object... providedArgs) throws Exception {
+	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception {
 		Class<? extends Object> payloadClass = message.getPayload().getClass();
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
 		Object result = handler.invoke(message, providedArgs);
 		if (message.getHeaders().get(AmqpHeaders.REPLY_TO) == null) {
 			Expression replyTo = this.handlerSendTo.get(handler);
 			if (replyTo != null) {
-				result = new AbstractAdaptableMessageListener.ResultHolder(result, replyTo);
+				return new InvocationResult(result, replyTo, handler.getMethod().getGenericReturnType());
 			}
 		}
-		return result;
+		return new InvocationResult(result, null, handler.getMethod().getGenericReturnType());
 	}
 
 	/**
