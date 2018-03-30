@@ -470,7 +470,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		@SuppressWarnings("rawtypes")
 		Collection<Collection> collections = this.declareCollections
 			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
-			: Collections.emptyList();
+			: Collections.<Collection>emptyList();
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {
