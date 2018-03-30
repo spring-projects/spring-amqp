@@ -265,6 +265,19 @@ public class RabbitAdminTests {
 	}
 
 	@Test
+	public void testMultiEntitiesSuppressed() {
+		ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(Config1.class);
+		RabbitAdmin admin = ctx.getBean(RabbitAdmin.class);
+		assertNotNull(admin.getQueueProperties("q1"));
+		assertNull(admin.getQueueProperties("q2"));
+		assertNull(admin.getQueueProperties("q3"));
+		assertNull(admin.getQueueProperties("q4"));
+		admin.deleteQueue("q1");
+		admin.deleteExchange("e1");
+		ctx.close();
+	}
+
+	@Test
 	public void testAvoidHangAMQP_508() {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -413,6 +426,18 @@ public class RabbitAdminTests {
 					new Queue("q4", false, false, true),
 					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null)
 			);
+		}
+
+	}
+
+	@Configuration
+	public static class Config1 extends Config {
+
+		@Override
+		public RabbitAdmin admin(ConnectionFactory cf) {
+			RabbitAdmin admin = super.admin(cf);
+			admin.setDeclareCollections(false);
+			return admin;
 		}
 
 	}
