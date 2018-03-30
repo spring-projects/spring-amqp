@@ -46,9 +46,10 @@ public class HandlerAdapter {
 		this.delegatingHandler = delegatingHandler;
 	}
 
-	public Object invoke(Message<?> message, Object... providedArgs) throws Exception {
+	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception {
 		if (this.invokerHandlerMethod != null) {
-			return this.invokerHandlerMethod.invoke(message, providedArgs);
+			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
+					null, this.invokerHandlerMethod.getMethod().getGenericReturnType());
 		}
 		else if (this.delegatingHandler.hasDefaultHandler()) {
 			// Needed to avoid returning raw Message which matches Object

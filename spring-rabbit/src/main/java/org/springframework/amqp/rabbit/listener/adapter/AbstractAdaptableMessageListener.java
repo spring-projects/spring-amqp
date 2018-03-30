@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 
 import org.apache.commons.logging.Log;
@@ -179,8 +180,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * Set a post processor to process the reply immediately before
 	 * {@code Channel#basicPublish()}. Often used to compress the data.
 	 * @param replyPostProcessor the reply post processor.
-	 * @deprecated in favor of
-	 * {@link #setBeforeSendReplyPostProcessors(MessagePostProcessor...)}.
+	 * @deprecated in favor of {@link #setBeforeSendReplyPostProcessors(MessagePostProcessor...)}.
 	 */
 	@Deprecated
 	public void setReplyPostProcessor(MessagePostProcessor replyPostProcessor) {
@@ -271,13 +271,12 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @param resultArg the result object to handle (never <code>null</code>)
 	 * @param request the original request message
 	 * @param channel the Rabbit channel to operate on (may be <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getReplyToAddress(Message, Object, Object)
+	 * @see #getReplyToAddress(Message, Object, InvocationResult)
 	 * @see #sendResponse
 	 */
-	protected void handleResult(Object resultArg, Message request, Channel channel) throws Exception {
+	protected void handleResult(InvocationResult resultArg, Message request, Channel channel) {
 		handleResult(resultArg, request, channel, null);
 	}
 
@@ -289,21 +288,19 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @param channel the Rabbit channel to operate on (may be <code>null</code>)
 	 * @param source the source data for the method invocation - e.g.
 	 * {@code o.s.messaging.Message<?>}; may be null
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #buildMessage
 	 * @see #postProcessResponse
-	 * @see #getReplyToAddress(Message, Object, Object)
+	 * @see #getReplyToAddress(Message, Object, InvocationResult)
 	 * @see #sendResponse
 	 */
-	protected void handleResult(Object resultArg, Message request, Channel channel, Object source) throws Exception {
+	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
 		if (channel != null) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Listener method returned result [" + resultArg
 						+ "] - generating response message for it");
 			}
 			try {
-				Object result = resultArg instanceof ResultHolder ? ((ResultHolder) resultArg).result : resultArg;
-				Message response = buildMessage(channel, result);
+				Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
 				postProcessResponse(request, response);
 				Address replyTo = getReplyToAddress(request, source, resultArg);
 				sendResponse(channel, replyTo, response);
@@ -324,16 +321,17 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 	/**
 	 * Build a Rabbit message to be sent as response based on the given result object.
-	 * @param channel the Rabbit Channel to operate on
-	 * @param result the content of the message, as returned from the listener method
-	 * @return the Rabbit <code>Message</code> (never <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
+	 * @param channel the Rabbit Channel to operate on.
+	 * @param result the content of the message, as returned from the listener method.
+	 * @param genericType the generic type to populate type headers.
+	 * @return the Rabbit <code>Message</code> (never <code>null</code>).
+	 * @throws Exception if thrown by Rabbit API methods.
 	 * @see #setMessageConverter
 	 */
-	protected Message buildMessage(Channel channel, Object result) throws Exception {
+	protected Message buildMessage(Channel channel, Object result, Type genericType) throws Exception {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof Message)) {
-			return converter.toMessage(result, new MessageProperties());
+			return converter.toMessage(result, new MessageProperties(), genericType);
 		}
 		else {
 			if (!(result instanceof Message)) {
@@ -351,9 +349,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * otherwise to the request message id.
 	 * @param request the original incoming Rabbit message
 	 * @param response the outgoing Rabbit message about to be sent
-	 * @throws Exception if thrown by Rabbit API methods
 	 */
-	protected void postProcessResponse(Message request, Message response) throws Exception {
+	protected void postProcessResponse(Message request, Message response) {
 		String correlation = request.getMessageProperties().getCorrelationId();
 
 		if (correlation == null) {
@@ -376,24 +373,23 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @param source the source data (e.g. {@code o.s.messaging.Message<?>}).
 	 * @param result the result.
 	 * @return the reply-to Address (never <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @throws org.springframework.amqp.AmqpException if no {@link Address} can be determined
 	 * @see #setResponseAddress(String)
 	 * @see #setResponseRoutingKey(String)
 	 * @see org.springframework.amqp.core.Message#getMessageProperties()
 	 * @see org.springframework.amqp.core.MessageProperties#getReplyTo()
 	 */
-	protected Address getReplyToAddress(Message request, Object source, Object result) throws Exception {
+	protected Address getReplyToAddress(Message request, Object source, InvocationResult result) {
 		Address replyTo = request.getMessageProperties().getReplyToAddress();
 		if (replyTo == null) {
 			if (this.responseAddress == null && this.responseExchange != null) {
 				this.responseAddress = new Address(this.responseExchange, this.responseRoutingKey);
 			}
-			if (result instanceof ResultHolder) {
-				replyTo = evaluateReplyTo(request, source, result, ((ResultHolder) result).sendTo);
+			if (result.getSendTo() != null) {
+				replyTo = evaluateReplyTo(request, source, result.getReturnValue(), result.getSendTo());
 			}
 			else if (this.responseExpression != null) {
-				replyTo = evaluateReplyTo(request, source, result, this.responseExpression);
+				replyTo = evaluateReplyTo(request, source, result.getReturnValue(), this.responseExpression);
 			}
 			else if (this.responseAddress == null) {
 				throw new AmqpException(
@@ -427,10 +423,9 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 * @param channel the Rabbit channel to operate on
 	 * @param replyTo the Rabbit ReplyTo string to use when sending. Currently interpreted to be the routing key.
 	 * @param messageIn the Rabbit message to send
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #postProcessResponse(Message, Message)
 	 */
-	protected void sendResponse(Channel channel, Address replyTo, Message messageIn) throws Exception {
+	protected void sendResponse(Channel channel, Address replyTo, Message messageIn) {
 		Message message = messageIn;
 		if (this.beforeSendReplyPostProcessors != null) {
 			for (MessagePostProcessor postProcessor : this.beforeSendReplyPostProcessors) {
@@ -458,30 +453,8 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 *
 	 * @param channel The channel.
 	 * @param response the outgoing Rabbit message about to be sent
-	 * @throws Exception if thrown by Rabbit API methods
 	 */
-	protected void postProcessChannel(Channel channel, Message response) throws Exception {
-	}
-
-	/**
-	 * Result holder.
-	 */
-	public static final class ResultHolder {
-
-		private final Object result;
-
-		private final Expression sendTo;
-
-		public ResultHolder(Object result, Expression sendTo) {
-			this.result = result;
-			this.sendTo = sendTo;
-		}
-
-		@Override
-		public String toString() {
-			return this.result.toString();
-		}
-
+	protected void postProcessChannel(Channel channel, Message response) {
 	}
 
 	/**
@@ -495,7 +468,7 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 
 		private final Object result;
 
-		public ReplyExpressionRoot(Message request, Object source, Object result) {
+		protected ReplyExpressionRoot(Message request, Object source, Object result) {
 			this.request = request;
 			this.source = source;
 			this.result = result;

@@ -51,6 +51,7 @@ import org.springframework.util.Assert;
  * Matches must be unambiguous.
  *
  * @author Gary Russell
+ *
  * @since 1.5
  *
  */
@@ -62,13 +63,11 @@ public class DelegatingInvocableHandler {
 
 	private final List<InvocableHandlerMethod> handlers;
 
-	private final ConcurrentMap<Class<?>, InvocableHandlerMethod> cachedHandlers =
-			new ConcurrentHashMap<Class<?>, InvocableHandlerMethod>();
+	private final ConcurrentMap<Class<?>, InvocableHandlerMethod> cachedHandlers = new ConcurrentHashMap<>();
 
 	private final InvocableHandlerMethod defaultHandler;
 
-	private final Map<InvocableHandlerMethod, Expression> handlerSendTo =
-			new HashMap<InvocableHandlerMethod, Expression>();
+	private final Map<InvocableHandlerMethod, Expression> handlerSendTo = new HashMap<>();
 
 	private final Object bean;
 
@@ -85,6 +84,7 @@ public class DelegatingInvocableHandler {
 	 */
 	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers, Object bean,
 			BeanExpressionResolver beanExpressionResolver, BeanExpressionContext beanExpressionContext) {
+
 		this(handlers, null, bean, beanExpressionResolver, beanExpressionContext);
 	}
 
@@ -100,7 +100,8 @@ public class DelegatingInvocableHandler {
 	public DelegatingInvocableHandler(List<InvocableHandlerMethod> handlers,
 			@Nullable InvocableHandlerMethod defaultHandler, Object bean, BeanExpressionResolver beanExpressionResolver,
 			BeanExpressionContext beanExpressionContext) {
-		this.handlers = new ArrayList<InvocableHandlerMethod>(handlers);
+
+		this.handlers = new ArrayList<>(handlers);
 		this.defaultHandler = defaultHandler;
 		this.bean = bean;
 		this.resolver = beanExpressionResolver;
@@ -122,17 +123,17 @@ public class DelegatingInvocableHandler {
 	 * @throws Exception raised if no suitable argument resolver can be found,
 	 * or the method raised an exception.
 	 */
-	public Object invoke(Message<?> message, Object... providedArgs) throws Exception {
+	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception {
 		Class<? extends Object> payloadClass = message.getPayload().getClass();
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
 		Object result = handler.invoke(message, providedArgs);
 		if (message.getHeaders().get(AmqpHeaders.REPLY_TO) == null) {
 			Expression replyTo = this.handlerSendTo.get(handler);
 			if (replyTo != null) {
-				result = new AbstractAdaptableMessageListener.ResultHolder(result, replyTo);
+				return new InvocationResult(result, replyTo, handler.getMethod().getGenericReturnType());
 			}
 		}
-		return result;
+		return new InvocationResult(result, null, handler.getMethod().getGenericReturnType());
 	}
 
 	/**

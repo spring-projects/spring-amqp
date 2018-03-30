@@ -115,7 +115,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		Assert.state(this.messageHandlerMethodFactory != null,
 				"Could not create message listener - MessageHandlerMethodFactory not set");
 		MessagingMessageListenerAdapter messageListener = createMessageListenerInstance();
-		messageListener.setHandlerMethod(configureListenerAdapter(messageListener));
+		messageListener.setHandlerAdapter(configureListenerAdapter(messageListener));
 		String replyToAddress = getDefaultReplyToAddress();
 		if (replyToAddress != null) {
 			messageListener.setResponseAddress(replyToAddress);

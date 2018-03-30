@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class MessagingMessageListenerAdapterTests {
 
 		Channel session = mock(Channel.class);
 		MessagingMessageListenerAdapter listener = getSimpleInstance("echo", Message.class);
-		org.springframework.amqp.core.Message replyMessage = listener.buildMessage(session, result);
+		org.springframework.amqp.core.Message replyMessage = listener.buildMessage(session, result, null);
 
 		assertNotNull("reply should never be null", replyMessage);
 		assertEquals("Response", new String(replyMessage.getBody()));
@@ -229,7 +229,7 @@ public class MessagingMessageListenerAdapterTests {
 
 	protected MessagingMessageListenerAdapter createInstance(Method m, boolean returnExceptions) {
 		MessagingMessageListenerAdapter adapter = new MessagingMessageListenerAdapter(null, m, returnExceptions, null);
-		adapter.setHandlerMethod(new HandlerAdapter(factory.createInvocableHandlerMethod(sample, m)));
+		adapter.setHandlerAdapter(new HandlerAdapter(factory.createInvocableHandlerMethod(sample, m)));
 		return adapter;
 	}
 
@@ -246,7 +246,7 @@ public class MessagingMessageListenerAdapterTests {
 		methods.add(this.factory.createInvocableHandlerMethod(sample, m1));
 		methods.add(this.factory.createInvocableHandlerMethod(sample, m2));
 		DelegatingInvocableHandler handler = new DelegatingInvocableHandler(methods, this.sample, null, null);
-		adapter.setHandlerMethod(new HandlerAdapter(handler));
+		adapter.setHandlerAdapter(new HandlerAdapter(handler));
 		return adapter;
 	}
 

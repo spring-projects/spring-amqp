@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,18 @@
 
 package org.springframework.amqp.support.converter;
 
+import java.lang.reflect.Type;
 import java.util.UUID;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 
 /**
  * Convenient base class for {@link MessageConverter} implementations.
+ *
  * @author Dave Syer
+ * @author Gary Russell
  *
  */
 public abstract class AbstractMessageConverter implements MessageConverter {
@@ -50,10 +54,18 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	@Override
 	public final Message toMessage(Object object, MessageProperties messageProperties)
 			throws MessageConversionException {
+
+		return toMessage(object, messageProperties, null);
+	}
+
+	@Override
+	public final Message toMessage(Object object, MessageProperties messageProperties, @Nullable Type genericType)
+			throws MessageConversionException {
+
 		if (messageProperties == null) {
 			messageProperties = new MessageProperties();
 		}
-		Message message = createMessage(object, messageProperties);
+		Message message = createMessage(object, messageProperties, genericType);
 		messageProperties = message.getMessageProperties();
 		if (this.createMessageIds && messageProperties.getMessageId() == null) {
 			messageProperties.setMessageId(UUID.randomUUID().toString());
@@ -64,14 +76,23 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	/**
 	 * Crate a message from the payload object and message properties provided. The message id will be added to the
 	 * properties if necessary later.
-	 *
 	 * @param object the payload
 	 * @param messageProperties the message properties (headers)
+	 * @param genericType the type to convert from - used to populate type headers.
 	 * @return a message
+	 * @since 2.1
+	 */
+	protected Message createMessage(Object object, MessageProperties messageProperties, @Nullable Type genericType) {
+		return createMessage(object, messageProperties);
+	}
+
+	/**
+	 * Crate a message from the payload object and message properties provided. The message id will be added to the
+	 * properties if necessary later.
+	 * @param object the payload.
+	 * @param messageProperties the message properties (headers).
+	 * @return a message.
 	 */
 	protected abstract Message createMessage(Object object, MessageProperties messageProperties);
-
-	@Override
-	public abstract Object fromMessage(Message message) throws MessageConversionException;
 
 }
