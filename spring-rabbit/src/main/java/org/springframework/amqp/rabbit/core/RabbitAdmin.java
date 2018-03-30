@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -110,6 +111,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
+	private boolean declareCollections = true;
+
 	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
 
 	public RabbitAdmin(ConnectionFactory connectionFactory) {
@@ -134,6 +137,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	public void setIgnoreDeclarationExceptions(boolean ignoreDeclarationExceptions) {
 		this.ignoreDeclarationExceptions = ignoreDeclarationExceptions;
+	}
+
+	/**
+	 * Set to false to disable declaring collections of {@link Declarable}.
+	 * Since the admin has to iterate over all Collection beans, this may
+	 * cause undesirable side-effects in some cases. Default true.
+	 * @param declareCollections set to false to prevent declarations of collections.
+	 * @since 1.7.7
+	 */
+	public void setDeclareCollections(boolean declareCollections) {
+		this.declareCollections = declareCollections;
 	}
 
 	/**
@@ -438,6 +452,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * Declares all the exchanges, queues and bindings in the enclosing application context, if any. It should be safe
 	 * (but unnecessary) to call this method more than once.
 	 */
+	@Override
 	public void initialize() {
 
 		if (this.applicationContext == null) {
@@ -454,8 +469,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				this.applicationContext.getBeansOfType(Binding.class).values());
 
 		@SuppressWarnings("rawtypes")
-		Collection<Collection> collections = this.applicationContext.getBeansOfType(Collection.class, false, false)
-				.values();
+		Collection<Collection> collections = this.declareCollections
+			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
+			: Collections.emptyList();
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {

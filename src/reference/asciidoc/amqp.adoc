@@ -3309,6 +3309,8 @@ public static class Config {
 }
 -----
 
+IMPORTANT: This feature can cause undesirable side effects in some cases, because the admin has to iterate over all `Collection<?>` beans.
+Starting with _versions 1.7.7, 2.0.4_, this feature can be disabled by setting the admin property `declareCollections` to `false`.
 
 [[conditional-declaration]]
 ===== Conditional Declaration
