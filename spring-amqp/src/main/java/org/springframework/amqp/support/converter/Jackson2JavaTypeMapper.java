@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,40 @@ public interface Jackson2JavaTypeMapper extends ClassMapper {
 	/**
 	 * The precedence for type conversion - inferred from the method parameter or message
 	 * headers. Only applies if both exist.
+	 * @since 1.6
 	 */
 	enum TypePrecedence {
 		INFERRED, TYPE_ID
 	}
 
+	/**
+	 * Set the message properties according to the type.
+	 * @param javaType the type.
+	 * @param properties the properties.
+	 */
 	void fromJavaType(JavaType javaType, MessageProperties properties);
 
+	/**
+	 * Determine the type from the message properties.
+	 * @param properties the properties.
+	 * @return the type.
+	 */
 	JavaType toJavaType(MessageProperties properties);
 
+	/**
+	 * Get the type precedence.
+	 * @return the precedence.
+	 * @since 1.6
+	 */
 	TypePrecedence getTypePrecedence();
+
+	/**
+	 * Add trusted packages.
+	 * @param packages the packages.
+	 * @since 2.1
+	 */
+	default void addTrustedPackages(String... packages) {
+		// no op
+	}
 
 }
