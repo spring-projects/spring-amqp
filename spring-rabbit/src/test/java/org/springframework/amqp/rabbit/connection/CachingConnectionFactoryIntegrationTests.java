@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
@@ -89,6 +90,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Gunnar Hillert
  * @author Gary Russell
  * @author Artem Bilan
+ *
  * @since 1.0
  *
  */
@@ -569,6 +571,14 @@ public class CachingConnectionFactoryIntegrationTests {
 		factory.createConnection();
 		hangOnClose.set(true);
 		factory.destroy();
+	}
+
+	@Test(expected = AmqpResourceNotAvailableException.class)
+	public void testChannelMax() {
+		this.connectionFactory.getRabbitConnectionFactory().setRequestedChannelMax(1);
+		Connection connection = this.connectionFactory.createConnection();
+		connection.createChannel(true);
+		connection.createChannel(false);
 	}
 
 	private Log spyOnLogger(CachingConnectionFactory connectionFactory2) {

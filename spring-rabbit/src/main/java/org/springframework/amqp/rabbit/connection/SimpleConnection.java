@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 import java.net.InetAddress;
 
+import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.util.ObjectUtils;
 
@@ -54,6 +55,9 @@ public class SimpleConnection implements Connection, NetworkConnection {
 	public Channel createChannel(boolean transactional) {
 		try {
 			Channel channel = this.delegate.createChannel();
+			if (channel == null) {
+				throw new AmqpResourceNotAvailableException("The channelMax limit is reached. Try later.");
+			}
 			if (transactional) {
 				// Just created so we want to start the transaction
 				channel.txSelect();
