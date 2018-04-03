@@ -361,6 +361,9 @@ The `ConnectionFactory` argument can be used to distinguish target connection na
 By default a `beanName` of the `AbstractConnectionFactory` and an internal counter are used to generate `connection_name`.
 The `<rabbit:connection-factory>` namespace component is also supplied with the `connection-name-strategy` attribute.
 
+Starting with _version 1.7.7_, an `AmqpResourceNotAvailableException` is provided, which is thrown now when `SimpleConnection.createChannel()` can't create a `Channel`, for example, because the `channelMax` limit is reached and there are no available channels in the cache.
+This exception can be used in the `RetryPolicy` to recover the operation after some back-off.
+
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
 
