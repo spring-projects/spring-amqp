@@ -377,6 +377,9 @@ Starting with _version 2.0.2_, the `RabbitTemplate` has a configuration option t
 See <<separate-connection>> for more information.
 The `ConnectionNameStrategy` for the publisher connection is the same as the primary strategy with `.publisher` appended to the result of calling the method.
 
+Starting with _version 1.7.7_, an `AmqpResourceNotAvailableException` is provided, which is thrown now when `SimpleConnection.createChannel()` can't create a `Channel` because a `channelMax` limit is reached.
+This exception can be used in the `RetryPolicy` to recover the operation after some back-off.
+
 [[connection-factory]]
 ===== Configuring the Underlying Client Connection Factory
 
