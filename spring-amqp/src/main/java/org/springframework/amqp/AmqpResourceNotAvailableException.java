@@ -22,9 +22,11 @@ package org.springframework.amqp;
  * create a new channel at the moment.
  *
  * @author Artem Bilan
+ * @author Gary Russell
  *
  * @since 1.7.7
  */
+@SuppressWarnings("serial")
 public class AmqpResourceNotAvailableException extends AmqpException {
 
 	public AmqpResourceNotAvailableException(String message) {
