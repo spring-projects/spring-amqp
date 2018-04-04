@@ -225,26 +225,6 @@ public class MessageProperties implements Serializable {
 		return this.correlationId;
 	}
 
-	/**
-	 * Get the correlation id.
-	 * @return the correlation id
-	 * @deprecated use {@link #getCorrelationId()}.
-	 */
-	@Deprecated
-	public String getCorrelationIdString() {
-		return this.correlationId;
-	}
-
-	/**
-	 * Set the correlation id.
-	 * @param correlationId the id.
-	 * @deprecated - use {@link #setCorrelationId(String)}.
-	 */
-	@Deprecated
-	public void setCorrelationIdString(String correlationId) {
-		this.correlationId = correlationId;
-	}
-
 	public void setReplyTo(String replyTo) {
 		this.replyTo = replyTo;
 	}
