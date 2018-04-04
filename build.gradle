@@ -89,15 +89,16 @@ subprojects { subproject ->
 
 	ext {
 		cglibVersion = '3.1'
-		commonsCliVersion = '1.2'
-		commonsIoVersion = '2.4'
+		commonsCliVersion = '1.3.1'
+		commonsIoVersion = '2.5'
 		hamcrestVersion = '1.3'
 		jacksonVersion = '1.9.13'
-		jackson2Version = '2.8.10'
+		jackson2Version = '2.8.11'
+		jackson2DataBindVersion = '2.8.11.1'
 		junitVersion = '4.12'
 		log4jVersion = '1.2.17'
 		log4j2Version = '2.7'
-		logbackVersion = '1.1.7'
+		logbackVersion = '1.1.11'
 		mockitoVersion = '1.10.19'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '4.0.3'
 		rabbitmqHttpClientVersion = '1.1.1.RELEASE'
@@ -209,7 +210,7 @@ project('spring-amqp') {
 		compile ("org.codehaus.jackson:jackson-core-asl:$jacksonVersion", optional)
 		compile ("org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion", optional)
 		compile ("com.fasterxml.jackson.core:jackson-core:$jackson2Version", optional)
-		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
+		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2DataBindVersion", optional)
 	}
 
 }
