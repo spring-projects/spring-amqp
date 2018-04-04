@@ -4401,7 +4401,7 @@ a| image::images/tickmark.png[]
 | consumersPerQueue
 (consumers-per-queue)
 
-| The number of consumers to create for each condigured queue.
+| The number of consumers to create for each configured queue.
 See <<listener-concurrency>>.
 
 a|
