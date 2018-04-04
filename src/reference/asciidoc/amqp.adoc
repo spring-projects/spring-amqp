@@ -1047,7 +1047,7 @@ Alternatively, you can inject a custom `MessagingMessageConverter` with some oth
 ----
 MessagingMessageConverter amqpMessageConverter = new MessagingMessageConverter();
 amqpMessageConverter.setPayloadConverter(myPayloadConverter);
-rabbitMessagingTempalte.setAmqpMessageConverter(amqpMessageConverter);
+rabbitMessagingTemplate.setAmqpMessageConverter(amqpMessageConverter);
 ----
 
 [[template-user-id]]
