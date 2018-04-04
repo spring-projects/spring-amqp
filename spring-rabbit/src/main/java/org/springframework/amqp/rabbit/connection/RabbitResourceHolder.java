@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ import org.springframework.util.MultiValueMap;
 
 import com.rabbitmq.client.Channel;
 /**
- * Rabbit resource holder, wrapping a RabbitMQ Connection and Channel. RabbitTransactionManager binds instances of this
+ * Rabbit resource holder, wrapping a RabbitMQ Connection and Channel.
+ * RabbitTransactionManager binds instances of this
  * class to the thread, for a given Rabbit ConnectionFactory.
  *
  * <p>
@@ -56,13 +57,13 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 
 	private final boolean frozen = false;
 
-	private final List<Connection> connections = new LinkedList<Connection>();
+	private final List<Connection> connections = new LinkedList<>();
 
-	private final List<Channel> channels = new LinkedList<Channel>();
+	private final List<Channel> channels = new LinkedList<>();
 
-	private final Map<Connection, List<Channel>> channelsPerConnection = new HashMap<Connection, List<Channel>>();
+	private final Map<Connection, List<Channel>> channelsPerConnection = new HashMap<>();
 
-	private final MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<Channel, Long>();
+	private final MultiValueMap<Channel, Long> deliveryTags = new LinkedMultiValueMap<>();
 
 	private final boolean releaseAfterCompletion;
 
@@ -216,16 +217,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 				RabbitUtils.commitIfNecessary(channel);
 			}
 		}
-	}
-
-	/**
-	 * Invalid - always returned false.
-	 * @return true if the channels in this holder are transactional
-	 * @deprecated Not used
-	 */
-	@Deprecated
-	public boolean isChannelTransactional() {
-		return false;
 	}
 
 }

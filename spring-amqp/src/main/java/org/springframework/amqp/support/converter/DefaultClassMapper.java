@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,11 +56,11 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 					"java.lang"
 			);
 
-	private final Set<String> trustedPackages = new LinkedHashSet<String>(TRUSTED_PACKAGES);
+	private final Set<String> trustedPackages = new LinkedHashSet<>(TRUSTED_PACKAGES);
 
-	private volatile Map<String, Class<?>> idClassMapping = new HashMap<String, Class<?>>();
+	private volatile Map<String, Class<?>> idClassMapping = new HashMap<>();
 
-	private volatile Map<Class<?>, String> classIdMapping = new HashMap<Class<?>, String>();
+	private volatile Map<Class<?>, String> classIdMapping = new HashMap<>();
 
 	private volatile Class<?> defaultMapClass = LinkedHashMap.class;
 
@@ -77,21 +77,8 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	/**
 	 * Set the type of {@link Map} to use. For outbound messages, set the
-	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code Hashtable}. For inbound messages,
-	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to this
-	 * class.
-	 * @param defaultMapClass the map class.
-	 * @deprecated use {@link #setDefaultMapClass(Class)}
-	 */
-	@Deprecated
-	public void setDefaultHashtableClass(Class<?> defaultMapClass) {
-		this.defaultMapClass = defaultMapClass;
-	}
-
-	/**
-	 * Set the type of {@link Map} to use. For outbound messages, set the
 	 * {@value #DEFAULT_CLASSID_FIELD_NAME} header to {@code HashTable}. For inbound messages,
-	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code HashTable} convert to this
+	 * if the {@value #DEFAULT_CLASSID_FIELD_NAME} header is {@code Hashtable} convert to this
 	 * class.
 	 * @param defaultMapClass the map class.
 	 * @since 2.0

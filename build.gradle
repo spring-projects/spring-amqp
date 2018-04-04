@@ -6,13 +6,11 @@ buildscript {
 		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.1'
 		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.0'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
-		classpath 'io.spring.gradle:dependency-management-plugin:1.0.2.RELEASE'
-		classpath 'io.spring.gradle:spring-io-plugin:0.0.8.RELEASE'
 	}
 }
 
 plugins {
-	id "org.sonarqube" version '2.5'
+	id "org.sonarqube" version '2.6.1'
 }
 
 description = 'Spring AMQP'
@@ -65,39 +63,23 @@ subprojects { subproject ->
 	apply plugin: 'jacoco'
 	apply plugin: 'checkstyle'
 
-	if (project.hasProperty('platformVersion')) {
-		apply plugin: 'spring-io'
-
-		repositories {
-			maven { url 'https://repo.spring.io/libs-snapshot' }
-		}
-
-		dependencyManagement {
-			springIoTestRuntime {
-				imports {
-					mavenBom "io.spring.platform:platform-bom:$platformVersion"
-				}
-			}
-		}
-	}
-
 	sourceCompatibility=1.8
 	targetCompatibility=1.8
 
 	ext {
 		hamcrestVersion = '1.3'
-		jackson2Version = '2.9.1'
+		jackson2Version = '2.9.5'
 		junit4Version = '4.12'
 		junitJupiterVersion = '5.1.0'
 		junitPlatformVersion = '1.1.0'
 		junitVintageVersion = '5.1.0'
-		log4jVersion = '2.8.2'
+		log4jVersion = '2.11.0'
 		logbackVersion = '1.2.3'
-		mockitoVersion = '2.11.0'
+		mockitoVersion = '2.17.0'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.2.0'
 		rabbitmqHttpClientVersion = '2.0.1.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.0.4.RELEASE'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.0.BUILD-SNAPSHOT'
 
 		springRetryVersion = '1.2.2.RELEASE'
 	}
@@ -124,7 +106,6 @@ subprojects { subproject ->
 		}
 		testCompile "org.springframework:spring-test:$springVersion"
 
-		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 		testRuntime "org.apache.logging.log4j:log4j-jcl:$log4jVersion"
 
 		testCompile "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
@@ -187,7 +168,7 @@ subprojects { subproject ->
 		logging.captureStandardOutput(LogLevel.INFO)
 		dependsOn checkTestConfigs
 
-		if (name ==~ /(springIo.*)|(testAll)/) {
+		if (name ==~ /(testAll)/) {
 			systemProperty 'RUN_LONG_INTEGRATION_TESTS', 'true'
 		}
 		useJUnitPlatform()
@@ -205,7 +186,7 @@ subprojects { subproject ->
 
 	checkstyle {
 		configFile = file("${rootDir}/src/checkstyle/checkstyle.xml")
-		toolVersion = "8.1"
+		toolVersion = "8.8"
 	}
 
 	artifacts {
@@ -242,6 +223,8 @@ project('spring-amqp') {
 		compile ("org.springframework:spring-context:$springVersion", optional)
 		compile ("com.fasterxml.jackson.core:jackson-core:$jackson2Version", optional)
 		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
+
+		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 
 }
@@ -289,6 +272,7 @@ project('spring-rabbit-junit') {
 		compile ("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion", optional)
 		compileOnly 'org.apiguardian:apiguardian-api:1.0.0'
 
+		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 
 }
@@ -308,7 +292,6 @@ project('spring-rabbit-test') {
 		}
 		testCompile project(":spring-rabbit").sourceSets.test.output
 		testCompile project(":spring-rabbit-junit")
-
 	}
 
 }
