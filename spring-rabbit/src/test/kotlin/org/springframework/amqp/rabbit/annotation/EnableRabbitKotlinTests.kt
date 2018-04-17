@@ -31,6 +31,13 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+/**
+ * Kotlin Annotated listener tests.
+ *
+ * @author Gary Russell
+ * @since 2.1
+ *
+ */
 @SpringJUnitConfig
 @RabbitAvailable(queues = ["kotlinQueue"])
 @DirtiesContext
