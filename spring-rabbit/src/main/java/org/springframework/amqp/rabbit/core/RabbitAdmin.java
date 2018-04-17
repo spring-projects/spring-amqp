@@ -451,7 +451,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
 			: Collections.emptyList();
 		for (Collection<?> collection : collections) {
-			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
+			//NullPointerException
+			if (collection != null && collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {
 					if (declarable instanceof Exchange) {
 						contextExchanges.add((Exchange) declarable);
