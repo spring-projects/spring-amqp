@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit
  * Kotlin Annotated listener tests.
  *
  * @author Gary Russell
+ *
  * @since 2.1
  *
  */
@@ -60,7 +61,7 @@ class EnableRabbitKotlinTests {
 		val latch = CountDownLatch(1)
 
 		@RabbitListener(queues = ["kotlinQueue"])
-		fun handle(data: String) {
+		fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
 			this.latch.countDown()
 		}
 
