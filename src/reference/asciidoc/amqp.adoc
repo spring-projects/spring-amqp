@@ -1577,6 +1577,8 @@ public class ExampleAmqpConfiguration {
 ----
 
 [[consumer-priority]]
+====== Consumer Priority
+
 Starting with *RabbitMQ Version 3.2*, the broker now supports consumer priority (see http://www.rabbitmq.com/blog/2013/12/16/using-consumer-priorities-with-rabbitmq/[Using Consumer Priorities with RabbitMQ]).
 This is enabled by setting the `x-priority` argument on the consumer.
 The `SimpleMessageListenerContainer` now supports setting consumer arguments:
@@ -3536,6 +3538,8 @@ In addition, any declaration exceptions result in the publishing of a `Declarati
 The event contains a reference to the admin, the element that was being declared, and the `Throwable`.
 
 [[headers-exchange]]
+===== Headers Exchange
+
 Starting with _version 1.3_ the `HeadersExchange` can be configured to match on multiple headers; you can also specify whether any or all headers must match:
 
 [source,xml]

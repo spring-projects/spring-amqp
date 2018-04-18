@@ -380,7 +380,7 @@ public class TestRabbitTemplateTests {
 }
 ----
 
-[[junit4-rules]]
+[[junit-rules]]
 ==== JUnit4 @Rules
 
 Spring AMQP _version 1.7_ and later provide an additional jar `spring-rabbit-junit`; this jar contains a couple of utility `@Rule` s for use when running JUnit4 tests.
@@ -495,7 +495,7 @@ Version _2.0.2_ introduced support for JUnit5.
 
 ===== @RabbitAvailable Annotation
 
-This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit4-rules>>; it is processed by the `RabbitAvailableCondition`.
+This class-level annotation is similar to the `BrokerRunning` `@Rule` discussed in <<junit-rules>>; it is processed by the `RabbitAvailableCondition`.
 
 The annotation has two properties:
 
