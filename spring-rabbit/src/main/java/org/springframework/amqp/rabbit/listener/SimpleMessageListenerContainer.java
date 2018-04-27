@@ -307,19 +307,8 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 			int delta = this.concurrentConsumers - concurrentConsumers;
 			this.concurrentConsumers = concurrentConsumers;
-			if (isActive() && this.consumers != null) {
-				if (delta > 0) {
-					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
-					while (consumerIterator.hasNext() && delta > 0) {
-						BlockingQueueConsumer consumer = consumerIterator.next();
-						consumer.basicCancel(true);
-						consumerIterator.remove();
-						delta--;
-					}
-				}
-				else {
-					addAndStartConsumers(-delta);
-				}
+			if (isActive()) {
+				adjustConsumers(delta);
 			}
 		}
 	}
@@ -339,7 +328,15 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				"'maxConcurrentConsumers' value must be at least 'concurrentConsumers'");
 		Assert.isTrue(!this.exclusive || maxConcurrentConsumers == 1,
 				"When the consumer is exclusive, the concurrency must be 1");
+		Integer oldMax = this.maxConcurrentConsumers;
 		this.maxConcurrentConsumers = maxConcurrentConsumers;
+		if (oldMax != null && isActive()) {
+			int delta = oldMax - maxConcurrentConsumers;
+			if (delta > 0) { // only decrease, not increase
+				adjustConsumers(delta);
+			}
+		}
+
 	}
 
 	/**
@@ -1026,10 +1023,45 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
+	/**
+	 * Adjust consumers depending on delta.
+	 * @param delta a negative value increases, positive decreases.
+	 * @since 1.7.8
+	 */
+	protected void adjustConsumers(int delta) {
+		synchronized (this.consumersMonitor) {
+			if (isActive() && this.consumers != null) {
+				if (delta > 0) {
+					Iterator<BlockingQueueConsumer> consumerIterator = this.consumers.iterator();
+					while (consumerIterator.hasNext() && delta > 0
+						&& (this.maxConcurrentConsumers == null
+								|| this.consumers.size() > this.maxConcurrentConsumers)) {
+						BlockingQueueConsumer consumer = consumerIterator.next();
+						consumer.basicCancel(true);
+						consumerIterator.remove();
+						delta--;
+					}
+				}
+				else {
+					addAndStartConsumers(-delta);
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * Start up to delta consumers, limited by {@link #setMaxConcurrentConsumers(int)}.
+	 * @param delta the consumers to add.
+	 */
 	protected void addAndStartConsumers(int delta) {
 		synchronized (this.consumersMonitor) {
 			if (this.consumers != null) {
 				for (int i = 0; i < delta; i++) {
+					if (this.maxConcurrentConsumers != null
+							&& this.consumers.size() >= this.maxConcurrentConsumers) {
+						break;
+					}
 					BlockingQueueConsumer consumer = createBlockingQueueConsumer();
 					this.consumers.add(consumer);
 					AsyncMessageProcessingConsumer processor = new AsyncMessageProcessingConsumer(consumer);
