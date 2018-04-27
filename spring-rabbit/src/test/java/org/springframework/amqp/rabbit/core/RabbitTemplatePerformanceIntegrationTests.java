@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.apache.logging.log4j.Level;
 import org.junit.After;
@@ -102,7 +102,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 			Thread.sleep(10L);
 			result = (String) template.receiveAndConvert(ROUTE);
 		}
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 	}
 
 	@Test
@@ -111,7 +111,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		template.setChannelTransacted(true);
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class RabbitTemplatePerformanceIntegrationTests {
 		});
 		template.convertAndSend(ROUTE, "message");
 		String result = (String) template.receiveAndConvert(ROUTE);
-		assertEquals("message", result);
+		assertThat(result).isEqualTo("message");
 	}
 
 	@SuppressWarnings("serial")
