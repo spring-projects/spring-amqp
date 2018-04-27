@@ -16,7 +16,8 @@
 
 package org.springframework.amqp.rabbit.annotation
 
-import org.junit.jupiter.api.Assertions.assertTrue
+import assertk.assert
+import assertk.assertions.isTrue
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
@@ -51,7 +52,7 @@ class EnableRabbitKotlinTests {
 	fun `send and wait for consume` () {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue", "test")
-		assertTrue(this.config.latch.await(10, TimeUnit.SECONDS))
+		assert(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Configuration
