@@ -57,7 +57,7 @@ class EnableRabbitKotlinTests {
 
 	@Configuration
 	@EnableRabbit
-	open class Config {
+	class Config {
 
 		val latch = CountDownLatch(1)
 
@@ -67,17 +67,18 @@ class EnableRabbitKotlinTests {
 		}
 
 		@Bean
-		open fun rabbitListenerContainerFactory(cf: CachingConnectionFactory): SimpleRabbitListenerContainerFactory {
+		fun rabbitListenerContainerFactory(cf: CachingConnectionFactory): SimpleRabbitListenerContainerFactory {
 			val factory = SimpleRabbitListenerContainerFactory()
 			factory.setConnectionFactory(cf)
 			return factory
 		}
 
 		@Bean
-		open fun cf(): CachingConnectionFactory {
+		fun cf(): CachingConnectionFactory {
 			return CachingConnectionFactory(
 					RabbitAvailableCondition.getBrokerRunning().connectionFactory)
 		}
+
 	}
 
 }
