@@ -18,3 +18,8 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 
 Certain classes have moved to different packages; most are internal classes and won't affect user applications.
 Two exceptions are `ChannelAwareMessageListener` and `RabbitListenerErrorHandler`; these interfaces are now in `org.springframework.amqp.rabbit.listener.api`.
+
+===== RabbitTemplate Changes
+
+The `RabbitTemplate` now sets `usePublisherConnection` to `true` by default.
+See <<separate-connection>> for more information.
