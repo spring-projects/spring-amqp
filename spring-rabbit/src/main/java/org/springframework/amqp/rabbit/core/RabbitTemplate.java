@@ -244,7 +244,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private boolean userCorrelationId;
 
-	private boolean usePublisherConnection = true;
+	private boolean usePublisherConnection;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
