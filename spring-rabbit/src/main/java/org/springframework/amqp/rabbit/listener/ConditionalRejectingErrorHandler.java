@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,20 +71,33 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 	@Override
 	public void handleError(Throwable t) {
-		if (this.logger.isWarnEnabled()) {
-			this.logger.warn("Execution of Rabbit message listener failed.", t);
-		}
+		log(t);
 		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", t);
 		}
 	}
 
 	/**
+	 * Log the throwable at WARN level, including stack trace.
+	 * Subclasses can override this behavior.
+	 * @param t the {@link Throwable}.
+	 * @since 1.7.8
+	 */
+	protected void log(Throwable t) {
+		if (this.logger.isWarnEnabled()) {
+			this.logger.warn("Execution of Rabbit message listener failed.", t);
+		}
+	}
+
+	/**
+	 * Return true if there is already an {@link AmqpRejectAndDontRequeueException}
+	 * present in the cause chain.
 	 * @param t a {@link Throwable}.
 	 * @return true if the cause chain already contains an
 	 * {@link AmqpRejectAndDontRequeueException}.
+	 * @since 1.7.8
 	 */
-	private boolean causeChainContainsARADRE(Throwable t) {
+	protected boolean causeChainContainsARADRE(Throwable t) {
 		Throwable cause = t.getCause();
 		while (cause != null) {
 			if (cause instanceof AmqpRejectAndDontRequeueException) {
