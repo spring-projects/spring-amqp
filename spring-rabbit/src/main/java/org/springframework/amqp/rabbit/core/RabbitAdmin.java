@@ -49,6 +49,11 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jmx.export.annotation.ManagedOperation;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -97,13 +102,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final RabbitTemplate rabbitTemplate;
 
+	private RetryTemplate retryTemplate;
+
+	private boolean retryDisabled;
+
 	private volatile boolean running = false;
 
-	private volatile boolean autoStartup = true;
+	private boolean autoStartup = true;
 
-	private volatile ApplicationContext applicationContext;
+	private ApplicationContext applicationContext;
 
-	private volatile boolean ignoreDeclarationExceptions;
+	private boolean ignoreDeclarationExceptions;
 
 	private final Object lifecycleMonitor = new Object();
 
@@ -169,6 +178,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public void declareExchange(final Exchange exchange) {
 		try {
 			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 				@Override
 				public Object doInRabbit(Channel channel) throws Exception {
 					declareExchanges(channel, exchange);
@@ -185,6 +195,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public boolean deleteExchange(final String exchangeName) {
 		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+
 			@Override
 			public Boolean doInRabbit(Channel channel) throws Exception {
 				if (isDeletingDefaultExchange(exchangeName)) {
@@ -219,6 +230,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public String declareQueue(final Queue queue) {
 		try {
 			return this.rabbitTemplate.execute(new ChannelCallback<String>() {
+
 				@Override
 				public String doInRabbit(Channel channel) throws Exception {
 					DeclareOk[] declared = declareQueues(channel, queue);
@@ -244,6 +256,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public Queue declareQueue() {
 		try {
 			DeclareOk declareOk = this.rabbitTemplate.execute(new ChannelCallback<DeclareOk>() {
+
 				@Override
 				public DeclareOk doInRabbit(Channel channel) throws Exception {
 					return channel.queueDeclare();
@@ -262,6 +275,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public boolean deleteQueue(final String queueName) {
 		return this.rabbitTemplate.execute(new ChannelCallback<Boolean>() {
+
 			@Override
 			public Boolean doInRabbit(Channel channel) throws Exception {
 				try {
@@ -279,6 +293,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
 		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queueDelete(queueName, unused, empty);
@@ -291,6 +306,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public void purgeQueue(final String queueName, final boolean noWait) {
 		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
 				channel.queuePurge(queueName);
@@ -305,6 +321,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public void declareBinding(final Binding binding) {
 		try {
 			this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 				@Override
 				public Object doInRabbit(Channel channel) throws Exception {
 					declareBindings(channel, binding);
@@ -321,6 +338,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@ManagedOperation
 	public void removeBinding(final Binding binding) {
 		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
 				if (binding.isDestinationQueue()) {
@@ -348,6 +366,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	public Properties getQueueProperties(final String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(new ChannelCallback<Properties>() {
+
 			@Override
 			public Properties doInRabbit(Channel channel) throws Exception {
 				try {
@@ -382,6 +401,25 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		});
 	}
 
+	/**
+	 * Set a retry template for auto declarations. There is a race condition with
+	 * auto-delete, exclusive queues in that the queue might still exist for a short time,
+	 * preventing the redeclaration. The default retry configuration will try 5 times with
+	 * an exponential backOff starting at 1 second a multiplier of 2.0 and a max interval
+	 * of 5 seconds. To disable retry, set the argument to {@code null}. Note that this
+	 * retry is at the macro level - all declarations will be retried within the scope of
+	 * this template. If you supplied a {@link RabbitTemplate} that is configured with a
+	 * {@link RetryTemplate}, its template will retry each individual declaration.
+	 * @param retryTemplate the retry template.
+	 * @since 1.7.8
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
+		if (retryTemplate == null) {
+			this.retryDisabled = true;
+		}
+	}
+
 	// Lifecycle implementation
 
 	public boolean isAutoStartup() {
@@ -406,6 +444,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				return;
 			}
 
+			if (this.retryTemplate == null && !this.retryDisabled) {
+				this.retryTemplate = new RetryTemplate();
+				this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(5));
+				ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+				backOffPolicy.setInitialInterval(1000);
+				backOffPolicy.setMultiplier(2.0);
+				backOffPolicy.setMaxInterval(5000);
+				this.retryTemplate.setBackOffPolicy(backOffPolicy);
+			}
 			if (this.connectionFactory instanceof CachingConnectionFactory &&
 					((CachingConnectionFactory) this.connectionFactory).getCacheMode() == CacheMode.CONNECTION) {
 				this.logger.warn("RabbitAdmin auto declaration is not supported with CacheMode.CONNECTION");
@@ -430,7 +477,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
 						 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
 						 */
-						initialize();
+						if (RabbitAdmin.this.retryTemplate != null) {
+							RabbitAdmin.this.retryTemplate.execute(
+									new RetryCallback<Object, RuntimeException>() {
+
+										@Override
+										public Object doWithRetry(RetryContext c) throws RuntimeException {
+											initialize();
+											return null;
+										}
+									});
+						}
+						else {
+							initialize();
+						}
 					}
 					finally {
 						initializing.compareAndSet(true, false);
@@ -469,8 +529,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 		@SuppressWarnings("rawtypes")
 		Collection<Collection> collections = this.declareCollections
-			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
-			: Collections.<Collection>emptyList();
+				? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
+				: Collections.<Collection>emptyList();
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
 				for (Object declarable : collection) {
@@ -492,7 +552,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		final Collection<Binding> bindings = filterDeclarables(contextBindings);
 
 		for (Exchange exchange : exchanges) {
-			if ((!exchange.isDurable() || exchange.isAutoDelete())  && this.logger.isInfoEnabled()) {
+			if ((!exchange.isDurable() || exchange.isAutoDelete()) && this.logger.isInfoEnabled()) {
 				this.logger.info("Auto-declaring a non-durable or auto-delete Exchange ("
 						+ exchange.getName()
 						+ ") durable:" + exchange.isDurable() + ", auto-delete:" + exchange.isAutoDelete() + ". "
@@ -517,6 +577,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			return;
 		}
 		this.rabbitTemplate.execute(new ChannelCallback<Object>() {
+
 			@Override
 			public Object doInRabbit(Channel channel) throws Exception {
 				declareExchanges(channel, exchanges.toArray(new Exchange[exchanges.size()]));
@@ -540,7 +601,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		for (T declarable : declarables) {
 			Collection<?> adminsWithWhichToDeclare = declarable.getDeclaringAdmins();
 			if (declarable.shouldDeclare() &&
-				(adminsWithWhichToDeclare.isEmpty() || adminsWithWhichToDeclare.contains(this))) {
+					(adminsWithWhichToDeclare.isEmpty() || adminsWithWhichToDeclare.contains(this))) {
 				filtered.add(declarable);
 			}
 		}
