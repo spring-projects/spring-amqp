@@ -28,7 +28,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willReturn;
@@ -52,11 +54,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.amqp.UncategorizedAmqpException;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
@@ -284,9 +288,10 @@ public class RabbitAdminTests {
 		String longName = new String(new byte[300]).replace('\u0000', 'x');
 		try {
 			admin.declareQueue(new Queue(longName));
+			fail("expected exception");
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			// NOSONAR
 		}
 		String goodName = "foobar";
 		admin.declareQueue(new Queue(goodName));
@@ -350,6 +355,35 @@ public class RabbitAdminTests {
 		verify(channel1, times(4)).queueDeclare();
 		verify(channel1, times(1)).close();
 		verifyZeroInteractions(channel2);
+	}
+
+	@Test
+	@Ignore // too long; not much value
+	public void testRetry() throws Exception {
+		com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory = mock(com.rabbitmq.client.ConnectionFactory.class);
+		com.rabbitmq.client.Connection connection = mock(com.rabbitmq.client.Connection.class);
+		given(rabbitConnectionFactory.newConnection((ExecutorService) isNull(), anyString())).willReturn(connection);
+		Channel channel = mock(Channel.class);
+		given(connection.createChannel()).willReturn(channel);
+		given(channel.isOpen()).willReturn(true);
+		willThrow(new RuntimeException()).given(channel)
+			.queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		CachingConnectionFactory ccf = new CachingConnectionFactory(rabbitConnectionFactory);
+		RabbitAdmin admin = new RabbitAdmin(ccf);
+		GenericApplicationContext ctx = new GenericApplicationContext();
+		ctx.getBeanFactory().registerSingleton("foo", new AnonymousQueue());
+		ctx.getBeanFactory().registerSingleton("admin", admin);
+		admin.setApplicationContext(ctx);
+		ctx.getBeanFactory().initializeBean(admin, "admin");
+		ctx.refresh();
+		try {
+			ccf.createConnection();
+			fail("expected exception");
+		}
+		catch (UncategorizedAmqpException e) {
+			// NOSONAR
+		}
+		ctx.close();
 	}
 
 	@Configuration
