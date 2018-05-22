@@ -48,6 +48,9 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jmx.export.annotation.ManagedOperation;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -96,13 +99,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final RabbitTemplate rabbitTemplate;
 
+	private RetryTemplate retryTemplate;
+
+	private boolean retryDisabled;
+
 	private volatile boolean running = false;
 
-	private volatile boolean autoStartup = true;
+	private boolean autoStartup = true;
 
-	private volatile ApplicationContext applicationContext;
+	private ApplicationContext applicationContext;
 
-	private volatile boolean ignoreDeclarationExceptions;
+	private boolean ignoreDeclarationExceptions;
 
 	private final Object lifecycleMonitor = new Object();
 
@@ -367,6 +374,25 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		});
 	}
 
+	/**
+	 * Set a retry template for auto declarations. There is a race condition with
+	 * auto-delete, exclusive queues in that the queue might still exist for a short time,
+	 * preventing the redeclaration. The default retry configuration will try 5 times with
+	 * an exponential backOff starting at 1 second a multiplier of 2.0 and a max interval
+	 * of 5 seconds. To disable retry, set the argument to {@code null}. Note that this
+	 * retry is at the macro level - all declarations will be retried within the scope of
+	 * this template. If you supplied a {@link RabbitTemplate} that is configured with a
+	 * {@link RetryTemplate}, its template will retry each individual declaration.
+	 * @param retryTemplate the retry template.
+	 * @since 1.7.8
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
+		if (retryTemplate == null) {
+			this.retryDisabled = true;
+		}
+	}
+
 	// Lifecycle implementation
 
 	public boolean isAutoStartup() {
@@ -391,6 +417,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				return;
 			}
 
+			if (this.retryTemplate == null && !this.retryDisabled) {
+				this.retryTemplate = new RetryTemplate();
+				this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(5));
+				ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+				backOffPolicy.setInitialInterval(1000);
+				backOffPolicy.setMultiplier(2.0);
+				backOffPolicy.setMaxInterval(5000);
+				this.retryTemplate.setBackOffPolicy(backOffPolicy);
+			}
 			if (this.connectionFactory instanceof CachingConnectionFactory &&
 					((CachingConnectionFactory) this.connectionFactory).getCacheMode() == CacheMode.CONNECTION) {
 				this.logger.warn("RabbitAdmin auto declaration is not supported with CacheMode.CONNECTION");
@@ -413,7 +448,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 					 * chatter). In fact it might even be a good thing: exclusive queues only make sense if they are
 					 * declared for every connection. If anyone has a problem with it: use auto-startup="false".
 					 */
-					initialize();
+					if (this.retryTemplate != null) {
+						this.retryTemplate.execute(c -> {
+							initialize();
+							return null;
+						});
+					}
+					else {
+						initialize();
+					}
 				}
 				finally {
 					initializing.compareAndSet(true, false);
