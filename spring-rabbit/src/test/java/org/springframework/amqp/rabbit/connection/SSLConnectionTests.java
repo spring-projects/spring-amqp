@@ -166,7 +166,7 @@ public class SSLConnectionTests {
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		verify(logger).debug(captor.capture());
 		final String log = captor.getValue();
-		assertThat(log, allOf(containsString("KM: ["), containsString("TM: ["), containsString("random: java.")));
+		assertThat(log, allOf(containsString("KM: ["), containsString("TM: ["), containsString("random: ")));
 	}
 
 	@Test

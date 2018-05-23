@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,7 @@ public abstract class AbstractRabbitAnnotationDrivenTests {
 		assertQueues(endpoint, "queue1", "queue2");
 		assertTrue("No queue instances should be set", endpoint.getQueues().isEmpty());
 		assertEquals(true, endpoint.isExclusive());
-		assertEquals(new Integer(34), endpoint.getPriority());
+		assertEquals(Integer.valueOf(34), endpoint.getPriority());
 		assertSame(context.getBean("rabbitAdmin"), endpoint.getAdmin());
 
 		// Resolve the container and invoke a message on it

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.logback;
 
-import javax.annotation.PreDestroy;
-
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -27,6 +25,7 @@ import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,9 +33,10 @@ import org.springframework.context.annotation.Scope;
 
 /**
  * @author Jon Brisbin
+ * @author Gary Russell
  */
 @Configuration
-public class AmqpAppenderConfiguration {
+public class AmqpAppenderConfiguration implements DisposableBean {
 
 	private static final String QUEUE = "amqp.appender.test";
 
@@ -51,7 +51,7 @@ public class AmqpAppenderConfiguration {
 		return new SingleConnectionFactory("localhost");
 	}
 
-	@PreDestroy
+	@Override
 	public void destroy() {
 		SingleConnectionFactory cf = new SingleConnectionFactory("localhost");
 		RabbitAdmin admin = new RabbitAdmin(cf);
