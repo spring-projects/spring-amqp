@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class SimpleAmqpHeaderMapperTests {
 		assertEquals(MessageDeliveryMode.NON_PERSISTENT, amqpProperties.getDeliveryMode());
 		assertEquals(1234L, amqpProperties.getDeliveryTag());
 		assertEquals("test.expiration", amqpProperties.getExpiration());
-		assertEquals(new Integer(42), amqpProperties.getMessageCount());
+		assertEquals(Integer.valueOf(42), amqpProperties.getMessageCount());
 		assertEquals("test.messageId", amqpProperties.getMessageId());
 		assertEquals("test.receivedExchange", amqpProperties.getReceivedExchange());
 		assertEquals("test.receivedRoutingKey", amqpProperties.getReceivedRoutingKey());

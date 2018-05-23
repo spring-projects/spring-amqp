@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,8 +103,8 @@ public class MessageListenerContainerMultipleQueueIntegrationTests {
 		messageConverter.setCreateMessageIds(true);
 		template.setMessageConverter(messageConverter);
 		for (int i = 0; i < messageCount; i++) {
-			template.convertAndSend(queue1.getName(), new Integer(i));
-			template.convertAndSend(queue2.getName(), new Integer(i));
+			template.convertAndSend(queue1.getName(), Integer.valueOf(i));
+			template.convertAndSend(queue2.getName(), Integer.valueOf(i));
 		}
 		final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		final CountDownLatch latch = new CountDownLatch(messageCount * 2);
