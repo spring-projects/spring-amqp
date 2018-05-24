@@ -54,7 +54,6 @@ import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
-import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnectionFactory;
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
@@ -86,6 +85,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
@@ -1842,8 +1842,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	public <T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
-			com.rabbitmq.client.ConfirmCallback nacks) {
+	public <T> T invoke(OperationsCallback<T> action, @Nullable com.rabbitmq.client.ConfirmCallback acks,
+			@Nullable com.rabbitmq.client.ConfirmCallback nacks) {
 
 		final Channel currentChannel = this.dedicatedChannels.get();
 		Assert.state(currentChannel == null, () -> "Nested invoke() calls are not supported; channel '" + currentChannel
@@ -1870,7 +1870,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (channel == null) {
 					throw new IllegalStateException("Connection returned a null channel");
 				}
-				RabbitUtils.setPhysicalCloseRequired(channel, true);
+				if (!getConnectionFactory().isPublisherConfirms()) {
+					RabbitUtils.setPhysicalCloseRequired(channel, true);
+				}
 				this.dedicatedChannels.set(channel);
 			}
 			catch (RuntimeException e) {
@@ -1935,14 +1937,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {
-		if (connectionFactory instanceof PublisherCallbackChannelConnectionFactory) {
-			PublisherCallbackChannelConnectionFactory pcccf =
-					(PublisherCallbackChannelConnectionFactory) connectionFactory;
-			this.confirmsOrReturnsCapable = pcccf.isPublisherConfirms() || pcccf.isPublisherReturns();
-		}
-		else {
-			this.confirmsOrReturnsCapable = Boolean.FALSE;
-		}
+		this.confirmsOrReturnsCapable =
+				connectionFactory.isPublisherConfirms() || connectionFactory.isPublisherReturns();
 	}
 
 	/**

@@ -839,8 +839,7 @@ public AmqpTemplate rabbitTemplate() {
 ----
 
 Starting with _version 1.4_, in addition to the `retryTemplate` property, the `recoveryCallback` option is supported on the `RabbitTemplate`.
-It is used as a second argument for the `RetryTemplate.execute(RetryCallback<T, E> retryCallback,
-			RecoveryCallback<T>recoveryCallback)`.
+It is used as a second argument for the `RetryTemplate.execute(RetryCallback<T, E> retryCallback, RecoveryCallback<T> recoveryCallback)`.
 
 NOTE: The `RecoveryCallback` is somewhat limited in that the retry context only contains the `lastThrowable` field.
 For more sophisticated use cases, you should use an external `RetryTemplate` so that you can convey additional information to the `RecoveryCallback` via the context's attributes:
@@ -954,6 +953,11 @@ channel on which a message is published is returned to the cache instead of bein
 You can monitor channel usage using the RabbitMQ management plugin; if you see channels being opened/closed rapidly you
 should consider increasing the cache size to reduce overhead on the server.
 
+IMPORTANT: Before _version 2.1_, channels enabled for publisher confirms were returned to the cache before the confirm(s) were received.
+Some other process could check out the channel and perform some operation that causes the channel to close - such as publishing a message to a non-existent exchange.
+This could cause the confirmation to be lost; _version 2.1_ and later no longer return the channel to the cache while confirmations are outstanding.
+Since the `RabbitTemplate` performs a logical `close()` on the channel after each operation; in general, this means that only one confirm will be outstanding on a channel at a time.
+
 See also <<scoped-operations>> for a simpler mechanism for waiting for publisher confirms.
 
 [[scoped-operations]]
@@ -965,6 +969,7 @@ There may be times, however, where you want to have more control over the use of
 
 Starting with _version 2.0_, a new method `invoke` is provided, with an `OperationsCallback`.
 Any operations performed within the scope of the callback, and on the provided `RabbitOperations` argument, will use the same dedicated `Channel`, which will be closed at the end (not returned to a cache).
+If the channel is a `PublisherCallbackChannel`, it will be returned to the cache after all confirms have been received (see <<template-confirms>> above).
 
 [source, java]
 ----

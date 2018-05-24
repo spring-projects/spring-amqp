@@ -65,4 +65,22 @@ public interface ConnectionFactory {
 		return false;
 	}
 
+	/**
+	 * Return true if publisher confirms are enabled.
+	 * @return publisherConfirms.
+	 * @since 2.1
+	 */
+	default boolean isPublisherConfirms() {
+		return false;
+	}
+
+	/**
+	 * Return true if publisher returns are enabled.
+	 * @return publisherReturns.
+	 * @since 2.1
+	 */
+	default boolean isPublisherReturns() {
+		return false;
+	}
+
 }

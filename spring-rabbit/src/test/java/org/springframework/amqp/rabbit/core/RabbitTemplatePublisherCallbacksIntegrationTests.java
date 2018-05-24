@@ -750,12 +750,15 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		doAnswer(invocation -> sent.incrementAndGet() < closeAfter).when(mockChannel1).isOpen();
 		final CountDownLatch sentAll = new CountDownLatch(1);
 		exec.execute(() -> {
-			for (int i = 0; i < 1000; i++) {
-				try {
-					template.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+			template.invoke(t -> {
+				for (int i = 0; i < 1000; i++) {
+					try {
+						t.convertAndSend(ROUTE, (Object) "message", new CorrelationData("abc"));
+					}
+					catch (AmqpException e) { }
 				}
-				catch (AmqpException e) { }
-			}
+				return null;
+			});
 			sentAll.countDown();
 		});
 		assertTrue(sentAll.await(10, TimeUnit.SECONDS));
