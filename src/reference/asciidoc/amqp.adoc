@@ -418,7 +418,7 @@ Previously you had to configure the SSL options programmatically.
     username="${username}" password="${password}" />
 
 <bean id="clientConnectionFactory"
-        class="org.springframework.xd.dirt.integration.rabbit.RabbitConnectionFactoryBean">
+        class="org.springframework.amqp.rabbit.connection.RabbitConnectionFactoryBean">
     <property name="useSSL" value="true" />
     <property name="sslPropertiesLocation" value="file:/secrets/rabbitSSL.properties"/>
 </bean>
