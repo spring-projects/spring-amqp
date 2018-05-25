@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ public class Queue extends AbstractDeclarable {
 	private final boolean autoDelete;
 
 	private final java.util.Map<java.lang.String, java.lang.Object> arguments;
+
+	private volatile String declaredName = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName()
+			+ "_awaiting_declaration";
 
 	/**
 	 * The queue is durable, non-exclusive and non auto-delete.
@@ -124,10 +127,29 @@ public class Queue extends AbstractDeclarable {
 		return this.arguments;
 	}
 
+	/**
+	 * Set the name from the DeclareOk.
+	 * @param name the name.
+	 * @since 2.0.4
+	 */
+	public void setDeclaredName(String name) {
+		this.declaredName = name;
+	}
+
+	/**
+	 * Return the declared name of the queue.
+	 * @return the name.
+	 * @since 2.0.4
+	 */
+	public String getDeclaredName() {
+		return this.declaredName;
+	}
+
 	@Override
 	public String toString() {
 		return "Queue [name=" + this.name + ", durable=" + this.durable + ", autoDelete=" + this.autoDelete
-				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments + "]";
+				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments
+				+ ", declaredName=" + this.declaredName + "]";
 	}
 
 }

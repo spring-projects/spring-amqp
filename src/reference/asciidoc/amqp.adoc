@@ -2582,6 +2582,39 @@ CAUTION: If you wish to use the idle event to stop the lister container, you sho
 thread that calls the listener - it will cause delays and unnecessary log messages.
 Instead, you should hand off the event to a different thread that can then stop the container.
 
+[[containers-and-broker-named-queues]]
+==== Containers and Broker-Named queues
+
+While it is preferable to use `AnonymousQueues` as auto-delete queues, starting with _version 2.0.4_, you can use broker named queues with listener containers:
+
+[source, java]
+----
+@Bean
+public Queue queue() {
+    return new Queue("", false, true, true);
+}
+
+@Bean
+public SimpleMessageListenerContainer container() {
+    SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(cf());
+    container.setQueues(queue());
+    container.setMessageListener(m -> {
+        ...
+    });
+    container.setMissingQueuesFatal(false);
+    return container;
+}
+----
+
+Notice the empty String for the name.
+When the `RabbitAdmin` declares queues, it updates the `Queue.declaredName` property with the name returned by the broker.
+You must use `setQueues()` when configuring the container, for this to work, so that the container can access the declared name at runtime, just setting the names is insufficient.
+
+NOTE: You cannot add broker-named queues to the containers while they are running.
+
+IMPORTANT: When a connection is reset and a new one established, the new queue will get a new name.
+Since there is a race condition between the container restarting and the queue being re-declared, it's important to set the container's `missingQueuesFatal` property to `false` since it is likely the container will initially try to reconnect to the old queue.
+
 [[message-converters]]
 ==== Message Converters
 
@@ -3403,9 +3436,11 @@ The additional properties of this auto-generated queue are `exclusive=true`, `au
 The `declareQueue(Queue queue)` method takes a `Queue` object and returns the name of the declared queue.
 If the provided `Queue`'s `name` property is an empty String, the broker declares the queue with a generated name and
 that name is returned to the caller.
-The `Queue` object itself is not changed.
+The `Queue` that name is added to the `Queue` 's `declaredName` property.
 This functionality can only be used programmatically by invoking the `RabbitAdmin` directly.
-It is not supported for auto-declaration by the admin by defining a queue declaratively in the application context.
+When using auto-declaration by the admin by defining a queue declaratively in the application context, set the name property to `""` and the broker will create the name.
+Starting with _version 2.0.4_, listener containers can use queues of this type.
+See <<containers-and-broker-named-queues>> for more information.
 
 This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to
 `false` and `exclusive`, `autoDelete` to `true`.
