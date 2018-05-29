@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Consumer;
+
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -49,13 +52,19 @@ public interface PublisherCallbackChannel extends Channel {
 	 */
 	Collection<PendingConfirm> expire(Listener listener, long cutoffTime);
 
-    /**
-     * Get the {@link PendingConfirm}s count.
-     * @param listener the listener.
-     * @return Count of the pending confirms.
-     */
+	/**
+	 * Get the {@link PendingConfirm}s count.
+	 * @param listener the listener.
+	 * @return Count of the pending confirms.
+	 */
+	int getPendingConfirmsCount(Listener listener);
 
-    int getPendingConfirmsCount(Listener listener);
+	/**
+	 * Get the total pending confirms count.
+	 * @return the count.
+	 * @since 2.1
+	 */
+	int getPendingConfirmsCount();
 
 	/**
 	 * Adds a pending confirmation to this channel's map.
@@ -73,6 +82,14 @@ public interface PublisherCallbackChannel extends Channel {
 	 * @since 1.4.
 	 */
 	Channel getDelegate();
+
+	/**
+	 * Set a callback to be invoked after the ack/nack has been handled.
+	 * @param callback the callback.
+	 * @param proxy the proxy.
+	 * @since 2.1
+	 */
+	void setAfterAckCallback(Consumer<ChannelProxy> callback, ChannelProxy proxy);
 
 	/**
 	 * Listeners implementing this interface can participate
