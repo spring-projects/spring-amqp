@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 
-import org.springframework.amqp.rabbit.connection.ChannelProxy;
-
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 
@@ -86,10 +84,10 @@ public interface PublisherCallbackChannel extends Channel {
 	/**
 	 * Set a callback to be invoked after the ack/nack has been handled.
 	 * @param callback the callback.
-	 * @param proxy the proxy.
+	 * @param proxyForThis the proxy for this channel.
 	 * @since 2.1
 	 */
-	void setAfterAckCallback(Consumer<ChannelProxy> callback, ChannelProxy proxy);
+	void setAfterAckCallback(Consumer<Channel> callback, Channel proxyForThis);
 
 	/**
 	 * Listeners implementing this interface can participate

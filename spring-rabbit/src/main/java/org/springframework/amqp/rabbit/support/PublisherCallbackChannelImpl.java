@@ -36,7 +36,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
@@ -91,9 +90,9 @@ public class PublisherCallbackChannelImpl
 
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 
-	private volatile java.util.function.Consumer<ChannelProxy> afterAckCallback;
+	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
-	private volatile ChannelProxy proxy;
+	private volatile Channel proxyForThis;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
@@ -101,14 +100,14 @@ public class PublisherCallbackChannelImpl
 	}
 
 	@Override
-	public synchronized void setAfterAckCallback(java.util.function.Consumer<ChannelProxy> callback,
-			ChannelProxy proxy) {
+	public synchronized void setAfterAckCallback(java.util.function.Consumer<Channel> callback,
+			Channel proxyForThis) {
 		if (getPendingConfirmsCount() == 0) {
-			callback.accept(proxy);
+			callback.accept(proxyForThis);
 		}
 		else {
 			this.afterAckCallback = callback;
-			this.proxy = proxy;
+			this.proxyForThis = proxyForThis;
 		}
 	}
 
@@ -897,7 +896,7 @@ public class PublisherCallbackChannelImpl
 		}
 		finally {
 			if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
-				this.afterAckCallback.accept(this.proxy);
+				this.afterAckCallback.accept(this.proxyForThis);
 				this.afterAckCallback = null;
 			}
 		}

@@ -1098,14 +1098,14 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 
-		private void returnToCache(ChannelProxy proxy) {
+		private void returnToCache(Channel proxy) {
 			synchronized (this.channelList) {
 				// Allow for multiple close calls...
 				if (CachingConnectionFactory.this.active && !this.channelList.contains(proxy)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Returning cached Channel: " + this.target);
 					}
-					this.channelList.addLast(proxy);
+					this.channelList.addLast((ChannelProxy) proxy);
 					setHighWaterMark();
 					this.theConnection.channelsAwaitingAcks.remove(proxy);
 				}
