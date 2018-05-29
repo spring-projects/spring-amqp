@@ -178,7 +178,7 @@ public class RoutingConnectionFactoryTests {
 		connectionFactory.setTargetConnectionFactories(factories);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setQueueNames("foo, bar");
+		container.setQueueNames("foo", "bar");
 		container.afterPropertiesSet();
 		container.start();
 

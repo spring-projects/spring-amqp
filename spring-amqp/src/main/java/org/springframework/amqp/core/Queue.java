@@ -40,8 +40,7 @@ public class Queue extends AbstractDeclarable {
 
 	private final java.util.Map<java.lang.String, java.lang.Object> arguments;
 
-	private volatile String declaredName = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName()
-			+ "_awaiting_declaration";
+	private volatile String actualName;
 
 	/**
 	 * The queue is durable, non-exclusive and non auto-delete.
@@ -86,6 +85,8 @@ public class Queue extends AbstractDeclarable {
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) {
 		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
+		this.actualName = StringUtils.hasText(name) ? name
+				: (AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName() + "_awaiting_declaration");
 		this.durable = durable;
 		this.exclusive = exclusive;
 		this.autoDelete = autoDelete;
@@ -138,17 +139,8 @@ public class Queue extends AbstractDeclarable {
 	 * @param name the name.
 	 * @since 2.0.4
 	 */
-	public void setDeclaredName(String name) {
-		this.declaredName = name;
-	}
-
-	/**
-	 * Return the declared name of the queue.
-	 * @return the name.
-	 * @since 2.0.4
-	 */
-	public String getDeclaredName() {
-		return this.declaredName;
+	public void setActualName(String name) {
+		this.actualName = name;
 	}
 
 	/**
@@ -158,14 +150,14 @@ public class Queue extends AbstractDeclarable {
 	 * @since 2.0.4
 	 */
 	public String getActualName() {
-		return StringUtils.hasText(this.name) ? this.name : this.declaredName;
+		return this.actualName;
 	}
 
 	@Override
 	public String toString() {
 		return "Queue [name=" + this.name + ", durable=" + this.durable + ", autoDelete=" + this.autoDelete
 				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments
-				+ ", declaredName=" + this.declaredName + "]";
+				+ ", actualName=" + this.actualName + "]";
 	}
 
 }

@@ -439,11 +439,11 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 							Queue queue = namesToQueues.get(consumer.getQueue());
 							if (queue != null && !StringUtils.hasText(queue.getName())) {
 								// check to see if a broker-declared queue name has changed
-								String declaredName = queue.getDeclaredName();
-								if (StringUtils.hasText(declaredName)) {
+								String actualName = queue.getActualName();
+								if (StringUtils.hasText(actualName)) {
 									namesToQueues.remove(consumer.getQueue());
-									namesToQueues.put(declaredName, queue);
-									consumer = new SimpleConsumer(null, null, declaredName);
+									namesToQueues.put(actualName, queue);
+									consumer = new SimpleConsumer(null, null, actualName);
 								}
 							}
 							try {

@@ -623,10 +623,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
-				? (this.lookupKeyQualifier + "[" + this.queues.stream()
+				? this.lookupKeyQualifier + "[" + this.queues.stream()
 								.map(q -> q.getName())
-								.collect(Collectors.joining(",")) + "]")
-						.replaceAll(" ", "")
+								.collect(Collectors.joining(",")) + "]"
 				: null;
 	}
 

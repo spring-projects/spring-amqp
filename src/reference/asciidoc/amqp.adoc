@@ -2607,7 +2607,7 @@ public SimpleMessageListenerContainer container() {
 ----
 
 Notice the empty String for the name.
-When the `RabbitAdmin` declares queues, it updates the `Queue.declaredName` property with the name returned by the broker.
+When the `RabbitAdmin` declares queues, it updates the `Queue.actualName` property with the name returned by the broker.
 You must use `setQueues()` when configuring the container, for this to work, so that the container can access the declared name at runtime, just setting the names is insufficient.
 
 NOTE: You cannot add broker-named queues to the containers while they are running.
@@ -3434,9 +3434,8 @@ The no-arg `declareQueue()` method defines a queue on the broker with a name tha
 The additional properties of this auto-generated queue are `exclusive=true`, `autoDelete=true`, and `durable=false`.
 
 The `declareQueue(Queue queue)` method takes a `Queue` object and returns the name of the declared queue.
-If the provided `Queue`'s `name` property is an empty String, the broker declares the queue with a generated name and
-that name is returned to the caller.
-The `Queue` that name is added to the `Queue` 's `declaredName` property.
+If the provided `Queue`'s `name` property is an empty String, the broker declares the queue with a generated name and that name is returned to the caller.
+That name is also added to the `Queue` 's `actualName` property.
 This functionality can only be used programmatically by invoking the `RabbitAdmin` directly.
 When using auto-declaration by the admin by defining a queue declaratively in the application context, set the name property to `""` and the broker will create the name.
 Starting with _version 2.0.4_, listener containers can use queues of this type.

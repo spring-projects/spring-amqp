@@ -610,7 +610,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						DeclareOk declareOk = channel.queueDeclare(queue.getName(), queue.isDurable(),
 								queue.isExclusive(), queue.isAutoDelete(), queue.getArguments());
 						if (StringUtils.hasText(declareOk.getQueue())) {
-							queue.setDeclaredName(declareOk.getQueue());
+							queue.setActualName(declareOk.getQueue());
 						}
 						declareOks.add(declareOk);
 					}

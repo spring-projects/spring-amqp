@@ -93,19 +93,19 @@ public class BrokerDeclaredQueueNameTests {
 	private void testBrokerNamedQueue(AbstractMessageListenerContainer container,
 			CountDownLatch latch1, CountDownLatch latch2, Queue queue) throws Exception {
 		container.start();
-		String firstDeclaredName = queue.getDeclaredName();
+		String firstActualName = queue.getActualName();
 		this.message.set(null);
-		this.template.convertAndSend(firstDeclaredName, "foo");
+		this.template.convertAndSend(firstActualName, "foo");
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.message.get().getBody()).isEqualTo("foo".getBytes());
 		final CountDownLatch newConnectionLatch = new CountDownLatch(2);
 		cf.addConnectionListener(c -> newConnectionLatch.countDown());
 		cf.resetConnection();
 		assertThat(newConnectionLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		String secondDeclaredName = queue.getDeclaredName();
-		assertThat(secondDeclaredName).isNotEqualTo(firstDeclaredName);
+		String secondActualName = queue.getActualName();
+		assertThat(secondActualName).isNotEqualTo(firstActualName);
 		this.message.set(null);
-		this.template.convertAndSend(secondDeclaredName, "bar");
+		this.template.convertAndSend(secondActualName, "bar");
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.message.get().getBody()).isEqualTo("bar".getBytes());
 		container.stop();
