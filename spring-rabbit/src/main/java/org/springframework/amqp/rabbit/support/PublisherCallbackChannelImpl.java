@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
@@ -90,10 +91,27 @@ public class PublisherCallbackChannelImpl
 
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<Long, Listener>();
 
+	private volatile java.util.function.Consumer<ChannelProxy> afterAckCallback;
+
+	private volatile ChannelProxy proxy;
+
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 	}
+
+	@Override
+	public synchronized void setAfterAckCallback(java.util.function.Consumer<ChannelProxy> callback,
+			ChannelProxy proxy) {
+		if (getPendingConfirmsCount() == 0) {
+			callback.accept(proxy);
+		}
+		else {
+			this.afterAckCallback = callback;
+			this.proxy = proxy;
+		}
+	}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN PURE DELEGATE METHODS
@@ -792,16 +810,24 @@ public class PublisherCallbackChannelImpl
 		this.listeners.clear();
 	}
 
-    @Override
-    public synchronized int getPendingConfirmsCount(Listener listener) {
-        SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
-        if (pendingConfirmsForListener == null) {
-            return 0;
-        }
-        else {
-            return pendingConfirmsForListener.entrySet().size();
-        }
-    }
+	@Override
+	public synchronized int getPendingConfirmsCount(Listener listener) {
+		SortedMap<Long, PendingConfirm> pendingConfirmsForListener = this.pendingConfirms.get(listener);
+		if (pendingConfirmsForListener == null) {
+			return 0;
+		}
+		else {
+			return pendingConfirmsForListener.entrySet().size();
+		}
+	}
+
+	@Override
+	public synchronized int getPendingConfirmsCount() {
+		return this.pendingConfirms.values().stream()
+				.map(m -> m.size())
+				.mapToInt(Integer::valueOf)
+				.sum();
+	}
 
 	/**
 	 * Add the listener and return the internal map of pending confirmations for that listener.
@@ -866,6 +892,18 @@ public class PublisherCallbackChannelImpl
 	}
 
 	private synchronized void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
+		try {
+			doProcessAck(seq, ack, multiple, remove);
+		}
+		finally {
+			if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
+				this.afterAckCallback.accept(this.proxy);
+				this.afterAckCallback = null;
+			}
+		}
+	}
+
+	private void doProcessAck(long seq, boolean ack, boolean multiple, boolean remove) {
 		if (multiple) {
 			/*
 			 * Piggy-backed ack - extract all Listeners for this and earlier
