@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -795,25 +796,30 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * Reset the Channel cache and underlying shared Connection, to be reinitialized on next access.
 	 */
 	protected void reset(List<ChannelProxy> channels, List<ChannelProxy> txChannels,
-			Collection<ChannelProxy> channelsAwaitingAcks) {
+			Map<Channel, ChannelProxy> channelsAwaitingAcks) {
 		this.active = false;
 		closeAndClear(channels);
 		closeAndClear(txChannels);
-		closeAndClear(channelsAwaitingAcks);
+		closeChannels(channelsAwaitingAcks.values());
+		channelsAwaitingAcks.clear();
 		this.active = true;
 	}
 
 	protected void closeAndClear(Collection<ChannelProxy> theChannels) {
 		synchronized (theChannels) {
-			for (ChannelProxy channel : theChannels) {
-				try {
-					channel.close();
-				}
-				catch (Exception ex) {
-					logger.trace("Could not close cached Rabbit Channel", ex);
-				}
-			}
+			closeChannels(theChannels);
 			theChannels.clear();
+		}
+	}
+
+	protected void closeChannels(Collection<ChannelProxy> theChannels) {
+		for (ChannelProxy channel : theChannels) {
+			try {
+				channel.close();
+			}
+			catch (Exception ex) {
+				logger.trace("Could not close cached Rabbit Channel", ex);
+			}
 		}
 	}
 
@@ -1090,8 +1096,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			if (CachingConnectionFactory.this.active && this.publisherConfirms
 					&& proxy instanceof PublisherCallbackChannel) {
-				this.theConnection.channelsAwaitingAcks.add(proxy);
-				((PublisherCallbackChannel) proxy).setAfterAckCallback(this::returnToCache, proxy);
+				this.theConnection.channelsAwaitingAcks.put(this.target, proxy);
+				((PublisherCallbackChannel) proxy).setAfterAckCallback(c -> {
+					returnToCache(this.theConnection.channelsAwaitingAcks.remove(c));
+				});
 			}
 			else {
 				returnToCache(proxy);
@@ -1099,15 +1107,27 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private void returnToCache(Channel proxy) {
-			synchronized (this.channelList) {
-				// Allow for multiple close calls...
-				if (CachingConnectionFactory.this.active && !this.channelList.contains(proxy)) {
-					if (logger.isTraceEnabled()) {
-						logger.trace("Returning cached Channel: " + this.target);
+			if (proxy != null) {
+				synchronized (this.channelList) {
+					// Allow for multiple close calls...
+					if (CachingConnectionFactory.this.active) {
+						if (!this.channelList.contains(proxy)) {
+							if (logger.isTraceEnabled()) {
+								logger.trace("Returning cached Channel: " + this.target);
+							}
+							this.channelList.addLast((ChannelProxy) proxy);
+							setHighWaterMark();
+						}
 					}
-					this.channelList.addLast((ChannelProxy) proxy);
-					setHighWaterMark();
-					this.theConnection.channelsAwaitingAcks.remove(proxy);
+					else {
+						if (proxy.isOpen()) {
+							try {
+								physicalClose();
+							}
+							catch (Exception e) {
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1191,7 +1211,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private final AtomicBoolean closeNotified = new AtomicBoolean(false);
 
-		private final Set<ChannelProxy> channelsAwaitingAcks = ConcurrentHashMap.newKeySet();
+		private final ConcurrentMap<Channel, ChannelProxy> channelsAwaitingAcks = new ConcurrentHashMap<>();
 
 		private volatile Connection target;
 

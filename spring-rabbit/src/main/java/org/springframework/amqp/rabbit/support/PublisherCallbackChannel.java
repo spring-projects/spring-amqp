@@ -84,10 +84,9 @@ public interface PublisherCallbackChannel extends Channel {
 	/**
 	 * Set a callback to be invoked after the ack/nack has been handled.
 	 * @param callback the callback.
-	 * @param proxyForThis the proxy for this channel.
 	 * @since 2.1
 	 */
-	void setAfterAckCallback(Consumer<Channel> callback, Channel proxyForThis);
+	void setAfterAckCallback(Consumer<Channel> callback);
 
 	/**
 	 * Listeners implementing this interface can participate

@@ -92,22 +92,18 @@ public class PublisherCallbackChannelImpl
 
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
-	private volatile Channel proxyForThis;
-
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 	}
 
 	@Override
-	public synchronized void setAfterAckCallback(java.util.function.Consumer<Channel> callback,
-			Channel proxyForThis) {
+	public synchronized void setAfterAckCallback(java.util.function.Consumer<Channel> callback) {
 		if (getPendingConfirmsCount() == 0) {
-			callback.accept(proxyForThis);
+			callback.accept(this);
 		}
 		else {
 			this.afterAckCallback = callback;
-			this.proxyForThis = proxyForThis;
 		}
 	}
 
@@ -896,7 +892,7 @@ public class PublisherCallbackChannelImpl
 		}
 		finally {
 			if (this.afterAckCallback != null && getPendingConfirmsCount() == 0) {
-				this.afterAckCallback.accept(this.proxyForThis);
+				this.afterAckCallback.accept(this);
 				this.afterAckCallback = null;
 			}
 		}
