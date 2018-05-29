@@ -240,11 +240,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		try {
 			return this.rabbitTemplate.execute(channel -> {
 				DeclareOk[] declared = declareQueues(channel, queue);
-				String declaredName = declared.length > 0 ? declared[0].getQueue() : null;
-				if (StringUtils.hasText(declaredName)) {
-					queue.setDeclaredName(declaredName);
-				}
-				return declaredName;
+				return declared.length > 0 ? declared[0].getQueue() : null;
 			});
 		}
 		catch (AmqpException e) {

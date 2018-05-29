@@ -19,6 +19,7 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Simple container collecting information to describe a queue. Used in conjunction with AmqpAdmin.
@@ -91,6 +92,11 @@ public class Queue extends AbstractDeclarable {
 		this.arguments = arguments;
 	}
 
+	/**
+	 * Return the name provided in the constructor.
+	 * @return the name.
+	 * @see #getActualName()
+	 */
 	public String getName() {
 		return this.name;
 	}
@@ -143,6 +149,16 @@ public class Queue extends AbstractDeclarable {
 	 */
 	public String getDeclaredName() {
 		return this.declaredName;
+	}
+
+	/**
+	 * Return the name provided to the constructor or the broker-generated name
+	 * if that name is an empty String.
+	 * @return the name.
+	 * @since 2.0.4
+	 */
+	public String getActualName() {
+		return StringUtils.hasText(this.name) ? this.name : this.declaredName;
 	}
 
 	@Override

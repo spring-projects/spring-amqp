@@ -28,7 +28,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
@@ -301,19 +300,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @since 2.0.4
 	 */
 	protected Map<String, Queue> getQueueNamesToQueues() {
-		HashMap<String, Queue> map = new HashMap<>();
-		if (this.queues.size() > 0) {
-			this.queues.stream()
-				.filter(q -> StringUtils.hasText(q.getName()) || StringUtils.hasText(q.getDeclaredName()))
-				.forEach(q -> map.put(StringUtils.hasText(q.getName()) ? q.getName() : q.getDeclaredName(), q));
-		}
-		return map;
+		return this.queues.stream()
+				.collect(Collectors.toMap(q -> q.getActualName(), q -> q));
 	}
 
 	private List<String> queuesToNames() {
 		return this.queues.stream()
-				.map(q ->  StringUtils.hasText(q.getName()) ? q.getName() : q.getDeclaredName())
-				.filter(n -> StringUtils.hasText(n))
+				.map(q ->  q.getActualName())
 				.collect(Collectors.toList());
 	}
 
@@ -326,8 +319,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
 		addQueues(Arrays.stream(queueNames)
 				.map(n -> new Queue(n))
-				.collect(Collectors.toList())
-			.toArray(new Queue[0]));
+				.toArray(Queue[]::new));
 	}
 
 	/**
@@ -339,7 +331,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		if (isRunning()) {
 			for (Queue queue : queues) {
-				Assert.isTrue(StringUtils.hasText(queue.getName()), "Cannot add broker-named queues dynamically");
+				Assert.hasText(queue.getName(), "Cannot add broker-named queues dynamically");
 			}
 		}
 		this.queues.addAll(Arrays.asList(queues));
@@ -353,17 +345,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		AtomicBoolean result = new AtomicBoolean();
 		if (this.queues.size() > 0) {
 			Set<String> toRemove = new HashSet<>(Arrays.asList(queueNames));
-			this.queues.stream().forEach(q -> {
-				if (toRemove.contains(q.getName()) || toRemove.contains(q.getDeclaredName())) {
-					this.queues.remove(q);
-					result.set(true);
-				}
-			});
+			return this.queues.removeIf(
+					q -> toRemove.contains(q.getActualName()));
 		}
-		return result.get();
+		return false;
 	}
 
 	/**
@@ -375,9 +362,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		return removeQueueNames(Arrays.stream(queues)
-				.map(q -> q.getName())
-				.collect(Collectors.toList())
-				.toArray(new String[0]));
+				.map(q -> q.getActualName())
+				.toArray(String[]::new));
 	}
 
 	/**
@@ -637,11 +623,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
-				? (this.lookupKeyQualifier + this.queues.stream()
+				? (this.lookupKeyQualifier + "[" + this.queues.stream()
 								.map(q -> q.getName())
-								.collect(Collectors.toList())
-							.toString()
-							.replaceAll(" ", ""))
+								.collect(Collectors.joining(",")) + "]")
+						.replaceAll(" ", "")
 				: null;
 	}
 

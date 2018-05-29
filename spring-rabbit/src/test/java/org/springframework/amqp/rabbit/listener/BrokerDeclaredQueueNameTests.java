@@ -94,6 +94,7 @@ public class BrokerDeclaredQueueNameTests {
 			CountDownLatch latch1, CountDownLatch latch2, Queue queue) throws Exception {
 		container.start();
 		String firstDeclaredName = queue.getDeclaredName();
+		this.message.set(null);
 		this.template.convertAndSend(firstDeclaredName, "foo");
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.message.get().getBody()).isEqualTo("foo".getBytes());
@@ -103,6 +104,7 @@ public class BrokerDeclaredQueueNameTests {
 		assertThat(newConnectionLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		String secondDeclaredName = queue.getDeclaredName();
 		assertThat(secondDeclaredName).isNotEqualTo(firstDeclaredName);
+		this.message.set(null);
 		this.template.convertAndSend(secondDeclaredName, "bar");
 		assertThat(latch2.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.message.get().getBody()).isEqualTo("bar".getBytes());

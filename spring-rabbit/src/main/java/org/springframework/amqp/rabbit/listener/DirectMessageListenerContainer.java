@@ -284,7 +284,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public boolean removeQueues(Queue... queues) {
-		removeQueues(Arrays.stream(queues).map(q -> q.getName()));
+		removeQueues(Arrays.stream(queues).map(q -> q.getActualName()));
 		return super.removeQueues(queues);
 	}
 
