@@ -401,6 +401,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
 		ccf.destroy();
+		int n = 0;
+		while (n++ < 100 && pendingConfirms.size() > 0) {
+			Thread.sleep(100);
+		}
 		assertEquals(0, pendingConfirms.size());
 	}
 
@@ -739,7 +743,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		when(mockConnection.createChannel()).thenReturn(mockChannel1, mockChannel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
-		ccf.setExecutor(mock(ExecutorService.class));
+		ccf.setExecutor(Executors.newSingleThreadExecutor());
 		ccf.setPublisherConfirms(true);
 		final RabbitTemplate template = new RabbitTemplate(ccf);
 
@@ -768,13 +772,12 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Test
 	public void testPublisherCallbackChannelImplCloseWithPending() throws Exception {
 
-		final AtomicInteger nacks = new AtomicInteger();
-
 		Listener listener = mock(Listener.class);
+		final CountDownLatch latch = new CountDownLatch(2);
 		doAnswer(invocation -> {
 			boolean ack = invocation.getArgument(1);
 			if (!ack) {
-				nacks.incrementAndGet();
+				latch.countDown();
 			}
 			return null;
 		}).when(listener).handleConfirm(any(PendingConfirm.class), anyBoolean());
@@ -795,8 +798,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		channel.close();
 
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+		int n = 0;
+		while (n++ < 100 && TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size() > 0) {
+			Thread.sleep(100);
+		}
 		assertEquals(0, TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size());
-		assertEquals(2, nacks.get());
 
 	}
 

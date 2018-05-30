@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -37,17 +36,18 @@ import com.rabbitmq.client.Channel;
 
 /**
  * @author Gary Russell
- *
  * @since 2.1
  *
  */
-@RabbitAvailable(queues = RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE)
+@RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE1,
+		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE2 })
 public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 
-	public static final String QUEUE = "defer.close";
+	public static final String QUEUE1 = "synthetic.nack";
+
+	public static final String QUEUE2 = "defer.close";
 
 	@Test
-	@Disabled
 	public void testRepublishOnNackThreadNoExchange() throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
@@ -56,13 +56,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		final CountDownLatch confirmLatch = new CountDownLatch(2);
 		template.setConfirmCallback((cd, a, c) -> {
 			if (confirmLatch.getCount() == 2) {
-				template.convertAndSend(QUEUE, ((MyCD) cd).payload); // deadlock creating new channel
+				template.convertAndSend(QUEUE1, ((MyCD) cd).payload);
 			}
 			confirmLatch.countDown();
 		});
 		template.convertAndSend("bad.exchange", "junk", "foo", new MyCD("foo"));
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
-		assertThat(template.receive(QUEUE, 10_000)).isNotNull();
+		assertThat(template.receive(QUEUE1, 10_000)).isNotNull();
 	}
 
 	@Test
@@ -90,7 +90,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		channel2.close();
 		conn.close();
 		assertThat(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size()).isEqualTo(2);
-		template.convertAndSend("", QUEUE + "junk", "foo", new MyCD("foo"));
+		template.convertAndSend("", QUEUE2 + "junk", "foo", new MyCD("foo"));
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);

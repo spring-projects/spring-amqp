@@ -31,6 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -79,6 +81,8 @@ import com.rabbitmq.client.ShutdownSignalException;
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
 
+	private static final ExecutorService DEFAULT_EXECUTOR = Executors.newSingleThreadExecutor();
+
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -91,9 +95,16 @@ public class PublisherCallbackChannelImpl
 
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
+	private final ExecutorService executor;
+
 	public PublisherCallbackChannelImpl(Channel delegate) {
+		this(delegate, null);
+	}
+
+	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
+		this.executor = executor != null ? executor : DEFAULT_EXECUTOR;
 	}
 
 	@Override
@@ -781,7 +792,11 @@ public class PublisherCallbackChannelImpl
 				this.logger.trace(this.delegate + " is already closed");
 			}
 		}
-		generateNacksForPendingAcks("Channel closed by application");
+		shutdownCompleted("Channel closed by application");
+	}
+
+	private void shutdownCompleted(String cause) {
+		this.executor.execute(() -> generateNacksForPendingAcks(cause));
 	}
 
 	private synchronized void generateNacksForPendingAcks(String cause) {
@@ -997,7 +1012,7 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public void shutdownCompleted(ShutdownSignalException cause) {
-		generateNacksForPendingAcks(cause.getMessage());
+		shutdownCompleted(cause.getMessage());
 	}
 
 // Object
