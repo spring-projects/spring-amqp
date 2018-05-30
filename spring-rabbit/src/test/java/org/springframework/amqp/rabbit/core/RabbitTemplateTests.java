@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,7 +56,6 @@ import org.springframework.amqp.core.ReceiveAndReplyCallback;
 import org.springframework.amqp.rabbit.connection.AbstractRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
-import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SimpleRoutingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.SingleConnectionFactory;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -255,11 +253,9 @@ public class RabbitTemplateTests {
 	@Test
 	public void testPublisherConfirmsReturnsSetup() {
 		org.springframework.amqp.rabbit.connection.ConnectionFactory cf =
-				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class,
-						withSettings().extraInterfaces(PublisherCallbackChannelConnectionFactory.class));
-		PublisherCallbackChannelConnectionFactory pcccf = (PublisherCallbackChannelConnectionFactory) cf;
-		when(pcccf.isPublisherConfirms()).thenReturn(true);
-		when(pcccf.isPublisherReturns()).thenReturn(true);
+				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
+		when(cf.isPublisherConfirms()).thenReturn(true);
+		when(cf.isPublisherReturns()).thenReturn(true);
 		org.springframework.amqp.rabbit.connection.Connection conn =
 				mock(org.springframework.amqp.rabbit.connection.Connection.class);
 		when(cf.createConnection()).thenReturn(conn);
