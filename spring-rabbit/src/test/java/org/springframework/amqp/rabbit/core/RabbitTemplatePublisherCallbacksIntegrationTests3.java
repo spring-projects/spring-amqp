@@ -66,7 +66,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 	}
 
 	@Test
-	public void testDeferredChannelCache() throws Exception {
+	public void testDeferredChannelCacheNack() throws Exception {
 		final CachingConnectionFactory cf = new CachingConnectionFactory(
 				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		cf.setPublisherReturns(true);
@@ -92,6 +92,32 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size()).isEqualTo(2);
 		template.convertAndSend("", QUEUE2 + "junk", "foo", new MyCD("foo"));
 		assertThat(returnLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(cacheCount.get()).isEqualTo(1);
+		cf.destroy();
+	}
+
+	@Test
+	public void testDeferredChannelCacheAck() throws Exception {
+		final CachingConnectionFactory cf = new CachingConnectionFactory(
+				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		cf.setPublisherConfirms(true);
+		final RabbitTemplate template = new RabbitTemplate(cf);
+		final CountDownLatch confirmLatch = new CountDownLatch(1);
+		final AtomicInteger cacheCount = new AtomicInteger();
+		template.setConfirmCallback((cd, a, c) -> {
+			cacheCount.set(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size());
+			confirmLatch.countDown();
+		});
+		template.setMandatory(true);
+		Connection conn = cf.createConnection();
+		Channel channel1 = conn.createChannel(false);
+		Channel channel2 = conn.createChannel(false);
+		channel1.close();
+		channel2.close();
+		conn.close();
+		assertThat(TestUtils.getPropertyValue(cf, "cachedChannelsNonTransactional", List.class).size()).isEqualTo(2);
+		template.convertAndSend("", QUEUE2, "foo", new MyCD("foo"));
 		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(cacheCount.get()).isEqualTo(1);
 		cf.destroy();
