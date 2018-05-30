@@ -104,9 +104,7 @@ public class AnonymousQueue extends Queue {
 	 */
 	@Deprecated
 	@FunctionalInterface
-	public interface NamingStrategy {
-
-		String generateName();
+	public interface NamingStrategy extends org.springframework.amqp.core.NamingStrategy {
 
 	}
 
