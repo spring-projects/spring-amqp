@@ -623,7 +623,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		if (this.publisherConfirms || this.publisherReturns) {
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
-				channel = new PublisherCallbackChannelImpl(channel);
+				channel = new PublisherCallbackChannelImpl(channel, getExecutorService());
 			}
 		}
 		if (channel != null) {
