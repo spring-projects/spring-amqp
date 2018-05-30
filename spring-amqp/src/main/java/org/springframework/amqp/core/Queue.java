@@ -38,7 +38,7 @@ public class Queue extends AbstractDeclarable {
 
 	private final boolean autoDelete;
 
-	private final java.util.Map<java.lang.String, java.lang.Object> arguments;
+	private final Map<String, Object> arguments;
 
 	private volatile String actualName;
 
@@ -86,7 +86,7 @@ public class Queue extends AbstractDeclarable {
 		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
 		this.actualName = StringUtils.hasText(name) ? name
-				: (AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName() + "_awaiting_declaration");
+				: (Base64UrlNamingStrategy.DEFAULT.generateName() + "_awaiting_declaration");
 		this.durable = durable;
 		this.exclusive = exclusive;
 		this.autoDelete = autoDelete;
@@ -137,7 +137,7 @@ public class Queue extends AbstractDeclarable {
 	/**
 	 * Set the name from the DeclareOk.
 	 * @param name the name.
-	 * @since 2.0.4
+	 * @since 2.1
 	 */
 	public void setActualName(String name) {
 		this.actualName = name;
@@ -147,7 +147,7 @@ public class Queue extends AbstractDeclarable {
 	 * Return the name provided to the constructor or the broker-generated name
 	 * if that name is an empty String.
 	 * @return the name.
-	 * @since 2.0.4
+	 * @since 2.1
 	 */
 	public String getActualName() {
 		return this.actualName;

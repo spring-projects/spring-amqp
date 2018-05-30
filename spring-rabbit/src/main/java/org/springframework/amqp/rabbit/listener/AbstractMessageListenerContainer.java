@@ -263,8 +263,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
 		setQueues(Arrays.stream(queueName)
 				.map(n -> new Queue(n))
-				.collect(Collectors.toList())
-			.toArray(new Queue[0]));
+				.toArray(Queue[]::new));
 	}
 
 	/**
@@ -297,16 +296,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Returns a map of current queue names to the Queue object; allows the
 	 * determination of a changed broker-named queue.
 	 * @return the map.
-	 * @since 2.0.4
+	 * @since 2.1
 	 */
 	protected Map<String, Queue> getQueueNamesToQueues() {
 		return this.queues.stream()
-				.collect(Collectors.toMap(q -> q.getActualName(), q -> q));
+				.collect(Collectors.toMap(Queue::getActualName, q -> q));
 	}
 
 	private List<String> queuesToNames() {
 		return this.queues.stream()
-				.map(q ->  q.getActualName())
+				.map(Queue::getActualName)
 				.collect(Collectors.toList());
 	}
 

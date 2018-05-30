@@ -2585,7 +2585,7 @@ Instead, you should hand off the event to a different thread that can then stop 
 [[containers-and-broker-named-queues]]
 ==== Containers and Broker-Named queues
 
-While it is preferable to use `AnonymousQueues` as auto-delete queues, starting with _version 2.0.4_, you can use broker named queues with listener containers:
+While it is preferable to use `AnonymousQueues` as auto-delete queues, starting with _version 2.1_, you can use broker named queues with listener containers:
 
 [source, java]
 ----
@@ -3438,7 +3438,7 @@ If the provided `Queue`'s `name` property is an empty String, the broker declare
 That name is also added to the `Queue` 's `actualName` property.
 This functionality can only be used programmatically by invoking the `RabbitAdmin` directly.
 When using auto-declaration by the admin by defining a queue declaratively in the application context, set the name property to `""` and the broker will create the name.
-Starting with _version 2.0.4_, listener containers can use queues of this type.
+Starting with _version 2.1_, listener containers can use queues of this type.
 See <<containers-and-broker-named-queues>> for more information.
 
 This is in contrast to an `AnonymousQueue` where the framework generates a unique (`UUID`) name and sets `durable` to
