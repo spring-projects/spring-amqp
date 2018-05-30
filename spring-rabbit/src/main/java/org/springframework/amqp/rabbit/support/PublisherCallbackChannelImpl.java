@@ -99,7 +99,7 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public synchronized void setAfterAckCallback(java.util.function.Consumer<Channel> callback) {
-		if (getPendingConfirmsCount() == 0) {
+		if (getPendingConfirmsCount() == 0 && callback != null) {
 			callback.accept(this);
 		}
 		else {

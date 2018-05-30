@@ -95,7 +95,7 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
-		implements InitializingBean, ShutdownListener, PublisherCallbackChannelConnectionFactory {
+		implements InitializingBean, ShutdownListener {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
 
