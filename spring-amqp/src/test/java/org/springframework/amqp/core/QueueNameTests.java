@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ public class QueueNameTests {
 	public void testAnonymous() {
 		AnonymousQueue q = new AnonymousQueue();
 		assertThat(q.getName(), startsWith("spring.gen-"));
-		q = new AnonymousQueue(new AnonymousQueue.Base64UrlNamingStrategy("foo-"));
+		q = new AnonymousQueue(new Base64UrlNamingStrategy("foo-"));
 		assertThat(q.getName(), startsWith("foo-"));
-		q = new AnonymousQueue(AnonymousQueue.UUIDNamingStrategy.DEFAULT);
+		q = new AnonymousQueue(UUIDNamingStrategy.DEFAULT);
 		assertTrue("Not a UUID: " + q.getName(),
 				Pattern.matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}", q.getName()));
 	}

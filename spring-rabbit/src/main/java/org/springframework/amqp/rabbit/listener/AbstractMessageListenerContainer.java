@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -164,7 +165,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private final Object lifecycleMonitor = new Object();
 
-	private volatile List<String> queueNames = new CopyOnWriteArrayList<String>();
+	private volatile List<Queue> queues = new CopyOnWriteArrayList<>();
 
 	private ErrorHandler errorHandler = new ConditionalRejectingErrorHandler();
 
@@ -260,7 +261,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	public void setQueueNames(String... queueName) {
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
-		this.queueNames = new CopyOnWriteArrayList<>(queueName);
+		setQueues(Arrays.stream(queueName)
+				.map(n -> new Queue(n))
+				.toArray(Queue[]::new));
 	}
 
 	/**
@@ -268,28 +271,42 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues the desired queue(s) (can not be <code>null</code>)
 	 */
 	public final void setQueues(Queue... queues) {
-		setQueueNames(collectQueueNames(queues));
-	}
-
-	private static String[] collectQueueNames(Queue... queues) {
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
-		String[] queueNames = new String[queues.length];
-		for (int i = 0; i < queues.length; i++) {
-			queueNames[i] = queues[i].getName();
+		if (isRunning()) {
+			for (Queue queue : queues) {
+				Assert.isTrue(StringUtils.hasText(queue.getName()), "Cannot add broker-named queues dynamically");
+			}
 		}
-		return queueNames;
+		this.queues = new CopyOnWriteArrayList<>(queues);
 	}
 
 	/**
 	 * @return the name of the queues to receive messages from.
 	 */
 	public String[] getQueueNames() {
-		return this.queueNames.toArray(new String[this.queueNames.size()]);
+		return queuesToNames().toArray(new String[0]);
 	}
 
 	protected Set<String> getQueueNamesAsSet() {
-		return new HashSet<String>(this.queueNames);
+		return new HashSet<>(queuesToNames());
+	}
+
+	/**
+	 * Returns a map of current queue names to the Queue object; allows the
+	 * determination of a changed broker-named queue.
+	 * @return the map.
+	 * @since 2.1
+	 */
+	protected Map<String, Queue> getQueueNamesToQueues() {
+		return this.queues.stream()
+				.collect(Collectors.toMap(Queue::getActualName, q -> q));
+	}
+
+	private List<String> queuesToNames() {
+		return this.queues.stream()
+				.map(Queue::getActualName)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -299,15 +316,24 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void addQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		this.queueNames.addAll(Arrays.asList(queueNames));
+		addQueues(Arrays.stream(queueNames)
+				.map(n -> new Queue(n))
+				.toArray(Queue[]::new));
 	}
 
 	/**
 	 * Add queue(s) to this container's list of queues.
 	 * @param queues The queue(s) to add.
 	 */
-	public final void addQueues(Queue... queues) {
-		addQueueNames(collectQueueNames(queues));
+	public void addQueues(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		if (isRunning()) {
+			for (Queue queue : queues) {
+				Assert.hasText(queue.getName(), "Cannot add broker-named queues dynamically");
+			}
+		}
+		this.queues.addAll(Arrays.asList(queues));
 	}
 
 	/**
@@ -318,7 +344,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public boolean removeQueueNames(String... queueNames) {
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
-		return this.queueNames.removeAll(Arrays.asList(queueNames));
+		if (this.queues.size() > 0) {
+			Set<String> toRemove = new HashSet<>(Arrays.asList(queueNames));
+			return this.queues.removeIf(
+					q -> toRemove.contains(q.getActualName()));
+		}
+		return false;
 	}
 
 	/**
@@ -326,8 +357,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to remove.
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
-	public final boolean removeQueues(Queue... queues) {
-		return removeQueueNames(collectQueueNames(queues));
+	public boolean removeQueues(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		return removeQueueNames(Arrays.stream(queues)
+				.map(q -> q.getActualName())
+				.toArray(String[]::new));
 	}
 
 	/**
@@ -587,7 +622,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
-				? (this.lookupKeyQualifier + this.queueNames.toString().replaceAll(" ", ""))
+				? this.lookupKeyQualifier + "[" + this.queues.stream()
+								.map(q -> q.getName())
+								.collect(Collectors.joining(",")) + "]"
 				: null;
 	}
 
@@ -1595,6 +1632,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 			}
 		}
+		else {
+			try {
+				Connection connection = getConnectionFactory().createConnection();
+				if (connection != null) {
+					connection.close();
+				}
+			}
+			catch (Exception e) {
+				logger.info("Broker not available; cannot force queue declarations during start");
+			}
+		}
 	}
 
 	/**
@@ -1622,7 +1670,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		try {
 			ApplicationContext applicationContext = this.getApplicationContext();
 			if (applicationContext != null) {
-				Set<String> queueNames = this.getQueueNamesAsSet();
+				Set<String> queueNames = getQueueNamesAsSet();
 				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
 				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
 					Queue queue = entry.getValue();

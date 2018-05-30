@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -45,6 +46,7 @@ import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
@@ -65,6 +67,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOffExecution;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -231,13 +234,28 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public void addQueueNames(String... queueNames) {
+		Assert.notNull(queueNames, "'queueNames' cannot be null");
+		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
 		try {
 			addQueues(Arrays.stream(queueNames));
 		}
 		catch (AmqpIOException e) {
-			throw new AmqpIOException("Failed to add " + Arrays.asList(queueNames), e.getCause());
+			throw new AmqpIOException("Failed to add " + Arrays.toString(queueNames), e.getCause());
 		}
 		super.addQueueNames(queueNames);
+	}
+
+	@Override
+	public void addQueues(Queue... queues) {
+		Assert.notNull(queues, "'queues' cannot be null");
+		Assert.noNullElements(queues, "'queues' cannot contain null elements");
+		try {
+			addQueues(Arrays.stream(queues).map(q -> q.getName()));
+		}
+		catch (AmqpIOException e) {
+			throw new AmqpIOException("Failed to add " + Arrays.toString(queues), e.getCause());
+		}
+		super.addQueues(queues);
 	}
 
 	private void addQueues(Stream<String> queueNameStream) {
@@ -262,6 +280,12 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	public boolean removeQueueNames(String... queueNames) {
 		removeQueues(Arrays.stream(queueNames));
 		return super.removeQueueNames(queueNames);
+	}
+
+	@Override
+	public boolean removeQueues(Queue... queues) {
+		removeQueues(Arrays.stream(queues).map(q -> q.getActualName()));
+		return super.removeQueues(queues);
 	}
 
 	private void removeQueues(Stream<String> queueNames) {
@@ -359,6 +383,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		if (getFailedDeclarationRetryInterval() < this.monitorInterval) {
 			this.monitorInterval = getFailedDeclarationRetryInterval();
 		}
+		final Map<String, Queue> namesToQueues = getQueueNamesToQueues();
 		this.lastRestartAttempt = System.currentTimeMillis();
 		this.consumerMonitorTask = this.taskScheduler.scheduleAtFixedRate(() -> {
 			long now = System.currentTimeMillis();
@@ -410,6 +435,16 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						for (SimpleConsumer consumer : restartableConsumers) {
 							if (this.logger.isDebugEnabled() && restartableConsumers.size() > 0) {
 								this.logger.debug("Attempting to restart consumer " + consumer);
+							}
+							Queue queue = namesToQueues.get(consumer.getQueue());
+							if (queue != null && !StringUtils.hasText(queue.getName())) {
+								// check to see if a broker-declared queue name has changed
+								String actualName = queue.getActualName();
+								if (StringUtils.hasText(actualName)) {
+									namesToQueues.remove(consumer.getQueue());
+									namesToQueues.put(actualName, queue);
+									consumer = new SimpleConsumer(null, null, actualName);
+								}
 							}
 							try {
 								doConsumeFromQueue(consumer.getQueue());

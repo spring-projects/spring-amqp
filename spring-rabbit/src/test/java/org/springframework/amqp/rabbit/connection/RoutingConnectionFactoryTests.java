@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,12 +178,12 @@ public class RoutingConnectionFactoryTests {
 		connectionFactory.setTargetConnectionFactories(factories);
 
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-		container.setQueueNames("foo, bar");
+		container.setQueueNames("foo", "bar");
 		container.afterPropertiesSet();
 		container.start();
 
 		verify(connectionFactory1, never()).createConnection();
-		verify(connectionFactory2).createConnection();
+		verify(connectionFactory2, times(2)).createConnection(); // container does an early open
 		verify(defaultConnectionFactory, never()).createConnection();
 
 		reset(connectionFactory1, connectionFactory2, defaultConnectionFactory);
@@ -252,7 +252,7 @@ public class RoutingConnectionFactoryTests {
 		Channel channel = mock(Channel.class);
 		given(connection.createChannel(anyBoolean())).willReturn(channel);
 		final AtomicReference<Object> connectionMakerKey = new AtomicReference<>();
-		final CountDownLatch latch = new CountDownLatch(1);
+		final CountDownLatch latch = new CountDownLatch(2); // early connection in Abstract container
 		willAnswer(i -> {
 			connectionMakerKey.set(connectionFactory.determineCurrentLookupKey());
 			latch.countDown();

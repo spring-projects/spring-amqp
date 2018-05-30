@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.amqp.core;
 import java.util.Map;
 
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Simple container collecting information to describe a queue. Used in conjunction with AmqpAdmin.
@@ -37,7 +38,9 @@ public class Queue extends AbstractDeclarable {
 
 	private final boolean autoDelete;
 
-	private final java.util.Map<java.lang.String, java.lang.Object> arguments;
+	private final Map<String, Object> arguments;
+
+	private volatile String actualName;
 
 	/**
 	 * The queue is durable, non-exclusive and non auto-delete.
@@ -82,12 +85,19 @@ public class Queue extends AbstractDeclarable {
 	public Queue(String name, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) {
 		Assert.notNull(name, "'name' cannot be null");
 		this.name = name;
+		this.actualName = StringUtils.hasText(name) ? name
+				: (Base64UrlNamingStrategy.DEFAULT.generateName() + "_awaiting_declaration");
 		this.durable = durable;
 		this.exclusive = exclusive;
 		this.autoDelete = autoDelete;
 		this.arguments = arguments;
 	}
 
+	/**
+	 * Return the name provided in the constructor.
+	 * @return the name.
+	 * @see #getActualName()
+	 */
 	public String getName() {
 		return this.name;
 	}
@@ -124,10 +134,30 @@ public class Queue extends AbstractDeclarable {
 		return this.arguments;
 	}
 
+	/**
+	 * Set the name from the DeclareOk.
+	 * @param name the name.
+	 * @since 2.1
+	 */
+	public void setActualName(String name) {
+		this.actualName = name;
+	}
+
+	/**
+	 * Return the name provided to the constructor or the broker-generated name
+	 * if that name is an empty String.
+	 * @return the name.
+	 * @since 2.1
+	 */
+	public String getActualName() {
+		return this.actualName;
+	}
+
 	@Override
 	public String toString() {
 		return "Queue [name=" + this.name + ", durable=" + this.durable + ", autoDelete=" + this.autoDelete
-				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments + "]";
+				+ ", exclusive=" + this.exclusive + ", arguments=" + this.arguments
+				+ ", actualName=" + this.actualName + "]";
 	}
 
 }

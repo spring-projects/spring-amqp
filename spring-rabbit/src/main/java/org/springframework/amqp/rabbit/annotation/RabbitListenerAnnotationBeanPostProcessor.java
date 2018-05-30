@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.core.AnonymousQueue;
+import org.springframework.amqp.core.Base64UrlNamingStrategy;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.ExchangeBuilder;
@@ -545,7 +545,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		String queueName = (String) resolveExpression(bindingQueue.value());
 		boolean isAnonymous = false;
 		if (!StringUtils.hasText(queueName)) {
-			queueName = AnonymousQueue.Base64UrlNamingStrategy.DEFAULT.generateName();
+			queueName = Base64UrlNamingStrategy.DEFAULT.generateName();
 			// default exclusive/autodelete and non-durable when anonymous
 			isAnonymous = true;
 		}

@@ -47,14 +47,17 @@ public class AnonymousQueue extends Queue {
 	 * @param arguments the arguments.
 	 */
 	public AnonymousQueue(Map<String, Object> arguments) {
-		this(Base64UrlNamingStrategy.DEFAULT, arguments);
+		this(org.springframework.amqp.core.Base64UrlNamingStrategy.DEFAULT, arguments);
 	}
 
 	/**
 	 * Construct a queue with a name provided by the supplied naming strategy.
 	 * @param namingStrategy the naming strategy.
+	 * @deprecated in favor of {@link #AnonymousQueue(NamingStrategy)}.
+	 *
 	 * @since 1.5.3
 	 */
+	@Deprecated
 	public AnonymousQueue(NamingStrategy namingStrategy) {
 		this(namingStrategy, null);
 	}
@@ -64,21 +67,44 @@ public class AnonymousQueue extends Queue {
 	 * supplied arguments.
 	 * @param namingStrategy the naming strategy.
 	 * @param arguments the arguments.
+	 * @deprecated in favor of {@link #AnonymousQueue(NamingStrategy, Map)}.
+	 *
 	 * @since 1.5.3
 	 */
+	@Deprecated
 	public AnonymousQueue(NamingStrategy namingStrategy, Map<String, Object> arguments) {
 		super(namingStrategy.generateName(), false, true, true, arguments);
 	}
 
 	/**
+	 * Construct a queue with a name provided by the supplied naming strategy.
+	 * @param namingStrategy the naming strategy.
+	 * @since 2.1
+	 */
+	public AnonymousQueue(org.springframework.amqp.core.NamingStrategy namingStrategy) {
+		this(namingStrategy, null);
+	}
+
+	/**
+	 * Construct a queue with a name provided by the supplied naming strategy with the
+	 * supplied arguments.
+	 * @param namingStrategy the naming strategy.
+	 * @param arguments the arguments.
+	 * @since 2.1
+	 */
+	public AnonymousQueue(org.springframework.amqp.core.NamingStrategy namingStrategy, Map<String, Object> arguments) {
+		super(namingStrategy.generateName(), false, true, true, arguments);
+	}
+
+	/**
 	 * A strategy to name anonymous queues.
+	 * @deprecated - use the {@link org.springframework.amqp.core.NamingStrategy}.
 	 * @since 1.5.3
 	 *
 	 */
+	@Deprecated
 	@FunctionalInterface
-	public interface NamingStrategy {
-
-		String generateName();
+	public interface NamingStrategy extends org.springframework.amqp.core.NamingStrategy {
 
 	}
 
@@ -89,8 +115,10 @@ public class AnonymousQueue extends Queue {
 	 * the 'base64url' String is generated from a UUID. The base64 alphabet
 	 * is the "URL and Filename Safe Alphabet"; see RFC-4648. Trailing padding
 	 * characters (@code =) are removed.
+	 * @deprecated - use the {@link org.springframework.amqp.core.Base64UrlNamingStrategy}.
 	 * @since 1.5.3
 	 */
+	@Deprecated
 	public static class Base64UrlNamingStrategy implements NamingStrategy {
 
 		/**
@@ -133,8 +161,10 @@ public class AnonymousQueue extends Queue {
 	 * Generates names using {@link UUID#randomUUID()}.
 	 * (e.g. "f20c818a-006b-4416-bf91-643590fedb0e").
 	 * @author Gary Russell
-	 * @since 5.0
+	 * @deprecated - use the {@link org.springframework.amqp.core.UUIDNamingStrategy}.
+	 * @since 2.0
 	 */
+	@Deprecated
 	public static class UUIDNamingStrategy implements NamingStrategy {
 
 		/**

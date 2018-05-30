@@ -376,7 +376,7 @@ public class DirectMessageListenerContainerIntegrationTests {
 	@Test
 	public void testContainerNotRecoveredAfterExhaustingRecoveryBackOff() throws Exception {
 		ConnectionFactory mockCF = mock(ConnectionFactory.class);
-		given(mockCF.createConnection()).willThrow(new RuntimeException("intended - backOff test"));
+		given(mockCF.createConnection()).willReturn(null).willThrow(new RuntimeException("intended - backOff test"));
 		DirectMessageListenerContainer container = new DirectMessageListenerContainer(mockCF);
 		container.setQueueNames("foo");
 		container.setRecoveryBackOff(new FixedBackOff(100, 3));

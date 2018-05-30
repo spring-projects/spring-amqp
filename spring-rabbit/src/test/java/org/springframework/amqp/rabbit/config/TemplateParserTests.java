@@ -127,9 +127,9 @@ public final class TemplateParserTests {
 		SimpleMessageListenerContainer messageListenerContainer =
 				beanFactory.getBean(SimpleMessageListenerContainer.class);
 		dfa = new DirectFieldAccessor(messageListenerContainer);
-		Collection<?> queueNames = (Collection<?>) dfa.getPropertyValue("queueNames");
+		Collection<?> queueNames = (Collection<?>) dfa.getPropertyValue("queues");
 		assertEquals(1, queueNames.size());
-		assertEquals(queueBean.getName(), queueNames.iterator().next());
+		assertEquals(queueBean, queueNames.iterator().next());
 	}
 
 }
