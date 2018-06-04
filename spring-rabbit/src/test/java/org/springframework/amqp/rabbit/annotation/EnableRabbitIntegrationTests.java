@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -360,8 +361,10 @@ public class EnableRabbitIntegrationTests {
 		this.jsonRabbitTemplate.convertAndSend(exchange, routingKey, bar);
 		this.jsonRabbitTemplate.setReceiveTimeout(10000);
 		assertEquals("BAR: barMultiListenerJsonBean", this.jsonRabbitTemplate.receiveAndConvert("sendTo.replies.spel"));
-		assertThat(TestUtils.getPropertyValue(this.registry.getListenerContainer("multi"), "concurrentConsumers"),
-				equalTo(1));
+		MessageListenerContainer container = this.registry.getListenerContainer("multi");
+		assertThat(TestUtils.getPropertyValue(container, "concurrentConsumers"), equalTo(1));
+		assertThat(TestUtils.getPropertyValue(container, "messageListener.errorHandler"), notNullValue());
+		assertTrue(TestUtils.getPropertyValue(container, "messageListener.returnExceptions", Boolean.class));
 	}
 
 	@Test
@@ -1413,7 +1416,8 @@ public class EnableRabbitIntegrationTests {
 	@RabbitListener(id = "multi", bindings = @QueueBinding
 			(value = @Queue,
 			exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
-			key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory")
+			key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory",
+			errorHandler = "alwaysBARHandler", returnExceptions = "true")
 	static class MultiListenerJsonBean {
 
 		@RabbitHandler
