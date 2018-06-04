@@ -356,7 +356,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		for (RabbitListener classLevelListener : classLevelListeners) {
 			MultiMethodRabbitListenerEndpoint endpoint =
 					new MultiMethodRabbitListenerEndpoint(checkedMethods, defaultMethod, bean);
-			endpoint.setBeanFactory(this.beanFactory);
 			processListener(endpoint, classLevelListener, bean, bean.getClass(), beanName);
 		}
 	}
@@ -365,12 +364,6 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		Method methodToUse = checkProxy(method, bean);
 		MethodRabbitListenerEndpoint endpoint = new MethodRabbitListenerEndpoint();
 		endpoint.setMethod(methodToUse);
-		endpoint.setBeanFactory(this.beanFactory);
-		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
-		String errorHandlerBeanName = resolveExpressionAsString(rabbitListener.errorHandler(), "errorHandler");
-		if (StringUtils.hasText(errorHandlerBeanName)) {
-			endpoint.setErrorHandler(this.beanFactory.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class));
-		}
 		processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
 	}
 
@@ -412,6 +405,12 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setId(getEndpointId(rabbitListener));
 		endpoint.setQueueNames(resolveQueues(rabbitListener));
 		endpoint.setConcurrency(resolveExpressionAsStringOrInteger(rabbitListener.concurrency(), "concurrency"));
+		endpoint.setBeanFactory(this.beanFactory);
+		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
+		String errorHandlerBeanName = resolveExpressionAsString(rabbitListener.errorHandler(), "errorHandler");
+		if (StringUtils.hasText(errorHandlerBeanName)) {
+			endpoint.setErrorHandler(this.beanFactory.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class));
+		}
 		String group = rabbitListener.group();
 		if (StringUtils.hasText(group)) {
 			Object resolvedGroup = resolveExpression(group);
