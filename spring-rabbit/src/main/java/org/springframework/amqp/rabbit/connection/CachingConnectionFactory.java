@@ -911,6 +911,16 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+			if (logger.isTraceEnabled() && !method.getName().equals("toString")
+					&& !method.getName().equals("hashCode") && !method.getName().equals("equals")) {
+				try {
+					logger.trace(this.target + " channel." + method.getName() + "("
+							+ (args != null ? Arrays.toString(args) : "") + ")");
+				}
+				catch (Exception e) {
+					// empty - some mocks fail here
+				}
+			}
 			String methodName = method.getName();
 			if (methodName.equals("txSelect") && !this.transactional) {
 				throw new UnsupportedOperationException("Cannot start transaction on non-transactional channel");

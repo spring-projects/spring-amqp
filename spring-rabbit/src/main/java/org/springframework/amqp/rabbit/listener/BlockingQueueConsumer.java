@@ -920,7 +920,9 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
 				throws IOException {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Storing delivery for " + BlockingQueueConsumer.this);
+				logger.debug("Storing delivery for consumerTag: '"
+						+ consumerTag + "' with deliveryTag: '" + envelope.getDeliveryTag() + "' in "
+						+ BlockingQueueConsumer.this);
 			}
 			try {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
