@@ -128,11 +128,13 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 	@Override
 	protected Message createMessage(Object object, MessageProperties messageProperties) throws MessageConversionException {
 		byte[] bytes = null;
+		String contentType = MessageProperties.DEFAULT_CONTENT_TYPE;
 		if (object instanceof byte[]) {
 			bytes = (byte[]) object;
-			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_BYTES);
+			contentType = MessageProperties.CONTENT_TYPE_BYTES;
 		}
 		else if (object instanceof String) {
+			contentType = MessageProperties.CONTENT_TYPE_TEXT_PLAIN;
 			try {
 				bytes = ((String) object).getBytes(this.defaultCharset);
 			}
@@ -140,10 +142,10 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 				throw new MessageConversionException(
 						"failed to convert to Message content", e);
 			}
-			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_TEXT_PLAIN);
 			messageProperties.setContentEncoding(this.defaultCharset);
 		}
 		else if (object instanceof Serializable) {
+			contentType = MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT;
 			try {
 				bytes = SerializationUtils.serialize(object);
 			}
@@ -151,10 +153,14 @@ public class SimpleMessageConverter extends WhiteListDeserializingMessageConvert
 				throw new MessageConversionException(
 						"failed to convert to serialized Message content", e);
 			}
-			messageProperties.setContentType(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT);
+		}
+		Object providedContentType = messageProperties.getHeaders().get("content-type");
+		if (providedContentType != null) {
+			contentType = "" + providedContentType;
 		}
 		if (bytes != null) {
 			messageProperties.setContentLength(bytes.length);
+			messageProperties.setContentType(contentType);
 			return new Message(bytes, messageProperties);
 		}
 		throw new IllegalArgumentException(getClass().getSimpleName()

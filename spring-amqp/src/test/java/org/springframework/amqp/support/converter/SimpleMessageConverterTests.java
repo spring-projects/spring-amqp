@@ -149,6 +149,19 @@ public class SimpleMessageConverterTests extends WhiteListDeserializingMessageCo
 	}
 
 	@Test
+	public void jsonToMessage() throws Exception {
+		SimpleMessageConverter converter = new SimpleMessageConverter();
+		String text = "{ \"foo\": \"bar\" }";
+		MessageProperties properties = new MessageProperties();
+		properties.getHeaders().put("content-type", "application/json");
+		Message message = converter.toMessage(text, properties);
+		String content = new String(message.getBody(), message.getMessageProperties().getContentEncoding());
+		String contentType = message.getMessageProperties().getContentType();
+		assertEquals("application/json", contentType);
+		assertEquals(text, content);
+	}
+
+	@Test
 	public void messageConversionExceptionForClassNotFound() throws Exception {
 		SimpleMessageConverter converter = new SimpleMessageConverter();
 		TestBean testBean = new TestBean("foo");
