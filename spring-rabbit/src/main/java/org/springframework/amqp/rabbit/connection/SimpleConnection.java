@@ -139,7 +139,8 @@ public class SimpleConnection implements Connection, NetworkConnection {
 		return this.delegate.getPort();
 	}
 
-	com.rabbitmq.client.Connection getDelegate() {
+	@Override
+	public com.rabbitmq.client.Connection getDelegate() {
 		return this.delegate;
 	}
 

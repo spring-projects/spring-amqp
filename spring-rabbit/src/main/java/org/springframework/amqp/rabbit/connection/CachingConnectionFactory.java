@@ -857,10 +857,13 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private void putConnectionName(Properties props, ConnectionProxy connection, String keySuffix) {
 		Connection targetConnection = connection.getTargetConnection(); // NOSONAR (close())
-		if (targetConnection instanceof SimpleConnection) {
-			String name = ((SimpleConnection) targetConnection).getDelegate().getClientProvidedName();
-			if (name != null) {
-				props.put("connectionName" + keySuffix, name);
+		if (targetConnection != null) {
+			com.rabbitmq.client.Connection delegate = targetConnection.getDelegate();
+			if (delegate != null) {
+				String name = delegate.getClientProvidedName();
+				if (name != null) {
+					props.put("connectionName" + keySuffix, name);
+				}
 			}
 		}
 	}
@@ -1253,6 +1256,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		@Override
 		public Connection getTargetConnection() {
 			return this.target;
+		}
+
+		@Override
+		public com.rabbitmq.client.Connection getDelegate() {
+			return this.target.getDelegate();
 		}
 
 		@Override

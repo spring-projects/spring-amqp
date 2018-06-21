@@ -341,4 +341,22 @@ public abstract class RabbitUtils {
 		return shouldRequeue;
 	}
 
+	/**
+	 * Return the negotiated frame_max.
+	 * @param connectionFactory the connection factory.
+	 * @return the size or -1 if it cannot be determined.
+	 */
+	public static int getMaxFrame(ConnectionFactory connectionFactory) {
+		try (Connection	connection = connectionFactory.createConnection()) {
+			com.rabbitmq.client.Connection rcon = connection.getDelegate();
+			if (rcon != null) {
+				return rcon.getFrameMax();
+			}
+		}
+		catch (RuntimeException e) {
+			// NOSONAR
+		}
+		return -1;
+	}
+
 }
