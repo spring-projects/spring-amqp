@@ -353,10 +353,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.applicationEventPublisher != null) {
 			instance.setApplicationEventPublisher(this.applicationEventPublisher);
 		}
-		if (endpoint.getAutoStartup() != null) {
-			instance.setAutoStartup(endpoint.getAutoStartup());
-		}
-		else if (this.autoStartup != null) {
+		if (this.autoStartup != null) {
 			instance.setAutoStartup(this.autoStartup);
 		}
 		if (this.phase != null) {
@@ -365,9 +362,14 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		if (this.afterReceivePostProcessors != null) {
 			instance.setAfterReceivePostProcessors(this.afterReceivePostProcessors);
 		}
-		instance.setListenerId(endpoint.getId());
+		if (endpoint != null) {
+			if (endpoint.getAutoStartup() != null) {
+				instance.setAutoStartup(endpoint.getAutoStartup());
+			}
+			instance.setListenerId(endpoint.getId());
 
-		endpoint.setupListenerContainer(instance);
+			endpoint.setupListenerContainer(instance);
+		}
 		if (this.beforeSendReplyPostProcessors != null
 				&& instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
 			((AbstractAdaptableMessageListener) instance.getMessageListener())

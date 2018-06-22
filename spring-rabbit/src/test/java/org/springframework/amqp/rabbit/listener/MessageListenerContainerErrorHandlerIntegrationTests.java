@@ -278,7 +278,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		((DisposableBean) template.getConnectionFactory()).destroy();
 	}
 
-	public void doTest(int messageCount, ErrorHandler errorHandler, CountDownLatch latch, Object listener)
+	public void doTest(int messageCount, ErrorHandler errorHandler, CountDownLatch latch, MessageListener listener)
 			throws Exception {
 		this.errorsHandled = new CountDownLatch(messageCount);
 		int concurrentConsumers = 1;

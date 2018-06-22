@@ -24,3 +24,11 @@ Two exceptions are `ChannelAwareMessageListener` and `RabbitListenerErrorHandler
 
 Channels enabled for publisher confirms are not returned to the cache while there are outstanding confirms.
 See <<template-confirms>> for more information.
+
+
+===== Listener Container Factory improvements
+
+The listener container factories can now be used to create any listener container, not just those for use with `@RabbitListener` s or the `@RabbitListenerEndpointRegistry`.
+See <<using-container-factories>> for more information.
+
+`ChannelAwareMessageListener` now inherits from `MesssageListener`.

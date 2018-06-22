@@ -394,15 +394,16 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Set the message listener implementation to register. This can be either a Spring
 	 * {@link MessageListener} object or a Spring {@link ChannelAwareMessageListener}
-	 * object. Using the strongly typed
-	 * {@link #setChannelAwareMessageListener(ChannelAwareMessageListener)} is preferred.
+	 * object.
 	 *
 	 * @param messageListener The listener.
 	 * @throws IllegalArgumentException if the supplied listener is not a
 	 * {@link MessageListener} or a {@link ChannelAwareMessageListener}
+	 * @deprecated use {@link #setMessageListener(MessageListener)}.
 	 * @see MessageListener
 	 * @see ChannelAwareMessageListener
 	 */
+	@Deprecated
 	public void setMessageListener(Object messageListener) {
 		checkMessageListener(messageListener);
 		this.messageListener = messageListener;
@@ -410,7 +411,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Set the {@link MessageListener}; strongly typed version of
-	 * {@link #setMessageListener(Object)}.
+	 * {@code setMessageListener(Object)}.
 	 * @param messageListener the listener.
 	 * @since 2.0
 	 */
@@ -420,10 +421,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Set the {@link ChannelAwareMessageListener}; strongly typed version of
-	 * {@link #setMessageListener(Object)}.
+	 * {@code setMessageListener(Object)}.
 	 * @param messageListener the listener.
 	 * @since 2.0
+	 * @deprecated use {@link #setMessageListener(MessageListener)} since
+	 * {@link ChannelAwareMessageListener} now inherits {@link MessageListener}.
 	 */
+	@Deprecated
 	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		this.messageListener = messageListener;
 	}
@@ -1071,7 +1075,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	@Override
-	public void setupMessageListener(Object messageListener) {
+	public void setupMessageListener(MessageListener messageListener) {
 		setMessageListener(messageListener);
 	}
 

@@ -82,33 +82,40 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void setMessageListener(Object messageListener) {
 		throw new UnsupportedOperationException(
 				"'messageListener' must be a 'MessageListener' or 'ChannelAwareMessageListener'");
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
-		super.setChannelAwareMessageListener((message, channel) -> {
-			try {
-				messageListener.onMessage(message, channel);
-			}
-			finally {
-				this.inUseConsumerChannels.remove(channel);
-			}
-		});
+		setMessageListener(messageListener);
 	}
 
 	@Override
 	public void setMessageListener(MessageListener messageListener) {
-		super.setChannelAwareMessageListener((message, channel) -> {
-			try {
-				messageListener.onMessage(message);
-			}
-			finally {
-				this.inUseConsumerChannels.remove(channel);
-			}
-		});
+		if (messageListener instanceof ChannelAwareMessageListener) {
+			super.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
+				try {
+					((ChannelAwareMessageListener) messageListener).onMessage(message, channel);
+				}
+				finally {
+					this.inUseConsumerChannels.remove(channel);
+				}
+			});
+		}
+		else {
+			super.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
+				try {
+					messageListener.onMessage(message);
+				}
+				finally {
+					this.inUseConsumerChannels.remove(channel);
+				}
+			});
+		}
 	}
 
 	@Override
