@@ -124,7 +124,7 @@ import com.rabbitmq.client.Channel;
  * @see #setMessageConverter
  * @see org.springframework.amqp.support.converter.SimpleMessageConverter
  * @see org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener
- * @see org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer#setMessageListener
+ * @see org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer#setMessageListener(MessageListener)
  */
 public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 
@@ -269,16 +269,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		Object delegate = getDelegate();
 		if (delegate != this) {
 			if (delegate instanceof ChannelAwareMessageListener) {
-				if (channel != null) {
-					((ChannelAwareMessageListener) delegate).onMessage(message, channel);
-					return;
-				}
-				else if (!(delegate instanceof MessageListener)) {
-					throw new AmqpIllegalStateException("MessageListenerAdapter cannot handle a "
-							+ "ChannelAwareMessageListener delegate if it hasn't been invoked with a Channel itself");
-				}
+				((ChannelAwareMessageListener) delegate).onMessage(message, channel);
+				return;
 			}
-			if (delegate instanceof MessageListener) {
+			else if (delegate instanceof MessageListener) {
 				((MessageListener) delegate).onMessage(message);
 				return;
 			}

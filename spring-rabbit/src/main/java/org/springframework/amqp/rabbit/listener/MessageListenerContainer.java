@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.SmartLifecycle;
 
@@ -33,7 +34,7 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	 * if that message listener type is not supported.
 	 * @param messageListener the {@code object} to wrapped to the {@code MessageListener}.
 	 */
-	void setupMessageListener(Object messageListener);
+	void setupMessageListener(MessageListener messageListener);
 
 	/**
 	 * @return the {@link MessageConverter} that can be used to

@@ -663,11 +663,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		return !this.container.isRunning();
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, String... queueNames) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener, String... queueNames) {
 		return createContainer(listener, true, queueNames);
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, boolean start, String... queueNames) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener, boolean start, String... queueNames) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		if (listener != null) {
 			container.setMessageListener(listener);

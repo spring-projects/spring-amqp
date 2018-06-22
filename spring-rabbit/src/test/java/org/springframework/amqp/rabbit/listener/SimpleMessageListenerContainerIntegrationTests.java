@@ -217,16 +217,16 @@ public class SimpleMessageListenerContainerIntegrationTests {
 	@Test
 	public void testNullQueue() throws Exception {
 		exception.expect(IllegalArgumentException.class);
-		container = createContainer((MessageListener) (m) -> { }, (Queue) null);
+		container = createContainer(m -> { }, (Queue) null);
 	}
 
 	@Test
 	public void testNullQueueName() throws Exception {
 		exception.expect(IllegalArgumentException.class);
-		container = createContainer((MessageListener) (m) -> { }, (String) null);
+		container = createContainer(m -> { }, (String) null);
 	}
 
-	private void doSunnyDayTest(CountDownLatch latch, Object listener) throws Exception {
+	private void doSunnyDayTest(CountDownLatch latch, MessageListener listener) throws Exception {
 		container = createContainer(listener);
 		for (int i = 0; i < messageCount; i++) {
 			template.convertAndSend(queue.getName(), i + "foo");
@@ -236,7 +236,7 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		assertNull(template.receiveAndConvert(queue.getName()));
 	}
 
-	private void doListenerWithExceptionTest(CountDownLatch latch, Object listener) throws Exception {
+	private void doListenerWithExceptionTest(CountDownLatch latch, MessageListener listener) throws Exception {
 		container = createContainer(listener);
 		if (acknowledgeMode.isTransactionAllowed()) {
 			// Should only need one message if it is going to fail
@@ -264,26 +264,26 @@ public class SimpleMessageListenerContainerIntegrationTests {
 		}
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener) {
 		SimpleMessageListenerContainer container = createContainer(listener, queue.getName());
 		container.afterPropertiesSet();
 		container.start();
 		return container;
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, String queue) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener, String queue) {
 		SimpleMessageListenerContainer container = doCreateContainer(listener);
 		container.setQueueNames(queue);
 		return container;
 	}
 
-	private SimpleMessageListenerContainer createContainer(Object listener, Queue queue) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener, Queue queue) {
 		SimpleMessageListenerContainer container = doCreateContainer(listener);
 		container.setQueues(queue);
 		return container;
 	}
 
-	private SimpleMessageListenerContainer doCreateContainer(Object listener) {
+	private SimpleMessageListenerContainer doCreateContainer(MessageListener listener) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container.setMessageListener(listener);
 		container.setTxSize(txSize);

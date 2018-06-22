@@ -70,6 +70,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -81,6 +82,7 @@ import org.springframework.amqp.rabbit.listener.MessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
@@ -151,6 +153,7 @@ public class EnableRabbitIntegrationTests {
 
 	@ClassRule
 	public static final BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues(
+			"test.manual.container", "test.no.listener.yet",
 			"test.simple", "test.header", "test.message", "test.reply", "test.sendTo", "test.sendTo.reply",
 			"test.sendTo.spel", "test.sendTo.reply.spel", "test.sendTo.runtimespel", "test.sendTo.reply.runtimespel",
 			"test.sendTo.runtimespelsource", "test.sendTo.runtimespelsource.reply",
@@ -684,6 +687,22 @@ public class EnableRabbitIntegrationTests {
 		assertThat(((Map<?, ?>) returned).get("key"), instanceOf(JsonObject.class));
 	}
 
+	@Test
+	public void testManualContainer() throws Exception {
+		this.rabbitTemplate.convertAndSend("test.manual.container", "foo");
+		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
+		assertTrue(config.manualContainerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(new String(config.message.getBody()), equalTo("foo"));
+	}
+
+	@Test
+	public void testNoListenerYet() throws Exception {
+		this.rabbitTemplate.convertAndSend("test.no.listener.yet", "bar");
+		EnableRabbitConfig config = this.context.getBean(EnableRabbitConfig.class);
+		assertTrue(config.noListenerLatch.await(10, TimeUnit.SECONDS));
+		assertThat(new String(config.message.getBody()), equalTo("bar"));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1125,6 +1144,12 @@ public class EnableRabbitIntegrationTests {
 
 		private int increment;
 
+		private Message message;
+
+		private final CountDownLatch manualContainerLatch = new CountDownLatch(1);
+
+		private final CountDownLatch noListenerLatch = new CountDownLatch(1);
+
 		@Bean
 		public static ProxyListenerBPP listenerProxier() { // note static
 			return new ProxyListenerBPP();
@@ -1163,6 +1188,30 @@ public class EnableRabbitIntegrationTests {
 				return m;
 			});
 			return factory;
+		}
+
+		@Bean
+		public SimpleMessageListenerContainer factoryCreatedContainerSimpleListener(
+				SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
+			SimpleRabbitListenerEndpoint listener = new SimpleRabbitListenerEndpoint();
+			listener.setQueueNames("test.manual.container");
+			listener.setMessageListener((ChannelAwareMessageListener) (message, channel) -> {
+				this.message = message;
+				this.manualContainerLatch.countDown();
+			});
+			return rabbitListenerContainerFactory.createListenerContainer(listener);
+		}
+
+		@Bean
+		public SimpleMessageListenerContainer factoryCreatedContainerNoListener(
+				SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory) {
+			SimpleMessageListenerContainer container = rabbitListenerContainerFactory.createListenerContainer();
+			container.setMessageListener(message -> {
+				this.message = message;
+				this.noListenerLatch.countDown();
+			});
+			container.setQueueNames("test.no.listener.yet");
+			return container;
 		}
 
 		@Bean

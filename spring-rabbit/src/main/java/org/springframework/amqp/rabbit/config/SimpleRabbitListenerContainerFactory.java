@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,11 +141,14 @@ public class SimpleRabbitListenerContainerFactory
 		if (this.txSize != null) {
 			instance.setTxSize(this.txSize);
 		}
-		String concurrency = endpoint.getConcurrency();
-		if (concurrency != null) {
-			instance.setConcurrency(concurrency);
+		String concurrency = null;
+		if (endpoint != null) {
+			concurrency = endpoint.getConcurrency();
+			if (concurrency != null) {
+				instance.setConcurrency(concurrency);
+			}
 		}
-		else if (this.concurrentConsumers != null) {
+		if (concurrency == null && this.concurrentConsumers != null) {
 			instance.setConcurrentConsumers(this.concurrentConsumers);
 		}
 		if ((concurrency == null || !(concurrency.contains("-"))) && this.maxConcurrentConsumers != null) {

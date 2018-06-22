@@ -29,7 +29,6 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
-import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
@@ -58,10 +57,9 @@ import com.rabbitmq.client.Channel;
  *
  * @since 1.4
  *
- * @see MessageListener
  * @see ChannelAwareMessageListener
  */
-public abstract class AbstractAdaptableMessageListener implements MessageListener, ChannelAwareMessageListener {
+public abstract class AbstractAdaptableMessageListener implements ChannelAwareMessageListener {
 
 	private static final String DEFAULT_RESPONSE_ROUTING_KEY = "";
 
@@ -217,27 +215,6 @@ public abstract class AbstractAdaptableMessageListener implements MessageListene
 	 */
 	protected MessageConverter getMessageConverter() {
 		return this.messageConverter;
-	}
-
-	/**
-	 * Rabbit {@link MessageListener} entry point.
-	 * <p>
-	 * Delegates the message to the target listener method, with appropriate conversion of the message argument.
-	 * <p>
-	 * <b>Note:</b> Does not support sending response messages based on result objects returned from listener methods.
-	 * Use the {@link ChannelAwareMessageListener} entry point (typically through a Spring message listener container)
-	 * for handling result objects as well.
-	 * @param message the incoming Rabbit message
-	 * @see #onMessage(Message, com.rabbitmq.client.Channel)
-	 */
-	@Override
-	public void onMessage(Message message) {
-		try {
-			onMessage(message, null);
-		}
-		catch (Exception e) {
-			throw new ListenerExecutionFailedException("Listener threw exception", e, message);
-		}
 	}
 
 	/**

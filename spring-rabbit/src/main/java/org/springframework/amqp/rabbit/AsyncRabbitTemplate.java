@@ -101,11 +101,9 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 
 	private final String replyAddress;
 
-	@SuppressWarnings("rawtypes")
-	private final ConcurrentMap<String, RabbitFuture> pending = new ConcurrentHashMap<String, RabbitFuture>();
+	private final ConcurrentMap<String, RabbitFuture<?>> pending = new ConcurrentHashMap<>();
 
-	@SuppressWarnings("rawtypes")
-	private final CorrelationMessagePostProcessor messagePostProcessor = new CorrelationMessagePostProcessor<>();
+	private final CorrelationMessagePostProcessor<?> messagePostProcessor = new CorrelationMessagePostProcessor<>();
 
 	private volatile boolean running;
 
@@ -224,7 +222,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setChannelAwareMessageListener(this);
+		this.directReplyToContainer.setMessageListener(this);
 	}
 
 	/**
@@ -239,7 +237,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setChannelAwareMessageListener(this);
+		this.directReplyToContainer.setMessageListener(this);
 	}
 
 	/**
