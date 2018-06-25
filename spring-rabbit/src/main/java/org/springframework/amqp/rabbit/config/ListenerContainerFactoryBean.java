@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 import org.aopalliance.aop.Advice;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -82,7 +83,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Boolean exposeListenerChannel;
 
-	private Object messageListener;
+	private MessageListener messageListener;
 
 	private ErrorHandler errorHandler;
 
@@ -211,7 +212,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		this.exposeListenerChannel = exposeListenerChannel;
 	}
 
-	public void setMessageListener(Object messageListener) {
+	public void setMessageListener(MessageListener messageListener) {
 		this.messageListener = messageListener;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-
+import org.springframework.amqp.core.MessageListener;
+import org.springframework.lang.Nullable;
 
 /**
- * Factory of {@link MessageListenerContainer} based on a
- * {@link RabbitListenerEndpoint} definition.
+ * Factory of {@link MessageListenerContainer}s.
  * @param <C> the container type.
  * @author Stephane Nicoll
  * @author Gary Russell
@@ -31,10 +31,21 @@ package org.springframework.amqp.rabbit.listener;
 public interface RabbitListenerContainerFactory<C extends MessageListenerContainer> {
 
 	/**
-	 * Create a {@link MessageListenerContainer} for the given {@link RabbitListenerEndpoint}.
-	 * @param endpoint the endpoint to configure
-	 * @return the created container
+	 * Create a {@link MessageListenerContainer} for the given
+	 * {@link RabbitListenerEndpoint}.
+	 * @param endpoint the endpoint to configure.
+	 * @return the created container.
 	 */
-	C createListenerContainer(RabbitListenerEndpoint endpoint);
+	C createListenerContainer(@Nullable RabbitListenerEndpoint endpoint);
+
+	/**
+	 * Create a {@link MessageListenerContainer} with no {@link MessageListener}
+	 * or queues; the listener must be added later before the container is started.
+	 * @return the created container.
+	 * @since 2.1.
+	 */
+	default C createListenerContainer() {
+		return createListenerContainer(null);
+	}
 
 }
