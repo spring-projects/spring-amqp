@@ -224,7 +224,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setChannelAwareMessageListener(this);
+		this.directReplyToContainer.setMessageListener(this);
 	}
 
 	/**
@@ -239,7 +239,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 		this.container = null;
 		this.replyAddress = null;
 		this.directReplyToContainer = new DirectReplyToMessageListenerContainer(this.template.getConnectionFactory());
-		this.directReplyToContainer.setChannelAwareMessageListener(this);
+		this.directReplyToContainer.setMessageListener(this);
 	}
 
 	/**

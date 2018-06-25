@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,9 @@ package org.springframework.amqp.rabbit.support;
 import java.util.Collection;
 
 import org.springframework.amqp.core.MessageListener;
-import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 
 /**
- * {@link MessageListener}s and {@link ChannelAwareMessageListener}s that also implement this
+ * {@link MessageListener}s that also implement this
  * interface can have configuration verified during initialization.
  *
  * @author Gary Russell

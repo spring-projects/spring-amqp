@@ -410,8 +410,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the {@link MessageListener}; strongly typed version of
-	 * {@code setMessageListener(Object)}.
+	 * Set the {@link MessageListener}.
 	 * @param messageListener the listener.
 	 * @since 2.0
 	 */
@@ -420,8 +419,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
-	 * Set the {@link ChannelAwareMessageListener}; strongly typed version of
-	 * {@code setMessageListener(Object)}.
+	 * Set the {@link ChannelAwareMessageListener}.
 	 * @param messageListener the listener.
 	 * @since 2.0
 	 * @deprecated use {@link #setMessageListener(MessageListener)} since
@@ -435,15 +433,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Check the given message listener, throwing an exception if it does not correspond to a supported listener type.
 	 * <p>
-	 * By default, only a Spring {@link MessageListener} object or a Spring
-	 * {@link ChannelAwareMessageListener} object will be accepted.
+	 * Only a Spring {@link MessageListener} object will be accepted.
 	 * @param messageListener the message listener object to check
-	 * @throws IllegalArgumentException if the supplied listener is not a MessageListener or SessionAwareMessageListener
+	 * @throws IllegalArgumentException if the supplied listener is not a MessageListener
 	 * @see MessageListener
-	 * @see ChannelAwareMessageListener
 	 */
 	protected void checkMessageListener(Object messageListener) {
-		if (!(messageListener instanceof MessageListener || messageListener instanceof ChannelAwareMessageListener)) {
+		if (!(messageListener instanceof MessageListener)) {
 			throw new IllegalArgumentException("Message listener needs to be of type ["
 					+ MessageListener.class.getName() + "] or [" + ChannelAwareMessageListener.class.getName() + "]");
 		}

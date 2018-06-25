@@ -83,6 +83,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	@Override
 	@SuppressWarnings("deprecation")
+	@Deprecated
 	public void setMessageListener(Object messageListener) {
 		throw new UnsupportedOperationException(
 				"'messageListener' must be a 'MessageListener' or 'ChannelAwareMessageListener'");
@@ -90,6 +91,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 
 	@Override
 	@SuppressWarnings("deprecation")
+	@Deprecated
 	public void setChannelAwareMessageListener(ChannelAwareMessageListener messageListener) {
 		setMessageListener(messageListener);
 	}

@@ -64,7 +64,7 @@ public class MessageListenerAdapterTests {
 			}
 		}
 		this.adapter.setDelegate(new Delegate());
-		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties), null);
 		assertTrue(called.get());
 	}
 
@@ -79,7 +79,7 @@ public class MessageListenerAdapterTests {
 			}
 		}
 		this.adapter = new MessageListenerAdapter(new Delegate(), "myPojoMessageMethod");
-		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), messageProperties), null);
 		assertTrue(called.get());
 	}
 
@@ -87,7 +87,7 @@ public class MessageListenerAdapterTests {
 	public void testExplicitListenerMethod() throws Exception {
 		this.adapter.setDefaultListenerMethod("handle");
 		this.adapter.setDelegate(this.simpleService);
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("handle", this.simpleService.called);
 	}
 
@@ -101,13 +101,13 @@ public class MessageListenerAdapterTests {
 		this.adapter.setDelegate(this.simpleService);
 		this.messageProperties.setConsumerQueue("foo");
 		this.messageProperties.setConsumerTag("bar");
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("handle", this.simpleService.called);
 		this.messageProperties.setConsumerQueue("junk");
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("notDefinedOnInterface", this.simpleService.called);
 		this.messageProperties.setConsumerTag("junk");
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("anotherHandle", this.simpleService.called);
 	}
 
@@ -117,7 +117,7 @@ public class MessageListenerAdapterTests {
 		ProxyFactory factory = new ProxyFactory(this.simpleService);
 		factory.setProxyTargetClass(true);
 		this.adapter.setDelegate(factory.getProxy());
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("notDefinedOnInterface", this.simpleService.called);
 	}
 
@@ -127,7 +127,7 @@ public class MessageListenerAdapterTests {
 		ProxyFactory factory = new ProxyFactory(this.simpleService);
 		factory.setProxyTargetClass(false);
 		this.adapter.setDelegate(factory.getProxy());
-		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties));
+		this.adapter.onMessage(new Message("foo".getBytes(), this.messageProperties), null);
 		assertEquals("handle", this.simpleService.called);
 	}
 
