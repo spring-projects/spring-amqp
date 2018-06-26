@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -278,8 +280,11 @@ public class BlockingQueueConsumerTests {
 		doReturn(isOpen.get()).when(channel).isOpen();
 		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
-		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class))).thenReturn("consumerTag");
+		doAnswer(i -> {
+			((Consumer) i.getArgument(6)).handleConsumeOk("consumerTag");
+			return "consumerTag";
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class));
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<>(),
@@ -310,8 +315,11 @@ public class BlockingQueueConsumerTests {
 		doReturn(isOpen.get()).when(channel).isOpen();
 		when(channel.queueDeclarePassive(anyString()))
 				.then(invocation -> mock(AMQP.Queue.DeclareOk.class));
-		when(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-				anyMap(), any(Consumer.class))).thenReturn("consumerTag");
+		doAnswer(i -> {
+			((Consumer) i.getArgument(6)).handleConsumeOk("consumerTag");
+			return "consumerTag";
+		}).when(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class));
 
 		BlockingQueueConsumer blockingQueueConsumer = new BlockingQueueConsumer(connectionFactory,
 				new DefaultMessagePropertiesConverter(), new ActiveObjectCounter<BlockingQueueConsumer>(),
@@ -323,7 +331,8 @@ public class BlockingQueueConsumerTests {
 		blockingQueueConsumer.start();
 
 		verify(channel).basicQos(2);
-		Consumer consumer = TestUtils.getPropertyValue(blockingQueueConsumer, "consumer", Consumer.class);
+		Consumer consumer = (Consumer) TestUtils.getPropertyValue(blockingQueueConsumer, "consumers", Map.class)
+				.get("test");
 		isOpen.set(false);
 		blockingQueueConsumer.stop();
 		verify(channel).basicCancel("consumerTag");

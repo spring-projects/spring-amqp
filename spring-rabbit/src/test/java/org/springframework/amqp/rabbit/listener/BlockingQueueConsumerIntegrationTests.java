@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,18 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.Level;
 import org.junit.After;
@@ -39,7 +43,6 @@ import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
-import org.springframework.amqp.utils.test.TestUtils;
 
 /**
  * @author Dave Syer
@@ -81,18 +84,21 @@ public class BlockingQueueConsumerIntegrationTests {
 				AcknowledgeMode.AUTO, true, 1, queue1.getName(), queue2.getName());
 		final String consumerTagPrefix = UUID.randomUUID().toString();
 		blockingQueueConsumer.setTagStrategy(queue -> consumerTagPrefix + '#' + queue);
+		CountDownLatch latch = new CountDownLatch(2);
+		List<ConsumeOkEvent> events = new ArrayList<>();
+		blockingQueueConsumer.setApplicationEventPublisher(e -> {
+			if (e instanceof ConsumeOkEvent) {
+				events.add((ConsumeOkEvent) e);
+				latch.countDown();
+			}
+		});
 		blockingQueueConsumer.start();
-		assertNotNull(TestUtils.getPropertyValue(blockingQueueConsumer, "consumerTags", Map.class).get(
-				consumerTagPrefix + "#" + queue1.getName()));
-		assertNotNull(TestUtils.getPropertyValue(blockingQueueConsumer, "consumerTags", Map.class).get(
-				consumerTagPrefix + "#" + queue2.getName()));
-
-		// TODO: make this into a proper assertion. An exception can be thrown here by the Rabbit client and printed to
-		// stderr without being rethrown (so hard to make a test fail).
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
+		assertThat(events.get(0).getConsumerTag(), equalTo(consumerTagPrefix + "#" + queue1.getName()));
+		assertThat(events.get(1).getConsumerTag(), equalTo(consumerTagPrefix + "#" + queue2.getName()));
 		blockingQueueConsumer.stop();
 		assertNull(template.receiveAndConvert(queue1.getName()));
 		connectionFactory.destroy();
-
 	}
 
 	@Test

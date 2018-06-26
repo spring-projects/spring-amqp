@@ -430,9 +430,11 @@ public class SimpleMessageListenerContainerTests {
 		CountDownLatch latch1 = new CountDownLatch(2);
 		CountDownLatch latch2 = new CountDownLatch(2);
 		doAnswer(messageToConsumer(mockChannel1, container, false, latch1))
-		.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.when(mockChannel1).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel2, container, false, latch1))
-			.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(), anyMap(), any(Consumer.class));
+				.when(mockChannel2).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
 		doAnswer(messageToConsumer(mockChannel1, container, true, latch2)).when(mockChannel1).basicCancel(anyString());
 		doAnswer(messageToConsumer(mockChannel2, container, true, latch2)).when(mockChannel2).basicCancel(anyString());
 
@@ -565,12 +567,12 @@ public class SimpleMessageListenerContainerTests {
 			for (Object consumer : consumers) {
 				ChannelProxy channel = TestUtils.getPropertyValue(consumer, "channel", ChannelProxy.class);
 				if (channel != null && channel.getTargetChannel() == mockChannel) {
-					Consumer rabbitConsumer = TestUtils.getPropertyValue(consumer, "consumer", Consumer.class);
 					if (cancel) {
-						rabbitConsumer.handleCancelOk(invocation.getArgument(0));
+						((Consumer) TestUtils.getPropertyValue(consumer, "consumers", Map.class)
+							.values().iterator().next()).handleCancelOk(invocation.getArgument(0));
 					}
 					else {
-						rabbitConsumer.handleConsumeOk("foo");
+						((Consumer) invocation.getArgument(6)).handleConsumeOk("foo");
 						returnValue = "foo";
 					}
 					latch.countDown();
