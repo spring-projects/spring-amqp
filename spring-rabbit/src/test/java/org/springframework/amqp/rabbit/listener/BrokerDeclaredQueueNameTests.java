@@ -22,6 +22,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.core.Message;
@@ -81,6 +86,23 @@ public class BrokerDeclaredQueueNameTests {
 	@Autowired
 	private DirectMessageListenerContainer dmlc;
 
+	private static Level savedLevel;
+
+	@BeforeAll
+	public static void setUp() {
+		Logger logger = (Logger) LogManager
+				.getLogger("org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer");
+		savedLevel = logger.getLevel();
+		logger.setLevel(Level.DEBUG);
+	}
+
+	@AfterAll
+	public static void tearDown() {
+		Logger logger = (Logger) LogManager
+				.getLogger("org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer");
+		logger.setLevel(savedLevel);
+	}
+
 	@Test
 	public void testBrokerNamedQueueSMLC() throws Exception {
 		testBrokerNamedQueue(this.smlc, this.latch1, this.latch2, this.queue1);
@@ -100,8 +122,8 @@ public class BrokerDeclaredQueueNameTests {
 		assertThat(latch1.await(10, TimeUnit.SECONDS)).isTrue();
 		assertThat(this.message.get().getBody()).isEqualTo("foo".getBytes());
 		final CountDownLatch newConnectionLatch = new CountDownLatch(2);
-		cf.addConnectionListener(c -> newConnectionLatch.countDown());
-		cf.resetConnection();
+		this.cf.addConnectionListener(c -> newConnectionLatch.countDown());
+		this.cf.resetConnection();
 		assertThat(newConnectionLatch.await(10, TimeUnit.SECONDS)).isTrue();
 		String secondActualName = queue.getActualName();
 		assertThat(secondActualName).isNotEqualTo(firstActualName);
