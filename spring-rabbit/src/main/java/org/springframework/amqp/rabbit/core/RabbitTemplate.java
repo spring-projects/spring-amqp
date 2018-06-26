@@ -2279,7 +2279,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			@Override
 			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)
 					throws IOException {
-				future.complete(new Delivery(consumerTag, envelope, properties, body));
+				future.complete(new Delivery(consumerTag, envelope, properties, body, queueName));
 			}
 
 		};

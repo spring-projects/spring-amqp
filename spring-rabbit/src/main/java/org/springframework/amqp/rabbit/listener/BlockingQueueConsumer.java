@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,10 +31,12 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,7 +66,6 @@ import org.springframework.util.backoff.BackOffExecution;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.Recoverable;
@@ -103,7 +105,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 	private RabbitResourceHolder resourceHolder;
 
-	private InternalConsumer consumer;
+	private final ConcurrentMap<String, InternalConsumer> consumers = new ConcurrentHashMap<>();
 
 	/**
 	 * The flag indicating that consumer has been cancelled from all queues
@@ -128,8 +130,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 	private final Set<Long> deliveryTags = new LinkedHashSet<Long>();
 
 	private final boolean defaultRequeueRejected;
-
-	private final Map<String, String> consumerTags = new ConcurrentHashMap<String, String>();
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
@@ -290,8 +290,11 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		return this.channel;
 	}
 
-	public String getConsumerTag() {
-		return this.consumer.getConsumerTag();
+	public Collection<String> getConsumerTags() {
+		return this.consumers.values().stream()
+				.map(c -> c.getConsumerTag())
+				.filter(tag -> tag != null)
+				.collect(Collectors.toList());
 	}
 
 	public void setShutdownTimeout(long shutdownTimeout) {
@@ -394,8 +397,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 	protected void basicCancel(boolean expected) {
 		this.normalCancel = expected;
-		for (String consumerTag : this.consumerTags.keySet()) {
-			removeConsumer(consumerTag);
+		getConsumerTags().forEach(consumerTag -> {
 			try {
 				if (this.channel.isOpen()) {
 					this.channel.basicCancel(consumerTag);
@@ -411,7 +413,8 @@ public class BlockingQueueConsumer implements RecoveryListener {
 					logger.trace(this.channel + " is already closed");
 				}
 			}
-		}
+		});
+		this.cancelled.set(true);
 		this.abortStarted = System.currentTimeMillis();
 	}
 
@@ -455,7 +458,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 				delivery.getProperties(), envelope, "UTF-8");
 		messageProperties.setConsumerTag(delivery.getConsumerTag());
-		messageProperties.setConsumerQueue(this.consumerTags.get(delivery.getConsumerTag()));
+		messageProperties.setConsumerQueue(delivery.getQueue());
 		Message message = new Message(body, messageProperties);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Received message: " + message);
@@ -573,7 +576,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
 		}
-		this.consumer = new InternalConsumer(this.channel);
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
 
@@ -666,13 +668,14 @@ public class BlockingQueueConsumer implements RecoveryListener {
 	}
 
 	private void consumeFromQueue(String queue) throws IOException {
+		InternalConsumer consumer = new InternalConsumer(this.channel, queue);
 		String consumerTag = this.channel.basicConsume(queue, this.acknowledgeMode.isAutoAck(),
 				(this.tagStrategy != null ? this.tagStrategy.createConsumerTag(queue) : ""), this.noLocal,
 				this.exclusive, this.consumerArgs,
-				new ConsumerDecorator(queue, this.consumer, this.applicationEventPublisher));
+				consumer);
 
 		if (consumerTag != null) {
-			this.consumerTags.put(consumerTag, queue);
+			this.consumers.put(queue, consumer);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Started on queue '" + queue + "' with tag " + consumerTag + ": " + this);
 			}
@@ -718,15 +721,13 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		}
 	}
 
-	public void stop() {
+	public synchronized void stop() {
 		if (this.abortStarted == 0) { // signal handle delivery to use offer
 			this.abortStarted = System.currentTimeMillis();
 		}
-		if (this.consumer != null && this.consumer.getChannel() != null && this.consumerTags.size() > 0
-				&& !this.cancelled.get()) {
+		if (!this.cancelled()) {
 			try {
-				RabbitUtils.closeMessageConsumer(this.consumer.getChannel(), this.consumerTags.keySet(),
-						this.transactional);
+				RabbitUtils.closeMessageConsumer(this.channel, getConsumerTags(), this.transactional);
 			}
 			catch (Exception e) {
 				if (logger.isDebugEnabled()) {
@@ -740,7 +741,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		RabbitUtils.setPhysicalCloseRequired(this.channel, true);
 		ConnectionFactoryUtils.releaseResources(this.resourceHolder);
 		this.deliveryTags.clear();
-		this.consumer = null;
+		this.consumers.clear();
 		this.queue.clear(); // in case we still have a client thread blocked
 	}
 
@@ -777,22 +778,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		}
 		finally {
 			this.deliveryTags.clear();
-		}
-	}
-
-	/**
-	 * Remove the consumer and set cancelled if all are gone.
-	 * @param consumerTag the tag to remove.
-	 * @return true if consumers remain.
-	 */
-	private boolean removeConsumer(String consumerTag) {
-		this.consumerTags.remove(consumerTag);
-		if (this.consumerTags.isEmpty()) {
-			this.cancelled.set(true);
-			return false;
-		}
-		else {
-			return true;
 		}
 	}
 
@@ -861,14 +846,18 @@ public class BlockingQueueConsumer implements RecoveryListener {
 	@Override
 	public String toString() {
 		return "Consumer@" + ObjectUtils.getIdentityHexString(this) + ": "
-				+ "tags=[" + (this.consumerTags.toString()) + "], channel=" + this.channel
+				+ "tags=[" + getConsumerTags()
+				+ "], channel=" + this.channel
 				+ ", acknowledgeMode=" + this.acknowledgeMode + " local queue size=" + this.queue.size();
 	}
 
 	private final class InternalConsumer extends DefaultConsumer {
 
-		InternalConsumer(Channel channel) {
+		private final String queue;
+
+		InternalConsumer(Channel channel, String queue) {
 			super(channel);
+			this.queue = queue;
 		}
 
 		@Override
@@ -876,6 +865,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			super.handleConsumeOk(consumerTag);
 			if (logger.isDebugEnabled()) {
 				logger.debug("ConsumeOK: " + BlockingQueueConsumer.this);
+			}
+			if (BlockingQueueConsumer.this.applicationEventPublisher != null) {
+				BlockingQueueConsumer.this.applicationEventPublisher
+						.publishEvent(new ConsumeOkEvent(this, this.queue, consumerTag));
 			}
 		}
 
@@ -899,11 +892,15 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		public void handleCancel(String consumerTag) throws IOException {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Cancel received for " + consumerTag + " ("
-						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
+						+ this.queue
 						+ "); " + BlockingQueueConsumer.this);
 			}
-			if (removeConsumer(consumerTag)) {
+			BlockingQueueConsumer.this.consumers.remove(this.queue);
+			if (!BlockingQueueConsumer.this.consumers.isEmpty()) {
 				basicCancel(false);
+			}
+			else {
+				BlockingQueueConsumer.this.cancelled.set(true);
 			}
 		}
 
@@ -911,7 +908,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		public void handleCancelOk(String consumerTag) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Received cancelOk for tag " + consumerTag + " ("
-						+ BlockingQueueConsumer.this.consumerTags.get(consumerTag)
+						+ this.queue
 						+ "); " + BlockingQueueConsumer.this);
 			}
 		}
@@ -926,8 +923,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			}
 			try {
 				if (BlockingQueueConsumer.this.abortStarted > 0) {
-					if (!BlockingQueueConsumer.this.queue.offer(new Delivery(consumerTag, envelope, properties, body),
+					if (!BlockingQueueConsumer.this.queue.offer(
+							new Delivery(consumerTag, envelope, properties, body, this.queue),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
+
 						RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
@@ -942,7 +941,8 @@ public class BlockingQueueConsumer implements RecoveryListener {
 					}
 				}
 				else {
-					BlockingQueueConsumer.this.queue.put(new Delivery(consumerTag, envelope, properties, body));
+					BlockingQueueConsumer.this.queue
+							.put(new Delivery(consumerTag, envelope, properties, body, this.queue));
 				}
 			}
 			catch (InterruptedException e) {
@@ -950,65 +950,10 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			}
 		}
 
-	}
-
-	private static final class ConsumerDecorator implements Consumer {
-
-		private final String queue;
-
-		private final Consumer delegate;
-
-		private final ApplicationEventPublisher applicationEventPublisher;
-
-		private String consumerTag;
-
-		ConsumerDecorator(String queue, Consumer delegate, ApplicationEventPublisher applicationEventPublisher) {
-			this.queue = queue;
-			this.delegate = delegate;
-			this.applicationEventPublisher = applicationEventPublisher;
-		}
-
-
-		@Override
-		public void handleConsumeOk(String consumerTag) {
-			this.consumerTag = consumerTag;
-			this.delegate.handleConsumeOk(consumerTag);
-			if (this.applicationEventPublisher != null) {
-				this.applicationEventPublisher.publishEvent(new ConsumeOkEvent(this.delegate, this.queue, consumerTag));
-			}
-		}
-
-		@Override
-		public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-			this.delegate.handleShutdownSignal(consumerTag, sig);
-		}
-
-		@Override
-		public void handleCancel(String consumerTag) throws IOException {
-			this.delegate.handleCancel(consumerTag);
-		}
-
-		@Override
-		public void handleCancelOk(String consumerTag) {
-			this.delegate.handleCancelOk(consumerTag);
-		}
-
-		@Override
-		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-				byte[] body) throws IOException {
-
-			this.delegate.handleDelivery(consumerTag, envelope, properties, body);
-		}
-
-		@Override
-		public void handleRecoverOk(String consumerTag) {
-			this.delegate.handleRecoverOk(consumerTag);
-		}
-
 		@Override
 		public String toString() {
-			return "ConsumerDecorator{" + "queue='" + this.queue + '\'' +
-					", consumerTag='" + this.consumerTag + '\'' +
+			return "InternalConsumer{" + "queue='" + this.queue + '\'' +
+					", consumerTag='" + getConsumerTag() + '\'' +
 					'}';
 		}
 

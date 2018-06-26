@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(channel -> {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
-			String tag = consumer.getConsumerTag();
+			String tag = consumer.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			template.convertAndSend("foo", "message");
@@ -119,7 +119,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(channel -> {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
-			String tag = consumer.getConsumerTag();
+			String tag = consumer.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			template.convertAndSend("topic", "foo", "message");
@@ -163,7 +163,7 @@ public class RabbitBindingIntegrationTests {
 		BlockingQueueConsumer consumer = template.execute(channel -> {
 
 			BlockingQueueConsumer consumer1 = createConsumer(template);
-			String tag = consumer1.getConsumerTag();
+			String tag = consumer1.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			return consumer1;
@@ -197,7 +197,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(channel -> {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
-			String tag = consumer.getConsumerTag();
+			String tag = consumer.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			try {
@@ -216,7 +216,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(channel -> {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
-			String tag = consumer.getConsumerTag();
+			String tag = consumer.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			try {
@@ -247,7 +247,7 @@ public class RabbitBindingIntegrationTests {
 		template.execute(channel -> {
 
 			BlockingQueueConsumer consumer = createConsumer(template);
-			String tag = consumer.getConsumerTag();
+			String tag = consumer.getConsumerTags().iterator().next();
 			assertNotNull(tag);
 
 			try {
@@ -273,7 +273,7 @@ public class RabbitBindingIntegrationTests {
 		// wait for consumeOk...
 		int n = 0;
 		while (n++ < 100) {
-			if (consumer.getConsumerTag() == null) {
+			if (consumer.getConsumerTags().size() == 0) {
 				try {
 					Thread.sleep(100);
 				}
