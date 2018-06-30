@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
+import java.util.Properties;
 
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.springframework.amqp.core.Queue;
@@ -28,7 +32,6 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
@@ -42,8 +45,8 @@ import org.springframework.core.io.ClassPathResource;
  */
 public final class QueueParserIntegrationTests {
 
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	@ClassRule
+	public static BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
 
 	private DefaultListableBeanFactory beanFactory;
 
@@ -59,19 +62,24 @@ public final class QueueParserIntegrationTests {
 
 		Queue queue = beanFactory.getBean("arguments", Queue.class);
 		assertNotNull(queue);
-		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(BrokerTestUtils.getPort());
-		connectionFactory.setHost("localhost");
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(
+				brokerIsRunning.getConnectionFactory());
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		RabbitAdmin rabbitAdmin = new RabbitAdmin(template.getConnectionFactory());
+		RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
 		rabbitAdmin.deleteQueue(queue.getName());
 		rabbitAdmin.declareQueue(queue);
 
 		assertEquals(100L, queue.getArguments().get("x-message-ttl"));
 		template.convertAndSend(queue.getName(), "message");
-
-		Thread.sleep(200);
-		String result = (String) template.receiveAndConvert(queue.getName());
-		assertEquals(null, result);
+		Properties props = rabbitAdmin.getQueueProperties("arguments");
+		if (props != null) {
+			int n = 0;
+			while (n++ < 200 && (Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT) > 0) {
+				Thread.sleep(50);
+				props = rabbitAdmin.getQueueProperties("arguments");
+			}
+			assertThat((Integer) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT), equalTo(0));
+		}
 
 		connectionFactory.destroy();
 		brokerIsRunning.deleteQueues("arguments");
