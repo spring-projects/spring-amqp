@@ -42,6 +42,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory.CacheMode;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -68,7 +69,7 @@ import com.rabbitmq.client.Channel;
  * @author Artem Bilan
  */
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
-		InitializingBean {
+		BeanNameAware, InitializingBean {
 
 	/**
 	 * The default exchange name.
@@ -99,6 +100,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final RabbitTemplate rabbitTemplate;
+
+	private String beanName;
 
 	private RetryTemplate retryTemplate;
 
@@ -394,6 +397,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 	}
 
+	@Override
+	public void setBeanName(String name) {
+		this.beanName = name;
+	}
+
+	public String getBeanName() {
+		return this.beanName;
+	}
+
 	// Lifecycle implementation
 
 	public boolean isAutoStartup() {
@@ -559,7 +571,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables) {
 		return declarables.stream()
 				.filter(d -> d.shouldDeclare()
-						&& (d.getDeclaringAdmins().isEmpty() || d.getDeclaringAdmins().contains(this)))
+						&& (d.getDeclaringAdmins().isEmpty() || d.getDeclaringAdmins().contains(this)
+								|| (this.beanName != null && d.getDeclaringAdmins().contains(this.beanName))))
 				.collect(Collectors.toList());
 	}
 
