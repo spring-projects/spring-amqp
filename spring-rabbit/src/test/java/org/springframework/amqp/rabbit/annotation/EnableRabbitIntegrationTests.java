@@ -760,7 +760,7 @@ public class EnableRabbitIntegrationTests {
 	public static class MyService {
 
 		@RabbitListener(bindings = @QueueBinding(
-				value = @Queue(value = "auto.declare", autoDelete = "true"),
+				value = @Queue(value = "auto.declare", autoDelete = "true", admins = "rabbitAdmin"),
 				exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
 				key = "auto.rk")
 		)

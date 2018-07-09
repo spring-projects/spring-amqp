@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,5 +81,19 @@ public @interface Queue {
 	 * @since 1.6
 	 */
 	Argument[] arguments() default {};
+
+	/**
+	 * @return true if the admin(s), if present, should declare this component.
+	 * @since 2.1
+	 */
+	String declare() default "true";
+
+	/**
+	 * Return a list of admin bean names that should declare this component.
+	 * By default all admins will declare it
+	 * @return the bean names
+	 * @since 2.1
+	 */
+	String[] admins() default {};
 
 }

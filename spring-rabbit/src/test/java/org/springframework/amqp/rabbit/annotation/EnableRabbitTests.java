@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,12 +213,20 @@ public class EnableRabbitTests extends AbstractRabbitAnnotationDrivenTests {
 			return new Listener();
 		}
 
+		@Bean
+		public RabbitAdmin myAdmin() {
+			return new RabbitAdmin(mock(ConnectionFactory.class));
+		}
+
 		static class Listener {
 
 			@RabbitListener(bindings =
-				@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true"),
-					exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true"),
-					key = "baz", ignoreDeclarationExceptions = "true"))
+				@QueueBinding(value = @Queue(value = "foo", ignoreDeclarationExceptions = "true",
+						declare = "false", admins = "myAdmin"),
+					exchange = @Exchange(value = "bar", ignoreDeclarationExceptions = "true",
+						declare = "false", admins = "myAdmin"),
+					key = "baz", ignoreDeclarationExceptions = "true",
+						declare = "false", admins = "myAdmin"))
 			public void handle(String foo) {
 				// empty
 			}

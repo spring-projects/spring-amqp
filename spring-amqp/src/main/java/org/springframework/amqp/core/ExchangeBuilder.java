@@ -18,6 +18,8 @@ package org.springframework.amqp.core;
 
 import java.util.Map;
 
+import org.springframework.util.ObjectUtils;
+
 /**
  * Builder providing a fluent API for building {@link Exchange}s.
  *
@@ -42,6 +44,10 @@ public final class ExchangeBuilder extends AbstractBuilder {
 	private boolean delayed;
 
 	private boolean ignoreDeclarationExceptions;
+
+	private boolean declare = true;
+
+	private Object[] admins;
 
 	/**
 	 * Construct an instance of the appropriate type.
@@ -159,6 +165,27 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		return this;
 	}
 
+	/**
+	 * Switch to disable declaration of the exchange by any admin.
+	 * @return the builder.
+	 * @since 2.1
+	 */
+	public ExchangeBuilder suppressDeclaration() {
+		this.declare = false;
+		return this;
+	}
+
+	/**
+	 * Admins, or admin bean names that should declare this exchange.
+	 * @param admins the admins.
+	 * @return the builder.
+	 * @since 2.1
+	 */
+	public ExchangeBuilder admins(Object... admins) {
+		this.admins = admins;
+		return this;
+	}
+
 	public Exchange build() {
 		AbstractExchange exchange;
 		if (ExchangeTypes.DIRECT.equals(this.type)) {
@@ -179,6 +206,10 @@ public final class ExchangeBuilder extends AbstractBuilder {
 		exchange.setInternal(this.internal);
 		exchange.setDelayed(this.delayed);
 		exchange.setIgnoreDeclarationExceptions(this.ignoreDeclarationExceptions);
+		exchange.setShouldDeclare(this.declare);
+		if (!ObjectUtils.isEmpty(this.admins)) {
+			exchange.setAdminsThatShouldDeclare(this.admins);
+		}
 		return exchange;
 	}
 

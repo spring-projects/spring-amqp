@@ -555,6 +555,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 				resolveArguments(bindingQueue.arguments()));
 		queue.setIgnoreDeclarationExceptions(resolveExpressionAsBoolean(bindingQueue.ignoreDeclarationExceptions()));
 		((ConfigurableBeanFactory) this.beanFactory).registerSingleton(queueName + ++this.increment, queue);
+		if (bindingQueue.admins().length > 0) {
+			queue.setAdminsThatShouldDeclare((Object[]) bindingQueue.admins());
+		}
+		queue.setShouldDeclare(resolveExpressionAsBoolean(bindingQueue.declare()));
 		return queueName;
 	}
 
@@ -582,11 +586,20 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			exchangeBuilder.ignoreDeclarationExceptions();
 		}
 
+		if (!resolveExpressionAsBoolean(bindingExchange.declare())) {
+			exchangeBuilder.suppressDeclaration();
+		}
+
+		if (bindingExchange.admins().length > 0) {
+			exchangeBuilder.admins((Object[]) bindingExchange.admins());
+		}
+
 		Map<String, Object> arguments = resolveArguments(bindingExchange.arguments());
 
 		if (!CollectionUtils.isEmpty(arguments)) {
 			exchangeBuilder.withArguments(arguments);
 		}
+
 
 		org.springframework.amqp.core.Exchange exchange =
 				exchangeBuilder.durable(resolveExpressionAsBoolean(bindingExchange.durable()))
@@ -607,10 +620,15 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		}
 		final Map<String, Object> bindingArguments = resolveArguments(binding.arguments());
 		final boolean bindingIgnoreExceptions = resolveExpressionAsBoolean(binding.ignoreDeclarationExceptions());
+		boolean declare = resolveExpressionAsBoolean(binding.declare());
 		for (String routingKey : routingKeys) {
 			final Binding actualBinding = new Binding(queueName, DestinationType.QUEUE, exchangeName, routingKey,
 					bindingArguments);
 			actualBinding.setIgnoreDeclarationExceptions(bindingIgnoreExceptions);
+			actualBinding.setShouldDeclare(declare);
+			if (binding.admins().length > 0) {
+				actualBinding.setAdminsThatShouldDeclare((Object[]) binding.admins());
+			}
 			((ConfigurableBeanFactory) this.beanFactory)
 					.registerSingleton(exchangeName + "." + queueName + ++this.increment, actualBinding);
 		}
