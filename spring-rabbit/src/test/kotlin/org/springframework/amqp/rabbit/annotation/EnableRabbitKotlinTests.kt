@@ -106,7 +106,7 @@ class EnableRabbitKotlinTests {
 	class Multi {
 
 		@RabbitHandler
-		fun handle(data: String) {
+		fun handle(@Suppress("UNUSED_PARAMETER") data: String) {
 			throw RuntimeException("fail")
 		}
 
