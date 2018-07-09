@@ -979,7 +979,7 @@ public class EnableRabbitIntegrationTests {
 			throw new Exception("return this");
 		}
 
-		@RabbitListener(queues = "test.pojo.errors", errorHandler = "alwaysBARHandler")
+		@RabbitListener(queues = "test.pojo.errors", errorHandler = "#{alwaysBARHandler}")
 		public String alwaysFailsWithErrorHandler(String data) throws Exception {
 			throw new Exception("return this");
 		}
