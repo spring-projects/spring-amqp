@@ -208,8 +208,13 @@ public @interface RabbitListener {
 	String returnExceptions() default "";
 
 	/**
-	 * Set an {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler}
-	 * to invoke if the listener method throws an exception.
+	 * Set an
+	 * {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler} to
+	 * invoke if the listener method throws an exception. A simple String representing the
+	 * bean name. If a Spel expression (#{...}) is provided, the expression must
+	 * evaluate to a bean name or a
+	 * {@link org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler}
+	 * instance.
 	 * @return the error handler.
 	 * @since 2.0
 	 */

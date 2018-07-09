@@ -407,9 +407,19 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		endpoint.setConcurrency(resolveExpressionAsStringOrInteger(rabbitListener.concurrency(), "concurrency"));
 		endpoint.setBeanFactory(this.beanFactory);
 		endpoint.setReturnExceptions(resolveExpressionAsBoolean(rabbitListener.returnExceptions()));
-		String errorHandlerBeanName = resolveExpressionAsString(rabbitListener.errorHandler(), "errorHandler");
-		if (StringUtils.hasText(errorHandlerBeanName)) {
-			endpoint.setErrorHandler(this.beanFactory.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class));
+		Object errorHandler = resolveExpression(rabbitListener.errorHandler());
+		if (errorHandler instanceof RabbitListenerErrorHandler) {
+			endpoint.setErrorHandler((RabbitListenerErrorHandler) errorHandler);
+		}
+		else if (errorHandler instanceof String) {
+			String errorHandlerBeanName = (String) errorHandler;
+			if (StringUtils.hasText(errorHandlerBeanName)) {
+				endpoint.setErrorHandler(this.beanFactory.getBean(errorHandlerBeanName, RabbitListenerErrorHandler.class));
+			}
+		}
+		else {
+			throw new IllegalStateException("error handler mut be a bean name or RabbitListenerErrorHandler, not a "
+					+ errorHandler.getClass().toString());
 		}
 		String group = rabbitListener.group();
 		if (StringUtils.hasText(group)) {

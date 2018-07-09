@@ -24,6 +24,7 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.rabbit.junit.RabbitAvailable
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition
+import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -41,7 +42,7 @@ import java.util.concurrent.TimeUnit
  *
  */
 @SpringJUnitConfig
-@RabbitAvailable(queues = ["kotlinQueue"])
+@RabbitAvailable(queues = ["kotlinQueue", "kotlinQueue1"])
 @DirtiesContext
 class EnableRabbitKotlinTests {
 
@@ -53,6 +54,13 @@ class EnableRabbitKotlinTests {
 		val template = RabbitTemplate(this.config.cf())
 		template.convertAndSend("kotlinQueue", "test")
 		assert(this.config.latch.await(10, TimeUnit.SECONDS)).isTrue();
+	}
+
+	@Test
+	fun `send and wait for consume with EH` () {
+		val template = RabbitTemplate(this.config.cf())
+		template.convertAndSend("kotlinQueue1", "test")
+		assert(this.config.ehLatch.await(10, TimeUnit.SECONDS)).isTrue();
 	}
 
 	@Configuration
@@ -77,6 +85,29 @@ class EnableRabbitKotlinTests {
 		fun cf(): CachingConnectionFactory {
 			return CachingConnectionFactory(
 					RabbitAvailableCondition.getBrokerRunning().connectionFactory)
+		}
+
+		@Bean
+		fun multi(): Multi {
+			return Multi()
+		}
+
+		val ehLatch = CountDownLatch(1)
+
+		@Bean
+		fun eh() = RabbitListenerErrorHandler { _, _, _ ->
+			this.ehLatch.countDown()
+			null
+		}
+
+	}
+
+	@RabbitListener(queues = ["kotlinQueue1"], errorHandler = "#{eh}")
+	class Multi {
+
+		@RabbitHandler
+		fun handle(data: String) {
+			throw RuntimeException("fail")
 		}
 
 	}
