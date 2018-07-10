@@ -53,7 +53,7 @@ public class BrokerEventListenerTests {
 	@Test
 	public void testEvents() throws Exception {
 		this.config.connectionFactory().createConnection().close();
-		if (this.config.eventListener().isBindingsFailed()) {
+		if (this.config.eventListener().getBindingsFailedException() != null) {
 			//missing plugin
 			return;
 		}

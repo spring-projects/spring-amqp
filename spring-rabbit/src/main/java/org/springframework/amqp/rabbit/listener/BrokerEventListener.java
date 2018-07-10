@@ -65,7 +65,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 
 	private volatile boolean running;
 
-	private volatile boolean bindingsFailed;
+	private Exception bindingsFailedException;
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
@@ -94,8 +94,8 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
-	public boolean isBindingsFailed() {
-		return this.bindingsFailed;
+	public Exception getBindingsFailedException() {
+		return this.bindingsFailedException;
 	}
 
 	@Override
@@ -165,8 +165,8 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 			});
 		}
 		catch (Exception e) {
-			logger.error("failed to declare event queue/bindings - is the plugin enabled?");
-			this.bindingsFailed = true;
+			logger.error("failed to declare event queue/bindings - is the plugin enabled?", e);
+			this.bindingsFailedException = e;
 		}
 
 	}
