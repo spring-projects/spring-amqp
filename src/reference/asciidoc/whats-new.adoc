@@ -26,9 +26,15 @@ Channels enabled for publisher confirms are not returned to the cache while ther
 See <<template-confirms>> for more information.
 
 
-===== Listener Container Factory improvements
+===== Listener Container Factory Improvements
 
 The listener container factories can now be used to create any listener container, not just those for use with `@RabbitListener` s or the `@RabbitListenerEndpointRegistry`.
 See <<using-container-factories>> for more information.
 
 `ChannelAwareMessageListener` now inherits from `MesssageListener`.
+
+===== RabbitAdmin Changes
+
+The `RabbitAdmin` will discover of type `Declarables`, which is a container for `Declarable` (`Queue`, `Exchange`, `Binding`) objects, and declare the objects on the broker.
+Users are discouraged from using the old mechanism of declaring `<Collection<Queue>>` etc and should use `Declarables` beans instead.
+See <<collection-declaration>> for more information.

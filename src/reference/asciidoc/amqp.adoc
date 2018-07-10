@@ -3783,9 +3783,8 @@ The `durable()` method with no parameter is no longer provided.
 [[collection-declaration]]
 ===== Declaring Collections of Exchanges, Queues, Bindings
 
-Starting with _version 1.5_, it is now possible to declare multiple entities with one `@Bean`, by returning a collection.
-
-Only collections where the first element is a `Declarable` are considered, and only `Declarable` elements from such collections are processed.
+You can wrap collections of declarable objects (`Queue`, `Exchange`, `Binding`) in `Declarables` objects.
+The `RabbitAdmin` will detect such beans in the application context and declare the contained objects on the broker.
 
 [source, java]
 -----
@@ -3818,43 +3817,42 @@ public static class Config {
     }
 
     @Bean
-    public List<Exchange> es() {
-    	return Arrays.<Exchange>asList(
-    			new DirectExchange("e2", false, true),
-    			new DirectExchange("e3", false, true)
-    	);
+    public Declarables es() {
+        return new Declarables(
+                new DirectExchange("e2", false, true),
+                new DirectExchange("e3", false, true));
     }
 
     @Bean
-    public List<Queue> qs() {
-    	return Arrays.asList(
-    			new Queue("q2", false, false, true),
-    			new Queue("q3", false, false, true)
-    	);
+    public Declarables qs() {
+        return new Declarables(
+                new Queue("q2", false, false, true),
+                new Queue("q3", false, false, true));
     }
 
     @Bean
-    public List<Binding> bs() {
-    	return Arrays.asList(
-    			new Binding("q2", DestinationType.QUEUE, "e2", "k2", null),
-    			new Binding("q3", DestinationType.QUEUE, "e3", "k3", null)
-    	);
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public Declarables prototypes() {
+        return new Declarables(new Queue(this.prototypeQueueName, false, false, true));
     }
 
     @Bean
-    public List<Declarable> ds() {
-    	return Arrays.<Declarable>asList(
-    			new DirectExchange("e4", false, true),
-    			new Queue("q4", false, false, true),
-    			new Binding("q4", DestinationType.QUEUE, "e4", "k4", null)
-    	);
+    public Declarables bs() {
+        return new Declarables(
+                new Binding("q2", DestinationType.QUEUE, "e2", "k2", null),
+                new Binding("q3", DestinationType.QUEUE, "e3", "k3", null));
+    }
+
+    @Bean
+    public Declarables ds() {
+        return new Declarables(
+                new DirectExchange("e4", false, true),
+                new Queue("q4", false, false, true),
+                new Binding("q4", DestinationType.QUEUE, "e4", "k4", null));
     }
 
 }
 -----
-
-IMPORTANT: This feature can cause undesirable side effects in some cases, because the admin has to iterate over all `Collection<?>` beans.
-Starting with _versions 1.7.7, 2.0.4_, this feature can be disabled by setting the admin property `declareCollections` to `false`.
 
 [[conditional-declaration]]
 ===== Conditional Declaration

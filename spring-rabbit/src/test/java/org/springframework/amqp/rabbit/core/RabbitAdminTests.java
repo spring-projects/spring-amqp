@@ -43,7 +43,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +64,7 @@ import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
@@ -269,19 +268,6 @@ public class RabbitAdminTests {
 	}
 
 	@Test
-	public void testMultiEntitiesSuppressed() {
-		ConfigurableApplicationContext ctx = new AnnotationConfigApplicationContext(Config1.class);
-		RabbitAdmin admin = ctx.getBean(RabbitAdmin.class);
-		assertNotNull(admin.getQueueProperties("q1"));
-		assertNull(admin.getQueueProperties("q2"));
-		assertNull(admin.getQueueProperties("q3"));
-		assertNull(admin.getQueueProperties("q4"));
-		admin.deleteQueue("q1");
-		admin.deleteExchange("e1");
-		ctx.close();
-	}
-
-	@Test
 	public void testAvoidHangAMQP_508() {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
 		RabbitAdmin admin = new RabbitAdmin(cf);
@@ -422,56 +408,38 @@ public class RabbitAdminTests {
 		}
 
 		@Bean
-		public List<Exchange> es() {
-			return Arrays.<Exchange>asList(
+		public Declarables es() {
+			return new Declarables(
 					new DirectExchange("e2", false, true),
-					new DirectExchange("e3", false, true)
-			);
+					new DirectExchange("e3", false, true));
 		}
 
 		@Bean
-		public List<Queue> qs() {
-			return Arrays.asList(
+		public Declarables qs() {
+			return new Declarables(
 					new Queue("q2", false, false, true),
-					new Queue("q3", false, false, true)
-			);
+					new Queue("q3", false, false, true));
 		}
 
 		@Bean
 		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-		public List<Queue> prototypes() {
-			return Arrays.asList(
-					new Queue(this.prototypeQueueName, false, false, true)
-			);
+		public Declarables prototypes() {
+			return new Declarables(new Queue(this.prototypeQueueName, false, false, true));
 		}
 
 		@Bean
-		public List<Binding> bs() {
-			return Arrays.asList(
+		public Declarables bs() {
+			return new Declarables(
 					new Binding("q2", DestinationType.QUEUE, "e2", "k2", null),
-					new Binding("q3", DestinationType.QUEUE, "e3", "k3", null)
-			);
+					new Binding("q3", DestinationType.QUEUE, "e3", "k3", null));
 		}
 
 		@Bean
-		public List<Declarable> ds() {
-			return Arrays.<Declarable>asList(
+		public Declarables ds() {
+			return new Declarables(
 					new DirectExchange("e4", false, true),
 					new Queue("q4", false, false, true),
-					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null)
-			);
-		}
-
-	}
-
-	@Configuration
-	public static class Config1 extends Config {
-
-		@Override
-		public RabbitAdmin admin(ConnectionFactory cf) {
-			RabbitAdmin admin = super.admin(cf);
-			admin.setDeclareCollections(false);
-			return admin;
+					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null));
 		}
 
 	}
