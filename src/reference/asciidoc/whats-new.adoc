@@ -31,10 +31,15 @@ See <<template-confirms>> for more information.
 The listener container factories can now be used to create any listener container, not just those for use with `@RabbitListener` s or the `@RabbitListenerEndpointRegistry`.
 See <<using-container-factories>> for more information.
 
-`ChannelAwareMessageListener` now inherits from `MesssageListener`.
+`ChannelAwareMessageListener` now inherits from `MessageListener`.
 
 ===== RabbitAdmin Changes
 
 The `RabbitAdmin` will discover of type `Declarables`, which is a container for `Declarable` (`Queue`, `Exchange`, `Binding`) objects, and declare the objects on the broker.
 Users are discouraged from using the old mechanism of declaring `<Collection<Queue>>` etc and should use `Declarables` beans instead.
 See <<collection-declaration>> for more information.
+
+===== RabbitTemplate Changes
+
+The `RabbitTemplate` now can be configured with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers in the `sendAndReceive()` operations.
+See <<request-reply>> for more information.

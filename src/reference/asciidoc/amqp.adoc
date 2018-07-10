@@ -3077,13 +3077,15 @@ Similar request/reply methods are also available where the `MessageConverter` is
 Those methods are named `convertSendAndReceive`.
 See the Javadoc of `AmqpTemplate` for more detail.
 
-Starting with _version 1.5.0_, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
+Starting with version 1.5.0, each of the `sendAndReceive` method variants has an overloaded version that takes `CorrelationData`.
 Together with a properly configured connection factory, this enables the receipt of publisher confirms for the send side of the operation.
 See <<template-confirms>> and the javadoc for `RabbitOperations` for more information.
 
-Starting with __version 2.0__, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
+Starting with version 2.0, there are variants of these methods (`convertSendAndReceiveAsType`) that take an additional `ParameterizedTypeReference` argument to convert complex returned types.
 The template must be configured with a `SmartMessageConverter`; see <<json-complex>> for more information.
 
+Starting with version 2.1, the `RabbitTemplate` can be configured with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers.
+This is `false` now by default.
 
 [[reply-timeout]]
 ===== Reply Timeout
@@ -3103,14 +3105,14 @@ Also, you must not have registered your own `ReturnCallback` with the `RabbitTem
 [[direct-reply-to]]
 ===== RabbitMQ Direct reply-to
 
-IMPORTANT: Starting with _version 3.4.0_, the RabbitMQ server now supports http://www.rabbitmq.com/direct-reply-to.html[Direct reply-to]; this eliminates the main reason for a fixed reply queue (to avoid the need to create a temporary queue for each request).
+IMPORTANT: Starting with version 3.4.0, the RabbitMQ server now supports http://www.rabbitmq.com/direct-reply-to.html[Direct reply-to]; this eliminates the main reason for a fixed reply queue (to avoid the need to create a temporary queue for each request).
 Starting with *Spring AMQP version 1.4.1* Direct reply-to will be used by default (if supported by the server) instead of creating temporary reply queues.
 When no `replyQueue` is provided (or it is set with the name `amq.rabbitmq.reply-to`), the `RabbitTemplate` will automatically detect whether Direct reply-to is supported and either use it or fall back to using a temporary reply queue.
 When using Direct reply-to, a `reply-listener` is not required and should not be configured.
 
 Reply listeners are still supported with named queues (other than `amq.rabbitmq.reply-to`), allowing control of reply concurrency etc.
 
-Starting with _version 1.6_ if, for some reason, you wish to use a temporary, exclusive, auto-delete queue for each
+Starting with version 1.6 if, for some reason, you wish to use a temporary, exclusive, auto-delete queue for each
 reply, set the `useTemporaryReplyQueues` property to `true`.
 This property is ignored if you you set a `replyAddress`.
 
@@ -3118,11 +3120,11 @@ The decision whether or not to use direct reply-to can be changed to use differe
 `RabbitTemplate` and overriding `useDirectReplyTo()`.
 The method is called once only; when the first request is sent.
 
-With versions earlier than _verion 2.0_, the `RabbitTemplate` created a new consumer for each request and canceled the consumer when the reply was received (or timed out).
+With versions earlier than version 2.0, the `RabbitTemplate` created a new consumer for each request and canceled the consumer when the reply was received (or timed out).
 Now, the template uses a `DirectReplyToMessageListenerContainer` instead, allowing the consumers to be reused; the template still takes care of correlating the replies so there is no danger of a late reply going to a different sender.
 If you want to revert to the previous behavior, set property `useDirectReplyToContainer` (`direct-reply-to-container` when using XML configuration) to false.
 
-The `AsynRabbitTemplate` has no such option - it always used a `DirectReplyToContainer` for replies when direct replyTo is being used.
+The `AsyncRabbitTemplate` has no such option - it always used a `DirectReplyToContainer` for replies when direct replyTo is being used.
 
 ===== Message Correlation With A Reply Queue
 

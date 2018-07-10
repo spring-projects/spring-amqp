@@ -246,6 +246,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private boolean usePublisherConnection;
 
+	private boolean noLocalReplyConsumer;
+
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
 	 */
@@ -690,6 +692,17 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 */
 	public void setUsePublisherConnection(boolean usePublisherConnection) {
 		this.usePublisherConnection = usePublisherConnection;
+	}
+
+	/**
+	 * Set to true for a no-local consumer. Defaults to false.
+	 * @param noLocalReplyConsumer true for a no-local consumer.
+	 * @since 2.0.2
+	 * @see AbstractMessageListenerContainer#setNoLocal(boolean)
+	 * @see Channel#basicConsume(String, boolean, String, boolean, boolean, Map, com.rabbitmq.client.Consumer)
+	 */
+	public void setNoLocalReplyConsumer(boolean noLocalReplyConsumer) {
+		this.noLocalReplyConsumer = noLocalReplyConsumer;
 	}
 
 	/**
@@ -1573,7 +1586,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 
 			};
-			channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
+			channel.basicConsume(replyTo, true, consumerTag, this.noLocalReplyConsumer, true, null, consumer);
 			Message reply = null;
 			try {
 				reply = exchangeMessages(exchange, routingKey, message, correlationData, channel, pendingReply,
@@ -1629,6 +1642,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						container.setAfterReceivePostProcessors(this.afterReceivePostProcessors
 								.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
 					}
+					container.setNoLocal(this.noLocalReplyConsumer);
 					container.start();
 					this.directReplyToContainers.put(connectionFactory, container);
 					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
