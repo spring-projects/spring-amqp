@@ -35,6 +35,7 @@ import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
@@ -88,7 +89,7 @@ public class BrokerEventListenerTests {
 			return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		}
 
-		@org.springframework.context.event.EventListener
+		@EventListener
 		public void listener(BrokerEvent event) {
 			this.events.put(event.getEventType(), event.getHeaders());
 			this.latch.countDown();
