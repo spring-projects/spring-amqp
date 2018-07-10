@@ -43,7 +43,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -410,43 +409,37 @@ public class RabbitAdminTests {
 
 		@Bean
 		public Declarables es() {
-			return new Declarables(Arrays.asList(
+			return new Declarables(
 					new DirectExchange("e2", false, true),
-					new DirectExchange("e3", false, true)
-			));
+					new DirectExchange("e3", false, true));
 		}
 
 		@Bean
 		public Declarables qs() {
-			return new Declarables(Arrays.asList(
+			return new Declarables(
 					new Queue("q2", false, false, true),
-					new Queue("q3", false, false, true)
-			));
+					new Queue("q3", false, false, true));
 		}
 
 		@Bean
 		@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 		public Declarables prototypes() {
-			return new Declarables(Arrays.asList(
-					new Queue(this.prototypeQueueName, false, false, true)
-			));
+			return new Declarables(new Queue(this.prototypeQueueName, false, false, true));
 		}
 
 		@Bean
 		public Declarables bs() {
-			return new Declarables(Arrays.asList(
+			return new Declarables(
 					new Binding("q2", DestinationType.QUEUE, "e2", "k2", null),
-					new Binding("q3", DestinationType.QUEUE, "e3", "k3", null)
-			));
+					new Binding("q3", DestinationType.QUEUE, "e3", "k3", null));
 		}
 
 		@Bean
 		public Declarables ds() {
-			return new Declarables(Arrays.asList(
+			return new Declarables(
 					new DirectExchange("e4", false, true),
 					new Queue("q4", false, false, true),
-					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null)
-			));
+					new Binding("q4", DestinationType.QUEUE, "e4", "k4", null));
 		}
 
 	}

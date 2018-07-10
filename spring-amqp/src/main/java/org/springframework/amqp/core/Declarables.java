@@ -17,7 +17,11 @@
 package org.springframework.amqp.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+
+import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 /**
  * A collection of {@link Declarable} objects; used to declare multiple objects on the
@@ -30,7 +34,14 @@ public class Declarables {
 
 	private final Collection<Declarable> declarables = new ArrayList<>();
 
+	public Declarables(Declarable... declarables) {
+		if (!ObjectUtils.isEmpty(declarables)) {
+			this.declarables.addAll(Arrays.asList(declarables));
+		}
+	}
+
 	public Declarables(Collection<Declarable> declarables) {
+		Assert.notNull(declarables, "declarables cannot be null");
 		this.declarables.addAll(declarables);
 	}
 
