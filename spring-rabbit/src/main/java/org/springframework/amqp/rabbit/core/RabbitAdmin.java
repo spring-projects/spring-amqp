@@ -36,6 +36,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -174,7 +175,10 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * cause undesirable side-effects in some cases. Default true.
 	 * @param declareCollections set to false to prevent declarations of collections.
 	 * @since 1.7.7
+	 * @deprecated - users should use {@link Declarables} beans instead of collections of
+	 * {@link Declarable}.
 	 */
+	@Deprecated
 	public void setDeclareCollections(boolean declareCollections) {
 		this.declareCollections = declareCollections;
 	}
@@ -502,12 +506,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		Collection<Binding> contextBindings = new LinkedList<Binding>(
 				this.applicationContext.getBeansOfType(Binding.class).values());
 
+		// TODO: remove in 3.0
 		@SuppressWarnings("rawtypes")
 		Collection<Collection> collections = this.declareCollections
 			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
 			: Collections.emptyList();
+		boolean shouldWarn = false;
 		for (Collection<?> collection : collections) {
 			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
+				shouldWarn = true;
 				for (Object declarable : collection) {
 					if (declarable instanceof Exchange) {
 						contextExchanges.add((Exchange) declarable);
@@ -521,6 +528,27 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 				}
 			}
 		}
+		if (shouldWarn && this.logger.isWarnEnabled()) {
+			this.logger.warn("Beans of type Collection<Declarable> are discouraged, and deprecated, "
+					+ "use Declarables beans instead");
+		}
+		// end TODO
+
+		Collection<Declarables> declarables = this.applicationContext.getBeansOfType(Declarables.class, false, true)
+				.values();
+		declarables.forEach(d -> {
+			d.getDeclarables().forEach(declarable -> {
+				if (declarable instanceof Exchange) {
+					contextExchanges.add((Exchange) declarable);
+				}
+				else if (declarable instanceof Queue) {
+					contextQueues.add((Queue) declarable);
+				}
+				else if (declarable instanceof Binding) {
+					contextBindings.add((Binding) declarable);
+				}
+			});
+		});
 
 		final Collection<Exchange> exchanges = filterDeclarables(contextExchanges);
 		final Collection<Queue> queues = filterDeclarables(contextQueues);
