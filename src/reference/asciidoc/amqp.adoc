@@ -4034,18 +4034,25 @@ Of course, you can provide your own naming strategy bean.
 
 When the https://www.rabbitmq.com/event-exchange.html[Event Exchange Plugin] is enabled, if you add a bean of type `BrokerEventListener` to the application context, it will publish selected broker events as `BrokerEvent` s which can be consumed with a normal Spring `ApplicationListener` or `@EventListener` method.
 Events are published by the broker to a topic exchange `amq.rabbitmq.event` with a different routing key for each event type.
-The listener with event keys, which are used to bind an `AnonymousQueue` to the exchange so the listener will receive only selected events; since it's a topic exchange, wildcards can be used.
+The listener with event keys, which are used to bind an `AnonymousQueue` to the exchange so the listener will receive only selected events; since it's a topic exchange, wildcards can be used (as well as explicitly requesting specific events)
 
 [source, java]
 ----
 @Bean
 public BrokerEventListener eventListener() {
-    return new BrokerEventListener(connectionFactory(), "user.#", "channel.#", "queue.#");
+    return new BrokerEventListener(connectionFactory(), "user.deleted", "channel.#", "queue.#");
 }
 ----
 
+You can further narrow the received events in individual event listeners, using normal Spring techniques:
 
-
+[source, java]
+----
+@EventListener(condition = "event.eventType == 'queue.created'")
+public void listener(BrokerEvent event) {
+    ...
+}
+----
 
 [[delayed-message-exchange]]
 ==== Delayed Message Exchange
