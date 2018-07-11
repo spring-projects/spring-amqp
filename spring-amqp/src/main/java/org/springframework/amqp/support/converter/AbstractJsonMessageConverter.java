@@ -21,13 +21,18 @@ import org.springframework.util.ClassUtils;
 
 /**
  * Abstract JSON message converter.
+ *
+ * @deprecated - use the {@link org.springframework.amqp.support.converter.AbstractJackson2MessageConverter}.
+ *
  * @author Mark Pollack
  * @author James Carr
  * @author Dave Syer
  * @author Sam Nelson
  * @author Andreas Asplund
  * @author Artem Bilan
+ * @author Mohammad Hewedy
  */
+@Deprecated
 public abstract class AbstractJsonMessageConverter extends AbstractMessageConverter
 		implements BeanClassLoaderAware {
 

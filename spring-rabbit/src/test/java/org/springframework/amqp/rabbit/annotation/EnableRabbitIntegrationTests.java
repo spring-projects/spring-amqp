@@ -88,12 +88,8 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.amqp.support.converter.DefaultClassMapper;
-import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
+import org.springframework.amqp.support.converter.*;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.RemoteInvocationAwareMessageConverterAdapter;
-import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.AopUtils;
@@ -141,6 +137,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Mohammad Hewedy
  *
  * @since 1.4
  */
@@ -585,6 +582,97 @@ public class EnableRabbitIntegrationTests {
 		Jackson2JsonMessageConverter jsonConverter = ctx.getBean(Jackson2JsonMessageConverter.class);
 
 		DefaultJackson2JavaTypeMapper mapper = TestUtils.getPropertyValue(jsonConverter, "javaTypeMapper",
+				DefaultJackson2JavaTypeMapper.class);
+		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
+
+		ctx.close();
+	}
+
+	@Test
+	public void testXmlConverted() {
+		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
+				EnableRabbitConfigWithCustomXmlConversion.class);
+		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
+		Foo1 foo1 = new Foo1();
+		foo1.setBar("bar");
+		Jackson2XmlMessageConverter converter = ctx.getBean(Jackson2XmlMessageConverter.class);
+		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
+		Object returned = template.convertSendAndReceive("test.converted", foo1);
+		assertThat(returned, instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) returned).getBar());
+		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		converter.setTypePrecedence(TypePrecedence.INFERRED);
+
+		// No type info in message
+		template.setMessageConverter(new SimpleMessageConverter());
+		@SuppressWarnings("resource")
+		MessagePostProcessor messagePostProcessor = message -> {
+			message.getMessageProperties().setContentType("application/xml");
+			message.getMessageProperties().setUserId("guest");
+			return message;
+		};
+		returned = template.convertSendAndReceive("", "test.converted", "<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>baz</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.list", "<Foo2><list><bar>baz</bar></list></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>BAZZZZ</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.array", "<Foo2><list><bar>baz</bar></list></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>BAZZxx</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args1", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=baztest.converted.args1</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args2", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=baztest.converted.args2</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.message", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=bazfoo2MessageFoo2Service</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.message", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>fooMessage</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.channel", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>barAndChannel</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagechannel", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=bazMessageAndChannel</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.foomessage", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageFoo2guest</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
+				"<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+
+		Jackson2XmlMessageConverter xmlConverter = ctx.getBean(Jackson2XmlMessageConverter.class);
+
+		DefaultJackson2JavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper",
 				DefaultJackson2JavaTypeMapper.class);
 		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
 
@@ -1602,6 +1690,91 @@ public class EnableRabbitIntegrationTests {
 					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			return jackson2JsonMessageConverter;
+		}
+
+		@Bean
+		public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+			DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+			factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+			return factory;
+		}
+
+		@Bean
+		public ConversionService myConversionService() {
+			DefaultConversionService conv = new DefaultConversionService();
+			conv.addConverter(foo1To2Converter());
+			return conv;
+		}
+
+		@Override
+		public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+			registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+		}
+
+		@Bean
+		public Converter<Foo1, Foo2> foo1To2Converter() {
+			return new Converter<Foo1, Foo2>() {
+
+				@SuppressWarnings("unused")
+				private boolean converted;
+
+				@Override
+				public Foo2 convert(Foo1 foo1) {
+					Foo2 foo2 = new Foo2();
+					foo2.setBar(foo1.getBar());
+					converted = true;
+					return foo2;
+				}
+
+			};
+		}
+
+		@Bean
+		public Foo2Service foo2Service() {
+			return new Foo2Service();
+		}
+
+	}
+
+	@Configuration
+	@EnableRabbit
+	public static class EnableRabbitConfigWithCustomXmlConversion implements RabbitListenerConfigurer {
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setMessageConverter(xmlConverter());
+			factory.setReceiveTimeout(10L);
+			return factory;
+		}
+
+		// Rabbit infrastructure setup
+
+		@Bean
+		public ConnectionFactory rabbitConnectionFactory() {
+			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setHost(brokerRunning.getHostName());
+			connectionFactory.setPort(brokerRunning.getPort());
+			connectionFactory.setUsername(brokerRunning.getUser());
+			connectionFactory.setPassword(brokerRunning.getPassword());
+			return connectionFactory;
+		}
+
+		@Bean
+		public RabbitTemplate xmlRabbitTemplate() {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
+			rabbitTemplate.setMessageConverter(xmlConverter());
+			return rabbitTemplate;
+		}
+
+		@Bean
+		public Jackson2XmlMessageConverter xmlConverter() {
+			Jackson2XmlMessageConverter jackson2XmlMessageConverter = new Jackson2XmlMessageConverter();
+			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
+					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
+			new DirectFieldAccessor(jackson2XmlMessageConverter).setPropertyValue("javaTypeMapper", mapper);
+			return jackson2XmlMessageConverter;
 		}
 
 		@Bean
