@@ -36,10 +36,18 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * When the event-exchange-plugin is enabled (see
+ * https://www.rabbitmq.com/event-exchange.html), if an object of this type is declared as
+ * a bean, selected events will be published as {@link BrokerEvent}s. Such events can then
+ * be consumed using an {@code ApplicationListener} or {@code @EventListener} method.
+ * An {@link AnonymousQueue} will be bound to the {@code amq.rabbitmq.event} topic exchange
+ * with the supplied keys.
+ *
  * @author Gary Russell
  * @since 2.1
  *
@@ -63,16 +71,41 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 
 	private boolean autoStartup = true;
 
-	private volatile boolean running;
+	private boolean running;
+
+	private boolean stopInvoked;
 
 	private Exception bindingsFailedException;
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
+	/**
+	 * Construct an instance using the supplied connection factory and event keys. Event
+	 * keys are patterns to match routing keys for events published to the
+	 * {@code amq.rabbitmq.event} topic exchange. They can therefore match wildcards;
+	 * examples are {@code user.#, queue.created}. Refer to the plugin documentation for
+	 * information about available events. A single-threaded
+	 * {@link DirectMessageListenerContainer} will be created; its lifecyle will be
+	 * controlled by this object's {@link SmartLifecycle} methods.
+	 * @param connectionFactory the connection factory.
+	 * @param eventKeys the event keys.
+	 */
 	public BrokerEventListener(ConnectionFactory connectionFactory, String... eventKeys) {
 		this(new DirectMessageListenerContainer(connectionFactory), true, eventKeys);
 	}
 
+	/**
+	 * Construct an instance using the supplied listener container factory and event keys.
+	 * Event keys are patterns to match routing keys for events published to the
+	 * {@code amq.rabbitmq.event} topic exchange. They can therefore match wildcards;
+	 * examples are {@code user.#, queue.created}. Refer to the plugin documentation for
+	 * information about available events. The container's lifecyle will be not be
+	 * controlled by this object's {@link SmartLifecycle} methods. The container should
+	 * not be configured with queues or a {@link MessageListener}; those properties will
+	 * be replaced.
+	 * @param container the listener container.
+	 * @param eventKeys the event keys.
+	 */
 	public BrokerEventListener(AbstractMessageListenerContainer container, String... eventKeys) {
 		this(container, false, eventKeys);
 	}
@@ -94,13 +127,22 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
-	public Exception getBindingsFailedException() {
+	/**
+	 * Return any exception thrown when attempting to bind the queue to the event exchange.
+	 * @return the exception.
+	 */
+	public @Nullable Exception getBindingsFailedException() {
 		return this.bindingsFailedException;
 	}
 
 	@Override
 	public synchronized void start() {
 		if (!this.running) {
+			if (this.stopInvoked) {
+				// redeclare auto-delete queue
+				this.stopInvoked = false;
+				onCreate(null);
+			}
 			if (this.ownContainer) {
 				this.container.start();
 			}
@@ -115,11 +157,12 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 				this.container.stop();
 			}
 			this.running = false;
+			this.stopInvoked = true;
 		}
 	}
 
 	@Override
-	public boolean isRunning() {
+	public synchronized boolean isRunning() {
 		return this.running;
 	}
 
@@ -156,6 +199,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 
 	@Override
 	public void onCreate(Connection connection) {
+		this.bindingsFailedException = null;
 		TopicExchange exchange = new TopicExchange("amq.rabbitmq.event");
 		try {
 			this.admin.declareQueue(this.eventQueue);

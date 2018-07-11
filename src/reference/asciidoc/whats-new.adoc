@@ -33,9 +33,14 @@ See <<using-container-factories>> for more information.
 
 `ChannelAwareMessageListener` now inherits from `MessageListener`.
 
+===== Broker Event Listener
+
+A `BrokerEventListener` is introduced to publish selected broker events as `ApplictionEvent` s.
+See <<broker-events>> for more information.
+
 ===== RabbitAdmin Changes
 
-The `RabbitAdmin` will discover of type `Declarables`, which is a container for `Declarable` (`Queue`, `Exchange`, `Binding`) objects, and declare the objects on the broker.
+The `RabbitAdmin` will discover beans of type `Declarables` (which is a container for `Declarable` - `Queue`, `Exchange`, `Binding` objects) and declare the contained objects on the broker.
 Users are discouraged from using the old mechanism of declaring `<Collection<Queue>>` etc and should use `Declarables` beans instead.
 See <<collection-declaration>> for more information.
 

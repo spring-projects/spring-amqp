@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
@@ -51,8 +52,20 @@ public class BrokerEventListenerTests {
 	public Config config;
 
 	@Test
+	@DirtiesContext
 	public void testEvents() throws Exception {
-		this.config.connectionFactory().createConnection().close();
+		doTestEvents();
+	}
+
+	@Test
+	@DirtiesContext
+	public void testEventsAfterRestart() throws Exception {
+		this.config.eventListener().stop();
+		this.config.eventListener().start();
+		doTestEvents();
+	}
+
+	private void doTestEvents() throws Exception {
 		if (this.config.eventListener().getBindingsFailedException() != null) {
 			//missing plugin
 			return;
@@ -91,7 +104,7 @@ public class BrokerEventListenerTests {
 
 		@EventListener
 		public void listener(BrokerEvent event) {
-			this.events.put(event.getEventType(), event.getHeaders());
+			this.events.put(event.getEventType(), event.getEventProperties());
 			this.latch.countDown();
 		}
 
