@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package org.springframework.amqp.support.converter;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.Type;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -28,18 +30,20 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MimeType;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Abstract Jackson2 message converter
+ * Abstract Jackson2 message converter.
  *
  * @author Mohammad Hewedy
+ *
+ * @since 2.1
  */
 public abstract class AbstractJackson2MessageConverter extends AbstractMessageConverter
 		implements BeanClassLoaderAware, SmartMessageConverter {
 
-	private static Log log = LogFactory.getLog(AbstractJackson2MessageConverter.class);
+	protected final Log log = LogFactory.getLog(getClass());
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
@@ -65,8 +69,9 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * @since 1.6.11
 	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
 	 */
-	public AbstractJackson2MessageConverter(ObjectMapper objectMapper, MimeType contentType, String... trustedPackages) {
+	protected AbstractJackson2MessageConverter(ObjectMapper objectMapper, MimeType contentType, String... trustedPackages) {
 		Assert.notNull(objectMapper, "'objectMapper' must not be null");
+		Assert.notNull(contentType, "'contentType' must not be null");
 		this.objectMapper = objectMapper;
 		this.contentType = contentType;
 		((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
@@ -201,8 +206,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 				}
 			}
 			else {
-				if (log.isWarnEnabled()) {
-					log.warn("Could not convert incoming message with content-type ["
+				if (this.log.isWarnEnabled()) {
+					this.log.warn("Could not convert incoming message with content-type ["
 							+ contentType + "], '" + this.contentType.getSubtype() + "' keyword missing.");
 				}
 			}

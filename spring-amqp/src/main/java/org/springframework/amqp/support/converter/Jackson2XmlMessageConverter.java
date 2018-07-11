@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,18 @@
 
 package org.springframework.amqp.support.converter;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.MimeTypeUtils;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * XML converter that uses the Jackson 2 Xml library.
  *
- * @author Muhammad Hewedy
+ * @author Mohammad Hewedy
+ *
+ * @since 2.1
  */
 public class Jackson2XmlMessageConverter extends AbstractJackson2MessageConverter {
 

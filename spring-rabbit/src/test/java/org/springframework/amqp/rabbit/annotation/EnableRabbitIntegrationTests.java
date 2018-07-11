@@ -88,8 +88,13 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
 import org.springframework.amqp.rabbit.test.MessageTestUtils;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.support.ConsumerTagStrategy;
-import org.springframework.amqp.support.converter.*;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
+import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.Jackson2XmlMessageConverter;
+import org.springframework.amqp.support.converter.RemoteInvocationAwareMessageConverterAdapter;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.AopUtils;

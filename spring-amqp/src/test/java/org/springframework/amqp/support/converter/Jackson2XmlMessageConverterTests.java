@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,7 @@
 
 package org.springframework.amqp.support.converter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.util.Hashtable;
@@ -35,15 +24,27 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * @author Mohammad Hewedy
+ *
+ * @since 2.1
  */
 @ContextConfiguration
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
 public class Jackson2XmlMessageConverterTests {
 
 	public static final String TRUSTED_PACKAGE = Jackson2XmlMessageConverterTests.class.getPackage().getName();
@@ -74,7 +75,7 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(trade).isEqualTo(marshalledTrade);
 	}
 
 	@Test
@@ -89,7 +90,7 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(trade).isEqualTo(marshalledTrade);
 	}
 
 	@Test
@@ -100,7 +101,7 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(bar, new MessageProperties());
 
 		Bar marshalled = (Bar) converter.fromMessage(message);
-		assertEquals(bar, marshalled);
+		assertThat(bar).isEqualTo(marshalled);
 	}
 
 	@Test
@@ -113,8 +114,8 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(hashtable, new MessageProperties());
 		Hashtable<String, String> marhsalledHashtable = (Hashtable<String, String>) converter.fromMessage(message);
 
-		assertEquals("VMW", marhsalledHashtable.get("TICKER"));
-		assertEquals("103.2", marhsalledHashtable.get("PRICE"));
+		assertThat("VMW").isEqualTo(marhsalledHashtable.get("TICKER"));
+		assertThat("103.2").isEqualTo(marhsalledHashtable.get("PRICE"));
 	}
 
 	@Test
@@ -127,7 +128,7 @@ public class Jackson2XmlMessageConverterTests {
 		((DefaultClassMapper) this.converter.getClassMapper()).setTrustedPackages(TRUSTED_PACKAGE);
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(trade).isEqualTo(marshalledTrade);
 	}
 
 	@Test
@@ -140,21 +141,22 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
-		assertEquals(trade, marshalledTrade);
+		assertThat(trade).isEqualTo(marshalledTrade);
 	}
 
 	@Test
 	public void testAmqp330StringArray() {
 		String[] testData = { "test" };
 		Message message = converter.toMessage(testData, new MessageProperties());
-		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+
+		assertThat(testData).containsExactly((String[]) converter.fromMessage(message));
 	}
 
 	@Test
 	public void testAmqp330ObjectArray() {
 		SimpleTrade[] testData = { trade };
 		Message message = converter.toMessage(testData, new MessageProperties());
-		assertArrayEquals(testData, (Object[]) converter.fromMessage(message));
+		assertThat(testData).containsExactly((SimpleTrade[]) converter.fromMessage(message));
 	}
 
 	@Test
@@ -168,7 +170,7 @@ public class Jackson2XmlMessageConverterTests {
 		classMapper.setDefaultType(Foo.class);
 		converter.setClassMapper(classMapper);
 		Object foo = converter.fromMessage(message);
-		assertTrue(foo instanceof Foo);
+		assertThat(foo).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -178,7 +180,7 @@ public class Jackson2XmlMessageConverterTests {
 		messageProperties.setContentType("application/xml");
 		Message message = new Message(bytes, messageProperties);
 		Object foo = xmlConverterWithDefaultType.fromMessage(message);
-		assertTrue(foo instanceof Foo);
+		assertThat(foo).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -187,7 +189,7 @@ public class Jackson2XmlMessageConverterTests {
 		MessageProperties messageProperties = new MessageProperties();
 		Message message = new Message(bytes, messageProperties);
 		Object foo = xmlConverterWithDefaultType.fromMessage(message);
-		assertEquals(new String(bytes), new String((byte[]) foo));
+		assertThat(new String(bytes)).isEqualTo(new String((byte[]) foo));
 	}
 
 	@Test
@@ -197,10 +199,10 @@ public class Jackson2XmlMessageConverterTests {
 		messageProperties.setContentType("application/xml");
 		Message message = new Message(bytes, messageProperties);
 		Object wrapper = this.converter.fromMessage(message);
-		assertThat(wrapper, instanceOf(LinkedHashMap.class));
+		assertThat(wrapper).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) wrapper;
-		assertThat(map.get("name"), instanceOf(LinkedHashMap.class));
+		assertThat(map.get("name")).isInstanceOf(LinkedHashMap.class);
 	}
 
 	@Test
@@ -211,7 +213,7 @@ public class Jackson2XmlMessageConverterTests {
 		messageProperties.setInferredArgumentType(Foo.class);
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(Foo.class));
+		assertThat(foo).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -222,8 +224,8 @@ public class Jackson2XmlMessageConverterTests {
 		messageProperties.setInferredArgumentType((new ParameterizedTypeReference<List<Foo>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(List.class));
-		assertThat(((List<?>) foo).get(0), instanceOf(Foo.class));
+		assertThat(foo).isInstanceOf(List.class);
+		assertThat(((List<?>) foo).get(0)).isInstanceOf(Foo.class);
 	}
 
 	@Test
@@ -235,13 +237,13 @@ public class Jackson2XmlMessageConverterTests {
 				(new ParameterizedTypeReference<Map<String, List<Bar>>>() {	}).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(LinkedHashMap.class));
+		assertThat(foo).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) foo;
-		assertThat(map.get("qux"), instanceOf(List.class));
+		assertThat(map.get("qux")).isInstanceOf(List.class);
 		Object row = ((List<?>) map.get("qux")).get(0);
-		assertThat(row, instanceOf(Bar.class));
-		assertThat(((Bar) row).getFoo(), equalTo(new Foo("bar")));
+		assertThat(row).isInstanceOf(Bar.class);
+		assertThat(((Bar) row).getFoo()).isEqualTo(new Foo("bar"));
 	}
 
 	@Test
@@ -253,13 +255,13 @@ public class Jackson2XmlMessageConverterTests {
 				(new ParameterizedTypeReference<Map<String, Map<String, Bar>>>() { }).getType());
 		Message message = new Message(bytes, messageProperties);
 		Object foo = this.converter.fromMessage(message);
-		assertThat(foo, instanceOf(LinkedHashMap.class));
+		assertThat(foo).isInstanceOf(LinkedHashMap.class);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>) foo;
-		assertThat(map.get("qux"), instanceOf(Map.class));
+		assertThat(map.get("qux")).isInstanceOf(Map.class);
 		Object value = ((Map<?, ?>) map.get("qux")).get("baz");
-		assertThat(value, instanceOf(Bar.class));
-		assertThat(((Bar) value).getFoo(), equalTo(new Foo("bar")));
+		assertThat(value).isInstanceOf(Bar.class);
+		assertThat(((Bar) value).getFoo()).isEqualTo(new Foo("bar"));
 	}
 
 	public static class Foo {

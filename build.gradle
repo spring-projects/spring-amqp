@@ -236,6 +236,7 @@ project('spring-amqp') {
 		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
 		compile ("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jackson2Version", optional)
 
+		testCompile "org.assertj:assertj-core:$assertjVersion"
 		testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 	}
 

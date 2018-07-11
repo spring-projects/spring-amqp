@@ -2936,6 +2936,29 @@ In terms of configuration, it's most common to provide the constructor argument 
 </bean>
 ----
 
+===== Jackson2XmlMessageConverter
+
+This class was introduced in _version 2.1_ and can be used to convert messages from/to XML. This class considered the twine for `Jackson2JsonMessageConverter`.
+In fact both of them share the same base class `AbstractJackson2MessageConverter`.
+
+NOTE: The class `AbstractJackson2MessageConverter` is introduced to replace the now-deprecating class `AbstractJsonMessageConverter`.
+
+The `Jackson2XmlMessageConverter` uses the `com.fasterxml.jackson` 2.x library.
+
+You can use it the same way as `Jackson2JsonMessageConverter`, except it supports XML instead of JSON.
+
+[source,xml]
+----
+<bean id="xmlConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType" value="foo.PurchaseOrder"/>
+        </bean>
+    </property>
+</bean>
+----
+See <<json-message-converter>> for more information.
+
 ===== ContentTypeDelegatingMessageConverter
 
 This class was introduced in _version 1.4.2_ and allows delegation to a specific `MessageConverter` based on the content type property in the `MessageProperties`.

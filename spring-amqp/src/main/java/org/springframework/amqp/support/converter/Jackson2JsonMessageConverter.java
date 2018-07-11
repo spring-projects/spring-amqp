@@ -16,10 +16,11 @@
 
 package org.springframework.amqp.support.converter;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.util.MimeTypeUtils;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * JSON converter that uses the Jackson 2 Json library.
@@ -32,7 +33,7 @@ import org.springframework.util.MimeTypeUtils;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Arlo Louis O'Keeffe
- * @author Muhammad Hewedy
+ * @author Mohammad Hewedy
  */
 public class Jackson2JsonMessageConverter extends AbstractJackson2MessageConverter {
 
