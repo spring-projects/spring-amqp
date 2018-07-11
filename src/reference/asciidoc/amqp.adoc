@@ -2908,7 +2908,7 @@ By default, for backward compatiblity the `Jackson2JsonMessageConverter` trusts 
 
 As mentioned above, type information is conveyed in message headers to assist the converter when converting from a message.
 This works fine in most cases, but when using generic types, it can only convert simple objects and known "container" objects (lists, arrays, maps).
-Starting with __version 2.0__, the `Jackson2JsonMessageConverter` implements `SmartMessageConverter` which allows it to be used with the new `RabbitTemplate` methods that take a `ParameterizedTypeReference` argument; this allows conversion of complex generic types.
+Starting with version 2.0, the `Jackson2JsonMessageConverter` implements `SmartMessageConverter` which allows it to be used with the new `RabbitTemplate` methods that take a `ParameterizedTypeReference` argument; this allows conversion of complex generic types.
 For example:
 
 [source, java]
@@ -2916,6 +2916,9 @@ For example:
 Foo<Bar<Baz, Qux>> foo =
     rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { });
 ----
+
+NOTE: Starting with version 2.1 the class `AbstractJsonMessageConverter` has been removed; it is no longer the base class for `Jackson2JsonMessageConverter`.
+It has been replaced by `AbstractJackson2MessageConverter`.
 
 ===== MarshallingMessageConverter
 
@@ -2935,6 +2938,30 @@ In terms of configuration, it's most common to provide the constructor argument 
     </property>
 </bean>
 ----
+
+===== Jackson2XmlMessageConverter
+
+This class was introduced in _version 2.1_ and can be used to convert messages from/to XML.
+
+Both of `Jackson2XmlMessageConverter` and `Jackson2JsonMessageConverter` have the same base class `AbstractJackson2MessageConverter`.
+
+NOTE: The class `AbstractJackson2MessageConverter` is introduced to replace a removed class `AbstractJsonMessageConverter`.
+
+The `Jackson2XmlMessageConverter` uses the `com.fasterxml.jackson` 2.x library.
+
+You can use it the same way as `Jackson2JsonMessageConverter`, except it supports XML instead of JSON.
+
+[source,xml]
+----
+<bean id="xmlConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
+    <property name="classMapper">
+        <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
+            <property name="defaultType" value="foo.PurchaseOrder"/>
+        </bean>
+    </property>
+</bean>
+----
+See <<json-message-converter>> for more information.
 
 ===== ContentTypeDelegatingMessageConverter
 

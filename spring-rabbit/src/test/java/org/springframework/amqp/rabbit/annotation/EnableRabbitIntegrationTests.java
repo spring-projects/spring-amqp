@@ -92,6 +92,7 @@ import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.Jackson2XmlMessageConverter;
 import org.springframework.amqp.support.converter.RemoteInvocationAwareMessageConverterAdapter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.amqp.utils.test.TestUtils;
@@ -141,6 +142,7 @@ import com.rabbitmq.client.Channel;
  * @author Stephane Nicoll
  * @author Artem Bilan
  * @author Gary Russell
+ * @author Mohammad Hewedy
  *
  * @since 1.4
  */
@@ -148,7 +150,7 @@ import com.rabbitmq.client.Channel;
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
 @TestExecutionListeners(mergeMode = MergeMode.MERGE_WITH_DEFAULTS,
-	listeners = EnableRabbitIntegrationTests.DeleteQueuesExecutionListener.class)
+		listeners = EnableRabbitIntegrationTests.DeleteQueuesExecutionListener.class)
 public class EnableRabbitIntegrationTests {
 
 	@ClassRule
@@ -270,7 +272,7 @@ public class EnableRabbitIntegrationTests {
 		String received = (String) rabbitTemplate.convertSendAndReceive("auto.exch", "auto.anon.atts.rk", "foo");
 		assertThat(received, startsWith("foo:"));
 		org.springframework.amqp.core.Queue anonQueueWithAttributes
-			= new org.springframework.amqp.core.Queue(received.substring(4), true, true, true);
+				= new org.springframework.amqp.core.Queue(received.substring(4), true, true, true);
 		this.rabbitAdmin.declareQueue(anonQueueWithAttributes); // will fail if atts not correctly set
 	}
 
@@ -592,6 +594,97 @@ public class EnableRabbitIntegrationTests {
 	}
 
 	@Test
+	public void testXmlConverted() {
+		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(
+				EnableRabbitConfigWithCustomXmlConversion.class);
+		RabbitTemplate template = ctx.getBean(RabbitTemplate.class);
+		Foo1 foo1 = new Foo1();
+		foo1.setBar("bar");
+		Jackson2XmlMessageConverter converter = ctx.getBean(Jackson2XmlMessageConverter.class);
+		converter.setTypePrecedence(TypePrecedence.TYPE_ID);
+		Object returned = template.convertSendAndReceive("test.converted", foo1);
+		assertThat(returned, instanceOf(Foo2.class));
+		assertEquals("bar", ((Foo2) returned).getBar());
+		assertTrue(TestUtils.getPropertyValue(ctx.getBean("foo1To2Converter"), "converted", Boolean.class));
+		converter.setTypePrecedence(TypePrecedence.INFERRED);
+
+		// No type info in message
+		template.setMessageConverter(new SimpleMessageConverter());
+		@SuppressWarnings("resource")
+		MessagePostProcessor messagePostProcessor = message -> {
+			message.getMessageProperties().setContentType("application/xml");
+			message.getMessageProperties().setUserId("guest");
+			return message;
+		};
+		returned = template.convertSendAndReceive("", "test.converted", "<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>baz</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.list", "<Foo2><list><bar>baz</bar></list></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>BAZZZZ</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.array", "<Foo2><list><bar>baz</bar></list></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<Foo2><bar>BAZZxx</bar></Foo2>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args1", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=baztest.converted.args1</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.args2", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=baztest.converted.args2</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.message", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=bazfoo2MessageFoo2Service</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.message", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>fooMessage</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.channel", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>barAndChannel</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagechannel", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>bar=bazMessageAndChannel</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessage", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.converted.foomessage", "<Foo2><bar>baz</bar></Foo2>",
+				messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageFoo2guest</String>", new String((byte[]) returned));
+
+		returned = template.convertSendAndReceive("", "test.notconverted.messagingmessagenotgeneric",
+				"<Foo2><bar>baz</bar></Foo2>", messagePostProcessor);
+		assertThat(returned, instanceOf(byte[].class));
+		assertEquals("<String>GenericMessageLinkedHashMap</String>", new String((byte[]) returned));
+
+		Jackson2XmlMessageConverter xmlConverter = ctx.getBean(Jackson2XmlMessageConverter.class);
+
+		DefaultJackson2JavaTypeMapper mapper = TestUtils.getPropertyValue(xmlConverter, "javaTypeMapper",
+				DefaultJackson2JavaTypeMapper.class);
+		Mockito.verify(mapper).setBeanClassLoader(ctx.getClassLoader());
+
+		ctx.close();
+	}
+
+	@Test
 	public void testMeta() throws Exception {
 		this.rabbitTemplate.convertAndSend("test.metaFanout", "", "foo");
 		assertTrue(this.metaListener.latch.await(10, TimeUnit.SECONDS));
@@ -678,11 +771,11 @@ public class EnableRabbitIntegrationTests {
 
 	@Test
 	public void testGenericReturnTypes() {
-		Object returned = this.jsonRabbitTemplate.convertSendAndReceive("",  "test.generic.list", new JsonObject("baz"));
+		Object returned = this.jsonRabbitTemplate.convertSendAndReceive("", "test.generic.list", new JsonObject("baz"));
 		assertThat(returned, instanceOf(List.class));
 		assertThat(((List<?>) returned).get(0), instanceOf(JsonObject.class));
 
-		returned = this.jsonRabbitTemplate.convertSendAndReceive("",  "test.generic.map", new JsonObject("baz"));
+		returned = this.jsonRabbitTemplate.convertSendAndReceive("", "test.generic.map", new JsonObject("baz"));
 		assertThat(returned, instanceOf(Map.class));
 		assertThat(((Map<?, ?>) returned).get("key"), instanceOf(JsonObject.class));
 	}
@@ -788,9 +881,9 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = {
 				@QueueBinding(
-					value = @Queue,
-					exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
-					key = "auto.anon.rk")}
+						value = @Queue,
+						exchange = @Exchange(value = "auto.exch", autoDelete = "true"),
+						key = "auto.anon.rk") }
 		)
 		public String handleWithDeclareAnon(String foo) {
 			return foo.toUpperCase();
@@ -822,10 +915,10 @@ public class EnableRabbitIntegrationTests {
 			return foo.toUpperCase() + foo + Thread.currentThread().getName();
 		}
 
-		@RabbitListener(queues = {"#{'test.comma.1,test.comma.2'.split(',')}",
-								  "test,with,commas",
-								  "#{commaQueues}"},
-						group = "commas")
+		@RabbitListener(queues = { "#{'test.comma.1,test.comma.2'.split(',')}",
+				"test,with,commas",
+				"#{commaQueues}" },
+				group = "commas")
 		public String multiQueuesConfig(String foo) {
 			return foo.toUpperCase() + foo;
 		}
@@ -901,38 +994,38 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(id = "notStarted", containerFactory = "rabbitAutoStartFalseListenerContainerFactory",
-			bindings = @QueueBinding(
-				value = @Queue(autoDelete = "true", exclusive = "true", durable = "true"),
-				exchange = @Exchange(value = "auto.start", autoDelete = "true", delayed = "${no.prop:false}"),
-				key = "auto.start")
+				bindings = @QueueBinding(
+						value = @Queue(autoDelete = "true", exclusive = "true", durable = "true"),
+						exchange = @Exchange(value = "auto.start", autoDelete = "true", delayed = "${no.prop:false}"),
+						key = "auto.start")
 		)
 		public void handleWithAutoStartFalse(String foo) {
 		}
 
 		@RabbitListener(id = "headersId", bindings = {
 				@QueueBinding(
-					value = @Queue(name = "auto.headers1", autoDelete = "true",
-									arguments = @Argument(name = "x-message-ttl", value = "10000",
-															type = "java.lang.Integer")),
-					exchange = @Exchange(name = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
-					arguments = {
-							@Argument(name = "x-match", value = "all"),
-							@Argument(name = "foo", value = "bar"),
-							@Argument(name = "baz")
-					}
+						value = @Queue(name = "auto.headers1", autoDelete = "true",
+								arguments = @Argument(name = "x-message-ttl", value = "10000",
+										type = "java.lang.Integer")),
+						exchange = @Exchange(name = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+						arguments = {
+								@Argument(name = "x-match", value = "all"),
+								@Argument(name = "foo", value = "bar"),
+								@Argument(name = "baz")
+						}
 				),
 				@QueueBinding(
-					value = @Queue(value = "auto.headers2", autoDelete = "true",
-									arguments = @Argument(name = "x-message-ttl", value = "10000",
-															type = "#{T(java.lang.Integer)}")),
-					exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
-					arguments = {
-							@Argument(name = "x-match", value = "any"),
-							@Argument(name = "foo", value = "bax"),
-							@Argument(name = "#{'baz'}", value = "#{'fiz'}")
-					}
+						value = @Queue(value = "auto.headers2", autoDelete = "true",
+								arguments = @Argument(name = "x-message-ttl", value = "10000",
+										type = "#{T(java.lang.Integer)}")),
+						exchange = @Exchange(value = "auto.headers", type = ExchangeTypes.HEADERS, autoDelete = "true"),
+						arguments = {
+								@Argument(name = "x-match", value = "any"),
+								@Argument(name = "foo", value = "bax"),
+								@Argument(name = "#{'baz'}", value = "#{'fiz'}")
+						}
 				)
-			}
+		}
 		)
 		public String handleWithHeadersExchange(String foo) {
 			return foo.toUpperCase();
@@ -940,9 +1033,9 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = {
 				@QueueBinding(
-					value = @Queue,
-					exchange = @Exchange(value = "auto.internal", autoDelete = "true", internal = "true"),
-					key = "auto.internal.rk")}
+						value = @Queue,
+						exchange = @Exchange(value = "auto.internal", autoDelete = "true", internal = "true"),
+						key = "auto.internal.rk") }
 		)
 		public String handleWithInternalExchange(String foo) {
 			return foo.toUpperCase();
@@ -950,26 +1043,26 @@ public class EnableRabbitIntegrationTests {
 
 		@RabbitListener(bindings = {
 				@QueueBinding(
-					value = @Queue,
-					exchange = @Exchange(value = "auto.internal", autoDelete = "true",
+						value = @Queue,
+						exchange = @Exchange(value = "auto.internal", autoDelete = "true",
 								ignoreDeclarationExceptions = "true"),
-					key = "auto.internal.rk")}
+						key = "auto.internal.rk") }
 		)
 		public String handleWithInternalExchangeIgnore(String foo) {
 			return foo.toUpperCase();
 		}
 
 		@RabbitListener(id = "defaultDLX",
-			bindings = @QueueBinding(
-				value = @Queue(value = "amqp656",
-					autoDelete = "true",
-					arguments = {
-						@Argument(name = "x-dead-letter-exchange", value = ""),
-						@Argument(name = "x-dead-letter-routing-key", value = "amqp656dlq"),
-						@Argument(name = "test-empty", value = ""),
-						@Argument(name = "test-null", value = "") }),
-				exchange = @Exchange(value = "amq.topic", type = "topic"),
-				key = "foo"))
+				bindings = @QueueBinding(
+						value = @Queue(value = "amqp656",
+								autoDelete = "true",
+								arguments = {
+										@Argument(name = "x-dead-letter-exchange", value = ""),
+										@Argument(name = "x-dead-letter-routing-key", value = "amqp656dlq"),
+										@Argument(name = "test-empty", value = ""),
+										@Argument(name = "test-null", value = "") }),
+						exchange = @Exchange(value = "amq.topic", type = "topic"),
+						key = "foo"))
 		public String handleWithDeadLetterDefaultExchange(String foo) {
 			throw new AmqpRejectAndDontRequeueException("dlq");
 		}
@@ -1432,8 +1525,8 @@ public class EnableRabbitIntegrationTests {
 
 	@RabbitListener(bindings = @QueueBinding
 			(value = @Queue,
-			exchange = @Exchange(value = "multi.exch", autoDelete = "true"),
-			key = "multi.rk"))
+					exchange = @Exchange(value = "multi.exch", autoDelete = "true"),
+					key = "multi.rk"))
 	static class MultiListenerBean {
 
 		@RabbitHandler
@@ -1464,8 +1557,8 @@ public class EnableRabbitIntegrationTests {
 
 	@RabbitListener(id = "multi", bindings = @QueueBinding
 			(value = @Queue,
-			exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
-			key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory",
+					exchange = @Exchange(value = "multi.json.exch", autoDelete = "true"),
+					key = "multi.json.rk"), containerFactory = "simpleJsonListenerContainerFactory",
 			errorHandler = "alwaysBARHandler", returnExceptions = "true")
 	static class MultiListenerJsonBean {
 
@@ -1499,8 +1592,8 @@ public class EnableRabbitIntegrationTests {
 
 	@RabbitListener(bindings = @QueueBinding
 			(value = @Queue,
-			exchange = @Exchange(value = "multi.exch.tx", autoDelete = "true"),
-			key = "multi.rk.tx"))
+					exchange = @Exchange(value = "multi.exch.tx", autoDelete = "true"),
+					key = "multi.rk.tx"))
 	static class TxClassLevelImpl implements TxClassLevel {
 
 		@Override
@@ -1524,12 +1617,13 @@ public class EnableRabbitIntegrationTests {
 
 	}
 
-	@Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+	@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 	@Retention(RetentionPolicy.RUNTIME)
 	@RabbitListener(bindings = @QueueBinding(
 			value = @Queue,
 			exchange = @Exchange(value = "test.metaFanout", type = ExchangeTypes.FANOUT, autoDelete = "true")))
 	public @interface MyAnonFanoutListener {
+
 	}
 
 	public static class MetaListener {
@@ -1602,6 +1696,91 @@ public class EnableRabbitIntegrationTests {
 					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
 			new DirectFieldAccessor(jackson2JsonMessageConverter).setPropertyValue("javaTypeMapper", mapper);
 			return jackson2JsonMessageConverter;
+		}
+
+		@Bean
+		public DefaultMessageHandlerMethodFactory myHandlerMethodFactory() {
+			DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
+			factory.setMessageConverter(new GenericMessageConverter(myConversionService()));
+			return factory;
+		}
+
+		@Bean
+		public ConversionService myConversionService() {
+			DefaultConversionService conv = new DefaultConversionService();
+			conv.addConverter(foo1To2Converter());
+			return conv;
+		}
+
+		@Override
+		public void configureRabbitListeners(RabbitListenerEndpointRegistrar registrar) {
+			registrar.setMessageHandlerMethodFactory(myHandlerMethodFactory());
+		}
+
+		@Bean
+		public Converter<Foo1, Foo2> foo1To2Converter() {
+			return new Converter<Foo1, Foo2>() {
+
+				@SuppressWarnings("unused")
+				private boolean converted;
+
+				@Override
+				public Foo2 convert(Foo1 foo1) {
+					Foo2 foo2 = new Foo2();
+					foo2.setBar(foo1.getBar());
+					converted = true;
+					return foo2;
+				}
+
+			};
+		}
+
+		@Bean
+		public Foo2Service foo2Service() {
+			return new Foo2Service();
+		}
+
+	}
+
+	@Configuration
+	@EnableRabbit
+	public static class EnableRabbitConfigWithCustomXmlConversion implements RabbitListenerConfigurer {
+
+		@Bean
+		public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory() {
+			SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+			factory.setConnectionFactory(rabbitConnectionFactory());
+			factory.setMessageConverter(xmlConverter());
+			factory.setReceiveTimeout(10L);
+			return factory;
+		}
+
+		// Rabbit infrastructure setup
+
+		@Bean
+		public ConnectionFactory rabbitConnectionFactory() {
+			CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+			connectionFactory.setHost(brokerRunning.getHostName());
+			connectionFactory.setPort(brokerRunning.getPort());
+			connectionFactory.setUsername(brokerRunning.getUser());
+			connectionFactory.setPassword(brokerRunning.getPassword());
+			return connectionFactory;
+		}
+
+		@Bean
+		public RabbitTemplate xmlRabbitTemplate() {
+			RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory());
+			rabbitTemplate.setMessageConverter(xmlConverter());
+			return rabbitTemplate;
+		}
+
+		@Bean
+		public Jackson2XmlMessageConverter xmlConverter() {
+			Jackson2XmlMessageConverter jackson2XmlMessageConverter = new Jackson2XmlMessageConverter();
+			DefaultJackson2JavaTypeMapper mapper = Mockito.spy(TestUtils.getPropertyValue(jackson2XmlMessageConverter,
+					"javaTypeMapper", DefaultJackson2JavaTypeMapper.class));
+			new DirectFieldAccessor(jackson2XmlMessageConverter).setPropertyValue("javaTypeMapper", mapper);
+			return jackson2XmlMessageConverter;
 		}
 
 		@Bean
