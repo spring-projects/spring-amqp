@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -170,8 +171,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private final Object connectionMonitor = new Object();
 
 	/** Executor used for deferred close if no explicit executor set. */
-	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
+	private ExecutorService deferredCloseExecutor;
 
+	/* Create a unique ID for the pool */
+	private static final AtomicInteger threadPoolId = new AtomicInteger();
+
+	/**
+	 * Determine the executor service used to close connections.
+	 *
+	 * @return specified executor service otherwise the default one is created and returned.
+	 */
+	protected ExecutorService getDeferredCloseExecutor() {
+		if (null != getExecutorService()) {
+			return getExecutorService();
+		}
+        synchronized (this.connectionMonitor) {
+            if (null == this.deferredCloseExecutor) {
+                this.deferredCloseExecutor =
+                        Executors.newCachedThreadPool(new AmqpNamedThreadPoolFactory());
+            }
+        }
+		return this.deferredCloseExecutor;
+	}
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -692,7 +713,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (this.contextStopped) {
 			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
+			if (null != this.deferredCloseExecutor) {
+				this.deferredCloseExecutor.shutdownNow();
+			}
 		}
 	}
 
@@ -1097,9 +1120,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (CachingConnectionFactory.this.active &&
 						(CachingConnectionFactory.this.publisherConfirms ||
 								CachingConnectionFactory.this.publisherReturns)) {
-					ExecutorService executorService = (getExecutorService() != null
-							? getExecutorService()
-							: CachingConnectionFactory.this.deferredCloseExecutor);
+					ExecutorService executorService = getDeferredCloseExecutor();
 					final Channel channel = CachedChannelInvocationHandler.this.target;
 					executorService.execute(new Runnable() {
 
@@ -1294,5 +1315,24 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 	}
+
+
+    /**
+     * Name each create thread by this class.
+     */
+    private static class AmqpNamedThreadPoolFactory implements ThreadFactory {
+        private AtomicInteger threadId = new AtomicInteger();
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            t.setName("spring-rabbit-deferred-pool-"
+                    + threadPoolId.incrementAndGet()
+                    + "-thread-"
+                    + this.threadId.incrementAndGet());
+            return t;
+        }
+    }
 
 }
