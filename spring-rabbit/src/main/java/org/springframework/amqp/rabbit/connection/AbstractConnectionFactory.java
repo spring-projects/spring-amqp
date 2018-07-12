@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
  * @author Gary Russell
  * @author Steve Powell
  * @author Artem Bilan
+ * @author Will Droste
  *
  */
 public abstract class AbstractConnectionFactory implements ConnectionFactory, DisposableBean, BeanNameAware,
@@ -428,7 +429,14 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
-	public boolean hasPublisherConnectionFactory() {
+	/**
+	 * Return a bean name of the component or null if not a bean.
+	 * @return the bean name or null.
+	 * @since 1.7.9
+	 */
+	protected String getBeanName() {
+		return this.beanName;
+	}	public boolean hasPublisherConnectionFactory() {
 		return this.publisherConnectionFactory != null;
 	}
 
