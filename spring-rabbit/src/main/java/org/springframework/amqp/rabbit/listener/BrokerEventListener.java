@@ -85,7 +85,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	 * {@code amq.rabbitmq.event} topic exchange. They can therefore match wildcards;
 	 * examples are {@code user.#, queue.created}. Refer to the plugin documentation for
 	 * information about available events. A single-threaded
-	 * {@link DirectMessageListenerContainer} will be created; its lifecyle will be
+	 * {@link DirectMessageListenerContainer} will be created; its lifecycle will be
 	 * controlled by this object's {@link SmartLifecycle} methods.
 	 * @param connectionFactory the connection factory.
 	 * @param eventKeys the event keys.
@@ -99,7 +99,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	 * Event keys are patterns to match routing keys for events published to the
 	 * {@code amq.rabbitmq.event} topic exchange. They can therefore match wildcards;
 	 * examples are {@code user.#, queue.created}. Refer to the plugin documentation for
-	 * information about available events. The container's lifecyle will be not be
+	 * information about available events. The container's lifecycle will be not be
 	 * controlled by this object's {@link SmartLifecycle} methods. The container should
 	 * not be configured with queues or a {@link MessageListener}; those properties will
 	 * be replaced.
@@ -194,6 +194,12 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	public void onMessage(Message message) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher.publishEvent(new BrokerEvent(this, message.getMessageProperties()));
+		}
+		else {
+			if (logger.isWarnEnabled()) {
+				logger.warn("No event publisher available for " + message + "; if the BrokerEventListener "
+						+ "is not defined as a bean, you must provide an ApplicationEventPublisher");
+			}
 		}
 	}
 
