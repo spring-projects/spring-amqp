@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 the original author or authors.
+ * Copyright 2010-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.After;
@@ -42,6 +43,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * @author Dave Syer
  * @author Gary Russell
+ * @author Will Droste
  */
 public final class ListenerContainerPlaceholderParserTests {
 
@@ -58,14 +60,18 @@ public final class ListenerContainerPlaceholderParserTests {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
 			this.context.close();
-			assertTrue(TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class)
-					.isTerminated());
+			ExecutorService es = TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class);
+			if (es != null) {
+				// if it gets started make sure its terminated..
+				assertTrue(es.isTerminated());
+			}
 		}
 	}
 
 	@Test
 	public void testParseWithQueueNames() throws Exception {
-		SimpleMessageListenerContainer container = this.context.getBean("testListener", SimpleMessageListenerContainer.class);
+		SimpleMessageListenerContainer container =
+				this.context.getBean("testListener", SimpleMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
 		assertEquals(this.context.getBean(ConnectionFactory.class), container.getConnectionFactory());
 		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());

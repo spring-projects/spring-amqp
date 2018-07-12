@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +57,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -92,13 +94,21 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Steve Powell
+ * @author Will Droste
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener, ApplicationContextAware, ApplicationListener<ContextClosedEvent>,
-				PublisherCallbackChannelConnectionFactory {
+		PublisherCallbackChannelConnectionFactory {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+
+	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
+
+	/**
+	 * Create a unique ID for the pool
+	 */
+	private static final AtomicInteger threadPoolId = new AtomicInteger();
 
 	private static final Set<String> txStarts = new HashSet<String>(Arrays.asList("basicPublish", "basicAck", "basicNack",
 			"basicReject"));
@@ -122,10 +132,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			new HashSet<ChannelCachingConnectionProxy>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-		allocatedConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+			allocatedConnectionNonTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
 
 	private final Map<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>
-		allocatedConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
+			allocatedConnectionTransactionalChannels = new HashMap<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>>();
 
 	private final BlockingDeque<ChannelCachingConnectionProxy> idleConnections =
 			new LinkedBlockingDeque<ChannelCachingConnectionProxy>();
@@ -166,12 +176,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile ConditionalExceptionLogger closeExceptionLogger = new DefaultChannelCloseLogger();
 
-	/** Synchronization monitor for the shared Connection */
+	/**
+	 * Synchronization monitor for the shared Connection
+	 */
 	private final Object connectionMonitor = new Object();
 
-	/** Executor used for deferred close if no explicit executor set. */
-	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
-
+	/**
+	 * Executor used for deferred close if no explicit executor set.
+	 */
+	private ExecutorService deferredCloseExecutor;
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -406,7 +419,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					}
 					if (logger.isDebugEnabled()) {
 						logger.debug(
-							"Acquired permit for " + connection + ", remaining:" + checkoutPermits.availablePermits());
+								"Acquired permit for " + connection + ", remaining:" + checkoutPermits.availablePermits());
 					}
 				}
 				catch (InterruptedException e) {
@@ -486,7 +499,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					checkoutPermits.release();
 					if (logger.isDebugEnabled()) {
 						logger.debug("Could not get channel; released permit for " + connection + ", remaining:"
-							+ checkoutPermits.availablePermits());
+								+ checkoutPermits.availablePermits());
 					}
 				}
 				throw e;
@@ -692,7 +705,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (this.contextStopped) {
 			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
+			if (this.deferredCloseExecutor != null) {
+				this.deferredCloseExecutor.shutdownNow();
+			}
 		}
 	}
 
@@ -820,12 +835,12 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				props.setProperty("connectionCacheSize", Integer.toString(this.connectionCacheSize));
 				props.setProperty("openConnections", Integer.toString(countOpenConnections()));
 				props.setProperty("idleConnections", Integer.toString(this.idleConnections.size()));
-				props.setProperty("idleConnectionsHighWater",  Integer.toString(this.connectionHighWaterMark.get()));
+				props.setProperty("idleConnectionsHighWater", Integer.toString(this.connectionHighWaterMark.get()));
 				for (ChannelCachingConnectionProxy proxy : this.allocatedConnections) {
 					putConnectionName(props, proxy, ":" + proxy.getLocalPort());
 				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
-										this.allocatedConnectionTransactionalChannels.entrySet()) {
+						this.allocatedConnectionTransactionalChannels.entrySet()) {
 					int port = entry.getKey().getLocalPort();
 					if (port > 0 && entry.getKey().isOpen()) {
 						LinkedList<ChannelProxy> channelList = entry.getValue();
@@ -835,7 +850,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					}
 				}
 				for (Entry<ChannelCachingConnectionProxy, LinkedList<ChannelProxy>> entry :
-										this.allocatedConnectionNonTransactionalChannels.entrySet()) {
+						this.allocatedConnectionNonTransactionalChannels.entrySet()) {
 					int port = entry.getKey().getLocalPort();
 					if (port > 0 && entry.getKey().isOpen()) {
 						LinkedList<ChannelProxy> channelList = entry.getValue();
@@ -878,6 +893,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		return n;
+	}
+
+	/**
+	 * Determine the executor service used to close connections.
+	 * @return specified executor service otherwise the default one is created and returned.
+	 * @since 1.7.9
+	 */
+	protected ExecutorService getDeferredCloseExecutor() {
+		if (getExecutorService() != null) {
+			return getExecutorService();
+		}
+		synchronized (this.connectionMonitor) {
+			if (this.deferredCloseExecutor == null) {
+				final String threadPrefix =
+						getBeanName() == null
+								? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
+								: getBeanName();
+				ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix);
+				this.deferredCloseExecutor = Executors.newCachedThreadPool(threadPoolFactory);
+			}
+		}
+		return this.deferredCloseExecutor;
 	}
 
 	@Override
@@ -1033,7 +1070,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					checkoutPermits.release();
 					if (logger.isDebugEnabled()) {
 						logger.debug("Released permit for '" + this.theConnection + "', remaining: "
-							+ checkoutPermits.availablePermits());
+								+ checkoutPermits.availablePermits());
 					}
 				}
 				else {
@@ -1097,9 +1134,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (CachingConnectionFactory.this.active &&
 						(CachingConnectionFactory.this.publisherConfirms ||
 								CachingConnectionFactory.this.publisherReturns)) {
-					ExecutorService executorService = (getExecutorService() != null
-							? getExecutorService()
-							: CachingConnectionFactory.this.deferredCloseExecutor);
+					ExecutorService executorService = getDeferredCloseExecutor();
 					final Channel channel = CachedChannelInvocationHandler.this.target;
 					executorService.execute(new Runnable() {
 
@@ -1116,14 +1151,18 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
 							}
-							catch (Exception e) { }
+							catch (Exception e) {
+							}
 							finally {
 								try {
 									channel.close();
 								}
-								catch (IOException e) { }
-								catch (AlreadyClosedException e) { }
-								catch (TimeoutException e) { }
+								catch (IOException e) {
+								}
+								catch (AlreadyClosedException e) {
+								}
+								catch (TimeoutException e) {
+								}
 								catch (ShutdownSignalException e) {
 									if (!RabbitUtils.isNormalShutdown(e)) {
 										logger.debug("Unexpected exception on deferred close", e);
@@ -1253,8 +1292,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		@Override
 		public String toString() {
 			return "Proxy@" + ObjectUtils.getIdentityHexString(this) + " "
-				+ (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated ")
-				+ "Rabbit Connection: " + this.target;
+					+ (CachingConnectionFactory.this.cacheMode == CacheMode.CHANNEL ? "Shared " : "Dedicated ")
+					+ "Rabbit Connection: " + this.target;
 		}
 
 	}
