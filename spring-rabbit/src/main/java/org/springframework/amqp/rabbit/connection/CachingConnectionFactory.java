@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,6 +56,7 @@ import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -92,12 +94,20 @@ import com.rabbitmq.client.ShutdownSignalException;
  * @author Gary Russell
  * @author Artem Bilan
  * @author Steve Powell
+ * @author Will Droste
  */
 @ManagedResource
 public class CachingConnectionFactory extends AbstractConnectionFactory
 		implements InitializingBean, ShutdownListener {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+
+	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
+
+	/**
+	 * Create a unique ID for the pool.
+	 */
+	private static final AtomicInteger threadPoolId = new AtomicInteger();
 
 	private static final Set<String> txStarts = new HashSet<>(Arrays.asList("basicPublish", "basicAck",
 			"basicNack", "basicReject"));
@@ -148,9 +158,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/** Synchronization monitor for the shared Connection. */
 	private final Object connectionMonitor = new Object();
 
-	/** Executor used for deferred close if no explicit executor set. */
-	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
-
 	private long channelCheckoutTimeout = 0;
 
 	private CacheMode cacheMode = CacheMode.CHANNEL;
@@ -172,6 +179,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private volatile boolean active = true;
 
 	private volatile boolean initialized;
+	/**
+	 * Executor used for deferred close if no explicit executor set.
+	 */
+	private ExecutorService deferredCloseExecutor;
 
 	private volatile boolean stopped;
 
@@ -764,7 +775,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (getContextStopped()) {
 			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
+			if (this.deferredCloseExecutor != null) {
+				this.deferredCloseExecutor.shutdownNow();
+			}
 		}
 	}
 
@@ -908,6 +921,28 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		return n;
+	}
+
+	/**
+	 * Determine the executor service used to close connections.
+	 * @return specified executor service otherwise the default one is created and returned.
+	 * @since 1.7.9
+	 */
+	protected ExecutorService getDeferredCloseExecutor() {
+		if (getExecutorService() != null) {
+			return getExecutorService();
+		}
+		synchronized (this.connectionMonitor) {
+			if (this.deferredCloseExecutor == null) {
+				final String threadPrefix =
+						getBeanName() == null
+								? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
+								: getBeanName();
+				ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix);
+				this.deferredCloseExecutor = Executors.newCachedThreadPool(threadPoolFactory);
+			}
+		}
+		return this.deferredCloseExecutor;
 	}
 
 	@Override
@@ -1187,9 +1222,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private void asyncClose() {
-			ExecutorService executorService = (getExecutorService() != null
-					? getExecutorService()
-					: CachingConnectionFactory.this.deferredCloseExecutor);
+			ExecutorService executorService = getDeferredCloseExecutor();
 			final Channel channel = CachedChannelInvocationHandler.this.target;
 			executorService.execute(() -> {
 				try {
