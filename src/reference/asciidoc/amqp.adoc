@@ -2917,6 +2917,9 @@ Foo<Bar<Baz, Qux>> foo =
     rabbitTemplate.receiveAndConvert(new ParameterizedTypeReference<Foo<Bar<Baz, Qux>>>() { });
 ----
 
+NOTE: Starting with _version 2.1_ the class `AbstractJsonMessageConverter` has been deprecated; it is no longer the base class for `Jackson2JsonMessageConverter`.
+It has been replace by `AbstractJackson2MessageConverter`.
+
 ===== MarshallingMessageConverter
 
 Yet another option is the `MarshallingMessageConverter`.
@@ -2938,8 +2941,9 @@ In terms of configuration, it's most common to provide the constructor argument 
 
 ===== Jackson2XmlMessageConverter
 
-This class was introduced in _version 2.1_ and can be used to convert messages from/to XML. This class considered the twine for `Jackson2JsonMessageConverter`.
-In fact both of them share the same base class `AbstractJackson2MessageConverter`.
+This class was introduced in _version 2.1_ and can be used to convert messages from/to XML.
+
+Both of `Jackson2XmlMessageConverter` and `Jackson2JsonMessageConverter` have the same base class `AbstractJackson2MessageConverter`.
 
 NOTE: The class `AbstractJackson2MessageConverter` is introduced to replace the now-deprecating class `AbstractJsonMessageConverter`.
 

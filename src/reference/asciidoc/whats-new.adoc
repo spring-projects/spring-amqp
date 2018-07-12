@@ -46,3 +46,4 @@ See <<request-reply>> for more information.
 
 ===== Message Converts
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
+See <<Jackson2XmlMessageConverter>> for more information.
