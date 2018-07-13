@@ -394,6 +394,13 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		return temp;
 	}
 
+	/**
+	 * @return expose for classes to use for naming.
+	 */
+	protected String getBeanName() {
+		return this.beanName;
+	}
+
 	@Override
 	public void destroy() {
 	}

@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +57,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -99,6 +101,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				PublisherCallbackChannelConnectionFactory {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
 
 	private static final Set<String> txStarts = new HashSet<String>(Arrays.asList("basicPublish", "basicAck", "basicNack",
 			"basicReject"));
@@ -170,8 +173,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private final Object connectionMonitor = new Object();
 
 	/** Executor used for deferred close if no explicit executor set. */
-	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
+	private ExecutorService deferredCloseExecutor;
 
+	/* Create a unique ID for the pool */
+	private static final AtomicInteger threadPoolId = new AtomicInteger();
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -692,7 +697,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (this.contextStopped) {
 			this.stopped = true;
-			this.deferredCloseExecutor.shutdownNow();
+			if (null != this.deferredCloseExecutor) {
+				this.deferredCloseExecutor.shutdownNow();
+			}
 		}
 	}
 
@@ -878,6 +885,29 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 		}
 		return n;
+	}
+
+	/**
+	 * Determine the executor service used to close connections.
+	 *
+	 * @return specified executor service otherwise the default one is created and returned.
+	 */
+	protected ExecutorService getDeferredCloseExecutor() {
+		if (null != getExecutorService()) {
+			return getExecutorService();
+		}
+		synchronized (this.connectionMonitor) {
+			if (null == this.deferredCloseExecutor) {
+				final String threadPrefix = (null == getBeanName())
+						? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
+						: getBeanName();
+				ThreadFactory threadPoolFactory
+						= new CustomizableThreadFactory(threadPrefix);
+				this.deferredCloseExecutor
+						= Executors.newCachedThreadPool(threadPoolFactory);
+			}
+		}
+		return this.deferredCloseExecutor;
 	}
 
 	@Override
@@ -1097,9 +1127,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				if (CachingConnectionFactory.this.active &&
 						(CachingConnectionFactory.this.publisherConfirms ||
 								CachingConnectionFactory.this.publisherReturns)) {
-					ExecutorService executorService = (getExecutorService() != null
-							? getExecutorService()
-							: CachingConnectionFactory.this.deferredCloseExecutor);
+					ExecutorService executorService = getDeferredCloseExecutor();
 					final Channel channel = CachedChannelInvocationHandler.this.target;
 					executorService.execute(new Runnable() {
 
