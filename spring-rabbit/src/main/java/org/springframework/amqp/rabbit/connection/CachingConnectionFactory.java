@@ -177,8 +177,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/** Synchronization monitor for the shared Connection. */
 	private final Object connectionMonitor = new Object();
 
-	/** Executor used for deferred close if no explicit executor set. */
-	private final ExecutorService deferredCloseExecutor = Executors.newCachedThreadPool();
 	/**
 	 * Executor used for deferred close if no explicit executor set.
 	 */
