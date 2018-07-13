@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
+
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;

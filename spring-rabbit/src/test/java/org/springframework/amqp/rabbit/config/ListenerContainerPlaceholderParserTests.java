@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.junit.After;
@@ -58,8 +59,11 @@ public final class ListenerContainerPlaceholderParserTests {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
 			this.context.close();
-			assertTrue(TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class)
-					.isTerminated());
+			ExecutorService es = TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class);
+			if (null != es) {
+				// if it gets started make sure its terminated..
+				assertTrue(es.isTerminated());
+			}
 		}
 	}
 
