@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
-
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
@@ -57,6 +56,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -100,6 +100,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				PublisherCallbackChannelConnectionFactory {
 
 	private static final int DEFAULT_CHANNEL_CACHE_SIZE = 25;
+	private static final String DEFAULT_DEFERRED_POOL_PREFIX = "spring-rabbit-deferred-pool-";
 
 	private static final Set<String> txStarts = new HashSet<String>(Arrays.asList("basicPublish", "basicAck", "basicNack",
 			"basicReject"));
@@ -175,24 +176,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	/* Create a unique ID for the pool */
 	private static final AtomicInteger threadPoolId = new AtomicInteger();
-
-	/**
-	 * Determine the executor service used to close connections.
-	 *
-	 * @return specified executor service otherwise the default one is created and returned.
-	 */
-	protected ExecutorService getDeferredCloseExecutor() {
-		if (null != getExecutorService()) {
-			return getExecutorService();
-		}
-        synchronized (this.connectionMonitor) {
-            if (null == this.deferredCloseExecutor) {
-                this.deferredCloseExecutor =
-                        Executors.newCachedThreadPool(new AmqpNamedThreadPoolFactory());
-            }
-        }
-		return this.deferredCloseExecutor;
-	}
 
 	/**
 	 * Create a new CachingConnectionFactory initializing the hostname to be the value returned from
@@ -903,6 +886,29 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return n;
 	}
 
+	/**
+	 * Determine the executor service used to close connections.
+	 *
+	 * @return specified executor service otherwise the default one is created and returned.
+	 */
+	protected ExecutorService getDeferredCloseExecutor() {
+		if (null != getExecutorService()) {
+			return getExecutorService();
+		}
+		synchronized (this.connectionMonitor) {
+			if (null == this.deferredCloseExecutor) {
+				final String threadPrefix = (null == getBeanName())
+						? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
+						: getBeanName();
+				ThreadFactory threadPoolFactory
+						= new CustomizableThreadFactory(threadPrefix);
+				this.deferredCloseExecutor
+						= Executors.newCachedThreadPool(threadPoolFactory);
+			}
+		}
+		return this.deferredCloseExecutor;
+	}
+
 	@Override
 	public String toString() {
 		return "CachingConnectionFactory [channelCacheSize=" + this.channelCacheSize + ", host=" + getHost()
@@ -1315,24 +1321,5 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 	}
-
-
-    /**
-     * Name each create thread by this class.
-     */
-    private static class AmqpNamedThreadPoolFactory implements ThreadFactory {
-        private AtomicInteger threadId = new AtomicInteger();
-
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r);
-            t.setDaemon(true);
-            t.setName("spring-rabbit-deferred-pool-"
-                    + threadPoolId.incrementAndGet()
-                    + "-thread-"
-                    + this.threadId.incrementAndGet());
-            return t;
-        }
-    }
 
 }
