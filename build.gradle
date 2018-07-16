@@ -72,6 +72,7 @@ subprojects { subproject ->
 	ext {
 		assertjVersion = '3.9.1'
 		assertkVersion = '0.10'
+		commonsHttpClientVersion = '4.5.5'
 		hamcrestVersion = '1.3'
 		jackson2Version = '2.9.5'
 		junit4Version = '4.12'
@@ -81,7 +82,7 @@ subprojects { subproject ->
 		logbackVersion = '1.2.3'
 		mockitoVersion = '2.18.0'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.2.0'
-		rabbitmqHttpClientVersion = '2.0.1.RELEASE'
+		rabbitmqHttpClientVersion = '2.1.0.RELEASE'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.0.BUILD-SNAPSHOT'
 
@@ -253,15 +254,12 @@ project('spring-rabbit') {
 		compile project(":spring-amqp")
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion") {
-			exclude group: 'org.springframework', module: 'spring-web'
-		}
+		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
-		compile "org.springframework:spring-web:$springVersion"
 
 		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
@@ -269,12 +267,15 @@ project('spring-rabbit') {
 
 		compile ("org.apache.logging.log4j:log4j-core:$log4jVersion", optional)
 
+		testCompile project(":spring-rabbit-junit")
 		testCompile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-		testRuntime "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 		testCompile("com.willowtreeapps.assertk:assertk:$assertkVersion") {
 			exclude group: 'org.jetbrains.kotlin', module: 'kotlin-reflect'
 		}
-		testCompile project(":spring-rabbit-junit")
+
+		testRuntime "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+		testRuntime "org.springframework:spring-web:$springVersion"
+		testRuntime "org.apache.httpcomponents:httpclient:$commonsHttpClientVersion"
 	}
 
 	compileTestKotlin {
