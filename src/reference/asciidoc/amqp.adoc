@@ -361,6 +361,31 @@ The `ConnectionFactory` argument can be used to distinguish target connection na
 By default, the `beanName` of the `AbstractConnectionFactory`, a hex String representing the object, and an internal counter are used to generate the `connection_name`.
 The `<rabbit:connection-factory>` namespace component is also supplied with the `connection-name-strategy` attribute.
 
+An implementation `SimplePropertyValueConnectionNameStrategy` is provided that sets the connection name to an application property.
+Declare it as a `@Bean` and inject it into the connection factory:
+
+[source, java]
+----
+@Bean
+public ConnectionNameStrategy cns() {
+    return new SimplePropertyValueConnectionNameStrategy("spring.application.name");
+}
+
+@Bean
+public ConnectionFactory rabbitConnectionFactory(ConnectionNameStrategy cns) {
+    CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+    ...
+    connectionFactory.setConnectionNameStrategy(cns);
+    return connectionFactory;
+}
+----
+
+The property must exist in the application context's `Environment`.
+
+NOTE: When using Spring Boot and it's autoconfigured connection factory, it is only necessary to declare the `ConnectionNameStrategy` `@Bean`.
+Boot will auto-detect the bean and wire it into the factory.
+
+===== Blocked Connections and Resource Constraints
 
 The connection might be blocked for interaction from the Broker according to the https://www.rabbitmq.com/memory.html[Memory Alarm].
 Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
@@ -370,8 +395,8 @@ These allow you to provide application logic to react appropriately to problems 
 IMPORTANT:  When the application is configured with a single `CachingConnectionFactory`, as it is by default with Spring Boot auto-configuration, the application will stop working when the connection is blocked by the Broker.
 And when it is blocked by the Broker, any its clients stop to work.
 If we have producers and consumers in the same application, we may end up with a deadlock  when producers are blocking the connection because there are no resources on the Broker anymore and consumers can't free them because the connection is blocked.
-To mitigate the problem, there is just enough to have one more separate `CachingConnectionFactory` instance with the same options - one for producers and one for consumers.
-The separate `CachingConnectionFactory` isn't recommended for transactional producers, since they should reuse a `Channel` associated with the consumer transactions.
+To mitigate the problem, it is suggested to have one more separate `CachingConnectionFactory` instance with the same options - one for producers and one for consumers.
+A separate `CachingConnectionFactory` isn't possible for transactional producers that execute on a consumer thread, since they should reuse the `Channel` associated with the consumer transactions.
 
 Starting with _version 2.0.2_, the `RabbitTemplate` has a configuration option to automatically use a second connection factory, unless transactions are being used.
 See <<separate-connection>> for more information.
