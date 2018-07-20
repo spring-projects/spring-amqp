@@ -21,7 +21,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 /**
- * A {@link ConnectionNameStrategy} that returns the value of a (required) property.
+ * A {@link ConnectionNameStrategy} that returns the value of a (required) property. If
+ * the property does not exist, the connection will be given the name of the property.
  *
  * @author Gary Russell
  * @since 2.1
@@ -33,18 +34,28 @@ public class SimplePropertyValueConnectionNameStrategy implements ConnectionName
 
 	private String propertyValue;
 
+	private Environment environment;
+
 	public SimplePropertyValueConnectionNameStrategy(String propertyName) {
+		Assert.notNull(propertyName, "'propertyName' cannot be null");
 		this.propertyName = propertyName;
 	}
 
 	@Override
 	public void setEnvironment(Environment environment) {
-		this.propertyValue = environment.getProperty(this.propertyName);
-		Assert.notNull(this.propertyValue, () -> "No property exists with name '" + this.propertyName + "'");
+		this.environment = environment;
 	}
 
 	@Override
 	public String obtainNewConnectionName(ConnectionFactory connectionFactory) {
+		if (this.propertyValue == null) {
+			if (this.environment != null) {
+				this.propertyValue = this.environment.getProperty(this.propertyName);
+			}
+			if (this.propertyValue == null) {
+				this.propertyValue = this.propertyName;
+			}
+		}
 		return this.propertyValue;
 	}
 
