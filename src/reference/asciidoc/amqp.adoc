@@ -346,6 +346,8 @@ Here's an example with a custom thread factory that prefixes thread names with `
 
 ----
 
+===== Naming Connections
+
 Starting with _version 1.7_ a `ConnectionNameStrategy` is provided for the injection into the `AbstractionConnectionFactory`.
 The generated name is used for the application-specific identification of the target RabbitMQ connection.
 The connection name is displayed in the management UI if the RabbitMQ server supports it.
