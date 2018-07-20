@@ -72,7 +72,10 @@ import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
+import org.springframework.amqp.rabbit.connection.SimplePropertyValueConnectionNameStrategy;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -128,6 +131,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestExecutionListeners.MergeMode;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -151,6 +155,7 @@ import com.rabbitmq.client.Channel;
 @DirtiesContext
 @TestExecutionListeners(mergeMode = MergeMode.MERGE_WITH_DEFAULTS,
 		listeners = EnableRabbitIntegrationTests.DeleteQueuesExecutionListener.class)
+@TestPropertySource(properties = "spring.application.name=testConnectionName")
 public class EnableRabbitIntegrationTests {
 
 	@ClassRule
@@ -208,6 +213,9 @@ public class EnableRabbitIntegrationTests {
 
 	@Autowired
 	private MetaListener metaListener;
+
+	@Autowired
+	private CachingConnectionFactory connectionFactory;
 
 	@BeforeClass
 	public static void setUp() {
@@ -796,6 +804,13 @@ public class EnableRabbitIntegrationTests {
 		assertThat(new String(config.message.getBody()), equalTo("bar"));
 	}
 
+	@Test
+	public void connectionName() {
+		Connection conn = this.connectionFactory.createConnection();
+		conn.close();
+		assertThat(conn.getDelegate().getClientProvidedName(), equalTo("testConnectionName"));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -1244,6 +1259,11 @@ public class EnableRabbitIntegrationTests {
 		private final CountDownLatch noListenerLatch = new CountDownLatch(1);
 
 		@Bean
+		public ConnectionNameStrategy cns() {
+			return new SimplePropertyValueConnectionNameStrategy("spring.application.name");
+		}
+
+		@Bean
 		public static ProxyListenerBPP listenerProxier() { // note static
 			return new ProxyListenerBPP();
 		}
@@ -1449,6 +1469,7 @@ public class EnableRabbitIntegrationTests {
 			executor.setThreadNamePrefix("rabbitClientThread-");
 			executor.afterPropertiesSet();
 			connectionFactory.setExecutor(executor);
+			connectionFactory.setConnectionNameStrategy(cns());
 			return connectionFactory;
 		}
 
