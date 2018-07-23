@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,9 @@ import org.springframework.amqp.rabbit.junit.BrokerRunning;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.BindingInfo;
+import com.rabbitmq.http.client.domain.ExchangeInfo;
 import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
@@ -54,14 +59,19 @@ import com.rabbitmq.http.client.domain.QueueInfo;
  * @since 1.5
  *
  */
-public class RabbitManagementTemplateTests {
+public class RabbitRestApiTests {
 
 	private final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 
-	private final RabbitManagementTemplate template = new RabbitManagementTemplate();
+	private final Client rabbitRestClient;
+
 
 	@ClassRule
 	public static BrokerRunning brokerAndManagementRunning = BrokerRunning.isBrokerAndManagementRunning();
+
+	public RabbitRestApiTests() throws MalformedURLException, URISyntaxException {
+		this.rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
+	}
 
 	@After
 	public void tearDown() {
@@ -70,37 +80,37 @@ public class RabbitManagementTemplateTests {
 
 	@Test
 	public void testExchanges() {
-		List<Exchange> list = this.template.getExchanges();
+		List<ExchangeInfo> list = this.rabbitRestClient.getExchanges();
 		assertTrue(list.size() > 0);
 	}
 
 	@Test
 	public void testExchangesVhost() {
-		List<Exchange> list = this.template.getExchanges("/");
+		List<ExchangeInfo> list = this.rabbitRestClient.getExchanges("/");
 		assertTrue(list.size() > 0);
 	}
 
 	@Test
 	public void testBindings() {
-		List<Binding> list = this.template.getBindings();
+		List<BindingInfo> list = this.rabbitRestClient.getBindings();
 		assertTrue(list.size() > 0);
 	}
 
 	@Test
 	public void testBindingsVhost() {
-		List<Binding> list = this.template.getBindings("/");
+		List<BindingInfo> list = this.rabbitRestClient.getBindings("/");
 		assertTrue(list.size() > 0);
 	}
 
 	@Test
 	public void testQueues() {
-		List<Queue> list = this.template.getQueues();
+		List<QueueInfo> list = this.rabbitRestClient.getQueues();
 		assertTrue(list.size() > 0);
 	}
 
 	@Test
 	public void testQueuesVhost() {
-		List<Queue> list = this.template.getQueues("/");
+		List<QueueInfo> list = this.rabbitRestClient.getQueues("/");
 		assertTrue(list.size() > 0);
 	}
 
@@ -125,12 +135,12 @@ public class RabbitManagementTemplateTests {
 				.with("bar");
 		admin.declareBinding(binding2);
 
-		List<Binding> bindings = this.template.getBindingsForExchange("/", exchange1.getName());
+		List<BindingInfo> bindings = this.rabbitRestClient.getBindingsBySource("/", exchange1.getName());
 		assertEquals(2, bindings.size());
-		assertEquals(exchange1.getName(), bindings.get(0).getExchange());
+		assertEquals(exchange1.getName(), bindings.get(0).getSource());
 		assertThat("foo", anyOf(equalTo(bindings.get(0).getRoutingKey()), equalTo(bindings.get(1).getRoutingKey())));
-		Binding qout = null;
-		Binding eout = null;
+		BindingInfo qout = null;
+		BindingInfo eout = null;
 		if (bindings.get(0).getRoutingKey().equals("foo")) {
 			qout = bindings.get(0);
 			eout = bindings.get(1);
@@ -139,12 +149,12 @@ public class RabbitManagementTemplateTests {
 			eout = bindings.get(0);
 			qout = bindings.get(1);
 		}
-		assertEquals(Binding.DestinationType.QUEUE, qout.getDestinationType());
+		assertEquals("queue", qout.getDestinationType());
 		assertEquals(queue.getName(), qout.getDestination());
 		assertNotNull(qout.getArguments());
 		assertEquals("", qout.getArguments().get("alternate-exchange"));
 
-		assertEquals(Binding.DestinationType.EXCHANGE, eout.getDestinationType());
+		assertEquals("exchange", eout.getDestinationType());
 		assertEquals(exchange2.getName(), eout.getDestination());
 
 		admin.deleteExchange(exchange1.getName());
@@ -157,7 +167,7 @@ public class RabbitManagementTemplateTests {
 		Map<String, Object> args = Collections.<String, Object>singletonMap("alternate-exchange", "");
 		Exchange exchange = new DirectExchange(UUID.randomUUID().toString(), true, true, args);
 		admin.declareExchange(exchange);
-		Exchange exchangeOut = this.template.getExchange("/", exchange.getName());
+		ExchangeInfo exchangeOut = this.rabbitRestClient.getExchange("/", exchange.getName());
 		assertTrue(exchangeOut.isDurable());
 		assertTrue(exchangeOut.isAutoDelete());
 		assertEquals(exchange.getName(), exchangeOut.getName());
@@ -180,13 +190,13 @@ public class RabbitManagementTemplateTests {
 		admin.declareQueue(queue2);
 		Channel channel = this.connectionFactory.createConnection().createChannel(false);
 		String consumer = channel.basicConsume(queue1.getName(), false, "", false, true, null, new DefaultConsumer(channel));
-		QueueInfo qi = this.template.getClient().getQueue("/", queue1.getName());
+		QueueInfo qi = this.rabbitRestClient.getQueue("/", queue1.getName());
 		int n = 0;
 		while (n++ < 100 && (qi.getExclusiveConsumerTag() == null || qi.getExclusiveConsumerTag().equals(""))) {
 			Thread.sleep(100);
-			qi = this.template.getClient().getQueue("/", queue1.getName());
+			qi = this.rabbitRestClient.getQueue("/", queue1.getName());
 		}
-		Queue queueOut = this.template.getQueue("/", queue1.getName());
+		QueueInfo queueOut = this.rabbitRestClient.getQueue("/", queue1.getName());
 		assertFalse(queueOut.isDurable());
 		assertFalse(queueOut.isExclusive());
 		assertTrue(queueOut.isAutoDelete());
@@ -196,7 +206,7 @@ public class RabbitManagementTemplateTests {
 		channel.basicCancel(consumer);
 		channel.close();
 
-		queueOut = this.template.getQueue("/", queue2.getName());
+		queueOut = this.rabbitRestClient.getQueue("/", queue2.getName());
 		assertTrue(queueOut.isDurable());
 		assertFalse(queueOut.isExclusive());
 		assertFalse(queueOut.isAutoDelete());
@@ -211,12 +221,17 @@ public class RabbitManagementTemplateTests {
 	public void testDeleteExchange() {
 		String exchangeName = "testExchange";
 		Exchange testExchange = new DirectExchange(exchangeName);
-		this.template.addExchange(testExchange);
-		Exchange exchangeToAssert = this.template.getExchange(exchangeName);
+		ExchangeInfo info = new ExchangeInfo();
+		info.setArguments(testExchange.getArguments());
+		info.setAutoDelete(testExchange.isAutoDelete());
+		info.setDurable(testExchange.isDurable());
+		info.setType(testExchange.getType());
+		this.rabbitRestClient.declareExchange("/", testExchange.getName(), info);
+		ExchangeInfo exchangeToAssert = this.rabbitRestClient.getExchange("/", exchangeName);
 		assertEquals(testExchange.getName(), exchangeToAssert.getName());
 		assertEquals(testExchange.getType(), exchangeToAssert.getType());
-		this.template.deleteExchange(testExchange);
-		assertNull(this.template.getExchange(exchangeName));
+		this.rabbitRestClient.deleteExchange("/", testExchange.getName());
+		assertNull(this.rabbitRestClient.getExchange("/", exchangeName));
 	}
 
 }

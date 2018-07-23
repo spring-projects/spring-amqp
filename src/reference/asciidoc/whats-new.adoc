@@ -19,12 +19,10 @@ RabbitMQ `ConnectionFactory` instances created by the `RabbitConnectionFactoryBe
 Certain classes have moved to different packages; most are internal classes and won't affect user applications.
 Two exceptions are `ChannelAwareMessageListener` and `RabbitListenerErrorHandler`; these interfaces are now in `org.springframework.amqp.rabbit.listener.api`.
 
-
 ===== Publisher Confirms Changes
 
 Channels enabled for publisher confirms are not returned to the cache while there are outstanding confirms.
 See <<template-confirms>> for more information.
-
 
 ===== Listener Container Factory Improvements
 
@@ -35,7 +33,7 @@ See <<using-container-factories>> for more information.
 
 ===== Broker Event Listener
 
-A `BrokerEventListener` is introduced to publish selected broker events as `ApplictionEvent` s.
+A `BrokerEventListener` is introduced to publish selected broker events as `ApplicationEvent` s.
 See <<broker-events>> for more information.
 
 ===== RabbitAdmin Changes
@@ -50,5 +48,11 @@ The `RabbitTemplate` now can be configured with the `noLocalReplyConsumer` optio
 See <<request-reply>> for more information.
 
 ===== Message Converts
+
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
 See <<Jackson2XmlMessageConverter>> for more information.
+
+===== Management REST API
+
+The `RabbitManagementTemplate` is now deprecated in favor of the direct `com.rabbitmq.http.client.Client` (or `com.rabbitmq.http.client.ReactorNettyClient`) usage.
+See <<management-rest-api>> for more information.

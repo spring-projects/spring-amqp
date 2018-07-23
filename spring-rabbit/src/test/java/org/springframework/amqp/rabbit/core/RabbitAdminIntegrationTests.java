@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -41,6 +40,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
@@ -56,6 +56,8 @@ import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.ExchangeInfo;
 
 /**
  * @author Dave Syer
@@ -260,8 +262,8 @@ public class RabbitAdminIntegrationTests {
 		exchange.setInternal(true);
 		rabbitAdmin.declareExchange(exchange);
 
-		Exchange exchange2 = getExchange(exchangeName);
-		assertThat(exchange2, instanceOf(DirectExchange.class));
+		ExchangeInfo exchange2 = getExchange(exchangeName);
+		assertEquals(ExchangeTypes.DIRECT, exchange2.getType());
 		assertTrue(exchange2.isInternal());
 
 		boolean result = rabbitAdmin.deleteExchange(exchangeName);
@@ -416,22 +418,22 @@ public class RabbitAdminIntegrationTests {
 		assertEquals(Integer.valueOf(1000), received.getMessageProperties().getReceivedDelay());
 		assertThat(System.currentTimeMillis() - t1, greaterThan(950L));
 
-		Exchange exchange2 = getExchange(exchangeName);
+		ExchangeInfo exchange2 = getExchange(exchangeName);
 		assertNotNull(exchange2);
-		assertThat(exchange2, instanceOf(DirectExchange.class));
-		assertTrue(exchange2.isDelayed());
+		assertEquals(ExchangeTypes.DIRECT, exchange2.getArguments().get("x-delayed-type"));
+		assertEquals("x-delayed-message", exchange2.getType());
 
 		this.rabbitAdmin.deleteQueue(queue.getName());
 		this.rabbitAdmin.deleteExchange(exchangeName);
 	}
 
-	private Exchange getExchange(String exchangeName) throws InterruptedException {
-		RabbitManagementTemplate rmt = new RabbitManagementTemplate();
+	private ExchangeInfo getExchange(String exchangeName) throws Exception {
+		Client rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
 		int n = 0;
-		Exchange exchange = rmt.getExchange(exchangeName);
+		ExchangeInfo exchange = rabbitRestClient.getExchange("/", exchangeName);
 		while (n++ < 100 && exchange == null) {
 			Thread.sleep(100);
-			exchange = rmt.getExchange(exchangeName);
+			exchange = rabbitRestClient.getExchange("/", exchangeName);
 		}
 		return exchange;
 	}
