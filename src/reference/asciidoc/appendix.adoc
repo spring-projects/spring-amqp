@@ -570,9 +570,8 @@ See <<reply-listener>> for more information.
 
 ===== The RabbitManagementTemplate
 
-The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker using the REST API
-provided by its https://www.rabbitmq.com/management.html[Management Plugin].
-See <<management-template>> for more information.
+The `RabbitManagementTemplate` has been introduced to monitor and configure the RabbitMQ Broker using the REST API provided by its https://www.rabbitmq.com/management.html[Management Plugin].
+See <<management-rest-api>> for more information.
 
 ===== Listener Container Bean Names (XML)
 

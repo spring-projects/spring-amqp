@@ -77,7 +77,6 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.connection.SimplePropertyValueConnectionNameStrategy;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
@@ -140,6 +139,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ErrorHandler;
 
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
  *
@@ -718,8 +719,8 @@ public class EnableRabbitIntegrationTests {
 		this.rabbitTemplate.convertAndSend("amqp656", "foo");
 		assertEquals("foo", this.rabbitTemplate.receiveAndConvert("amqp656dlq", 10000));
 		try {
-			RabbitManagementTemplate rmt = new RabbitManagementTemplate();
-			org.springframework.amqp.core.Queue amqp656 = rmt.getQueue("amqp656");
+			Client rabbitRestClient = new Client("http://localhost:15672/api/", "guest", "guest");
+			QueueInfo amqp656 = rabbitRestClient.getQueue("/", "amqp656");
 			if (amqp656 != null) {
 				assertEquals("", amqp656.getArguments().get("test-empty"));
 				assertEquals("undefined", amqp656.getArguments().get("test-null"));

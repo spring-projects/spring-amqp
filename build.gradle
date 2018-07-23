@@ -254,7 +254,7 @@ project('spring-rabbit') {
 		compile project(":spring-amqp")
 
 		compile "com.rabbitmq:amqp-client:$rabbitmqVersion"
-		compile "com.rabbitmq:http-client:$rabbitmqHttpClientVersion"
+		compile ("com.rabbitmq:http-client:$rabbitmqHttpClientVersion", optional)
 
 		compile ("org.springframework:spring-aop:$springVersion", optional)
 		compile "org.springframework:spring-context:$springVersion"
