@@ -137,7 +137,7 @@ public class RabbitRestApiTests {
 
 		List<BindingInfo> bindings = this.rabbitRestClient.getBindingsBySource("/", exchange1.getName());
 		assertEquals(2, bindings.size());
-		assertEquals(exchange1.getName(), bindings.get(0).getDestination());
+		assertEquals(exchange1.getName(), bindings.get(0).getSource());
 		assertThat("foo", anyOf(equalTo(bindings.get(0).getRoutingKey()), equalTo(bindings.get(1).getRoutingKey())));
 		BindingInfo qout = null;
 		BindingInfo eout = null;
@@ -149,12 +149,12 @@ public class RabbitRestApiTests {
 			eout = bindings.get(0);
 			qout = bindings.get(1);
 		}
-		assertEquals(Binding.DestinationType.QUEUE.name(), qout.getDestinationType());
+		assertEquals("queue", qout.getDestinationType());
 		assertEquals(queue.getName(), qout.getDestination());
 		assertNotNull(qout.getArguments());
 		assertEquals("", qout.getArguments().get("alternate-exchange"));
 
-		assertEquals(Binding.DestinationType.EXCHANGE.name(), eout.getDestinationType());
+		assertEquals("exchange", eout.getDestinationType());
 		assertEquals(exchange2.getName(), eout.getDestination());
 
 		admin.deleteExchange(exchange1.getName());
