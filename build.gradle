@@ -1,5 +1,5 @@
 buildscript {
-	ext.kotlinVersion = '1.2.41'
+	ext.kotlinVersion = '1.2.51'
 	repositories {
 		maven { url 'https://repo.spring.io/plugins-release' }
 	}
@@ -81,10 +81,10 @@ subprojects { subproject ->
 		log4jVersion = '2.11.0'
 		logbackVersion = '1.2.3'
 		mockitoVersion = '2.18.0'
-		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.2.0'
+		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.3.0'
 		rabbitmqHttpClientVersion = '2.1.0.RELEASE'
 
-		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.0.BUILD-SNAPSHOT'
+		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.0.RC1'
 
 		springRetryVersion = '1.2.2.RELEASE'
 	}
