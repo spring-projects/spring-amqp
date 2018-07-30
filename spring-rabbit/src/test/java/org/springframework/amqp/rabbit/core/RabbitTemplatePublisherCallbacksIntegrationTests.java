@@ -697,7 +697,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 			sentAll.set(true);
 		});
 		long t1 = System.currentTimeMillis();
-		while (!sentAll.get() && System.currentTimeMillis() < t1 + 20000) {
+		while (!sentAll.get() && System.currentTimeMillis() < t1 + 60_000) {
 			template.getUnconfirmed(-1);
 		}
 		assertTrue(sentAll.get());
