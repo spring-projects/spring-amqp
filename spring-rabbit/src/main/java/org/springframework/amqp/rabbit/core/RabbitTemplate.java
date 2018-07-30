@@ -2017,7 +2017,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {
-		if (this.publisherConfirms && channel instanceof PublisherCallbackChannel) {
+		if ((this.publisherConfirms || this.confirmCallback != null) && channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			correlationData = this.correlationDataPostProcessor != null
 					? this.correlationDataPostProcessor.postProcess(message, correlationData)
