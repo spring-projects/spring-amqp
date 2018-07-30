@@ -932,7 +932,10 @@ public class PublisherCallbackChannelImpl
 					while (iterator.hasNext()) {
 						Entry<Long, PendingConfirm> entry = iterator.next();
 						PendingConfirm value = entry.getValue();
-						value.getCorrelationData().getFuture().set(new Confirm(ack, value.getCause()));
+						CorrelationData correlationData = value.getCorrelationData();
+						if (correlationData != null) {
+							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
+						}
 						iterator.remove();
 						doHandleConfirm(ack, involvedListener, value);
 					}
@@ -955,7 +958,10 @@ public class PublisherCallbackChannelImpl
 					pendingConfirm = confirmsForListener.get(seq);
 				}
 				if (pendingConfirm != null) {
-					pendingConfirm.getCorrelationData().getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
+					CorrelationData correlationData = pendingConfirm.getCorrelationData();
+					if (correlationData != null) {
+						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
+					}
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
 			}
