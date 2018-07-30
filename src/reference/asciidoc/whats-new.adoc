@@ -47,7 +47,10 @@ See <<collection-declaration>> for more information.
 The `RabbitTemplate` now can be configured with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers in the `sendAndReceive()` operations.
 See <<request-reply>> for more information.
 
-===== Message Converts
+`CorrelationData` for publisher confirms now has a `ListenableFuture` which can be used to get the acknowledgment instead of using a callback.
+See <<template-confirms>> for more information.
+
+===== Message Convertion
 
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
 See <<Jackson2XmlMessageConverter>> for more information.

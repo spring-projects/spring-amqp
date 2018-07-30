@@ -64,6 +64,8 @@ import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
@@ -98,6 +100,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	private static final String ROUTE = "test.queue";
 
+	@Rule
+	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
+
 	private CachingConnectionFactory connectionFactory;
 
 	private CachingConnectionFactory connectionFactoryWithConfirmsEnabled;
@@ -116,8 +121,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsEnabled = new CachingConnectionFactory();
 		connectionFactoryWithConfirmsEnabled.setHost("localhost");
-		// When using publisher confirms, the cache size needs to be large enough
-		// otherwise channels can be closed before confirms are received.
 		connectionFactoryWithConfirmsEnabled.setChannelCacheSize(100);
 		connectionFactoryWithConfirmsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithConfirmsEnabled.setPublisherConfirms(true);
@@ -139,9 +142,6 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		this.connectionFactoryWithReturnsEnabled.destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
-
-	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
 
 	@Test
 	public void testPublisherConfirmReceived() throws Exception {
@@ -806,6 +806,24 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		}
 		assertEquals(0, TestUtils.getPropertyValue(channel, "pendingConfirms", Map.class).size());
 
+	}
+
+	@Test
+	public void testWithFuture() throws Exception {
+		RabbitAdmin admin = new RabbitAdmin(this.connectionFactory);
+		Queue queue = QueueBuilder.nonDurable()
+						.autoDelete()
+						.withArgument("x-max-length", 1)
+						.withArgument("x-overflow", "reject-publish")
+						.build();
+		admin.declareQueue(queue);
+		CorrelationData cd1 = new CorrelationData();
+		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "foo", cd1);
+		assertTrue(cd1.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		CorrelationData cd2 = new CorrelationData();
+		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
+		assertFalse(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		admin.deleteQueue(queue.getName());
 	}
 
 }

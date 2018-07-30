@@ -2014,7 +2014,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {
-		if (this.confirmCallback != null && channel instanceof PublisherCallbackChannel) {
+		if (channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			correlationData = this.correlationDataPostProcessor != null
 					? this.correlationDataPostProcessor.postProcess(message, correlationData)
@@ -2143,11 +2143,6 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	public void handleConfirm(PendingConfirm pendingConfirm, boolean ack) {
 		if (this.confirmCallback != null) {
 			this.confirmCallback.confirm(pendingConfirm.getCorrelationData(), ack, pendingConfirm.getCause());
-		}
-		else {
-			if (logger.isDebugEnabled()) {
-				logger.warn("Confirm received but no callback available");
-			}
 		}
 	}
 
