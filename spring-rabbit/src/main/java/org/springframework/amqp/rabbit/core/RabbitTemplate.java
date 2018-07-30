@@ -208,6 +208,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private volatile Boolean confirmsOrReturnsCapable;
 
+	private volatile boolean publisherConfirms;
+
 	private volatile Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
 	private volatile String correlationKey = null;
@@ -1951,8 +1953,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	public void determineConfirmsReturnsCapability(ConnectionFactory connectionFactory) {
+		this.publisherConfirms = connectionFactory.isPublisherConfirms();
 		this.confirmsOrReturnsCapable =
-				connectionFactory.isPublisherConfirms() || connectionFactory.isPublisherReturns();
+				this.publisherConfirms || connectionFactory.isPublisherReturns();
 	}
 
 	/**
@@ -2014,7 +2017,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void setupConfirm(Channel channel, Message message, CorrelationData correlationData) {
-		if (channel instanceof PublisherCallbackChannel) {
+		if (this.publisherConfirms && channel instanceof PublisherCallbackChannel) {
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
 			correlationData = this.correlationDataPostProcessor != null
 					? this.correlationDataPostProcessor.postProcess(message, correlationData)
