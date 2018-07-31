@@ -873,9 +873,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
 		execute(channel -> {
-			doSend(channel, exchange, routingKey, message, RabbitTemplate.this.returnCallback != null
+			doSend(channel, exchange, routingKey, message,
+					(RabbitTemplate.this.returnCallback != null
+							|| (correlationData != null && StringUtils.hasText(correlationData.getReturnCorrelation())))
 							&& RabbitTemplate.this.mandatoryExpression.getValue(
-					RabbitTemplate.this.evaluationContext, message, Boolean.class),
+									RabbitTemplate.this.evaluationContext, message, Boolean.class),
 					correlationData);
 			return null;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
@@ -2026,6 +2028,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 			publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
+			if (correlationData != null && StringUtils.hasText(correlationData.getReturnCorrelation())) {
+				message.getMessageProperties().setHeader(PublisherCallbackChannel.RETURNED_MESSAGE_CORRELATION_KEY,
+						correlationData.getReturnCorrelation());
+			}
 		}
 		else if (channel instanceof ChannelProxy && ((ChannelProxy) channel).isConfirmSelected()) {
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();

@@ -48,6 +48,7 @@ The `RabbitTemplate` now can be configured with the `noLocalReplyConsumer` optio
 See <<request-reply>> for more information.
 
 `CorrelationData` for publisher confirms now has a `ListenableFuture` which can be used to get the acknowledgment instead of using a callback.
+When returns and confirms are enabled, the correlation data, if provided, is populated with the returned message.
 See <<template-confirms>> for more information.
 
 ===== Message Convertion

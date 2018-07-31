@@ -37,6 +37,8 @@ public interface PublisherCallbackChannel extends Channel {
 
 	String RETURN_CORRELATION_KEY = "spring_listener_return_correlation";
 
+	String RETURNED_MESSAGE_CORRELATION_KEY = "spring_returned_message_correlation";
+
 	/**
 	 * Adds a {@link Listener}.
 	 * @param listener The Listener.
