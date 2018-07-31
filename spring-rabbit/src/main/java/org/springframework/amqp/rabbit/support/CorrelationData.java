@@ -37,8 +37,6 @@ public class CorrelationData implements Correlation {
 
 	private volatile String id;
 
-	private volatile String returnCorrelation;
-
 	private volatile Message returnedMessage;
 
 	/**
@@ -50,7 +48,8 @@ public class CorrelationData implements Correlation {
 	}
 
 	/**
-	 * Construct an instance with the supplied id.
+	 * Construct an instance with the supplied id. Must be unique if returns are enabled
+	 * to allow population of the {@link #setReturnedMessage(Message) returnedMessage}.
 	 * @param id the id.
 	 */
 	public CorrelationData(String id) {
@@ -84,23 +83,10 @@ public class CorrelationData implements Correlation {
 		return this.future;
 	}
 
-	public String getReturnCorrelation() {
-		return this.returnCorrelation;
-	}
-
 	/**
-	 * Set a unique return correlation id, used to populate the
-	 * {@link #setReturnedMessage(Message) returnedMessage}.
-	 * @param returnCorrelation the correlation id.
-	 * @since 2.1
-	 */
-	public void setReturnCorrelation(String returnCorrelation) {
-		this.returnCorrelation = returnCorrelation;
-	}
-
-	/**
-	 * Return a returned message, if any; requires a {@link #setReturnCorrelation(String)
-	 * returnCorrelation}. Guaranteed to be populated before the future is set.
+	 * Return a returned message, if any; requires a unique
+	 * {@link #CorrelationData(String) id}. Guaranteed to be populated before the future
+	 * is set.
 	 * @return the message or null.
 	 * @since 2.1
 	 */

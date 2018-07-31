@@ -558,7 +558,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	 * time as adding a new pending ack to the map. Test verifies we don't
 	 * get a {@link ConcurrentModificationException}.
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testConcurrentConfirms() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -840,8 +840,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
 		assertFalse(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck());
 		assertThat(cd3.getFuture().get().getReason(), containsString("NOT_FOUND"));
-		CorrelationData cd4 = new CorrelationData();
-		cd4.setReturnCorrelation("42");
+		CorrelationData cd4 = new CorrelationData("42");
 		AtomicBoolean resent = new AtomicBoolean();
 		this.templateWithConfirmsAndReturnsEnabled.setReturnCallback((m, r, rt, e, rk) -> {
 			this.templateWithConfirmsEnabled.send(ROUTE, m);

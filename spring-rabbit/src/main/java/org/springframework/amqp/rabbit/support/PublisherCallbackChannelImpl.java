@@ -883,8 +883,8 @@ public class PublisherCallbackChannelImpl
 					expired.add(pendingConfirm);
 					iterator.remove();
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
-					if (correlationData != null && StringUtils.hasText(correlationData.getReturnCorrelation())) {
-						this.pendingReturns.remove(correlationData.getReturnCorrelation());
+					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+						this.pendingReturns.remove(correlationData.getId());
 					}
 				}
 				else {
@@ -949,8 +949,8 @@ public class PublisherCallbackChannelImpl
 						CorrelationData correlationData = value.getCorrelationData();
 						if (correlationData != null) {
 							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
-							if (StringUtils.hasText(correlationData.getReturnCorrelation())) {
-								this.pendingReturns.remove(correlationData.getReturnCorrelation());
+							if (StringUtils.hasText(correlationData.getId())) {
+								this.pendingReturns.remove(correlationData.getId());
 							}
 						}
 						iterator.remove();
@@ -978,8 +978,8 @@ public class PublisherCallbackChannelImpl
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
 					if (correlationData != null) {
 						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
-						if (StringUtils.hasText(correlationData.getReturnCorrelation())) {
-							this.pendingReturns.remove(correlationData.getReturnCorrelation());
+						if (StringUtils.hasText(correlationData.getId())) {
+							this.pendingReturns.remove(correlationData.getId());
 						}
 					}
 					doHandleConfirm(ack, listener, pendingConfirm);
@@ -1015,7 +1015,7 @@ public class PublisherCallbackChannelImpl
 		pendingConfirmsForListener.put(seq, pendingConfirm);
 		this.listenerForSeq.put(seq, listener);
 		if (pendingConfirm.getCorrelationData() != null) {
-			String returnCorrelation = pendingConfirm.getCorrelationData().getReturnCorrelation();
+			String returnCorrelation = pendingConfirm.getCorrelationData().getId();
 			if (StringUtils.hasText(returnCorrelation)) {
 				this.pendingReturns.put(returnCorrelation, pendingConfirm);
 			}
@@ -1040,7 +1040,7 @@ public class PublisherCallbackChannelImpl
 				confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties));
 			}
 		}
-		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
+		String uuidObject = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isWarnEnabled()) {
