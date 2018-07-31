@@ -145,7 +145,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * that return result objects, which will be wrapped in
 	 * a response message and sent to a response destination.
 	 * <p>
-	 * Can be a string starting with "SpEL:" in which case the expression is
+	 * It can be a string surrounded by "!{...}" in which case the expression is
 	 * evaluated at runtime; see the reference manual for more information.
 	 * @param defaultReplyTo The exchange.
 	 * @since 1.6

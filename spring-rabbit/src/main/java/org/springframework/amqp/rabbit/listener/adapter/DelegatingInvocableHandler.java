@@ -51,6 +51,7 @@ import org.springframework.util.Assert;
  * Matches must be unambiguous.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 1.5
  *
@@ -162,7 +163,7 @@ public class DelegatingInvocableHandler {
 		}
 		if (replyTo == null) {
 			SendTo ann = AnnotationUtils.getAnnotation(this.bean.getClass(), SendTo.class);
-			replyTo = extractSendTo(this.getBean().getClass().getSimpleName(), ann);
+			replyTo = extractSendTo(getBean().getClass().getSimpleName(), ann);
 		}
 		if (replyTo != null) {
 			this.handlerSendTo.put(handler, PARSER.parseExpression(replyTo, PARSER_CONTEXT));
@@ -184,6 +185,7 @@ public class DelegatingInvocableHandler {
 
 	private String resolve(String value) {
 		if (this.resolver != null) {
+			value = this.beanExpressionContext.getBeanFactory().resolveEmbeddedValue(value);
 			Object newValue = this.resolver.evaluate(value, this.beanExpressionContext);
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
 			return (String) newValue;

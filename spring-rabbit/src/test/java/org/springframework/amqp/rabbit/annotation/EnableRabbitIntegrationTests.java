@@ -957,7 +957,7 @@ public class EnableRabbitIntegrationTests {
 		}
 
 		@RabbitListener(queues = "test.sendTo")
-		@SendTo("test.sendTo.reply")
+		@SendTo("${foo.bar:test.sendTo.reply}")
 		public String capitalizeAndSendTo(String foo) {
 			return foo.toUpperCase();
 		}
@@ -1552,7 +1552,7 @@ public class EnableRabbitIntegrationTests {
 	static class MultiListenerBean {
 
 		@RabbitHandler
-		@SendTo("#{sendToRepliesBean}")
+		@SendTo("${foo.bar:#{sendToRepliesBean}}")
 		public String bar(@NonNull Bar bar) {
 			return "BAR: " + bar.field;
 		}

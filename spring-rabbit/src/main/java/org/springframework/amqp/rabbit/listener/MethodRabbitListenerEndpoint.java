@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Artem Bilan
+ *
  * @since 1.4
  */
 public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint {
@@ -166,8 +167,9 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	}
 
 	private String resolve(String value) {
-		if (getResolver() != null) {
-			Object newValue = this.getResolver().evaluate(value, getBeanExpressionContext());
+		if (getBeanFactory() != null) {
+			value = getBeanExpressionContext().getBeanFactory().resolveEmbeddedValue(value);
+			Object newValue = getResolver().evaluate(value, getBeanExpressionContext());
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
 			return (String) newValue;
 		}
