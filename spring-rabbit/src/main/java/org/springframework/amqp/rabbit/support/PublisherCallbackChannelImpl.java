@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.rabbit.support.CorrelationData.Confirm;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
@@ -888,7 +889,7 @@ public class PublisherCallbackChannelImpl
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(this.toString() + " PC:Ack:" + seq + ":" + multiple);
 		}
-		this.processAck(seq, true, multiple, true);
+		processAck(seq, true, multiple, true);
 	}
 
 	@Override
@@ -897,7 +898,7 @@ public class PublisherCallbackChannelImpl
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug(this.toString() + " PC:Nack:" + seq + ":" + multiple);
 		}
-		this.processAck(seq, false, multiple, true);
+		processAck(seq, false, multiple, true);
 	}
 
 	private synchronized void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
@@ -931,6 +932,10 @@ public class PublisherCallbackChannelImpl
 					while (iterator.hasNext()) {
 						Entry<Long, PendingConfirm> entry = iterator.next();
 						PendingConfirm value = entry.getValue();
+						CorrelationData correlationData = value.getCorrelationData();
+						if (correlationData != null) {
+							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
+						}
 						iterator.remove();
 						doHandleConfirm(ack, involvedListener, value);
 					}
@@ -953,6 +958,10 @@ public class PublisherCallbackChannelImpl
 					pendingConfirm = confirmsForListener.get(seq);
 				}
 				if (pendingConfirm != null) {
+					CorrelationData correlationData = pendingConfirm.getCorrelationData();
+					if (correlationData != null) {
+						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
+					}
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
 			}

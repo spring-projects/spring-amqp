@@ -17,6 +17,8 @@
 package org.springframework.amqp.rabbit.support;
 
 import org.springframework.amqp.core.Correlation;
+import org.springframework.lang.Nullable;
+import org.springframework.util.concurrent.SettableListenableFuture;
 
 /**
  * Base class for correlating publisher confirms to sent messages.
@@ -29,6 +31,8 @@ import org.springframework.amqp.core.Correlation;
  *
  */
 public class CorrelationData implements Correlation {
+
+	private final SettableListenableFuture<Confirm> future = new SettableListenableFuture<>();
 
 	private volatile String id;
 
@@ -66,9 +70,48 @@ public class CorrelationData implements Correlation {
 		this.id = id;
 	}
 
+	public SettableListenableFuture<Confirm> getFuture() {
+		return this.future;
+	}
+
 	@Override
 	public String toString() {
 		return "CorrelationData [id=" + this.id + "]";
+	}
+
+	/**
+	 * Represents a publisher confirmation. When the ack field is
+	 * true, the publish was successful; otherwise failed with a possible
+	 * reason (may be null, meaning unknown).
+	 *
+	 * @since 2.1
+	 */
+	public static class Confirm {
+
+		private final boolean ack;
+
+		private final String reason;
+
+		public Confirm(boolean ack, @Nullable String reason) {
+			this.ack = ack;
+			this.reason = reason;
+		}
+
+		public boolean isAck() {
+			return this.ack;
+		}
+
+		public String getReason() {
+			return this.reason;
+		}
+
+		@Override
+		public String toString() {
+			return "Confirm [ack=" + this.ack
+					+ (this.reason != null ? ", reason=" + this.reason : "")
+					+ "]";
+		}
+
 	}
 
 }
