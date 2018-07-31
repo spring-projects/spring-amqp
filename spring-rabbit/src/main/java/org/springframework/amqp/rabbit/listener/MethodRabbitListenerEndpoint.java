@@ -167,7 +167,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 	}
 
 	private String resolve(String value) {
-		if (getResolver() != null) {
+		if (getBeanFactory() != null) {
 			value = getBeanExpressionContext().getBeanFactory().resolveEmbeddedValue(value);
 			Object newValue = getResolver().evaluate(value, getBeanExpressionContext());
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");

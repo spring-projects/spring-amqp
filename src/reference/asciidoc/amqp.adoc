@@ -2235,8 +2235,6 @@ public OrderStatus processOrder(Order order) {
 }
 ----
 
-NOTE: Starting with version 2.0.6, the `@SendTo` value can be as a property placeholder, e.g. `@SendTo("${some.reply.queue.name}")`.
-
 If you need to set additional headers in a transport-independent manner, you could return a `Message` instead, something like:
 
 [source,java]
@@ -2324,6 +2322,20 @@ In summary, `#{...}` is evaluated once during initialization, with the `#root` o
 beans are referenced by their names.
 `!{...}` is evaluated at runtime for each message with the root object having the properties above and beans are
 referenced with their names, prefixed by `@`.
+
+Starting with version 2.1, simple property placeholders are also supported `${some.reply.to}`.
+With earlier versions, the following can be used as a work around:
+====
+[source, java]
+----
+@RabbitListener(queues = "foo")
+@SendTo("#{environment['my.send.to']}")
+public String listen(Message in) {
+    ...
+    return ...
+}
+----
+====
 
 [[annotation-method-selection]]
 ====== Multi-Method Listeners

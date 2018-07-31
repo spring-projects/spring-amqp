@@ -180,11 +180,12 @@ public class DelegatingInvocableHandler {
 			}
 			replyTo = destinations.length == 1 ? resolve(destinations[0]) : null;
 		}
-		return this.beanExpressionContext.getBeanFactory().resolveEmbeddedValue(replyTo);
+		return replyTo;
 	}
 
 	private String resolve(String value) {
 		if (this.resolver != null) {
+			value = this.beanExpressionContext.getBeanFactory().resolveEmbeddedValue(value);
 			Object newValue = this.resolver.evaluate(value, this.beanExpressionContext);
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
 			return (String) newValue;
