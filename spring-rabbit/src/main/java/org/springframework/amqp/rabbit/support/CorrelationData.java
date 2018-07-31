@@ -39,7 +39,7 @@ public class CorrelationData implements Correlation {
 
 	private volatile String returnCorrelation;
 
-	private volatile Message returnedmessage;
+	private volatile Message returnedMessage;
 
 	/**
 	 * Construct an instance with a null Id.
@@ -90,7 +90,7 @@ public class CorrelationData implements Correlation {
 
 	/**
 	 * Set a unique return correlation id, used to populate the
-	 * {@link #setReturnedmessage(Message) returnedMessage}.
+	 * {@link #setReturnedMessage(Message) returnedMessage}.
 	 * @param returnCorrelation the correlation id.
 	 * @since 2.1
 	 */
@@ -105,12 +105,12 @@ public class CorrelationData implements Correlation {
 	 * @since 2.1
 	 */
 	@Nullable
-	public Message getReturnedmessage() {
-		return this.returnedmessage;
+	public Message getReturnedMessage() {
+		return this.returnedMessage;
 	}
 
-	public void setReturnedmessage(Message returnedmessage) {
-		this.returnedmessage = returnedmessage;
+	void setReturnedMessage(Message returnedMessage) {
+		this.returnedMessage = returnedMessage;
 	}
 
 	@Override

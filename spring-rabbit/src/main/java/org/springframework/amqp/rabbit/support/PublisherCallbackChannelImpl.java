@@ -1037,7 +1037,7 @@ public class PublisherCallbackChannelImpl
 			if (confirm != null) {
 				MessageProperties messageProperties = converter.toMessageProperties(properties,
 						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
-				confirm.getCorrelationData().setReturnedmessage(new Message(body, messageProperties));
+				confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties));
 			}
 		}
 		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();

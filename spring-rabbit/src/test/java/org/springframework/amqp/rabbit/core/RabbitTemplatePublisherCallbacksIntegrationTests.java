@@ -849,7 +849,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		});
 		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
 		assertTrue(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck());
-		assertNotNull(cd4.getReturnedmessage());
+		assertNotNull(cd4.getReturnedMessage());
 		assertTrue(resent.get());
 		admin.deleteQueue(queue.getName());
 	}
