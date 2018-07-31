@@ -35,7 +35,15 @@ import com.rabbitmq.client.Channel;
  */
 public interface PublisherCallbackChannel extends Channel {
 
-	String RETURN_CORRELATION_KEY = "spring_listener_return_correlation";
+	/**
+	 * Header used to determine which listener to invoke for a returned message.
+	 */
+	String RETURN_LISTENER_CORRELATION_KEY = "spring_listener_return_correlation";
+
+	/**
+	 * Header used to locate a pending confirm to which to attach a returned message.
+	 */
+	String RETURNED_MESSAGE_CORRELATION_KEY = "spring_returned_message_correlation";
 
 	/**
 	 * Adds a {@link Listener}.

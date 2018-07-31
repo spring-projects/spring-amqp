@@ -873,9 +873,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			final Message message, final CorrelationData correlationData)
 			throws AmqpException {
 		execute(channel -> {
-			doSend(channel, exchange, routingKey, message, RabbitTemplate.this.returnCallback != null
+			doSend(channel, exchange, routingKey, message,
+					(RabbitTemplate.this.returnCallback != null
+							|| (correlationData != null && StringUtils.hasText(correlationData.getId())))
 							&& RabbitTemplate.this.mandatoryExpression.getValue(
-					RabbitTemplate.this.evaluationContext, message, Boolean.class),
+									RabbitTemplate.this.evaluationContext, message, Boolean.class),
 					correlationData);
 			return null;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
@@ -1987,7 +1989,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Message messageToUse = message;
 		MessageProperties messageProperties = messageToUse.getMessageProperties();
 		if (mandatory) {
-			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_CORRELATION_KEY, this.uuid);
+			messageProperties.getHeaders().put(PublisherCallbackChannel.RETURN_LISTENER_CORRELATION_KEY, this.uuid);
 		}
 		if (this.beforePublishPostProcessors != null) {
 			for (MessagePostProcessor processor : this.beforePublishPostProcessors) {
@@ -2026,6 +2028,10 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 			publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
 					new PendingConfirm(correlationData, System.currentTimeMillis()));
+			if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+				message.getMessageProperties().setHeader(PublisherCallbackChannel.RETURNED_MESSAGE_CORRELATION_KEY,
+						correlationData.getId());
+			}
 		}
 		else if (channel instanceof ChannelProxy && ((ChannelProxy) channel).isConfirmSelected()) {
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
@@ -2178,7 +2184,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 		}
 		if (returnCallback != null) {
-			properties.getHeaders().remove(PublisherCallbackChannel.RETURN_CORRELATION_KEY);
+			properties.getHeaders().remove(PublisherCallbackChannel.RETURN_LISTENER_CORRELATION_KEY);
 			MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 					properties, null, this.encoding);
 			Message returnedMessage = new Message(body, messageProperties);

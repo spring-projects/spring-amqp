@@ -109,9 +109,13 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 	private CachingConnectionFactory connectionFactoryWithReturnsEnabled;
 
+	private CachingConnectionFactory connectionFactoryWithConfirmsAndReturnsEnabled;
+
 	private RabbitTemplate templateWithConfirmsEnabled;
 
 	private RabbitTemplate templateWithReturnsEnabled;
+
+	private RabbitTemplate templateWithConfirmsAndReturnsEnabled;
 
 	@Before
 	public void create() {
@@ -131,6 +135,14 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		connectionFactoryWithReturnsEnabled.setPort(BrokerTestUtils.getPort());
 		connectionFactoryWithReturnsEnabled.setPublisherReturns(true);
 		templateWithReturnsEnabled = new RabbitTemplate(connectionFactoryWithReturnsEnabled);
+		connectionFactoryWithConfirmsAndReturnsEnabled = new CachingConnectionFactory();
+		connectionFactoryWithConfirmsAndReturnsEnabled.setHost("localhost");
+		connectionFactoryWithConfirmsAndReturnsEnabled.setChannelCacheSize(100);
+		connectionFactoryWithConfirmsAndReturnsEnabled.setPort(BrokerTestUtils.getPort());
+		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherConfirms(true);
+		connectionFactoryWithConfirmsAndReturnsEnabled.setPublisherReturns(true);
+		templateWithConfirmsAndReturnsEnabled = new RabbitTemplate(connectionFactoryWithConfirmsAndReturnsEnabled);
+		templateWithConfirmsAndReturnsEnabled.setMandatory(true);
 	}
 
 	@After
@@ -546,7 +558,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	 * time as adding a new pending ack to the map. Test verifies we don't
 	 * get a {@link ConcurrentModificationException}.
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked", "deprecation" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Test
 	public void testConcurrentConfirms() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
@@ -824,6 +836,20 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		this.templateWithConfirmsEnabled.convertAndSend("", queue.getName(), "bar", cd2);
 		// TODO: Uncomment when travis updates to rabbitmq 3.7
 //		assertFalse(cd2.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		CorrelationData cd3 = new CorrelationData();
+		this.templateWithConfirmsEnabled.convertAndSend("NO_EXCHANGE_HERE", queue.getName(), "foo", cd3);
+		assertFalse(cd3.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		assertThat(cd3.getFuture().get().getReason(), containsString("NOT_FOUND"));
+		CorrelationData cd4 = new CorrelationData("42");
+		AtomicBoolean resent = new AtomicBoolean();
+		this.templateWithConfirmsAndReturnsEnabled.setReturnCallback((m, r, rt, e, rk) -> {
+			this.templateWithConfirmsEnabled.send(ROUTE, m);
+			resent.set(true);
+		});
+		this.templateWithConfirmsAndReturnsEnabled.convertAndSend("", "NO_QUEUE_HERE", "foo", cd4);
+		assertTrue(cd4.getFuture().get(10, TimeUnit.SECONDS).isAck());
+		assertNotNull(cd4.getReturnedMessage());
+		assertTrue(resent.get());
 		admin.deleteQueue(queue.getName());
 	}
 

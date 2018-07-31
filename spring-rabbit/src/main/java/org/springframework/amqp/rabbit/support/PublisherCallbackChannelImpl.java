@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,8 +39,11 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.support.CorrelationData.Confirm;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Basic.RecoverOk;
@@ -63,7 +67,9 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.ConsumerShutdownSignalCallback;
 import com.rabbitmq.client.DeliverCallback;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.LongString;
 import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ReturnCallback;
 import com.rabbitmq.client.ReturnListener;
@@ -84,6 +90,8 @@ public class PublisherCallbackChannelImpl
 
 	private static final ExecutorService DEFAULT_EXECUTOR = Executors.newSingleThreadExecutor();
 
+	private static final MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
+
 	private final Log logger = LogFactory.getLog(this.getClass());
 
 	private final Channel delegate;
@@ -92,11 +100,13 @@ public class PublisherCallbackChannelImpl
 
 	private final Map<Listener, SortedMap<Long, PendingConfirm>> pendingConfirms = new ConcurrentHashMap<>();
 
+	private final Map<String, PendingConfirm> pendingReturns = new ConcurrentHashMap<>();
+
 	private final SortedMap<Long, Listener> listenerForSeq = new ConcurrentSkipListMap<>();
 
-	private volatile java.util.function.Consumer<Channel> afterAckCallback;
-
 	private final ExecutorService executor;
+
+	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this(delegate, null);
@@ -872,6 +882,10 @@ public class PublisherCallbackChannelImpl
 				if (pendingConfirm.getTimestamp() < cutoffTime) {
 					expired.add(pendingConfirm);
 					iterator.remove();
+					CorrelationData correlationData = pendingConfirm.getCorrelationData();
+					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
+						this.pendingReturns.remove(correlationData.getId());
+					}
 				}
 				else {
 					break;
@@ -935,6 +949,9 @@ public class PublisherCallbackChannelImpl
 						CorrelationData correlationData = value.getCorrelationData();
 						if (correlationData != null) {
 							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
+							if (StringUtils.hasText(correlationData.getId())) {
+								this.pendingReturns.remove(correlationData.getId());
+							}
 						}
 						iterator.remove();
 						doHandleConfirm(ack, involvedListener, value);
@@ -961,6 +978,9 @@ public class PublisherCallbackChannelImpl
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
 					if (correlationData != null) {
 						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
+						if (StringUtils.hasText(correlationData.getId())) {
+							this.pendingReturns.remove(correlationData.getId());
+						}
 					}
 					doHandleConfirm(ack, listener, pendingConfirm);
 				}
@@ -994,6 +1014,12 @@ public class PublisherCallbackChannelImpl
 				"Listener not registered: " + listener + " " + this.pendingConfirms.keySet());
 		pendingConfirmsForListener.put(seq, pendingConfirm);
 		this.listenerForSeq.put(seq, listener);
+		if (pendingConfirm.getCorrelationData() != null) {
+			String returnCorrelation = pendingConfirm.getCorrelationData().getId();
+			if (StringUtils.hasText(returnCorrelation)) {
+				this.pendingReturns.put(returnCorrelation, pendingConfirm);
+			}
+		}
 	}
 
 //  ReturnListener
@@ -1005,7 +1031,16 @@ public class PublisherCallbackChannelImpl
 			String routingKey,
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException {
-		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
+		LongString returnCorrelation = (LongString) properties.getHeaders().get(RETURNED_MESSAGE_CORRELATION_KEY);
+		if (returnCorrelation != null) {
+			PendingConfirm confirm = this.pendingReturns.remove(returnCorrelation.toString());
+			if (confirm != null) {
+				MessageProperties messageProperties = converter.toMessageProperties(properties,
+						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
+				confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties));
+			}
+		}
+		String uuidObject = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY).toString();
 		Listener listener = this.listeners.get(uuidObject);
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isWarnEnabled()) {

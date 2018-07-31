@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support;
 
 import org.springframework.amqp.core.Correlation;
+import org.springframework.amqp.core.Message;
 import org.springframework.lang.Nullable;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
@@ -36,6 +37,8 @@ public class CorrelationData implements Correlation {
 
 	private volatile String id;
 
+	private volatile Message returnedMessage;
+
 	/**
 	 * Construct an instance with a null Id.
 	 * @since 1.6.7
@@ -45,7 +48,8 @@ public class CorrelationData implements Correlation {
 	}
 
 	/**
-	 * Construct an instance with the supplied id.
+	 * Construct an instance with the supplied id. Must be unique if returns are enabled
+	 * to allow population of the {@link #setReturnedMessage(Message) returnedMessage}.
 	 * @param id the id.
 	 */
 	public CorrelationData(String id) {
@@ -70,8 +74,29 @@ public class CorrelationData implements Correlation {
 		this.id = id;
 	}
 
+	/**
+	 * Return a future to check the success/failure of the publish operation.
+	 * @return the future.
+	 * @since 2.1
+	 */
 	public SettableListenableFuture<Confirm> getFuture() {
 		return this.future;
+	}
+
+	/**
+	 * Return a returned message, if any; requires a unique
+	 * {@link #CorrelationData(String) id}. Guaranteed to be populated before the future
+	 * is set.
+	 * @return the message or null.
+	 * @since 2.1
+	 */
+	@Nullable
+	public Message getReturnedMessage() {
+		return this.returnedMessage;
+	}
+
+	void setReturnedMessage(Message returnedMessage) {
+		this.returnedMessage = returnedMessage;
 	}
 
 	@Override
