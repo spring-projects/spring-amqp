@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import org.springframework.amqp.core.MessageProperties;
 public class DefaultClassMapperTests {
 
 	@Spy
-	private DefaultClassMapper classMapper = new DefaultClassMapper();
+	private final DefaultClassMapper classMapper = new DefaultClassMapper();
 
 	private final MessageProperties props = new MessageProperties();
 
@@ -130,7 +130,7 @@ public class DefaultClassMapperTests {
 		Class<Foo> clazz = (Class<Foo>) classMapper.toClass(props);
 
 		assertSame(Foo.class, clazz);
-		classMapper.setDefaultType(null);
+		classMapper.setDefaultType(LinkedHashMap.class);
 	}
 
 	private Map<String, Class<?>> map(String string, Class<?> class1) {

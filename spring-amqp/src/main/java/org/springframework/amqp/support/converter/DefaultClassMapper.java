@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -72,6 +73,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	 * @param defaultType the defaultType to set.
 	 */
 	public void setDefaultType(Class<?> defaultType) {
+		Assert.notNull(defaultType, "'defaultType' cannot be null");
 		this.defaultType = defaultType;
 	}
 

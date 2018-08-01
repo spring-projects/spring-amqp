@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import javax.xml.transform.stream.StreamSource;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.oxm.Marshaller;
 import org.springframework.oxm.Unmarshaller;
 import org.springframework.oxm.XmlMappingException;
@@ -101,7 +102,7 @@ public class MarshallingMessageConverter extends AbstractMessageConverter implem
 	 *
 	 * @param contentType The content type.
 	 */
-	public void setContentType(String contentType) {
+	public void setContentType(@Nullable String contentType) {
 		this.contentType = contentType;
 	}
 

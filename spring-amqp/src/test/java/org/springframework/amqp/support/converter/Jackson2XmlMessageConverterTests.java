@@ -40,6 +40,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 /**
  * @author Mohammad Hewedy
+ * @author Gary Russell
  *
  * @since 2.1
  */
@@ -123,7 +124,6 @@ public class Jackson2XmlMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		converter.setClassMapper(new DefaultClassMapper());
-		converter.setJavaTypeMapper(null);
 
 		((DefaultClassMapper) this.converter.getClassMapper()).setTrustedPackages(TRUSTED_PACKAGE);
 
@@ -137,7 +137,6 @@ public class Jackson2XmlMessageConverterTests {
 		classMapper.setTrustedPackages(TRUSTED_PACKAGE);
 
 		converter.setClassMapper(classMapper);
-		converter.setJavaTypeMapper(null);
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
