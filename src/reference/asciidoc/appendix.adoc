@@ -470,7 +470,7 @@ See <<logging>> for more information.
 ===== spring-erlang is No Longer Supported
 
 The `spring-erlang` jar is no longer included in the distribution.
-Use <<management-template>> instead.
+Use <<management-rest-api, the RabbitMQ REST API>> instead.
 
 ===== CachingConnectionFactory Changes
 
