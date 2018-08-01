@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -91,7 +92,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.6.11
 	 */
-	public void setTrustedPackages(String... trustedPackages) {
+	public void setTrustedPackages(@Nullable String... trustedPackages) {
 		if (trustedPackages != null) {
 			for (String whiteListClass : trustedPackages) {
 				if ("*".equals(whiteListClass)) {
@@ -106,7 +107,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 	}
 
 	@Override
-	public void addTrustedPackages(String... packages) {
+	public void addTrustedPackages(@Nullable String... packages) {
 		setTrustedPackages(packages);
 	}
 

@@ -26,6 +26,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MimeType;
@@ -43,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Andreas Asplund
  * @author Artem Bilan
  * @author Mohammad Hewedy
+ * @author Gary Russell
  *
  * @since 2.1
  */
@@ -98,7 +100,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * Message body content. If not specified, the charset will be "UTF-8".
 	 * @param defaultCharset The default charset.
 	 */
-	public void setDefaultCharset(String defaultCharset) {
+	public void setDefaultCharset(@Nullable String defaultCharset) {
 		this.defaultCharset = (defaultCharset != null) ? defaultCharset
 				: DEFAULT_CHARSET;
 	}
@@ -124,6 +126,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	}
 
 	public void setJavaTypeMapper(Jackson2JavaTypeMapper javaTypeMapper) {
+		Assert.notNull(javaTypeMapper, "'javaTypeMapper' cannot be null");
 		this.javaTypeMapper = javaTypeMapper;
 		this.typeMapperSet = true;
 	}
@@ -175,7 +178,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	 * @param conversionHint The conversionHint must be a {@link ParameterizedTypeReference}.
 	 */
 	@Override
-	public Object fromMessage(Message message, Object conversionHint) throws MessageConversionException {
+	public Object fromMessage(Message message, @Nullable Object conversionHint) throws MessageConversionException {
 		Object content = null;
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
@@ -240,7 +243,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	}
 
 	@Override
-	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties, Type genericType)
+	protected Message createMessage(Object objectToConvert, MessageProperties messageProperties,
+				@Nullable Type genericType)
 			throws MessageConversionException {
 
 		byte[] bytes;

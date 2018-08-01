@@ -131,8 +131,6 @@ public class Jackson2JsonMessageConverterTests {
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		converter.setClassMapper(new DefaultClassMapper());
-		converter.setJavaTypeMapper(null);
-
 
 		((DefaultClassMapper) this.converter.getClassMapper()).setTrustedPackages(TRUSTED_PACKAGE);
 
@@ -146,7 +144,6 @@ public class Jackson2JsonMessageConverterTests {
 		classMapper.setTrustedPackages(TRUSTED_PACKAGE);
 
 		converter.setClassMapper(classMapper);
-		converter.setJavaTypeMapper(null);
 		Message message = converter.toMessage(trade, new MessageProperties());
 
 		SimpleTrade marshalledTrade = (SimpleTrade) converter.fromMessage(message);
