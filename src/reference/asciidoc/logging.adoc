@@ -78,7 +78,8 @@ Retries are delayed like: `N ^ log(N)`, where `N` is the retry number.
 | null
 | The SSL algorithm to use.
 
-| sslPropertiesLocation
+| sslProperties
+Location
 | null
 | Location of the SSL properties file.
 

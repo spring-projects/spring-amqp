@@ -5,7 +5,7 @@ buildscript {
 	}
 	dependencies {
 		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.1'
-		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.3'
+		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.8'
 		classpath 'me.champeau.gradle:gradle-javadoc-hotfix-plugin:0.1'
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
 		classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
@@ -339,16 +339,16 @@ asciidoctor {
 	logDocuments = true
 	options = [
 		doctype: 'book',
-		attributes: [
-			docinfo: '',
-			toc2: '',
-			'compat-mode': '',
-			imagesdir: '',
-			stylesdir: "stylesheets/",
-			stylesheet: 'golo.css',
-			'spring-amqp-version': "$version",
-			'source-highlighter': 'highlightjs'
-		]
+	]
+	attributes = [
+		docinfo: '',
+		toc2: '',
+		'compat-mode': '',
+		imagesdir: '',
+		stylesdir: "stylesheets/",
+		stylesheet: 'golo.css',
+		'spring-amqp-version': "$version",
+		'source-highlighter': 'highlightjs'
 	]
 }
 

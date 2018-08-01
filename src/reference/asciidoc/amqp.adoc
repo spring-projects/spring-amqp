@@ -3012,7 +3012,8 @@ You can use it the same way as `Jackson2JsonMessageConverter`, except it support
 
 [source,xml]
 ----
-<bean id="xmlConverterWithDefaultType" class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
+<bean id="xmlConverterWithDefaultType"
+        class="org.springframework.amqp.support.converter.Jackson2XmlMessageConverter">
     <property name="classMapper">
         <bean class="org.springframework.amqp.support.converter.DefaultClassMapper">
             <property name="defaultType" value="foo.PurchaseOrder"/>
@@ -4769,8 +4770,11 @@ You can also use a properties bean to set the property globally for all containe
 
 [source,xml]
 ----
-<util:properties id="spring.amqp.global.properties">
-    <prop key="mlc.missing.queues.fatal">false</prop>
+<util:properties
+        id="spring.amqp.global.properties">
+    <prop key="mlc.missing.queues.fatal">
+        false
+    </prop>
 </util:properties>
 ----
 
@@ -4799,11 +4803,12 @@ You can also use a properties bean to set the property globally for all containe
 
 [source,xml]
 ----
-<util:properties id="spring.amqp.global.properties">
-    <prop
-     key="mlc.possible.authentication.failure.fatal">
+<util:properties
+    id="spring.amqp.global.properties">
+  <prop
+    key="mlc.possible.authentication.failure.fatal">
      false
-    </prop>
+  </prop>
 </util:properties>
 ----
 
