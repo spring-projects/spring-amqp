@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -42,6 +43,7 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +69,7 @@ import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -117,6 +120,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
@@ -162,7 +166,8 @@ public class EnableRabbitIntegrationTests {
 			"test.notconverted.channel", "test.notconverted.messagechannel", "test.notconverted.messagingmessage",
 			"test.converted.foomessage", "test.notconverted.messagingmessagenotgeneric", "test.simple.direct",
 			"test.simple.direct2",
-			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2");
+			"amqp656dlq", "test.simple.declare", "test.return.exceptions", "test.pojo.errors", "test.pojo.errors2",
+			"test.messaging.message", "test.amqp.message");
 
 	@Autowired
 	private RabbitTemplate rabbitTemplate;
@@ -672,6 +677,26 @@ public class EnableRabbitIntegrationTests {
 		assertSame(value, typeCache.get(Foo1.class));
 	}
 
+	@Test
+	public void messagingMessageReturned() {
+		Message message = org.springframework.amqp.core.MessageBuilder.withBody("\"messaging\"".getBytes())
+			.andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json").build()).build();
+		message = this.rabbitTemplate.sendAndReceive("test.messaging.message", message);
+		assertThat(message, is(notNullValue()));
+		assertThat(new String(message.getBody()), equalTo("{\"field\":\"MESSAGING\"}"));
+		assertThat(message.getMessageProperties().getHeaders().get("foo"), equalTo("bar"));
+	}
+
+	@Test
+	public void amqpMessageReturned() {
+		Message message = org.springframework.amqp.core.MessageBuilder.withBody("amqp".getBytes())
+				.andProperties(MessagePropertiesBuilder.newInstance().setContentType("text/plain").build()).build();
+		message = this.rabbitTemplate.sendAndReceive("test.amqp.message", message);
+		assertThat(message, is(notNullValue()));
+		assertThat(new String(message.getBody()), equalTo("AMQP"));
+		assertThat(message.getMessageProperties().getHeaders().get("foo"), equalTo("bar"));
+	}
+
 	interface TxService {
 
 		@Transactional
@@ -953,9 +978,25 @@ public class EnableRabbitIntegrationTests {
 			throw new Exception("return this");
 		}
 
-		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANewException", returnExceptions = "true")
+		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANe wException", returnExceptions = "true")
 		public String alwaysFailsWithErrorHandlerThrowAnother(String data) throws Exception {
 			throw new Exception("return this");
+		}
+
+		@RabbitListener(queues = "test.messaging.message", containerFactory = "simpleJsonListenerContainerFactory")
+		public org.springframework.messaging.Message<Bar> messagingMessage(String in) {
+			Bar bar = new Bar();
+			bar.field = in.toUpperCase();
+			return new GenericMessage<>(bar, Collections.singletonMap("foo", "bar"));
+		}
+
+		@RabbitListener(queues = "test.amqp.message")
+		public Message amqpMessage(String in) {
+			return org.springframework.amqp.core.MessageBuilder.withBody(in.toUpperCase().getBytes())
+					.andProperties(MessagePropertiesBuilder.newInstance().setContentType("text/plain")
+							.setHeader("foo", "bar")
+							.build())
+					.build();
 		}
 
 	}

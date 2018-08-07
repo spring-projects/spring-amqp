@@ -111,6 +111,12 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	@Override
+	public void setMessageConverter(MessageConverter messageConverter) {
+		super.setMessageConverter(messageConverter);
+		this.messagingMessageConverter.setPayloadConverter(messageConverter);
+	}
+
+	@Override
 	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception {
 		Message<?> message = toMessagingMessage(amqpMessage);
 		if (logger.isDebugEnabled()) {
