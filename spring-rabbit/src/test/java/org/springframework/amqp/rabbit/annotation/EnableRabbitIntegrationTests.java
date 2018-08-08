@@ -978,7 +978,7 @@ public class EnableRabbitIntegrationTests {
 			throw new Exception("return this");
 		}
 
-		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANe wException", returnExceptions = "true")
+		@RabbitListener(queues = "test.pojo.errors2", errorHandler = "throwANewException", returnExceptions = "true")
 		public String alwaysFailsWithErrorHandlerThrowAnother(String data) throws Exception {
 			throw new Exception("return this");
 		}
