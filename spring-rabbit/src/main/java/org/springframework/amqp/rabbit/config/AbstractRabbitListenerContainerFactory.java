@@ -397,7 +397,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			endpoint.setupListenerContainer(instance);
 		}
 		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
-			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance.getMessageListener();
+			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance
+					.getMessageListener();
 			if (this.beforeSendReplyPostProcessors != null) {
 				messageListener.setBeforeSendReplyPostProcessors(this.beforeSendReplyPostProcessors);
 			}
