@@ -39,6 +39,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.retry.RecoveryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.backoff.BackOff;
@@ -105,6 +107,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	private MessagePostProcessor[] afterReceivePostProcessors;
 
 	private MessagePostProcessor[] beforeSendReplyPostProcessors;
+
+	private RetryTemplate retryTemplate;
+
+	private RecoveryCallback<?> recoveryCallback;
 
 	protected final AtomicInteger counter = new AtomicInteger();
 
@@ -295,6 +301,26 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.beforeSendReplyPostProcessors = beforeSendReplyPostProcessors;
 	}
 
+	/**
+	 * Set a {@link RetryTemplate} to use when sending replies.
+	 * @param retryTemplate the template.
+	 * @since 2.0.6
+	 * @see #setReplyRecoveryCallback(RecoveryCallback)
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
+	}
+
+	/**
+	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted.
+	 * @param recoveryCallback the recovery callback.
+	 * @since 2.0.6
+	 * @see #setRetryTemplate(RetryTemplate)
+	 */
+	public void setReplyRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+		this.recoveryCallback = recoveryCallback;
+	}
+
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -370,10 +396,17 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 			endpoint.setupListenerContainer(instance);
 		}
-		if (this.beforeSendReplyPostProcessors != null
-				&& instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
-			((AbstractAdaptableMessageListener) instance.getMessageListener())
-					.setBeforeSendReplyPostProcessors(this.beforeSendReplyPostProcessors);
+		if (instance.getMessageListener() instanceof AbstractAdaptableMessageListener) {
+			AbstractAdaptableMessageListener messageListener = (AbstractAdaptableMessageListener) instance.getMessageListener();
+			if (this.beforeSendReplyPostProcessors != null) {
+				messageListener.setBeforeSendReplyPostProcessors(this.beforeSendReplyPostProcessors);
+			}
+			if (this.retryTemplate != null) {
+				messageListener.setRetryTemplate(this.retryTemplate);
+			}
+			if (this.recoveryCallback != null) {
+				messageListener.setRecoveryCallback(this.recoveryCallback);
+			}
 		}
 		initializeContainer(instance, endpoint);
 

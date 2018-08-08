@@ -60,3 +60,8 @@ See <<Jackson2XmlMessageConverter>> for more information.
 
 The `RabbitManagementTemplate` is now deprecated in favor of the direct `com.rabbitmq.http.client.Client` (or `com.rabbitmq.http.client.ReactorNettyClient`) usage.
 See <<management-rest-api>> for more information.
+
+===== @RabbitListener Changes
+
+The listener container factory can now be configured with a `RetryTemplate` and, optionally, a `RecoveryCallback` used when sending replies.
+See <<async-annotation-driven-enable>> for more information.
