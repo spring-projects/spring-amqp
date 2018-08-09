@@ -1955,9 +1955,8 @@ The `RecoveryCallback` is invoked when retries are exhausted; a `SendRetryContex
 ----
 factory.setRetryTemplate(retryTemplate);
 factory.setReplyRecoveryCallback(ctx -> {
-    SendRetryContextAccessor accessor = new SendRetryContextAccessor(ctx);
-    Message failed = accessor.getMessage();
-    Address replyTo = accessor.getAddress();
+    Message failed = SendRetryContextAccessor.getMessage(ctx);
+    Address replyTo = SendRetryContextAccessor.getAddress(ctx);
     Throwable t = ctx.getLastThrowable();
     ...
     return null;

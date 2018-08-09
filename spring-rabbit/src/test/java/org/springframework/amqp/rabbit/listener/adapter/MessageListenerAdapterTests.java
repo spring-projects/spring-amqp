@@ -159,9 +159,8 @@ public class MessageListenerAdapterTests {
 		AtomicReference<Address> replyAddress = new AtomicReference<>();
 		AtomicReference<Throwable> throwable = new AtomicReference<>();
 		this.adapter.setRecoveryCallback(ctx -> {
-			SendRetryContextAccessor accessor = new SendRetryContextAccessor(ctx);
-			replyMessage.set(accessor.getMessage());
-			replyAddress.set(accessor.getAddress());
+			replyMessage.set(SendRetryContextAccessor.getMessage(ctx));
+			replyAddress.set(SendRetryContextAccessor.getAddress(ctx));
 			throwable.set(ctx.getLastThrowable());
 			return null;
 		});

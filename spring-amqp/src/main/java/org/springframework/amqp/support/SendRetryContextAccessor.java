@@ -27,7 +27,7 @@ import org.springframework.retry.RetryContext;
  * @since 2.0.6
  *
  */
-public class SendRetryContextAccessor {
+public final class SendRetryContextAccessor {
 
 	/**
 	 * Key for the message we tried to send.
@@ -39,26 +39,28 @@ public class SendRetryContextAccessor {
 	 */
 	public static final String ADDRESS = "address";
 
-	private final RetryContext context;
-
-	public SendRetryContextAccessor(RetryContext context) {
-		this.context = context;
+	private SendRetryContextAccessor() {
+		super();
 	}
 
-	public void setMessage(Message message) {
-		this.context.setAttribute(MESSAGE, message);
+	/**
+	 * Retrieve the {@link Message} from the context.
+	 * @param context the context.
+	 * @return the message.
+	 * @see #MESSAGE
+	 */
+	public static Message getMessage(RetryContext context) {
+		return (Message) context.getAttribute(MESSAGE);
 	}
 
-	public Message getMessage() {
-		return (Message) this.context.getAttribute(MESSAGE);
-	}
-
-	public void setAddress(Address address) {
-		this.context.setAttribute(ADDRESS, address);
-	}
-
-	public Address getAddress() {
-		return (Address) this.context.getAttribute(ADDRESS);
+	/**
+	 * Retrieve the {@link Address} from the context.
+	 * @param context the context.
+	 * @return the address.
+	 * @see #ADDRESS
+	 */
+	public static Address getAddress(RetryContext context) {
+		return (Address) context.getAttribute(ADDRESS);
 	}
 
 }
