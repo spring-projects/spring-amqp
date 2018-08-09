@@ -293,29 +293,36 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	}
 
 	/**
-	 * Set post processors that will be applied before sending replies.
+	 * Set post processors that will be applied before sending replies; added to each
+	 * message listener adapter.
 	 * @param beforeSendReplyPostProcessors the post processors.
 	 * @since 2.0.3
+	 * @see AbstractAdaptableMessageListener#setBeforeSendReplyPostProcessors(MessagePostProcessor...)
 	 */
 	public void setBeforeSendReplyPostProcessors(MessagePostProcessor... beforeSendReplyPostProcessors) {
 		this.beforeSendReplyPostProcessors = beforeSendReplyPostProcessors;
 	}
 
 	/**
-	 * Set a {@link RetryTemplate} to use when sending replies.
+	 * Set a {@link RetryTemplate} to use when sending replies; added to each message
+	 * listener adapter.
 	 * @param retryTemplate the template.
 	 * @since 2.0.6
 	 * @see #setReplyRecoveryCallback(RecoveryCallback)
+	 * @see AbstractAdaptableMessageListener#setRetryTemplate(RetryTemplate)
 	 */
 	public void setRetryTemplate(RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
 	}
 
 	/**
-	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted.
+	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted. Added to each
+	 * message listener adapter. Only used if a {@link #setRetryTemplate(RetryTemplate)
+	 * retryTemplate} is provided.
 	 * @param recoveryCallback the recovery callback.
 	 * @since 2.0.6
 	 * @see #setRetryTemplate(RetryTemplate)
+	 * @see AbstractAdaptableMessageListener#setRecoveryCallback(RecoveryCallback)
 	 */
 	public void setReplyRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
@@ -404,9 +411,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			}
 			if (this.retryTemplate != null) {
 				messageListener.setRetryTemplate(this.retryTemplate);
-			}
-			if (this.recoveryCallback != null) {
-				messageListener.setRecoveryCallback(this.recoveryCallback);
+				if (this.recoveryCallback != null) {
+					messageListener.setRecoveryCallback(this.recoveryCallback);
+				}
 			}
 		}
 		initializeContainer(instance, endpoint);

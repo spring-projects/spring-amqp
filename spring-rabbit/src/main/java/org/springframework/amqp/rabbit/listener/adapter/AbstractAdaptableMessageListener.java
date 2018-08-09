@@ -19,7 +19,6 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -449,15 +448,20 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			}
 			else {
 				final Message messageToSend = message;
-				final AtomicBoolean first = new AtomicBoolean(true);
 				this.retryTemplate.execute(ctx -> {
-					if (this.recoveryCallback != null && first.getAndSet(false)) {
-						ctx.setAttribute(SendRetryContextAccessor.MESSAGE, messageToSend);
-						ctx.setAttribute(SendRetryContextAccessor.ADDRESS, replyTo);
-					}
 					doPublish(channel, replyTo, messageToSend);
 					return null;
-				}, this.recoveryCallback);
+				}, ctx -> {
+					if (this.recoveryCallback != null) {
+						ctx.setAttribute(SendRetryContextAccessor.MESSAGE, messageToSend);
+						ctx.setAttribute(SendRetryContextAccessor.ADDRESS, replyTo);
+						this.recoveryCallback.recover(ctx);
+						return null;
+					}
+					else {
+						throw RabbitExceptionTranslator.convertRabbitAccessException(ctx.getLastThrowable());
+					}
+				});
 			}
 		}
 		catch (Exception ex) {
