@@ -49,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -64,6 +65,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -95,6 +97,7 @@ import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.rabbit.junit.BrokerTestUtils;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.rabbit.support.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
@@ -163,7 +166,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Rule
 	public LogLevelAdjuster logAdjuster = new LogLevelAdjuster(Level.DEBUG, RabbitTemplate.class,
-			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class);
+			RabbitAdmin.class, RabbitTemplateIntegrationTests.class, BrokerRunning.class, ClosingRecoveryListener.class);
 
 	@Rule
 	public TestName testName = new TestName();
@@ -1602,6 +1605,46 @@ public class RabbitTemplateIntegrationTests {
 			return true;
 		});
 		assertTrue(result);
+	}
+
+	@Test
+	@Ignore("Not an automated test - requires broker restart")
+	public void testReceiveNoAutoRecovery() throws Exception {
+		CachingConnectionFactory ccf = new CachingConnectionFactory("localhost");
+		ccf.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
+		RabbitAdmin admin = new RabbitAdmin(ccf);
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		final RabbitTemplate template = new RabbitTemplate(ccf);
+		template.setReceiveTimeout(30_000);
+		exec.execute(() -> {
+			while (true) {
+				try {
+					Thread.sleep(2000);
+					template.receive(ROUTE);
+				}
+				catch (AmqpException e) {
+					e.printStackTrace();
+					if (e.getCause() != null
+						&& e.getCause().getClass().equals(InterruptedException.class)) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+		});
+		System .out .println("Wait for consumer; then bounce broker; then enter after it's back up");
+		System.in.read();
+		for (int i = 0; i < 20; i++) {
+			Properties queueProperties = admin.getQueueProperties(ROUTE);
+			System .out .println(queueProperties);
+			Thread.sleep(1000);
+		}
+		exec.shutdownNow();
+		ccf.destroy();
 	}
 
 	private Collection<String> getMessagesToSend() {
