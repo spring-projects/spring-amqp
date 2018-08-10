@@ -35,9 +35,9 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -88,7 +88,7 @@ public class BrokerEventListenerTests {
 	}
 
 	@Configuration
-	public static class Config {
+	public static class Config implements ApplicationListener<BrokerEvent> {
 
 		private final CountDownLatch latch = new CountDownLatch(3);
 
@@ -104,8 +104,8 @@ public class BrokerEventListenerTests {
 			return new CachingConnectionFactory(RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
 		}
 
-		@EventListener
-		public void listener(BrokerEvent event) {
+		@Override
+		public void onApplicationEvent(BrokerEvent event) {
 			this.events.put(event.getEventType(), event.getEventProperties());
 			this.latch.countDown();
 		}
