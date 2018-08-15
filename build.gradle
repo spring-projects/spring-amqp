@@ -235,6 +235,8 @@ project('spring-amqp') {
 		compile ("org.springframework:spring-messaging:$springVersion", optional)
 		compile ("org.springframework:spring-oxm:$springVersion", optional)
 		compile ("org.springframework:spring-context:$springVersion", optional)
+		compile "org.springframework.retry:spring-retry:$springRetryVersion"
+
 		compile ("com.fasterxml.jackson.core:jackson-core:$jackson2Version", optional)
 		compile ("com.fasterxml.jackson.core:jackson-databind:$jackson2Version", optional)
 		compile ("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jackson2Version", optional)
@@ -262,8 +264,6 @@ project('spring-rabbit') {
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
-
-		compile "org.springframework.retry:spring-retry:$springRetryVersion"
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 

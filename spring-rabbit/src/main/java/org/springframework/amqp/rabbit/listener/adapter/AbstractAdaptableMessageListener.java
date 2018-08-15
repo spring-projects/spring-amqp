@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
@@ -32,6 +33,7 @@ import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.amqp.support.SendRetryContextAccessor;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.SimpleMessageConverter;
@@ -43,6 +45,8 @@ import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
+import org.springframework.retry.RecoveryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -91,6 +95,11 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private String encoding = DEFAULT_ENCODING;
 
 	private MessagePostProcessor[] beforeSendReplyPostProcessors;
+
+	private RetryTemplate retryTemplate;
+
+	private RecoveryCallback<?> recoveryCallback;
+
 
 	/**
 	 * Set the routing key to use when sending response messages.
@@ -194,6 +203,26 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		Assert.noNullElements(beforeSendReplyPostProcessors, "'replyPostProcessors' must not have any null elements");
 		this.beforeSendReplyPostProcessors = Arrays.copyOf(beforeSendReplyPostProcessors,
 				beforeSendReplyPostProcessors.length);
+	}
+
+	/**
+	 * Set a {@link RetryTemplate} to use when sending replies.
+	 * @param retryTemplate the template.
+	 * @since 2.0.6
+	 * @see #setRecoveryCallback(RecoveryCallback)
+	 */
+	public void setRetryTemplate(RetryTemplate retryTemplate) {
+		this.retryTemplate = retryTemplate;
+	}
+
+	/**
+	 * Set a {@link RecoveryCallback} to invoke when retries are exhausted.
+	 * @param recoveryCallback the recovery callback.
+	 * @since 2.0.6
+	 * @see #setRetryTemplate(RetryTemplate)
+	 */
+	public void setRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
+		this.recoveryCallback = recoveryCallback;
 	}
 
 	/**
@@ -414,13 +443,36 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 		try {
 			this.logger.debug("Publishing response to exchange = [" + replyTo.getExchangeName() + "], routingKey = ["
 					+ replyTo.getRoutingKey() + "]");
-			channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
-					this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), this.encoding),
-					message.getBody());
+			if (this.retryTemplate == null) {
+				doPublish(channel, replyTo, message);
+			}
+			else {
+				final Message messageToSend = message;
+				this.retryTemplate.execute(ctx -> {
+					doPublish(channel, replyTo, messageToSend);
+					return null;
+				}, ctx -> {
+					if (this.recoveryCallback != null) {
+						ctx.setAttribute(SendRetryContextAccessor.MESSAGE, messageToSend);
+						ctx.setAttribute(SendRetryContextAccessor.ADDRESS, replyTo);
+						this.recoveryCallback.recover(ctx);
+						return null;
+					}
+					else {
+						throw RabbitExceptionTranslator.convertRabbitAccessException(ctx.getLastThrowable());
+					}
+				});
+			}
 		}
 		catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
 		}
+	}
+
+	protected void doPublish(Channel channel, Address replyTo, Message message) throws IOException {
+		channel.basicPublish(replyTo.getExchangeName(), replyTo.getRoutingKey(), this.mandatoryPublish,
+				this.messagePropertiesConverter.fromMessageProperties(message.getMessageProperties(), this.encoding),
+				message.getBody());
 	}
 
 	/**
