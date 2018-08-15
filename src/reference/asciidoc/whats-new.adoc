@@ -148,6 +148,10 @@ See <<async-annotation-driven>> for more information.
 Starting with _version 2.0.3_, one of the `@RabbitHandler` s on a class-level `@RabbitListener` can be designated as the default.
 See <<annotation-method-selection>> for more information.
 
+The listener container factory can now be configured with a `RetryTemplate` and, optionally, a `RecoveryCallback` used when sending replies.
+See <<async-annotation-driven-enable>> for more information.
+
+
 ===== Container Conditional Rollback
 
 When using an external transaction manager (e.g. JDBC), rule-based rollback is now supported when providing the container with a transaction attribute.

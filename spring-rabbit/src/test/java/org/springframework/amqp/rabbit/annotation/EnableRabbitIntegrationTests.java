@@ -122,6 +122,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -235,6 +236,9 @@ public class EnableRabbitIntegrationTests {
 				.getListenerContainer("anonymousQueue575");
 		assertThat(container.getQueueNames(), arrayWithSize(1));
 		assertEquals("viaAnonymous:foo", rabbitTemplate.convertSendAndReceive(container.getQueueNames()[0], "foo"));
+		Object messageListener = container.getMessageListener();
+		assertThat(TestUtils.getPropertyValue(messageListener, "retryTemplate"), notNullValue());
+		assertThat(TestUtils.getPropertyValue(messageListener, "recoveryCallback"), notNullValue());
 	}
 
 	@Test
@@ -1154,6 +1158,8 @@ public class EnableRabbitIntegrationTests {
 				m.getMessageProperties().getHeaders().put("replyMPPApplied", true);
 				return m;
 			});
+			factory.setRetryTemplate(new RetryTemplate());
+			factory.setReplyRecoveryCallback(c -> null);
 			return factory;
 		}
 
