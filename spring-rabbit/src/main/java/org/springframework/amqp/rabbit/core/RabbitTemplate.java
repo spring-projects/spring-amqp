@@ -1246,13 +1246,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private void logReceived(Message message) {
-		if (logger.isDebugEnabled()) {
-			if (message == null) {
-				logger.debug("Received no message");
-			}
-			else {
-				logger.debug("Received: " + message);
-			}
+		if (message == null) {
+			logger.debug("Received no message");
+		}
+		else if (logger.isDebugEnabled()) {
+			logger.debug("Received: " + message);
 		}
 	}
 
