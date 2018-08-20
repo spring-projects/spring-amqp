@@ -1235,7 +1235,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					&& channel.isOpen()) {
 				cancelConsumerQuietly(channel, consumer);
 			}
-			channel.removeShutdownListener(shutdownListener);
+			try {
+				channel.removeShutdownListener(shutdownListener);
+			}
+			catch (Exception e) {
+				// NOSONAR - channel might have closed.
+			}
 		}
 		return delivery;
 	}
