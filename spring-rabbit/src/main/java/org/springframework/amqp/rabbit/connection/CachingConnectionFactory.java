@@ -47,6 +47,7 @@ import org.apache.commons.logging.Log;
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpTimeoutException;
+import org.springframework.amqp.rabbit.support.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannel;
 import org.springframework.amqp.rabbit.support.PublisherCallbackChannelImpl;
 import org.springframework.amqp.support.ConditionalExceptionLogger;
@@ -63,6 +64,7 @@ import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * A {@link ConnectionFactory} implementation that (when the cache mode is {@link CacheMode#CHANNEL} (default)
@@ -1142,6 +1144,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				}
 				else {
 					this.target.close();
+					if (this.target instanceof AutorecoveringChannel) {
+						ClosingRecoveryListener.removeChannel((AutorecoveringChannel) this.target);
+					}
 				}
 			}
 			catch (AlreadyClosedException e) {

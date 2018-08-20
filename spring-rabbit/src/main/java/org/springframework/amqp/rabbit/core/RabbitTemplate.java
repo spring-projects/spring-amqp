@@ -61,6 +61,7 @@ import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.DirectReplyToMessageListenerContainer.ChannelHolder;
+import org.springframework.amqp.rabbit.support.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
@@ -99,6 +100,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.ShutdownListener;
 
 /**
  * <p>
@@ -1185,6 +1187,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Delivery delivery = null;
 		RuntimeException exception = null;
 		CompletableFuture<Delivery> future = new CompletableFuture<>();
+		ShutdownListener shutdownListener = c -> future.completeExceptionally(c);
+		channel.addShutdownListener(shutdownListener);
+		ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
 		DefaultConsumer consumer = createConsumer(queueName, channel, future,
 				timeoutMillis < 0 ? DEFAULT_CONSUME_TIMEOUT : timeoutMillis);
 		try {
@@ -1208,8 +1213,15 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			// no result in time
 		}
 		finally {
-			if (exception == null || !(exception instanceof ConsumerCancelledException)) {
+			if ((exception == null || !(exception instanceof ConsumerCancelledException))
+					&& channel.isOpen()) {
 				cancelConsumerQuietly(channel, consumer);
+			}
+			try {
+				channel.removeShutdownListener(shutdownListener);
+			}
+			catch (Exception e) {
+				// NOSONAR - channel might have closed.
 			}
 		}
 		return delivery;
@@ -1578,6 +1590,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 
 			};
+			ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
 			channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
 			Message reply = null;
 			try {
@@ -1586,7 +1599,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 			finally {
 				this.replyHolder.remove(messageTag);
-				cancelConsumerQuietly(channel, consumer);
+				if (channel.isOpen()) {
+					cancelConsumerQuietly(channel, consumer);
+				}
 			}
 			return reply;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));

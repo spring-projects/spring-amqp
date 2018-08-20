@@ -50,6 +50,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupException;
+import org.springframework.amqp.rabbit.support.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.Delivery;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
@@ -66,10 +67,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.Recoverable;
-import com.rabbitmq.client.RecoveryListener;
 import com.rabbitmq.client.ShutdownSignalException;
-import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 import com.rabbitmq.utility.Utility;
 
 /**
@@ -84,7 +82,7 @@ import com.rabbitmq.utility.Utility;
  * @author Alex Panchenko
  * @author Johno Crawford
  */
-public class BlockingQueueConsumer implements RecoveryListener {
+public class BlockingQueueConsumer {
 
 	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
@@ -568,7 +566,7 @@ public class BlockingQueueConsumer implements RecoveryListener {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
 					this.transactional);
 			this.channel = this.resourceHolder.getChannel();
-			addRecoveryListener();
+			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel);
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);
@@ -649,19 +647,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 		}
 		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
-		}
-	}
-
-	/**
-	 * Add a listener if necessary so we can immediately close an autorecovered
-	 * channel if necessary since the async consumer will no longer exist.
-	 */
-	private void addRecoveryListener() {
-		if (this.channel instanceof ChannelProxy) {
-			if (((ChannelProxy) this.channel).getTargetChannel() instanceof AutorecoveringChannel) {
-				((AutorecoveringChannel) ((ChannelProxy) this.channel).getTargetChannel())
-						.addRecoveryListener(this);
-			}
 		}
 	}
 
@@ -837,25 +822,6 @@ public class BlockingQueueConsumer implements RecoveryListener {
 
 		return true;
 
-	}
-
-	@Override
-	public void handleRecovery(Recoverable recoverable) {
-		// should never get here
-		handleRecoveryStarted(recoverable);
-	}
-
-	@Override
-	public void handleRecoveryStarted(Recoverable recoverable) {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Closing an autorecovered channel: " + recoverable);
-		}
-		try {
-			((Channel) recoverable).close();
-		}
-		catch (IOException | TimeoutException e) {
-			logger.debug("Error closing an autorecovered channel");
-		}
 	}
 
 	@Override
