@@ -60,6 +60,7 @@ import com.rabbitmq.client.Method;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * Channel wrapper to allow a single listener able to handle
@@ -130,6 +131,9 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public void close(int closeCode, String closeMessage) throws IOException, TimeoutException {
 		this.delegate.close(closeCode, closeMessage);
+		if (this.delegate instanceof AutorecoveringChannel) {
+			ClosingRecoveryListener.removeChannel((AutorecoveringChannel) this.delegate);
+		}
 	}
 
 	/**

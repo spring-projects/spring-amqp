@@ -16,7 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener;
 
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -409,11 +408,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container2.stop();
 		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 		verify(logger, atLeastOnce()).info(captor.capture());
-		assertThat(captor.getAllValues(), contains(containsString("exclusive")));
+		assertThat(captor.getAllValues().toString(), containsString("exclusive"));
 		assertEquals("Consumer raised exception, attempting restart", eventRef.get().getReason());
 		assertFalse(eventRef.get().isFatal());
 		assertThat(eventRef.get().getThrowable(), instanceOf(AmqpIOException.class));
-		verify(containerLogger).warn(any());
+		verify(containerLogger, atLeastOnce()).warn(any());
 	}
 
 	@Test

@@ -56,6 +56,7 @@ import org.springframework.amqp.rabbit.connection.PublisherCallbackChannelConnec
 import org.springframework.amqp.rabbit.connection.RabbitAccessor;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
 import org.springframework.amqp.rabbit.connection.RabbitUtils;
+import org.springframework.amqp.rabbit.support.ClosingRecoveryListener;
 import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
@@ -1294,6 +1295,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 						pendingReply.reply(reply);
 					}
 				};
+				ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
 				channel.basicConsume(replyTo, true, consumerTag, true, true, null, consumer);
 				Message reply = null;
 				try {
@@ -1816,6 +1818,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			}
 
 		};
+		ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
 		channel.basicConsume(queueName, consumer);
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			if (channel instanceof ChannelProxy) {
