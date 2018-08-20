@@ -66,7 +66,7 @@ public final class ClosingRecoveryListener implements RecoveryListener {
 			((Channel) recoverable).close();
 		}
 		catch (IOException | TimeoutException e) {
-			logger.debug("Error closing an autorecovered channel");
+			logger.error("Error closing an autorecovered channel", e);
 		}
 		finally {
 			hasListener.remove(recoverable);
@@ -76,20 +76,31 @@ public final class ClosingRecoveryListener implements RecoveryListener {
 	/**
 	 * Add a listener if necessary so we can immediately close an autorecovered
 	 * channel if necessary since the actual consumer will no longer exist.
+	 * Idempotent operation.
 	 * @param channel the channel.
 	 */
 	public static void addRecoveryListenerIfNecessary(Channel channel) {
+		AutorecoveringChannel autorecoveringChannel = null;
 		if (channel instanceof ChannelProxy) {
 			if (((ChannelProxy) channel).getTargetChannel() instanceof AutorecoveringChannel) {
-				AutorecoveringChannel autorecoveringChannel = (AutorecoveringChannel) ((ChannelProxy) channel)
+				autorecoveringChannel = (AutorecoveringChannel) ((ChannelProxy) channel)
 						.getTargetChannel();
-				if (hasListener.putIfAbsent(autorecoveringChannel, Boolean.TRUE) == null) {
-					autorecoveringChannel.addRecoveryListener(INSTANCE);
-				}
 			}
+		}
+		else if (channel instanceof AutorecoveringChannel) {
+			autorecoveringChannel = (AutorecoveringChannel) channel;
+		}
+		if (autorecoveringChannel != null
+				&& hasListener.putIfAbsent(autorecoveringChannel, Boolean.TRUE) == null) {
+			autorecoveringChannel.addRecoveryListener(INSTANCE);
 		}
 	}
 
+	/**
+	 * Remove the channel from the set used to ensure that
+	 * {@link #addRecoveryListenerIfNecessary(Channel)} is idempotent.
+	 * @param channel the channel to remove.
+	 */
 	public static void removeChannel(AutorecoveringChannel channel) {
 		hasListener.remove(channel);
 	}
