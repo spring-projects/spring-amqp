@@ -765,6 +765,9 @@ public class PublisherCallbackChannelImpl
 
 	@Override
 	public void close() throws IOException, TimeoutException {
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Closing " + this.delegate);
+		}
 		try {
 			this.delegate.close();
 		}
