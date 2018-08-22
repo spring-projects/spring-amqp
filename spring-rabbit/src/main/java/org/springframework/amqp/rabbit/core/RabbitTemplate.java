@@ -25,8 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -1601,6 +1599,8 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 			};
 			ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
+			ShutdownListener shutdownListener = c -> pendingReply.completeExceptionally(c);
+			channel.addShutdownListener(shutdownListener);
 			channel.basicConsume(replyTo, true, consumerTag, this.noLocalReplyConsumer, true, null, consumer);
 			Message reply = null;
 			try {
@@ -1612,6 +1612,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				if (channel.isOpen()) {
 					cancelConsumerQuietly(channel, consumer);
 				}
+				try {
+					channel.removeShutdownListener(shutdownListener);
+				}
+				catch (Exception e) {
+					// NOSONAR - channel might have closed.
+				}
 			}
 			return reply;
 		}, obtainTargetConnectionFactory(this.sendConnectionFactorySelectorExpression, message));
@@ -1619,13 +1625,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private void cancelConsumerQuietly(Channel channel, DefaultConsumer consumer) {
 		try {
-            channel.basicCancel(consumer.getConsumerTag());
-        }
-        catch (Exception e) {
+			channel.basicCancel(consumer.getConsumerTag());
+		}
+		catch (Exception e) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Failed to cancel consumer: " + consumer, e);
 			}
-        }
+		}
 	}
 
 	protected Message doSendAndReceiveWithFixed(final String exchange, final String routingKey, final Message message,
@@ -2331,7 +2337,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 		private volatile String savedCorrelation;
 
-		private final BlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
+		private final CompletableFuture<Message> future = new CompletableFuture<>();
 
 		public String getSavedReplyTo() {
 			return this.savedReplyTo;
@@ -2350,33 +2356,36 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 
 		public Message get() throws InterruptedException {
-			Object reply = this.queue.take();
-			return processReply(reply);
+			try {
+				return this.future.get();
+			}
+			catch (ExecutionException e) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause());
+			}
 		}
 
 		public Message get(long timeout, TimeUnit unit) throws InterruptedException {
-			Object reply = this.queue.poll(timeout, unit);
-			return reply == null ? null : processReply(reply);
-		}
-
-		private Message processReply(Object reply) {
-			if (reply instanceof Message) {
-				return (Message) reply;
+			try {
+				return this.future.get(timeout, unit);
 			}
-			else if (reply instanceof AmqpException) {
-				throw (AmqpException) reply;
+			catch (ExecutionException e) {
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause());
 			}
-			else {
-				throw new AmqpException("Unexpected reply type " + reply.getClass().getName());
+			catch (TimeoutException e) {
+				return null;
 			}
 		}
 
 		public void reply(Message reply) {
-			this.queue.add(reply);
+			this.future.complete(reply);
 		}
 
 		public void returned(AmqpMessageReturnedException e) {
-			this.queue.add(e);
+			completeExceptionally(e);
+		}
+
+		public void completeExceptionally(Throwable t) {
+			this.future.completeExceptionally(t);
 		}
 
 	}
