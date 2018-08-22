@@ -27,12 +27,11 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willReturn;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -118,11 +117,11 @@ public class RabbitTemplateTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
-		when(mockConnection.isOpen()).thenReturn(true);
-		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
 
-		when(mockChannel.isOpen()).thenReturn(true);
+		given(mockChannel.isOpen()).willReturn(true);
 
 		CachingConnectionFactory connectionFactory = new CachingConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -180,17 +179,17 @@ public class RabbitTemplateTests {
 		Connection mockConnection = mock(Connection.class);
 		Channel mockChannel = mock(Channel.class);
 
-		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
-		when(mockConnection.isOpen()).thenReturn(true);
-		when(mockConnection.createChannel()).thenReturn(mockChannel);
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
 
-		when(mockChannel.queueDeclare()).thenReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+		given(mockChannel.queueDeclare()).willReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
 
 		final AtomicReference<Consumer> consumer = new AtomicReference<Consumer>();
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			consumer.set(invocation.getArgument(6));
 			return null;
-		}).when(mockChannel).basicConsume(anyString(), anyBoolean(), anyString(),
+		}).given(mockChannel).basicConsume(anyString(), anyBoolean(), anyString(),
 				anyBoolean(), anyBoolean(), isNull(), any(Consumer.class));
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -207,10 +206,10 @@ public class RabbitTemplateTests {
 	public void testRetry() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			count.incrementAndGet();
 			throw new AuthenticationFailureException("foo");
-		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
+		}).given(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -229,10 +228,10 @@ public class RabbitTemplateTests {
 	public void testRecovery() throws Exception {
 		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
 		final AtomicInteger count = new AtomicInteger();
-		doAnswer(invocation -> {
+		willAnswer(invocation -> {
 			count.incrementAndGet();
 			throw new AuthenticationFailureException("foo");
-		}).when(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
+		}).given(mockConnectionFactory).newConnection(any(ExecutorService.class), anyString());
 
 		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
 		connectionFactory.setExecutor(mock(ExecutorService.class));
@@ -254,13 +253,13 @@ public class RabbitTemplateTests {
 	public void testPublisherConfirmsReturnsSetup() {
 		org.springframework.amqp.rabbit.connection.ConnectionFactory cf =
 				mock(org.springframework.amqp.rabbit.connection.ConnectionFactory.class);
-		when(cf.isPublisherConfirms()).thenReturn(true);
-		when(cf.isPublisherReturns()).thenReturn(true);
+		given(cf.isPublisherConfirms()).willReturn(true);
+		given(cf.isPublisherReturns()).willReturn(true);
 		org.springframework.amqp.rabbit.connection.Connection conn =
 				mock(org.springframework.amqp.rabbit.connection.Connection.class);
-		when(cf.createConnection()).thenReturn(conn);
+		given(cf.createConnection()).willReturn(conn);
 		PublisherCallbackChannel channel = mock(PublisherCallbackChannel.class);
-		when(conn.createChannel(false)).thenReturn(channel);
+		given(conn.createChannel(false)).willReturn(channel);
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend("foo");
 		verify(channel).addListener(template);
