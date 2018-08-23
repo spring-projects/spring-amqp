@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -141,7 +142,7 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 	 */
 	@SuppressWarnings("unchecked")
 	public void registerListenerContainer(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> factory,
-	                                      boolean startImmediately) {
+				boolean startImmediately) {
 		Assert.notNull(endpoint, "Endpoint must not be null");
 		Assert.notNull(factory, "Factory must not be null");
 
@@ -201,6 +202,16 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 		return listenerContainer;
 	}
 
+	/**
+	 * Remove a listener container from the registry.
+	 * @param id the container id.
+	 * @return the container, or null if there is no registration matching the id.
+	 * @since 2.0.6
+	 */
+	@Nullable
+	public MessageListenerContainer unregisterListenerContainer(String id) {
+		return this.listenerContainers.remove(id);
+	}
 
 	@Override
 	public void destroy() {
