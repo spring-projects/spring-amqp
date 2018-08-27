@@ -395,7 +395,8 @@ public class RabbitTemplateTests {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setReplyTimeout(60_000);
 		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
-		Executors.newSingleThreadExecutor().execute(() -> {
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		exec.execute(() -> {
 			try {
 				shutdownLatch.await(10, TimeUnit.SECONDS);
 			}
@@ -411,6 +412,7 @@ public class RabbitTemplateTests {
 		catch (AmqpException e) {
 			assertThat(e.getCause(), instanceOf(ShutdownSignalException.class));
 		}
+		exec.shutdownNow();
 	}
 
 	@SuppressWarnings("serial")
