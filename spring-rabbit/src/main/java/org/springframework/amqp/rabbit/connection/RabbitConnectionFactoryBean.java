@@ -103,29 +103,31 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private Resource sslPropertiesLocation;
 
-	private volatile String keyStore;
+	private String keyStore;
 
-	private volatile String trustStore;
+	private String trustStore;
 
-	private volatile Resource keyStoreResource;
+	private Resource keyStoreResource;
 
-	private volatile Resource trustStoreResource;
+	private Resource trustStoreResource;
 
-	private volatile String keyStorePassphrase;
+	private String keyStorePassphrase;
 
-	private volatile String trustStorePassphrase;
+	private String trustStorePassphrase;
 
-	private volatile String keyStoreType;
+	private String keyStoreType;
 
-	private volatile String trustStoreType;
+	private String trustStoreType;
 
-	private volatile String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = TLS_V1_1;
 
-	private volatile boolean sslAlgorithmSet;
+	private boolean sslAlgorithmSet;
 
-	private volatile SecureRandom secureRandom;
+	private SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation;
+
+	private boolean enableHostnameVerification = true;
 
 	public RabbitConnectionFactoryBean() {
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
@@ -604,6 +606,22 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.connectionFactory.setChannelRpcTimeout(channelRpcTimeout);
 	}
 
+	/**
+	 * Enable server hostname verification for TLS connections.
+	 * <p>
+	 * This enables hostname verification regardless of the IO mode used (blocking or
+	 * non-blocking IO).
+	 * <p>
+	 * This can be called typically after setting the {@link SSLContext} with one of the
+	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
+	 * @param enable false to disable.
+	 * @since 2.0.6
+	 * @see ConnectionFactory#enableHostnameVerification()
+	 */
+	public void setEnableHostnameVerification(boolean enable) {
+		this.enableHostnameVerification = enable;
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;
@@ -686,6 +704,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			SSLContext context = createSSLContext();
 			context.init(keyManagers, trustManagers, this.secureRandom);
 			this.connectionFactory.useSslProtocol(context);
+			if (this.enableHostnameVerification) {
+				this.connectionFactory.enableHostnameVerification();
+			}
 		}
 	}
 
@@ -709,6 +730,9 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
+		if (this.enableHostnameVerification) {
+			this.connectionFactory.enableHostnameVerification();
+		}
 	}
 
 }
