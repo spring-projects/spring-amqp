@@ -18,10 +18,12 @@ package org.springframework.amqp.rabbit.core;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,7 +38,10 @@ import static org.mockito.Mockito.verify;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,6 +52,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.springframework.amqp.AmqpAuthenticationException;
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -77,6 +83,8 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 import com.rabbitmq.client.impl.AMQImpl;
 import com.rabbitmq.client.impl.AMQImpl.Queue.DeclareOk;
 
@@ -363,6 +371,48 @@ public class RabbitTemplateTests {
 		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
 		assertThat(((ChannelProxy) templateChannel.get()).getTargetChannel(), equalTo(channel1));
 		verify(channel1).txCommit();
+	}
+
+	@Test
+	public void testShutdownWhileWaitingForReply() throws Exception {
+		ConnectionFactory mockConnectionFactory = mock(ConnectionFactory.class);
+		Connection mockConnection = mock(Connection.class);
+		Channel mockChannel = mock(Channel.class);
+
+		given(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).willReturn(mockConnection);
+		given(mockConnection.isOpen()).willReturn(true);
+		given(mockConnection.createChannel()).willReturn(mockChannel);
+		given(mockChannel.queueDeclare()).willReturn(new AMQImpl.Queue.DeclareOk("foo", 0, 0));
+		final AtomicReference<ShutdownListener> listener = new AtomicReference<>();
+		final CountDownLatch shutdownLatch = new CountDownLatch(1);
+		willAnswer(invocation -> {
+			listener.set(invocation.getArgument(0));
+			shutdownLatch.countDown();
+			return null;
+		}).given(mockChannel).addShutdownListener(any());
+		SingleConnectionFactory connectionFactory = new SingleConnectionFactory(mockConnectionFactory);
+		connectionFactory.setExecutor(mock(ExecutorService.class));
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setReplyTimeout(60_000);
+		Message input = new Message("Hello, world!".getBytes(), new MessageProperties());
+		ExecutorService exec = Executors.newSingleThreadExecutor();
+		exec.execute(() -> {
+			try {
+				shutdownLatch.await(10, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			listener.get().shutdownCompleted(new ShutdownSignalException(true, false, null, null));
+		});
+		try {
+			template.doSendAndReceiveWithTemporary("foo", "bar", input, null);
+			fail("Expected exception");
+		}
+		catch (AmqpException e) {
+			assertThat(e.getCause(), instanceOf(ShutdownSignalException.class));
+		}
+		exec.shutdownNow();
 	}
 
 	@SuppressWarnings("serial")
