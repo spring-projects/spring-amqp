@@ -179,6 +179,11 @@ Also the `ConnectionBlockedEvent` and `ConnectionUnblockedEvent` events are emit
 
 See <<connections>> for more information.
 
+===== Connection Factory Bean Changes
+
+The `RabbitConnectionFactoryBean` now provides an `enableHostnameVerification` property; set it to `true` to enable host name verification.
+Host name verification requires overriding the `amqp-client` to 5.4.0 or later.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

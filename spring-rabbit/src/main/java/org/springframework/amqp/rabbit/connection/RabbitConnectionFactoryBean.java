@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.KeyManager;
@@ -42,6 +43,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -56,7 +61,7 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * setter methods and optionally enabling SSL, with or without
  * certificate validation. When {@link #setSslPropertiesLocation(Resource) sslPropertiesLocation}
  * is not null, the default implementation loads a {@code PKCS12} keystore and a
- * {@code JKS} truststore using the supplied properties and intializes {@code SunX509} key
+ * {@code JKS} truststore using the supplied properties and initializes {@code SunX509} key
  * and trust manager factories. These are then used to initialize an {@link SSLContext}
  * using the {@link #setSslAlgorithm(String) sslAlgorithm} (default TLSv1.1).
  * <p>
@@ -74,6 +79,19 @@ import com.rabbitmq.client.impl.nio.NioParams;
  * @since 1.4
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
+
+	private static final Method enableHostnameVerificationNoArgMethod;
+
+	static {
+		final AtomicReference<Method> method1 = new AtomicReference<>();
+		ReflectionUtils.doWithMethods(ConnectionFactory.class, m -> {
+			if (m.getParameterTypes().length == 0) {
+				method1.set(m);
+			}
+		}, m -> m.getName().equals("enableHostnameVerification"));
+
+		enableHostnameVerificationNoArgMethod = method1.get();
+	}
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -103,29 +121,31 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private Resource sslPropertiesLocation;
 
-	private volatile String keyStore;
+	private String keyStore;
 
-	private volatile String trustStore;
+	private String trustStore;
 
-	private volatile Resource keyStoreResource;
+	private Resource keyStoreResource;
 
-	private volatile Resource trustStoreResource;
+	private Resource trustStoreResource;
 
-	private volatile String keyStorePassphrase;
+	private String keyStorePassphrase;
 
-	private volatile String trustStorePassphrase;
+	private String trustStorePassphrase;
 
-	private volatile String keyStoreType;
+	private String keyStoreType;
 
-	private volatile String trustStoreType;
+	private String trustStoreType;
 
-	private volatile String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = TLS_V1_1;
 
-	private volatile boolean sslAlgorithmSet;
+	private boolean sslAlgorithmSet;
 
-	private volatile SecureRandom secureRandom;
+	private SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation;
+
+	private boolean enableHostnameVerification;
 
 	public RabbitConnectionFactoryBean() {
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
@@ -604,6 +624,21 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.connectionFactory.setChannelRpcTimeout(channelRpcTimeout);
 	}
 
+	/**
+	 * Enable server hostname verification for TLS connections.
+	 * <p>
+	 * This enables hostname verification regardless of the IO mode used (blocking or
+	 * non-blocking IO).
+	 * Requires amqp-client 5.4.0 or later.
+	 * @param enable true to enable.
+	 * @since 1.7.10
+	 */
+	public void setEnableHostnameVerification(boolean enable) {
+		Assert.notNull(enableHostnameVerificationNoArgMethod,
+				"Host name verification requires amqp-client 5.4.0 or later");
+		this.enableHostnameVerification = enable;
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;
@@ -686,6 +721,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			SSLContext context = createSSLContext();
 			context.init(keyManagers, trustManagers, this.secureRandom);
 			this.connectionFactory.useSslProtocol(context);
+			checkHostVerification();
 		}
 	}
 
@@ -701,14 +737,20 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 
-	private void useDefaultTrustStoreMechanism()
-			throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
+	private void useDefaultTrustStoreMechanism() throws Exception {
 		SSLContext sslContext = SSLContext.getInstance(this.sslAlgorithm);
 		TrustManagerFactory trustManagerFactory =
 				TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
+		checkHostVerification();
+	}
+
+	private void checkHostVerification() throws Exception {
+		if (this.enableHostnameVerification) {
+			enableHostnameVerificationNoArgMethod.invoke(this.connectionFactory);
+		}
 	}
 
 }
