@@ -1187,7 +1187,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		Delivery delivery = null;
 		RuntimeException exception = null;
 		CompletableFuture<Delivery> future = new CompletableFuture<>();
-		ShutdownListener shutdownListener = c -> future.completeExceptionally(c);
+		ShutdownListener shutdownListener = c -> {
+			if (!RabbitUtils.isNormalChannelClose(c)) {
+				future.completeExceptionally(c);
+			}
+		};
 		channel.addShutdownListener(shutdownListener);
 		ClosingRecoveryListener.addRecoveryListenerIfNecessary(channel);
 		DefaultConsumer consumer = createConsumer(queueName, channel, future,
