@@ -62,6 +62,12 @@ See <<connections>> for more information.
 Message requeue on transaction rollback can now be configured to be consistent, regardless of whether or not a transaction manager is configured.
 See <<transaction-rollback>> for more information.
 
+===== Connection Factory Bean Changes
+
+The `RabbitConnectionFactoryBean` now provides an `enabaleHostnameVerification` property; set it to `true` to enable host name verification.
+Also `setHostnameVerifier` is provided for when using Java 6; see the connection factory javadocs for more information.
+Host name verification requires overriding the `amqp-client` to 4.8.0 or later.
+
 ==== Earlier Releases
 
 See <<previous-whats-new>> for changes in previous versions.

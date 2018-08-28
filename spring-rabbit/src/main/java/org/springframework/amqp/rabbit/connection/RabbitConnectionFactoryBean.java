@@ -16,11 +16,11 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -42,6 +44,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.ReflectionUtils.MethodCallback;
+import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -75,6 +81,37 @@ import com.rabbitmq.client.impl.nio.NioParams;
  */
 public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionFactory> {
 
+	public static final Method enableHostnameVerificationNoArgMethod;
+
+	public static final Method enableHostnameVerificationOneArgMethod;
+
+	static {
+		final AtomicReference<Method> method1 = new AtomicReference<Method>();
+		final AtomicReference<Method> method2 = new AtomicReference<Method>();
+		ReflectionUtils.doWithMethods(ConnectionFactory.class, new MethodCallback() {
+
+			@Override
+			public void doWith(Method m) throws IllegalArgumentException, IllegalAccessException {
+				if (m.getParameterTypes().length == 0) {
+					method1.set(m);
+				}
+				else if (m.getParameterTypes().length == 1 && m.getParameterTypes()[0].equals(HostnameVerifier.class)) {
+					method2.set(m);
+				}
+			}
+
+		}, new MethodFilter() {
+
+			@Override
+			public boolean matches(Method m) {
+				return m.getName().equals("enableHostnameVerification");
+			}
+
+		});
+		enableHostnameVerificationNoArgMethod = method1.get();
+		enableHostnameVerificationOneArgMethod = method2.get();
+	}
+
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private static final String KEY_STORE = "keyStore";
@@ -103,29 +140,33 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private Resource sslPropertiesLocation;
 
-	private volatile String keyStore;
+	private String keyStore;
 
-	private volatile String trustStore;
+	private String trustStore;
 
-	private volatile Resource keyStoreResource;
+	private Resource keyStoreResource;
 
-	private volatile Resource trustStoreResource;
+	private Resource trustStoreResource;
 
-	private volatile String keyStorePassphrase;
+	private String keyStorePassphrase;
 
-	private volatile String trustStorePassphrase;
+	private String trustStorePassphrase;
 
-	private volatile String keyStoreType;
+	private String keyStoreType;
 
-	private volatile String trustStoreType;
+	private String trustStoreType;
 
-	private volatile String sslAlgorithm = TLS_V1_1;
+	private String sslAlgorithm = TLS_V1_1;
 
-	private volatile boolean sslAlgorithmSet;
+	private boolean sslAlgorithmSet;
 
-	private volatile SecureRandom secureRandom;
+	private SecureRandom secureRandom;
 
 	private boolean skipServerCertificateValidation = true;
+
+	private boolean enableHostnameVerification;
+
+	private HostnameVerifier hostnameVerifier;
 
 	public RabbitConnectionFactoryBean() {
 		this.connectionFactory.setAutomaticRecoveryEnabled(false);
@@ -592,6 +633,46 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 		this.connectionFactory.setTopologyRecoveryEnabled(topologyRecoveryEnabled);
 	}
 
+	/**
+	 * Enable server hostname verification for TLS connections.
+	 * <p>
+	 * This enables hostname verification regardless of the IO mode used (blocking or
+	 * non-blocking IO).
+	 * <p>
+	 * If <strong>using Java 7 or more</strong>, the hostname verification will be
+	 * performed by Java, as part of the TLS handshake.
+	 * <p>
+	 * If <strong>using Java 6</strong>, the hostname verification will be handled after
+	 * the TLS handshake, using the {@link HostnameVerifier} from the Commons HttpClient
+	 * project. This requires to add Commons HttpClient and its dependencies to the
+	 * classpath. To use a custom {@link HostnameVerifier}, use
+	 * {@link #setHostnameVerifier(HostnameVerifier)}. Requires
+	 * amqp-client 4.8.0 or later.
+	 * @param enable true to enable.
+	 * @since 1.7.10
+	 * @see #setHostnameVerifier(HostnameVerifier)
+	 */
+	public void setEnableHostnameVerification(boolean enable) {
+		Assert.notNull(enableHostnameVerificationNoArgMethod,
+				"Host name verification requires amqp-client 4.8.0 or later");
+		this.enableHostnameVerification = enable;
+	}
+
+	/**
+	 * Set a custom {@link HostnameVerifier} for use with
+	 * {@link #setEnableHostnameVerification(boolean)}.
+	 * @param hostnameVerifier the verifier.
+	 * @see #setEnableHostnameVerification(boolean)
+	 * @deprecated only used with Java 6
+	 */
+	@Deprecated
+	public void setHostnameVerifier(HostnameVerifier hostnameVerifier) {
+		Assert.notNull(enableHostnameVerificationOneArgMethod,
+				"Host name verification requires amqp-client 4.8.0 or later, "
+						+ "when using 5.8.0 or later, a custom verifier is not required");
+		this.hostnameVerifier = hostnameVerifier;
+	}
+
 	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;
@@ -674,6 +755,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 			SSLContext context = createSSLContext();
 			context.init(keyManagers, trustManagers, this.secureRandom);
 			this.connectionFactory.useSslProtocol(context);
+			checkHostVerification();
 		}
 	}
 
@@ -689,14 +771,25 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 
-	private void useDefaultTrustStoreMechanism()
-			throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
+	private void useDefaultTrustStoreMechanism() throws Exception {
 		SSLContext sslContext = SSLContext.getInstance(this.sslAlgorithm);
 		TrustManagerFactory trustManagerFactory =
 				TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		trustManagerFactory.init((KeyStore) null);
 		sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 		this.connectionFactory.useSslProtocol(sslContext);
+		checkHostVerification();
+	}
+
+	private void checkHostVerification() throws Exception {
+		if (this.enableHostnameVerification) {
+			if (this.hostnameVerifier == null) {
+				enableHostnameVerificationNoArgMethod.invoke(this.connectionFactory);
+			}
+			else {
+				enableHostnameVerificationOneArgMethod.invoke(this.connectionFactory, this.hostnameVerifier);
+			}
+		}
 	}
 
 }
