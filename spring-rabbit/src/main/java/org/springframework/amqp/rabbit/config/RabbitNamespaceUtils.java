@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import org.springframework.beans.factory.support.ManagedList;
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.AcknowledgeMode;
@@ -25,6 +26,8 @@ import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 /**
  * @author Gary Russell
@@ -108,6 +111,8 @@ public final class RabbitNamespaceUtils {
 	private static final String MONITOR_INTERVAL = "monitor-interval";
 
 	private static final String TYPE = "type";
+
+	private static final String AFTER_RECEIVE_POST_PROCESSORS = "after-receive-post-processors";
 
 	private RabbitNamespaceUtils() {
 		super();
@@ -302,6 +307,16 @@ public final class RabbitNamespaceUtils {
 		String monitorInterval = containerEle.getAttribute(MONITOR_INTERVAL);
 		if (StringUtils.hasText(monitorInterval)) {
 			containerDef.getPropertyValues().add("monitorInterval", new TypedStringValue(monitorInterval));
+		}
+
+		String afterReceivePostProcessors = containerEle.getAttribute(AFTER_RECEIVE_POST_PROCESSORS);
+		if (StringUtils.hasText(afterReceivePostProcessors)) {
+			String[] names = StringUtils.commaDelimitedListToStringArray(afterReceivePostProcessors);
+			List<RuntimeBeanReference> values = new ManagedList<RuntimeBeanReference>();
+			for (int i = 0; i < names.length; i++) {
+				values.add(new RuntimeBeanReference(names[i].trim()));
+			}
+			containerDef.getPropertyValues().add("afterReceivePostProcessors", values);
 		}
 
 		return containerDef;

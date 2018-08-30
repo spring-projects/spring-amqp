@@ -234,6 +234,11 @@ public class ListenerContainerParserTests {
 		}
 	}
 
+	@Test
+	public void testParseMessagePostProcessor(){
+		beanFactory.getBean("testMessagePostProcessor", SimpleMessageListenerContainer.class);
+	}
+
 	static class TestBean {
 
 		public void handle(String s) {
