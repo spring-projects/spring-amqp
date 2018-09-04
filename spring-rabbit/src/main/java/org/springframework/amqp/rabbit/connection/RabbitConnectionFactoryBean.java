@@ -669,7 +669,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	public void setHostnameVerifier(HostnameVerifier hostnameVerifier) {
 		Assert.notNull(enableHostnameVerificationOneArgMethod,
 				"Host name verification requires amqp-client 4.8.0 or later, "
-						+ "when using 5.8.0 or later, a custom verifier is not required");
+						+ "when using 5.4.0 or later, a custom verifier is not required");
 		this.hostnameVerifier = hostnameVerifier;
 	}
 
