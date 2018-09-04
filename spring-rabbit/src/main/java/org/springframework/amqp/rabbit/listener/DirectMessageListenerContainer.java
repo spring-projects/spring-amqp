@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
@@ -285,12 +284,29 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
 				if (consumerList != null && consumerList.size() > newCount) {
-					IntStream.range(newCount, consumerList.size())
-							.mapToObj(i -> consumerList.remove(0))
-							.forEach(this::cancelConsumer);
+					int delta = consumerList.size() - newCount;
+					for (int i = 0; i < delta; i++) {
+						int index = findIdleConsumer();
+						if (index >= 0) {
+							SimpleConsumer consumer = consumerList.remove(index);
+							if (consumer != null) {
+								cancelConsumer(consumer);
+							}
+						}
+					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * When adjusting down, return a consumer that can be canceled. Called while
+	 * synchronized on consumersMonitor.
+	 * @return the consumer index or -1 if non idle.
+	 * @since 2.0.6
+	 */
+	protected int findIdleConsumer() {
+		return 0;
 	}
 
 	private void checkStartState() {

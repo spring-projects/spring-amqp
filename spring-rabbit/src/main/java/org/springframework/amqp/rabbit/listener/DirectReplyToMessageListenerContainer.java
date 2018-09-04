@@ -139,6 +139,16 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
+	protected int findIdleConsumer() {
+		for (int i = 0; i < this.consumers.size(); i++) {
+			if (!this.inUseConsumerChannels.containsValue(this.consumers.get(i))) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	@Override
 	protected void consumerRemoved(SimpleConsumer consumer) {
 		this.inUseConsumerChannels.remove(consumer.getChannel());
 		this.whenUsed.remove(consumer);
