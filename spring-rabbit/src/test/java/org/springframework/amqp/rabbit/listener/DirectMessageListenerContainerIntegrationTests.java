@@ -552,13 +552,19 @@ public class DirectMessageListenerContainerIntegrationTests {
 		DirectReplyToMessageListenerContainer container = new DirectReplyToMessageListenerContainer(cf);
 		container.setBeanName("reducing");
 		container.setIdleEventInterval(100);
+		CountDownLatch latch = new CountDownLatch(5);
+		container.setApplicationEventPublisher(e -> {
+			if (e instanceof ListenerContainerIdleEvent) {
+				latch.countDown();
+			}
+		});
 		container.afterPropertiesSet();
 		container.start();
 		ChannelHolder channelHolder1 = container.getChannelHolder();
 		ChannelHolder channelHolder2 = container.getChannelHolder();
 		assertTrue(activeConsumerCount(container, 2));
 		container.releaseConsumerFor(channelHolder2, false, null);
-		Thread.sleep(500);
+		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		assertTrue(channelHolder1.getChannel().isOpen());
 		container.releaseConsumerFor(channelHolder1, false, null);
 		assertTrue(activeConsumerCount(container, 0));
