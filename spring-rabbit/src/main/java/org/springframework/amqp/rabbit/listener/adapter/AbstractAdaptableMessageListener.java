@@ -48,8 +48,10 @@ import org.springframework.expression.spel.support.StandardTypeConverter;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.client.Channel;
+import reactor.core.publisher.Mono;
 
 /**
  * An abstract {@link MessageListener} adapter providing the necessary infrastructure
@@ -301,23 +303,60 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 */
 	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
 		if (channel != null) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Listener method returned result [" + resultArg
-						+ "] - generating response message for it");
+			if (resultArg.getReturnValue() instanceof ListenableFuture) {
+				((ListenableFuture<?>) resultArg.getReturnValue()).addCallback(
+						r -> asyncSuccess(resultArg, request, channel, source, r),
+						t -> asyncFailure(request, channel, t));
 			}
-			try {
-				Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
-				postProcessResponse(request, response);
-				Address replyTo = getReplyToAddress(request, source, resultArg);
-				sendResponse(channel, replyTo, response);
+			else if (resultArg.getReturnValue() instanceof Mono) {
+				((Mono<?>) resultArg.getReturnValue()).subscribe(
+						r -> asyncSuccess(resultArg, request, channel, source, r),
+						t -> asyncFailure(request, channel, t));
 			}
-			catch (Exception ex) {
-				throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", ex);
+			else {
+				doHandleResult(resultArg, request, channel, source);
 			}
 		}
 		else if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Listener method returned result [" + resultArg
 					+ "]: not generating response message for it because no Rabbit Channel given");
+		}
+	}
+
+	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source, Object r) {
+		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), resultArg.getReturnType()), request,
+				channel, source);
+		try {
+			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
+		}
+		catch (IOException e) {
+			this.logger.error("Failed to nack message", e);
+		}
+	}
+
+	private void asyncFailure(Message request, Channel channel, Throwable t) {
+		this.logger.error("Future was completed with an exception for " + request, t);
+		try {
+			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false, true);
+		}
+		catch (IOException e) {
+			this.logger.error("Failed to nack message", e);
+		}
+	}
+
+	protected void doHandleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Listener method returned result [" + resultArg
+					+ "] - generating response message for it");
+		}
+		try {
+			Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
+			postProcessResponse(request, response);
+			Address replyTo = getReplyToAddress(request, source, resultArg);
+			sendResponse(channel, replyTo, response);
+		}
+		catch (Exception ex) {
+			throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", ex);
 		}
 	}
 

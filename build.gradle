@@ -84,6 +84,7 @@ subprojects { subproject ->
 		mockitoVersion = '2.18.0'
 		rabbitmqVersion = project.hasProperty('rabbitmqVersion') ? project.rabbitmqVersion : '5.4.1'
 		rabbitmqHttpClientVersion = '2.1.0.RELEASE'
+		reactorVersion = '3.1.6.RELEASE'
 
 		springVersion = project.hasProperty('springVersion') ? project.springVersion : '5.1.0.RC2'
 
@@ -264,6 +265,7 @@ project('spring-rabbit') {
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
+		compile "io.projectreactor:reactor-core:$reactorVersion"
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 
