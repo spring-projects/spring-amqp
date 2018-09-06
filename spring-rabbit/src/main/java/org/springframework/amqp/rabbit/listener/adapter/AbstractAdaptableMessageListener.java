@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,8 +49,12 @@ import org.springframework.expression.spel.support.StandardTypeConverter;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.client.Channel;
+
+import reactor.core.publisher.Mono;
 
 /**
  * An abstract {@link MessageListener} adapter providing the necessary infrastructure
@@ -72,6 +77,20 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
+
+	private static final boolean monoPresent;
+
+	static {
+		boolean present;
+		try {
+			ClassUtils.forName("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
+			present = true;
+		}
+		catch (Exception e) {
+			present = false;
+		}
+		monoPresent = present;
+	}
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -301,23 +320,60 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 */
 	protected void handleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
 		if (channel != null) {
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Listener method returned result [" + resultArg
-						+ "] - generating response message for it");
+			if (resultArg.getReturnValue() instanceof ListenableFuture) {
+				((ListenableFuture<?>) resultArg.getReturnValue()).addCallback(
+						r -> asyncSuccess(resultArg, request, channel, source, r),
+						t -> asyncFailure(request, channel, t));
 			}
-			try {
-				Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
-				postProcessResponse(request, response);
-				Address replyTo = getReplyToAddress(request, source, resultArg);
-				sendResponse(channel, replyTo, response);
+			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+				MonoHandler.subscribe(resultArg.getReturnValue(),
+						r -> asyncSuccess(resultArg, request, channel, source, r),
+						t -> asyncFailure(request, channel, t));
 			}
-			catch (Exception ex) {
-				throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", ex);
+			else {
+				doHandleResult(resultArg, request, channel, source);
 			}
 		}
 		else if (this.logger.isWarnEnabled()) {
 			this.logger.warn("Listener method returned result [" + resultArg
 					+ "]: not generating response message for it because no Rabbit Channel given");
+		}
+	}
+
+	private void asyncSuccess(InvocationResult resultArg, Message request, Channel channel, Object source, Object r) {
+		doHandleResult(new InvocationResult(r, resultArg.getSendTo(), resultArg.getReturnType()), request,
+				channel, source);
+		try {
+			channel.basicAck(request.getMessageProperties().getDeliveryTag(), false);
+		}
+		catch (IOException e) {
+			this.logger.error("Failed to nack message", e);
+		}
+	}
+
+	private void asyncFailure(Message request, Channel channel, Throwable t) {
+		this.logger.error("Future was completed with an exception for " + request, t);
+		try {
+			channel.basicNack(request.getMessageProperties().getDeliveryTag(), false, true);
+		}
+		catch (IOException e) {
+			this.logger.error("Failed to nack message", e);
+		}
+	}
+
+	protected void doHandleResult(InvocationResult resultArg, Message request, Channel channel, Object source) {
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug("Listener method returned result [" + resultArg
+					+ "] - generating response message for it");
+		}
+		try {
+			Message response = buildMessage(channel, resultArg.getReturnValue(), resultArg.getReturnType());
+			postProcessResponse(request, response);
+			Address replyTo = getReplyToAddress(request, source, resultArg);
+			sendResponse(channel, replyTo, response);
+		}
+		catch (Exception ex) {
+			throw new ReplyFailureException("Failed to send reply with payload '" + resultArg + "'", ex);
 		}
 	}
 
@@ -513,6 +569,21 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 		public Object getResult() {
 			return this.result;
+		}
+
+	}
+
+	private static class MonoHandler {
+
+		static boolean isMono(Object result) {
+			return result instanceof Mono;
+		}
+
+		@SuppressWarnings("unchecked")
+		static void subscribe(Object returnValue, Consumer<? super Object> success,
+				Consumer<? super Throwable> failure) {
+
+			((Mono<? super Object>) returnValue).subscribe(success, failure);
 		}
 
 	}

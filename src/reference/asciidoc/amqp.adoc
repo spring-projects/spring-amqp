@@ -2555,6 +2555,15 @@ These techniques are useful if you wish to create several containers with simila
 
 IMPORTANT: Containers created this way are normal `@Bean` s and are not registered in the `RabbitListenerEndpointRegistry`.
 
+[[async-returns]]
+===== Asynchronous @RabbitListener Return Types
+
+Starting with version 2.1, `@RabbitListener` (and `@RabbitHandler`) methods can be specified with asynchronous return types `ListenableFuture<?>` and `Mono<?>`,
+allowing the reply to be sent asynchronously.
+
+IMPORTANT: The listener container factory must be configured with `AcknowledgeMode.MANUAL` so that the consumer thread will not ack the message; instead, the asynchronous completion will ack or nack (requeue) the message when the async operation completes.
+If some exception occurs within the listener method that prevents creation of the async result object, you MUST catch that exception and return an appropriate return object that will cause the message to be acknowledged or requeued.
+
 [[threading]]
 ===== Threading and Asynchronous Consumers
 
