@@ -1068,6 +1068,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 						+ "transactional channel. Either use a different AcknowledgeMode or make sure channelTransacted=false");
 		validateConfiguration();
 		initialize();
+		this.initialized = true;
 	}
 
 	@Override
