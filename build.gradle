@@ -265,7 +265,7 @@ project('spring-rabbit') {
 		compile "org.springframework:spring-context:$springVersion"
 		compile "org.springframework:spring-messaging:$springVersion"
 		compile "org.springframework:spring-tx:$springVersion"
-		compile "io.projectreactor:reactor-core:$reactorVersion"
+		compile ("io.projectreactor:reactor-core:$reactorVersion", optional)
 
 		compile ("ch.qos.logback:logback-classic:$logbackVersion", optional)
 

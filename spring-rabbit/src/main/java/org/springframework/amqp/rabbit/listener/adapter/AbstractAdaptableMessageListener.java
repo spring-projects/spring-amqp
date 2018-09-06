@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.listener.adapter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,9 +49,11 @@ import org.springframework.expression.spel.support.StandardTypeConverter;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import com.rabbitmq.client.Channel;
+
 import reactor.core.publisher.Mono;
 
 /**
@@ -74,6 +77,20 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
+
+	private static final boolean monoPresent;
+
+	static {
+		boolean present;
+		try {
+			ClassUtils.forName("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());
+			present = true;
+		}
+		catch (Exception e) {
+			present = false;
+		}
+		monoPresent = present;
+	}
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
@@ -308,8 +325,8 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 						r -> asyncSuccess(resultArg, request, channel, source, r),
 						t -> asyncFailure(request, channel, t));
 			}
-			else if (resultArg.getReturnValue() instanceof Mono) {
-				((Mono<?>) resultArg.getReturnValue()).subscribe(
+			else if (monoPresent && MonoHandler.isMono(resultArg.getReturnValue())) {
+				MonoHandler.subscribe(resultArg.getReturnValue(),
 						r -> asyncSuccess(resultArg, request, channel, source, r),
 						t -> asyncFailure(request, channel, t));
 			}
@@ -552,6 +569,21 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 		public Object getResult() {
 			return this.result;
+		}
+
+	}
+
+	private static class MonoHandler {
+
+		static boolean isMono(Object result) {
+			return result instanceof Mono;
+		}
+
+		@SuppressWarnings("unchecked")
+		static void subscribe(Object returnValue, Consumer<? super Object> success,
+				Consumer<? super Throwable> failure) {
+
+			((Mono<? super Object>) returnValue).subscribe(success, failure);
 		}
 
 	}
