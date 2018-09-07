@@ -51,6 +51,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -264,7 +265,7 @@ public class MessageListenerContainerErrorHandlerIntegrationTests {
 		container.stop();
 
 		Exception e = new ListenerExecutionFailedException("foo", new MessageConversionException("bar"),
-				mock(Message.class));
+				new Message("".getBytes(), new MessageProperties()));
 		try {
 			eh.handleError(e);
 			fail("expected exception");

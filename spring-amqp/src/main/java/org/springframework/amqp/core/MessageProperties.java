@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -514,6 +515,20 @@ public class MessageProperties implements Serializable {
 	 */
 	public void setTargetBean(Object targetBean) {
 		this.targetBean = targetBean;
+	}
+
+	/**
+	 * Return the x-death header.
+	 * @return the header.
+	 */
+	@SuppressWarnings("unchecked")
+	public List<Map<String, ?>> getXDeathHeader() {
+		try {
+			return (List<Map<String, ?>>) this.headers.get("x-death");
+		}
+		catch (Exception e) {
+			return null;
+		}
 	}
 
 	@Override

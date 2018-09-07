@@ -16,10 +16,15 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.messaging.MessagingException;
@@ -54,6 +59,8 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 
 	private final FatalExceptionStrategy exceptionStrategy;
 
+	private boolean discardFatalsWithXDeath = true;
+
 	/**
 	 * Create a handler with the {@link ConditionalRejectingErrorHandler.DefaultExceptionStrategy}.
 	 */
@@ -69,10 +76,33 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		this.exceptionStrategy = exceptionStrategy;
 	}
 
+	/**
+	 * Set to false to disable the, now, default behavior of logging and discarding
+	 * messages that cause fatal exceptions and have an `x-death` header; which
+	 * usually means that the message has been republished after previously being
+	 * sent to a DLQ.
+	 * @param discardFatalsWithXDeath false to disable.
+	 * @since 2.1
+	 */
+	public void setDiscardFatalsWithXDeath(boolean discardFatalsWithXDeath) {
+		this.discardFatalsWithXDeath = discardFatalsWithXDeath;
+	}
+
 	@Override
 	public void handleError(Throwable t) {
 		log(t);
 		if (!this.causeChainContainsARADRE(t) && this.exceptionStrategy.isFatal(t)) {
+			if (this.discardFatalsWithXDeath && t instanceof ListenerExecutionFailedException) {
+				Message failed = ((ListenerExecutionFailedException) t).getFailedMessage();
+				if (failed != null) {
+					List<Map<String, ?>> xDeath = failed.getMessageProperties().getXDeathHeader();
+					if (xDeath != null && xDeath.size() > 0) {
+						this.logger.error("x-death header detected on a message with a fatal exception; "
+								+ "perhaps requeued from a DLQ? - discarding: " + failed);
+						throw new ImmediateAcknowledgeAmqpException("Fatal and x-death present");
+					}
+				}
+			}
 			throw new AmqpRejectAndDontRequeueException("Error Handler converted exception to fatal", t);
 		}
 	}
