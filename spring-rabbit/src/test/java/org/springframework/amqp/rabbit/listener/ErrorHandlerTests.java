@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,11 +54,11 @@ public class ErrorHandlerTests {
 		willDoNothing().given(logger).warn(anyString(), any(Throwable.class));
 		new DirectFieldAccessor(handler).setPropertyValue("logger", logger);
 		handler.handleError(new ListenerExecutionFailedException("intended", new RuntimeException(),
-				mock(org.springframework.amqp.core.Message.class)));
+				new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended", new MessageConversionException(""),
-					mock(org.springframework.amqp.core.Message.class)));
+					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -67,7 +67,7 @@ public class ErrorHandlerTests {
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
 					new org.springframework.messaging.converter.MessageConversionException(""),
-					mock(org.springframework.amqp.core.Message.class)));
+					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -78,7 +78,7 @@ public class ErrorHandlerTests {
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
 					new MethodArgumentNotValidException(message, mp),
-					mock(org.springframework.amqp.core.Message.class)));
+					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {
@@ -87,7 +87,7 @@ public class ErrorHandlerTests {
 		try {
 			handler.handleError(new ListenerExecutionFailedException("intended",
 					new MethodArgumentTypeMismatchException(message, mp, ""),
-					mock(org.springframework.amqp.core.Message.class)));
+					new org.springframework.amqp.core.Message("".getBytes(), new MessageProperties())));
 			fail("Expected exception");
 		}
 		catch (AmqpRejectAndDontRequeueException e) {

@@ -3824,7 +3824,7 @@ public class RabbitServerConfiguration extends AbstractStockAppRabbitConfigurati
 ----
 
 This is the end of the whole inheritance chain of `@Configuration` classes.
-The end result is the the TopicExchange and Queue will be declared to the broker upon application startup.
+The end result is the `TopicExchange` and `Queue` will be declared to the broker upon application startup.
 There is no binding of the TopicExchange to a queue in the server configuration, as that is done in the client application.
 The stock request queue however is automatically bound to the AMQP default exchange - this behavior is defined by the specification.
 
@@ -4278,7 +4278,11 @@ In addition, the `ListenerExecutionFailedException` now has a `failedMessage` pr
 If the `FatalExceptionStrategy.isFatal()` method returns `true`, the error handler throws an `AmqpRejectAndDontRequeueException`.
 The default `FatalExceptionStrategy` logs a warning message when an exception is determined to be fatal.
 
-Since _version 1.6.3_ a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
+Since version 1.6.3, a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
+
+A common pattern for handling DLQ messages is to set a `time-to-live` on those messages as well as additional DLQ configuration such that these messages expire and are routed back to the main queue for retry.
+The problem with this technique is that messages that cause fatal exceptions will loop forever.
+Starting with version 2.1, the `ConditionalRejectingErrorHandler` detects an `x-death` header on a message that causes a fatal exception to be thrown, the message will be logged and discarded.
 
 [[transactions]]
 ==== Transactions
