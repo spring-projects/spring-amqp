@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +41,9 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.support.CorrelationData.Confirm;
+import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
+import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
+import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 

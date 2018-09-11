@@ -21,9 +21,9 @@ import java.util.concurrent.ScheduledFuture;
 
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.support.BatchingStrategy;
 import org.springframework.amqp.rabbit.core.support.MessageBatch;
-import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.context.Lifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
@@ -31,7 +31,7 @@ import org.springframework.scheduling.TaskScheduler;
  * A {@link RabbitTemplate} that permits batching individual messages into a larger
  * message. All {@code send()} methods (except
  * {@link #send(String, String, org.springframework.amqp.core.Message,
- * org.springframework.amqp.rabbit.support.CorrelationData)})
+ * org.springframework.amqp.rabbit.connection.CorrelationData)})
  * are eligible for batching.
  * <p>
  * <b>Experimental - APIs may change.</b>

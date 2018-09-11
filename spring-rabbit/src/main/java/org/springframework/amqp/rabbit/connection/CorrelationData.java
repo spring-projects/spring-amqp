@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import org.springframework.amqp.core.Correlation;
 import org.springframework.amqp.core.Message;

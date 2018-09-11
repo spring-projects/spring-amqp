@@ -21,7 +21,7 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.core.ParameterizedTypeReference;
 
 /**
