@@ -4280,6 +4280,10 @@ The default `FatalExceptionStrategy` logs a warning message when an exception is
 
 Since _version 1.6.3_ a convenient way to add user exceptions to the fatal list is to subclass `ConditionalRejectingErrorHandler.DefaultExceptionStrategy` and override the method `isUserCauseFatal(Throwable cause)` to return true for fatal exceptions.
 
+A common pattern for handling DLQ messages is to set a time-to-live on those messages as well as additional DLQ configuration such that these messages expire and are routed back to the main queue for retry.
+The problem with this technique is that messages that cause fatal exceptions will loop forever.
+Starting with version 2.1, the the `ConditionalRejectingErrorHandler` detects an `x-death` header on a message that causes a fatal exception to be thrown, the message will be logged and discarded.
+
 [[transactions]]
 ==== Transactions
 

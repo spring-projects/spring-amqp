@@ -74,3 +74,8 @@ See <<async-return>> for more information.
 ===== Connection Factory Bean Changes
 
 The `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()` by default; to revert to the previous behavior, set the `enabaleHostnameVerification` property to `false`.
+
+===== Listener Container Changes
+
+The default `ConditionalRejectingErrorHandler` will now completely discard messages that cause fatal errors if an `x-death` header is present.
+See <<>> for more information.
