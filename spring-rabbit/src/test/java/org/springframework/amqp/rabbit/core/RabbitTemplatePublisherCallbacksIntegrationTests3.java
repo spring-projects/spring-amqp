@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.junit.RabbitAvailable;
 import org.springframework.amqp.rabbit.junit.RabbitAvailableCondition;
-import org.springframework.amqp.rabbit.support.CorrelationData;
 import org.springframework.amqp.utils.test.TestUtils;
 
 import com.rabbitmq.client.Channel;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.amqp.rabbit.support;
+package org.springframework.amqp.rabbit.connection;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,8 +23,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.springframework.amqp.rabbit.connection.ChannelProxy;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Recoverable;

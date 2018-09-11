@@ -17,7 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.support.CorrelationData;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 
 /**
  * A callback invoked immediately before publishing a message to update, replace, or
