@@ -3672,14 +3672,15 @@ TIP: You can provide both an *id* and a *name* attribute.
 This allows you to refer to the queue (for example in a binding) by an id that is independent of the queue name.
 It also allows standard Spring features such as property placeholders, and SpEL expressions for the queue name; these features are not available when using the name as the bean identifier.
 
-Queues can be configured with additional arguments, for example, 'x-message-ttl' or 'x-ha-policy'.
+Queues can be configured with additional arguments, for example, `x-message-ttl`.
 Using the namespace support, they are provided in the form of a Map of argument name/argument value pairs, using the `<rabbit:queue-arguments>` element.
 
 [source,xml]
 ----
 <rabbit:queue name="withArguments">
     <rabbit:queue-arguments>
-        <entry key="x-ha-policy" value="all"/>
+        <entry key="x-dead-letter-exchange" value="myDLX"/>
+        <entry key="x-dead-letter-routing-key" value="dlqRK"/>
     </rabbit:queue-arguments>
 </rabbit:queue>
 ----
@@ -3705,7 +3706,8 @@ When providing arguments of mixed types, the type is provided for each entry ele
         <entry key="x-message-ttl">
             <value type="java.lang.Long">100</value>
         </entry>
-        <entry key="x-ha-policy" value="all"/>
+        <entry key="x-dead-letter-exchange" value="myDLX"/>
+        <entry key="x-dead-letter-routing-key" value="dlqRK"/>
     </rabbit:queue-arguments>
 </rabbit:queue>
 ----
