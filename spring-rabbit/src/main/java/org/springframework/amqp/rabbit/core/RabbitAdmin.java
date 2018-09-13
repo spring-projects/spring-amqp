@@ -337,7 +337,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		return this.rabbitTemplate.execute(channel -> {
 			PurgeOk queuePurged = channel.queuePurge(queueName);
 			if (this.logger.isDebugEnabled()) {
-				logger.debug("Purged queue: " + queueName + ", " + queuePurged);
+				this.logger.debug("Purged queue: " + queueName + ", " + queuePurged);
 			}
 			return queuePurged.getMessageCount();
 		});
