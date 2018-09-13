@@ -3968,6 +3968,11 @@ public static class Config {
 }
 -----
 
+IMPORTANT: In versions prior to 2.1, you could declare multiple `Declarable` s by defining beans of type `Collection<Declarable>`.
+This can cause undesirable side effects in some cases, because the admin has to iterate over all `Collection<?>` beans.
+This feature is now disabled in favor of `Declarables` as discussed above.
+You can revert to the previous behavior by setting the `RabbitAdmin` property `declareCollections` to `true`.
+
 [[conditional-declaration]]
 ===== Conditional Declaration
 

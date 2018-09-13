@@ -125,7 +125,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
-	private boolean declareCollections = true;
+	private boolean declareCollections = false;
 
 	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
