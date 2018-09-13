@@ -49,7 +49,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
+import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -57,6 +60,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import com.rabbitmq.client.AMQP.Queue.PurgeOk;
 import com.rabbitmq.client.Channel;
 
 /**
@@ -69,6 +73,7 @@ import com.rabbitmq.client.Channel;
  * @author Gary Russell
  * @author Artem Bilan
  */
+@ManagedResource(description = "Admin Tasks")
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
 		BeanNameAware, InitializingBean {
 
@@ -102,13 +107,15 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private final RabbitTemplate rabbitTemplate;
 
+	private final Object lifecycleMonitor = new Object();
+
+	private final ConnectionFactory connectionFactory;
+
 	private String beanName;
 
 	private RetryTemplate retryTemplate;
 
 	private boolean retryDisabled;
-
-	private volatile boolean running = false;
 
 	private boolean autoStartup = true;
 
@@ -116,13 +123,13 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	private boolean ignoreDeclarationExceptions;
 
-	private final Object lifecycleMonitor = new Object();
-
-	private final ConnectionFactory connectionFactory;
-
 	private ApplicationEventPublisher applicationEventPublisher;
 
 	private boolean declareCollections = true;
+
+	private TaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
+
+	private volatile boolean running = false;
 
 	private volatile DeclarationExceptionEvent lastDeclarationExceptionEvent;
 
@@ -192,6 +199,17 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		return this.lastDeclarationExceptionEvent;
 	}
 
+	/**
+	 * Set a task executor to use for async operations. Currently only used
+	 * with {@link #purgeQueue(String, boolean)}.
+	 * @param taskExecutor the executor to use.
+	 * @since 2.1
+	 */
+	public void setTaskExecutor(TaskExecutor taskExecutor) {
+		Assert.notNull(taskExecutor, "'taskExecutor' cannot be null");
+		this.taskExecutor = taskExecutor;
+	}
+
 	public RabbitTemplate getRabbitTemplate() {
 		return this.rabbitTemplate;
 	}
@@ -212,7 +230,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description = "Delete an exchange from the broker")
 	public boolean deleteExchange(final String exchangeName) {
 		return this.rabbitTemplate.execute(channel -> {
 			if (isDeletingDefaultExchange(exchangeName)) {
@@ -242,7 +260,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * true.
 	 */
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description =
+			"Declare a queue on the broker (this operation is not available remotely)")
 	public String declareQueue(final Queue queue) {
 		try {
 			return this.rabbitTemplate.execute(channel -> {
@@ -264,7 +283,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * is true.
 	 */
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description =
+			"Declare a queue with a broker-generated name (this operation is not available remotely)")
 	public Queue declareQueue() {
 		try {
 			DeclareOk declareOk = this.rabbitTemplate.execute(Channel::queueDeclare);
@@ -277,7 +297,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description = "Delete a queue from the broker")
 	public boolean deleteQueue(final String queueName) {
 		return this.rabbitTemplate.execute(channel -> {
 			try {
@@ -291,7 +311,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description =
+			"Delete a queue from the broker if unused and empty (when corresponding arguments are true")
 	public void deleteQueue(final String queueName, final boolean unused, final boolean empty) {
 		this.rabbitTemplate.execute(channel -> {
 			channel.queueDelete(queueName, unused, empty);
@@ -300,17 +321,32 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description = "Purge a queue and optionally don't wait for the purge to occur")
 	public void purgeQueue(final String queueName, final boolean noWait) {
-		this.rabbitTemplate.execute(channel -> {
-			channel.queuePurge(queueName);
-			return null;
+		if (noWait) {
+			this.taskExecutor.execute(() -> purgeQueue(queueName));
+		}
+		else {
+			purgeQueue(queueName);
+		}
+	}
+
+	@Override
+	@ManagedOperation(description = "Purge a queue and return the number of messages purged")
+	public int purgeQueue(final String queueName) {
+		return this.rabbitTemplate.execute(channel -> {
+			PurgeOk queuePurged = channel.queuePurge(queueName);
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Purged queue: " + queueName + ", " + queuePurged);
+			}
+			return queuePurged.getMessageCount();
 		});
 	}
 
 	// Binding
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description =
+			"Declare a binding on the broker (this operation is not available remotely)")
 	public void declareBinding(final Binding binding) {
 		try {
 			this.rabbitTemplate.execute(channel -> {
@@ -324,7 +360,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	}
 
 	@Override
-	@ManagedOperation
+	@ManagedOperation(description =
+			"Remove a binding from the broker (this operation is not available remotely)")
 	public void removeBinding(final Binding binding) {
 		this.rabbitTemplate.execute(channel -> {
 			if (binding.isDestinationQueue()) {
@@ -348,6 +385,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * {@link #QUEUE_CONSUMER_COUNT}, or null if the queue doesn't exist.
 	 */
 	@Override
+	@ManagedOperation(description = "Get queue name, message count and consumer count")
 	public Properties getQueueProperties(final String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(channel -> {

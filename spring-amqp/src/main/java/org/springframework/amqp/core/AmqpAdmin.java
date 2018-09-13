@@ -83,6 +83,14 @@ public interface AmqpAdmin {
 	 */
 	void purgeQueue(String queueName, boolean noWait);
 
+	/**
+	 * Purges the contents of the given queue.
+	 * @param queueName the name of the queue.
+	 * @return the number of messages purged.
+	 * @since 2.1
+	 */
+	int purgeQueue(String queueName);
+
 	// Binding operations
 
 	/**
