@@ -1137,6 +1137,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				}
 
 			}
+			this.initialized = true;
 		}
 		catch (Exception ex) {
 			throw convertRabbitAccessException(ex);
@@ -1214,7 +1215,6 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			synchronized (this.lifecycleMonitor) {
 				if (!this.initialized) {
 					afterPropertiesSet();
-					this.initialized = true;
 				}
 			}
 		}
