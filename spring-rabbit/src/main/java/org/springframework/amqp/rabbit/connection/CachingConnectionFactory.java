@@ -257,13 +257,17 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		super(rabbitConnectionFactory);
 		if (!isPublisherFactory) {
 			if (rabbitConnectionFactory.isAutomaticRecoveryEnabled()) {
-				logger.warn("***\nAutomatic Recovery is Enabled in the provided connection factory;\n"
-						+ "while Spring AMQP is compatible with this feature, it\n"
+				rabbitConnectionFactory.setAutomaticRecoveryEnabled(false);
+				logger.warn("***\nAutomatic Recovery was Enabled in the provided connection factory;\n"
+						+ "while Spring AMQP is generally compatible with this feature, there\n"
+						+ "are some corner cases where problems arise. Spring AMQP\n"
 						+ "prefers to use its own recovery mechanisms; when this option is true, you may receive\n"
-						+ "'AutoRecoverConnectionNotCurrentlyOpenException's until the connection is recovered.");
+						+ "'AutoRecoverConnectionNotCurrentlyOpenException's until the connection is recovered.\n"
+						+ "It has therefore been disabled; if you really wish to enable it, use\n"
+						+ "'getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true)',\n"
+						+ "but this is discouraged.");
 			}
-			this.publisherConnectionFactory = new CachingConnectionFactory(getRabbitConnectionFactory(),
-					true);
+			this.publisherConnectionFactory = new CachingConnectionFactory(getRabbitConnectionFactory(), true);
 			setPublisherConnectionFactory(this.publisherConnectionFactory);
 		}
 		else {

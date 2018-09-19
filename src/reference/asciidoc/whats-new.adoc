@@ -76,6 +76,14 @@ See <<async-return>> for more information.
 
 The `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()` by default; to revert to the previous behavior, set the `enableHostnameVerification` property to `false`.
 
+===== Connection Factory Changes
+
+The `CachingConnectionFactory` now unconditionally disables auto recovery in the underlying RabbitMQ `ConnectionFactory`, even if a pre-configured instance is provided in a constructor.
+While steps have been taken to make Spring AMQP compatible with auto recovery, certain corner cases have arisen where issues remain.
+Spring AMQP has had its own recovery mechanism since 1.0.0 and doesn't need to use the recovery provided by the client.
+While it is still possible to enable the feature (using `cachingConnectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled()`) after the `CachingConnectionFactory` is constructed, it is **strongly recommended that you not do so**.
+Use a separate RabbitMQ `ConnectionFactory` if you need auto recovery connections when using the client factory directly (rather than via Spring AMQP components).
+
 ===== Listener Container Changes
 
 The default `ConditionalRejectingErrorHandler` will now completely discard messages that cause fatal errors if an `x-death` header is present.
