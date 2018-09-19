@@ -374,7 +374,27 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 				}
 				rabbitConnection = this.rabbitConnectionFactory.newConnection(this.executorService, connectionName);
 			}
-			Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
+			final Connection connection = new SimpleConnection(rabbitConnection, this.closeTimeout);
+			if (rabbitConnection instanceof AutorecoveringConnection) {
+				((AutorecoveringConnection) rabbitConnection).addRecoveryListener(new RecoveryListener() {
+
+					@Override
+					public void handleRecoveryStarted(Recoverable recoverable) {
+						handleRecovery(recoverable);
+					}
+
+					@Override
+					public void handleRecovery(Recoverable recoverable) {
+						try {
+							connection.close();
+						}
+						catch (Exception e) {
+							AbstractConnectionFactory.this.logger.error("Failed to close auto-recover connection", e);
+						}
+					}
+
+				});
+			}
 			if (this.logger.isInfoEnabled()) {
 				this.logger.info("Created new connection: " + connectionName + "/" + connection);
 			}
