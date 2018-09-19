@@ -26,14 +26,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.willReturn;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -58,11 +55,9 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
 
 import org.springframework.amqp.AmqpApplicationContextClosedException;
 import org.springframework.amqp.AmqpAuthenticationException;
-import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.AmqpResourceNotAvailableException;
 import org.springframework.amqp.AmqpTimeoutException;
@@ -80,10 +75,6 @@ import org.springframework.context.event.ContextClosedEvent;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Recoverable;
-import com.rabbitmq.client.RecoveryListener;
-import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
-import com.rabbitmq.client.impl.recovery.AutorecoveringConnection;
 
 /**
  * @author Dave Syer
@@ -370,111 +361,6 @@ public class CachingConnectionFactoryIntegrationTests {
 		}
 		template.convertAndSend(route, "message");
 		assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-		String result = (String) template.receiveAndConvert(route);
-		assertEquals("message", result);
-		result = (String) template.receiveAndConvert(route);
-		assertEquals(null, result);
-	}
-
-	@Test
-	public void testHardErrorAndReconnectAuto() throws Exception {
-		this.connectionFactory.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
-		Log cfLogger = spyOnLogger(this.connectionFactory);
-		willReturn(true).given(cfLogger).isDebugEnabled();
-		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		RabbitAdmin admin = new RabbitAdmin(connectionFactory);
-		Queue queue = new Queue(CF_INTEGRATION_TEST_QUEUE);
-		admin.declareQueue(queue);
-		final String route = queue.getName();
-
-		final CountDownLatch latch = new CountDownLatch(1);
-		final CountDownLatch recoveryLatch = new CountDownLatch(1);
-		final RecoveryListener channelRecoveryListener = new RecoveryListener() {
-
-			@Override
-			public void handleRecoveryStarted(Recoverable recoverable) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Channel recovery started: " + asString(recoverable));
-				}
-			}
-
-			@Override
-			public void handleRecovery(Recoverable recoverable) {
-				try {
-					((Channel) recoverable).basicCancel("testHardErrorAndReconnect");
-				}
-				catch (IOException e) {
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Channel recovery complete: " + asString(recoverable));
-				}
-			}
-
-			private String asString(Recoverable recoverable) {
-				// TODO: https://github.com/rabbitmq/rabbitmq-java-client/issues/217
-				return ((AutorecoveringChannel) recoverable).getDelegate().toString();
-			}
-
-		};
-		final RecoveryListener connectionRecoveryListener = new RecoveryListener() {
-
-			@Override
-			public void handleRecoveryStarted(Recoverable recoverable) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Connection recovery started: " + recoverable);
-				}
-			}
-
-			@Override
-			public void handleRecovery(Recoverable recoverable) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Connection recovery complete: " + recoverable);
-				}
-				recoveryLatch.countDown();
-			}
-
-		};
-		Object connection = ((ConnectionProxy) this.connectionFactory.createConnection()).getTargetConnection();
-		connection = TestUtils.getPropertyValue(connection, "delegate");
-		if (connection instanceof AutorecoveringConnection) {
-			((AutorecoveringConnection) connection).addRecoveryListener(connectionRecoveryListener);
-		}
-		try {
-			template.execute(channel -> {
-				channel.getConnection().addShutdownListener(cause -> {
-					logger.info("Error", cause);
-					latch.countDown();
-					// This will be thrown on the Connection thread just before it dies, so basically ignored
-					throw new RuntimeException(cause);
-				});
-				Channel targetChannel = ((ChannelProxy) channel).getTargetChannel();
-				if (targetChannel instanceof AutorecoveringChannel) {
-					((AutorecoveringChannel) targetChannel).addRecoveryListener(channelRecoveryListener);
-				}
-				else {
-					recoveryLatch.countDown(); // Spring IO Platform Tests
-				}
-				String tag = channel.basicConsume(route, false, "testHardErrorAndReconnect",
-						new DefaultConsumer(channel));
-				// Consume twice with the same tag is a hard error (connection will be reset)
-				String result = channel.basicConsume(route, false, tag, new DefaultConsumer(channel));
-				fail("Expected IOException, got: " + result);
-				return null;
-			});
-			fail("Expected AmqpIOException");
-		}
-		catch (AmqpException e) {
-			// expected
-		}
-		assertTrue(recoveryLatch.await(10, TimeUnit.SECONDS));
-		if (logger.isDebugEnabled()) {
-			logger.debug("Resuming test after recovery complete");
-		}
-		ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-		verify(cfLogger, atLeastOnce()).debug(captor.capture());
-		assertThat(captor.getValue(), containsString("Connection recovery complete:"));
-		template.convertAndSend(route, "message");
-		assertTrue(latch.await(10, TimeUnit.SECONDS));
 		String result = (String) template.receiveAndConvert(route);
 		assertEquals("message", result);
 		result = (String) template.receiveAndConvert(route);
