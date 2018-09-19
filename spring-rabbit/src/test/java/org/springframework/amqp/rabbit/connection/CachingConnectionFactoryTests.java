@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1574,6 +1574,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		ccf.setAddresses("mq1,mq2");
 		ccf.createConnection();
 		verify(mock).isAutomaticRecoveryEnabled();
+		verify(mock).setAutomaticRecoveryEnabled(false);
 		verify(mock).newConnection(isNull(),
 				aryEq(new Address[] { new Address("mq1"), new Address("mq2") }), anyString());
 		verifyNoMoreInteractions(mock);
