@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -350,7 +351,7 @@ public class RabbitTemplateTests {
 		given(connection.isOpen()).willReturn(true);
 		given(connection.createChannel()).willReturn(channel1, channel2);
 		DeclareOk dok = new DeclareOk("foo", 0, 0);
-		willReturn(dok).given(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		willReturn(dok).given(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap());
 		CachingConnectionFactory ccf = new CachingConnectionFactory(cf);
 		ccf.setExecutor(mock(ExecutorService.class));
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(ccf);
@@ -368,7 +369,7 @@ public class RabbitTemplateTests {
 			});
 		});
 		verify(channel1).txSelect();
-		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), isNull());
+		verify(channel1).queueDeclare(anyString(), anyBoolean(), anyBoolean(), anyBoolean(), anyMap());
 		assertThat(((ChannelProxy) templateChannel.get()).getTargetChannel(), equalTo(channel1));
 		verify(channel1).txCommit();
 	}

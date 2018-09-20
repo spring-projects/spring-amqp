@@ -16,8 +16,10 @@
 
 package org.springframework.amqp.core;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -29,6 +31,12 @@ import org.springframework.util.StringUtils;
  * @see AmqpAdmin
  */
 public class Queue extends AbstractDeclarable {
+
+	/**
+	 * Argument key for the master locator.
+	 * @since 2.1
+	 */
+	public static final String X_QUEUE_MASTER_LOCATOR = "x-queue-master-locator";
 
 	private final String name;
 
@@ -90,7 +98,7 @@ public class Queue extends AbstractDeclarable {
 		this.durable = durable;
 		this.exclusive = exclusive;
 		this.autoDelete = autoDelete;
-		this.arguments = arguments;
+		this.arguments = arguments != null ? arguments : new HashMap<>();
 	}
 
 	/**
@@ -151,6 +159,20 @@ public class Queue extends AbstractDeclarable {
 	 */
 	public String getActualName() {
 		return this.actualName;
+	}
+
+	/**
+	 * Set the master locator strategy argument for this queue.
+	 * @param locator the locator; null to clear the argument.
+	 * @since 2.1
+	 */
+	public final void setMasterLocator(@Nullable String locator) {
+		if (locator == null) {
+			this.arguments.remove(X_QUEUE_MASTER_LOCATOR);
+		}
+		else {
+			this.arguments.put(X_QUEUE_MASTER_LOCATOR, locator);
+		}
 	}
 
 	@Override
