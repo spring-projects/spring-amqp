@@ -3612,6 +3612,8 @@ A `<rabbit:queue/>` with an empty, or missing, `name` attribute will always crea
 
 See <<anonymous-queue>> to understand why `AnonymousQueue` is preferred over broker-generated queue names, as well as
 how to control the format of the name.
+Starting with version 2.1, anonymous queues are declared with argument `x-queue-master-locator` set to `client-local` by default.
+This ensures that the queue will be declared on the node the application is connected to.
 Declarative queues must have fixed names because they might be referenced elsewhere in the context, for example, in a
 listener:
 
@@ -3723,6 +3725,10 @@ With Spring Framework 3.2 and later, this can be declared a little more succinct
     </rabbit:queue-arguments>
 </rabbit:queue>
 ----
+
+When using Java configuration, the `x-queue-master-locator` is supported as a first class property via the `setMasterLocator()` method on the `Queue` class.
+Starting with version 2.1, anonymous queues are declared with this property set to `client-local` by default.
+This ensures that the queue will be declared on the node the application is connected to.
 
 IMPORTANT: The RabbitMQ broker will not allow declaration of a queue with mismatched arguments.
 For example, if a `queue` already exists with no `time to live` argument, and you attempt to declare it with, say, `key="x-message-ttl" value="100"`, an exception will be thrown.
@@ -4147,6 +4153,10 @@ The second creates names with a String representation of a UUID.
 The third creates names like `custom.gen-MRBv9sqISkuCiPfOYfpo4g`.
 
 Of course, you can provide your own naming strategy bean.
+
+Starting with version 2.1, anonymous queues are declared with argument `x-queue-master-locator` set to `client-local` by default.
+This ensures that the queue will be declared on the node the application is connected to.
+To revert to the previous behavior, call `queue.setMasterLocator(null)` after constructing the instance.
 
 [[broker-events]]
 ==== Broker Event Listener

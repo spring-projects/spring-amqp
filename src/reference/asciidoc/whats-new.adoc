@@ -43,6 +43,9 @@ Users are discouraged from using the old mechanism of declaring `<Collection<Que
 By default, the old mechanism is disabled.
 See <<collection-declaration>> for more information.
 
+`AnonymousQueue` s are now declared with `x-queue-master-locator` set to `client-local` by default, to ensure the queues are created on the node the application is connected to.
+See <<broker-configuration>> for more information.
+
 ===== RabbitTemplate Changes
 
 The `RabbitTemplate` now can be configured with the `noLocalReplyConsumer` option to control a `noLocal` flag for reply consumers in the `sendAndReceive()` operations.

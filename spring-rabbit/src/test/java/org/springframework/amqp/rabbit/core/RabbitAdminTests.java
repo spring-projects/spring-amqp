@@ -89,6 +89,8 @@ import org.springframework.context.support.GenericApplicationContext;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.QueueInfo;
 
 /**
  * @author Mark Pollack
@@ -107,7 +109,7 @@ public class RabbitAdminTests {
 	public ExpectedException exception = ExpectedException.none();
 
 	@Rule
-	public BrokerRunning brokerIsRunning = BrokerRunning.isRunning();
+	public BrokerRunning brokerIsRunning = BrokerRunning.isBrokerAndManagementRunning();
 
 	@Test
 	public void testSettingOfNullConnectionFactory() {
@@ -370,6 +372,36 @@ public class RabbitAdminTests {
 			// NOSONAR
 		}
 		ctx.close();
+	}
+
+	@Test
+	public void testMasterLocator() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory(brokerIsRunning.getConnectionFactory());
+		RabbitAdmin admin = new RabbitAdmin(cf);
+		AnonymousQueue queue = new AnonymousQueue();
+		admin.declareQueue(queue);
+		Client client = new Client("http://guest:guest@localhost:15672/api");
+		QueueInfo info = client.getQueue("?", queue.getName());
+		int n = 0;
+		while (n++ < 100 && info == null) {
+			Thread.sleep(100);
+			info = client.getQueue("/", queue.getName());
+		}
+		assertNotNull(info);
+		assertThat(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR), equalTo("client-local"));
+
+		queue = new AnonymousQueue();
+		queue.setMasterLocator(null);
+		admin.declareQueue(queue);
+		info = client.getQueue("?", queue.getName());
+		n = 0;
+		while (n++ < 100 && info == null) {
+			Thread.sleep(100);
+			info = client.getQueue("/", queue.getName());
+		}
+		assertNotNull(info);
+		assertNull(info.getArguments().get(Queue.X_QUEUE_MASTER_LOCATOR));
+		cf.destroy();
 	}
 
 	@Configuration

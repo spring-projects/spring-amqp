@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,9 @@ public class AnonymousQueue extends Queue {
 	 */
 	public AnonymousQueue(org.springframework.amqp.core.NamingStrategy namingStrategy, Map<String, Object> arguments) {
 		super(namingStrategy.generateName(), false, true, true, arguments);
+		if (!getArguments().containsKey(X_QUEUE_MASTER_LOCATOR)) {
+			setMasterLocator("client-local");
+		}
 	}
 
 	/**
