@@ -616,7 +616,7 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	 * <code>useSslProtocol</code> methods. Requires amqp-client 5.4.0 or later.
 	 * @param enable false to disable.
 	 * @since 2.0.6
-	 * @see ConnectionFactory#enableHostnameVerification()
+	 * @see com.rabbitmq.client.ConnectionFactory#enableHostnameVerification()
 	 */
 	public void setEnableHostnameVerification(boolean enable) {
 		this.enableHostnameVerification = enable;

@@ -18,7 +18,7 @@ package org.springframework.amqp;
 
 /**
  * The special {@link AmqpException} to be thrown from the listener (e.g. retry recoverer callback)
- * to {@code requeue) failed message.
+ * to {@code requeue} failed message.
  *
  * @author Artem Bilan
  *

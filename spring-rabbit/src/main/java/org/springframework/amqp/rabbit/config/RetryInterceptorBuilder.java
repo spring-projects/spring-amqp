@@ -59,6 +59,7 @@ import org.springframework.util.Assert;
  *				.build();
  * </pre>
  *
+ * @param <B> The target {@link RetryInterceptorBuilder} implementation type.
  * @param <T> The type of {@link MethodInterceptor} returned by the builder's {@link #build()} method.
  *
  * @author James Carr
