@@ -5231,6 +5231,8 @@ RepublishMessageRecoverer recoverer = new RepublishMessageRecoverer(amqpTemplate
 };
 ----
 
+Starting with version 2.1, an `ImmediateRequeueMessageRecoverer` is  added to throw an `ImmediateRequeueAmqpException` which notifies a listener container to requeue the current failed message.
+
 ===== Exception Classification for Retry
 
 Spring Retry has a great deal of flexibility for determining which exceptions can invoke retry.

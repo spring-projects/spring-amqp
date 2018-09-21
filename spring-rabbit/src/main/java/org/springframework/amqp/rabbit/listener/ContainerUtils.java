@@ -19,11 +19,13 @@ package org.springframework.amqp.rabbit.listener;
 import org.apache.commons.logging.Log;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.ImmediateRequeueAmqpException;
 
 /**
  * Utility methods for listener containers.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  *
  * @since 2.1
  *
@@ -45,7 +47,8 @@ public final class ContainerUtils {
 	 */
 	public static boolean shouldRequeue(boolean defaultRequeueRejected, Throwable throwable, Log logger) {
 		boolean shouldRequeue = defaultRequeueRejected ||
-				throwable instanceof MessageRejectedWhileStoppingException;
+				throwable instanceof MessageRejectedWhileStoppingException ||
+				throwable instanceof ImmediateRequeueAmqpException;
 		Throwable t = throwable;
 		while (shouldRequeue && t != null) {
 			if (t instanceof AmqpRejectAndDontRequeueException) {
