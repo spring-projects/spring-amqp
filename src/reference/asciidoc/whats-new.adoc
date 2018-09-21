@@ -55,7 +55,7 @@ See <<request-reply>> for more information.
 When returns and confirms are enabled, the correlation data, if provided, is populated with the returned message.
 See <<template-confirms>> for more information.
 
-===== Message Convertion
+===== Message Conversion
 
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
 See <<Jackson2XmlMessageConverter>> for more information.
@@ -91,3 +91,10 @@ Use a separate RabbitMQ `ConnectionFactory` if you need auto recovery connection
 
 The default `ConditionalRejectingErrorHandler` will now completely discard messages that cause fatal errors if an `x-death` header is present.
 See <<exception-handling>> for more information.
+
+===== Immediate requeue
+
+A new `ImmediateRequeueAmqpException` is introduced to notify a listener container that the message has to be requeued.
+To utilize this feature a new `ImmediateRequeueMessageRecoverer` implementation is added.
+
+See <<async-listeners>> for more information.
