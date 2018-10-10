@@ -716,7 +716,7 @@ public class AmqpAppender extends AbstractAppender {
 					x = new FanoutExchange(this.exchangeName, this.durable, this.autoDelete);
 				}
 				else if ("headers".equals(this.exchangeType)) {
-					x = new HeadersExchange(this.exchangeType, this.durable, this.autoDelete);
+					x = new HeadersExchange(this.exchangeName, this.durable, this.autoDelete);
 				}
 				else {
 					x = new TopicExchange(this.exchangeName, this.durable, this.autoDelete);
