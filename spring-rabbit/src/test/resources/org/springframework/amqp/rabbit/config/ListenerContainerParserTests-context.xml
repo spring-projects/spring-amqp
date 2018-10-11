@@ -120,4 +120,14 @@
 
 	<task:executor id="exec" />
 
+	<rabbit:listener-container connection-factory="connectionFactory" auto-startup="false"
+							   after-receive-post-processors="unzipPostProcessor, gUnzipPostProcessor">
+		<rabbit:listener id="testMessagePostProcessor" queues="foo" ref="testBean" method="handle" />
+	</rabbit:listener-container>
+
+
+	<bean id="unzipPostProcessor" class="org.springframework.amqp.support.postprocessor.UnzipPostProcessor" />
+
+	<bean id="gUnzipPostProcessor" class="org.springframework.amqp.support.postprocessor.GUnzipPostProcessor" />
+
 </beans>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package org.springframework.amqp.rabbit.config;
 
+import java.util.List;
+
 import org.w3c.dom.Element;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.TypedStringValue;
+import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
@@ -109,6 +112,9 @@ public final class RabbitNamespaceUtils {
 
 	private static final String TYPE = "type";
 
+	private static final String AFTER_RECEIVE_POST_PROCESSORS = "after-receive-post-processors";
+
+
 	private RabbitNamespaceUtils() {
 		super();
 	}
@@ -174,7 +180,8 @@ public final class RabbitNamespaceUtils {
 
 		String minConsecutiveMessages = containerEle.getAttribute(MIN_CONSECUTIVE_ACTIVE_ATTRIBUTE);
 		if (StringUtils.hasText(minConsecutiveMessages)) {
-			containerDef.getPropertyValues().add("consecutiveActiveTrigger", new TypedStringValue(minConsecutiveMessages));
+			containerDef.getPropertyValues().add("consecutiveActiveTrigger",
+					new TypedStringValue(minConsecutiveMessages));
 		}
 
 		String minConsecutiveIdle = containerEle.getAttribute(MIN_CONSECUTIVE_IDLE_ATTRIBUTE);
@@ -270,12 +277,14 @@ public final class RabbitNamespaceUtils {
 
 		String failedDeclarationRetryInterval = containerEle.getAttribute(FAILED_DECLARATION_RETRY_INTERVAL);
 		if (StringUtils.hasText(failedDeclarationRetryInterval)) {
-			containerDef.getPropertyValues().add("failedDeclarationRetryInterval", new TypedStringValue(failedDeclarationRetryInterval));
+			containerDef.getPropertyValues().add("failedDeclarationRetryInterval",
+					new TypedStringValue(failedDeclarationRetryInterval));
 		}
 
 		String retryDeclarationInterval = containerEle.getAttribute(MISSING_QUEUE_RETRY_INTERVAL);
 		if (StringUtils.hasText(retryDeclarationInterval)) {
-			containerDef.getPropertyValues().add("retryDeclarationInterval", new TypedStringValue(retryDeclarationInterval));
+			containerDef.getPropertyValues().add("retryDeclarationInterval",
+			new TypedStringValue(retryDeclarationInterval));
 		}
 
 		String consumerTagStrategy = containerEle.getAttribute(CONSUMER_TAG_STRATEGY);
@@ -302,6 +311,16 @@ public final class RabbitNamespaceUtils {
 		String monitorInterval = containerEle.getAttribute(MONITOR_INTERVAL);
 		if (StringUtils.hasText(monitorInterval)) {
 			containerDef.getPropertyValues().add("monitorInterval", new TypedStringValue(monitorInterval));
+		}
+
+		String afterReceivePostProcessors = containerEle.getAttribute(AFTER_RECEIVE_POST_PROCESSORS);
+		if (StringUtils.hasText(afterReceivePostProcessors)) {
+			String[] names = StringUtils.delimitedListToStringArray(afterReceivePostProcessors, ",", " ");
+			List<RuntimeBeanReference> values = new ManagedList<>();
+			for (String name : names) {
+				values.add(new RuntimeBeanReference(name));
+			}
+			containerDef.getPropertyValues().add("afterReceivePostProcessors", values);
 		}
 
 		return containerDef;

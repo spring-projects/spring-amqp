@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2017 the original author or authors.
+ * Copyright 2010-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
@@ -62,7 +63,7 @@ public class ListenerContainerParserTests {
 	private DefaultListableBeanFactory beanFactory;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		beanFactory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
 		reader.loadBeanDefinitions(new ClassPathResource(getClass().getSimpleName() + "-context.xml", getClass()));
@@ -70,8 +71,9 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithQueueNames() throws Exception {
-		SimpleMessageListenerContainer container = beanFactory.getBean("container1", SimpleMessageListenerContainer.class);
+	public void testParseWithQueueNames() {
+		SimpleMessageListenerContainer container =
+				this.beanFactory.getBean("container1", SimpleMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
 		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
 		assertEquals(MessageListenerAdapter.class, container.getMessageListener().getClass());
@@ -111,7 +113,7 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithDirect() throws Exception {
+	public void testParseWithDirect() {
 		DirectMessageListenerContainer container = beanFactory.getBean("direct1", DirectMessageListenerContainer.class);
 		assertEquals(AcknowledgeMode.MANUAL, container.getAcknowledgeMode());
 		assertEquals(beanFactory.getBean(ConnectionFactory.class), container.getConnectionFactory());
@@ -146,7 +148,7 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithQueues() throws Exception {
+	public void testParseWithQueues() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container2", SimpleMessageListenerContainer.class);
 		Queue queue = beanFactory.getBean("bar", Queue.class);
 		assertEquals("[foo, " + queue.getName() + "]", Arrays.asList(container.getQueueNames()).toString());
@@ -155,7 +157,7 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithAdviceChain() throws Exception {
+	public void testParseWithAdviceChain() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container3", SimpleMessageListenerContainer.class);
 		Object adviceChain = ReflectionTestUtils.getField(container, "adviceChain");
 		assertNotNull(adviceChain);
@@ -164,14 +166,14 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithDefaults() throws Exception {
+	public void testParseWithDefaults() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container4", SimpleMessageListenerContainer.class);
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		assertEquals(true, ReflectionTestUtils.getField(container, "defaultRequeueRejected"));
 	}
 
 	@Test
-	public void testParseWithDefaultQueueRejectedFalse() throws Exception {
+	public void testParseWithDefaultQueueRejectedFalse() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container5", SimpleMessageListenerContainer.class);
 		assertEquals(1, ReflectionTestUtils.getField(container, "concurrentConsumers"));
 		assertEquals(false, ReflectionTestUtils.getField(container, "defaultRequeueRejected"));
@@ -179,20 +181,20 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testParseWithTx() throws Exception {
+	public void testParseWithTx() {
 		SimpleMessageListenerContainer container = beanFactory.getBean("container6", SimpleMessageListenerContainer.class);
 		assertTrue(container.isChannelTransacted());
 		assertEquals(5, ReflectionTestUtils.getField(container, "txSize"));
 	}
 
 	@Test
-	public void testNamedListeners() throws Exception {
+	public void testNamedListeners() {
 		beanFactory.getBean("testListener1", SimpleMessageListenerContainer.class);
 		beanFactory.getBean("testListener2", SimpleMessageListenerContainer.class);
 	}
 
 	@Test
-	public void testAnonListeners() throws Exception {
+	public void testAnonListeners() {
 		beanFactory.getBean("org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#0",
 				SimpleMessageListenerContainer.class);
 		beanFactory.getBean("org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#1",
@@ -203,7 +205,7 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testAnonEverything() throws Exception {
+	public void testAnonEverything() {
 		SimpleMessageListenerContainer container = beanFactory.getBean(
 				"org.springframework.amqp.rabbit.config.ListenerContainerFactoryBean#3",
 				SimpleMessageListenerContainer.class);
@@ -217,7 +219,7 @@ public class ListenerContainerParserTests {
 	}
 
 	@Test
-	public void testAnonParent() throws Exception {
+	public void testAnonParent() {
 		beanFactory.getBean("anonParentL1", SimpleMessageListenerContainer.class);
 		beanFactory.getBean("anonParentL2", SimpleMessageListenerContainer.class);
 	}
@@ -232,6 +234,21 @@ public class ListenerContainerParserTests {
 			assertTrue(e.getMessage().startsWith(
 				"Configuration problem: Listener Container - cannot set channel-transacted with acknowledge='NONE'"));
 		}
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testParseMessagePostProcessor() {
+		SimpleMessageListenerContainer listenerContainer =
+				this.beanFactory.getBean("testMessagePostProcessor", SimpleMessageListenerContainer.class);
+
+		Collection<MessagePostProcessor> messagePostProcessors =
+				TestUtils.getPropertyValue(listenerContainer, "afterReceivePostProcessors", Collection.class);
+
+		assertFalse(messagePostProcessors.isEmpty());
+		assertThat(messagePostProcessors,
+				contains(this.beanFactory.getBean("unzipPostProcessor"),
+						this.beanFactory.getBean("gUnzipPostProcessor")));
 	}
 
 	static class TestBean {
