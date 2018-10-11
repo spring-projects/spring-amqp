@@ -100,6 +100,10 @@
 		<rabbit:listener id="direct1" queue-names="foo, #{bar.name}" ref="testBean" method="handle" priority="10" />
 	</rabbit:listener-container>
 
+	<rabbit:listener-container connection-factory="connectionFactory" after-receive-post-processors="unzipPostProcessor, gUnzipPostProcessor">
+		<rabbit:listener id="testMessagePostProcessor" queues="foo" ref="testBean" method="handle" />
+	</rabbit:listener-container>
+
 	<util:list id="adviceChain">
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
 		<bean class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestAdvice"/>
@@ -115,6 +119,10 @@
 	<bean id="testBean" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestBean"/>
 
 	<bean id="tagger" class="org.springframework.amqp.rabbit.config.ListenerContainerParserTests$TestConsumerTagStrategy" />
+
+	<bean id="unzipPostProcessor" class="org.springframework.amqp.support.postprocessor.UnzipPostProcessor" />
+
+	<bean id="gUnzipPostProcessor" class="org.springframework.amqp.support.postprocessor.GUnzipPostProcessor" />
 
 	<task:scheduler id="sched" />
 
