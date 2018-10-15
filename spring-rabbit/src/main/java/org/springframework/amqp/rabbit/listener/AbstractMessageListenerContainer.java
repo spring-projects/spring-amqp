@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,7 +305,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Add queue(s) to this container's list of queues.
 	 * @param queues The queue(s) to add.
 	 */
-	public final void addQueues(Queue... queues) {
+	public void addQueues(Queue... queues) {
 		addQueueNames(collectQueueNames(queues));
 	}
 
@@ -325,7 +325,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param queues The queue(s) to remove.
 	 * @return the boolean result of removal on the target {@code queueNames} List.
 	 */
-	public final boolean removeQueues(Queue... queues) {
+	public boolean removeQueues(Queue... queues) {
 		return removeQueueNames(collectQueueNames(queues));
 	}
 
