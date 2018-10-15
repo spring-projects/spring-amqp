@@ -41,6 +41,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.ImmediateAcknowledgeAmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.ConsumerChannelRegistry;
@@ -336,7 +337,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	public void setQueueNames(String... queueName) {
 		super.setQueueNames(queueName);
-		this.queuesChanged();
+		queuesChanged();
 	}
 
 	/**
@@ -349,7 +350,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	public void addQueueNames(String... queueName) {
 		super.addQueueNames(queueName);
-		this.queuesChanged();
+		queuesChanged();
 	}
 
 	/**
@@ -361,7 +362,37 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	@Override
 	public boolean removeQueueNames(String... queueName) {
 		if (super.removeQueueNames(queueName)) {
-			this.queuesChanged();
+			queuesChanged();
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	/**
+	 * Add queue(s) to this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. The queue must exist to avoid problems when
+	 * restarting the consumers.
+	 * @param queue The queue to add.
+	 */
+	@Override
+	public void addQueues(Queue... queue) {
+		super.addQueues(queue);
+		queuesChanged();
+	}
+
+	/**
+	 * Remove queues from this container's list of queues. The existing consumers
+	 * will be cancelled after they have processed any pre-fetched messages and
+	 * new consumers will be created. At least one queue must remain.
+	 * @param queue The queue to remove.
+	 */
+	@Override
+	public boolean removeQueues(Queue... queue) {
+		if (super.removeQueues(queue)) {
+			queuesChanged();
 			return true;
 		}
 		else {

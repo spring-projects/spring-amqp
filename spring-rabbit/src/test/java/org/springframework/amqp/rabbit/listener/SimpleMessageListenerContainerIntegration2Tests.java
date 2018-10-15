@@ -166,6 +166,31 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	}
 
 	@Test
+	public void testChangeQueues2() throws Exception { // addQueues instead of addQueueNames
+		CountDownLatch latch = new CountDownLatch(30);
+		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		final CountDownLatch consumerLatch = new CountDownLatch(1);
+		this.container.setApplicationEventPublisher(e -> {
+			if (e instanceof AsyncConsumerStoppedEvent) {
+				consumerLatch.countDown();
+			}
+		});
+		for (int i = 0; i < 10; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+			template.convertAndSend(queue1.getName(), i + "foo");
+		}
+		container.addQueues(queue1);
+		assertTrue(consumerLatch.await(10, TimeUnit.SECONDS));
+		for (int i = 0; i < 10; i++) {
+			template.convertAndSend(queue.getName(), i + "foo");
+		}
+		boolean waited = latch.await(10, TimeUnit.SECONDS);
+		assertTrue("Timed out waiting for message", waited);
+		assertNull(template.receiveAndConvert(queue.getName()));
+		assertNull(template.receiveAndConvert(queue1.getName()));
+	}
+
+	@Test
 	public void testNoQueues() throws Exception {
 		CountDownLatch latch1 = new CountDownLatch(20);
 		container = createContainer(new MessageListenerAdapter(new PojoListener(latch1)), (String[]) null);
