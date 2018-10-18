@@ -11,6 +11,7 @@
 				  applicationId="testAppId" routingKeyPattern="%X{applicationId}.%c.%p"
 				  contentType="text/plain" contentEncoding="UTF-8" generateId="true" deliveryMode="NON_PERSISTENT"
 				  charset="UTF-8"
+				  connectionName="log4j2Appender"
 				  clientConnectionProperties="foo:bar,baz:qux"
 				  async="false"
 				  senderPoolSize="3" maxSenderRetries="5"

@@ -72,6 +72,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
 
@@ -172,6 +173,7 @@ public class AmqpAppender extends AbstractAppender {
 			@PluginAttribute("autoDelete") boolean autoDelete,
 			@PluginAttribute("contentType") String contentType,
 			@PluginAttribute("contentEncoding") String contentEncoding,
+			@PluginAttribute("connectionName") String connectionName,
 			@PluginAttribute("clientConnectionProperties") String clientConnectionProperties,
 			@PluginAttribute("async") boolean async,
 			@PluginAttribute("charset") String charset,
@@ -214,6 +216,7 @@ public class AmqpAppender extends AbstractAppender {
 		manager.autoDelete = autoDelete;
 		manager.contentType = contentType;
 		manager.contentEncoding = contentEncoding;
+		manager.connectionName = connectionName;
 		manager.clientConnectionProperties = clientConnectionProperties;
 		manager.charset = charset;
 		manager.async = async;
@@ -571,6 +574,11 @@ public class AmqpAppender extends AbstractAppender {
 		private boolean declareExchange = false;
 
 		/**
+		 * A name for the connection (appears on the RabbitMQ Admin UI).
+		 */
+		private String connectionName;
+
+		/**
 		 * Additional client connection properties to be added to the rabbit connection,
 		 * with the form {@code key:value[,key:value]...}.
 		 */
@@ -617,7 +625,10 @@ public class AmqpAppender extends AbstractAppender {
 						.withAlwaysWriteExceptions(false)
 						.withNoConsoleNoAnsi(true)
 						.build();
-				this.connectionFactory = new CachingConnectionFactory(createRabbitConnectionFactory());
+				this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+				if (StringUtils.hasText(this.connectionName)) {
+					this.connectionFactory.setConnectionNameStrategy(cf -> this.connectionName);
+				}
 				if (this.addresses != null) {
 					this.connectionFactory.setAddresses(this.addresses);
 				}
