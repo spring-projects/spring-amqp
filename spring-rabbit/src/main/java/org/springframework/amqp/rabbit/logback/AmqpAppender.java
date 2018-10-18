@@ -51,6 +51,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.StringUtils;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
@@ -175,6 +176,11 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	 * RabbitMQ ConnectionFactory.
 	 */
 	private AbstractConnectionFactory connectionFactory;
+
+	/**
+	 * A name for the connection (appears on the RabbitMQ Admin UI).
+	 */
+	private String connectionName;
 
 	/**
 	 * Additional client connection properties added to the rabbit connection, with the form
@@ -570,6 +576,15 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 	}
 
 	/**
+	 * Set a name for the connection which will appear on the RabbitMQ Admin UI.
+	 * @param connectionName the connection name.
+	 * @since 2.1.1
+	 */
+	public void setConnectionName(String connectionName) {
+		this.connectionName = connectionName;
+	}
+
+	/**
 	 * Set additional client connection properties to be added to the rabbit connection,
 	 * with the form {@code key:value[,key:value]...}.
 	 *
@@ -609,6 +624,9 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 			this.locationLayout.setContext(getContext());
 			this.locationLayout.start();
 			this.connectionFactory = new CachingConnectionFactory(rabbitConnectionFactory);
+			if (StringUtils.hasText(this.connectionName)) {
+				this.connectionFactory.setConnectionNameStrategy(cf -> this.connectionName);
+			}
 			if (this.addresses != null) {
 				this.connectionFactory.setAddresses(this.addresses);
 			}
