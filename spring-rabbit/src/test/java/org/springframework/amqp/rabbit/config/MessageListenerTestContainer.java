@@ -25,6 +25,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 /**
  * @author Stephane Nicoll
+ * @author Gary Russell
  */
 public class MessageListenerTestContainer
 		implements MessageListenerContainer, InitializingBean, DisposableBean {
@@ -100,6 +101,7 @@ public class MessageListenerTestContainer
 	}
 
 	@Override
+	@Deprecated
 	public MessageConverter getMessageConverter() {
 		return null;
 	}
