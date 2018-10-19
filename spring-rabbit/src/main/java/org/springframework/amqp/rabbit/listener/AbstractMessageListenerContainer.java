@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpConnectException;
 import org.springframework.amqp.AmqpIOException;
@@ -212,6 +213,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private String lookupKeyQualifier = "";
 
 	private boolean forceCloseChannel = true;
+
+	private String errorHandlerLoggerName = getClass().getName();
 
 	/**
 	 * {@inheritDoc}
@@ -1062,6 +1065,18 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	/**
+	 * Set the name (category) of the logger used to log exceptions thrown by the error handler.
+	 * It defaults to the container's logger but can be overridden if you want it to log at a different
+	 * level to the container. Such exceptions are logged at the ERROR level.
+	 * @param errorHandlerLoggerName the logger name.
+	 * @since 2.0.8
+	 */
+	public void setErrorHandlerLoggerName(String errorHandlerLoggerName) {
+		Assert.notNull(errorHandlerLoggerName, "'errorHandlerLoggerName' cannot be null");
+		this.errorHandlerLoggerName = errorHandlerLoggerName;
+	}
+
+	/**
 	 * Delegates to {@link #validateConfiguration()} and {@link #initialize()}.
 	 */
 	@Override
@@ -1312,7 +1327,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 */
 	protected void invokeErrorHandler(Throwable ex) {
 		if (this.errorHandler != null) {
-			this.errorHandler.handleError(ex);
+			try {
+				this.errorHandler.handleError(ex);
+			}
+			catch (Exception e) {
+				LogFactory.getLog(this.errorHandlerLoggerName).error(
+						"Execution of Rabbit message listener failed, and the error handler threw an exception", e);
+				throw e;
+			}
 		}
 		else if (logger.isWarnEnabled()) {
 			logger.warn("Execution of Rabbit message listener failed, and no ErrorHandler has been set.", ex);
