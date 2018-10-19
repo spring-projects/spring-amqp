@@ -27,6 +27,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -76,6 +77,8 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	private String group;
 
 	private Boolean autoStartup;
+
+	private MessageConverter messageConverter;
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
@@ -247,6 +250,16 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 	@Override
 	public Boolean getAutoStartup() {
 		return this.autoStartup;
+	}
+
+	@Override
+	public MessageConverter getMessageConverter() {
+		return this.messageConverter;
+	}
+
+	@Override
+	public void setMessageConverter(MessageConverter messageConverter) {
+		this.messageConverter = messageConverter;
 	}
 
 	@Override

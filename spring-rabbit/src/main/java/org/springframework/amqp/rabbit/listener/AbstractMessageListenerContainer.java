@@ -465,12 +465,21 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Set the {@link MessageConverter} strategy for converting AMQP Messages.
 	 * @param messageConverter the message converter to use
+	 * @deprecated - this converter is not used by the container; it was only
+	 * used to configure the converter for a {@code @RabbitListener} adapter.
+	 * That is now handled differently. If you are manually creating a listener
+	 * container, the converter must be configured in a listener adapter (if
+	 * present).
 	 */
+	@Deprecated
 	public void setMessageConverter(MessageConverter messageConverter) {
+		this.logger.warn("It is preferred to configure the message converter via the endpoint. "
+				+ "See RabbitListenerEndpoint.setMessageConverter");
 		this.messageConverter = messageConverter;
 	}
 
 	@Override
+	@Deprecated
 	public MessageConverter getMessageConverter() {
 		return this.messageConverter;
 	}

@@ -111,6 +111,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return this.messageHandlerMethodFactory;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected MessagingMessageListenerAdapter createMessageListener(MessageListenerContainer container) {
 		Assert.state(this.messageHandlerMethodFactory != null,
@@ -121,7 +122,10 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		if (replyToAddress != null) {
 			messageListener.setResponseAddress(replyToAddress);
 		}
-		MessageConverter messageConverter = container.getMessageConverter();
+		MessageConverter messageConverter = getMessageConverter();
+		if (messageConverter == null) {
+			messageConverter = container.getMessageConverter();
+		}
 		if (messageConverter != null) {
 			messageListener.setMessageConverter(messageConverter);
 		}
