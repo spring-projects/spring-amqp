@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import org.springframework.amqp.support.converter.MessageConverter;
 
 /**
  * Model for a Rabbit listener endpoint. Can be used against a
@@ -66,5 +67,28 @@ public interface RabbitListenerEndpoint {
 	 * @param listenerContainer the listener container to configure
 	 */
 	void setupListenerContainer(MessageListenerContainer listenerContainer);
+
+	/**
+	 * The preferred way for a container factory to pass a message converter
+	 * to the endpoint's adapter.
+	 * @param converter the converter.
+	 * @since 2.0.8
+	 */
+	default void setMessageConverter(MessageConverter converter) {
+		// NOSONAR
+	}
+
+	/**
+	 * Used by the container factory to check if this endpoint supports the
+	 * preferred way for a container factory to pass a message converter
+	 * to the endpoint's adapter. If null is returned, the factory will
+	 * fall back to the legacy method of passing the converter via the
+	 * container.
+	 * @return the converter.
+	 * @since 2.0.8
+	 */
+	default MessageConverter getMessageConverter() {
+		return null;
+	}
 
 }

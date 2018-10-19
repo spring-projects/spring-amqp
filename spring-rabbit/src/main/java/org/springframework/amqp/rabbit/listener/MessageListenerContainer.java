@@ -24,6 +24,7 @@ import org.springframework.context.SmartLifecycle;
  * listener container. Not meant to be implemented externally.
  *
  * @author Stephane Nicoll
+ * @author Gary Russell
  * @since 1.4
  */
 public interface MessageListenerContainer extends SmartLifecycle {
@@ -38,7 +39,13 @@ public interface MessageListenerContainer extends SmartLifecycle {
 	/**
 	 * @return the {@link MessageConverter} that can be used to
 	 * convert {@link org.springframework.amqp.core.Message}, if any.
+	 * @deprecated - this converter is not used by the container; it was only
+	 * used to configure the converter for a {@code @RabbitListener} adapter.
+	 * That is now handled differently. If you are manually creating a listener
+	 * container, the converter must be configured in a listener adapter (if
+	 * present).
 	 */
+	@Deprecated
 	MessageConverter getMessageConverter();
 
 }

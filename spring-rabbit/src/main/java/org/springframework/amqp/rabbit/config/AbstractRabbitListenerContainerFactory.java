@@ -328,6 +328,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.recoveryCallback = recoveryCallback;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
 		C instance = createContainerInstance();
@@ -339,7 +340,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			instance.setErrorHandler(this.errorHandler);
 		}
 		if (this.messageConverter != null) {
-			instance.setMessageConverter(this.messageConverter);
+			endpoint.setMessageConverter(this.messageConverter);
+			if (endpoint.getMessageConverter() == null) {
+				instance.setMessageConverter(this.messageConverter);
+			}
 		}
 		if (this.acknowledgeMode != null) {
 			instance.setAcknowledgeMode(this.acknowledgeMode);
