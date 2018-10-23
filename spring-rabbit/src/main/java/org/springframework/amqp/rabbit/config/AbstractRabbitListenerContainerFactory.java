@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.config;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.aopalliance.aop.Advice;
 import org.apache.commons.logging.Log;
@@ -63,6 +64,8 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		implements RabbitListenerContainerFactory<C>, ApplicationContextAware, ApplicationEventPublisherAware {
 
 	protected final Log logger = LogFactory.getLog(getClass());
+
+	protected final AtomicInteger counter = new AtomicInteger();
 
 	private ConnectionFactory connectionFactory;
 
@@ -112,7 +115,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	private RecoveryCallback<?> recoveryCallback;
 
-	protected final AtomicInteger counter = new AtomicInteger();
+	private Consumer<C> containerConfigurer;
 
 	/**
 	 * @param connectionFactory The connection factory.
@@ -328,6 +331,16 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.recoveryCallback = recoveryCallback;
 	}
 
+	/**
+	 * A {@link Consumer} that is invoked to enable setting other container properties not
+	 * exposed  by this container factory.
+	 * @param configurer the configurer;
+	 * @since 2.1.1
+	 */
+	public void setContainerConfigurer(Consumer<C> configurer) {
+		this.containerConfigurer = configurer;
+	}
+
 	@SuppressWarnings("deprecation")
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
@@ -340,8 +353,13 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			instance.setErrorHandler(this.errorHandler);
 		}
 		if (this.messageConverter != null) {
-			endpoint.setMessageConverter(this.messageConverter);
-			if (endpoint.getMessageConverter() == null) {
+			if (endpoint != null) {
+				endpoint.setMessageConverter(this.messageConverter);
+				if (endpoint.getMessageConverter() == null) {
+					instance.setMessageConverter(this.messageConverter);
+				}
+			}
+			else {
 				instance.setMessageConverter(this.messageConverter);
 			}
 		}
@@ -421,6 +439,10 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 			}
 		}
 		initializeContainer(instance, endpoint);
+
+		if (this.containerConfigurer != null) {
+			this.containerConfigurer.accept(instance);
+		}
 
 		return instance;
 	}
