@@ -109,6 +109,7 @@ public class RabbitListenerContainerFactoryTests {
 		this.factory.setRecoveryBackOff(recoveryBackOff);
 		this.factory.setMissingQueuesFatal(true);
 		this.factory.setAfterReceivePostProcessors(afterReceivePostProcessor);
+		this.factory.setContainerConfigurer(c -> c.setShutdownTimeout(10_000));
 
 		assertArrayEquals(new Advice[] {advice}, this.factory.getAdviceChain());
 
@@ -131,6 +132,7 @@ public class RabbitListenerContainerFactoryTests {
 		assertEquals(6, fieldAccessor.getPropertyValue("consecutiveIdleTrigger"));
 		assertEquals(3, fieldAccessor.getPropertyValue("prefetchCount"));
 		assertEquals(1500L, fieldAccessor.getPropertyValue("receiveTimeout"));
+		assertEquals(10_000L, fieldAccessor.getPropertyValue("shutdownTimeout"));
 		assertEquals(false, fieldAccessor.getPropertyValue("defaultRequeueRejected"));
 		Advice[] actualAdviceChain = (Advice[]) fieldAccessor.getPropertyValue("adviceChain");
 		assertEquals("Wrong number of advice", 1, actualAdviceChain.length);
