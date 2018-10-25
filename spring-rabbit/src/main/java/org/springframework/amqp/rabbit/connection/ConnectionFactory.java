@@ -31,6 +31,7 @@ import org.springframework.lang.Nullable;
  */
 public interface ConnectionFactory {
 
+	@Nullable
 	Connection createConnection() throws AmqpException;
 
 	String getHost();

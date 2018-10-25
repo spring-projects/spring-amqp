@@ -53,6 +53,7 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
@@ -744,8 +745,9 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 	}
 
-	private <T extends Throwable> void logOrRethrowDeclarationException(Declarable element, String elementType, T t)
-			throws T {
+	private <T extends Throwable> void logOrRethrowDeclarationException(@Nullable Declarable element,
+			String elementType, T t) throws T {
+
 		DeclarationExceptionEvent event = new DeclarationExceptionEvent(this, element, t);
 		this.lastDeclarationExceptionEvent = event;
 		if (this.applicationEventPublisher != null) {

@@ -870,7 +870,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public void send(final String exchange, final String routingKey,
-			final Message message, final CorrelationData correlationData)
+			final Message message, @Nullable final CorrelationData correlationData)
 			throws AmqpException {
 		execute(channel -> {
 			doSend(channel, exchange, routingKey, message,

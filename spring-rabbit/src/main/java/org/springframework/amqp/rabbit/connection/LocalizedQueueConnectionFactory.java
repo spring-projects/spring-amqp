@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.AmqpException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.http.client.Client;
@@ -270,6 +271,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		}
 	}
 
+	@Nullable
 	private ConnectionFactory determineConnectionFactory(String queue) {
 		for (int i = 0; i < this.adminUris.length; i++) {
 			String adminUri = this.adminUris[i];

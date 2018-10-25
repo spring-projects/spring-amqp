@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.List;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.util.Assert;
@@ -166,7 +167,8 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @param endpoint the {@link RabbitListenerEndpoint} instance to register.
 	 * @param factory the {@link RabbitListenerContainerFactory} to use.
 	 */
-	public void registerEndpoint(RabbitListenerEndpoint endpoint, RabbitListenerContainerFactory<?> factory) {
+	public void registerEndpoint(RabbitListenerEndpoint endpoint,
+			@Nullable RabbitListenerContainerFactory<?> factory) {
 		Assert.notNull(endpoint, "Endpoint must be set");
 		Assert.hasText(endpoint.getId(), "Endpoint id must be set");
 		// Factory may be null, we defer the resolution right before actually creating the container
@@ -201,7 +203,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 		private final RabbitListenerContainerFactory<?> containerFactory;
 
 		AmqpListenerEndpointDescriptor(RabbitListenerEndpoint endpoint,
-				RabbitListenerContainerFactory<?> containerFactory) {
+				@Nullable RabbitListenerContainerFactory<?> containerFactory) {
 			this.endpoint = endpoint;
 			this.containerFactory = containerFactory;
 		}

@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.NamedThreadLocal;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -90,6 +91,7 @@ public final class SimpleResourceHolder {
 	 * @param actualKey the key.
 	 * @return the resource object.
 	 */
+	@Nullable
 	private static Object doGet(Object actualKey) {
 		Map<Object, Object> map = resources.get();
 		if (map == null) {
@@ -137,6 +139,7 @@ public final class SimpleResourceHolder {
 	 * @param key the key to unbind (usually the resource factory)
 	 * @return the previously bound value, or <code>null</code> if none bound
 	 */
+	@Nullable
 	public static Object unbindIfPossible(Object key) {
 		Map<Object, Object> map = resources.get();
 		if (map == null) {

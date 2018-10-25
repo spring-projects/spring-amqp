@@ -29,6 +29,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.transaction.RabbitTransactionManager;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -122,7 +123,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		addChannel(channel, null);
 	}
 
-	public final void addChannel(Channel channel, Connection connection) {
+	public final void addChannel(Channel channel, @Nullable Connection connection) {
 		Assert.isTrue(!this.frozen, "Cannot add Channel because RabbitResourceHolder is frozen");
 		Assert.notNull(channel, "Channel must not be null");
 		if (!this.channels.contains(channel)) {
@@ -142,6 +143,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return this.channels.contains(channel);
 	}
 
+	@Nullable
 	public Connection getConnection() {
 		return (!this.connections.isEmpty() ? this.connections.get(0) : null);
 	}
@@ -150,6 +152,7 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return CollectionUtils.findValueOfType(this.connections, connectionType);
 	}
 
+	@Nullable
 	public Channel getChannel() {
 		return (!this.channels.isEmpty() ? this.channels.get(0) : null);
 	}

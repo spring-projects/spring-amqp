@@ -205,7 +205,7 @@ public class BrokerEventListener implements MessageListener, ApplicationEventPub
 	}
 
 	@Override
-	public void onCreate(Connection connection) {
+	public void onCreate(@Nullable Connection connection) {
 		this.bindingsFailedException = null;
 		TopicExchange exchange = new TopicExchange("amq.rabbitmq.event");
 		try {

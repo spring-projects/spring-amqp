@@ -44,6 +44,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -115,7 +116,7 @@ public class PublisherCallbackChannelImpl
 		this(delegate, null);
 	}
 
-	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
+	public PublisherCallbackChannelImpl(Channel delegate, @Nullable ExecutorService executor) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
 		this.executor = executor != null ? executor : DEFAULT_EXECUTOR;

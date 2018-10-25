@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.listener;
 
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.lang.Nullable;
 
 /**
  * Model for a Rabbit listener endpoint. Can be used against a
@@ -87,6 +88,7 @@ public interface RabbitListenerEndpoint {
 	 * @return the converter.
 	 * @since 2.0.8
 	 */
+	@Nullable
 	default MessageConverter getMessageConverter() {
 		return null;
 	}

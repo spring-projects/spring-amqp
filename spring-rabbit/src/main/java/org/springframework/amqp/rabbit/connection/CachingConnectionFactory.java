@@ -54,6 +54,7 @@ import org.springframework.amqp.support.ConditionalExceptionLogger;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -197,7 +198,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * Create a new CachingConnectionFactory given a host name.
 	 * @param hostname the host name to connect to
 	 */
-	public CachingConnectionFactory(String hostname) {
+	public CachingConnectionFactory(@Nullable String hostname) {
 		this(hostname, com.rabbitmq.client.ConnectionFactory.DEFAULT_AMQP_PORT);
 	}
 
@@ -216,7 +217,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * @param hostname the host name to connect to
 	 * @param port the port number
 	 */
-	public CachingConnectionFactory(String hostname, int port) {
+	public CachingConnectionFactory(@Nullable String hostname, int port) {
 		super(newRabbitConnectionFactory());
 		if (!StringUtils.hasText(hostname)) {
 			hostname = getDefaultHostName();
@@ -596,6 +597,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						transactional));
 	}
 
+	@Nullable
 	private Channel createBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		if (this.cacheMode == CacheMode.CHANNEL) {
 			if (!this.connection.isOpen()) {
@@ -625,6 +627,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return null;
 	}
 
+	@Nullable
 	private Channel doCreateBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		Channel channel = connection.createBareChannel(transactional);
 		if (this.publisherConfirms || this.simplePublisherConfirms) {
@@ -646,6 +649,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return channel;
 	}
 
+	@Nullable
 	@Override
 	public final Connection createConnection() throws AmqpException {
 		if (this.stopped) {

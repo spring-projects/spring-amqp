@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.core;
 
 import org.springframework.amqp.core.Declarable;
+import org.springframework.lang.Nullable;
 
 /**
  * Application event published when a declaration exception occurs.
@@ -33,7 +34,7 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 
 	private final Throwable throwable;
 
-	public DeclarationExceptionEvent(Object source, Declarable declarable, Throwable t) {
+	public DeclarationExceptionEvent(Object source, @Nullable Declarable declarable, Throwable t) {
 		super(source);
 		this.declarable = declarable;
 		this.throwable = t;
