@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.support.converter.MessagingMessageConverter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.converter.MessageConversionException;
@@ -126,21 +127,22 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	@Override
 	public void convertAndSend(String exchange, String routingKey, Object payload,
-			Map<String, Object> headers) throws MessagingException {
+			@Nullable Map<String, Object> headers) throws MessagingException {
 
 		convertAndSend(exchange, routingKey, payload, headers, null);
 	}
 
 	@Override
 	public void convertAndSend(String exchange, String routingKey, Object payload,
-			MessagePostProcessor postProcessor) throws MessagingException {
+			@Nullable MessagePostProcessor postProcessor) throws MessagingException {
 
 		convertAndSend(exchange, routingKey, payload, null, postProcessor);
 	}
 
 	@Override
 	public void convertAndSend(String exchange, String routingKey, Object payload,
-			Map<String, Object> headers, MessagePostProcessor postProcessor) throws MessagingException {
+			@Nullable Map<String, Object> headers, @Nullable MessagePostProcessor postProcessor)
+					throws MessagingException {
 
 		Message<?> message = doConvert(payload, headers, postProcessor);
 		send(exchange, routingKey, message);
@@ -162,22 +164,23 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	@Override
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
-			Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
+			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
 
 		return convertSendAndReceive(exchange, routingKey, request, headers, targetClass, null);
 	}
 
 	@Override
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
-			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException {
+			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
 
 		return convertSendAndReceive(exchange, routingKey, request, null, targetClass, requestPostProcessor);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request, Map<String, Object> headers,
-			Class<T> targetClass, MessagePostProcessor requestPostProcessor) throws MessagingException {
+	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
+			@Nullable Map<String, Object> headers,
+			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
 
 		Message<?> requestMessage = doConvert(request, headers, requestPostProcessor);
 		Message<?> replyMessage = sendAndReceive(exchange, routingKey, requestMessage);

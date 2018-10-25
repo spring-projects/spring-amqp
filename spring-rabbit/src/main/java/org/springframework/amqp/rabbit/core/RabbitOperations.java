@@ -23,6 +23,7 @@ import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.Nullable;
 
 /**
  * Rabbit specific methods for Amqp functionality.
@@ -68,8 +69,8 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the result of the action method.
 	 * @since 2.1
 	 */
-	<T> T invoke(OperationsCallback<T> action, com.rabbitmq.client.ConfirmCallback acks,
-			com.rabbitmq.client.ConfirmCallback nacks);
+	<T> T invoke(OperationsCallback<T> action, @Nullable com.rabbitmq.client.ConfirmCallback acks,
+			@Nullable com.rabbitmq.client.ConfirmCallback nacks);
 
 	/**
 	 * Delegate to the underlying dedicated channel to wait for confirms. The connection
@@ -336,7 +337,9 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	default <T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
-			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException {
+			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
+					throws AmqpException {
+
 		return convertSendAndReceiveAsType(exchange, routingKey, message, null, correlationData, responseType);
 	}
 
@@ -399,7 +402,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
-			MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
+			@Nullable MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**

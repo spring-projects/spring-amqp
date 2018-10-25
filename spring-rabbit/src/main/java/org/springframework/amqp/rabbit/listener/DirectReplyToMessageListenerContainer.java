@@ -24,6 +24,7 @@ import org.springframework.amqp.core.Address;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -201,7 +202,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	 * @param cancelConsumer true to cancel the consumer.
 	 * @param message a message to be included in the cancel event if cancelConsumer is true.
 	 */
-	public void releaseConsumerFor(ChannelHolder channelHolder, boolean cancelConsumer, String message) {
+	public void releaseConsumerFor(ChannelHolder channelHolder, boolean cancelConsumer, @Nullable String message) {
 		synchronized (this.consumersMonitor) {
 			SimpleConsumer consumer = this.inUseConsumerChannels.get(channelHolder.getChannel());
 			if (consumer != null) {

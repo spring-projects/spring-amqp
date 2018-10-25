@@ -728,6 +728,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 * return null, if there are no open idle, return the first closed idle so it can
 	 * be reopened.
 	 */
+	@Nullable
 	private ChannelCachingConnectionProxy findIdleConnection() {
 		ChannelCachingConnectionProxy connection = null;
 		ChannelCachingConnectionProxy lastIdle = this.idleConnections.peekLast();

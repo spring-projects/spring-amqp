@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.support;
 
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
@@ -30,7 +31,7 @@ import com.rabbitmq.client.Envelope;
  */
 public interface MessagePropertiesConverter {
 
-	MessageProperties toMessageProperties(BasicProperties source, Envelope envelope, String charset);
+	MessageProperties toMessageProperties(BasicProperties source, @Nullable Envelope envelope, String charset);
 
 	BasicProperties fromMessageProperties(MessageProperties source, String charset);
 

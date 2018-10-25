@@ -29,6 +29,7 @@ import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.HeadersExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
+import org.springframework.lang.Nullable;
 
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.domain.BindingInfo;
@@ -230,7 +231,8 @@ public class RabbitManagementTemplate implements org.springframework.amqp.core.A
 				.collect(Collectors.toList());
 	}
 
-	private Queue convert(QueueInfo qi) {
+	@Nullable
+	private Queue convert(@Nullable QueueInfo qi) {
 		if (qi == null) {
 			return null;
 		}
@@ -244,7 +246,8 @@ public class RabbitManagementTemplate implements org.springframework.amqp.core.A
 				.collect(Collectors.toList());
 	}
 
-	private Exchange convert(ExchangeInfo ei) {
+	@Nullable
+	private Exchange convert(@Nullable ExchangeInfo ei) {
 		if (ei == null) {
 			return null;
 		}
@@ -280,7 +283,8 @@ public class RabbitManagementTemplate implements org.springframework.amqp.core.A
 				.collect(Collectors.toList());
 	}
 
-	private Binding convert(BindingInfo bi) {
+	@Nullable
+	private Binding convert(@Nullable BindingInfo bi) {
 		if (bi == null) {
 			return null;
 		}
