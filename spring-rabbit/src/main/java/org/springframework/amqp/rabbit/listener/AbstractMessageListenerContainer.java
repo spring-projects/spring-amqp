@@ -1516,7 +1516,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 				// so the channel exposed (because exposeListenerChannel is false) will be closed
 				resourceHolder.setSynchronizedWithTransaction(false);
 			}
-			ConnectionFactoryUtils.releaseResources(resourceHolder);
+			ConnectionFactoryUtils.releaseResources(resourceHolder); // NOSONAR - null check in method
 			if (boundHere) {
 				// unbind if we bound
 				TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());

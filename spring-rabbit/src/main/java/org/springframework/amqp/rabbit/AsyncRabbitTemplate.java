@@ -687,7 +687,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 			}
 			AsyncRabbitTemplate.this.pending.remove(this.correlationId);
 			if (this.channelHolder != null && AsyncRabbitTemplate.this.directReplyToContainer != null) {
-				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channelHolder, false, null);
+				AsyncRabbitTemplate.this.directReplyToContainer.releaseConsumerFor(this.channelHolder, false, null); // NOSONAR
 			}
 			return super.cancel(mayInterruptIfRunning);
 		}
@@ -742,7 +742,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 				if (RabbitFuture.this.channelHolder != null
 						&& AsyncRabbitTemplate.this.directReplyToContainer != null) {
 					AsyncRabbitTemplate.this.directReplyToContainer
-							.releaseConsumerFor(RabbitFuture.this.channelHolder, false, null);
+							.releaseConsumerFor(RabbitFuture.this.channelHolder, false, null); // NOSONAR
 				}
 				setException(new AmqpReplyTimeoutException("Reply timed out", RabbitFuture.this.requestMessage));
 			}
