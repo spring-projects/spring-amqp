@@ -24,6 +24,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListener
 import org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -35,6 +36,7 @@ import org.springframework.util.Assert;
  *
  * @author Stephane Nicoll
  * @author Artem Bilan
+ * @author Gary Russell
  *
  * @since 1.4
  */
@@ -155,6 +157,7 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 		return new MessagingMessageListenerAdapter(this.bean, this.method, this.returnExceptions, this.errorHandler);
 	}
 
+	@Nullable
 	private String getDefaultReplyToAddress() {
 		Method method = getMethod();
 		if (method != null) {

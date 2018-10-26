@@ -512,7 +512,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								this.logger.error("Error creating consumer; retrying in " + nextBackOff, e);
 								doShutdown();
 								try {
-									Thread.sleep(nextBackOff);
+									Thread.sleep(nextBackOff); // NOSONAR
 								}
 								catch (InterruptedException e1) {
 									Thread.currentThread().interrupt();

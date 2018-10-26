@@ -73,6 +73,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
@@ -632,6 +633,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @since 1.6.9
 	 * @see #setLookupKeyQualifier(String)
 	 */
+	@Nullable
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? this.lookupKeyQualifier + "[" + this.queues.stream()
@@ -646,6 +648,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the {@link RoutingConnectionFactory} or null.
 	 * @since 1.6.9
 	 */
+	@Nullable
 	protected RoutingConnectionFactory getRoutingConnectionFactory() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? (RoutingConnectionFactory) super.getConnectionFactory()
@@ -1602,7 +1605,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		return e;
 	}
 
-	protected void publishConsumerFailedEvent(String reason, boolean fatal, Throwable t) {
+	protected void publishConsumerFailedEvent(String reason, boolean fatal, @Nullable Throwable t) {
 		if (this.applicationEventPublisher != null) {
 			this.applicationEventPublisher
 					.publishEvent(t == null ? new ListenerContainerConsumerTerminatedEvent(this, reason) :
@@ -1665,7 +1668,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		else {
 			try {
-				Connection connection = getConnectionFactory().createConnection();
+				Connection connection = getConnectionFactory().createConnection(); // NOSONAR
 				if (connection != null) {
 					connection.close();
 				}

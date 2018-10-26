@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.JavaType;
@@ -93,6 +94,7 @@ public abstract class AbstractJavaTypeMapper implements BeanClassLoaderAware {
 		return classId;
 	}
 
+	@Nullable
 	protected String retrieveHeaderAsString(MessageProperties properties, String headerName) {
 		Map<String, Object> headers = properties.getHeaders();
 		Object classIdFieldNameValue = headers.get(headerName);

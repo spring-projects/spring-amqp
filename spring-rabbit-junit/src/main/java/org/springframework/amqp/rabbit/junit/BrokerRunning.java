@@ -392,7 +392,7 @@ public final class BrokerRunning extends TestWatcher {
 	}
 
 	public void isUp() throws Exception {
-		Connection connection = getConnectionFactory().newConnection();
+		Connection connection = getConnectionFactory().newConnection(); // NOSONAR - closeResources()
 		Channel channel = null;
 		try {
 			channel = createQueues(connection);

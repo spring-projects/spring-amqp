@@ -1382,18 +1382,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message,
 			@Nullable CorrelationData correlationData) throws AmqpException {
+
 		return convertSendAndReceive(this.exchange, routingKey, message, null, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message)
 			throws AmqpException {
+
 		return convertSendAndReceive(exchange, routingKey, message, (CorrelationData) null);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String exchange, final String routingKey, final Object message,
-			CorrelationData correlationData) throws AmqpException {
+			@Nullable CorrelationData correlationData) throws AmqpException {
+
 		return convertSendAndReceive(exchange, routingKey, message, null, correlationData);
 	}
 
@@ -1405,19 +1408,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	@Override
 	public Object convertSendAndReceive(final Object message, final MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData) throws AmqpException {
+			@Nullable CorrelationData correlationData) throws AmqpException {
+
 		return convertSendAndReceive(this.exchange, this.routingKey, message, messagePostProcessor, correlationData);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message,
 			final MessagePostProcessor messagePostProcessor) throws AmqpException {
+
 		return convertSendAndReceive(routingKey, message, messagePostProcessor, null);
 	}
 
 	@Override
 	public Object convertSendAndReceive(final String routingKey, final Object message, final MessagePostProcessor messagePostProcessor,
-			CorrelationData correlationData) throws AmqpException {
+			@Nullable CorrelationData correlationData) throws AmqpException {
 		return convertSendAndReceive(this.exchange, routingKey, message, messagePostProcessor, correlationData);
 	}
 

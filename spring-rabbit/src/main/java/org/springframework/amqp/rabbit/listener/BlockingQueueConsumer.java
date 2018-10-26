@@ -60,6 +60,7 @@ import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.amqp.support.ConsumerTagStrategy;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.backoff.BackOffExecution;
@@ -217,7 +218,7 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-			Map<String, Object> consumerArgs, String... queues) {
+			@Nullable Map<String, Object> consumerArgs, String... queues) {
 		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
 				prefetchCount, defaultRequeueRejected, consumerArgs, false, queues);
 	}
@@ -443,6 +444,7 @@ public class BlockingQueueConsumer {
 	 * @return A message built from the contents.
 	 * @throws InterruptedException if the thread is interrupted.
 	 */
+	@Nullable
 	private Message handle(Delivery delivery) throws InterruptedException {
 		if ((delivery == null && this.shutdown != null)) {
 			throw this.shutdown;
@@ -489,6 +491,7 @@ public class BlockingQueueConsumer {
 	 * @throws InterruptedException if an interrupt is received while waiting
 	 * @throws ShutdownSignalException if the connection is shut down while waiting
 	 */
+	@Nullable
 	public Message nextMessage(long timeout) throws InterruptedException, ShutdownSignalException {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Retrieving delivery for " + this);

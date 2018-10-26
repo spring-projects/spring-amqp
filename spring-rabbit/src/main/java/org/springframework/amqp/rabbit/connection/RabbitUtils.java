@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpIOException;
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.AMQP;
@@ -50,7 +51,7 @@ public abstract class RabbitUtils {
 	 * <code>finally</code> blocks in manual RabbitMQ code.
 	 * @param connection the RabbitMQ Connection to close (may be <code>null</code>)
 	 */
-	public static void closeConnection(Connection connection) {
+	public static void closeConnection(@Nullable Connection connection) {
 		if (connection != null) {
 			try {
 				connection.close();
@@ -69,7 +70,7 @@ public abstract class RabbitUtils {
 	 * blocks in manual RabbitMQ code.
 	 * @param channel the RabbitMQ Channel to close (may be <code>null</code>)
 	 */
-	public static void closeChannel(Channel channel) {
+	public static void closeChannel(@Nullable Channel channel) {
 		if (channel != null) {
 			try {
 				channel.close();

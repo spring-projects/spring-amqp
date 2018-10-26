@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -180,7 +181,8 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * @param value the value.
 	 * @return the converted value.
 	 */
-	private Object convertHeaderValueIfNecessary(Object value) {
+	@Nullable
+	private Object convertHeaderValueIfNecessary(@Nullable Object value) {
 		boolean valid = (value instanceof String) || (value instanceof byte[]) || (value instanceof Boolean)
 				|| (value instanceof LongString) || (value instanceof Integer) || (value instanceof Long)
 				|| (value instanceof Float) || (value instanceof Double) || (value instanceof BigDecimal)
