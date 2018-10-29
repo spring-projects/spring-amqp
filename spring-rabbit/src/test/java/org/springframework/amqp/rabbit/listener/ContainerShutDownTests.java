@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.logging.log4j.Level;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
+import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 
 /**
@@ -44,6 +47,9 @@ public class ContainerShutDownTests {
 
 	@ClassRule
 	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("test.shutdown");
+
+	@Rule
+	public LogLevelAdjuster lla = new LogLevelAdjuster(Level.DEBUG).categories("org.springframework.amqp");
 
 	@AfterClass
 	public static void tearDown() {
