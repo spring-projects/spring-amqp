@@ -30,9 +30,12 @@ import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
+import org.springframework.amqp.rabbit.connection.RabbitUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
 import org.springframework.amqp.utils.test.TestUtils;
+
+import com.rabbitmq.client.AMQP.BasicProperties;
 
 /**
  * @author Gary Russell
@@ -90,7 +93,11 @@ public class ContainerShutDownTests {
 		try {
 			assertTrue(startLatch.await(30, TimeUnit.SECONDS));
 			RabbitTemplate template = new RabbitTemplate(cf);
-			template.convertAndSend("test.shutdown", "foo");
+			template.execute(c -> {
+				c.basicPublish("", "test.shutdown", new BasicProperties(), "foo".getBytes());
+				RabbitUtils.setPhysicalCloseRequired(c, false);
+				return null;
+			});
 			assertTrue(latch.await(30, TimeUnit.SECONDS));
 			assertThat(channels.size(), equalTo(2));
 		}
