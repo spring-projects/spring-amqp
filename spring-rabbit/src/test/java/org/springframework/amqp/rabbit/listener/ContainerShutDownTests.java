@@ -81,10 +81,10 @@ public class ContainerShutDownTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicBoolean testEnded = new AtomicBoolean();
 		container.setMessageListener(m -> {
+			logger.info("In Listener: " + m);
+			latch.countDown();
 			while (!testEnded.get()) {
 				try {
-					logger.info("In Listener");
-					latch.countDown();
 					Thread.sleep(100);
 				}
 				catch (InterruptedException e) {
