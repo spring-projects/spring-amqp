@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -448,8 +449,18 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 						if (restartableConsumers.size() > 0) {
 							doRedeclareElementsIfNecessary();
 						}
-						for (SimpleConsumer consumer : restartableConsumers) {
-							if (this.logger.isDebugEnabled() && restartableConsumers.size() > 0) {
+						Iterator<SimpleConsumer> iterator = restartableConsumers.iterator();
+						while (iterator.hasNext()) {
+							SimpleConsumer consumer = iterator.next();
+							iterator.remove();
+							if (!DirectMessageListenerContainer.this.consumersByQueue
+									.containsKey(consumer.getQueue())) {
+								if (this.logger.isDebugEnabled()) {
+									this.logger.debug("Skipping restart of consumer " + consumer);
+								}
+								continue;
+							}
+							if (this.logger.isDebugEnabled()) {
 								this.logger.debug("Attempting to restart consumer " + consumer);
 							}
 							Queue queue = namesToQueues.get(consumer.getQueue());
@@ -470,6 +481,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								if (e.getCause() instanceof AmqpApplicationContextClosedException) {
 									this.logger.error("Application context is closed, terminating");
 									this.taskScheduler.schedule(this::stop, new Date());
+								}
+								this.consumersToRestart.addAll(restartableConsumers);
+								if (this.logger.isTraceEnabled()) {
+									this.logger.trace("After restart exception, consumers to restart now: " + this.consumersToRestart);
 								}
 								break;
 							}
@@ -772,6 +787,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void addConsumerToRestart(SimpleConsumer consumer) {
 		if (this.started) {
 			this.consumersToRestart.add(consumer);
+			if (this.logger.isTraceEnabled()) {
+				this.logger.trace("Consumers to restart now: " + this.consumersToRestart);
+			}
 		}
 	}
 

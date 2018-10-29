@@ -25,9 +25,11 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.CountDownLatch;
@@ -196,6 +198,64 @@ public class DirectMessageListenerContainerMockTests {
 		assertTrue(latch5.await(10, TimeUnit.SECONDS));
 		// pending acks on stop
 		verify(channel).basicAck(20L, true);
+	}
+
+	@Test
+	public void testRemoveQueuesWhileNotConnected() throws Exception {
+		ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
+		Connection connection = mock(Connection.class);
+		ChannelProxy channel = mock(ChannelProxy.class);
+		Channel rabbitChannel = mock(AutorecoveringChannel.class);
+		given(channel.getTargetChannel()).willReturn(rabbitChannel);
+
+		given(connectionFactory.createConnection()).willReturn(connection);
+		given(connection.createChannel(anyBoolean())).willReturn(channel);
+		final AtomicBoolean isOpen = new AtomicBoolean(true);
+		willAnswer(i -> isOpen.get()).given(channel).isOpen();
+		given(channel.queueDeclarePassive(Mockito.anyString()))
+				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
+		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class))).willReturn("consumerTag");
+
+		final CountDownLatch latch1 = new CountDownLatch(2);
+		final CountDownLatch latch3 = new CountDownLatch(3);
+		final AtomicInteger qos = new AtomicInteger();
+		willAnswer(i -> {
+			qos.set(i.getArgument(0));
+			latch1.countDown();
+			latch3.countDown();
+			return null;
+		}).given(channel).basicQos(anyInt());
+		final CountDownLatch latch2 = new CountDownLatch(2);
+		willAnswer(i -> {
+			latch2.countDown();
+			return null;
+		}).given(channel).basicCancel("consumerTag");
+
+		DirectMessageListenerContainer container = new DirectMessageListenerContainer(connectionFactory);
+		container.setQueueNames("test1", "test2");
+		container.setPrefetchCount(2);
+		container.setMonitorInterval(100);
+		container.setFailedDeclarationRetryInterval(100);
+		container.setRecoveryInterval(100);
+		container.setShutdownTimeout(1);
+		container.afterPropertiesSet();
+		container.start();
+
+		assertTrue(latch1.await(10, TimeUnit.SECONDS));
+		assertThat(qos.get(), equalTo(2));
+		isOpen.set(false);
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
+		container.removeQueueNames("test1");
+		isOpen.set(true);
+		assertTrue(latch3.await(10, TimeUnit.SECONDS));
+
+		verify(channel, times(1)).basicConsume(eq("test1"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class));
+		verify(channel, times(2)).basicConsume(eq("test2"), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+				anyMap(), any(Consumer.class));
+
+		container.stop();
 	}
 
 	private Envelope envelope(long tag) {
