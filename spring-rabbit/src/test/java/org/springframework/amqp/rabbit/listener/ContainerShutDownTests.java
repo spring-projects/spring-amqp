@@ -75,13 +75,15 @@ public class ContainerShutDownTests {
 
 	public void testUninterruptibleListener(AbstractMessageListenerContainer container) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
+		Connection connection = cf.createConnection();
+		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap", Map.class);
 		container.setConnectionFactory(cf);
 		container.setShutdownTimeout(500);
 		container.setQueueNames("test.shutdown");
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicBoolean testEnded = new AtomicBoolean();
 		container.setMessageListener(m -> {
-			logger.info("In Listener: " + m);
+			logger.info("In Listener: " + m + " channels " + channels);
 			latch.countDown();
 			while (!testEnded.get()) {
 				try {
@@ -95,7 +97,7 @@ public class ContainerShutDownTests {
 		final CountDownLatch startLatch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStartedEvent) {
-				logger.info("ConsumerStarted Event", new RuntimeException());
+				logger.info("ConsumerStarted Event, channels: " + channels);
 				startLatch.countDown();
 			}
 		});
@@ -103,12 +105,11 @@ public class ContainerShutDownTests {
 		assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend("test.shutdown", "foo");
+		logger.info("Sent, channels: " + channels);
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		Connection connection = cf.createConnection();
-		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap", Map.class);
-		assertThat(channels.size(), equalTo(2));
+		assertThat("Channels not 2, channels: " + channels, channels.size(), equalTo(2));
 		container.stop();
-		assertThat(channels.size(), equalTo(1));
+		assertThat("Channels not 1, channels: ", channels.size(), equalTo(1));
 
 		cf.destroy();
 		testEnded.set(true);
