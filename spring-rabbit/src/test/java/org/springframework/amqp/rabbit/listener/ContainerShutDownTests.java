@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.logging.log4j.Level;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.junit.BrokerRunning;
-import org.springframework.amqp.rabbit.test.LogLevelAdjuster;
 import org.springframework.amqp.utils.test.TestUtils;
 
 /**
@@ -47,14 +42,8 @@ import org.springframework.amqp.utils.test.TestUtils;
  */
 public class ContainerShutDownTests {
 
-	private final Log logger = LogFactory.getLog(ContainerShutDownTests.class);
-
 	@ClassRule
 	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("test.shutdown");
-
-	@Rule
-	public LogLevelAdjuster lla = new LogLevelAdjuster(Level.TRACE).categories("org.springframework.amqp",
-			"org.springframework.amqp.rabbit");
 
 	@AfterClass
 	public static void tearDown() {
@@ -75,18 +64,15 @@ public class ContainerShutDownTests {
 
 	public void testUninterruptibleListener(AbstractMessageListenerContainer container) throws Exception {
 		CachingConnectionFactory cf = new CachingConnectionFactory("localhost");
-		Connection connection = cf.createConnection();
-		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap", Map.class);
 		container.setConnectionFactory(cf);
 		container.setShutdownTimeout(500);
 		container.setQueueNames("test.shutdown");
 		final CountDownLatch latch = new CountDownLatch(1);
 		final AtomicBoolean testEnded = new AtomicBoolean();
 		container.setMessageListener(m -> {
-			logger.info("In Listener: " + m + " channels " + channels);
-			latch.countDown();
 			while (!testEnded.get()) {
 				try {
+					latch.countDown();
 					Thread.sleep(100);
 				}
 				catch (InterruptedException e) {
@@ -97,7 +83,6 @@ public class ContainerShutDownTests {
 		final CountDownLatch startLatch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStartedEvent) {
-				logger.info("ConsumerStarted Event, channels: " + channels);
 				startLatch.countDown();
 			}
 		});
@@ -105,11 +90,12 @@ public class ContainerShutDownTests {
 		assertTrue(startLatch.await(10, TimeUnit.SECONDS));
 		RabbitTemplate template = new RabbitTemplate(cf);
 		template.convertAndSend("test.shutdown", "foo");
-		logger.info("Sent, channels: " + channels);
 		assertTrue(latch.await(10, TimeUnit.SECONDS));
-		assertThat("Channels not 2, channels: " + channels, channels.size(), equalTo(2));
+		Connection connection = cf.createConnection();
+		Map<?, ?> channels = TestUtils.getPropertyValue(connection, "target.delegate._channelManager._channelMap", Map.class);
+		assertThat(channels.size(), equalTo(2));
 		container.stop();
-		assertThat("Channels not 1, channels: ", channels.size(), equalTo(1));
+		assertThat(channels.size(), equalTo(1));
 
 		cf.destroy();
 		testEnded.set(true);
