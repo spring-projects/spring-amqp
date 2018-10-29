@@ -25,6 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.logging.log4j.Level;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
@@ -45,11 +47,14 @@ import org.springframework.amqp.utils.test.TestUtils;
  */
 public class ContainerShutDownTests {
 
+	private final Log logger = LogFactory.getLog(ContainerShutDownTests.class);
+
 	@ClassRule
 	public static BrokerRunning brokerRunning = BrokerRunning.isRunningWithEmptyQueues("test.shutdown");
 
 	@Rule
-	public LogLevelAdjuster lla = new LogLevelAdjuster(Level.DEBUG).categories("org.springframework.amqp");
+	public LogLevelAdjuster lla = new LogLevelAdjuster(Level.TRACE).categories("org.springframework.amqp",
+			"org.springframework.amqp.rabbit");
 
 	@AfterClass
 	public static void tearDown() {
@@ -78,6 +83,7 @@ public class ContainerShutDownTests {
 		container.setMessageListener(m -> {
 			while (!testEnded.get()) {
 				try {
+					logger.info("In Listener");
 					latch.countDown();
 					Thread.sleep(100);
 				}
@@ -89,6 +95,7 @@ public class ContainerShutDownTests {
 		final CountDownLatch startLatch = new CountDownLatch(1);
 		container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStartedEvent) {
+				logger.info("ConsumerStarted Event", new RuntimeException());
 				startLatch.countDown();
 			}
 		});
