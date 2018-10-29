@@ -390,7 +390,7 @@ Boot will auto-detect the bean and wire it into the factory.
 ===== Blocked Connections and Resource Constraints
 
 The connection might be blocked for interaction from the Broker according to the https://www.rabbitmq.com/memory.html[Memory Alarm].
-Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` can be supplied with `com.rabbitmq.client.BlockedListener` s to be notified for connection blocked and unblocked events.
 In addition the `AbstractConnectionFactory` emits a `ConnectionBlockedEvent` and `ConnectionUnblockedEvent`, respectively, via its internal `BlockedListener` implementation.
 These allow you to provide application logic to react appropriately to problems on the broker and take some corrective actions for example.
 
@@ -636,7 +636,7 @@ public interface ConnectionListener {
 }
 ----
 
-Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with `com.rabbitmq.client.BlockedListener` s to to be notified for connection blocked and unblocked events.
+Starting with _version 2.0_, the `org.springframework.amqp.rabbit.connection.Connection` object can be supplied with `com.rabbitmq.client.BlockedListener` s to be notified for connection blocked and unblocked events.
 
 .ChannelListener
 [source, java]
@@ -941,7 +941,7 @@ The `RabbitTemplate` implementation of `AmqpTemplate` supports Publisher Confirm
 For returned messages, the template's `mandatory` property must be set to `true`, or the `mandatory-expression`
 must evaluate to `true` for a particular message.
 This feature requires a `CachingConnectionFactory` that has its `publisherReturns` property set to true (see <<cf-pub-conf-ret>>).
-Returns are sent to to the client by it registering a `RabbitTemplate.ReturnCallback` by calling `setReturnCallback(ReturnCallback callback)`.
+Returns are sent to the client by it registering a `RabbitTemplate.ReturnCallback` by calling `setReturnCallback(ReturnCallback callback)`.
 The callback must implement this method:
 
 [source,java]
@@ -954,7 +954,7 @@ Only one `ReturnCallback` is supported by each `RabbitTemplate`.
 See also <<reply-timeout>>.
 
 For Publisher Confirms (aka Publisher Acknowledgements), the template requires a `CachingConnectionFactory` that has its `publisherConfirms` property set to true.
-Confirms are sent to to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
+Confirms are sent to the client by it registering a `RabbitTemplate.ConfirmCallback` by calling `setConfirmCallback(ConfirmCallback callback)`.
 The callback must implement this method:
 
 [source,java]
