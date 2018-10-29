@@ -1512,6 +1512,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 				return null;
 			}).when(mockChannel).close();
 			channel.close();
+			RabbitUtils.setPhysicalCloseRequired(channel, false);
 			con.close(); // should be ignored
 
 			assertTrue(physicalCloseLatch.await(10, TimeUnit.SECONDS));
@@ -1649,6 +1650,7 @@ public class CachingConnectionFactoryTests extends AbstractConnectionFactoryTest
 		Channel channel = conn.createChannel(false);
 		RabbitUtils.setPhysicalCloseRequired(channel, true);
 		channel.close();
+		RabbitUtils.setPhysicalCloseRequired(channel, false);
 		Thread.sleep(6000);
 	}
 
