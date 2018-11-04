@@ -49,6 +49,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.ChannelProxy;
 import org.springframework.amqp.rabbit.connection.ClosingRecoveryListener;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
@@ -242,7 +243,7 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-			Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
+			@Nullable Map<String, Object> consumerArgs, boolean exclusive, String... queues) {
 		this(connectionFactory, messagePropertiesConverter, activeObjectCounter, acknowledgeMode, transactional,
 				prefetchCount, defaultRequeueRejected, consumerArgs, false, exclusive, queues);
 	}
@@ -445,7 +446,7 @@ public class BlockingQueueConsumer {
 	 * @throws InterruptedException if the thread is interrupted.
 	 */
 	@Nullable
-	private Message handle(Delivery delivery) throws InterruptedException {
+	private Message handle(@Nullable Delivery delivery) throws InterruptedException {
 		if ((delivery == null && this.shutdown != null)) {
 			throw this.shutdown;
 		}
@@ -521,7 +522,11 @@ public class BlockingQueueConsumer {
 					String queue = iterator.next();
 					Channel channel = null;
 					try {
-						channel = this.connectionFactory.createConnection().createChannel(false);
+						Connection connection = this.connectionFactory.createConnection();
+						if (connection == null) {
+							return;
+						}
+						channel = connection.createChannel(false);
 						channel.queueDeclarePassive(queue);
 						if (logger.isInfoEnabled()) {
 							logger.info("Queue '" + queue + "' is now available");

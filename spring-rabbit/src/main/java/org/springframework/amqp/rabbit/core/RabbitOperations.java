@@ -402,7 +402,8 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 */
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
-			@Nullable MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
+			@Nullable MessagePostProcessor messagePostProcessor,
+			@Nullable CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
 	/**

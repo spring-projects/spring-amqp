@@ -1577,7 +1577,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @return the message that is received in reply
 	 */
 	protected Message doSendAndReceive(final String exchange, final String routingKey, final Message message,
-			CorrelationData correlationData) {
+			@Nullable CorrelationData correlationData) {
 		if (!this.evaluatedFastReplyTo) {
 			synchronized (this) {
 				if (!this.evaluatedFastReplyTo) {
@@ -1796,6 +1796,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
+	@Nullable
 	private Message exchangeMessages(final String exchange, final String routingKey, final Message message,
 			final CorrelationData correlationData, Channel channel, final PendingReply pendingReply, String messageTag)
 			throws Exception {
