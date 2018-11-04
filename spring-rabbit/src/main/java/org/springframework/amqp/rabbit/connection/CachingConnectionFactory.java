@@ -597,7 +597,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 						transactional));
 	}
 
-	@Nullable
 	private Channel createBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		if (this.cacheMode == CacheMode.CHANNEL) {
 			if (!this.connection.isOpen()) {
@@ -627,7 +626,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return null;
 	}
 
-	@Nullable
 	private Channel doCreateBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
 		Channel channel = connection.createBareChannel(transactional);
 		if (this.publisherConfirms || this.simplePublisherConfirms) {
@@ -646,7 +644,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		if (channel != null) {
 			channel.addShutdownListener(this);
 		}
-		return channel;
+		return channel; // NOSONAR - Simple connection throws exception
 	}
 
 	@Nullable

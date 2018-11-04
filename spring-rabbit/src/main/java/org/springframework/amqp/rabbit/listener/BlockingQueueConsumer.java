@@ -520,9 +520,10 @@ public class BlockingQueueConsumer {
 				while (iterator.hasNext()) {
 					boolean available = true;
 					String queue = iterator.next();
+					Connection connection = null;
 					Channel channel = null;
 					try {
-						Connection connection = this.connectionFactory.createConnection();
+						connection = this.connectionFactory.createConnection(); // NOSONAR - RabbitUtils
 						if (connection == null) {
 							return;
 						}
@@ -539,17 +540,8 @@ public class BlockingQueueConsumer {
 						}
 					}
 					finally {
-						if (channel != null) {
-							try {
-								channel.close();
-							}
-							catch (IOException e) {
-								//Ignore it
-							}
-							catch (TimeoutException e) {
-								//Ignore it
-							}
-						}
+						RabbitUtils.closeChannel(channel);
+						RabbitUtils.closeConnection(connection);
 					}
 					if (available) {
 						try {
