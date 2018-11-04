@@ -520,7 +520,7 @@ public class BlockingQueueConsumer {
 				while (iterator.hasNext()) {
 					boolean available = true;
 					String queue = iterator.next();
-					Connection connection = null;
+					Connection connection = null; // NOSONAR - RabbitUtils
 					Channel channel = null;
 					try {
 						connection = this.connectionFactory.createConnection(); // NOSONAR - RabbitUtils

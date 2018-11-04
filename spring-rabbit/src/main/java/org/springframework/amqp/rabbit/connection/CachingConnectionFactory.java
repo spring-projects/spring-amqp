@@ -623,7 +623,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			}
 			return doCreateBareChannel(connection, transactional);
 		}
-		return null;
+		return null; // NOSONAR doCreate will throw an exception
 	}
 
 	private Channel doCreateBareChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
