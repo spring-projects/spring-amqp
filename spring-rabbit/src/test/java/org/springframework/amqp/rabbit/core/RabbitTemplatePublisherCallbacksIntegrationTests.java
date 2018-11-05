@@ -103,6 +103,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 	@Rule
 	public BrokerRunning brokerIsRunning = BrokerRunning.isRunningWithEmptyQueues(ROUTE);
 
+	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
 	private CachingConnectionFactory connectionFactory;
 
 	private CachingConnectionFactory connectionFactoryWithConfirmsEnabled;
@@ -153,6 +155,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		this.connectionFactoryWithConfirmsEnabled.destroy();
 		this.connectionFactoryWithReturnsEnabled.destroy();
 		this.brokerIsRunning.removeTestQueues();
+
+		this.executorService.shutdown();
 	}
 
 	@Test
@@ -327,7 +331,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
+
+		doReturn(new PublisherCallbackChannelImpl(mockChannel, this.executorService))
+				.when(mockConnection)
+				.createChannel();
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
 		ccf.setExecutor(mock(ExecutorService.class));
@@ -359,8 +366,9 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1);
-		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2);
+
+		PublisherCallbackChannelImpl channel1 = new PublisherCallbackChannelImpl(mockChannel1, this.executorService);
+		PublisherCallbackChannelImpl channel2 = new PublisherCallbackChannelImpl(mockChannel2, this.executorService);
 		when(mockConnection.createChannel()).thenReturn(channel1).thenReturn(channel2);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -429,7 +437,10 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		doReturn(new PublisherCallbackChannelImpl(mockChannel)).when(mockConnection).createChannel();
+
+		doReturn(new PublisherCallbackChannelImpl(mockChannel, this.executorService))
+				.when(mockConnection)
+				.createChannel();
 
 		final AtomicLong count = new AtomicLong();
 		doAnswer(invocation -> count.incrementAndGet()).when(mockChannel).getNextPublishSeqNo();
@@ -469,7 +480,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
+		PublisherCallbackChannelImpl callbackChannel =
+				new PublisherCallbackChannelImpl(mockChannel, this.executorService);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
 		final AtomicLong count = new AtomicLong();
@@ -508,7 +520,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		PublisherCallbackChannelImpl callbackChannel = new PublisherCallbackChannelImpl(mockChannel);
+		PublisherCallbackChannelImpl callbackChannel =
+				new PublisherCallbackChannelImpl(mockChannel, this.executorService);
 		when(mockConnection.createChannel()).thenReturn(callbackChannel);
 
 		final AtomicLong count = new AtomicLong();
@@ -569,7 +582,8 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		when(mockConnectionFactory.newConnection(any(ExecutorService.class), anyString())).thenReturn(mockConnection);
 		when(mockConnection.isOpen()).thenReturn(true);
-		final PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(mockChannel);
+		final PublisherCallbackChannelImpl channel =
+				new PublisherCallbackChannelImpl(mockChannel, this.executorService);
 		when(mockConnection.createChannel()).thenReturn(channel);
 
 		CachingConnectionFactory ccf = new CachingConnectionFactory(mockConnectionFactory);
@@ -798,7 +812,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 
 		Channel channelMock = mock(Channel.class);
 
-		PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(channelMock);
+		PublisherCallbackChannelImpl channel = new PublisherCallbackChannelImpl(channelMock, this.executorService);
 
 		channel.addListener(listener);
 

@@ -44,6 +44,7 @@ import org.springframework.core.io.ClassPathResource;
  * @author Dave Syer
  * @author Gary Russell
  * @author Will Droste
+ * @author Artem Bilan
  */
 public final class ListenerContainerPlaceholderParserTests {
 
@@ -60,7 +61,7 @@ public final class ListenerContainerPlaceholderParserTests {
 		if (this.context != null) {
 			CachingConnectionFactory cf = this.context.getBean(CachingConnectionFactory.class);
 			this.context.close();
-			ExecutorService es = TestUtils.getPropertyValue(cf, "deferredCloseExecutor", ThreadPoolExecutor.class);
+			ExecutorService es = TestUtils.getPropertyValue(cf, "channelsExecutor", ThreadPoolExecutor.class);
 			if (es != null) {
 				// if it gets started make sure its terminated..
 				assertTrue(es.isTerminated());

@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -44,7 +43,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -86,13 +84,13 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  *
  * @author Gary Russell
  * @author Arnaud Cogoluègnes
+ * @author Artem Bilan
+ *
  * @since 1.0.1
  *
  */
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
-
-	private static final ExecutorService DEFAULT_EXECUTOR = Executors.newSingleThreadExecutor();
 
 	private static final MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
 
@@ -112,14 +110,20 @@ public class PublisherCallbackChannelImpl
 
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
+	/**
+	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided delegate.
+	 * @param delegate the {@link Channel} to delegate.
+	 * @deprecated since 2.2.1 in favor of {@link #PublisherCallbackChannelImpl(Channel, ExecutorService)}
+	 */
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this(delegate, null);
 	}
 
-	public PublisherCallbackChannelImpl(Channel delegate, @Nullable ExecutorService executor) {
+	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
+		Assert.notNull(executor, "'executor' must not be null");
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
-		this.executor = executor != null ? executor : DEFAULT_EXECUTOR;
+		this.executor = executor;
 	}
 
 	@Override
@@ -854,8 +858,7 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public synchronized int getPendingConfirmsCount() {
 		return this.pendingConfirms.values().stream()
-				.map(m -> m.size())
-				.mapToInt(Integer::valueOf)
+				.mapToInt(Map::size)
 				.sum();
 	}
 

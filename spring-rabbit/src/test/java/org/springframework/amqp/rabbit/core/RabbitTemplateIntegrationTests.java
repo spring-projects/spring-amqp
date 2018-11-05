@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,6 @@ import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.amqp.utils.test.TestUtils;
 import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.expression.common.LiteralExpression;
@@ -201,9 +200,9 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@After
-	public void cleanup() throws Exception {
+	public void cleanup() {
 		this.template.stop();
-		((DisposableBean) template.getConnectionFactory()).destroy();
+		this.connectionFactory.destroy();
 		this.brokerIsRunning.removeTestQueues();
 	}
 
@@ -289,7 +288,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	@Test(expected = ConsumerCancelledException.class)
-	public void testReceiveConsumerCanceled() throws Exception {
+	public void testReceiveConsumerCanceled() {
 		ConnectionFactory connectionFactory = new SingleConnectionFactory("localhost", BrokerTestUtils.getPort());
 
 		class MockConsumer implements Consumer {
@@ -339,10 +338,12 @@ public class RabbitTemplateIntegrationTests {
 
 		}
 
+		ExecutorService executorService = Executors.newSingleThreadExecutor();
+
 		class MockChannel extends PublisherCallbackChannelImpl {
 
 			MockChannel(Channel delegate) {
-				super(delegate);
+				super(delegate, executorService);
 			}
 
 			@Override
@@ -361,7 +362,12 @@ public class RabbitTemplateIntegrationTests {
 
 		this.template = new RabbitTemplate(connectionFactory);
 		this.template.setReceiveTimeout(10000);
-		this.template.receive(ROUTE);
+		try {
+			this.template.receive(ROUTE);
+		}
+		finally {
+			executorService.shutdown();
+		}
 	}
 
 	@Test

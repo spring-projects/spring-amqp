@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,6 +103,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	private static Log logger = LogFactory.getLog(SimpleMessageListenerContainerIntegration2Tests.class);
 
+	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
 	private final Queue queue = new Queue("test.queue");
 
 	private final Queue queue1 = new Queue("test.queue.1");
@@ -138,12 +142,15 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		}
 		((DisposableBean) template.getConnectionFactory()).destroy();
 		this.brokerIsRunning.removeTestQueues();
+
+		this.executorService.shutdown();
 	}
 
 	@Test
 	public void testChangeQueues() throws Exception {
 		CountDownLatch latch = new CountDownLatch(30);
-		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		container =
+				createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 		this.container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStoppedEvent) {
@@ -168,7 +175,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testChangeQueues2() throws Exception { // addQueues instead of addQueueNames
 		CountDownLatch latch = new CountDownLatch(30);
-		container = createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
+		container =
+				createContainer(new MessageListenerAdapter(new PojoListener(latch)), queue.getName(), queue1.getName());
 		final CountDownLatch consumerLatch = new CountDownLatch(1);
 		this.container.setApplicationEventPublisher(e -> {
 			if (e instanceof AsyncConsumerStoppedEvent) {
@@ -354,7 +362,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		doReturn(true).when(logger).isInfoEnabled();
 		new DirectFieldAccessor(this.template.getConnectionFactory()).setPropertyValue("logger", logger);
 		CountDownLatch latch1 = new CountDownLatch(1000);
-		SimpleMessageListenerContainer container1 = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		SimpleMessageListenerContainer container1 =
+				new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container1.setMessageListener(new MessageListenerAdapter(new PojoListener(latch1)));
 		container1.setQueueNames(queue.getName());
 		GenericApplicationContext context = new GenericApplicationContext();
@@ -372,7 +381,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		container1.start();
 		assertTrue(consumeLatch1.await(10, TimeUnit.SECONDS));
 		CountDownLatch latch2 = new CountDownLatch(1000);
-		SimpleMessageListenerContainer container2 = new SimpleMessageListenerContainer(template.getConnectionFactory());
+		SimpleMessageListenerContainer container2 =
+				new SimpleMessageListenerContainer(template.getConnectionFactory());
 		container2.setMessageListener(new MessageListenerAdapter(new PojoListener(latch2)));
 		container2.setQueueNames(queue.getName());
 		container2.setApplicationContext(context);
@@ -432,7 +442,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		class MockChannel extends PublisherCallbackChannelImpl {
 
 			MockChannel(Channel delegate) {
-				super(delegate);
+				super(delegate, SimpleMessageListenerContainerIntegration2Tests.this.executorService);
 			}
 
 			@Override
@@ -481,7 +491,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		class MockChannel extends PublisherCallbackChannelImpl {
 
 			MockChannel(Channel delegate) {
-				super(delegate);
+				super(delegate, SimpleMessageListenerContainerIntegration2Tests.this.executorService);
 			}
 
 			@Override
@@ -497,7 +507,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 		Connection connection = spy(connectionFactory.createConnection());
 		when(connection.createChannel(anyBoolean()))
-			.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
+				.then(invocation -> new MockChannel((Channel) invocation.callRealMethod()));
 
 		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory);
 		dfa.setPropertyValue("connection", connection);
@@ -554,9 +564,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void stopStartInListener() throws Exception {
-		final AtomicReference<SimpleMessageListenerContainer> container =
-				new AtomicReference<SimpleMessageListenerContainer>();
-		final CountDownLatch latch = new CountDownLatch(2);
+		AtomicReference<SimpleMessageListenerContainer> container = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(2);
 		class StopStartListener implements MessageListener {
 
 			boolean doneStopStart;
@@ -583,7 +592,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testTransientBadMessageDoesntStopContainer() throws Exception {
 		CountDownLatch latch = new CountDownLatch(3);
-		this.container = createContainer(new MessageListenerAdapter(new PojoListener(latch, false)), this.queue.getName());
+		this.container =
+				createContainer(new MessageListenerAdapter(new PojoListener(latch, false)), this.queue.getName());
 		this.template.convertAndSend(this.queue.getName(), "foo");
 		this.template.convertAndSend(this.queue.getName(), new Foo());
 		this.template.convertAndSend(this.queue.getName(), new Bar());
@@ -596,10 +606,11 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 	@Test
 	public void testTransientBadMessageDoesntStopContainerLambda() throws Exception {
 		final CountDownLatch latch = new CountDownLatch(2);
-		this.container = createContainer(new MessageListenerAdapter((ReplyingMessageListener<String, Void>) m -> {
-			latch.countDown();
-			return null;
-		}), this.queue.getName());
+		this.container = createContainer(new MessageListenerAdapter(
+				(ReplyingMessageListener<String, Void>) m -> {
+					latch.countDown();
+					return null;
+				}), this.queue.getName());
 		this.template.convertAndSend(this.queue.getName(), "foo");
 		this.template.convertAndSend(this.queue.getName(), new Foo());
 		this.template.convertAndSend(this.queue.getName(), "foo");
@@ -610,7 +621,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void testTooSmallExecutor() {
-		this.container = createContainer((MessageListener) (m) -> { }, false, this.queue.getName());
+		this.container = createContainer((m) -> {
+		}, false, this.queue.getName());
 		ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
 		exec.initialize();
 		this.container.setTaskExecutor(exec);
@@ -628,7 +640,7 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 
 	@Test
 	public void testErrorStopsContainer() throws Exception {
-		this.container = createContainer((MessageListener) (m) -> {
+		this.container = createContainer((m) -> {
 			throw new Error("testError");
 		}, false, this.queue.getName());
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -692,7 +704,8 @@ public class SimpleMessageListenerContainerIntegration2Tests {
 		return createContainer(listener, true, queueNames);
 	}
 
-	private SimpleMessageListenerContainer createContainer(MessageListener listener, boolean start, String... queueNames) {
+	private SimpleMessageListenerContainer createContainer(MessageListener listener, boolean start,
+			String... queueNames) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(template.getConnectionFactory());
 		if (listener != null) {
 			container.setMessageListener(listener);
