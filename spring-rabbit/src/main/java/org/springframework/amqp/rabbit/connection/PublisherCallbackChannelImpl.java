@@ -862,8 +862,7 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public synchronized int getPendingConfirmsCount() {
 		return this.pendingConfirms.values().stream()
-				.map(Map::size)
-				.mapToInt(Integer::valueOf)
+				.mapToInt(Map::size)
 				.sum();
 	}
 
