@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -124,8 +126,8 @@ public class DirectMessageListenerContainerMockTests {
 			consumer.get().handleConsumeOk("consumerTag");
 			latch1.countDown();
 			return "consumerTag";
-		})
-		.given(channel).basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
 						anyMap(), any(Consumer.class));
 
 		final AtomicInteger qos = new AtomicInteger();
@@ -214,16 +216,21 @@ public class DirectMessageListenerContainerMockTests {
 		willAnswer(i -> isOpen.get()).given(channel).isOpen();
 		given(channel.queueDeclarePassive(Mockito.anyString()))
 				.willAnswer(invocation -> mock(AMQP.Queue.DeclareOk.class));
-		given(channel.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
-						anyMap(), any(Consumer.class))).willReturn("consumerTag");
 
 		final CountDownLatch latch1 = new CountDownLatch(2);
 		final CountDownLatch latch3 = new CountDownLatch(3);
+
+		willAnswer(i -> {
+			latch3.countDown();
+			return "consumerTag";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+
 		final AtomicInteger qos = new AtomicInteger();
 		willAnswer(i -> {
 			qos.set(i.getArgument(0));
 			latch1.countDown();
-			latch3.countDown();
 			return null;
 		}).given(channel).basicQos(anyInt());
 		final CountDownLatch latch2 = new CountDownLatch(2);
@@ -245,8 +252,8 @@ public class DirectMessageListenerContainerMockTests {
 		assertTrue(latch1.await(10, TimeUnit.SECONDS));
 		assertThat(qos.get(), equalTo(2));
 		isOpen.set(false);
-		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		container.removeQueueNames("test1");
+		assertTrue(latch2.await(10, TimeUnit.SECONDS));
 		isOpen.set(true);
 		assertTrue(latch3.await(10, TimeUnit.SECONDS));
 
@@ -259,7 +266,7 @@ public class DirectMessageListenerContainerMockTests {
 	}
 
 	private Envelope envelope(long tag) {
-		return new Envelope(tag,  false, "", "");
+		return new Envelope(tag, false, "", "");
 	}
 
 }

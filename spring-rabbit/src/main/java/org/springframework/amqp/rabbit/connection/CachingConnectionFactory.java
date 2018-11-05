@@ -180,9 +180,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private volatile boolean initialized;
 	/**
-	 * Executor used for deferred close if no explicit executor set.
+	 * Executor used for channels if no explicit executor set.
 	 */
-	private ExecutorService deferredCloseExecutor;
+	private volatile ExecutorService channelsExecutor;
 
 	private volatile boolean stopped;
 
@@ -638,7 +638,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 		if (this.publisherConfirms || this.publisherReturns) {
 			if (!(channel instanceof PublisherCallbackChannelImpl)) {
-				channel = new PublisherCallbackChannelImpl(channel, getExecutorService());
+				channel = new PublisherCallbackChannelImpl(channel, getChannelsExecutor());
 			}
 		}
 		if (channel != null) {
@@ -781,8 +781,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		resetConnection();
 		if (getContextStopped()) {
 			this.stopped = true;
-			if (this.deferredCloseExecutor != null) {
-				this.deferredCloseExecutor.shutdownNow();
+			if (this.channelsExecutor != null) {
+				this.channelsExecutor.shutdownNow();
 			}
 		}
 	}
@@ -930,25 +930,27 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	/**
-	 * Determine the executor service used to close connections.
+	 * Determine the executor service used for target channels.
 	 * @return specified executor service otherwise the default one is created and returned.
 	 * @since 1.7.9
 	 */
-	protected ExecutorService getDeferredCloseExecutor() {
+	protected ExecutorService getChannelsExecutor() {
 		if (getExecutorService() != null) {
 			return getExecutorService();
 		}
-		synchronized (this.connectionMonitor) {
-			if (this.deferredCloseExecutor == null) {
-				final String threadPrefix =
-						getBeanName() == null
-								? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
-								: getBeanName();
-				ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix);
-				this.deferredCloseExecutor = Executors.newCachedThreadPool(threadPoolFactory);
+		if (this.channelsExecutor == null) {
+			synchronized (this.connectionMonitor) {
+				if (this.channelsExecutor == null) {
+					final String threadPrefix =
+							getBeanName() == null
+									? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
+									: getBeanName();
+					ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix);
+					this.channelsExecutor = Executors.newCachedThreadPool(threadPoolFactory);
+				}
 			}
 		}
-		return this.deferredCloseExecutor;
+		return this.channelsExecutor;
 	}
 
 	@Override
@@ -1231,7 +1233,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		}
 
 		private void asyncClose() {
-			ExecutorService executorService = getDeferredCloseExecutor();
+			ExecutorService executorService = getChannelsExecutor();
 			final Channel channel = CachedChannelInvocationHandler.this.target;
 			executorService.execute(() -> {
 				try {

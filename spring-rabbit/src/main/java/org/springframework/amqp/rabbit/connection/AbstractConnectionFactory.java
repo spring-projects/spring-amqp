@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -387,6 +388,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 		}
 	}
 
+	@Nullable
 	protected ExecutorService getExecutorService() {
 		return this.executorService;
 	}
@@ -434,9 +436,12 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 	 * @return the bean name or null.
 	 * @since 1.7.9
 	 */
+	@Nullable
 	protected String getBeanName() {
 		return this.beanName;
-	}	public boolean hasPublisherConnectionFactory() {
+	}
+
+	public boolean hasPublisherConnectionFactory() {
 		return this.publisherConnectionFactory != null;
 	}
 

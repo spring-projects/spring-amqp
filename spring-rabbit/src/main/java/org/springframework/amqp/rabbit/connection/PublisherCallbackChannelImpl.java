@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
@@ -44,7 +43,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData.Confirm;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -110,19 +108,22 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
-	private final boolean executorExplicitlySet;
-
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
+	/**
+	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided delegate.
+	 * @param delegate the {@link Channel} to delegate.
+	 * @deprecated since 2.2.1 in favor of {@link #PublisherCallbackChannelImpl(Channel, ExecutorService)}
+	 */
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this(delegate, null);
 	}
 
-	public PublisherCallbackChannelImpl(Channel delegate, @Nullable ExecutorService executor) {
+	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
+		Assert.notNull(executor, "'executor' must not be null");
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
-		this.executor = executor != null ? executor : Executors.newSingleThreadExecutor();
-		this.executorExplicitlySet = executor != null;
+		this.executor = executor;
 	}
 
 	@Override
@@ -820,12 +821,7 @@ public class PublisherCallbackChannelImpl
 	}
 
 	private void shutdownCompleted(String cause) {
-		if (!this.executor.isShutdown()) {
-			this.executor.execute(() -> generateNacksForPendingAcks(cause));
-			if (!this.executorExplicitlySet) {
-					this.executor.shutdown();
-			}
-		}
+		this.executor.execute(() -> generateNacksForPendingAcks(cause));
 	}
 
 	private synchronized void generateNacksForPendingAcks(String cause) {
