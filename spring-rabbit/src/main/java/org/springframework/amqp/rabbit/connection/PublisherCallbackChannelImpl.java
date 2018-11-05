@@ -86,13 +86,13 @@ import com.rabbitmq.client.impl.recovery.AutorecoveringChannel;
  *
  * @author Gary Russell
  * @author Arnaud Cogoluègnes
+ * @author Artem Bilan
+ *
  * @since 1.0.1
  *
  */
 public class PublisherCallbackChannelImpl
 		implements PublisherCallbackChannel, ConfirmListener, ReturnListener, ShutdownListener {
-
-	private static final ExecutorService DEFAULT_EXECUTOR = Executors.newSingleThreadExecutor();
 
 	private static final MessagePropertiesConverter converter = new DefaultMessagePropertiesConverter();
 
@@ -110,6 +110,8 @@ public class PublisherCallbackChannelImpl
 
 	private final ExecutorService executor;
 
+	private final boolean executorExplicitlySet;
+
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
 	public PublisherCallbackChannelImpl(Channel delegate) {
@@ -119,7 +121,8 @@ public class PublisherCallbackChannelImpl
 	public PublisherCallbackChannelImpl(Channel delegate, @Nullable ExecutorService executor) {
 		delegate.addShutdownListener(this);
 		this.delegate = delegate;
-		this.executor = executor != null ? executor : DEFAULT_EXECUTOR;
+		this.executor = executor != null ? executor : Executors.newSingleThreadExecutor();
+		this.executorExplicitlySet = executor != null;
 	}
 
 	@Override
@@ -817,7 +820,12 @@ public class PublisherCallbackChannelImpl
 	}
 
 	private void shutdownCompleted(String cause) {
-		this.executor.execute(() -> generateNacksForPendingAcks(cause));
+		if (!this.executor.isShutdown()) {
+			this.executor.execute(() -> generateNacksForPendingAcks(cause));
+			if (!this.executorExplicitlySet) {
+					this.executor.shutdown();
+			}
+		}
 	}
 
 	private synchronized void generateNacksForPendingAcks(String cause) {
@@ -854,7 +862,7 @@ public class PublisherCallbackChannelImpl
 	@Override
 	public synchronized int getPendingConfirmsCount() {
 		return this.pendingConfirms.values().stream()
-				.map(m -> m.size())
+				.map(Map::size)
 				.mapToInt(Integer::valueOf)
 				.sum();
 	}
