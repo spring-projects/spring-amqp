@@ -111,10 +111,13 @@ public class PublisherCallbackChannelImpl
 	private volatile java.util.function.Consumer<Channel> afterAckCallback;
 
 	/**
-	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided delegate.
+	 * Create a {@link PublisherCallbackChannelImpl} instance based on the provided
+	 * delegate.
 	 * @param delegate the {@link Channel} to delegate.
-	 * @deprecated since 2.2.1 in favor of {@link #PublisherCallbackChannelImpl(Channel, ExecutorService)}
+	 * @deprecated since 2.2.1 in favor of
+	 * {@link #PublisherCallbackChannelImpl(Channel, ExecutorService)}
 	 */
+	@Deprecated
 	public PublisherCallbackChannelImpl(Channel delegate) {
 		this(delegate, null);
 	}
