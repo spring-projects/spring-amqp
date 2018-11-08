@@ -1810,7 +1810,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug("Reply: " + reply);
 		}
+		if (reply == null) {
+			replyTimedOut(message.getMessageProperties().getCorrelationId());
+		}
 		return reply;
+	}
+
+	/**
+	 * Subclasses can implement this to be notified that a reply has timed out.
+	 * @param correlationId the correlationId
+	 * @since 2.1.2
+	 */
+	protected void replyTimedOut(String correlationId) {
+		// NOSONAR
 	}
 
 	/**
