@@ -3204,7 +3204,7 @@ This is `false` now by default.
 
 By default, the send and receive methods will timeout after 5 seconds and return null.
 This can be modified by setting the `replyTimeout` property.
-Starting with _version 1.5_, if you set the `mandatory` property to true (or the `mandatory-expression` evaluates to
+Starting with version 1.5, if you set the `mandatory` property to true (or the `mandatory-expression` evaluates to
 `true` for a particular message), if the message cannot be delivered to a queue an `AmqpMessageReturnedException` will
 be thrown.
 This exception has `returnedMessage`, `replyCode`, `replyText` properties, as well as the `exchange` and
@@ -3213,6 +3213,8 @@ This exception has `returnedMessage`, `replyCode`, `replyText` properties, as we
 NOTE: This feature uses publisher returns and is enabled by setting `publisherReturns` to true on the
 `CachingConnectionFactory` (see <<cf-pub-conf-ret>>).
 Also, you must not have registered your own `ReturnCallback` with the `RabbitTemplate`.
+
+Starting with version 2.1.2, a method `replyTimedOut` has been added, allowing subclasses to be informed of the timeout so they can clean up any retained state.
 
 [[direct-reply-to]]
 ===== RabbitMQ Direct reply-to

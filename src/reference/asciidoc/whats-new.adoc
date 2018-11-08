@@ -55,6 +55,9 @@ See <<request-reply>> for more information.
 When returns and confirms are enabled, the correlation data, if provided, is populated with the returned message.
 See <<template-confirms>> for more information.
 
+A method `replyTimedOut` is now provided to notify subclasses that a reply has timed out, allowing for any state cleanup.
+See <<reply-timeout>> for more information.
+
 ===== Message Conversion
 
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
