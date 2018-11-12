@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Channel;
@@ -91,6 +92,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Connection fetched from the holder, or <code>null</code> if none found
 	 */
+	@Nullable
 	protected Connection getConnection(RabbitResourceHolder holder) {
 		return holder.getConnection();
 	}
@@ -101,6 +103,7 @@ public abstract class RabbitAccessor implements InitializingBean {
 	 * @param holder the RabbitResourceHolder
 	 * @return an appropriate Channel fetched from the holder, or <code>null</code> if none found
 	 */
+	@Nullable
 	protected Channel getChannel(RabbitResourceHolder holder) {
 		return holder.getChannel();
 	}

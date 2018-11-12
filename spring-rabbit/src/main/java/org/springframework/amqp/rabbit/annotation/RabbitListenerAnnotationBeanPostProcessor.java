@@ -345,7 +345,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		Method defaultMethod = null;
 		for (Method method : multiMethods) {
 			Method checked = checkProxy(method, bean);
-			if (AnnotationUtils.findAnnotation(method, RabbitHandler.class).isDefault()) {
+			if (AnnotationUtils.findAnnotation(method, RabbitHandler.class).isDefault()) { // NOSONAR never null
 				final Method toAssert = defaultMethod;
 				Assert.state(toAssert == null, () -> "Only one @RabbitHandler can be marked 'isDefault', found: "
 						+ toAssert.toString() + " and " + method.toString());

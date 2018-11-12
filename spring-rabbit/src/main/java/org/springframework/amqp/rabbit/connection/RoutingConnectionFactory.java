@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Implementations select a connection factory based on a supplied key.
  *
@@ -31,6 +33,7 @@ public interface RoutingConnectionFactory {
 	 * @param key The lookup key to which the {@link ConnectionFactory} is bound
 	 * @return the {@link ConnectionFactory} bound to the given lookup key, or null if one does not exist
 	 */
+	@Nullable
 	ConnectionFactory getTargetConnectionFactory(Object key);
 
 }

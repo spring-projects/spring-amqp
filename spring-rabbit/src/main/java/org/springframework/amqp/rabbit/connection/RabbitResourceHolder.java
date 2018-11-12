@@ -148,6 +148,14 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		return (!this.connections.isEmpty() ? this.connections.get(0) : null);
 	}
 
+	/**
+	 * Find a single connection of this type.
+	 * @param connectionType the type.
+	 * @return the connection or null.
+	 * @deprecated Not used.
+	 */
+	@Deprecated
+	@Nullable
 	public Connection getConnection(Class<? extends Connection> connectionType) {
 		return CollectionUtils.findValueOfType(this.connections, connectionType);
 	}

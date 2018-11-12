@@ -753,7 +753,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			consumer.setRetryDeclarationInterval(this.retryDeclarationInterval);
 		}
 		if (getConsumerTagStrategy() != null) {
-			consumer.setTagStrategy(getConsumerTagStrategy());
+			consumer.setTagStrategy(getConsumerTagStrategy()); // NOSONAR never null here
 		}
 		consumer.setBackOffExecution(getRecoveryBackOff().start());
 		consumer.setShutdownTimeout(getShutdownTimeout());
@@ -803,10 +803,10 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			try {
 				if (this.transactionTemplate == null) {
 					this.transactionTemplate =
-							new TransactionTemplate(getTransactionManager(), getTransactionAttribute());
+							new TransactionTemplate(getTransactionManager(), getTransactionAttribute()); //  NOSONAR never null
 				}
 				return this.transactionTemplate
-						.execute(status -> {
+						.execute(status -> { // NOSONAR null never returned
 							RabbitResourceHolder resourceHolder = ConnectionFactoryUtils.bindResourceToTransaction(
 									new RabbitResourceHolder(consumer.getChannel(), false),
 									getConnectionFactory(), true);
@@ -1004,7 +1004,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 
 			String routingLookupKey = getRoutingLookupKey();
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+				SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null
 			}
 
 			if (this.consumer.getQueueCount() < 1) {
@@ -1245,7 +1245,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 			}
 
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
 

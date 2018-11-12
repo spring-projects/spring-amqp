@@ -245,6 +245,7 @@ public abstract class NamespaceUtils {
 		return elementId;
 	}
 
+	@Deprecated // Since 2.1. Not used
 	public static BeanComponentDefinition parseInnerBeanDefinition(Element element, ParserContext parserContext) {
 		// parses out inner bean definition for concrete implementation if defined
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, "bean");
@@ -253,7 +254,7 @@ public abstract class NamespaceUtils {
 			Element beanElement = childElements.get(0);
 			BeanDefinitionParserDelegate delegate = parserContext.getDelegate();
 			BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(beanElement);
-			bdHolder = delegate.decorateBeanDefinitionIfRequired(beanElement, bdHolder);
+			bdHolder = delegate.decorateBeanDefinitionIfRequired(beanElement, bdHolder); // NOSONAR not used
 			BeanDefinition inDef = bdHolder.getBeanDefinition();
 			String beanName = BeanDefinitionReaderUtils.generateBeanName(inDef, parserContext.getRegistry());
 			innerComponentDefinition = new BeanComponentDefinition(inDef, beanName);

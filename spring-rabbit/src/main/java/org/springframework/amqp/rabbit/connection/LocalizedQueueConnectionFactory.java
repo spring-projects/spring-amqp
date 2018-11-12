@@ -352,7 +352,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		rcfb.setKeyStorePassphrase(this.keyStorePassPhrase);
 		rcfb.setTrustStorePassphrase(this.trustStorePassPhrase);
 		rcfb.afterPropertiesSet();
-		CachingConnectionFactory ccf = new CachingConnectionFactory(rcfb.getObject());
+		CachingConnectionFactory ccf = new CachingConnectionFactory(rcfb.getObject()); // NOSONAR never null
 		ccf.setAddresses(address);
 		ccf.setUsername(this.username);
 		ccf.setPassword(this.password);

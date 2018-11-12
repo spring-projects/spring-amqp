@@ -29,6 +29,7 @@ import org.springframework.lang.Nullable;
  */
 public class PendingConfirm {
 
+	@Nullable
 	private final CorrelationData correlationData;
 
 	private final long timestamp;
@@ -49,6 +50,7 @@ public class PendingConfirm {
 	 * corresponding to this confirmation.
 	 * @return The correlation data.
 	 */
+	@Nullable
 	public CorrelationData getCorrelationData() {
 		return this.correlationData;
 	}
@@ -73,6 +75,7 @@ public class PendingConfirm {
 	 * @return the cause.
 	 * @since 1.4
 	 */
+	@Nullable
 	public String getCause() {
 		return this.cause;
 	}

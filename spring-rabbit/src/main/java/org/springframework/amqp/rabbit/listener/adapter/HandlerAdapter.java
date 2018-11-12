@@ -16,8 +16,6 @@
 
 package org.springframework.amqp.rabbit.listener.adapter;
 
-import java.lang.reflect.Method;
-
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
 
@@ -83,8 +81,7 @@ public class HandlerAdapter {
 			return this.invokerHandlerMethod.getMethod().getReturnType();
 		}
 		else {
-			Method method = this.delegatingHandler.getMethodFor(payload);
-			return method == null ? null : method.getReturnType();
+			return this.delegatingHandler.getMethodFor(payload).getReturnType();
 		}
 	}
 

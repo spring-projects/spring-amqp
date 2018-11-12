@@ -119,7 +119,7 @@ public class PublisherCallbackChannelImpl
 	 */
 	@Deprecated
 	public PublisherCallbackChannelImpl(Channel delegate) {
-		this(delegate, null);
+		this(delegate, null); // NOSONAR = deprecated ctor
 	}
 
 	public PublisherCallbackChannelImpl(Channel delegate, ExecutorService executor) {
@@ -900,7 +900,7 @@ public class PublisherCallbackChannelImpl
 					iterator.remove();
 					CorrelationData correlationData = pendingConfirm.getCorrelationData();
 					if (correlationData != null && StringUtils.hasText(correlationData.getId())) {
-						this.pendingReturns.remove(correlationData.getId());
+						this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 					}
 				}
 				else {
@@ -966,7 +966,7 @@ public class PublisherCallbackChannelImpl
 						if (correlationData != null) {
 							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
 							if (StringUtils.hasText(correlationData.getId())) {
-								this.pendingReturns.remove(correlationData.getId());
+								this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 							}
 						}
 						iterator.remove();
@@ -995,7 +995,7 @@ public class PublisherCallbackChannelImpl
 					if (correlationData != null) {
 						correlationData.getFuture().set(new Confirm(ack, pendingConfirm.getCause()));
 						if (StringUtils.hasText(correlationData.getId())) {
-							this.pendingReturns.remove(correlationData.getId());
+							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
 						}
 					}
 					doHandleConfirm(ack, listener, pendingConfirm);
@@ -1031,7 +1031,7 @@ public class PublisherCallbackChannelImpl
 		pendingConfirmsForListener.put(seq, pendingConfirm);
 		this.listenerForSeq.put(seq, listener);
 		if (pendingConfirm.getCorrelationData() != null) {
-			String returnCorrelation = pendingConfirm.getCorrelationData().getId();
+			String returnCorrelation = pendingConfirm.getCorrelationData().getId(); // NOSONAR never null
 			if (StringUtils.hasText(returnCorrelation)) {
 				this.pendingReturns.put(returnCorrelation, pendingConfirm);
 			}
@@ -1053,7 +1053,9 @@ public class PublisherCallbackChannelImpl
 			if (confirm != null) {
 				MessageProperties messageProperties = converter.toMessageProperties(properties,
 						new Envelope(0L, false, exchange, routingKey), StandardCharsets.UTF_8.name());
-				confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties));
+				if (confirm.getCorrelationData() != null) {
+					confirm.getCorrelationData().setReturnedMessage(new Message(body, messageProperties)); // NOSONAR never null
+				}
 			}
 		}
 		String uuidObject = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY).toString();

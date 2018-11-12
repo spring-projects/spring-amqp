@@ -57,6 +57,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 
 	private volatile String defaultCharset = DEFAULT_CHARSET;
 
+	@Nullable
 	private ClassMapper classMapper = null;
 
 	protected boolean typeMapperSet;
@@ -86,6 +87,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
 	}
 
+	@Nullable
 	public ClassMapper getClassMapper() {
 		return this.classMapper;
 
@@ -201,7 +203,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 								encoding, targetJavaType);
 					}
 					else {
-						Class<?> targetClass = getClassMapper().toClass(
+						Class<?> targetClass = getClassMapper().toClass(// NOSONAR never null
 								message.getMessageProperties());
 						content = convertBytesToObject(message.getBody(),
 								encoding, targetClass);
@@ -265,8 +267,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 					genericType == null ? objectToConvert.getClass() : genericType), messageProperties);
 		}
 		else {
-			getClassMapper().fromClass(objectToConvert.getClass(),
-					messageProperties);
+			getClassMapper().fromClass(objectToConvert.getClass(), messageProperties); // NOSONAR never null
 		}
 
 		return new Message(bytes, messageProperties);

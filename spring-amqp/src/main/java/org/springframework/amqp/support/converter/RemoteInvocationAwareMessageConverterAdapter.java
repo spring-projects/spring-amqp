@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.springframework.amqp.AmqpRemoteException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.lang.Nullable;
 import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
@@ -62,6 +63,7 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 	}
 
 	@Override
+	@Nullable
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object result = this.delegate.fromMessage(message);
 		if (result instanceof RemoteInvocationResult) {

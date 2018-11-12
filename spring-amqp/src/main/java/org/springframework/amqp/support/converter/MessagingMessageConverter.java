@@ -22,6 +22,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
@@ -116,8 +117,11 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 		}
 		Map<String, Object> mappedHeaders = this.headerMapper.toHeaders(message.getMessageProperties());
 		Object convertedObject = extractPayload(message);
+		if (convertedObject == null) {
+			throw new MessageConversionException("Message converter returned null");
+		}
 		MessageBuilder<Object> builder = (convertedObject instanceof org.springframework.messaging.Message) ?
-				MessageBuilder.fromMessage((org.springframework.messaging.Message<Object>) convertedObject) :
+				MessageBuilder.fromMessage((org.springframework.messaging.Message<Object>) convertedObject) : // NOSONAR
 				MessageBuilder.withPayload(convertedObject);
 		return builder.copyHeadersIfAbsent(mappedHeaders).build();
 	}
@@ -127,6 +131,7 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 	 * @param message the AMQP Message to extract {@code payload}.
 	 * @return the extracted {@code payload}.
 	 */
+	@Nullable
 	protected Object extractPayload(org.springframework.amqp.core.Message message) {
 		return this.payloadConverter.fromMessage(message);
 	}

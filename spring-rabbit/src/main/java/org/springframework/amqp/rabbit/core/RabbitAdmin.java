@@ -233,7 +233,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Delete an exchange from the broker")
 	public boolean deleteExchange(final String exchangeName) {
-		return this.rabbitTemplate.execute(channel -> {
+		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
 			if (isDeletingDefaultExchange(exchangeName)) {
 				return true;
 			}
@@ -286,10 +286,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description =
 			"Declare a queue with a broker-generated name (this operation is not available remotely)")
+	@Nullable
 	public Queue declareQueue() {
 		try {
 			DeclareOk declareOk = this.rabbitTemplate.execute(Channel::queueDeclare);
-			return new Queue(declareOk.getQueue(), false, true, true);
+			return new Queue(declareOk.getQueue(), false, true, true); // NOSONAR never null
 		}
 		catch (AmqpException e) {
 			logOrRethrowDeclarationException(null, "queue", e);
@@ -300,7 +301,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Delete a queue from the broker")
 	public boolean deleteQueue(final String queueName) {
-		return this.rabbitTemplate.execute(channel -> {
+		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
 			try {
 				channel.queueDelete(queueName);
 			}
@@ -335,7 +336,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description = "Purge a queue and return the number of messages purged")
 	public int purgeQueue(final String queueName) {
-		return this.rabbitTemplate.execute(channel -> {
+		return this.rabbitTemplate.execute(channel -> { // NOSONAR never returns null
 			PurgeOk queuePurged = channel.queuePurge(queueName);
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Purged queue: " + queueName + ", " + queuePurged);
