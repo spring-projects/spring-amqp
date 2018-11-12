@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.amqp.event.AmqpEvent;
+import org.springframework.lang.Nullable;
 
 /**
  * An event that is emitted when a container is idle if the container
@@ -34,11 +35,12 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	private final long idleTime;
 
+	@Nullable
 	private final String listenerId;
 
 	private final List<String> queueNames;
 
-	public ListenerContainerIdleEvent(Object source, long idleTime, String id, String... queueNames) {
+	public ListenerContainerIdleEvent(Object source, long idleTime, @Nullable String id, String... queueNames) {
 		super(source);
 		this.idleTime = idleTime;
 		this.listenerId = id;
@@ -65,6 +67,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * The id of the listener (if {@code @RabbitListener}) or the container bean name.
 	 * @return the id.
 	 */
+	@Nullable
 	public String getListenerId() {
 		return this.listenerId;
 	}

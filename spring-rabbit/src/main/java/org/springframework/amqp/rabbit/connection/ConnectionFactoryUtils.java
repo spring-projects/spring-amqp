@@ -19,6 +19,7 @@ package org.springframework.amqp.rabbit.connection;
 import java.io.IOException;
 
 import org.springframework.amqp.AmqpIOException;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSynchronization;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -92,11 +93,13 @@ public final class ConnectionFactoryUtils {
 		return doGetTransactionalResourceHolder(connectionFactory, new ResourceFactory() {
 
 			@Override
+			@Nullable
 			public Channel getChannel(RabbitResourceHolder holder) {
 				return holder.getChannel();
 			}
 
 			@Override
+			@Nullable
 			public Connection getConnection(RabbitResourceHolder holder) {
 				return holder.getConnection();
 			}
@@ -200,7 +203,7 @@ public final class ConnectionFactoryUtils {
 			ConnectionFactory connectionFactory, boolean synched) {
 		if (TransactionSynchronizationManager.hasResource(connectionFactory)
 				|| !TransactionSynchronizationManager.isActualTransactionActive() || !synched) {
-			return (RabbitResourceHolder) TransactionSynchronizationManager.getResource(connectionFactory);
+			return (RabbitResourceHolder) TransactionSynchronizationManager.getResource(connectionFactory); // NOSONAR never null
 		}
 		TransactionSynchronizationManager.bindResource(connectionFactory, resourceHolder);
 		resourceHolder.setSynchronizedWithTransaction(true);
@@ -251,6 +254,7 @@ public final class ConnectionFactoryUtils {
 		 * @param holder the RabbitResourceHolder
 		 * @return an appropriate Channel fetched from the holder, or <code>null</code> if none found
 		 */
+		@Nullable
 		Channel getChannel(RabbitResourceHolder holder);
 
 		/**

@@ -42,6 +42,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	private final List<AmqpListenerEndpointDescriptor> endpointDescriptors =
 			new ArrayList<AmqpListenerEndpointDescriptor>();
 
+	@Nullable
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
 	private MessageHandlerMethodFactory messageHandlerMethodFactory;
@@ -66,6 +67,7 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	 * @return the {@link RabbitListenerEndpointRegistry} instance for this
 	 * registrar, may be {@code null}.
 	 */
+	@Nullable
 	public RabbitListenerEndpointRegistry getEndpointRegistry() {
 		return this.endpointRegistry;
 	}
@@ -130,9 +132,10 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 	}
 
 	protected void registerAllEndpoints() {
+		Assert.state(this.endpointRegistry != null, "No registry available");
 		synchronized (this.endpointDescriptors) {
 			for (AmqpListenerEndpointDescriptor descriptor : this.endpointDescriptors) {
-				this.endpointRegistry.registerListenerContainer(
+				this.endpointRegistry.registerListenerContainer(// NOSONAR never null
 						descriptor.endpoint, resolveContainerFactory(descriptor));
 			}
 			this.startImmediately = true;  // trigger immediate startup
@@ -171,11 +174,12 @@ public class RabbitListenerEndpointRegistrar implements BeanFactoryAware, Initia
 			@Nullable RabbitListenerContainerFactory<?> factory) {
 		Assert.notNull(endpoint, "Endpoint must be set");
 		Assert.hasText(endpoint.getId(), "Endpoint id must be set");
+		Assert.state(!this.startImmediately || this.endpointRegistry != null, "No registry available");
 		// Factory may be null, we defer the resolution right before actually creating the container
 		AmqpListenerEndpointDescriptor descriptor = new AmqpListenerEndpointDescriptor(endpoint, factory);
 		synchronized (this.endpointDescriptors) {
 			if (this.startImmediately) { // Register and start immediately
-				this.endpointRegistry.registerListenerContainer(descriptor.endpoint,
+				this.endpointRegistry.registerListenerContainer(descriptor.endpoint, // NOSONAR never null
 						resolveContainerFactory(descriptor), true);
 			}
 			else {

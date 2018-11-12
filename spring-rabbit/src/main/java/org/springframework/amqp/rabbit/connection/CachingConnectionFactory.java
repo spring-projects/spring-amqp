@@ -647,7 +647,6 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return channel; // NOSONAR - Simple connection throws exception
 	}
 
-	@Nullable
 	@Override
 	public final Connection createConnection() throws AmqpException {
 		if (this.stopped) {
@@ -718,7 +717,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				return connection;
 			}
 		}
-		return null;
+		return null; // NOSONAR - never reach here - exceptions
 	}
 
 	/*
@@ -936,7 +935,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	 */
 	protected ExecutorService getChannelsExecutor() {
 		if (getExecutorService() != null) {
-			return getExecutorService();
+			return getExecutorService(); // NOSONAR never null
 		}
 		if (this.channelsExecutor == null) {
 			synchronized (this.connectionMonitor) {
@@ -945,7 +944,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 							getBeanName() == null
 									? DEFAULT_DEFERRED_POOL_PREFIX + threadPoolId.incrementAndGet()
 									: getBeanName();
-					ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix);
+					ThreadFactory threadPoolFactory = new CustomizableThreadFactory(threadPrefix); // NOSONAR never null
 					this.channelsExecutor = Executors.newCachedThreadPool(threadPoolFactory);
 				}
 			}

@@ -127,10 +127,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private ApplicationEventPublisher applicationEventPublisher;
 
+	@Nullable
 	private PlatformTransactionManager transactionManager;
 
 	private TransactionAttribute transactionAttribute = new DefaultTransactionAttribute();
 
+	@Nullable
 	private String beanName;
 
 	private Executor taskExecutor = new SimpleAsyncTaskExecutor();
@@ -191,6 +193,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	private Advice[] adviceChain = new Advice[0];
 
+	@Nullable
 	private ConsumerTagStrategy consumerTagStrategy;
 
 	private volatile boolean exclusive;
@@ -569,6 +572,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * @return The bean name that this listener container has been assigned in its containing bean factory, if any.
 	 */
+	@Nullable
 	protected final String getBeanName() {
 		return this.beanName;
 	}
@@ -587,7 +591,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		ConnectionFactory connectionFactory = super.getConnectionFactory();
 		if (connectionFactory instanceof RoutingConnectionFactory) {
 			ConnectionFactory targetConnectionFactory = ((RoutingConnectionFactory) connectionFactory)
-					.getTargetConnectionFactory(getRoutingLookupKey());
+					.getTargetConnectionFactory(getRoutingLookupKey()); // NOSONAR never null
 			if (targetConnectionFactory != null) {
 				return targetConnectionFactory;
 			}
@@ -659,6 +663,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * The 'id' attribute of the listener.
 	 * @return the id (or the container bean name if no id set).
 	 */
+	@Nullable
 	public String getListenerId() {
 		return this.listenerId != null ? this.listenerId : this.beanName;
 	}
@@ -682,6 +687,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return the strategy.
 	 * @since 2.0
 	 */
+	@Nullable
 	protected ConsumerTagStrategy getConsumerTagStrategy() {
 		return this.consumerTagStrategy;
 	}
@@ -824,6 +830,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.transactionManager = transactionManager;
 	}
 
+	@Nullable
 	protected PlatformTransactionManager getTransactionManager() {
 		return this.transactionManager;
 	}
@@ -847,6 +854,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param taskExecutor the task executor.
 	 */
 	public void setTaskExecutor(Executor taskExecutor) {
+		Assert.notNull(taskExecutor, "'taskExecutor' cannot be null");
 		this.taskExecutor = taskExecutor;
 		this.taskExecutorSet = true;
 	}
@@ -900,10 +908,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @deprecated in favor of {@link #getAmqpAdmin()}
 	 */
 	@Deprecated
+	@Nullable
 	protected AmqpAdmin getRabbitAdmin() {
 		return getAmqpAdmin();
 	}
 
+	@Nullable
 	protected AmqpAdmin getAmqpAdmin() {
 		return this.amqpAdmin;
 	}

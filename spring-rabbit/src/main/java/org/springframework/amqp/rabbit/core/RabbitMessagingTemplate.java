@@ -149,6 +149,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
+	@Nullable
 	public Message<?> sendAndReceive(String exchange, String routingKey, Message<?> requestMessage)
 			throws MessagingException {
 
@@ -156,6 +157,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
+	@Nullable
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
 			Class<T> targetClass) throws MessagingException {
 
@@ -163,6 +165,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
+	@Nullable
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
 			@Nullable Map<String, Object> headers, Class<T> targetClass) throws MessagingException {
 
@@ -170,6 +173,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 	}
 
 	@Override
+	@Nullable
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
 			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
 
@@ -178,6 +182,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 	@SuppressWarnings("unchecked")
 	@Override
+	@Nullable
 	public <T> T convertSendAndReceive(String exchange, String routingKey, Object request,
 			@Nullable Map<String, Object> headers,
 			Class<T> targetClass, @Nullable MessagePostProcessor requestPostProcessor) throws MessagingException {
@@ -220,6 +225,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 
 
 	@Override
+	@Nullable
 	protected Message<?> doSendAndReceive(String destination, Message<?> requestMessage) {
 		try {
 			org.springframework.amqp.core.Message amqpMessage = this.rabbitTemplate.sendAndReceive(
@@ -231,6 +237,7 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 		}
 	}
 
+	@Nullable
 	protected Message<?> doSendAndReceive(String exchange, String routingKey, Message<?> requestMessage) {
 		try {
 			org.springframework.amqp.core.Message amqpMessage = this.rabbitTemplate.sendAndReceive(
@@ -251,7 +258,8 @@ public class RabbitMessagingTemplate extends AbstractMessagingTemplate<String>
 		}
 	}
 
-	protected Message<?> convertAmqpMessage(org.springframework.amqp.core.Message message) {
+	@Nullable
+	protected Message<?> convertAmqpMessage(@Nullable org.springframework.amqp.core.Message message) {
 		if (message == null) {
 			return null;
 		}

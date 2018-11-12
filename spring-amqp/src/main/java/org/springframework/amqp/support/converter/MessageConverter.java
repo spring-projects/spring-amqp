@@ -62,6 +62,7 @@ public interface MessageConverter {
 	 * @return the converted Java object
 	 * @throws MessageConversionException in case of conversion failure
 	 */
+	@Nullable
 	Object fromMessage(Message message) throws MessageConversionException;
 
 }

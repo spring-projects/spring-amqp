@@ -250,8 +250,14 @@ public class DelegatingInvocableHandler {
 	 * @return the method name.
 	 */
 	public String getMethodNameFor(Object payload) {
-		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
-		return handlerForPayload == null ? "no match" : handlerForPayload.getMethod().toGenericString(); //NOSONAR
+		InvocableHandlerMethod handlerForPayload = null;
+		try {
+			handlerForPayload = getHandlerForPayload(payload.getClass());
+		}
+		catch (Exception e) {
+			// NOSONAR
+		}
+		return handlerForPayload == null ? "no match" : handlerForPayload.getMethod().toGenericString();
 	}
 
 	/**
@@ -261,8 +267,7 @@ public class DelegatingInvocableHandler {
 	 * @since 2.0
 	 */
 	public Method getMethodFor(Object payload) {
-		InvocableHandlerMethod handlerForPayload = getHandlerForPayload(payload.getClass());
-		return handlerForPayload == null ? null : handlerForPayload.getMethod();
+		return getHandlerForPayload(payload.getClass()).getMethod();
 	}
 
 	public boolean hasDefaultHandler() {

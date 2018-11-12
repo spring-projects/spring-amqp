@@ -35,6 +35,7 @@ public class CorrelationData implements Correlation {
 
 	private final SettableListenableFuture<Confirm> future = new SettableListenableFuture<>();
 
+	@Nullable
 	private volatile String id;
 
 	private volatile Message returnedMessage;
@@ -56,6 +57,7 @@ public class CorrelationData implements Correlation {
 		this.id = id;
 	}
 
+	@Nullable
 	public String getId() {
 		return this.id;
 	}

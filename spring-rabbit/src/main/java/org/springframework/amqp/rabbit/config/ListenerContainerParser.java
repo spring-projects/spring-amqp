@@ -96,7 +96,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 				parserContext.getReaderContext().error("Unexpected configuration for bean " + group, element);
 			}
 			containerList = (ManagedList<RuntimeBeanReference>) constructorArgumentValues
-					.getIndexedArgumentValue(0, ManagedList.class).getValue();
+					.getIndexedArgumentValue(0, ManagedList.class).getValue(); // NOSONAR never null
 		}
 
 		List<Element> childElements = DomUtils.getChildElementsByTagName(element, LISTENER_ELEMENT);

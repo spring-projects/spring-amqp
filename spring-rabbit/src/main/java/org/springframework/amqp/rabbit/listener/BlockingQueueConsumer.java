@@ -269,7 +269,7 @@ public class BlockingQueueConsumer {
 			MessagePropertiesConverter messagePropertiesConverter,
 			ActiveObjectCounter<BlockingQueueConsumer> activeObjectCounter, AcknowledgeMode acknowledgeMode,
 			boolean transactional, int prefetchCount, boolean defaultRequeueRejected,
-			Map<String, Object> consumerArgs, boolean noLocal, boolean exclusive, String... queues) {
+			@Nullable Map<String, Object> consumerArgs, boolean noLocal, boolean exclusive, String... queues) {
 		this.connectionFactory = connectionFactory;
 		this.messagePropertiesConverter = messagePropertiesConverter;
 		this.activeObjectCounter = activeObjectCounter;
@@ -478,6 +478,7 @@ public class BlockingQueueConsumer {
 	 * @throws InterruptedException if an interrupt is received while waiting
 	 * @throws ShutdownSignalException if the connection is shut down while waiting
 	 */
+	@Nullable
 	public Message nextMessage() throws InterruptedException, ShutdownSignalException {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Retrieving delivery for " + this);
@@ -523,11 +524,7 @@ public class BlockingQueueConsumer {
 					Connection connection = null; // NOSONAR - RabbitUtils
 					Channel channel = null;
 					try {
-						connection = this.connectionFactory.createConnection(); // NOSONAR - RabbitUtils
-						if (connection == null) {
-							return;
-						}
-						channel = connection.createChannel(false);
+						channel = this.connectionFactory.createConnection().createChannel(false);
 						channel.queueDeclarePassive(queue);
 						if (logger.isInfoEnabled()) {
 							logger.info("Queue '" + queue + "' is now available");
@@ -569,7 +566,7 @@ public class BlockingQueueConsumer {
 			this.resourceHolder = ConnectionFactoryUtils.getTransactionalResourceHolder(this.connectionFactory,
 					this.transactional);
 			this.channel = this.resourceHolder.getChannel();
-			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel);
+			ClosingRecoveryListener.addRecoveryListenerIfNecessary(this.channel); // NOSONAR never null here
 		}
 		catch (AmqpAuthenticationException e) {
 			throw new FatalListenerStartupException("Authentication failure", e);

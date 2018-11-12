@@ -36,6 +36,7 @@ import org.springframework.beans.factory.config.BeanExpressionResolver;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.expression.BeanResolver;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -90,6 +91,7 @@ public abstract class AbstractRabbitListenerEndpoint implements RabbitListenerEn
 		this.beanResolver = new BeanFactoryResolver(beanFactory);
 	}
 
+	@Nullable
 	protected BeanFactory getBeanFactory() {
 		return this.beanFactory;
 	}

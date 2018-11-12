@@ -52,6 +52,8 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.expression.Expression;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.Assert;
@@ -608,7 +610,7 @@ public class AsyncRabbitTemplate implements AsyncAmqpTemplate, ChannelAwareMessa
 	}
 
 	@Override
-	public void confirm(CorrelationData correlationData, boolean ack, String cause) {
+	public void confirm(@NonNull CorrelationData correlationData, boolean ack, @Nullable String cause) {
 		if (this.logger.isDebugEnabled()) {
 			this.logger.debug("Confirm: " + correlationData + ", ack=" + ack
 					+ (cause == null ? "" : (", cause: " + cause)));

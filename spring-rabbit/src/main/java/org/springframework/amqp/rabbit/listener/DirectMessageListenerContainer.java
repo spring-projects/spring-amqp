@@ -306,7 +306,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			this.consumersToRestart.clear();
 			for (String queue : getQueueNames()) {
 				while (this.consumersByQueue.get(queue) == null
-						|| this.consumersByQueue.get(queue).size() < newCount) {
+						|| this.consumersByQueue.get(queue).size() < newCount) { // NOSONAR never null
 					doConsumeFromQueue(queue);
 				}
 				List<SimpleConsumer> consumerList = this.consumersByQueue.get(queue);
@@ -387,9 +387,6 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		super.doStart();
 		final String[] queueNames = getQueueNames();
 		checkMissingQueues(queueNames);
-		if (getTaskExecutor() == null) {
-			afterPropertiesSet();
-		}
 		long idleEventInterval = getIdleEventInterval();
 		if (this.taskScheduler == null) {
 			afterPropertiesSet();
@@ -497,7 +494,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}, this.monitorInterval);
 		if (queueNames.length > 0) {
 			doRedeclareElementsIfNecessary();
-			getTaskExecutor().execute(() -> {
+			getTaskExecutor().execute(() -> { // NOSONAR never null here
 
 				synchronized (this.consumersMonitor) {
 					if (this.hasStopped) { // container stopped before we got the lock
@@ -554,7 +551,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	protected void doRedeclareElementsIfNecessary() {
 		String routingLookupKey = getRoutingLookupKey();
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
 		}
 		try {
 			redeclareElementsIfNecessary();
@@ -564,7 +561,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
 	}
@@ -629,7 +626,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		String routingLookupKey = getRoutingLookupKey();
 		if (routingLookupKey != null) {
-			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey);
+			SimpleResourceHolder.bind(getRoutingConnectionFactory(), routingLookupKey); // NOSONAR both never null here
 		}
 		Connection connection = null; // NOSONAR (close)
 		try {
@@ -643,7 +640,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		finally {
 			if (routingLookupKey != null) {
-				SimpleResourceHolder.unbind(getRoutingConnectionFactory());
+				SimpleResourceHolder.unbind(getRoutingConnectionFactory()); // NOSONAR never null here
 			}
 		}
 		Channel channel = null;
@@ -655,7 +652,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			channel.queueDeclarePassive(queue);
 			consumer.consumerTag = channel.basicConsume(queue, getAcknowledgeMode().isAutoAck(),
 					(getConsumerTagStrategy() != null
-							? getConsumerTagStrategy().createConsumerTag(queue) : ""),
+							? getConsumerTagStrategy().createConsumerTag(queue) : ""), // NOSONAR never null
 					isNoLocal(), isExclusive(), getConsumerArguments(), consumer);
 		}
 		catch (AmqpApplicationContextClosedException e) {

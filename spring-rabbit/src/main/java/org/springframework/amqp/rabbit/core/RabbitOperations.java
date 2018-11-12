@@ -43,6 +43,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * {@link ChannelCallback#doInRabbit(com.rabbitmq.client.Channel)}.
 	 * @throws AmqpException if one occurs.
 	 */
+	@Nullable
 	<T> T execute(ChannelCallback<T> action) throws AmqpException;
 
 	/**
@@ -55,6 +56,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @throws AmqpException if one occurs.
 	 * @since 2.0
 	 */
+	@Nullable
 	default <T> T invoke(OperationsCallback<T> action) throws AmqpException {
 		return invoke(action, null, null);
 	}
@@ -69,6 +71,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the result of the action method.
 	 * @since 2.1
 	 */
+	@Nullable
 	<T> T invoke(OperationsCallback<T> action, @Nullable com.rabbitmq.client.ConfirmCallback acks,
 			@Nullable com.rabbitmq.client.ConfirmCallback nacks);
 
@@ -200,6 +203,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(Object message, CorrelationData correlationData) throws AmqpException;
 
 	/**
@@ -214,6 +218,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message, CorrelationData correlationData)
 			throws AmqpException;
 
@@ -230,6 +235,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message,
 			CorrelationData correlationData) throws AmqpException;
 
@@ -245,6 +251,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData) throws AmqpException;
 
@@ -261,6 +268,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, CorrelationData correlationData) throws AmqpException;
 
@@ -278,6 +286,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, CorrelationData correlationData)
 			throws AmqpException;
@@ -297,6 +306,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one.
 	 * @throws AmqpException if there is a problem.
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(Object message, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -316,6 +326,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String routingKey, Object message, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -336,6 +347,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	default <T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			@Nullable CorrelationData correlationData, ParameterizedTypeReference<T> responseType)
 					throws AmqpException {
@@ -359,6 +371,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
 			CorrelationData correlationData, ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -379,6 +392,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, CorrelationData correlationData,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
@@ -401,6 +415,7 @@ public interface RabbitOperations extends AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			@Nullable MessagePostProcessor messagePostProcessor,
 			@Nullable CorrelationData correlationData,
@@ -425,6 +440,7 @@ public interface RabbitOperations extends AmqpTemplate {
 		 * @param operations The operations.
 		 * @return The result.
 		 */
+		@Nullable
 		T doInRabbit(RabbitOperations operations);
 
 	}
