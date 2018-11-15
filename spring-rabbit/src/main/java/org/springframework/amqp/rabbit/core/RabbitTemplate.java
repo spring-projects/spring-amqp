@@ -1769,8 +1769,11 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 		ChannelHolder channelHolder = container.getChannelHolder();
 		try {
-			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData,
-					channelHolder.getChannel());
+			Channel channel = channelHolder.getChannel();
+			if (this.confirmsOrReturnsCapable) {
+				addListener(channel);
+			}
+			return doSendAndReceiveAsListener(exchange, routingKey, message, correlationData, channel);
 		}
 		catch (Exception e) {
 			container.releaseConsumerFor(channelHolder, false, null);
