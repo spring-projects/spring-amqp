@@ -40,12 +40,15 @@ import com.rabbitmq.client.Channel;
  *
  */
 @RabbitAvailable(queues = { RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE1,
-		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE2 })
+		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE2,
+		RabbitTemplatePublisherCallbacksIntegrationTests3.QUEUE3 })
 public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 
 	public static final String QUEUE1 = "synthetic.nack";
 
 	public static final String QUEUE2 = "defer.close";
+
+	public static final String QUEUE3 = "confirm.send.receive";
 
 	@Test
 	public void testRepublishOnNackThreadNoExchange() throws Exception {
@@ -122,6 +125,25 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests3 {
 		assertThat(cacheCount.get()).isEqualTo(1);
 		cf.destroy();
 	}
+
+	@Test
+	public void testTwoSendsAndReceivesDRTMLC() throws Exception {
+		CachingConnectionFactory cf = new CachingConnectionFactory(
+				RabbitAvailableCondition.getBrokerRunning().getConnectionFactory());
+		cf.setPublisherConfirms(true);
+		RabbitTemplate template = new RabbitTemplate(cf);
+		template.setReplyTimeout(0);
+		final CountDownLatch confirmLatch = new CountDownLatch(2);
+		template.setConfirmCallback((cd, a, c) -> {
+			confirmLatch.countDown();
+		});
+		template.convertSendAndReceive("", QUEUE3, "foo", new MyCD("foo"));
+		template.convertSendAndReceive("", QUEUE3, "foo", new MyCD("foo")); // listener not registered
+		assertThat(confirmLatch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(template.receive(QUEUE3, 10_000)).isNotNull();
+		assertThat(template.receive(QUEUE3, 10_000)).isNotNull();
+	}
+
 
 	private static class MyCD extends CorrelationData {
 
