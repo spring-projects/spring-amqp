@@ -873,6 +873,15 @@ public class PublisherCallbackChannelImpl
 	}
 
 	private synchronized void processAck(long seq, boolean ack, boolean multiple, boolean remove) {
+		try {
+			doProcessAck(seq, ack, multiple, remove);
+		}
+		catch (Exception e) {
+			this.logger.error("Failed to process publisher confirm", e);
+		}
+	}
+
+	private void doProcessAck(long seq, boolean ack, boolean multiple, boolean remove) {
 		if (multiple) {
 			/*
 			 * Piggy-backed ack - extract all Listeners for this and earlier
@@ -905,12 +914,14 @@ public class PublisherCallbackChannelImpl
 			Listener listener = this.listenerForSeq.remove(seq);
 			if (listener != null) {
 				SortedMap<Long, PendingConfirm> confirmsForListener = this.pendingConfirms.get(listener);
-				PendingConfirm pendingConfirm;
-				if (remove) {
-					pendingConfirm = confirmsForListener.remove(seq);
-				}
-				else {
-					pendingConfirm = confirmsForListener.get(seq);
+				PendingConfirm pendingConfirm = null;
+				if (confirmsForListener != null) { // should never happen; defensive
+					if (remove) {
+						pendingConfirm = confirmsForListener.remove(seq);
+					}
+					else {
+						pendingConfirm = confirmsForListener.get(seq);
+					}
 				}
 				if (pendingConfirm != null) {
 					doHandleConfirm(ack, listener, pendingConfirm);
@@ -957,14 +968,25 @@ public class PublisherCallbackChannelImpl
 			AMQP.BasicProperties properties,
 			byte[] body) throws IOException {
 		String uuidObject = properties.getHeaders().get(RETURN_CORRELATION_KEY).toString();
-		Listener listener = this.listeners.get(uuidObject);
+		Listener listener = null;
+		if (uuidObject != null) {
+			listener = this.listeners.get(uuidObject);
+		}
+		else {
+			this.logger.error("No 'spring_listener_return_correlation' header in returned message");
+		}
 		if (listener == null || !listener.isReturnListener()) {
 			if (this.logger.isWarnEnabled()) {
 				this.logger.warn("No Listener for returned message");
 			}
 		}
 		else {
-			listener.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
+			try {
+				listener.handleReturn(replyCode, replyText, exchange, routingKey, properties, body);
+			}
+			catch (Exception e) {
+				this.logger.error("Exception delivering returned message ", e);
+			}
 		}
 	}
 
