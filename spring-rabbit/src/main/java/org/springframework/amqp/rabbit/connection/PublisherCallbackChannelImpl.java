@@ -1068,7 +1068,11 @@ public class PublisherCallbackChannelImpl
 				}
 			}
 		}
-		String uuidObject = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY).toString();
+		Object returnListenerHeader = properties.getHeaders().get(RETURN_LISTENER_CORRELATION_KEY);
+		String uuidObject = null;
+		if (returnListenerHeader != null) {
+			uuidObject = returnListenerHeader.toString();
+		}
 		Listener listener = null;
 		if (uuidObject != null) {
 			listener = this.listeners.get(uuidObject);
