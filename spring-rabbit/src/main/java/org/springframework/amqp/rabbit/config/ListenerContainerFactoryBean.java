@@ -69,7 +69,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	private Type type = Type.simple;
 
-	private AbstractMessageListenerContainer container;
+	private AbstractMessageListenerContainer listenerContainer;
 
 	private ConnectionFactory connectionFactory;
 
@@ -401,13 +401,13 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public Class<?> getObjectType() {
-		return this.container == null ? AbstractMessageListenerContainer.class : this.container.getClass();
+		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer.getClass();
 	}
 
 	@SuppressWarnings("deprecation")
 	@Override
-	protected AbstractMessageListenerContainer createInstance() throws Exception {
-		if (this.container == null) {
+	protected AbstractMessageListenerContainer createInstance() { // NOSONAR complexity
+		if (this.listenerContainer == null) {
 			AbstractMessageListenerContainer container = createContainer();
 			if (this.applicationContext != null) {
 				container.setApplicationContext(this.applicationContext);
@@ -524,9 +524,9 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 				container.setExclusiveConsumerExceptionLogger(this.exclusiveConsumerExceptionLogger);
 			}
 			container.afterPropertiesSet();
-			this.container = container;
+			this.listenerContainer = container;
 		}
-		return this.container;
+		return this.listenerContainer;
 	}
 
 	private AbstractMessageListenerContainer createContainer() {
@@ -581,37 +581,37 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 
 	@Override
 	public void start() {
-		if (this.container != null) {
-			this.container.start();
+		if (this.listenerContainer != null) {
+			this.listenerContainer.start();
 		}
 	}
 
 	@Override
 	public void stop() {
-		if (this.container != null) {
-			this.container.stop();
+		if (this.listenerContainer != null) {
+			this.listenerContainer.stop();
 		}
 	}
 
 	@Override
 	public boolean isRunning() {
-		return this.container != null && this.container.isRunning();
+		return this.listenerContainer != null && this.listenerContainer.isRunning();
 	}
 
 	@Override
 	public int getPhase() {
-		return (this.container != null) ? this.container.getPhase() : 0;
+		return (this.listenerContainer != null) ? this.listenerContainer.getPhase() : 0;
 	}
 
 	@Override
 	public boolean isAutoStartup() {
-		return this.container != null && this.container.isAutoStartup();
+		return this.listenerContainer != null && this.listenerContainer.isAutoStartup();
 	}
 
 	@Override
 	public void stop(Runnable callback) {
-		if (this.container != null) {
-			this.container.stop(callback);
+		if (this.listenerContainer != null) {
+			this.listenerContainer.stop(callback);
 		}
 	}
 

@@ -71,7 +71,7 @@ public abstract class AbstractConnectionFactory implements ConnectionFactory, Di
 
 	private static final String BAD_URI = "setUri() was passed an invalid URI; it is ignored";
 
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private final com.rabbitmq.client.ConnectionFactory rabbitConnectionFactory;
 

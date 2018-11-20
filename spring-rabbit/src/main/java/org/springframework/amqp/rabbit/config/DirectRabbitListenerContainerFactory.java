@@ -88,7 +88,7 @@ public class DirectRabbitListenerContainerFactory
 				instance.setConsumersPerQueue(Integer.parseInt(endpoint.getConcurrency()));
 			}
 			catch (NumberFormatException e) {
-				throw new IllegalStateException("Failed to parse concurrency: " + e.getMessage());
+				throw new IllegalStateException("Failed to parse concurrency: " + e.getMessage(), e);
 			}
 		}
 		else if (this.consumersPerQueue != null) {

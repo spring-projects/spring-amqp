@@ -92,8 +92,8 @@ class TemplateParser extends AbstractSingleBeanDefinitionParser {
 		return false;
 	}
 
-	@Override
-	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+	@Override // NOSONAR complexity
+	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) { // NOSONAR
 		String connectionFactoryRef = element.getAttribute(CONNECTION_FACTORY_ATTRIBUTE);
 
 		if (!StringUtils.hasText(connectionFactoryRef)) {

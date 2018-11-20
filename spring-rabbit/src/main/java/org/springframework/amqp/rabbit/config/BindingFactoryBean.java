@@ -80,7 +80,8 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		this.adminsThatShouldDeclare = adminsThatShouldDeclare;
 	}
 
-	public Binding getObject() throws Exception {
+	@Override
+	public Binding getObject() {
 		String destination;
 		DestinationType destinationType;
 		if (this.destinationQueue != null) {
@@ -104,10 +105,12 @@ public class BindingFactoryBean implements FactoryBean<Binding> {
 		return binding;
 	}
 
+	@Override
 	public Class<?> getObjectType() {
 		return Binding.class;
 	}
 
+	@Override
 	public boolean isSingleton() {
 		return true;
 	}

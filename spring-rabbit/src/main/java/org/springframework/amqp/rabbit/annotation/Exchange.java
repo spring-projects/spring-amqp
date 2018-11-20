@@ -35,6 +35,10 @@ import org.springframework.core.annotation.AliasFor;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Exchange {
 
+	String TRUE = "true";
+
+	String FALSE = "false";
+
 	/**
 	 * @return the exchange name.
 	 */
@@ -60,24 +64,24 @@ public @interface Exchange {
 	/**
 	 * @return false if the exchange is to be declared as non-durable.
 	 */
-	String durable() default "true";
+	String durable() default TRUE;
 
 	/**
 	 * @return true if the exchange is to be declared as auto-delete.
 	 */
-	String autoDelete() default "false";
+	String autoDelete() default FALSE;
 
 	/**
 	 * @return true if the exchange is to be declared as internal.
 	 * @since 1.6
 	 */
-	String internal() default "false";
+	String internal() default FALSE;
 
 	/**
 	 * @return true if the declaration exceptions should be ignored.
 	 * @since 1.6
 	 */
-	String ignoreDeclarationExceptions() default "false";
+	String ignoreDeclarationExceptions() default FALSE;
 
 	/**
 	 * @return true if the exchange is to be declared as an
@@ -85,7 +89,7 @@ public @interface Exchange {
 	 * plugin on the broker.
 	 * @since 1.6.4
 	 */
-	String delayed() default "false";
+	String delayed() default FALSE;
 
 	/**
 	 * @return the arguments to apply when declaring this exchange.
@@ -97,7 +101,7 @@ public @interface Exchange {
 	 * @return true if the admin(s), if present, should declare this component.
 	 * @since 2.1
 	 */
-	String declare() default "true";
+	String declare() default TRUE;
 
 	/**
 	 * Return a list of admin bean names that should declare this component.

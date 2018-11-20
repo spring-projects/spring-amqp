@@ -108,7 +108,7 @@ class ListenerContainerParser implements BeanDefinitionParser {
 		return null;
 	}
 
-	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext,
+	private void parseListener(Element listenerEle, Element containerEle, ParserContext parserContext, // NOSONAR complexity
 			ManagedList<RuntimeBeanReference> containerList) {
 		RootBeanDefinition listenerDef = new RootBeanDefinition();
 		listenerDef.setSource(parserContext.extractSource(listenerEle));

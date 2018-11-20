@@ -69,6 +69,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory;
 import org.springframework.messaging.handler.annotation.support.MessageHandlerMethodFactory;
 import org.springframework.messaging.handler.invocation.InvocableHandlerMethod;
@@ -130,7 +131,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 	private RabbitListenerEndpointRegistry endpointRegistry;
 
-	private String containerFactoryBeanName = DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME;
+	private String defaultContainerFactoryBeanName = DEFAULT_RABBIT_LISTENER_CONTAINER_FACTORY_BEAN_NAME;
 
 	private BeanFactory beanFactory;
 
@@ -175,7 +176,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 * @param containerFactoryBeanName the {@link RabbitListenerContainerFactory} bean name.
 	 */
 	public void setContainerFactoryBeanName(String containerFactoryBeanName) {
-		this.containerFactoryBeanName = containerFactoryBeanName;
+		this.defaultContainerFactoryBeanName = containerFactoryBeanName;
 	}
 
 	/**
@@ -242,8 +243,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			this.registrar.setEndpointRegistry(this.endpointRegistry);
 		}
 
-		if (this.containerFactoryBeanName != null) {
-			this.registrar.setContainerFactoryBeanName(this.containerFactoryBeanName);
+		if (this.defaultContainerFactoryBeanName != null) {
+			this.registrar.setContainerFactoryBeanName(this.defaultContainerFactoryBeanName);
 		}
 
 		// Set the custom handler method factory once resolved by the configurer
@@ -367,7 +368,8 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		processListener(endpoint, rabbitListener, bean, methodToUse, beanName);
 	}
 
-	private Method checkProxy(Method method, Object bean) {
+	private Method checkProxy(Method methodArg, Object bean) {
+		Method method = methodArg;
 		if (AopUtils.isJdkDynamicProxy(bean)) {
 			try {
 				// Found a @RabbitListener method on the target class for this JDK proxy ->
@@ -389,10 +391,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			catch (NoSuchMethodException ex) {
 				throw new IllegalStateException(String.format(
 						"@RabbitListener method '%s' found on bean target class '%s', " +
-								"but not found in any interface(s) for bean JDK proxy. Either " +
-								"pull the method up to an interface or switch to subclass (CGLIB) " +
-								"proxies by setting proxy-target-class/proxyTargetClass " +
-								"attribute to 'true'", method.getName(), method.getDeclaringClass().getSimpleName()));
+						"but not found in any interface(s) for a bean JDK proxy. Either " +
+						"pull the method up to an interface or switch to subclass (CGLIB) " +
+						"proxies by setting proxy-target-class/proxyTargetClass " +
+						"attribute to 'true'", method.getName(), method.getDeclaringClass().getSimpleName()), ex);
 			}
 		}
 		return method;
@@ -445,6 +447,13 @@ public class RabbitListenerAnnotationBeanPostProcessor
 			}
 		}
 
+		resolveAdmin(endpoint, rabbitListener, adminTarget);
+		RabbitListenerContainerFactory<?> factory = resolveContainerFactory(rabbitListener, adminTarget, beanName);
+
+		this.registrar.registerEndpoint(endpoint, factory);
+	}
+
+	private void resolveAdmin(MethodRabbitListenerEndpoint endpoint, RabbitListener rabbitListener, Object adminTarget) {
 		String rabbitAdmin = resolve(rabbitListener.admin());
 		if (StringUtils.hasText(rabbitAdmin)) {
 			Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve RabbitAdmin by bean name");
@@ -457,8 +466,11 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						rabbitAdmin + "' was found in the application context", ex);
 			}
 		}
+	}
 
-
+	@Nullable
+	private RabbitListenerContainerFactory<?> resolveContainerFactory(RabbitListener rabbitListener, Object adminTarget,
+			String beanName) {
 		RabbitListenerContainerFactory<?> factory = null;
 		String containerFactoryBeanName = resolve(rabbitListener.containerFactory());
 		if (StringUtils.hasText(containerFactoryBeanName)) {
@@ -472,8 +484,7 @@ public class RabbitListenerAnnotationBeanPostProcessor
 						containerFactoryBeanName + "' was found in the application context", ex);
 			}
 		}
-
-		this.registrar.registerEndpoint(endpoint, factory);
+		return factory;
 	}
 
 	private String getEndpointId(RabbitListener rabbitListener) {
@@ -617,6 +628,10 @@ public class RabbitListenerAnnotationBeanPostProcessor
 
 		((ConfigurableBeanFactory) this.beanFactory)
 				.registerSingleton(exchangeName + ++this.increment, exchange);
+		registerBindings(binding, queueName, exchangeName, exchangeType);
+	}
+
+	private void registerBindings(QueueBinding binding, String queueName, String exchangeName, String exchangeType) {
 		final String[] routingKeys;
 		if (exchangeType.equals(ExchangeTypes.FANOUT) || binding.key().length == 0) {
 			routingKeys = new String[] { "" };
@@ -826,17 +841,17 @@ public class RabbitListenerAnnotationBeanPostProcessor
 		/**
 		 * Methods annotated with {@link RabbitListener}.
 		 */
-		final ListenerMethod[] listenerMethods;
+		final ListenerMethod[] listenerMethods; // NOSONAR
 
 		/**
 		 * Methods annotated with {@link RabbitHandler}.
 		 */
-		final Method[] handlerMethods;
+		final Method[] handlerMethods; // NOSONAR
 
 		/**
 		 * Class level {@link RabbitListener} annotations.
 		 */
-		final RabbitListener[] classAnnotations;
+		final RabbitListener[] classAnnotations; // NOSONAR
 
 		static final TypeMetadata EMPTY = new TypeMetadata();
 
@@ -859,9 +874,9 @@ public class RabbitListenerAnnotationBeanPostProcessor
 	 */
 	private static class ListenerMethod {
 
-		final Method method;
+		final Method method; // NOSONAR
 
-		final RabbitListener[] annotations;
+		final RabbitListener[] annotations; // NOSONAR
 
 		ListenerMethod(Method method, RabbitListener[] annotations) { // NOSONAR
 			this.method = method;

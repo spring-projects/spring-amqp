@@ -79,7 +79,7 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 	}
 
 	@Override
-	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) { // NOSONAR complexity
 
 		if (!NamespaceUtils.isAttributeDefined(element, NAME_ATTRIBUTE)
 				&& !NamespaceUtils.isAttributeDefined(element, ID_ATTRIBUTE)) {
