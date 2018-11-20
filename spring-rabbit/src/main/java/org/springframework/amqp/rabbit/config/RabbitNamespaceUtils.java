@@ -119,7 +119,7 @@ public final class RabbitNamespaceUtils {
 		super();
 	}
 
-	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) {
+	public static BeanDefinition parseContainer(Element containerEle, ParserContext parserContext) { // NOSONAR complexity
 		RootBeanDefinition containerDef = new RootBeanDefinition(ListenerContainerFactoryBean.class);
 		containerDef.setSource(parserContext.extractSource(containerEle));
 

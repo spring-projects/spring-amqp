@@ -17,6 +17,7 @@
 package org.springframework.amqp.rabbit.config;
 
 
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -63,9 +64,9 @@ import org.springframework.util.backoff.FixedBackOff;
 public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractMessageListenerContainer>
 		implements RabbitListenerContainerFactory<C>, ApplicationContextAware, ApplicationEventPublisherAware {
 
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
-	protected final AtomicInteger counter = new AtomicInteger();
+	protected final AtomicInteger counter = new AtomicInteger(); // NOSONAR
 
 	private ConnectionFactory connectionFactory;
 
@@ -194,7 +195,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * @since 1.7.4
 	 */
 	public Advice[] getAdviceChain() {
-		return this.adviceChain;
+		return Arrays.copyOf(this.adviceChain, this.adviceChain.length);
 	}
 
 	/**
@@ -202,7 +203,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * @see SimpleMessageListenerContainer#setAdviceChain
 	 */
 	public void setAdviceChain(Advice... adviceChain) {
-		this.adviceChain = adviceChain;
+		this.adviceChain = adviceChain == null ? null : Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
 	/**
@@ -343,7 +344,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public C createListenerContainer(RabbitListenerEndpoint endpoint) {
+	public C createListenerContainer(RabbitListenerEndpoint endpoint) { // NOSONAR complexity
 		C instance = createContainerInstance();
 
 		if (this.connectionFactory != null) {

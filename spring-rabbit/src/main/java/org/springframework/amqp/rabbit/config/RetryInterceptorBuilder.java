@@ -104,7 +104,7 @@ public abstract class RetryInterceptorBuilder<B extends RetryInterceptorBuilder<
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final B _this() {
+	protected final B _this() { // NOSONAR starts with _
 		return (B) this;
 	}
 

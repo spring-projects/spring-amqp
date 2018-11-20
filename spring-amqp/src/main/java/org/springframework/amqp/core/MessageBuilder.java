@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@ import org.springframework.util.Assert;
  */
 public final class MessageBuilder extends MessageBuilderSupport<Message> {
 
+	private static final String MESSAGE_CANNOT_BE_NULL = "'message' cannot be null";
+
+	private static final String BODY_CANNOT_BE_NULL = "'body' cannot be null";
+
 	private final byte[] body;
 
 	/**
@@ -38,7 +42,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 	 * @return The builder.
 	 */
 	public static MessageBuilder withBody(byte[] body) {
-		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(body, BODY_CANNOT_BE_NULL);
 		return new MessageBuilder(body);
 	}
 
@@ -48,7 +52,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 	 * @return The builder.
 	 */
 	public static MessageBuilder withClonedBody(byte[] body) {
-		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(body, BODY_CANNOT_BE_NULL);
 		return new MessageBuilder(Arrays.copyOf(body, body.length));
 	}
 
@@ -63,7 +67,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 	 * @see Arrays#copyOfRange(byte[], int, int)
 	 */
 	public static MessageBuilder withBody(byte[] body, int from, int to) {
-		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(body, BODY_CANNOT_BE_NULL);
 		return new MessageBuilder(Arrays.copyOfRange(body, from, to));
 	}
 
@@ -74,7 +78,7 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 	 * @return The builder.
 	 */
 	public static MessageBuilder fromMessage(Message message) {
-		Assert.notNull(message, "'message' cannot be null");
+		Assert.notNull(message, MESSAGE_CANNOT_BE_NULL);
 		return new MessageBuilder(message);
 	}
 
@@ -85,9 +89,9 @@ public final class MessageBuilder extends MessageBuilderSupport<Message> {
 	 * @return The builder.
 	 */
 	public static MessageBuilder fromClonedMessage(Message message) {
-		Assert.notNull(message, "'message' cannot be null");
+		Assert.notNull(message, MESSAGE_CANNOT_BE_NULL);
 		byte[] body = message.getBody();
-		Assert.notNull(body, "'body' cannot be null");
+		Assert.notNull(body, BODY_CANNOT_BE_NULL);
 		return new MessageBuilder(Arrays.copyOf(body, body.length), message.getMessageProperties());
 	}
 
