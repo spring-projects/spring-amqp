@@ -547,7 +547,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return permits;
 	}
 
-	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList, ChannelProxy channel) {
+	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList, // NOSONAR LinkedList.removeFirst()
+			ChannelProxy channel) {
 		synchronized (channelList) {
 			while (!channelList.isEmpty()) {
 				channel = channelList.removeFirst();
@@ -558,36 +559,40 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 					break;
 				}
 				else {
-					try {
-						Channel target = channel.getTargetChannel();
-						if (target != null) {
-							target.close();
-							/*
-							 *  To remove it from auto-recovery if so configured,
-							 *  and nack any pending confirms if PublisherCallbackChannel.
-							 */
-						}
-					}
-					catch (AlreadyClosedException e) {
-						if (logger.isTraceEnabled()) {
-							logger.trace(channel + " is already closed");
-						}
-					}
-					catch (IOException e) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Unexpected Exception closing channel " + e.getMessage());
-						}
-					}
-					catch (TimeoutException e) {
-						if (logger.isWarnEnabled()) {
-							logger.warn("TimeoutException closing channel " + e.getMessage());
-						}
-					}
+					cleanUpClosedChannel(channel);
 					channel = null;
 				}
 			}
 		}
 		return channel;
+	}
+
+	private void cleanUpClosedChannel(ChannelProxy channel) {
+		try {
+			Channel target = channel.getTargetChannel();
+			if (target != null) {
+				target.close();
+				/*
+				 *  To remove it from auto-recovery if so configured,
+				 *  and nack any pending confirms if PublisherCallbackChannel.
+				 */
+			}
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(channel + " is already closed");
+			}
+		}
+		catch (IOException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Unexpected Exception closing channel " + e.getMessage());
+			}
+		}
+		catch (TimeoutException e) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("TimeoutException closing channel " + e.getMessage());
+			}
+		}
 	}
 
 	private ChannelProxy getCachedChannelProxy(ChannelCachingConnectionProxy connection,
@@ -689,17 +694,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	private Connection connectionFromCache() {
 		ChannelCachingConnectionProxy cachedConnection = findIdleConnection();
 		long now = System.currentTimeMillis();
-		while (cachedConnection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
-			if (countOpenConnections() >= this.connectionLimit) {
-				try {
-					this.connectionMonitor.wait(this.channelCheckoutTimeout);
-					cachedConnection = findIdleConnection();
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					throw new AmqpException("Interrupted while waiting for a connection", e);
-				}
-			}
+		if (cachedConnection == null) {
+			cachedConnection = waitForConnection(cachedConnection, now);
 		}
 		if (cachedConnection == null) {
 			if (countOpenConnections() >= this.connectionLimit
@@ -732,6 +728,22 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		else {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Obtained connection '" + cachedConnection + "' from cache");
+			}
+		}
+		return cachedConnection;
+	}
+
+	private ChannelCachingConnectionProxy waitForConnection(ChannelCachingConnectionProxy cachedConnection, long now) {
+		while (cachedConnection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
+			if (countOpenConnections() >= this.connectionLimit) {
+				try {
+					this.connectionMonitor.wait(this.channelCheckoutTimeout);
+					cachedConnection = findIdleConnection();
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new AmqpException("Interrupted while waiting for a connection", e);
+				}
 			}
 		}
 		return cachedConnection;
