@@ -695,7 +695,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		ChannelCachingConnectionProxy cachedConnection = findIdleConnection();
 		long now = System.currentTimeMillis();
 		if (cachedConnection == null) {
-			cachedConnection = waitForConnection(cachedConnection, now);
+			cachedConnection = waitForConnection(now);
 		}
 		if (cachedConnection == null) {
 			if (countOpenConnections() >= this.connectionLimit
@@ -734,7 +734,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	@Nullable
-	private ChannelCachingConnectionProxy waitForConnection(ChannelCachingConnectionProxy cachedConnection, long now) {
+	private ChannelCachingConnectionProxy waitForConnection(long now) {
+		ChannelCachingConnectionProxy cachedConnection = null;
 		while (cachedConnection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
 			if (countOpenConnections() >= this.connectionLimit) {
 				try {
