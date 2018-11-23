@@ -733,6 +733,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return cachedConnection;
 	}
 
+	@Nullable
 	private ChannelCachingConnectionProxy waitForConnection(ChannelCachingConnectionProxy cachedConnection, long now) {
 		while (cachedConnection == null && System.currentTimeMillis() - now < this.channelCheckoutTimeout) {
 			if (countOpenConnections() >= this.connectionLimit) {
