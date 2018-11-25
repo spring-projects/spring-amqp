@@ -342,7 +342,7 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 		this.containerConfigurer = configurer;
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation") // NOSONAR complexity - mostly null checks
 	@Override
 	public C createListenerContainer(RabbitListenerEndpoint endpoint) { // NOSONAR complexity
 		C instance = createContainerInstance();

@@ -953,39 +953,7 @@ public class PublisherCallbackChannelImpl
 
 	private void doProcessAck(long seq, boolean ack, boolean multiple, boolean remove) {
 		if (multiple) {
-			/*
-			 * Piggy-backed ack - extract all Listeners for this and earlier
-			 * sequences. Then, for each Listener, handle each of it's acks.
-			 * Finally, remove the sequences from listenerForSeq.
-			 */
-			Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
-			// eliminate duplicates
-			Set<Listener> listeners = new HashSet<Listener>(involvedListeners.values());
-			for (Listener involvedListener : listeners) {
-				// find all unack'd confirms for this listener and handle them
-				SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
-				if (confirmsMap != null) {
-					Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
-					Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
-					while (iterator.hasNext()) {
-						Entry<Long, PendingConfirm> entry = iterator.next();
-						PendingConfirm value = entry.getValue();
-						CorrelationData correlationData = value.getCorrelationData();
-						if (correlationData != null) {
-							correlationData.getFuture().set(new Confirm(ack, value.getCause()));
-							if (StringUtils.hasText(correlationData.getId())) {
-								this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
-							}
-						}
-						iterator.remove();
-						doHandleConfirm(ack, involvedListener, value);
-					}
-				}
-			}
-			List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
-			for (Long key : seqs) {
-				this.listenerForSeq.remove(key);
-			}
+			processMultipleAck(seq, ack);
 		}
 		else {
 			Listener listener = this.listenerForSeq.remove(seq);
@@ -1016,6 +984,42 @@ public class PublisherCallbackChannelImpl
 					this.logger.debug(this.delegate.toString() + " No listener for seq:" + seq);
 				}
 			}
+		}
+	}
+
+	private void processMultipleAck(long seq, boolean ack) {
+		/*
+		 * Piggy-backed ack - extract all Listeners for this and earlier
+		 * sequences. Then, for each Listener, handle each of it's acks.
+		 * Finally, remove the sequences from listenerForSeq.
+		 */
+		Map<Long, Listener> involvedListeners = this.listenerForSeq.headMap(seq + 1);
+		// eliminate duplicates
+		Set<Listener> listenersForAcks = new HashSet<Listener>(involvedListeners.values());
+		for (Listener involvedListener : listenersForAcks) {
+			// find all unack'd confirms for this listener and handle them
+			SortedMap<Long, PendingConfirm> confirmsMap = this.pendingConfirms.get(involvedListener);
+			if (confirmsMap != null) {
+				Map<Long, PendingConfirm> confirms = confirmsMap.headMap(seq + 1);
+				Iterator<Entry<Long, PendingConfirm>> iterator = confirms.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Entry<Long, PendingConfirm> entry = iterator.next();
+					PendingConfirm value = entry.getValue();
+					CorrelationData correlationData = value.getCorrelationData();
+					if (correlationData != null) {
+						correlationData.getFuture().set(new Confirm(ack, value.getCause()));
+						if (StringUtils.hasText(correlationData.getId())) {
+							this.pendingReturns.remove(correlationData.getId()); // NOSONAR never null
+						}
+					}
+					iterator.remove();
+					doHandleConfirm(ack, involvedListener, value);
+				}
+			}
+		}
+		List<Long> seqs = new ArrayList<Long>(involvedListeners.keySet());
+		for (Long key : seqs) {
+			this.listenerForSeq.remove(key);
 		}
 	}
 

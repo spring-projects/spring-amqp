@@ -18,14 +18,18 @@ package org.springframework.amqp.rabbit.connection;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -33,7 +37,6 @@ import org.springframework.util.Assert;
 
 import com.rabbitmq.http.client.Client;
 import com.rabbitmq.http.client.domain.QueueInfo;
-
 
 /**
  * A {@link RoutingConnectionFactory} that determines the node on which a queue is located and
@@ -96,19 +99,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	public LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory,
 			Map<String, String> nodeToAddress, String[] adminUris, String vhost, String username, String password,
 			boolean useSSL, Resource sslPropertiesLocation) {
-		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		this.defaultConnectionFactory = defaultConnectionFactory;
-		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		this.nodeToAddress.putAll(nodeToAddress);
-		this.vhost = vhost;
-		this.username = username;
-		this.password = password;
-		this.useSSL = useSSL;
-		this.sslPropertiesLocation = sslPropertiesLocation;
-		this.keyStore = null;
-		this.trustStore = null;
-		this.keyStorePassPhrase = null;
-		this.trustStorePassPhrase = null;
+
+		this(defaultConnectionFactory, adminUris, nodeToAddress, vhost, username, password, useSSL,
+				sslPropertiesLocation, null, null, null, null);
 	}
 
 	/**
@@ -129,19 +122,9 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 			Map<String, String> nodeToAddress, String[] adminUris, String vhost, String username, String password,
 			boolean useSSL, String keyStore, String trustStore,
 			String keyStorePassPhrase, String trustStorePassPhrase) {
-		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		this.defaultConnectionFactory = defaultConnectionFactory;
-		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		this.nodeToAddress.putAll(nodeToAddress);
-		this.vhost = vhost;
-		this.username = username;
-		this.password = password;
-		this.useSSL = useSSL;
-		this.sslPropertiesLocation = null;
-		this.keyStore = keyStore;
-		this.trustStore = trustStore;
-		this.keyStorePassPhrase = keyStorePassPhrase;
-		this.trustStorePassPhrase = trustStorePassPhrase;
+
+		this(defaultConnectionFactory, adminUris, nodeToAddress, vhost, username, password, useSSL, null,
+				keyStore, trustStore, keyStorePassPhrase, trustStorePassPhrase);
 	}
 
 	/**
@@ -159,24 +142,10 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 */
 	public LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory, String[] addresses,
 			String[] adminUris, String[] nodes, String vhost, String username, String password, boolean useSSL,
-			Resource sslPropertiesLocation) {
-		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		Assert.isTrue(addresses.length == nodes.length,
-				"'addresses', 'adminAddresses', and 'nodes' properties must have equal length");
-		this.defaultConnectionFactory = defaultConnectionFactory;
-		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		for (int i = 0; i < addresses.length; i++) {
-			this.nodeToAddress.put(nodes[i], addresses[i]);
-		}
-		this.vhost = vhost;
-		this.username = username;
-		this.password = password;
-		this.useSSL = useSSL;
-		this.sslPropertiesLocation = sslPropertiesLocation;
-		this.keyStore = null;
-		this.trustStore = null;
-		this.keyStorePassPhrase = null;
-		this.trustStorePassPhrase = null;
+			@Nullable Resource sslPropertiesLocation) {
+
+		this(defaultConnectionFactory, adminUris, nodesAddressesToMap(nodes, addresses), vhost, username, password,
+				useSSL, sslPropertiesLocation, null, null, null, null);
 	}
 
 	/**
@@ -198,23 +167,38 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 			String[] addresses, String[] adminUris, String[] nodes, String vhost,
 			String username, String password, boolean useSSL, String keyStore, String trustStore,
 			String keyStorePassPhrase, String trustStorePassPhrase) {
+
+		this(defaultConnectionFactory, adminUris, nodesAddressesToMap(nodes, addresses), vhost, username, password,
+				useSSL, null, keyStore, trustStore, keyStorePassPhrase, trustStorePassPhrase);
+	}
+
+	private LocalizedQueueConnectionFactory(ConnectionFactory defaultConnectionFactory, String[] adminUris,
+			Map<String, String> nodeToAddress, String vhost, String username, String password, boolean useSSL,
+			@Nullable Resource sslPropertiesLocation, @Nullable String keyStore, @Nullable String trustStore,
+			@Nullable String keyStorePassPhrase, @Nullable String trustStorePassPhrase) {
+
 		Assert.notNull(defaultConnectionFactory, "'defaultConnectionFactory' cannot be null");
-		Assert.isTrue(addresses.length == nodes.length,
-				"'addresses', 'adminAddresses', and 'nodes' properties must have equal length");
 		this.defaultConnectionFactory = defaultConnectionFactory;
 		this.adminUris = Arrays.copyOf(adminUris, adminUris.length);
-		for (int i = 0; i < addresses.length; i++) {
-			this.nodeToAddress.put(nodes[i], addresses[i]);
-		}
+		this.nodeToAddress.putAll(nodeToAddress);
 		this.vhost = vhost;
 		this.username = username;
 		this.password = password;
 		this.useSSL = useSSL;
-		this.sslPropertiesLocation = null;
+		this.sslPropertiesLocation = sslPropertiesLocation;
 		this.keyStore = keyStore;
 		this.trustStore = trustStore;
 		this.keyStorePassPhrase = keyStorePassPhrase;
 		this.trustStorePassPhrase = trustStorePassPhrase;
+	}
+
+	private static Map<String, String> nodesAddressesToMap(String[] nodes, String[] addresses) {
+		Assert.isTrue(addresses.length == nodes.length,
+				"'addresses' and 'nodes' properties must have equal length");
+		return IntStream.range(0, addresses.length)
+			.mapToObj(i -> new SimpleImmutableEntry<>(nodes[i], addresses[i]))
+			.collect(Collectors.toMap(SimpleImmutableEntry::getKey, SimpleImmutableEntry::getValue,
+					(u, v) -> v)); // TODO in 2.2 use default throwingMerger() (to catch dups)
 	}
 
 	@Override
@@ -320,8 +304,7 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		return new Client(adminUri, username, password);
 	}
 
-	private synchronized ConnectionFactory nodeConnectionFactory(String queue, String node, String address)
-			throws Exception {
+	private synchronized ConnectionFactory nodeConnectionFactory(String queue, String node, String address)  {
 		if (this.logger.isInfoEnabled()) {
 			this.logger.info("Queue: " + queue + " is on node: " + node + " at: " + address);
 		}
@@ -341,9 +324,8 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	 * @param address the address to which the factory should connect.
 	 * @param node  the node.
 	 * @return the connection factory.
-	 * @throws Exception if errors occur during creation.
 	 */
-	protected ConnectionFactory createConnectionFactory(String address, String node) throws Exception {
+	protected ConnectionFactory createConnectionFactory(String address, String node) {
 		RabbitConnectionFactoryBean rcfb = new RabbitConnectionFactoryBean();
 		rcfb.setUseSSL(this.useSSL);
 		rcfb.setSslPropertiesLocation(this.sslPropertiesLocation);
@@ -352,7 +334,14 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 		rcfb.setKeyStorePassphrase(this.keyStorePassPhrase);
 		rcfb.setTrustStorePassphrase(this.trustStorePassPhrase);
 		rcfb.afterPropertiesSet();
-		CachingConnectionFactory ccf = new CachingConnectionFactory(rcfb.getObject()); // NOSONAR never null
+		com.rabbitmq.client.ConnectionFactory rcf;
+		try {
+			rcf = rcfb.getObject();
+		}
+		catch (Exception e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+		CachingConnectionFactory ccf = new CachingConnectionFactory(rcf); // NOSONAR never null
 		ccf.setAddresses(address);
 		ccf.setUsername(this.username);
 		ccf.setPassword(this.password);
@@ -362,11 +351,20 @@ public class LocalizedQueueConnectionFactory implements ConnectionFactory, Routi
 	}
 
 	@Override
-	public void destroy() throws Exception {
+	public void destroy() {
+		Exception lastException = null;
 		for (ConnectionFactory connectionFactory : this.nodeFactories.values()) {
 			if (connectionFactory instanceof DisposableBean) {
-				((DisposableBean) connectionFactory).destroy();
+				try {
+					((DisposableBean) connectionFactory).destroy();
+				}
+				catch (Exception e) {
+					lastException = e;
+				}
 			}
+		}
+		if (lastException != null) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(lastException);
 		}
 	}
 

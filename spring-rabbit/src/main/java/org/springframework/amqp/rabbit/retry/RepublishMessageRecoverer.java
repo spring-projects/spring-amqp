@@ -59,13 +59,13 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 
 	public static final int DEFAULT_FRAME_MAX_HEADROOM = 20_000;
 
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
-	protected final AmqpTemplate errorTemplate;
+	protected final AmqpTemplate errorTemplate; // NOSONAR
 
-	protected final String errorRoutingKey;
+	protected final String errorRoutingKey; // NOSONAR
 
-	protected final String errorExchangeName;
+	protected final String errorExchangeName; // NOSONAR
 
 	private String errorRoutingKeyPrefix = "error.";
 
@@ -150,20 +150,7 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 	public void recover(Message message, Throwable cause) {
 		MessageProperties messageProperties = message.getMessageProperties();
 		Map<String, Object> headers = messageProperties.getHeaders();
-		String stackTraceAsString = getStackTraceAsString(cause);
-		if (this.maxStackTraceLength < 0) {
-			int maxStackTraceLength = RabbitUtils
-					.getMaxFrame(((RabbitTemplate) this.errorTemplate).getConnectionFactory());
-			if (maxStackTraceLength > 0) {
-				maxStackTraceLength -= this.frameMaxHeadroom;
-				this.maxStackTraceLength = maxStackTraceLength;
-			}
-		}
-		if (this.maxStackTraceLength > 0 && stackTraceAsString.length() > this.maxStackTraceLength) {
-			stackTraceAsString = stackTraceAsString.substring(0, this.maxStackTraceLength);
-			this.logger.warn("Stack trace in republished message header truncated due to frame_max limitations; "
-					+ "consider increasing frame_max on the broker or reduce the stack trace depth", cause);
-		}
+		String stackTraceAsString = processStackTrace(cause);
 		headers.put(X_EXCEPTION_STACKTRACE, stackTraceAsString);
 		headers.put(X_EXCEPTION_MESSAGE, cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage());
 		headers.put(X_ORIGINAL_EXCHANGE, messageProperties.getReceivedExchange());
@@ -194,6 +181,24 @@ public class RepublishMessageRecoverer implements MessageRecoverer {
 						+ routingKey);
 			}
 		}
+	}
+
+	private String processStackTrace(Throwable cause) {
+		String stackTraceAsString = getStackTraceAsString(cause);
+		if (this.maxStackTraceLength < 0) {
+			int maxStackTraceLen = RabbitUtils
+					.getMaxFrame(((RabbitTemplate) this.errorTemplate).getConnectionFactory());
+			if (maxStackTraceLen > 0) {
+				maxStackTraceLen -= this.frameMaxHeadroom;
+				this.maxStackTraceLength = maxStackTraceLen;
+			}
+		}
+		if (this.maxStackTraceLength > 0 && stackTraceAsString.length() > this.maxStackTraceLength) {
+			stackTraceAsString = stackTraceAsString.substring(0, this.maxStackTraceLength);
+			this.logger.warn("Stack trace in republished message header truncated due to frame_max limitations; "
+					+ "consider increasing frame_max on the broker or reduce the stack trace depth", cause);
+		}
+		return stackTraceAsString;
 	}
 
 	/**

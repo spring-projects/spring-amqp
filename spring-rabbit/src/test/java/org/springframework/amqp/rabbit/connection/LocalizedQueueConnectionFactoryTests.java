@@ -16,7 +16,9 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.collection.IsArrayContainingInOrder.arrayContaining;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -98,11 +100,16 @@ public class LocalizedQueueConnectionFactoryTests {
 			}
 
 			@Override
-			protected ConnectionFactory createConnectionFactory(String address, String node) throws Exception {
+			protected ConnectionFactory createConnectionFactory(String address, String node) {
 				return mockCFs.get(address);
 			}
 
 		};
+		Map<?, ?> nodeAddress = TestUtils.getPropertyValue(lqcf, "nodeToAddress", Map.class);
+		assertThat(nodeAddress.get("rabbit@foo"), equalTo(rabbit1));
+		assertThat(nodeAddress.get("rabbit@bar"), equalTo(rabbit2));
+		String[] admins = TestUtils.getPropertyValue(lqcf, "adminUris", String[].class);
+		assertThat(admins, arrayContaining(adminUris));
 		Log logger = spy(TestUtils.getPropertyValue(lqcf, "logger", Log.class));
 		doReturn(true).when(logger).isInfoEnabled();
 		new DirectFieldAccessor(lqcf).setPropertyValue("logger", logger);

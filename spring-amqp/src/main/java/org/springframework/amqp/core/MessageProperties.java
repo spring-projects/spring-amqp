@@ -531,8 +531,8 @@ public class MessageProperties implements Serializable {
 		}
 	}
 
-	@Override
-	public int hashCode() { // NOSONAR complexity
+	@Override // NOSONAR complexity
+	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((this.appId == null) ? 0 : this.appId.hashCode());
@@ -558,8 +558,8 @@ public class MessageProperties implements Serializable {
 		return result;
 	}
 
-	@Override
-	public boolean equals(Object obj) { // NOSONAR complexity
+	@Override // NOSONAR complexity
+	public boolean equals(Object obj) { // NOSONAR line count
 		if (this == obj) {
 			return true;
 		}
@@ -715,8 +715,8 @@ public class MessageProperties implements Serializable {
 		return true;
 	}
 
-	@Override
-	public String toString() { // NOSONAR complexity
+	@Override // NOSONAR complexity
+	public String toString() {
 		return "MessageProperties [headers=" + this.headers
 				+ (this.timestamp == null ? "" : ", timestamp=" + this.timestamp)
 				+ (this.messageId == null ? "" : ", messageId=" + this.messageId)
