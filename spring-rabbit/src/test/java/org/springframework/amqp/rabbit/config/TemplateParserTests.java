@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public final class TemplateParserTests {
 		assertEquals(123L, accessor.getPropertyValue("receiveTimeout"));
 		assertEquals(1000L, accessor.getPropertyValue("replyTimeout"));
 		assertEquals("foo", accessor.getPropertyValue("exchange"));
-		assertEquals("bar", accessor.getPropertyValue("queue"));
+		assertEquals("bar", accessor.getPropertyValue("defaultQueue"));
 		assertEquals("spam", accessor.getPropertyValue("routingKey"));
 		assertTrue(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
 		assertEquals("@connectionFactory.username",
