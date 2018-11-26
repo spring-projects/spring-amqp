@@ -201,7 +201,7 @@ public class RabbitTemplatePublisherCallbacksIntegrationTests {
 		exec.shutdown();
 		assertTrue(exec.awaitTermination(300, TimeUnit.SECONDS));
 		assertTrue("" + latch.getCount(), latch.await(60, TimeUnit.SECONDS));
-		assertTrue("" + mppLatch.getCount(), latch.await(60, TimeUnit.SECONDS));
+		assertTrue("" + mppLatch.getCount(), mppLatch.await(60, TimeUnit.SECONDS));
 		assertNotNull(confirmCorrelation.get());
 		assertEquals("abc", confirmCorrelation.get().getId());
 		assertNull(templateWithConfirmsEnabled.getUnconfirmed(-1));
