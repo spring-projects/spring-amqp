@@ -666,7 +666,7 @@ public class RabbitTemplateIntegrationTests {
 		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(() -> {
@@ -700,7 +700,7 @@ public class RabbitTemplateIntegrationTests {
 		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		final AtomicReference<String> remoteCorrelationId = new AtomicReference<>();
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
@@ -767,7 +767,7 @@ public class RabbitTemplateIntegrationTests {
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		ReflectionUtils.setField(fields[0], template, logger);
 		template.setRoutingKey(ROUTE);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<Message> received = executor.submit(() -> {
@@ -867,7 +867,7 @@ public class RabbitTemplateIntegrationTests {
 		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<String> received = executor.submit(() -> {
@@ -953,7 +953,7 @@ public class RabbitTemplateIntegrationTests {
 		cachingConnectionFactory.setHost("localhost");
 		final RabbitTemplate template = createSendAndReceiveRabbitTemplate(cachingConnectionFactory);
 		template.setRoutingKey(ROUTE);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		ExecutorService executor = Executors.newFixedThreadPool(1);
 		// Set up a consumer to respond to our producer
 		Future<String> received = executor.submit(() -> {
@@ -1060,7 +1060,7 @@ public class RabbitTemplateIntegrationTests {
 
 	@Test
 	public void testReceiveAndReplyNonStandardCorrelationNotBytes() {
-		this.template.setQueue(ROUTE);
+		this.template.setDefaultReceiveQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		MessageProperties messageProperties = new MessageProperties();
 		messageProperties.getHeaders().put("baz", "bar");
@@ -1087,7 +1087,7 @@ public class RabbitTemplateIntegrationTests {
 	}
 
 	private void testReceiveAndReply(long timeout) throws Exception {
-		this.template.setQueue(ROUTE);
+		this.template.setDefaultReceiveQueue(ROUTE);
 		this.template.setRoutingKey(ROUTE);
 		this.template.convertAndSend(ROUTE, "test");
 		template.setReceiveTimeout(timeout);
@@ -1229,7 +1229,7 @@ public class RabbitTemplateIntegrationTests {
 	@Test
 	public void testSymmetricalReceiveAndReply() throws InterruptedException, UnsupportedEncodingException {
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
-		template.setQueue(ROUTE);
+		template.setDefaultReceiveQueue(ROUTE);
 		template.setRoutingKey(ROUTE);
 		template.setReplyAddress(REPLY_QUEUE.getName());
 		template.setReplyTimeout(20000);
@@ -1358,7 +1358,7 @@ public class RabbitTemplateIntegrationTests {
 			messageListenerAdapter.setMessageConverter(null);
 			container.setMessageListener(messageListenerAdapter);
 			container.start();
-			template.setQueue(ROUTE);
+			template.setDefaultReceiveQueue(ROUTE);
 			template.setRoutingKey(ROUTE);
 			Object result = template.convertSendAndReceive("foo");
 			container.stop();

@@ -102,7 +102,7 @@ public final class TemplateParserTests {
 		assertEquals(123L, accessor.getPropertyValue("receiveTimeout"));
 		assertEquals(1000L, accessor.getPropertyValue("replyTimeout"));
 		assertEquals("foo", accessor.getPropertyValue("exchange"));
-		assertEquals("bar", accessor.getPropertyValue("defaultQueue"));
+		assertEquals("bar", accessor.getPropertyValue("defaultReceiveQueue"));
 		assertEquals("spam", accessor.getPropertyValue("routingKey"));
 		assertTrue(TestUtils.getPropertyValue(template, "useTemporaryReplyQueues", Boolean.class));
 		assertEquals("@connectionFactory.username",
