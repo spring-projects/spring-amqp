@@ -404,7 +404,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		return this.listenerContainer == null ? AbstractMessageListenerContainer.class : this.listenerContainer.getClass();
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation") // NOSONAR complexity - mostly null checks
 	@Override
 	protected AbstractMessageListenerContainer createInstance() { // NOSONAR complexity
 		if (this.listenerContainer == null) {
@@ -529,7 +529,7 @@ public class ListenerContainerFactoryBean extends AbstractFactoryBean<AbstractMe
 		return this.listenerContainer;
 	}
 
-	private AbstractMessageListenerContainer createContainer() {
+	private AbstractMessageListenerContainer createContainer() { // NOSONAR complexity - mostly null checks
 		if (this.type.equals(Type.simple)) {
 			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 			if (this.concurrentConsumers != null) {

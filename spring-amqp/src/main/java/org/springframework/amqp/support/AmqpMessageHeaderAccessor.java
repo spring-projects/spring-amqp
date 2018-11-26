@@ -87,7 +87,7 @@ public class AmqpMessageHeaderAccessor extends NativeMessageHeaderAccessor {
 	@Override
 	public MimeType getContentType() {
 		Object value = getHeader(AmqpHeaders.CONTENT_TYPE);
-		if (value != null && value instanceof String) {
+		if (value instanceof String) {
 			return MimeType.valueOf((String) value);
 		}
 		else {

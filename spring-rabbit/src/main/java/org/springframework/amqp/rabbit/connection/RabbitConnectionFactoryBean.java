@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.connection;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -23,6 +24,8 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -39,9 +42,11 @@ import javax.net.ssl.TrustManagerFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -95,9 +100,11 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	private static final String TRUST_STORE_DEFAULT_TYPE = "JKS";
 
-	protected final ConnectionFactory connectionFactory = new ConnectionFactory();
+	protected final ConnectionFactory connectionFactory = new ConnectionFactory(); // NOSONAR
 
 	private final Properties sslProperties = new Properties();
+
+	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
 	private boolean useSSL;
 
@@ -623,12 +630,22 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 	}
 
 	@Override
+	public void afterPropertiesSet() {
+		try {
+			super.afterPropertiesSet();
+		}
+		catch (Exception e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	@Override
 	public Class<?> getObjectType() {
 		return ConnectionFactory.class;
 	}
 
 	@Override
-	protected ConnectionFactory createInstance() throws Exception {
+	protected ConnectionFactory createInstance() {
 		if (this.useSSL) {
 			setUpSSL();
 		}
@@ -637,77 +654,98 @@ public class RabbitConnectionFactoryBean extends AbstractFactoryBean<ConnectionF
 
 	/**
 	 * Override this method to take complete control over the SSL setup.
-	 * @throws Exception an Exception.
 	 * @since 1.4.4
 	 */
-	protected void setUpSSL() throws Exception {
-		if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null
-				&& this.keyStoreResource == null && this.trustStoreResource == null) {
-			if (this.skipServerCertificateValidation) {
-				if (this.sslAlgorithmSet) {
-					this.connectionFactory.useSslProtocol(this.sslAlgorithm);
-				}
-				else {
-					this.connectionFactory.useSslProtocol();
-				}
+	protected void setUpSSL() {
+		try {
+			if (this.sslPropertiesLocation == null && this.keyStore == null && this.trustStore == null // NOSONAR boolean complexity
+					&& this.keyStoreResource == null && this.trustStoreResource == null) {
+				setupBasicSSL();
 			}
 			else {
-				useDefaultTrustStoreMechanism();
+				if (this.sslPropertiesLocation != null) {
+					this.sslProperties.load(this.sslPropertiesLocation.getInputStream());
+				}
+				KeyManager[] keyManagers = configureKeyManagers();
+				TrustManager[] trustManagers = configureTrustManagers();
+
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Initializing SSLContext with KM: "
+							+ Arrays.toString(keyManagers)
+							+ ", TM: " + Arrays.toString(trustManagers)
+							+ ", random: " + this.secureRandom);
+				}
+				SSLContext context = createSSLContext();
+				context.init(keyManagers, trustManagers, this.secureRandom);
+				this.connectionFactory.useSslProtocol(context);
+				if (this.enableHostnameVerification) {
+					this.connectionFactory.enableHostnameVerification();
+				}
+			}
+		}
+		catch (Exception e) {
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	private void setupBasicSSL() throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException {
+		if (this.skipServerCertificateValidation) {
+			if (this.sslAlgorithmSet) {
+				this.connectionFactory.useSslProtocol(this.sslAlgorithm);
+			}
+			else {
+				this.connectionFactory.useSslProtocol();
 			}
 		}
 		else {
-			if (this.sslPropertiesLocation != null) {
-				this.sslProperties.load(this.sslPropertiesLocation.getInputStream());
-			}
-			PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-			String keyStoreName = getKeyStore();
-			String trustStoreName = getTrustStore();
-			String keyStorePassword = getKeyStorePassphrase();
-			String trustStorePassword = getTrustStorePassphrase();
-			String keyStoreType = getKeyStoreType();
-			String trustStoreType = getTrustStoreType();
-			char[] keyPassphrase = null;
-			if (keyStorePassword != null) {
-				keyPassphrase = keyStorePassword.toCharArray();
-			}
-			char[] trustPassphrase = null;
-			if (trustStorePassword != null) {
-				trustPassphrase = trustStorePassword.toCharArray();
-			}
-			KeyManager[] keyManagers = null;
-			TrustManager[] trustManagers = null;
-			if (StringUtils.hasText(keyStoreName) || this.keyStoreResource != null) {
-				Resource keyStoreResource = this.keyStoreResource != null ? this.keyStoreResource
-						: resolver.getResource(keyStoreName);
-				KeyStore ks = KeyStore.getInstance(keyStoreType);
-				ks.load(keyStoreResource.getInputStream(), keyPassphrase);
-				KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-				kmf.init(ks, keyPassphrase);
-				keyManagers = kmf.getKeyManagers();
-			}
-			if (StringUtils.hasText(trustStoreName) || this.trustStoreResource != null) {
-				Resource trustStoreResource = this.trustStoreResource != null ? this.trustStoreResource
-						: resolver.getResource(trustStoreName);
-				KeyStore tks = KeyStore.getInstance(trustStoreType);
-				tks.load(trustStoreResource.getInputStream(), trustPassphrase);
-				TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-				tmf.init(tks);
-				trustManagers = tmf.getTrustManagers();
-			}
-
-			if (this.logger.isDebugEnabled()) {
-				this.logger.debug("Initializing SSLContext with KM: "
-						+ Arrays.toString(keyManagers)
-						+ ", TM: " + Arrays.toString(trustManagers)
-						+ ", random: " + this.secureRandom);
-			}
-			SSLContext context = createSSLContext();
-			context.init(keyManagers, trustManagers, this.secureRandom);
-			this.connectionFactory.useSslProtocol(context);
-			if (this.enableHostnameVerification) {
-				this.connectionFactory.enableHostnameVerification();
-			}
+			useDefaultTrustStoreMechanism();
 		}
+	}
+
+	@Nullable
+	private KeyManager[] configureKeyManagers() throws KeyStoreException, IOException, NoSuchAlgorithmException,
+			CertificateException, UnrecoverableKeyException {
+		String keyStoreName = getKeyStore();
+		String keyStorePassword = getKeyStorePassphrase();
+		String storeType = getKeyStoreType();
+		char[] keyPassphrase = null;
+		if (keyStorePassword != null) {
+			keyPassphrase = keyStorePassword.toCharArray();
+		}
+		KeyManager[] keyManagers = null;
+		if (StringUtils.hasText(keyStoreName) || this.keyStoreResource != null) {
+			Resource resource = this.keyStoreResource != null ? this.keyStoreResource
+					: this.resolver.getResource(keyStoreName);
+			KeyStore ks = KeyStore.getInstance(storeType);
+			ks.load(resource.getInputStream(), keyPassphrase);
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+			kmf.init(ks, keyPassphrase);
+			keyManagers = kmf.getKeyManagers();
+		}
+		return keyManagers;
+	}
+
+	@Nullable
+	private TrustManager[] configureTrustManagers()
+			throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+		String trustStoreName = getTrustStore();
+		String trustStorePassword = getTrustStorePassphrase();
+		String storeType = getTrustStoreType();
+		char[] trustPassphrase = null;
+		if (trustStorePassword != null) {
+			trustPassphrase = trustStorePassword.toCharArray();
+		}
+		TrustManager[] trustManagers = null;
+		if (StringUtils.hasText(trustStoreName) || this.trustStoreResource != null) {
+			Resource resource = this.trustStoreResource != null ? this.trustStoreResource
+					: this.resolver.getResource(trustStoreName);
+			KeyStore tks = KeyStore.getInstance(storeType);
+			tks.load(resource.getInputStream(), trustPassphrase);
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+			tmf.init(tks);
+			trustManagers = tmf.getTrustManagers();
+		}
+		return trustManagers;
 	}
 
 	/**

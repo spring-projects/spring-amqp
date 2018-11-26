@@ -134,7 +134,7 @@ public class SimpleRabbitListenerContainerFactory
 		return new SimpleMessageListenerContainer();
 	}
 
-	@Override
+	@Override // NOSONAR complexity = mostly null checks
 	protected void initializeContainer(SimpleMessageListenerContainer instance, RabbitListenerEndpoint endpoint) {
 		super.initializeContainer(instance, endpoint);
 

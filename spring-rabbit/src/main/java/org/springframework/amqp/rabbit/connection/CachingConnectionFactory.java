@@ -480,22 +480,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	private Channel getChannel(ChannelCachingConnectionProxy connection, boolean transactional) {
-		Semaphore checkoutPermits = null;
+		Semaphore permits = null;
 		if (this.channelCheckoutTimeout > 0) {
-			checkoutPermits = obtainPermit(connection);
+			permits = obtainPermits(connection);
 		}
-		LinkedList<ChannelProxy> channelList;
-		if (this.cacheMode == CacheMode.CHANNEL) {
-			channelList = transactional ? this.cachedChannelsTransactional
-					: this.cachedChannelsNonTransactional;
-		}
-		else {
-			channelList = transactional ? this.allocatedConnectionTransactionalChannels.get(connection)
-					: this.allocatedConnectionNonTransactionalChannels.get(connection);
-		}
-		if (channelList == null) {
-			throw new IllegalStateException("No channel list for connection " + connection);
-		}
+		LinkedList<ChannelProxy> channelList = determineChannelList(connection, transactional);
 		ChannelProxy channel = null;
 		if (connection.isOpen()) {
 			channel = findOpenChannel(channelList, channel);
@@ -510,11 +499,11 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				channel = getCachedChannelProxy(connection, channelList, transactional);
 			}
 			catch (RuntimeException e) {
-				if (checkoutPermits != null) {
-					checkoutPermits.release();
+				if (permits != null) {
+					permits.release();
 					if (logger.isDebugEnabled()) {
 						logger.debug("Could not get channel; released permit for " + connection + ", remaining:"
-								+ checkoutPermits.availablePermits());
+								+ permits.availablePermits());
 					}
 				}
 				throw e;
@@ -523,7 +512,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		return channel;
 	}
 
-	private Semaphore obtainPermit(ChannelCachingConnectionProxy connection) {
+	private Semaphore obtainPermits(ChannelCachingConnectionProxy connection) {
 		Semaphore permits;
 		permits = this.checkoutPermits.get(connection);
 		if (permits != null) {
@@ -548,7 +537,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	}
 
 	private ChannelProxy findOpenChannel(LinkedList<ChannelProxy> channelList, // NOSONAR LinkedList.removeFirst()
-			ChannelProxy channel) {
+			ChannelProxy channelArg) {
+		ChannelProxy channel = channelArg;
 		synchronized (channelList) {
 			while (!channelList.isEmpty()) {
 				channel = channelList.removeFirst();
@@ -593,6 +583,23 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				logger.warn("TimeoutException closing channel " + e.getMessage());
 			}
 		}
+	}
+
+	private LinkedList<ChannelProxy> determineChannelList(ChannelCachingConnectionProxy connection, // NOSONAR LL
+			boolean transactional) {
+		LinkedList<ChannelProxy> channelList; // NOSONAR must be LinkedList
+		if (this.cacheMode == CacheMode.CHANNEL) {
+			channelList = transactional ? this.cachedChannelsTransactional
+					: this.cachedChannelsNonTransactional;
+		}
+		else {
+			channelList = transactional ? this.allocatedConnectionTransactionalChannels.get(connection)
+					: this.allocatedConnectionNonTransactionalChannels.get(connection);
+		}
+		if (channelList == null) {
+			throw new IllegalStateException("No channel list for connection " + connection);
+		}
+		return channelList;
 	}
 
 	private ChannelProxy getCachedChannelProxy(ChannelCachingConnectionProxy connection,

@@ -43,7 +43,7 @@ import org.springframework.lang.Nullable;
 public class RabbitGatewaySupport implements InitializingBean {
 
 	/** Logger available to subclasses. */
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private RabbitOperations rabbitOperations;
 
@@ -112,7 +112,7 @@ public class RabbitGatewaySupport implements InitializingBean {
 	 * Gets called after population of this instance's bean properties.
 	 * @throws java.lang.Exception if initialization fails
 	 */
-	protected void initGateway() throws Exception {
+	protected void initGateway() throws Exception { // NOSONAR TODO in 2.2 remove throws clause
 	}
 
 }

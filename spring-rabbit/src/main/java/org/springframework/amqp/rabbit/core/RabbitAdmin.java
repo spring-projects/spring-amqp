@@ -104,7 +104,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private static final String DELAYED_MESSAGE_EXCHANGE = "x-delayed-message";
 
 	/** Logger available to subclasses. */
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR
 
 	private final RabbitTemplate rabbitTemplate;
 
@@ -546,49 +546,8 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		Collection<Binding> contextBindings = new LinkedList<Binding>(
 				this.applicationContext.getBeansOfType(Binding.class).values());
 
-		// TODO: remove in 3.0
-		@SuppressWarnings("rawtypes")
-		Collection<Collection> collections = this.declareCollections
-			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
-			: Collections.emptyList();
-		boolean shouldWarn = false;
-		for (Collection<?> collection : collections) {
-			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
-				shouldWarn = true;
-				for (Object declarable : collection) {
-					if (declarable instanceof Exchange) {
-						contextExchanges.add((Exchange) declarable);
-					}
-					else if (declarable instanceof Queue) {
-						contextQueues.add((Queue) declarable);
-					}
-					else if (declarable instanceof Binding) {
-						contextBindings.add((Binding) declarable);
-					}
-				}
-			}
-		}
-		if (shouldWarn && this.logger.isWarnEnabled()) {
-			this.logger.warn("Beans of type Collection<Declarable> are discouraged, and deprecated, "
-					+ "use Declarables beans instead");
-		}
-		// end TODO
-
-		Collection<Declarables> declarables = this.applicationContext.getBeansOfType(Declarables.class, false, true)
-				.values();
-		declarables.forEach(d -> {
-			d.getDeclarables().forEach(declarable -> {
-				if (declarable instanceof Exchange) {
-					contextExchanges.add((Exchange) declarable);
-				}
-				else if (declarable instanceof Queue) {
-					contextQueues.add((Queue) declarable);
-				}
-				else if (declarable instanceof Binding) {
-					contextBindings.add((Binding) declarable);
-				}
-			});
-		});
+		processLegacyCollections(contextExchanges, contextQueues, contextBindings);
+		processDeclarables(contextExchanges, contextQueues, contextBindings);
 
 		final Collection<Exchange> exchanges = filterDeclarables(contextExchanges);
 		final Collection<Queue> queues = filterDeclarables(contextQueues);
@@ -629,6 +588,56 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 	}
 
+	// TODO: remove in 3.0
+	private void processLegacyCollections(Collection<Exchange> contextExchanges, // NOSONAR complexity
+			Collection<Queue> contextQueues, Collection<Binding> contextBindings) {
+
+		@SuppressWarnings("rawtypes")
+		Collection<Collection> collections = this.declareCollections
+			? this.applicationContext.getBeansOfType(Collection.class, false, false).values()
+			: Collections.emptyList();
+		boolean shouldWarn = false;
+		for (Collection<?> collection : collections) {
+			if (collection.size() > 0 && collection.iterator().next() instanceof Declarable) {
+				shouldWarn = true;
+				for (Object declarable : collection) {
+					if (declarable instanceof Exchange) {
+						contextExchanges.add((Exchange) declarable);
+					}
+					else if (declarable instanceof Queue) {
+						contextQueues.add((Queue) declarable);
+					}
+					else if (declarable instanceof Binding) {
+						contextBindings.add((Binding) declarable);
+					}
+				}
+			}
+		}
+		if (shouldWarn && this.logger.isWarnEnabled()) {
+			this.logger.warn("Beans of type Collection<Declarable> are discouraged, and deprecated, "
+					+ "use Declarables beans instead");
+		}
+	}
+
+	private void processDeclarables(Collection<Exchange> contextExchanges, Collection<Queue> contextQueues,
+			Collection<Binding> contextBindings) {
+		Collection<Declarables> declarables = this.applicationContext.getBeansOfType(Declarables.class, false, true)
+				.values();
+		declarables.forEach(d -> {
+			d.getDeclarables().forEach(declarable -> {
+				if (declarable instanceof Exchange) {
+					contextExchanges.add((Exchange) declarable);
+				}
+				else if (declarable instanceof Queue) {
+					contextQueues.add((Queue) declarable);
+				}
+				else if (declarable instanceof Binding) {
+					contextBindings.add((Binding) declarable);
+				}
+			});
+		});
+	}
+
 	/**
 	 * Remove any instances that should not be declared by this admin.
 	 * @param declarables the collection of {@link Declarable}s.
@@ -638,7 +647,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	private <T extends Declarable> Collection<T> filterDeclarables(Collection<T> declarables) {
 		return declarables.stream()
-				.filter(d -> d.shouldDeclare()
+				.filter(d -> d.shouldDeclare() // NOSONAR boolean complexity
 						&& (d.getDeclaringAdmins().isEmpty() || d.getDeclaringAdmins().contains(this)
 								|| (this.beanName != null && d.getDeclaringAdmins().contains(this.beanName))))
 				.collect(Collectors.toList());
@@ -696,20 +705,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 						declareOks.add(declareOk);
 					}
 					catch (IllegalArgumentException e) {
-						if (this.logger.isDebugEnabled()) {
-							this.logger.error("Exception while declaring queue: '" + queue.getName() + "'");
-						}
-						try {
-							if (channel instanceof ChannelProxy) {
-								((ChannelProxy) channel).getTargetChannel().close();
-							}
-						}
-						catch (TimeoutException e1) {
-						}
+						closeChannelAfterIllegalArg(channel, queue);
 						throw new IOException(e);
 					}
 				}
-				catch (IOException e) {
+				catch (IOException e) { // NOSONAR exceptions for flow control
 					logOrRethrowDeclarationException(queue, "queue", e);
 				}
 			}
@@ -718,6 +718,20 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 			}
 		}
 		return declareOks.toArray(new DeclareOk[declareOks.size()]);
+	}
+
+	private void closeChannelAfterIllegalArg(final Channel channel, Queue queue) {
+		if (this.logger.isDebugEnabled()) {
+			this.logger.error("Exception while declaring queue: '" + queue.getName() + "'");
+		}
+		try {
+			if (channel instanceof ChannelProxy) {
+				((ChannelProxy) channel).getTargetChannel().close();
+			}
+		}
+		catch (IOException | TimeoutException e1) {
+			this.logger.error("Failed to close channel after illegal argument", e1);
+		}
 	}
 
 	private void declareBindings(final Channel channel, final Binding... bindings) throws IOException {
@@ -749,11 +763,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	private <T extends Throwable> void logOrRethrowDeclarationException(@Nullable Declarable element,
 			String elementType, T t) throws T {
 
-		DeclarationExceptionEvent event = new DeclarationExceptionEvent(this, element, t);
-		this.lastDeclarationExceptionEvent = event;
-		if (this.applicationEventPublisher != null) {
-			this.applicationEventPublisher.publishEvent(event);
-		}
+		publishDeclarationExceptionEvent(element, t);
 		if (this.ignoreDeclarationExceptions || (element != null && element.isIgnoreDeclarationExceptions())) {
 			if (this.logger.isDebugEnabled()) {
 				this.logger.debug("Failed to declare " + elementType
@@ -772,6 +782,14 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 		}
 		else {
 			throw t;
+		}
+	}
+
+	private <T extends Throwable> void publishDeclarationExceptionEvent(Declarable element, T t) {
+		DeclarationExceptionEvent event = new DeclarationExceptionEvent(this, element, t);
+		this.lastDeclarationExceptionEvent = event;
+		if (this.applicationEventPublisher != null) {
+			this.applicationEventPublisher.publishEvent(event);
 		}
 	}
 
