@@ -188,7 +188,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private volatile String routingKey = DEFAULT_ROUTING_KEY;
 
 	// The default queue name that will be used for synchronous receives.
-	private volatile String defaultQueue;
+	private volatile String defaultReceiveQueue;
 
 	private volatile long receiveTimeout = 0;
 
@@ -316,11 +316,21 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	/**
 	 * The name of the default queue to receive messages from when none is specified explicitly.
-	 *
 	 * @param queue the default queue name to use for receive
+	 * @deprecated in favor of {@link #setDefaultReceiveQueue(String)}.
 	 */
+	@Deprecated
 	public void setQueue(String queue) {
-		this.defaultQueue = queue;
+		this.defaultReceiveQueue = queue;
+	}
+
+	/**
+	 * The name of the default queue to receive messages from when none is specified explicitly.
+	 * @param queue the default queue name to use for receive
+	 * @since 2.1.2
+	 */
+	public void setDefaultReceiveQueue(String queue) {
+		this.defaultReceiveQueue = queue;
 	}
 
 	/**
@@ -2235,7 +2245,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	private String getRequiredQueue() throws IllegalStateException {
-		String name = this.defaultQueue;
+		String name = this.defaultReceiveQueue;
 		if (name == null) {
 			throw new AmqpIllegalStateException("No 'queue' specified. Check configuration of RabbitTemplate.");
 		}

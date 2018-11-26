@@ -182,7 +182,7 @@ public class ComplexTypeJsonIntegrationTests {
 		public RabbitTemplate template() {
 			RabbitTemplate rabbitTemplate = new RabbitTemplate(cf());
 			rabbitTemplate.setRoutingKey(TEST_QUEUE);
-			rabbitTemplate.setQueue(TEST_QUEUE2);
+			rabbitTemplate.setDefaultReceiveQueue(TEST_QUEUE2);
 			rabbitTemplate.setMessageConverter(jsonMessageConverter());
 			return rabbitTemplate;
 		}
