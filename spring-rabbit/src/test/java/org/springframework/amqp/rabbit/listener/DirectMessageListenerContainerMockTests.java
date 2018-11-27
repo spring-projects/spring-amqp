@@ -218,14 +218,21 @@ public class DirectMessageListenerContainerMockTests {
 						anyMap(), any(Consumer.class))).willReturn("consumerTag");
 
 		final CountDownLatch latch1 = new CountDownLatch(2);
-		final CountDownLatch latch3 = new CountDownLatch(3);
 		final AtomicInteger qos = new AtomicInteger();
 		willAnswer(i -> {
 			qos.set(i.getArgument(0));
 			latch1.countDown();
-			latch3.countDown();
 			return null;
 		}).given(channel).basicQos(anyInt());
+
+		final CountDownLatch latch3 = new CountDownLatch(3);
+		willAnswer(i -> {
+			latch3.countDown();
+			return "consumerTag";
+		}).given(channel)
+				.basicConsume(anyString(), anyBoolean(), anyString(), anyBoolean(), anyBoolean(),
+						anyMap(), any(Consumer.class));
+
 		final CountDownLatch latch2 = new CountDownLatch(2);
 		willAnswer(i -> {
 			latch2.countDown();
