@@ -472,6 +472,9 @@ Starting with Spring AMQP _version 1.5_, these properties can be set directly on
 If both discrete properties and `sslPropertiesLocation` is provided, properties in the latter will override the
 discrete values.
 
+IMPORTANT: Starting with version 2.0, the server certificate is validated by default because it is more secure. If you wish to skip this validation for some reason, set the factory bean's `skipServerCertificateValidation` property to `true`.
+Starting with version 2.1, the `RabbitConnectionFactoryBean` now calls `enableHostnameVerification()` by default; to revert to the previous behavior, set the `enableHostnameVerification` property to `false`.
+
 [[routing-connection-factory]]
 ===== Routing Connection Factory
 
