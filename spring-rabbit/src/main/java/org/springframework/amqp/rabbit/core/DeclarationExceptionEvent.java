@@ -30,7 +30,7 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 
 	private static final long serialVersionUID = -8367796410619780665L;
 
-	private transient Declarable declarable;
+	private final transient Declarable declarable;
 
 	private final Throwable throwable;
 

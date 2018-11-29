@@ -611,7 +611,7 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
-	private static class BrokerNotAliveException extends RuntimeException {
+	public static class BrokerNotAliveException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
 
