@@ -613,7 +613,7 @@ public final class BrokerRunning extends TestWatcher {
 
 	/**
 	 * The {@link RuntimeException} thrown when broker is not available
-	 * on the provided host port
+	 * on the provided host port.
 	 */
 	public static class BrokerNotAliveException extends RuntimeException {
 
