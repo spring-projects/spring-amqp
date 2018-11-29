@@ -611,6 +611,10 @@ public final class BrokerRunning extends TestWatcher {
 		}
 	}
 
+	/**
+	 * The {@link RuntimeException} thrown when broker is not available
+	 * on the provided host port
+	 */
 	public static class BrokerNotAliveException extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
