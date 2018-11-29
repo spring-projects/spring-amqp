@@ -22,7 +22,6 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.support.AmqpHeaderMapper;
 import org.springframework.amqp.support.SimpleAmqpHeaderMapper;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.Assert;
@@ -131,7 +130,6 @@ public class MessagingMessageConverter implements MessageConverter, Initializing
 	 * @param message the AMQP Message to extract {@code payload}.
 	 * @return the extracted {@code payload}.
 	 */
-	@Nullable
 	protected Object extractPayload(org.springframework.amqp.core.Message message) {
 		return this.payloadConverter.fromMessage(message);
 	}

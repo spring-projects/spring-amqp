@@ -20,7 +20,6 @@ import org.springframework.amqp.AmqpRemoteException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.lang.Nullable;
 import org.springframework.remoting.support.RemoteInvocationResult;
 import org.springframework.util.Assert;
 
@@ -63,12 +62,14 @@ public class RemoteInvocationAwareMessageConverterAdapter implements MessageConv
 	}
 
 	@Override
-	@Nullable
 	public Object fromMessage(Message message) throws MessageConversionException {
 		Object result = this.delegate.fromMessage(message);
 		if (result instanceof RemoteInvocationResult) {
 			try {
 				result = ((RemoteInvocationResult) result).recreate();
+				if (result == null) {
+					throw new MessageConversionException("RemoteInvocationResult returned null");
+				}
 			}
 			catch (Throwable e) { // NOSONAR
 				throw new AmqpRemoteException(e);
