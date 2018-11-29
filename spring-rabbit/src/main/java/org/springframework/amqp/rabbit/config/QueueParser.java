@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,13 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 
 		}
 
+		parseArguments(element, parserContext, builder);
+
+		NamespaceUtils.parseDeclarationControls(element, builder);
+		CURRENT_ELEMENT.set(element);
+	}
+
+	private void parseArguments(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 		String queueArguments = element.getAttribute(ARGUMENTS);
 		Element argumentsElement = DomUtils.getChildElementByTagName(element, ARGUMENTS);
 
@@ -141,9 +148,6 @@ public class QueueParser extends AbstractSingleBeanDefinitionParser {
 		if (StringUtils.hasText(queueArguments)) {
 			builder.addConstructorArgReference(queueArguments);
 		}
-
-		NamespaceUtils.parseDeclarationControls(element, builder);
-		CURRENT_ELEMENT.set(element);
 	}
 
 	private boolean attributeHasIllegalOverride(Element element, String name, String allowed) {

@@ -30,7 +30,7 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 
 	private static final long serialVersionUID = -8367796410619780665L;
 
-	private final Declarable declarable;
+	private final transient Declarable declarable;
 
 	private final Throwable throwable;
 
@@ -43,6 +43,7 @@ public class DeclarationExceptionEvent extends RabbitAdminEvent {
 	/**
 	 * @return the declarable - if null, we were declaring a broker-named queue.
 	 */
+	@Nullable
 	public Declarable getDeclarable() {
 		return this.declarable;
 	}

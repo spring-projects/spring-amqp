@@ -128,6 +128,7 @@ public class ConnectionFactoryLifecycleTests {
 		ConnectionUnblockedEvent connectionUnblockedEvent = unblockedConnectionEvent.get();
 		assertNotNull(connectionUnblockedEvent);
 		assertSame(TestUtils.getPropertyValue(connection, "target"), connectionUnblockedEvent.getConnection());
+		context.close();
 	}
 
 	@Configuration

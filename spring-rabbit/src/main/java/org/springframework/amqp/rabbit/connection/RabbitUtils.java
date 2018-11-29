@@ -124,19 +124,7 @@ public abstract class RabbitUtils {
 		}
 		try {
 			for (String consumerTag : consumerTags) {
-				try {
-					channel.basicCancel(consumerTag);
-				}
-				catch (IOException e) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Error performing 'basicCancel'", e);
-					}
-				}
-				catch (AlreadyClosedException e) {
-					if (logger.isTraceEnabled()) {
-						logger.trace(channel + " is already closed");
-					}
-				}
+				cancel(channel, consumerTag);
 			}
 			if (transactional) {
 				/*
@@ -152,6 +140,22 @@ public abstract class RabbitUtils {
 		}
 		catch (Exception ex) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(ex);
+		}
+	}
+
+	private static void cancel(Channel channel, String consumerTag) {
+		try {
+			channel.basicCancel(consumerTag);
+		}
+		catch (IOException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error performing 'basicCancel'", e);
+			}
+		}
+		catch (AlreadyClosedException e) {
+			if (logger.isTraceEnabled()) {
+				logger.trace(channel + " is already closed");
+			}
 		}
 	}
 
@@ -229,7 +233,7 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isPassiveDeclarationChannelClose(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
-		return shutdownReason instanceof AMQP.Channel.Close
+		return shutdownReason instanceof AMQP.Channel.Close // NOSONAR boolean complexity
 				&& AMQP.NOT_FOUND == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
 				&& ((((AMQP.Channel.Close) shutdownReason).getClassId() == 40 // exchange
 					|| ((AMQP.Channel.Close) shutdownReason).getClassId() == 50) // queue
@@ -245,7 +249,7 @@ public abstract class RabbitUtils {
 	 */
 	public static boolean isExclusiveUseChannelClose(ShutdownSignalException sig) {
 		Method shutdownReason = sig.getReason();
-		return shutdownReason instanceof AMQP.Channel.Close
+		return shutdownReason instanceof AMQP.Channel.Close // NOSONAR boolean complexity
 				&& AMQP.ACCESS_REFUSED == ((AMQP.Channel.Close) shutdownReason).getReplyCode()
 				&& ((AMQP.Channel.Close) shutdownReason).getClassId() == 60 // basic
 				&& ((AMQP.Channel.Close) shutdownReason).getMethodId() == 20 // consume

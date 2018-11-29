@@ -122,7 +122,7 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	}
 
 	@Override
-	protected void doStart() throws Exception {
+	protected void doStart() {
 		if (!isRunning()) {
 			this.consumerCount = 0;
 			super.setConsumersPerQueue(0);

@@ -161,7 +161,7 @@ public class SimpleMessageListenerContainerTests {
 		final SingleConnectionFactory singleConnectionFactory = new SingleConnectionFactory("localhost");
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(singleConnectionFactory) {
 			@Override
-			protected void doStart() throws Exception {
+			protected void doStart() {
 				// do nothing
 			}
 		};
@@ -536,7 +536,7 @@ public class SimpleMessageListenerContainerTests {
 		class Container extends SimpleMessageListenerContainer {
 
 			@Override
-			public void executeListener(Channel channel, Message messageIn) throws Exception {
+			public void executeListener(Channel channel, Message messageIn) {
 				super.executeListener(channel, messageIn);
 			}
 
