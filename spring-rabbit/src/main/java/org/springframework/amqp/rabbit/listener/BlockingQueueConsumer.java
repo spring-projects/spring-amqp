@@ -156,9 +156,9 @@ public class BlockingQueueConsumer {
 
 	private volatile boolean normalCancel;
 
-	volatile Thread thread;
+	volatile Thread thread; // NOSONAR package protected
 
-	volatile boolean declaring;
+	volatile boolean declaring; // NOSONAR package protected
 
 	/**
 	 * Create a consumer. The consumer must not attempt to use
@@ -520,29 +520,29 @@ public class BlockingQueueConsumer {
 				Iterator<String> iterator = this.missingQueues.iterator();
 				while (iterator.hasNext()) {
 					boolean available = true;
-					String queue = iterator.next();
+					String queueToCheck = iterator.next();
 					Connection connection = null; // NOSONAR - RabbitUtils
-					Channel channel = null;
+					Channel channelForCheck = null;
 					try {
-						channel = this.connectionFactory.createConnection().createChannel(false);
-						channel.queueDeclarePassive(queue);
+						channelForCheck = this.connectionFactory.createConnection().createChannel(false);
+						channelForCheck.queueDeclarePassive(queueToCheck);
 						if (logger.isInfoEnabled()) {
-							logger.info("Queue '" + queue + "' is now available");
+							logger.info("Queue '" + queueToCheck + "' is now available");
 						}
 					}
 					catch (IOException e) {
 						available = false;
 						if (logger.isWarnEnabled()) {
-							logger.warn("Queue '" + queue + "' is still not available");
+							logger.warn("Queue '" + queueToCheck + "' is still not available");
 						}
 					}
 					finally {
-						RabbitUtils.closeChannel(channel);
+						RabbitUtils.closeChannel(channelForCheck);
 						RabbitUtils.closeConnection(connection);
 					}
 					if (available) {
 						try {
-							this.consumeFromQueue(queue);
+							this.consumeFromQueue(queueToCheck);
 							iterator.remove();
 						}
 						catch (IOException e) {
@@ -589,34 +589,7 @@ public class BlockingQueueConsumer {
 				passiveDeclareRetries = 0;
 			}
 			catch (DeclarationException e) {
-				if (passiveDeclareRetries > 0 && this.channel.isOpen()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
-						try {
-							Thread.sleep(this.failedDeclarationRetryInterval);
-						}
-						catch (InterruptedException e1) {
-							this.declaring = false;
-							Thread.currentThread().interrupt();
-							this.activeObjectCounter.release(this);
-							throw RabbitExceptionTranslator.convertRabbitAccessException(e1);
-						}
-					}
-				}
-				else if (e.getFailedQueues().size() < this.queues.length) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("Not all queues are available; only listening on those that are - configured: "
-								+ Arrays.asList(this.queues) + "; not available: " + e.getFailedQueues());
-					}
-					this.missingQueues.addAll(e.getFailedQueues());
-					this.lastRetryDeclaration = System.currentTimeMillis();
-				}
-				else {
-					this.declaring = false;
-					this.activeObjectCounter.release(this);
-					throw new QueuesNotAvailableException("Cannot prepare queue for listener. "
-							+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
-				}
+				handleDeclarationException(passiveDeclareRetries, e);
 			}
 		}
 		while (passiveDeclareRetries-- > 0 && !cancelled());
@@ -646,6 +619,37 @@ public class BlockingQueueConsumer {
 		}
 		catch (IOException e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+		}
+	}
+
+	private void handleDeclarationException(int passiveDeclareRetries, DeclarationException e) {
+		if (passiveDeclareRetries > 0 && this.channel.isOpen()) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Queue declaration failed; retries left=" + (passiveDeclareRetries), e);
+				try {
+					Thread.sleep(this.failedDeclarationRetryInterval);
+				}
+				catch (InterruptedException e1) {
+					this.declaring = false;
+					Thread.currentThread().interrupt();
+					this.activeObjectCounter.release(this);
+					throw RabbitExceptionTranslator.convertRabbitAccessException(e1); // NOSONAR stack trace loss
+				}
+			}
+		}
+		else if (e.getFailedQueues().size() < this.queues.length) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Not all queues are available; only listening on those that are - configured: "
+						+ Arrays.asList(this.queues) + "; not available: " + e.getFailedQueues());
+			}
+			this.missingQueues.addAll(e.getFailedQueues());
+			this.lastRetryDeclaration = System.currentTimeMillis();
+		}
+		else {
+			this.declaring = false;
+			this.activeObjectCounter.release(this);
+			throw new QueuesNotAvailableException("Cannot prepare queue for listener. "
+					+ "Either the queue doesn't exist or the broker will not allow us to use it.", e);
 		}
 	}
 
@@ -756,7 +760,7 @@ public class BlockingQueueConsumer {
 		}
 		catch (Exception e) {
 			logger.error("Application exception overridden by rollback exception", ex);
-			throw e;
+			throw RabbitExceptionTranslator.convertRabbitAccessException(e); // NOSONAR stack trace loss
 		}
 		finally {
 			this.deliveryTags.clear();
@@ -890,13 +894,14 @@ public class BlockingQueueConsumer {
 							new Delivery(consumerTag, envelope, properties, body, this.queue),
 							BlockingQueueConsumer.this.shutdownTimeout, TimeUnit.MILLISECONDS)) {
 
-						RabbitUtils.setPhysicalCloseRequired(getChannel(), true);
+						Channel channelToClose = super.getChannel();
+						RabbitUtils.setPhysicalCloseRequired(channelToClose, true);
 						// Defensive - should never happen
 						BlockingQueueConsumer.this.queue.clear();
-						getChannel().basicNack(envelope.getDeliveryTag(), true, true);
-						getChannel().basicCancel(consumerTag);
+						channelToClose.basicNack(envelope.getDeliveryTag(), true, true);
+						channelToClose.basicCancel(consumerTag);
 						try {
-							getChannel().close();
+							channelToClose.close();
 						}
 						catch (TimeoutException e) {
 							// no-op

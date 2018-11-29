@@ -350,7 +350,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doInitialize() throws Exception {
+	protected void doInitialize() {
 		if (this.taskScheduler == null) {
 			ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
 			threadPoolTaskScheduler.setThreadNamePrefix(getBeanName() + "-consumerMonitor-");
@@ -363,7 +363,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doStart() throws Exception {
+	protected void doStart() {
 		if (!this.started) {
 			actualStart();
 		}
@@ -378,7 +378,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 	}
 
-	protected void actualStart() throws Exception {
+	protected void actualStart() {
 		this.aborted = false;
 		this.hasStopped = false;
 		if (getPrefetchCount() < this.messagesPerAck) {

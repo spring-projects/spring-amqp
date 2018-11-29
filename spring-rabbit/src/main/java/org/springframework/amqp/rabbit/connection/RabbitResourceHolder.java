@@ -129,12 +129,12 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		if (!this.channels.contains(channel)) {
 			this.channels.add(channel);
 			if (connection != null) {
-				List<Channel> channels = this.channelsPerConnection.get(connection);
-				if (channels == null) {
-					channels = new LinkedList<Channel>();
-					this.channelsPerConnection.put(connection, channels);
+				List<Channel> channelsForConnection = this.channelsPerConnection.get(connection);
+				if (channelsForConnection == null) {
+					channelsForConnection = new LinkedList<Channel>();
+					this.channelsPerConnection.put(connection, channelsForConnection);
 				}
-				channels.add(channel);
+				channelsForConnection.add(channel);
 			}
 		}
 	}

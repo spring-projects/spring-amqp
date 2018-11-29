@@ -142,6 +142,8 @@ import com.rabbitmq.client.ShutdownListener;
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
 		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle, BeanNameAware {
 
+	private static final String UNCHECKED = "unchecked";
+
 	private static final String RETURN_CORRELATION_KEY = "spring_request_return_correlation";
 
 	/** Alias for amq.direct default exchange. */
@@ -1126,7 +1128,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	@Nullable
 	public <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException {
 		Message response = timeoutMillis == 0 ? doReceiveNoWait(queueName) : receive(queueName, timeoutMillis);
@@ -1143,7 +1145,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	@Nullable
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
 		return receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
@@ -1292,7 +1294,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	private <R, S> Boolean sendReply(final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel, Message receiveMessage)
 					throws Exception { // NOSONAR TODO change to IOException in 2.2.
@@ -1588,7 +1590,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	@Nullable
 	public <T> T convertSendAndReceiveAsType(final String exchange, final String routingKey, final Object message,
 			@Nullable final MessagePostProcessor messagePostProcessor, @Nullable final CorrelationData correlationData,
@@ -1916,7 +1918,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		return execute(action, getConnectionFactory());
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings(UNCHECKED)
 	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
@@ -1937,7 +1939,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 
-	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) {
+	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) { // NOSONAR complexity
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
 		boolean invokeScope = false;
@@ -2050,27 +2052,40 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				throw e;
 			}
 		}
+		ConfirmListener listener = addConfirmListener(acks, nacks, channel);
+		try {
+			return action.doInRabbit(this);
+		}
+		finally {
+			cleanUpAfterAction(resourceHolder, connection, channel, listener);
+		}
+	}
+
+	@Nullable
+	private ConfirmListener addConfirmListener(@Nullable com.rabbitmq.client.ConfirmCallback acks,
+			@Nullable com.rabbitmq.client.ConfirmCallback nacks, Channel channel) {
 		ConfirmListener listener = null;
 		if (acks != null && nacks != null && channel instanceof ChannelProxy
 				&& ((ChannelProxy) channel).isConfirmSelected()) {
 			listener = channel.addConfirmListener(acks, nacks);
 		}
-		try {
-			return action.doInRabbit(this);
+		return listener;
+	}
+
+	private void cleanUpAfterAction(RabbitResourceHolder resourceHolder, Connection connection, Channel channel,
+			ConfirmListener listener) {
+
+		if (listener != null) {
+			channel.removeConfirmListener(listener);
 		}
-		finally {
-			if (listener != null) {
-				channel.removeConfirmListener(listener);
-			}
-			this.activeTemplateCallbacks.decrementAndGet();
-			this.dedicatedChannels.remove();
-			if (resourceHolder != null) {
-				ConnectionFactoryUtils.releaseResources(resourceHolder);
-			}
-			else {
-				RabbitUtils.closeChannel(channel);
-				RabbitUtils.closeConnection(connection);
-			}
+		this.activeTemplateCallbacks.decrementAndGet();
+		this.dedicatedChannels.remove();
+		if (resourceHolder != null) {
+			ConnectionFactoryUtils.releaseResources(resourceHolder);
+		}
+		else {
+			RabbitUtils.closeChannel(channel);
+			RabbitUtils.closeConnection(connection);
 		}
 	}
 
@@ -2116,28 +2131,28 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * Send the given message to the specified exchange.
 	 *
 	 * @param channel The RabbitMQ Channel to operate within.
-	 * @param exchange The name of the RabbitMQ exchange to send to.
-	 * @param routingKey The routing key.
+	 * @param exchangeArg The name of the RabbitMQ exchange to send to.
+	 * @param routingKeyArg The routing key.
 	 * @param message The Message to send.
 	 * @param mandatory The mandatory flag.
 	 * @param correlationData The correlation data.
 	 * @throws Exception If thrown by RabbitMQ API methods
 	 */
-	public void doSend(Channel channel, String exchange, String routingKey, Message message,
+	public void doSend(Channel channel, String exchangeArg, String routingKeyArg, Message message, // NOSONAR complexity
 			boolean mandatory, @Nullable CorrelationData correlationData)
 					throws Exception { // NOSONAR TODO: change to IOException in 2.2.
 
-		if (exchange == null) {
-			// try to send to configured exchange
-			exchange = this.exchange;
+		String exch = exchangeArg;
+		String rKey = routingKeyArg;
+		if (exch == null) {
+			exch = this.exchange;
 		}
-		if (routingKey == null) {
-			// try to send to configured routing key
-			routingKey = this.routingKey;
+		if (rKey == null) {
+			rKey = this.routingKey;
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("Publishing message " + message
-					+ "on exchange [" + exchange + "], routingKey = [" + routingKey + "]");
+					+ "on exchange [" + exch + "], routingKey = [" + rKey + "]");
 		}
 
 		Message messageToUse = message;
@@ -2157,7 +2172,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				messageProperties.setUserId(userId);
 			}
 		}
-		sendToRabbit(channel, exchange, routingKey, mandatory, messageToUse);
+		sendToRabbit(channel, exch, rKey, mandatory, messageToUse);
 		// Check if commit needed
 		if (isChannelLocallyTransacted(channel)) {
 			// Transacted channel created by this template -> commit.
@@ -2172,12 +2187,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		channel.basicPublish(exchange, routingKey, mandatory, convertedMessageProperties, message.getBody());
 	}
 
-	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationData) {
+	private void setupConfirm(Channel channel, Message message, @Nullable CorrelationData correlationDataArg) {
 		if ((this.publisherConfirms || this.confirmCallback != null) && channel instanceof PublisherCallbackChannel) {
+
 			PublisherCallbackChannel publisherCallbackChannel = (PublisherCallbackChannel) channel;
-			correlationData = this.correlationDataPostProcessor != null
-					? this.correlationDataPostProcessor.postProcess(message, correlationData)
-					: correlationData;
+			CorrelationData correlationData = this.correlationDataPostProcessor != null
+					? this.correlationDataPostProcessor.postProcess(message, correlationDataArg)
+					: correlationDataArg;
 			long nextPublishSeqNo = channel.getNextPublishSeqNo();
 			message.getMessageProperties().setPublishSequenceNumber(nextPublishSeqNo);
 			publisherCallbackChannel.addPendingConfirm(this, nextPublishSeqNo,
@@ -2318,14 +2334,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			byte[] body)
 			throws IOException {
 
-		ReturnCallback returnCallback = this.returnCallback;
-		if (returnCallback == null) {
+		ReturnCallback callback = this.returnCallback;
+		if (callback == null) {
 			Object messageTagHeader = properties.getHeaders().remove(RETURN_CORRELATION_KEY);
 			if (messageTagHeader != null) {
 				String messageTag = messageTagHeader.toString();
 				final PendingReply pendingReply = this.replyHolder.get(messageTag);
 				if (pendingReply != null) {
-					returnCallback = (message, replyCode1, replyText1, exchange1, routingKey1) ->
+					callback = (message, replyCode1, replyText1, exchange1, routingKey1) ->
 							pendingReply.returned(new AmqpMessageReturnedException("Message returned",
 									message, replyCode1, replyText1, exchange1, routingKey1));
 				}
@@ -2337,12 +2353,12 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				logger.warn("Returned message but no callback available");
 			}
 		}
-		if (returnCallback != null) {
+		if (callback != null) {
 			properties.getHeaders().remove(PublisherCallbackChannel.RETURN_LISTENER_CORRELATION_KEY);
 			MessageProperties messageProperties = this.messagePropertiesConverter.toMessageProperties(
 					properties, null, this.encoding);
 			Message returnedMessage = new Message(body, messageProperties);
-			returnCallback.returnedMessage(returnedMessage,
+			callback.returnedMessage(returnedMessage,
 					replyCode, replyText, exchange, routingKey);
 		}
 	}
@@ -2496,7 +2512,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return this.future.get();
 			}
 			catch (ExecutionException e) {
-				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause());
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause()); // NOSONAR lost stack trace
 			}
 		}
 
@@ -2506,7 +2522,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				return this.future.get(timeout, unit);
 			}
 			catch (ExecutionException e) {
-				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause());
+				throw RabbitExceptionTranslator.convertRabbitAccessException(e.getCause()); // NOSONAR lost stack trace
 			}
 			catch (TimeoutException e) {
 				return null;

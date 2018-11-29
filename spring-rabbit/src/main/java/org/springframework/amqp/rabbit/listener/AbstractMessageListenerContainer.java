@@ -1215,10 +1215,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Register any invokers within this container.
 	 * <p>
 	 * Subclasses need to implement this method for their specific invoker management process.
-	 *
-	 * @throws Exception Any Exception.
 	 */
-	protected abstract void doInitialize() throws Exception;
+	protected abstract void doInitialize();
 
 	/**
 	 * Close the registered invokers.
@@ -1270,9 +1268,8 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Start this container, and notify all invoker tasks.
-	 * @throws Exception if thrown by Rabbit API methods
 	 */
-	protected void doStart() throws Exception {
+	protected void doStart() {
 		// Reschedule paused tasks, if any.
 		synchronized (this.lifecycleMonitor) {
 			this.active = true;
@@ -1360,15 +1357,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	/**
 	 * Execute the specified listener, committing or rolling back the transaction afterwards (if necessary).
-	 *
 	 * @param channel the Rabbit Channel to operate on
 	 * @param messageIn the received Rabbit Message
-	 * @throws Exception Any Exception.
-	 *
 	 * @see #invokeListener
 	 * @see #handleListenerException
 	 */
-	protected void executeListener(Channel channel, Message messageIn) throws Exception {
+	protected void executeListener(Channel channel, Message messageIn) {
 		if (!isRunning()) {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Rejecting received message because the listener container has been stopped: " + messageIn);
@@ -1376,45 +1370,13 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			throw new MessageRejectedWhileStoppingException();
 		}
 		try {
-			Message message = messageIn;
-			if (this.afterReceivePostProcessors != null) {
-				for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
-					message = processor.postProcessMessage(message);
-					if (message == null) {
-						throw new ImmediateAcknowledgeAmqpException(
-								"Message Post Processor returned 'null', discarding message");
-					}
-				}
-			}
-			Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
-			if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
-				ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
-				MessageProperties messageProperties = message.getMessageProperties();
-				messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
-				while (byteBuffer.hasRemaining()) {
-					int length = byteBuffer.getInt();
-					if (length < 0 || length > byteBuffer.remaining()) {
-						throw new ListenerExecutionFailedException("Bad batched message received",
-								new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
-								message);
-					}
-					byte[] body = new byte[length];
-					byteBuffer.get(body);
-					messageProperties.setContentLength(length);
-					// Caveat - shared MessageProperties.
-					Message fragment = new Message(body, messageProperties);
-					invokeListener(channel, fragment);
-				}
-			}
-			else {
-				invokeListener(channel, message);
-			}
+			doExecuteListener(channel, messageIn);
 		}
-		catch (Exception ex) {
+		catch (RuntimeException ex) {
 			if (messageIn.getMessageProperties().isFinalRetryForMessageWithNoId()) {
 				if (this.statefulRetryFatalWithNullMessageId) {
 					throw new FatalListenerExecutionException(
-							"Illegal null id in message. Failed to manage retry for message: " + messageIn);
+							"Illegal null id in message. Failed to manage retry for message: " + messageIn, ex);
 				}
 				else {
 					throw new ListenerExecutionFailedException("Cannot retry message more than once without an ID",
@@ -1427,7 +1389,43 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 	}
 
-	protected void invokeListener(Channel channel, Message message) throws Exception {
+	private void doExecuteListener(Channel channel, Message messageIn) {
+		Message message = messageIn;
+		if (this.afterReceivePostProcessors != null) {
+			for (MessagePostProcessor processor : this.afterReceivePostProcessors) {
+				message = processor.postProcessMessage(message);
+				if (message == null) {
+					throw new ImmediateAcknowledgeAmqpException(
+							"Message Post Processor returned 'null', discarding message");
+				}
+			}
+		}
+		Object batchFormat = message.getMessageProperties().getHeaders().get(MessageProperties.SPRING_BATCH_FORMAT);
+		if (MessageProperties.BATCH_FORMAT_LENGTH_HEADER4.equals(batchFormat) && this.deBatchingEnabled) {
+			ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBody());
+			MessageProperties messageProperties = message.getMessageProperties();
+			messageProperties.getHeaders().remove(MessageProperties.SPRING_BATCH_FORMAT);
+			while (byteBuffer.hasRemaining()) {
+				int length = byteBuffer.getInt();
+				if (length < 0 || length > byteBuffer.remaining()) {
+					throw new ListenerExecutionFailedException("Bad batched message received",
+							new MessageConversionException("Insufficient batch data at offset " + byteBuffer.position()),
+							message);
+				}
+				byte[] body = new byte[length];
+				byteBuffer.get(body);
+				messageProperties.setContentLength(length);
+				// Caveat - shared MessageProperties.
+				Message fragment = new Message(body, messageProperties);
+				invokeListener(channel, fragment);
+			}
+		}
+		else {
+			invokeListener(channel, message);
+		}
+	}
+
+	protected void invokeListener(Channel channel, Message message) {
 		this.proxy.invokeListener(channel, message);
 	}
 
@@ -1435,10 +1433,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * Invoke the specified listener: either as standard MessageListener or (preferably) as SessionAwareMessageListener.
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setMessageListener(MessageListener)
 	 */
-	protected void actualInvokeListener(Channel channel, Message message) throws Exception {
+	protected void actualInvokeListener(Channel channel, Message message) {
 		Object listener = getMessageListener();
 		if (listener instanceof ChannelAwareMessageListener) {
 			doInvokeListener((ChannelAwareMessageListener) listener, channel, message);
@@ -1473,17 +1470,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	/**
 	 * Invoke the specified listener as Spring ChannelAwareMessageListener, exposing a new Rabbit Session (potentially
 	 * with its own transaction) to the listener if demanded.
+	 * An exception thrown from the listener will be wrapped in a {@link ListenerExecutionFailedException}.
 	 * @param listener the Spring ChannelAwareMessageListener to invoke
 	 * @param channel the Rabbit Channel to operate on
 	 * @param message the received Rabbit Message
-	 * @throws Exception if thrown by Rabbit API methods or listener itself.
-	 * <p>
-	 * Exception thrown from listener will be wrapped to {@link ListenerExecutionFailedException}.
 	 * @see ChannelAwareMessageListener
 	 * @see #setExposeListenerChannel(boolean)
 	 */
-	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Message message)
-			throws Exception {
+	protected void doInvokeListener(ChannelAwareMessageListener listener, Channel channel, Message message) {
 
 		RabbitResourceHolder resourceHolder = null;
 		Channel channelToUse = channel;
@@ -1525,23 +1519,29 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 			}
 		}
 		finally {
-			if (resourceHolder != null && boundHere) {
-				// so the channel exposed (because exposeListenerChannel is false) will be closed
-				resourceHolder.setSynchronizedWithTransaction(false);
-			}
-			ConnectionFactoryUtils.releaseResources(resourceHolder); // NOSONAR - null check in method
-			if (boundHere) {
-				// unbind if we bound
-				TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
-				if (!isExposeListenerChannel() && isChannelLocallyTransacted()) {
-					/*
-					 *  commit the temporary channel we exposed; the consumer's channel
-					 *  will be committed later. Note that when exposing a different channel
-					 *  when there's no transaction manager, the exposed channel is committed
-					 *  on each message, and not based on txSize.
-					 */
-					RabbitUtils.commitIfNecessary(channelToUse);
-				}
+			cleanUpAfterInvoke(resourceHolder, channelToUse, boundHere);
+		}
+	}
+
+	private void cleanUpAfterInvoke(@Nullable RabbitResourceHolder resourceHolder, Channel channelToUse,
+			boolean boundHere) {
+
+		if (resourceHolder != null && boundHere) {
+			// so the channel exposed (because exposeListenerChannel is false) will be closed
+			resourceHolder.setSynchronizedWithTransaction(false);
+		}
+		ConnectionFactoryUtils.releaseResources(resourceHolder); // NOSONAR - null check in method
+		if (boundHere) {
+			// unbind if we bound
+			TransactionSynchronizationManager.unbindResource(this.getConnectionFactory());
+			if (!isExposeListenerChannel() && isChannelLocallyTransacted()) {
+				/*
+				 *  commit the temporary channel we exposed; the consumer's channel
+				 *  will be committed later. Note that when exposing a different channel
+				 *  when there's no transaction manager, the exposed channel is committed
+				 *  on each message, and not based on txSize.
+				 */
+				RabbitUtils.commitIfNecessary(channelToUse);
 			}
 		}
 	}
@@ -1555,11 +1555,10 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 *
 	 * @param listener the Rabbit MessageListener to invoke
 	 * @param message the received Rabbit Message
-	 * @throws Exception Any Exception.
 	 *
 	 * @see org.springframework.amqp.core.MessageListener#onMessage
 	 */
-	protected void doInvokeListener(MessageListener listener, Message message) throws Exception {
+	protected void doInvokeListener(MessageListener listener, Message message) {
 		try {
 			listener.onMessage(message);
 		}
@@ -1607,12 +1606,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @return If 'e' is of type {@link ListenerExecutionFailedException} - return 'e' as it is, otherwise wrap it to
 	 * {@link ListenerExecutionFailedException} and return.
 	 */
-	protected Exception wrapToListenerExecutionFailedExceptionIfNeeded(Exception e, Message message) {
+	protected ListenerExecutionFailedException wrapToListenerExecutionFailedExceptionIfNeeded(Exception e,
+			Message message) {
+
 		if (!(e instanceof ListenerExecutionFailedException)) {
 			// Wrap exception to ListenerExecutionFailedException.
 			return new ListenerExecutionFailedException("Listener threw exception", e, message);
 		}
-		return e;
+		return (ListenerExecutionFailedException) e;
 	}
 
 	protected void publishConsumerFailedEvent(String reason, boolean fatal, @Nullable Throwable t) {
@@ -1707,33 +1708,36 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * fail with a fatal error if mismatches occur.
 	 */
 	protected synchronized void redeclareElementsIfNecessary() {
-		AmqpAdmin amqpAdmin = getAmqpAdmin();
-		if (amqpAdmin == null || !isAutoDeclare()) {
-			return;
+		AmqpAdmin admin = getAmqpAdmin();
+		if (admin != null && isAutoDeclare()) {
+			try {
+				attemptDeclarations(admin);
+			}
+			catch (Exception e) {
+				if (RabbitUtils.isMismatchedQueueArgs(e)) {
+					throw new FatalListenerStartupException("Mismatched queues", e);
+				}
+				logger.error("Failed to check/redeclare auto-delete queue(s).", e);
+			}
 		}
-		try {
-			ApplicationContext applicationContext = this.getApplicationContext();
-			if (applicationContext != null) {
-				Set<String> queueNames = getQueueNamesAsSet();
-				Map<String, Queue> queueBeans = applicationContext.getBeansOfType(Queue.class);
-				for (Entry<String, Queue> entry : queueBeans.entrySet()) {
-					Queue queue = entry.getValue();
-					if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
-							amqpAdmin.getQueueProperties(queue.getName()) == null)) {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Redeclaring context exchanges, queues, bindings.");
-						}
-						amqpAdmin.initialize();
-						return;
+	}
+
+	private void attemptDeclarations(AmqpAdmin amqpAdmin) {
+		ApplicationContext context = this.getApplicationContext();
+		if (context != null) {
+			Set<String> queueNames = getQueueNamesAsSet();
+			Map<String, Queue> queueBeans = context.getBeansOfType(Queue.class);
+			for (Entry<String, Queue> entry : queueBeans.entrySet()) {
+				Queue queue = entry.getValue();
+				if (isMismatchedQueuesFatal() || (queueNames.contains(queue.getName()) &&
+						amqpAdmin.getQueueProperties(queue.getName()) == null)) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Redeclaring context exchanges, queues, bindings.");
 					}
+					amqpAdmin.initialize();
+					break;
 				}
 			}
-		}
-		catch (Exception e) {
-			if (RabbitUtils.isMismatchedQueueArgs(e)) {
-				throw new FatalListenerStartupException("Mismatched queues", e);
-			}
-			logger.error("Failed to check/redeclare auto-delete queue(s).", e);
 		}
 	}
 
@@ -1779,17 +1783,17 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private void checkMissingQueuesFatalFromProperty() {
 		if (!isMissingQueuesFatalSet()) {
 			try {
-				ApplicationContext applicationContext = getApplicationContext();
-				if (applicationContext != null) {
-					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
-					String missingQueuesFatal = properties.getProperty("mlc.missing.queues.fatal");
+				ApplicationContext context = getApplicationContext();
+				if (context != null) {
+					Properties properties = context.getBean("spring.amqp.global.properties", Properties.class);
+					String missingQueuesFatalProperty = properties.getProperty("mlc.missing.queues.fatal");
 
-					if (!StringUtils.hasText(missingQueuesFatal)) {
-						missingQueuesFatal = properties.getProperty("smlc.missing.queues.fatal");
+					if (!StringUtils.hasText(missingQueuesFatalProperty)) {
+						missingQueuesFatalProperty = properties.getProperty("smlc.missing.queues.fatal");
 					}
 
-					if (StringUtils.hasText(missingQueuesFatal)) {
-						setMissingQueuesFatal(Boolean.parseBoolean(missingQueuesFatal));
+					if (StringUtils.hasText(missingQueuesFatalProperty)) {
+						setMissingQueuesFatal(Boolean.parseBoolean(missingQueuesFatalProperty));
 					}
 				}
 			}
@@ -1802,13 +1806,14 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	private void checkPossibleAuthenticationFailureFatalFromProperty() {
 		if (!isPossibleAuthenticationFailureFatal()) {
 			try {
-				ApplicationContext applicationContext = getApplicationContext();
-				if (applicationContext != null) {
-					Properties properties = applicationContext.getBean("spring.amqp.global.properties", Properties.class);
-					String possibleAuthenticationFailureFatal =
+				ApplicationContext context = getApplicationContext();
+				if (context != null) {
+					Properties properties = context.getBean("spring.amqp.global.properties", Properties.class);
+					String possibleAuthenticationFailureFatalProperty =
 							properties.getProperty("mlc.possible.authentication.failure.fatal");
-					if (StringUtils.hasText(possibleAuthenticationFailureFatal)) {
-						setPossibleAuthenticationFailureFatal(Boolean.parseBoolean(possibleAuthenticationFailureFatal));
+					if (StringUtils.hasText(possibleAuthenticationFailureFatalProperty)) {
+						setPossibleAuthenticationFailureFatal(
+								Boolean.parseBoolean(possibleAuthenticationFailureFatalProperty));
 					}
 				}
 			}
@@ -1821,7 +1826,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	@FunctionalInterface
 	private interface ContainerDelegate {
 
-		void invokeListener(Channel channel, Message message) throws Exception;
+		void invokeListener(Channel channel, Message message);
 
 	}
 

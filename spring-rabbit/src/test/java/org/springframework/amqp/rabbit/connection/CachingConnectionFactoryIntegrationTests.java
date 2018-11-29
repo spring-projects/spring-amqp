@@ -467,11 +467,4 @@ public class CachingConnectionFactoryIntegrationTests {
 		connection.createChannel(false);
 	}
 
-	private Log spyOnLogger(CachingConnectionFactory connectionFactory2) {
-		DirectFieldAccessor dfa = new DirectFieldAccessor(connectionFactory2);
-		Log logger = spy((Log) dfa.getPropertyValue("logger"));
-		dfa.setPropertyValue("logger", logger);
-		return logger;
-	}
-
 }

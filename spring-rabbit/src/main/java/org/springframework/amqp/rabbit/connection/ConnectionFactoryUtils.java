@@ -162,7 +162,7 @@ public final class ConnectionFactoryUtils {
 		}
 	}
 
-	public static void releaseResources(RabbitResourceHolder resourceHolder) {
+	public static void releaseResources(@Nullable RabbitResourceHolder resourceHolder) {
 		if (resourceHolder == null || resourceHolder.isSynchronizedWithTransaction()) {
 			return;
 		}

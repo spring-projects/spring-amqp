@@ -53,6 +53,7 @@ import org.springframework.amqp.rabbit.listener.exception.FatalListenerStartupEx
 import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.rabbit.support.ConsumerCancelledException;
 import org.springframework.amqp.rabbit.support.ListenerContainerAware;
+import org.springframework.amqp.rabbit.support.RabbitExceptionTranslator;
 import org.springframework.jmx.export.annotation.ManagedMetric;
 import org.springframework.jmx.support.MetricType;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -462,7 +463,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	@Override
-	protected void doInitialize() throws Exception {
+	protected void doInitialize() {
 
 	}
 
@@ -474,10 +475,9 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 	/**
 	 * Re-initializes this container's Rabbit message consumers, if not initialized already. Then submits each consumer
 	 * to this container's task executor.
-	 * @throws Exception Any Exception.
 	 */
 	@Override
-	protected void doStart() throws Exception {
+	protected void doStart() {
 		if (getMessageListener() instanceof ListenerContainerAware) {
 			Collection<String> expectedQueueNames = ((ListenerContainerAware) getMessageListener()).expectedQueueNames();
 			if (expectedQueueNames != null) {
@@ -526,7 +526,17 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 				}
 			}
 			for (AsyncMessageProcessingConsumer processor : processors) {
-				FatalListenerStartupException startupException = processor.getStartupException();
+				FatalListenerStartupException startupException = null;
+				try {
+					startupException = processor.getStartupException();
+				}
+				catch (TimeoutException e) {
+					throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw RabbitExceptionTranslator.convertRabbitAccessException(e);
+				}
 				if (startupException != null) {
 					throw new AmqpIllegalStateException("Fatal exception on listener startup", startupException);
 				}
@@ -976,8 +986,7 @@ public class SimpleMessageListenerContainer extends AbstractMessageListenerConta
 		 * @throws TimeoutException if the consumer hasn't started
 		 * @throws InterruptedException if the consumer startup is interrupted
 		 */
-		private FatalListenerStartupException getStartupException() throws TimeoutException,
-				InterruptedException {
+		private FatalListenerStartupException getStartupException() throws TimeoutException, InterruptedException {
 			if (!this.start.await(
 					SimpleMessageListenerContainer.this.consumerStartTimeout, TimeUnit.MILLISECONDS)) {
 				logger.error("Consumer failed to start in "
