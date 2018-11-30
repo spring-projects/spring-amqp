@@ -41,6 +41,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -194,8 +195,9 @@ public abstract class AbstractRabbitListenerContainerFactory<C extends AbstractM
 	 * @return the advice chain that was set. Defaults to {@code null}.
 	 * @since 1.7.4
 	 */
+	@Nullable
 	public Advice[] getAdviceChain() {
-		return Arrays.copyOf(this.adviceChain, this.adviceChain.length);
+		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
 	}
 
 	/**
