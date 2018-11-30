@@ -512,8 +512,9 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
+	@Nullable
 	protected Advice[] getAdviceChain() {
-		return this.adviceChain;
+		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
 	}
 
 	/**
