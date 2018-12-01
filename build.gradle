@@ -255,6 +255,7 @@ project('spring-rabbit') {
 	apply plugin: 'kotlin-spring'
 
 	dependencies {
+		annotationProcessor "org.apache.logging.log4j:log4j-core:$log4jVersion" // @Plugin
 
 		compile project(":spring-amqp")
 
