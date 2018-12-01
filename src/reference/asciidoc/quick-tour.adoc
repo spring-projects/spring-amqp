@@ -28,14 +28,30 @@ compile 'org.springframework.amqp:spring-rabbit:{spring-amqp-version}'
 [[compatibility]]
 ===== Compatibility
 
-The minimum Spring Framework version dependency is 5.0.x.
+The minimum Spring Framework version dependency is 5.1.x.
 
-The minimum `amqp-client` java client library version is 5.0.0.
+The minimum `amqp-client` java client library version is 5.4.0.
 
 ===== Very, Very Quick
 
+**Imports for the following Java examples**
+
+====
+[source, java]
+----
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+----
+====
+
 Using plain, imperative Java to send and receive a message:
 
+====
 [source,java]
 ----
 ConnectionFactory connectionFactory = new CachingConnectionFactory();
@@ -45,16 +61,18 @@ AmqpTemplate template = new RabbitTemplate(connectionFactory);
 template.convertAndSend("myqueue", "foo");
 String foo = (String) template.receiveAndConvert("myqueue");
 ----
+====
 
 Note that there is a `ConnectionFactory` in the native Java Rabbit client as well.
-We are using the Spring abstraction in the code above.
+We are using the Spring abstraction in the code above; it caches channels (and optionally connections) for reuse.
 We are relying on the default exchange in the broker (since none is specified in the send), and the default binding of all queues to the default exchange by their name (hence we can use the queue name as a routing key in the send).
-Those behaviours are defined in the AMQP specification.
+Those behaviors are defined in the AMQP specification.
 
 ===== With XML Configuration
 
 The same example as above, but externalizing the resource configuration to XML:
 
+====
 [source,java]
 ----
 ApplicationContext context =
@@ -84,6 +102,7 @@ String foo = (String) template.receiveAndConvert("myqueue");
 
 </beans>
 ----
+====
 
 The `<rabbit:admin/>` declaration by default automatically looks for beans of type `Queue`, `Exchange` and `Binding` and declares them to the broker on behalf of the user, hence there is no need to use that bean explicitly in the simple Java driver.
 There are plenty of options to configure the properties of the components in the XML schema - you can use auto-complete features of your XML editor to explore them and look at their documentation.
@@ -92,6 +111,7 @@ There are plenty of options to configure the properties of the components in the
 
 The same example again with the external configuration in Java:
 
+====
 [source,java]
 ----
 ApplicationContext context =
@@ -126,3 +146,37 @@ public class RabbitConfiguration {
     }
 }
 ----
+====
+
+===== With Spring Boot Auto Configuration and an Async POJO Listener
+
+Spring Boot automatically configures the infrastructure beans:
+
+====
+[source, java]
+----
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    public ApplicationRunner runner(AmqpTemplate template) {
+        return args -> template.convertAndSend("myqueue", "foo");
+    }
+
+    @Bean
+    public Queue myQueue() {
+        return new Queue("myqueue");
+    }
+
+    @RabbitListener(queues = "myqueue")
+    public void listen(String in) {
+        System.out.println(in);
+    }
+
+}
+----
+====
