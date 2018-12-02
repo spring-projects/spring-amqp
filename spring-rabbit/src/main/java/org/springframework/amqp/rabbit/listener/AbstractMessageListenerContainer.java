@@ -509,12 +509,12 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	 * @param adviceChain the advice chain to set
 	 */
 	public void setAdviceChain(Advice... adviceChain) {
+		Assert.notNull(adviceChain, "'adviceChain' cannot be null");
 		this.adviceChain = Arrays.copyOf(adviceChain, adviceChain.length);
 	}
 
-	@Nullable
 	protected Advice[] getAdviceChain() {
-		return this.adviceChain == null ? null : Arrays.copyOf(this.adviceChain, this.adviceChain.length);
+		return this.adviceChain; // NOSONAR direct access
 	}
 
 	/**
@@ -1122,7 +1122,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	}
 
 	protected void initializeProxy(Object delegate) {
-		if (this.getAdviceChain().length == 0) {
+		if (getAdviceChain().length == 0) {
 			return;
 		}
 		ProxyFactory factory = new ProxyFactory();
