@@ -5,7 +5,7 @@
 
 ===== AMQP Client library
 
-Spring AMQP now uses the new 5.2.x version of the `amqp-client` library provided by the RabbitMQ team.
+Spring AMQP now uses the 5.4.x version of the `amqp-client` library provided by the RabbitMQ team.
 This client has auto recovery configured by default; see <<auto-recovery>>.
 
 NOTE: As of version 4.0, the client enables automatic recovery by default; while compatible with this feature, Spring AMQP has its own recovery mechanisms and the client recovery feature generally isn't needed.
