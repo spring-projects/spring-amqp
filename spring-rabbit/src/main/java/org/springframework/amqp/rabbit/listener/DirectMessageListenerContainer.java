@@ -250,7 +250,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		try {
-			addQueues(Arrays.stream(queues).map(q -> q.getName()));
+			addQueues(Arrays.stream(queues).map(Queue::getName));
 		}
 		catch (AmqpIOException e) {
 			throw new AmqpIOException("Failed to add " + Arrays.toString(queues), e.getCause());
@@ -284,7 +284,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 	@Override
 	public boolean removeQueues(Queue... queues) {
-		removeQueues(Arrays.stream(queues).map(q -> q.getActualName()));
+		removeQueues(Arrays.stream(queues).map(Queue::getActualName));
 		return super.removeQueues(queues);
 	}
 
@@ -481,7 +481,8 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 								}
 								this.consumersToRestart.addAll(restartableConsumers);
 								if (this.logger.isTraceEnabled()) {
-									this.logger.trace("After restart exception, consumers to restart now: " + this.consumersToRestart);
+									this.logger.trace("After restart exception, consumers to restart now: "
+											+ this.consumersToRestart);
 								}
 								break;
 							}
@@ -583,8 +584,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				 * Use reflection to avoid class tangles.
 				 */
 				try {
-					Class<?> clazz = ClassUtils.forName("org.springframework.amqp.rabbit.core.RabbitAdmin",
-							getClass().getClassLoader());
+					Class<?> clazz =
+							ClassUtils.forName("org.springframework.amqp.rabbit.core.RabbitAdmin",
+									ClassUtils.getDefaultClassLoader());
 
 					@SuppressWarnings("unchecked")
 					Constructor<AmqpAdmin> ctor = (Constructor<AmqpAdmin>) clazz
@@ -962,8 +964,9 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 					this.logger.error("Failed to invoke listener", e);
 					if (this.transactionManager != null) {
 						if (this.transactionAttribute.rollbackOn(e)) {
-							RabbitResourceHolder resourceHolder = (RabbitResourceHolder) TransactionSynchronizationManager
-									.getResource(getConnectionFactory());
+							RabbitResourceHolder resourceHolder =
+									(RabbitResourceHolder) TransactionSynchronizationManager
+											.getResource(getConnectionFactory());
 							if (resourceHolder == null) {
 								/*
 								 * If we don't actually have a transaction, we have to roll back
@@ -987,7 +990,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) throws IOException {
+		private void handleAck(long deliveryTag, boolean channelLocallyTransacted) {
 			/*
 			 * If we have a TX Manager, but no TX, act like we are locally transacted.
 			 */
@@ -1082,7 +1085,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 
 		@Override
-		public void handleCancel(String consumerTag) throws IOException {
+		public void handleCancel(String consumerTag) {
 			this.logger.error("Consumer canceled - queue deleted? " + this);
 			cancelConsumer("Consumer " + this + " canceled");
 		}

@@ -57,6 +57,7 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -617,7 +618,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		else {
 			interfaces = new Class<?>[] { ChannelProxy.class };
 		}
-		return (ChannelProxy) Proxy.newProxyInstance(ChannelProxy.class.getClassLoader(),
+		return (ChannelProxy) Proxy.newProxyInstance(ClassUtils.getDefaultClassLoader(),
 				interfaces, new CachedChannelInvocationHandler(connection, targetChannel, channelList,
 						transactional));
 	}
@@ -1317,7 +1318,7 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 		private volatile Connection target;
 
-		ChannelCachingConnectionProxy(Connection target) {
+		ChannelCachingConnectionProxy(@Nullable Connection target) {
 			this.target = target;
 		}
 

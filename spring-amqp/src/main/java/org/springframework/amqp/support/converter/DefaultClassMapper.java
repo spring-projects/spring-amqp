@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -116,7 +117,7 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @since 1.6.11
 	 */
-	public void setTrustedPackages(String... trustedPackages) {
+	public void setTrustedPackages(@Nullable String... trustedPackages) {
 		if (trustedPackages != null) {
 			for (String whiteListClass : trustedPackages) {
 				if ("*".equals(whiteListClass)) {
@@ -145,12 +146,12 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 	 * <p>Creates the reverse mapping from class to type id.
 	 */
 	@Override
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		validateIdTypeMapping();
 	}
 
 	private void validateIdTypeMapping() {
-		Map<String, Class<?>> finalIdClassMapping = new HashMap<String, Class<?>>();
+		Map<String, Class<?>> finalIdClassMapping = new HashMap<>();
 		this.classIdMapping.clear();
 		for (Entry<String, Class<?>> entry : this.idClassMapping.entrySet()) {
 			String id = entry.getKey();
@@ -203,14 +204,10 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 						"If the serialization is only done by a trusted source, you can also enable trust all (*).");
 			}
 			else {
-				return ClassUtils.forName(classId, getClass().getClassLoader());
+				return ClassUtils.forName(classId, ClassUtils.getDefaultClassLoader());
 			}
 		}
-		catch (ClassNotFoundException e) {
-			throw new MessageConversionException(
-					"failed to resolve class name [" + classId + "]", e);
-		}
-		catch (LinkageError e) {
+		catch (ClassNotFoundException | LinkageError e) {
 			throw new MessageConversionException(
 					"failed to resolve class name [" + classId + "]", e);
 		}
