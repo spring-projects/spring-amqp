@@ -79,6 +79,7 @@ import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 import org.springframework.util.backoff.BackOff;
@@ -119,7 +120,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 
 	protected final Object consumersMonitor = new Object(); //NOSONAR
 
-	private final Map<String, Object> consumerArgs = new HashMap<String, Object>();
+	private final Map<String, Object> consumerArgs = new HashMap<>();
 
 	private ContainerDelegate proxy = this.delegate;
 
@@ -269,7 +270,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	public void setQueueNames(String... queueName) {
 		Assert.noNullElements(queueName, "Queue name(s) cannot be null");
 		setQueues(Arrays.stream(queueName)
-				.map(n -> new Queue(n))
+				.map(Queue::new)
 				.toArray(Queue[]::new));
 	}
 
@@ -324,7 +325,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queueNames, "'queueNames' cannot be null");
 		Assert.noNullElements(queueNames, "'queueNames' cannot contain null elements");
 		addQueues(Arrays.stream(queueNames)
-				.map(n -> new Queue(n))
+				.map(Queue::new)
 				.toArray(Queue[]::new));
 	}
 
@@ -368,7 +369,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		Assert.notNull(queues, "'queues' cannot be null");
 		Assert.noNullElements(queues, "'queues' cannot contain null elements");
 		return removeQueueNames(Arrays.stream(queues)
-				.map(q -> q.getActualName())
+				.map(Queue::getActualName)
 				.toArray(String[]::new));
 	}
 
@@ -642,7 +643,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 	protected String getRoutingLookupKey() {
 		return super.getConnectionFactory() instanceof RoutingConnectionFactory
 				? this.lookupKeyQualifier + "[" + this.queues.stream()
-								.map(q -> q.getName())
+								.map(Queue::getName)
 								.collect(Collectors.joining(",")) + "]"
 				: null;
 	}
@@ -1131,7 +1132,7 @@ public abstract class AbstractMessageListenerContainer extends RabbitAccessor
 		}
 		factory.addInterface(ContainerDelegate.class);
 		factory.setTarget(delegate);
-		this.proxy = (ContainerDelegate) factory.getProxy(ContainerDelegate.class.getClassLoader());
+		this.proxy = (ContainerDelegate) factory.getProxy(ClassUtils.getDefaultClassLoader());
 	}
 
 	/**

@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.springframework.amqp.utils.SerializationUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 
 /**
  * The 0-8 and 0-9-1 AMQP specifications do not define an Message class or interface. Instead, when performing an
@@ -39,6 +40,7 @@ import org.springframework.util.Assert;
  * @author Dave Syer
  * @author Gary Russell
  * @author Alex Panchenko
+ * @author Artem Bilan
  */
 public class Message implements Serializable {
 
@@ -46,8 +48,8 @@ public class Message implements Serializable {
 
 	private static final String ENCODING = Charset.defaultCharset().name();
 
-	private static final Set<String> whiteListPatterns = new LinkedHashSet<String>(
-			Arrays.asList("java.util.*", "java.lang.*"));
+	private static final Set<String> whiteListPatterns =
+			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
 
 	private final MessageProperties messageProperties;
 
@@ -103,7 +105,7 @@ public class Message implements Serializable {
 			String contentType = (this.messageProperties != null) ? this.messageProperties.getContentType() : null;
 			if (MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT.equals(contentType)) {
 				return SerializationUtils.deserialize(new ByteArrayInputStream(this.body), whiteListPatterns,
-						getClass().getClassLoader()).toString();
+						ClassUtils.getDefaultClassLoader()).toString();
 			}
 			if (MessageProperties.CONTENT_TYPE_TEXT_PLAIN.equals(contentType)
 					|| MessageProperties.CONTENT_TYPE_JSON.equals(contentType)
