@@ -48,6 +48,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -389,6 +390,14 @@ public class RabbitTemplateIntegrationTests {
 		catch (ConsumeOkNotReceivedException e) {
 			// we're expecting no result, this could happen, depending on timing.
 		}
+	}
+
+	@Test
+	public void testReceiveTimeoutRequeue() {
+		assertNull(this.template.receiveAndConvert(ROUTE, 1));
+		assertEquals(0,
+				TestUtils.getPropertyValue(this.connectionFactory, "cachedChannelsNonTransactional", List.class)
+						.size());
 	}
 
 	@Test
