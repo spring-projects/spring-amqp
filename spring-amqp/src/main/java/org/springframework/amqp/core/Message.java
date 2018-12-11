@@ -48,7 +48,7 @@ public class Message implements Serializable {
 
 	private static final String ENCODING = Charset.defaultCharset().name();
 
-	private static final Set<String> whiteListPatterns =
+	private static final Set<String> whiteListPatterns = // NOSONAR lower case static
 			new LinkedHashSet<>(Arrays.asList("java.util.*", "java.lang.*"));
 
 	private final MessageProperties messageProperties;
