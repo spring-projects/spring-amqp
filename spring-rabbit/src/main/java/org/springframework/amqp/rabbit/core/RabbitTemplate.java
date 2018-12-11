@@ -137,6 +137,7 @@ import com.rabbitmq.client.ShutdownListener;
  * @author Artem Bilan
  * @author Ernest Sadykov
  * @author Mark Norkin
+ *
  * @since 1.0
  */
 public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
@@ -1269,7 +1270,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			Thread.currentThread().interrupt();
 		}
 		catch (TimeoutException e) {
-			// no result in time
+			RabbitUtils.setPhysicalCloseRequired(channel, true);
 		}
 		finally {
 			if (!(exception instanceof ConsumerCancelledException) && channel.isOpen()) {
