@@ -890,6 +890,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				}
 				channel.basicCancel(consumer.getConsumerTag());
 				if (delivery == null) {
+					RabbitUtils.setPhysicalCloseRequired(channel, true);
 					return null;
 				}
 				else {
@@ -1028,6 +1029,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 							channel.basicAck(deliveryTag, false);
 						}
 						receiveMessage = buildMessageFromDelivery(delivery);
+					}
+					else {
+						RabbitUtils.setPhysicalCloseRequired(channel, true);
 					}
 				}
 				if (receiveMessage != null) {

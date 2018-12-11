@@ -47,6 +47,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -346,6 +347,14 @@ public class RabbitTemplateIntegrationTests {
 		assertEquals("blockNoTO", out);
 		this.template.setReceiveTimeout(1); // test the no message after timeout path
 		assertNull(this.template.receive(ROUTE));
+	}
+
+	@Test
+	public void testReceiveTimeoutRequeue() {
+		assertNull(this.template.receiveAndConvert(ROUTE, 1));
+		assertEquals(0,
+				TestUtils.getPropertyValue(this.connectionFactory, "cachedChannelsNonTransactional", List.class)
+						.size());
 	}
 
 	@Test
