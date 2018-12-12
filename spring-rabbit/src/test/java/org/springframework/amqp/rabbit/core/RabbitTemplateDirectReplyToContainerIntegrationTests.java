@@ -16,7 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.Map;
 
@@ -28,6 +29,8 @@ import org.springframework.amqp.utils.test.TestUtils;
 
 /**
  * @author Gary Russell
+ * @author Artem Bilan
+ *
  * @since 2.0
  *
  */
@@ -48,12 +51,12 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		template.setReplyTimeout(1);
 		Object reply = template.convertSendAndReceive(ROUTE, "foo");
-		assertThat(reply).isNull();
+		assertNull(reply);
 		Object container = TestUtils.getPropertyValue(template, "directReplyToContainers", Map.class)
 				.get(template.isUsePublisherConnection()
 						? connectionFactory.getPublisherConnectionFactory()
 						: connectionFactory);
-		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
+		assertEquals(0, TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class).size());
 	}
 
 }
