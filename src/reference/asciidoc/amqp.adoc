@@ -3315,8 +3315,8 @@ to a queue with the same name.
 This check cannot be performed if the reply address is an exchange and routing key and a debug log message will be
 written.
 
-IMPORTANT: When wiring the reply listener and template yourself, it is important to ensure that the template's `replyQueue` and the container's `queues` (or `queueNames`) properties refer to the same queue.
-The template inserts the reply queue into the outbound message `replyTo` property.
+IMPORTANT: When wiring the reply listener and template yourself, it is important to ensure that the template's `replyAddress` and the container's `queues` (or `queueNames`) properties refer to the same queue.
+The template inserts the reply address into the outbound message `replyTo` property.
 
 The following are examples of how to manually wire up the beans.
 
@@ -3346,7 +3346,7 @@ The following are examples of how to manually wire up the beans.
     public RabbitTemplate amqpTemplate() {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory());
         rabbitTemplate.setMessageConverter(msgConv());
-        rabbitTemplate.setReplyQueue(replyQueue());
+        rabbitTemplate.setReplyAddress(replyQueue().getName());
         rabbitTemplate.setReplyTimeout(60000);
         rabbitTemplate.setUseDirectReplyToContainer(false);
         return rabbitTemplate;
