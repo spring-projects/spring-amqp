@@ -17,14 +17,26 @@
 package org.springframework.amqp.rabbit.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFailedException;
 import org.springframework.amqp.utils.test.TestUtils;
+import org.springframework.util.ErrorHandler;
 
 /**
  * @author Gary Russell
@@ -43,10 +55,17 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void channelReleasedOnTimeout() {
+	public void channelReleasedOnTimeout() throws Exception {
 		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
 		template.setReplyTimeout(1);
+		AtomicReference<Throwable> exception = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
+		ErrorHandler replyErrorHandler = t -> {
+			exception.set(t);
+			latch.countDown();
+		};
+		template.setReplyErrorHandler(replyErrorHandler);
 		Object reply = template.convertSendAndReceive(ROUTE, "foo");
 		assertThat(reply).isNull();
 		Object container = TestUtils.getPropertyValue(template, "directReplyToContainers", Map.class)
@@ -54,6 +73,36 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 						? connectionFactory.getPublisherConnectionFactory()
 						: connectionFactory);
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
+		assertThat(TestUtils.getPropertyValue(container, "errorHandler")).isSameAs(replyErrorHandler);
+		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
+		assertThatThrownBy(() -> template.onMessage(replyMessage))
+			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
+			.hasMessage("No correlation header");
+		replyMessage.getMessageProperties().setCorrelationId("foo");
+		assertThatThrownBy(() -> template.onMessage(replyMessage))
+			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
+			.hasMessage("Reply received after timeout");
+
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		// Set up a consumer to respond to our producer
+		executor.submit(() -> {
+			Message message = template.receive(ROUTE, 10_000);
+			assertNotNull("No message received", message);
+			template.send(message.getMessageProperties().getReplyTo(), replyMessage);
+			return message;
+		});
+		while (template.receive(ROUTE, 100) != null) {
+			// empty
+		}
+		reply = template.convertSendAndReceive(ROUTE, "foo");
+		assertThat(reply).isNull();
+		assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+		assertThat(exception.get()).isInstanceOf(ListenerExecutionFailedException.class);
+		assertThat(exception.get().getCause().getMessage()).isEqualTo("Reply received after timeout");
+		assertThat(((ListenerExecutionFailedException) exception.get()).getFailedMessage().getBody())
+			.isEqualTo(replyMessage.getBody());
+		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
+		executor.shutdownNow();
 	}
 
 }

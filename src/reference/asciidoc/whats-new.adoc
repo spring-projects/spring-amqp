@@ -58,6 +58,10 @@ See <<template-confirms>> for more information.
 A method `replyTimedOut` is now provided to notify subclasses that a reply has timed out, allowing for any state cleanup.
 See <<reply-timeout>> for more information.
 
+You can now specify an `ErrorHandler` to be invoked when using request/reply with a `DirectReplyToMessageListenerContainer` (the default) when exceptions occur when replies are delivered (e.g. late replies).
+See `setReplyErrorHandler` on the `RabbitTemplate`.
+(Also since 2.0.11).
+
 ===== Message Conversion
 
 A new `Jackson2XmlMessageConverter` is introduced to support converting messages from/to XML format.
