@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,15 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Map;
+
+import org.junit.Test;
+
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.utils.test.TestUtils;
 
 /**
  * @author Gary Russell
@@ -31,6 +39,21 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		template.setUseDirectReplyToContainer(true);
 		template.setBeanName(this.testName.getMethodName() + "SendReceiveRabbitTemplate");
 		return template;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void channelReleasedOnTimeout() {
+		final CachingConnectionFactory connectionFactory = new CachingConnectionFactory("localhost");
+		RabbitTemplate template = createSendAndReceiveRabbitTemplate(connectionFactory);
+		template.setReplyTimeout(1);
+		Object reply = template.convertSendAndReceive(ROUTE, "foo");
+		assertThat(reply).isNull();
+		Object container = TestUtils.getPropertyValue(template, "directReplyToContainers", Map.class)
+				.get(template.isUsePublisherConnection()
+						? connectionFactory.getPublisherConnectionFactory()
+						: connectionFactory);
+		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 	}
 
 }

@@ -3328,6 +3328,7 @@ The following are examples of how to manually wire up the beans.
     <property name="routingKey" value="foo" />
     <property name="replyQueue" ref="replyQ" />
     <property name="replyTimeout" value="600000" />
+    <property name="useDirectReplyToContainer" value="false" />
 </bean>
 
 <bean class="org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer">
@@ -3347,6 +3348,7 @@ The following are examples of how to manually wire up the beans.
         rabbitTemplate.setMessageConverter(msgConv());
         rabbitTemplate.setReplyQueue(replyQueue());
         rabbitTemplate.setReplyTimeout(60000);
+        rabbitTemplate.setUseDirectReplyToContainer(false);
         return rabbitTemplate;
     }
 
