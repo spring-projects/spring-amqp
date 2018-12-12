@@ -157,7 +157,7 @@ public class RabbitTemplateIntegrationTests {
 
 	private static final Log logger = LogFactory.getLog(RabbitTemplateIntegrationTests.class);
 
-	private static final String ROUTE = "test.queue";
+	protected static final String ROUTE = "test.queue";
 
 	private static final Queue REPLY_QUEUE = new Queue("test.reply.queue");
 
