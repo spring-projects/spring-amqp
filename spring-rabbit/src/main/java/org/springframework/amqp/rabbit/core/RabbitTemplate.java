@@ -89,6 +89,7 @@ import org.springframework.retry.RecoveryCallback;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.ErrorHandler;
 import org.springframework.util.StringUtils;
 
 import com.rabbitmq.client.AMQP;
@@ -186,63 +187,53 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 
 	private final AtomicInteger containerInstance = new AtomicInteger();
 
-	private volatile String exchange = DEFAULT_EXCHANGE;
+	private String exchange = DEFAULT_EXCHANGE;
 
-	private volatile String routingKey = DEFAULT_ROUTING_KEY;
+	private String routingKey = DEFAULT_ROUTING_KEY;
 
 	// The default queue name that will be used for synchronous receives.
-	private volatile String defaultReceiveQueue;
+	private String defaultReceiveQueue;
 
-	private volatile long receiveTimeout = 0;
+	private long receiveTimeout = 0;
 
-	private volatile long replyTimeout = DEFAULT_REPLY_TIMEOUT;
+	private long replyTimeout = DEFAULT_REPLY_TIMEOUT;
 
-	private volatile MessageConverter messageConverter = new SimpleMessageConverter();
+	private MessageConverter messageConverter = new SimpleMessageConverter();
 
-	private volatile MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
+	private MessagePropertiesConverter messagePropertiesConverter = new DefaultMessagePropertiesConverter();
 
-	private volatile String encoding = DEFAULT_ENCODING;
+	private String encoding = DEFAULT_ENCODING;
 
-	private volatile String replyAddress;
+	private String replyAddress;
 
 	@Nullable
-	private volatile ConfirmCallback confirmCallback;
+	private ConfirmCallback confirmCallback;
 
-	private volatile ReturnCallback returnCallback;
+	private ReturnCallback returnCallback;
 
-	private volatile Boolean confirmsOrReturnsCapable;
+	private Expression mandatoryExpression = new ValueExpression<Boolean>(false);
 
-	private volatile boolean publisherConfirms;
+	private String correlationKey = null;
 
-	private volatile Expression mandatoryExpression = new ValueExpression<Boolean>(false);
+	private RetryTemplate retryTemplate;
 
-	private volatile String correlationKey = null;
+	private RecoveryCallback<?> recoveryCallback;
 
-	private volatile RetryTemplate retryTemplate;
+	private Expression sendConnectionFactorySelectorExpression;
 
-	private volatile RecoveryCallback<?> recoveryCallback;
+	private Expression receiveConnectionFactorySelectorExpression;
 
-	private volatile Expression sendConnectionFactorySelectorExpression;
+	private boolean useDirectReplyToContainer = true;
 
-	private volatile Expression receiveConnectionFactorySelectorExpression;
+	private boolean useTemporaryReplyQueues;
 
-	private volatile boolean usingFastReplyTo;
+	private Collection<MessagePostProcessor> beforePublishPostProcessors;
 
-	private volatile boolean useDirectReplyToContainer = true;
+	private Collection<MessagePostProcessor> afterReceivePostProcessors;
 
-	private volatile boolean evaluatedFastReplyTo;
+	private CorrelationDataPostProcessor correlationDataPostProcessor;
 
-	private volatile boolean useTemporaryReplyQueues;
-
-	private volatile Collection<MessagePostProcessor> beforePublishPostProcessors;
-
-	private volatile Collection<MessagePostProcessor> afterReceivePostProcessors;
-
-	private volatile CorrelationDataPostProcessor correlationDataPostProcessor;
-
-	private volatile boolean isListener;
-
-	private volatile Expression userIdExpression;
+	private Expression userIdExpression;
 
 	private String beanName = "rabbitTemplate";
 
@@ -253,6 +244,18 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private boolean usePublisherConnection;
 
 	private boolean noLocalReplyConsumer;
+
+	private ErrorHandler replyErrorHandler;
+
+	private volatile Boolean confirmsOrReturnsCapable;
+
+	private volatile boolean publisherConfirms;
+
+	private volatile boolean usingFastReplyTo;
+
+	private volatile boolean evaluatedFastReplyTo;
+
+	private volatile boolean isListener;
 
 	/**
 	 * Convenient constructor for use with setter injection. Don't forget to set the connection factory.
@@ -723,8 +726,19 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	/**
+	 * When using a direct reply-to container for request/reply operations, set an error
+	 * handler to be invoked when a reply delivery fails (e.g. due to a late reply).
+	 * @param replyErrorHandler the reply error handler
+	 * @since 2.0.11
+	 * @see #setUseDirectReplyToContainer(boolean)
+	 */
+	public void setReplyErrorHandler(ErrorHandler replyErrorHandler) {
+		this.replyErrorHandler = replyErrorHandler;
+	}
+
+	/**
 	 * Invoked by the container during startup so it can verify the queue is correctly
-	 * configured (if a simple reply queue name is used instead of exchange/routingKey.
+	 * configured (if a simple reply queue name is used instead of exchange/routingKey).
 	 * @return the queue name, if configured.
 	 * @since 1.5
 	 */
@@ -1782,6 +1796,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 								.toArray(new MessagePostProcessor[this.afterReceivePostProcessors.size()]));
 					}
 					container.setNoLocal(this.noLocalReplyConsumer);
+					if (this.replyErrorHandler != null) {
+						container.setErrorHandler(this.replyErrorHandler);
+					}
 					container.start();
 					this.directReplyToContainers.put(connectionFactory, container);
 					this.replyAddress = Address.AMQ_RABBITMQ_REPLY_TO;
@@ -2404,8 +2421,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					.getHeaders().get(this.correlationKey);
 		}
 		if (messageTag == null) {
-			logger.error("No correlation header in reply");
-			return;
+			throw new AmqpRejectAndDontRequeueException("No correlation header in reply");
 		}
 
 		PendingReply pendingReply = this.replyHolder.get(messageTag);
