@@ -77,7 +77,7 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 		Message replyMessage = new Message("foo".getBytes(), new MessageProperties());
 		assertThatThrownBy(() -> template.onMessage(replyMessage))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
-			.hasMessage("No correlation header");
+			.hasMessage("No correlation header in reply");
 		replyMessage.getMessageProperties().setCorrelationId("foo");
 		assertThatThrownBy(() -> template.onMessage(replyMessage))
 			.isInstanceOf(AmqpRejectAndDontRequeueException.class)
