@@ -103,6 +103,8 @@ public class RabbitTemplateDirectReplyToContainerIntegrationTests extends Rabbit
 			.isEqualTo(replyMessage.getBody());
 		assertThat(TestUtils.getPropertyValue(container, "inUseConsumerChannels", Map.class)).hasSize(0);
 		executor.shutdownNow();
+		template.stop();
+		connectionFactory.destroy();
 	}
 
 }
