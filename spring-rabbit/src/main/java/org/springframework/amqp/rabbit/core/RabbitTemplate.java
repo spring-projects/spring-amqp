@@ -2421,8 +2421,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 					.getHeaders().get(this.correlationKey);
 		}
 		if (messageTag == null) {
-			logger.error("No correlation header in reply");
-			throw new AmqpRejectAndDontRequeueException("No correlation header");
+			throw new AmqpRejectAndDontRequeueException("No correlation header in reply");
 		}
 
 		PendingReply pendingReply = this.replyHolder.get(messageTag);

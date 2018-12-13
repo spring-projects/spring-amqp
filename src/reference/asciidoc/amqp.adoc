@@ -3220,6 +3220,10 @@ Also, you must not have registered your own `ReturnCallback` with the `RabbitTem
 
 Starting with version 2.1.2, a method `replyTimedOut` has been added, allowing subclasses to be informed of the timeout so they can clean up any retained state.
 
+Starting with version 2.1.3, when using the default `DirectReplyToMessageListenerContainer`, you can add an error handler by setting the template's `replyErrorHandler` property.
+This error handler will be invoked for any failed deliveries, such as late replies and messages received without a correlation header.
+The exception passed in is a `ListenerExecutionFailedException` which has a `failedMessage` property.
+
 [[direct-reply-to]]
 ===== RabbitMQ Direct reply-to
 
