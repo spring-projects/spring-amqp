@@ -660,7 +660,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		catch (AmqpApplicationContextClosedException e) {
 			throw new AmqpConnectException(e);
 		}
-		catch (IOException | AmqpConnectException e) {
+		catch (Exception e) {
 			RabbitUtils.closeChannel(channel);
 			RabbitUtils.closeConnection(connection);
 
@@ -876,7 +876,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope,
-				BasicProperties properties, byte[] body) throws IOException {
+				BasicProperties properties, byte[] body) {
 			MessageProperties messageProperties =
 					getMessagePropertiesConverter().toMessageProperties(properties, envelope, "UTF-8");
 			messageProperties.setConsumerTag(consumerTag);
@@ -939,7 +939,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void callExecuteListener(Message message, long deliveryTag) throws Exception {
+		private void callExecuteListener(Message message, long deliveryTag) {
 			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
 				executeListener(getChannel(), message);
