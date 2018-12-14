@@ -16,6 +16,8 @@
 
 package org.springframework.amqp.rabbit.core;
 
+import org.springframework.lang.Nullable;
+
 import com.rabbitmq.client.Channel;
 
 /**
@@ -36,6 +38,7 @@ public interface ChannelCallback<T> {
 	 * @return The result.
 	 * @throws Exception Not sure what else Rabbit Throws
 	 */
+	@Nullable
 	T doInRabbit(Channel channel) throws Exception; // NOSONAR user code might throw anything; cannot change
 
 }

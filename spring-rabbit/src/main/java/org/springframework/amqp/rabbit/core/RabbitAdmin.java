@@ -263,6 +263,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	@Override
 	@ManagedOperation(description =
 			"Declare a queue on the broker (this operation is not available remotely)")
+	@Nullable
 	public String declareQueue(final Queue queue) {
 		try {
 			return this.rabbitTemplate.execute(channel -> {
@@ -388,6 +389,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 */
 	@Override
 	@ManagedOperation(description = "Get queue name, message count and consumer count")
+	@Nullable
 	public Properties getQueueProperties(final String queueName) {
 		Assert.hasText(queueName, "'queueName' cannot be null or empty");
 		return this.rabbitTemplate.execute(channel -> {
@@ -434,7 +436,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * @param retryTemplate the retry template.
 	 * @since 1.7.8
 	 */
-	public void setRetryTemplate(RetryTemplate retryTemplate) {
+	public void setRetryTemplate(@Nullable RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
 		if (retryTemplate == null) {
 			this.retryDisabled = true;

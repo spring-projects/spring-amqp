@@ -19,6 +19,7 @@ package org.springframework.amqp.core;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.Nullable;
 
 /**
  * Specifies a basic set of AMQP operations.
@@ -141,6 +142,7 @@ public interface AmqpTemplate {
 	 * @return a message or null if there is none waiting
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Message receive() throws AmqpException;
 
 	/**
@@ -151,6 +153,7 @@ public interface AmqpTemplate {
 	 * @return a message or null if there is none waiting
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Message receive(String queueName) throws AmqpException;
 
 	/**
@@ -164,6 +167,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 1.6
 	 */
+	@Nullable
 	Message receive(long timeoutMillis) throws AmqpException;
 
 	/**
@@ -178,6 +182,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 1.6
 	 */
+	@Nullable
 	Message receive(String queueName, long timeoutMillis) throws AmqpException;
 
 	// receive methods with conversion
@@ -189,6 +194,7 @@ public interface AmqpTemplate {
 	 * @return a message or null if there is none waiting
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object receiveAndConvert() throws AmqpException;
 
 	/**
@@ -199,6 +205,7 @@ public interface AmqpTemplate {
 	 * @return a message or null if there is none waiting
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object receiveAndConvert(String queueName) throws AmqpException;
 
 	/**
@@ -213,6 +220,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 1.6
 	 */
+	@Nullable
 	Object receiveAndConvert(long timeoutMillis) throws AmqpException;
 
 	/**
@@ -228,6 +236,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 1.6
 	 */
+	@Nullable
 	Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
 
 	/**
@@ -241,6 +250,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
@@ -255,6 +265,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
@@ -272,6 +283,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException;
 
 	/**
@@ -290,6 +302,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type)
 			throws AmqpException;
 
@@ -410,6 +423,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Message sendAndReceive(Message message) throws AmqpException;
 
 	/**
@@ -422,6 +436,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Message sendAndReceive(String routingKey, Message message) throws AmqpException;
 
 	/**
@@ -436,6 +451,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Message sendAndReceive(String exchange, String routingKey, Message message) throws AmqpException;
 
 	// send and receive methods with conversion
@@ -450,6 +466,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(Object message) throws AmqpException;
 
 	/**
@@ -463,6 +480,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message) throws AmqpException;
 
 	/**
@@ -477,6 +495,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message) throws AmqpException;
 
 	/**
@@ -490,6 +509,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
 
 	/**
@@ -504,6 +524,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String routingKey, Object message, MessagePostProcessor messagePostProcessor)
 			throws AmqpException;
 
@@ -520,6 +541,7 @@ public interface AmqpTemplate {
 	 * @return the response if there is one
 	 * @throws AmqpException if there is a problem
 	 */
+	@Nullable
 	Object convertSendAndReceive(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor) throws AmqpException;
 
@@ -537,6 +559,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem.
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(Object message, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
 
@@ -554,6 +577,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -572,6 +596,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -589,6 +614,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(Object message, MessagePostProcessor messagePostProcessor,
 			ParameterizedTypeReference<T> responseType) throws AmqpException;
 
@@ -607,6 +633,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;
@@ -627,6 +654,7 @@ public interface AmqpTemplate {
 	 * @throws AmqpException if there is a problem
 	 * @since 2.0
 	 */
+	@Nullable
 	<T> T convertSendAndReceiveAsType(String exchange, String routingKey, Object message,
 			MessagePostProcessor messagePostProcessor, ParameterizedTypeReference<T> responseType)
 			throws AmqpException;

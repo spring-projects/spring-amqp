@@ -1013,11 +1013,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
+	@Nullable
 	public Message receive() throws AmqpException {
 		return this.receive(getRequiredQueue());
 	}
 
 	@Override
+	@Nullable
 	public Message receive(String queueName) {
 		if (this.receiveTimeout == 0) {
 			return doReceiveNoWait(queueName);
@@ -1033,6 +1035,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	 * @return The message, or null if none immediately available.
 	 * @since 1.5
 	 */
+	@Nullable
 	protected Message doReceiveNoWait(final String queueName) {
 		Message message = execute(channel -> {
 			GetResponse response = channel.basicGet(queueName, !isChannelTransacted());
@@ -1934,11 +1937,13 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
+	@Nullable
 	public <T> T execute(ChannelCallback<T> action) {
 		return execute(action, getConnectionFactory());
 	}
 
 	@SuppressWarnings(UNCHECKED)
+	@Nullable
 	private <T> T execute(final ChannelCallback<T> action, final ConnectionFactory connectionFactory) {
 		if (this.retryTemplate != null) {
 			try {
@@ -1958,7 +1963,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
-
+	@Nullable
 	private <T> T doExecute(ChannelCallback<T> action, ConnectionFactory connectionFactory) { // NOSONAR complexity
 		Assert.notNull(action, "Callback object must not be null");
 		Channel channel = null;
