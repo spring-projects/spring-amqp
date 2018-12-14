@@ -18,6 +18,8 @@ package org.springframework.amqp.core;
 
 import java.util.Properties;
 
+import org.springframework.lang.Nullable;
+
 
 /**
  * Specifies a basic set of portable AMQP administrative operations for AMQP &gt; 0.9.
@@ -57,6 +59,7 @@ public interface AmqpAdmin {
 	 * @param queue the queue to declare.
 	 * @return the name of the queue.
 	 */
+	@Nullable
 	String declareQueue(Queue queue);
 
 	/**
@@ -111,6 +114,7 @@ public interface AmqpAdmin {
 	 * @param queueName the name of the queue.
 	 * @return the properties or null if the queue doesn't exist.
 	 */
+	@Nullable
 	Properties getQueueProperties(String queueName);
 
 	/**
