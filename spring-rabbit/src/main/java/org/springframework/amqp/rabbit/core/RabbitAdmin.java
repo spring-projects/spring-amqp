@@ -436,7 +436,7 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 	 * @param retryTemplate the retry template.
 	 * @since 1.7.8
 	 */
-	public void setRetryTemplate(RetryTemplate retryTemplate) {
+	public void setRetryTemplate(@Nullable RetryTemplate retryTemplate) {
 		this.retryTemplate = retryTemplate;
 		if (retryTemplate == null) {
 			this.retryDisabled = true;

@@ -52,6 +52,7 @@ public interface AmqpAdmin {
 	 *
 	 * @return The queue.
 	 */
+	@Nullable
 	Queue declareQueue();
 
 	/**
