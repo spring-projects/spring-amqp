@@ -16,8 +16,9 @@
 
 package org.springframework.amqp.rabbit.core;
 
-import com.rabbitmq.client.Channel;
 import org.springframework.lang.Nullable;
+
+import com.rabbitmq.client.Channel;
 
 /**
  * Basic callback for use in RabbitTemplate.
