@@ -1157,28 +1157,24 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	@Nullable
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
 		return receiveAndReply(this.getRequiredQueue(), callback);
 	}
 
 	@Override
 	@SuppressWarnings(UNCHECKED)
-	@Nullable
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback) throws AmqpException {
 		return receiveAndReply(queueName, callback, (ReplyToAddressCallback<S>) this.defaultReplyToAddressCallback);
 
 	}
 
 	@Override
-	@Nullable
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, final String exchange, final String routingKey)
 			throws AmqpException {
 		return receiveAndReply(this.getRequiredQueue(), callback, exchange, routingKey);
 	}
 
 	@Override
-	@Nullable
 	public <R, S> boolean receiveAndReply(final String queueName, ReceiveAndReplyCallback<R, S> callback, final String replyExchange,
 			final String replyRoutingKey) throws AmqpException {
 		return receiveAndReply(queueName, callback,
@@ -1186,22 +1182,20 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@Override
-	@Nullable
 	public <R, S> boolean receiveAndReply(ReceiveAndReplyCallback<R, S> callback, ReplyToAddressCallback<S> replyToAddressCallback)
 			throws AmqpException {
 		return receiveAndReply(this.getRequiredQueue(), callback, replyToAddressCallback);
 	}
 
 	@Override
-	@Nullable
 	public <R, S> boolean receiveAndReply(String queueName, ReceiveAndReplyCallback<R, S> callback,
 			ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 		return doReceiveAndReply(queueName, callback, replyToAddressCallback);
 	}
 
-	@Nullable
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
+
 		return execute(channel -> {
 			Message receiveMessage = receiveForReply(queueName, channel);
 			if (receiveMessage != null) {
@@ -2006,17 +2000,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			invokeScope = true;
 		}
 		try {
-			if (this.confirmsOrReturnsCapable == null) {
-				determineConfirmsReturnsCapability(connectionFactory);
-			}
-			if (this.confirmsOrReturnsCapable) {
-				addListener(channel);
-			}
-			if (logger.isDebugEnabled()) {
-				logger.debug(
-						"Executing callback " + action.getClass().getSimpleName() + " on RabbitMQ Channel: " + channel);
-			}
-			return action.doInRabbit(channel);
+			return invokeAction(action, connectionFactory, channel);
 		}
 		catch (Exception ex) {
 			if (isChannelLocallyTransacted(channel)) {
@@ -2025,16 +2009,38 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 			throw convertRabbitAccessException(ex);
 		}
 		finally {
-			if (!invokeScope) {
-				if (resourceHolder != null) {
-					ConnectionFactoryUtils.releaseResources(resourceHolder);
-				}
-				else {
-					RabbitUtils.closeChannel(channel);
-					RabbitUtils.closeConnection(connection);
-				}
+			cleanUpAfterAction(channel, invokeScope, resourceHolder, connection);
+		}
+	}
+
+	private void cleanUpAfterAction(Channel channel, boolean invokeScope, RabbitResourceHolder resourceHolder,
+			Connection connection) {
+
+		if (!invokeScope) {
+			if (resourceHolder != null) {
+				ConnectionFactoryUtils.releaseResources(resourceHolder);
+			}
+			else {
+				RabbitUtils.closeChannel(channel);
+				RabbitUtils.closeConnection(connection);
 			}
 		}
+	}
+
+	private <T> T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
+			throws Exception {
+
+		if (this.confirmsOrReturnsCapable == null) {
+			determineConfirmsReturnsCapability(connectionFactory);
+		}
+		if (this.confirmsOrReturnsCapable) {
+			addListener(channel);
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug(
+					"Executing callback " + action.getClass().getSimpleName() + " on RabbitMQ Channel: " + channel);
+		}
+		return action.doInRabbit(channel);
 	}
 
 	@Override
