@@ -1196,13 +1196,14 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	private <R, S> boolean doReceiveAndReply(final String queueName, final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback) throws AmqpException {
 
-		return execute(channel -> {
-			Message receiveMessage = receiveForReply(queueName, channel);
-			if (receiveMessage != null) {
-				return sendReply(callback, replyToAddressCallback, channel, receiveMessage);
-			}
-			return false;
-		}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
+		Boolean result = execute(channel -> {
+					Message receiveMessage = receiveForReply(queueName, channel);
+					if (receiveMessage != null) {
+						return sendReply(callback, replyToAddressCallback, channel, receiveMessage);
+					}
+					return false;
+				}, obtainTargetConnectionFactory(this.receiveConnectionFactorySelectorExpression, queueName));
+		return result == null ? false : result;
 	}
 
 	@Nullable
@@ -1307,7 +1308,7 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 	}
 
 	@SuppressWarnings(UNCHECKED)
-	private <R, S> Boolean sendReply(final ReceiveAndReplyCallback<R, S> callback,
+	private <R, S> boolean sendReply(final ReceiveAndReplyCallback<R, S> callback,
 			final ReplyToAddressCallback<S> replyToAddressCallback, Channel channel, Message receiveMessage)
 					throws Exception { // NOSONAR TODO change to IOException in 2.2.
 
@@ -2027,8 +2028,9 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 		}
 	}
 
+	@Nullable
 	private <T> T invokeAction(ChannelCallback<T> action, ConnectionFactory connectionFactory, Channel channel)
-			throws Exception {
+			throws Exception { // NOSONAR see the callback
 
 		if (this.confirmsOrReturnsCapable == null) {
 			determineConfirmsReturnsCapability(connectionFactory);
