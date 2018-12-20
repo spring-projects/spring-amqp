@@ -574,6 +574,11 @@ public class BlockingQueueConsumer {
 		this.deliveryTags.clear();
 		this.activeObjectCounter.add(this);
 
+		passiveDeclarations();
+		setQosAndreateConsumers();
+	}
+
+	private void passiveDeclarations() {
 		// mirrored queue might be being moved
 		int passiveDeclareRetries = this.declarationRetries;
 		this.declaring = true;
@@ -594,7 +599,9 @@ public class BlockingQueueConsumer {
 		}
 		while (passiveDeclareRetries-- > 0 && !cancelled());
 		this.declaring = false;
+	}
 
+	private void setQosAndreateConsumers() {
 		if (!this.acknowledgeMode.isAutoAck() && !cancelled()) {
 			// Set basicQos before calling basicConsume (otherwise if we are not acking the broker
 			// will send blocks of 100 messages)
@@ -606,7 +613,6 @@ public class BlockingQueueConsumer {
 				throw new AmqpIOException(e);
 			}
 		}
-
 
 		try {
 			if (!cancelled()) {
@@ -734,9 +740,8 @@ public class BlockingQueueConsumer {
 	/**
 	 * Perform a rollback, handling rollback exceptions properly.
 	 * @param ex the thrown application exception or error
-	 * @throws Exception in case of a rollback error
 	 */
-	public void rollbackOnExceptionIfNecessary(Throwable ex) throws Exception {
+	public void rollbackOnExceptionIfNecessary(Throwable ex) {
 
 		boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 		try {

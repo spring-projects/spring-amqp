@@ -168,7 +168,7 @@ public class ConditionalRejectingErrorHandler implements ErrorHandler {
 		}
 
 		private boolean isCauseFatal(Throwable cause) {
-			return cause instanceof MessageConversionException
+			return cause instanceof MessageConversionException // NOSONAR boolean complexity
 					|| cause instanceof org.springframework.messaging.converter.MessageConversionException
 					|| cause instanceof MethodArgumentResolutionException
 					|| cause instanceof NoSuchMethodException
