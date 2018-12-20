@@ -888,7 +888,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 			}
 		}
 
-		private void callExecuteListener(Message message, long deliveryTag) {
+		private void callExecuteListener(Message message, long deliveryTag) throws Exception {
 			boolean channelLocallyTransacted = isChannelLocallyTransacted();
 			try {
 				executeListener(getChannel(), message);
