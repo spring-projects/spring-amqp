@@ -108,8 +108,7 @@ public class CachingConnectionFactoryIntegrationTests {
 
 	@Before
 	public void open() {
-		connectionFactory = new CachingConnectionFactory();
-		connectionFactory.setHost("localhost");
+		connectionFactory = new CachingConnectionFactory("localhost");
 		connectionFactory.setPort(BrokerTestUtils.getPort());
 		connectionFactory.getRabbitConnectionFactory().getClientProperties().put("foo", "bar");
 		connectionFactory.setConnectionNameStrategy(cf -> CF_INTEGRATION_CONNECTION_NAME);
