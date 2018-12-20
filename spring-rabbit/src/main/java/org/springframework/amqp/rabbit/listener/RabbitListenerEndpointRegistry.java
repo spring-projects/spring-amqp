@@ -67,7 +67,7 @@ import org.springframework.util.StringUtils;
 public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLifecycle, ApplicationContextAware,
 		ApplicationListener<ContextRefreshedEvent> {
 
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	private final Map<String, MessageListenerContainer> listenerContainers =
 			new ConcurrentHashMap<String, MessageListenerContainer>();
@@ -256,9 +256,9 @@ public class RabbitListenerEndpointRegistry implements DisposableBean, SmartLife
 
 	@Override
 	public void stop(Runnable callback) {
-		Collection<MessageListenerContainer> listenerContainers = getListenerContainers();
-		AggregatingCallback aggregatingCallback = new AggregatingCallback(listenerContainers.size(), callback);
-		for (MessageListenerContainer listenerContainer : listenerContainers) {
+		Collection<MessageListenerContainer> containers = getListenerContainers();
+		AggregatingCallback aggregatingCallback = new AggregatingCallback(containers.size(), callback);
+		for (MessageListenerContainer listenerContainer : containers) {
 			try {
 				listenerContainer.stop(aggregatingCallback);
 			}

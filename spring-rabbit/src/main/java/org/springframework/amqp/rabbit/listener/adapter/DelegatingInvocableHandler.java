@@ -124,7 +124,7 @@ public class DelegatingInvocableHandler {
 	 * @throws Exception raised if no suitable argument resolver can be found,
 	 * or the method raised an exception.
 	 */
-	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception {
+	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
 		Class<? extends Object> payloadClass = message.getPayload().getClass();
 		InvocableHandlerMethod handler = getHandlerForPayload(payloadClass);
 		Object result = handler.invoke(message, providedArgs);
@@ -185,8 +185,8 @@ public class DelegatingInvocableHandler {
 
 	private String resolve(String value) {
 		if (this.resolver != null) {
-			value = this.beanExpressionContext.getBeanFactory().resolveEmbeddedValue(value);
-			Object newValue = this.resolver.evaluate(value, this.beanExpressionContext);
+			String resolvedValue = this.beanExpressionContext.getBeanFactory().resolveEmbeddedValue(value);
+			Object newValue = this.resolver.evaluate(resolvedValue, this.beanExpressionContext);
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
 			return (String) newValue;
 		}

@@ -159,25 +159,25 @@ public class MethodRabbitListenerEndpoint extends AbstractRabbitListenerEndpoint
 
 	@Nullable
 	private String getDefaultReplyToAddress() {
-		Method method = getMethod();
-		if (method != null) {
-			SendTo ann = AnnotationUtils.getAnnotation(method, SendTo.class);
+		Method listenerMethod = getMethod();
+		if (listenerMethod != null) {
+			SendTo ann = AnnotationUtils.getAnnotation(listenerMethod, SendTo.class);
 			if (ann != null) {
 				String[] destinations = ann.value();
 				if (destinations.length > 1) {
 					throw new IllegalStateException("Invalid @" + SendTo.class.getSimpleName() + " annotation on '"
-							+ method + "' one destination must be set (got " + Arrays.toString(destinations) + ")");
+							+ listenerMethod + "' one destination must be set (got " + Arrays.toString(destinations) + ")");
 				}
-				return destinations.length == 1 ? resolve(destinations[0]) : "";
+				return destinations.length == 1 ? resolveSendTo(destinations[0]) : "";
 			}
 		}
 		return null;
 	}
 
-	private String resolve(String value) {
+	private String resolveSendTo(String value) {
 		if (getBeanFactory() != null) {
-			value = getBeanExpressionContext().getBeanFactory().resolveEmbeddedValue(value);
-			Object newValue = getResolver().evaluate(value, getBeanExpressionContext());
+			String resolvedValue = getBeanExpressionContext().getBeanFactory().resolveEmbeddedValue(value);
+			Object newValue = getResolver().evaluate(resolvedValue, getBeanExpressionContext());
 			Assert.isInstanceOf(String.class, newValue, "Invalid @SendTo expression");
 			return (String) newValue;
 		}

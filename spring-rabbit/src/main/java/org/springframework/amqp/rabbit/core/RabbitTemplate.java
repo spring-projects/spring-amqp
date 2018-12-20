@@ -141,8 +141,9 @@ import com.rabbitmq.client.ShutdownListener;
  *
  * @since 1.0
  */
-public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, RabbitOperations, MessageListener,
-		ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle, BeanNameAware {
+public class RabbitTemplate extends RabbitAccessor // NOSONAR type line count/comment density
+		implements BeanFactoryAware, RabbitOperations, MessageListener,
+			ListenerContainerAware, PublisherCallbackChannel.Listener, Lifecycle, BeanNameAware {
 
 	private static final String UNCHECKED = "unchecked";
 
@@ -2628,4 +2629,4 @@ public class RabbitTemplate extends RabbitAccessor implements BeanFactoryAware, 
 				String exchange, String routingKey);
 	}
 
-} // NOSONAR type line count/comment density
+}
