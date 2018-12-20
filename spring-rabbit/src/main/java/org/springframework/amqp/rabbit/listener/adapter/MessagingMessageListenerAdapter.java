@@ -117,7 +117,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	@Override
-	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception {
+	public void onMessage(org.springframework.amqp.core.Message amqpMessage, Channel channel) throws Exception { // NOSONAR
 		Message<?> message = toMessagingMessage(amqpMessage);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Processing [" + message + "]");
@@ -154,7 +154,7 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	}
 
 	private void returnOrThrow(org.springframework.amqp.core.Message amqpMessage, Channel channel, Message<?> message,
-			Throwable throwableToReturn, Exception exceptionToThrow) throws Exception {
+			Throwable throwableToReturn, Exception exceptionToThrow) throws Exception { // NOSONAR
 		if (!this.returnExceptions) {
 			throw exceptionToThrow;
 		}
@@ -212,12 +212,10 @@ public class MessagingMessageListenerAdapter extends AbstractAdaptableMessageLis
 	 * @param result the content of the message, as returned from the listener method
 	 * @param genericType the generic type of the result.
 	 * @return the Rabbit <code>Message</code> (never <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setMessageConverter
 	 */
 	@Override
-	protected org.springframework.amqp.core.Message buildMessage(Channel channel, Object result, Type genericType)
-			throws Exception {
+	protected org.springframework.amqp.core.Message buildMessage(Channel channel, Object result, Type genericType) {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof org.springframework.amqp.core.Message)) {
 			if (result instanceof org.springframework.messaging.Message) {

@@ -263,17 +263,17 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @throws Exception if thrown by Rabbit API methods
 	 */
 	@Override
-	public void onMessage(Message message, Channel channel) throws Exception {
+	public void onMessage(Message message, Channel channel) throws Exception { // NOSONAR
 		// Check whether the delegate is a MessageListener impl itself.
 		// In that case, the adapter will simply act as a pass-through.
-		Object delegate = getDelegate();
-		if (delegate != this) {
-			if (delegate instanceof ChannelAwareMessageListener) {
-				((ChannelAwareMessageListener) delegate).onMessage(message, channel);
+		Object delegateListener = getDelegate();
+		if (delegateListener != this) {
+			if (delegateListener instanceof ChannelAwareMessageListener) {
+				((ChannelAwareMessageListener) delegateListener).onMessage(message, channel);
 				return;
 			}
-			else if (delegate instanceof MessageListener) {
-				((MessageListener) delegate).onMessage(message);
+			else if (delegateListener instanceof MessageListener) {
+				((MessageListener) delegateListener).onMessage(message);
 				return;
 			}
 		}
@@ -309,11 +309,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param extractedMessage the converted Rabbit request message, to be passed into the
 	 * listener method as argument
 	 * @return the name of the listener method (never <code>null</code>)
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #setDefaultListenerMethod
 	 * @see #setQueueOrTagToMethodName
 	 */
-	protected String getListenerMethodName(Message originalMessage, Object extractedMessage) throws Exception {
+	protected String getListenerMethodName(Message originalMessage, Object extractedMessage) {
 		if (this.queueOrTagToMethodName.size() > 0) {
 			MessageProperties props = originalMessage.getMessageProperties();
 			String methodName = this.queueOrTagToMethodName.get(props.getConsumerQueue());
@@ -351,12 +350,10 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 	 * @param arguments the message arguments to be passed in
 	 * @param originalMessage the original message
 	 * @return the result returned from the listener method
-	 * @throws Exception if thrown by Rabbit API methods
 	 * @see #getListenerMethodName
 	 * @see #buildListenerArguments
 	 */
-	protected Object invokeListenerMethod(String methodName, Object[] arguments, Message originalMessage)
-			throws Exception {
+	protected Object invokeListenerMethod(String methodName, Object[] arguments, Message originalMessage) {
 		try {
 			MethodInvoker methodInvoker = new MethodInvoker();
 			methodInvoker.setTargetObject(getDelegate());
@@ -368,10 +365,11 @@ public class MessageListenerAdapter extends AbstractAdaptableMessageListener {
 		catch (InvocationTargetException ex) {
 			Throwable targetEx = ex.getTargetException();
 			if (targetEx instanceof IOException) {
-				throw new AmqpIOException((IOException) targetEx);
+				throw new AmqpIOException((IOException) targetEx); // NOSONAR lost stack trace
 			}
 			else {
-				throw new ListenerExecutionFailedException("Listener method '" + methodName + "' threw exception",
+				throw new ListenerExecutionFailedException("Listener method '" // NOSONAR lost stack trace
+							+ methodName + "' threw exception",
 						targetEx, originalMessage);
 			}
 		}

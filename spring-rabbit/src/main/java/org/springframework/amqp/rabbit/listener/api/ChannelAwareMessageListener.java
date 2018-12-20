@@ -38,7 +38,7 @@ public interface ChannelAwareMessageListener extends MessageListener {
 	 * @param channel the underlying Rabbit Channel (never <code>null</code>)
 	 * @throws Exception Any.
 	 */
-	void onMessage(Message message, Channel channel) throws Exception;
+	void onMessage(Message message, Channel channel) throws Exception; // NOSONAR
 
 	@Override
 	default void onMessage(Message message) {

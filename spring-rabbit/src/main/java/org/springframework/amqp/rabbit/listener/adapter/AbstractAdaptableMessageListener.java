@@ -81,7 +81,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());;
 
 	/** Logger available to subclasses. */
-	protected final Log logger = LogFactory.getLog(getClass());
+	protected final Log logger = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	private final StandardEvaluationContext evalContext = new StandardEvaluationContext();
 
@@ -375,10 +375,9 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 	 * @param result the content of the message, as returned from the listener method.
 	 * @param genericType the generic type to populate type headers.
 	 * @return the Rabbit <code>Message</code> (never <code>null</code>).
-	 * @throws Exception if thrown by Rabbit API methods.
 	 * @see #setMessageConverter
 	 */
-	protected Message buildMessage(Channel channel, Object result, Type genericType) throws Exception {
+	protected Message buildMessage(Channel channel, Object result, Type genericType) {
 		MessageConverter converter = getMessageConverter();
 		if (converter != null && !(result instanceof Message)) {
 			return converter.toMessage(result, new MessageProperties(), genericType);

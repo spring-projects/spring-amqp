@@ -44,7 +44,7 @@ public class HandlerAdapter {
 		this.delegatingHandler = delegatingHandler;
 	}
 
-	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception {
+	public InvocationResult invoke(Message<?> message, Object... providedArgs) throws Exception { // NOSONAR
 		if (this.invokerHandlerMethod != null) {
 			return new InvocationResult(this.invokerHandlerMethod.invoke(message, providedArgs),
 					null, this.invokerHandlerMethod.getMethod().getGenericReturnType());

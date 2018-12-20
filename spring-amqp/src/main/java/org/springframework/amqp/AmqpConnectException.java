@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 
 package org.springframework.amqp;
 
-import java.net.ConnectException;
-
 /**
- * RuntimeException wrapper for an {@link ConnectException} which can be commonly thrown from AMQP operations if the
- * remote process dies or there is a network issue.
+ * RuntimeException wrapper for an {@link java.net.ConnectException} which can be commonly
+ * thrown from AMQP operations if the remote process dies or there is a network issue.
  *
  * @author Dave Syer
  * @author Gary Russell
