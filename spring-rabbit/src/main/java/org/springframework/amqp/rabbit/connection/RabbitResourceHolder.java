@@ -54,9 +54,7 @@ import com.rabbitmq.client.Channel;
  */
 public class RabbitResourceHolder extends ResourceHolderSupport {
 
-	private static final Log logger = LogFactory.getLog(RabbitResourceHolder.class);
-
-	private final boolean frozen = false;
+	private static final Log logger = LogFactory.getLog(RabbitResourceHolder.class); // NOSONAR - lower case
 
 	private final List<Connection> connections = new LinkedList<>();
 
@@ -87,8 +85,9 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 		this.releaseAfterCompletion = releaseAfterCompletion;
 	}
 
+	@Deprecated
 	public final boolean isFrozen() {
-		return this.frozen;
+		return false;
 	}
 
 	/**
@@ -112,7 +111,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	}
 
 	public final void addConnection(Connection connection) {
-		Assert.isTrue(!this.frozen, "Cannot add Connection because RabbitResourceHolder is frozen");
 		Assert.notNull(connection, "Connection must not be null");
 		if (!this.connections.contains(connection)) {
 			this.connections.add(connection);
@@ -124,7 +122,6 @@ public class RabbitResourceHolder extends ResourceHolderSupport {
 	}
 
 	public final void addChannel(Channel channel, @Nullable Connection connection) {
-		Assert.isTrue(!this.frozen, "Cannot add Channel because RabbitResourceHolder is frozen");
 		Assert.notNull(channel, "Channel must not be null");
 		if (!this.channels.contains(channel)) {
 			this.channels.add(channel);

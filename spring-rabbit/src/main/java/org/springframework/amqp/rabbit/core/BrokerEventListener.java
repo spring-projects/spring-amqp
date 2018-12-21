@@ -56,7 +56,7 @@ import org.springframework.util.ObjectUtils;
 public class BrokerEventListener implements MessageListener, ApplicationEventPublisherAware, ConnectionListener,
 		SmartLifecycle {
 
-	private static final Log logger = LogFactory.getLog(BrokerEventListener.class);
+	private static final Log logger = LogFactory.getLog(BrokerEventListener.class); // NOSONAR - lower case
 
 	private final AbstractMessageListenerContainer container;
 

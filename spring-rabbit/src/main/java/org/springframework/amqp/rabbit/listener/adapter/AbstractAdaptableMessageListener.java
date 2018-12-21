@@ -77,7 +77,7 @@ public abstract class AbstractAdaptableMessageListener implements ChannelAwareMe
 
 	private static final ParserContext PARSER_CONTEXT = new TemplateParserContext("!{", "}");
 
-	private static final boolean monoPresent =
+	private static final boolean monoPresent = // NOSONAR - lower case
 			ClassUtils.isPresent("reactor.core.publisher.Mono", ChannelAwareMessageListener.class.getClassLoader());;
 
 	/** Logger available to subclasses. */

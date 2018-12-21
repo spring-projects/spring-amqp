@@ -37,8 +37,6 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 
 	private final Method defaultMethod;
 
-	private DelegatingInvocableHandler delegatingHandler;
-
 	/**
 	 * Construct an instance for the provided methods and bean.
 	 * @param methods the methods.
@@ -73,9 +71,8 @@ public class MultiMethodRabbitListenerEndpoint extends MethodRabbitListenerEndpo
 				defaultHandler = handler;
 			}
 		}
-		this.delegatingHandler = new DelegatingInvocableHandler(invocableHandlerMethods, defaultHandler,
-				getBean(), getResolver(), getBeanExpressionContext());
-		return new HandlerAdapter(this.delegatingHandler);
+		return new HandlerAdapter(new DelegatingInvocableHandler(invocableHandlerMethods, defaultHandler,
+				getBean(), getResolver(), getBeanExpressionContext()));
 	}
 
 }

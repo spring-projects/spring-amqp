@@ -88,6 +88,10 @@ import com.rabbitmq.utility.Utility;
  */
 public class BlockingQueueConsumer {
 
+	private static final int DEFAULT_DECLARATION_RETRIES = 3;
+
+	private static final int DEFAULT_RETRY_DECLARATION_INTERVAL = 60000;
+
 	private static Log logger = LogFactory.getLog(BlockingQueueConsumer.class);
 
 	private final BlockingQueue<Delivery> queue;
@@ -133,12 +137,12 @@ public class BlockingQueueConsumer {
 
 	private final Set<String> missingQueues = Collections.synchronizedSet(new HashSet<String>());
 
-	private long retryDeclarationInterval = 60000;
+	private long retryDeclarationInterval = DEFAULT_RETRY_DECLARATION_INTERVAL;
 
 	private long failedDeclarationRetryInterval =
 			AbstractMessageListenerContainer.DEFAULT_FAILED_DECLARATION_RETRY_INTERVAL;
 
-	private int declarationRetries = 3;
+	private int declarationRetries = DEFAULT_DECLARATION_RETRIES;
 
 	private long lastRetryDeclaration;
 
@@ -794,15 +798,13 @@ public class BlockingQueueConsumer {
 
 			boolean ackRequired = !this.acknowledgeMode.isAutoAck() && !this.acknowledgeMode.isManual();
 
-			if (ackRequired) {
-				if (!this.transactional || isLocallyTransacted) {
-					long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
-					this.channel.basicAck(deliveryTag, true);
-				}
+			if (ackRequired && (!this.transactional || isLocallyTransacted)) {
+				long deliveryTag = new ArrayList<Long>(this.deliveryTags).get(this.deliveryTags.size() - 1);
+				this.channel.basicAck(deliveryTag, true);
 			}
 
 			if (isLocallyTransacted) {
-				// For manual acks we still need to commit
+				// For manual acks we still need to commit``
 				RabbitUtils.commitIfNecessary(this.channel);
 			}
 

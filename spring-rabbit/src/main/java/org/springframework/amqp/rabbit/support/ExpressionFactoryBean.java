@@ -32,7 +32,7 @@ import org.springframework.util.Assert;
  */
 public class ExpressionFactoryBean extends AbstractFactoryBean<Expression> {
 
-	private final static ExpressionParser DEFAULT_PARSER = new SpelExpressionParser();
+	private static final ExpressionParser DEFAULT_PARSER = new SpelExpressionParser();
 
 
 	private final String expressionString;

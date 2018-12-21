@@ -65,7 +65,7 @@ public abstract class AmqpHeaders {
 
 	public static final String RECEIVED_DELAY = PREFIX + "receivedDelay";
 
-	public final static String RECEIVED_DELIVERY_MODE = PREFIX + "receivedDeliveryMode";
+	public static final String RECEIVED_DELIVERY_MODE = PREFIX + "receivedDeliveryMode";
 
 	public static final String RECEIVED_EXCHANGE = PREFIX + "receivedExchange";
 

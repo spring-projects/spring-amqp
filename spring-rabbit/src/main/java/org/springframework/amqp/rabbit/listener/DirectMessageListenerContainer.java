@@ -92,6 +92,8 @@ import com.rabbitmq.client.ShutdownSignalException;
  */
 public class DirectMessageListenerContainer extends AbstractMessageListenerContainer {
 
+	private static final int START_WAIT_TIME = 60;
+
 	private static final int DEFAULT_MONITOR_INTERVAL = 10_000;
 
 	private static final int DEFAULT_ACK_TIMEOUT = 20_000;
@@ -340,7 +342,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	private void checkStartState() {
 		if (!this.isRunning()) {
 			try {
-				Assert.state(this.startedLatch.await(60, TimeUnit.SECONDS),
+				Assert.state(this.startedLatch.await(START_WAIT_TIME, TimeUnit.SECONDS),
 						"Container is not started - cannot adjust queues");
 			}
 			catch (InterruptedException e) {
@@ -458,11 +460,10 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 	}
 
 	private void checkIdle(long idleEventInterval, long now) {
-		if (idleEventInterval > 0) {
-			if (now - getLastReceive() > idleEventInterval && now - this.lastAlertAt > idleEventInterval) {
-				publishIdleContainerEvent(now - getLastReceive());
-				this.lastAlertAt = now;
-			}
+		if (idleEventInterval > 0
+				&& now - getLastReceive() > idleEventInterval && now - this.lastAlertAt > idleEventInterval) {
+			publishIdleContainerEvent(now - getLastReceive());
+			this.lastAlertAt = now;
 		}
 	}
 
@@ -663,7 +664,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		}
 		catch (Exception e) {
 			addConsumerToRestart(new SimpleConsumer(null, null, queue));
-			throw e instanceof AmqpConnectException
+			throw e instanceof AmqpConnectException // NOSONAR exception type check
 					? (AmqpConnectException) e
 					: new AmqpConnectException(e);
 		}
@@ -920,6 +921,7 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope,
 				BasicProperties properties, byte[] body) {
+
 			MessageProperties messageProperties =
 					getMessagePropertiesConverter().toMessageProperties(properties, envelope, "UTF-8");
 			messageProperties.setConsumerTag(consumerTag);
@@ -934,12 +936,13 @@ public class DirectMessageListenerContainer extends AbstractMessageListenerConta
 				try {
 					executeListenerInTransaction(message, deliveryTag);
 				}
-				catch (Throwable e) { // NOSONAR - errors are rethrown
-					if (e instanceof WrappedTransactionException) {
-						if (e.getCause() instanceof Error) {
-							throw (Error) e.getCause();
-						}
+				catch (WrappedTransactionException e) {
+					if (e.getCause() instanceof Error) {
+						throw (Error) e.getCause();
 					}
+				}
+				catch (Exception e) {
+					// empty
 				}
 				finally {
 					if (this.isRabbitTxManager) {

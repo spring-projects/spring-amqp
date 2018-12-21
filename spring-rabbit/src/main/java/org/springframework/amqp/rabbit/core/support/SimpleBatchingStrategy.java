@@ -79,7 +79,7 @@ public class SimpleBatchingStrategy implements BatchingStrategy {
 		else {
 			this.routingKey = routingKey;
 		}
-		int bufferUse = 4 + message.getBody().length;
+		int bufferUse = Integer.BYTES + message.getBody().length;
 		MessageBatch batch = null;
 		if (this.messages.size() > 0 && this.currentSize + bufferUse > this.bufferLimit) {
 			batch = doReleaseBatch();

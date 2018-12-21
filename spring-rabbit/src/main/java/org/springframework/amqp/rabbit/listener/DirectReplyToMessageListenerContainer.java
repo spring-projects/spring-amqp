@@ -205,13 +205,11 @@ public class DirectReplyToMessageListenerContainer extends DirectMessageListener
 	public void releaseConsumerFor(ChannelHolder channelHolder, boolean cancelConsumer, @Nullable String message) {
 		synchronized (this.consumersMonitor) {
 			SimpleConsumer consumer = this.inUseConsumerChannels.get(channelHolder.getChannel());
-			if (consumer != null) {
-				if (consumer.getEpoch() == channelHolder.getConsumerEpoch()) {
-					this.inUseConsumerChannels.remove(channelHolder.getChannel());
-					if (cancelConsumer) {
-						Assert.isTrue(message != null, "A 'message' is required when 'cancelConsumer' is 'true'");
-						consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
-					}
+			if (consumer != null && consumer.getEpoch() == channelHolder.getConsumerEpoch()) {
+				this.inUseConsumerChannels.remove(channelHolder.getChannel());
+				if (cancelConsumer) {
+					Assert.isTrue(message != null, "A 'message' is required when 'cancelConsumer' is 'true'");
+					consumer.cancelConsumer("Consumer " + this + " canceled due to " + message);
 				}
 			}
 		}

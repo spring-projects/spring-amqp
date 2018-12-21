@@ -81,6 +81,8 @@ import com.rabbitmq.http.client.Client;
  */
 public final class BrokerRunning extends TestWatcher {
 
+	private static final int SIXTEEN = 16;
+
 	public static final String BROKER_ADMIN_URI = "RABBITMQ_TEST_ADMIN_URI";
 
 	public static final String BROKER_HOSTNAME = "RABBITMQ_TEST_HOSTNAME";
@@ -101,15 +103,15 @@ public final class BrokerRunning extends TestWatcher {
 
 	private static final String GUEST = "guest";
 
-	private static final Log logger = LogFactory.getLog(BrokerRunning.class);
+	private static final Log logger = LogFactory.getLog(BrokerRunning.class); // NOSONAR - lower case
 
 	// Static so that we only test once on failure: speeds up test suite
-	private static final Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>();
+	private static final Map<Integer, Boolean> brokerOnline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
 
 	// Static so that we only test once on failure
-	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>();
+	private static final Map<Integer, Boolean> brokerOffline = new HashMap<Integer, Boolean>(); // NOSONAR - lower case
 
-	private static final Map<String, String> environmentOverrides = new HashMap<>();
+	private static final Map<String, String> environmentOverrides = new HashMap<>(); // NOSONAR - lower case
 
 	private final boolean assumeOnline;
 
@@ -461,7 +463,7 @@ public final class BrokerRunning extends TestWatcher {
 	 */
 	public String generateId() {
 		UUID uuid = UUID.randomUUID();
-		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+		ByteBuffer bb = ByteBuffer.wrap(new byte[SIXTEEN]);
 		bb.putLong(uuid.getMostSignificantBits())
 		  .putLong(uuid.getLeastSignificantBits());
 		return "SpringBrokerRunning." + Base64Utils.encodeToUrlSafeString(bb.array()).replaceAll("=", "");

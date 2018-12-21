@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public final class QueueBuilder extends AbstractBuilder {
 
-	private static final NamingStrategy namingStrategy = Base64UrlNamingStrategy.DEFAULT;
+	private static final NamingStrategy namingStrategy = Base64UrlNamingStrategy.DEFAULT; // NOSONAR lower case
 
 	private final String name;
 

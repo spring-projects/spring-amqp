@@ -16,6 +16,7 @@
 
 package org.springframework.amqp.rabbit.listener;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,7 +34,7 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public class ListenerContainerIdleEvent extends AmqpEvent {
 
-	private final long idleTime;
+	private final Duration idleTime;
 
 	@Nullable
 	private final String listenerId;
@@ -42,7 +43,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 
 	public ListenerContainerIdleEvent(Object source, long idleTime, @Nullable String id, String... queueNames) {
 		super(source);
-		this.idleTime = idleTime;
+		this.idleTime = Duration.ofMillis(idleTime);
 		this.listenerId = id;
 		this.queueNames = Arrays.asList(queueNames);
 	}
@@ -52,7 +53,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	 * @return the time in milliseconds.
 	 */
 	public long getIdleTime() {
-		return this.idleTime;
+		return this.idleTime.toMillis();
 	}
 
 	/**
@@ -75,7 +76,7 @@ public class ListenerContainerIdleEvent extends AmqpEvent {
 	@Override
 	public String toString() {
 		return "ListenerContainerIdleEvent [idleTime="
-				+ ((float) this.idleTime / 1000) + "s, listenerId=" + this.listenerId
+				+ this.idleTime + ", listenerId=" + this.listenerId
 				+ ", container=" + getSource() + "]";
 	}
 

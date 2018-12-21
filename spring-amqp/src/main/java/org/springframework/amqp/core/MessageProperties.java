@@ -35,6 +35,8 @@ import java.util.Map;
  */
 public class MessageProperties implements Serializable {
 
+	private static final int INT_MASK = 32;
+
 	private static final long serialVersionUID = 1619000546531112290L;
 
 	public static final String CONTENT_TYPE_BYTES = "application/octet-stream";
@@ -123,11 +125,11 @@ public class MessageProperties implements Serializable {
 
 	private volatile long publishSequenceNumber;
 
-	private volatile transient Type inferredArgumentType;
+	private transient volatile Type inferredArgumentType;
 
-	private volatile transient Method targetMethod;
+	private transient volatile Method targetMethod;
 
-	private volatile transient Object targetBean;
+	private transient volatile Object targetBean;
 
 	public void setHeader(String key, Object value) {
 		this.headers.put(key, value);
@@ -538,11 +540,11 @@ public class MessageProperties implements Serializable {
 		result = prime * result + ((this.appId == null) ? 0 : this.appId.hashCode());
 		result = prime * result + ((this.clusterId == null) ? 0 : this.clusterId.hashCode());
 		result = prime * result + ((this.contentEncoding == null) ? 0 : this.contentEncoding.hashCode());
-		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> 32));
+		result = prime * result + (int) (this.contentLength ^ (this.contentLength >>> INT_MASK));
 		result = prime * result + ((this.contentType == null) ? 0 : this.contentType.hashCode());
 		result = prime * result + this.correlationId.hashCode();
 		result = prime * result + ((this.deliveryMode == null) ? 0 : this.deliveryMode.hashCode());
-		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> 32));
+		result = prime * result + (int) (this.deliveryTag ^ (this.deliveryTag >>> INT_MASK));
 		result = prime * result + ((this.expiration == null) ? 0 : this.expiration.hashCode());
 		result = prime * result + this.headers.hashCode();
 		result = prime * result + ((this.messageCount == null) ? 0 : this.messageCount.hashCode());

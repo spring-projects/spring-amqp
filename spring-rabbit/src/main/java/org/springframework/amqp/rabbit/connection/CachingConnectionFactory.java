@@ -108,15 +108,15 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	/**
 	 * Create a unique ID for the pool.
 	 */
-	private static final AtomicInteger threadPoolId = new AtomicInteger();
+	private static final AtomicInteger threadPoolId = new AtomicInteger(); // NOSONAR lower case
 
-	private static final Set<String> txStarts = new HashSet<>(Arrays.asList("basicPublish", "basicAck",
+	private static final Set<String> txStarts = new HashSet<>(Arrays.asList("basicPublish", "basicAck", // NOSONAR
 			"basicNack", "basicReject"));
 
-	private static final Set<String> ackMethods = new HashSet<>(Arrays.asList("basicAck",
+	private static final Set<String> ackMethods = new HashSet<>(Arrays.asList("basicAck", // NOSONAR
 			"basicNack", "basicReject"));
 
-	private static final Set<String> txEnds = new HashSet<>(Arrays.asList("txCommit", "txRollback"));
+	private static final Set<String> txEnds = new HashSet<>(Arrays.asList("txCommit", "txRollback")); // NOSONAR
 
 	private final ChannelCachingConnectionProxy connection = new ChannelCachingConnectionProxy(null);
 
@@ -471,10 +471,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 	public void shutdownCompleted(ShutdownSignalException cause) {
 		this.closeExceptionLogger.log(logger, "Channel shutdown", cause);
 		int protocolClassId = cause.getReason().protocolClassId();
-		if (protocolClassId == 20) {
+		if (protocolClassId == RabbitUtils.CHANNEL_PROTOCOL_CLASS_ID_20) {
 			getChannelListener().onShutDown(cause);
 		}
-		else if (protocolClassId == 10) {
+		else if (protocolClassId == RabbitUtils.CONNECTION_PROTOCOL_CLASS_ID_10) {
 			getConnectionListener().onShutDown(cause);
 		}
 
@@ -489,10 +489,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 		ChannelProxy channel = null;
 		if (connection.isOpen()) {
 			channel = findOpenChannel(channelList, channel);
-			if (channel != null) {
-				if (logger.isTraceEnabled()) {
-					logger.trace("Found cached Rabbit Channel: " + channel.toString());
-				}
+			if (channel != null && logger.isTraceEnabled()) {
+				logger.trace("Found cached Rabbit Channel: " + channel.toString());
 			}
 		}
 		if (channel == null) {
@@ -662,10 +660,9 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 				logger.error("Could not configure the channel to receive publisher confirms", e);
 			}
 		}
-		if (this.publisherConfirms || this.publisherReturns) {
-			if (!(channel instanceof PublisherCallbackChannelImpl)) {
-				channel = new PublisherCallbackChannelImpl(channel, getChannelsExecutor());
-			}
+		if ((this.publisherConfirms || this.publisherReturns)
+				&& !(channel instanceof PublisherCallbackChannelImpl)) {
+			channel = new PublisherCallbackChannelImpl(channel, getChannelsExecutor());
 		}
 		if (channel != null) {
 			channel.addShutdownListener(this);
@@ -996,6 +993,8 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 
 	private final class CachedChannelInvocationHandler implements InvocationHandler {
 
+		private static final int ASYNC_CLOSE_TIMEOUT = 5_000;
+
 		private final ChannelCachingConnectionProxy theConnection;
 
 		private final LinkedList<ChannelProxy> channelList; // NOSONAR addLast()
@@ -1278,10 +1277,10 @@ public class CachingConnectionFactory extends AbstractConnectionFactory
 			executorService.execute(() -> {
 				try {
 					if (CachingConnectionFactory.this.publisherConfirms) {
-						channel.waitForConfirmsOrDie(5000);
+						channel.waitForConfirmsOrDie(ASYNC_CLOSE_TIMEOUT);
 					}
 					else {
-						Thread.sleep(5000);
+						Thread.sleep(ASYNC_CLOSE_TIMEOUT);
 					}
 				}
 				catch (InterruptedException e1) {

@@ -948,7 +948,7 @@ public class RabbitTemplateIntegrationTests {
 		});
 		RabbitTemplate template = createSendAndReceiveRabbitTemplate(this.connectionFactory);
 		String result = (String) template.convertSendAndReceive("", ROUTE, "message");
-		assertEquals("message", received.get(1000, TimeUnit.MILLISECONDS));
+		assertEquals("message", received.get(10_000, TimeUnit.MILLISECONDS));
 		assertEquals("message", result);
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert(ROUTE);
@@ -987,7 +987,7 @@ public class RabbitTemplateIntegrationTests {
 				throw new AmqpException("unexpected failure in test", e);
 			}
 		});
-		assertEquals("MESSAGE", received.get(1000, TimeUnit.MILLISECONDS));
+		assertEquals("MESSAGE", received.get(10_000, TimeUnit.MILLISECONDS));
 		assertEquals("MESSAGE", result);
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert();
@@ -1023,7 +1023,7 @@ public class RabbitTemplateIntegrationTests {
 				throw new AmqpException("unexpected failure in test", e);
 			}
 		});
-		assertEquals("MESSAGE", received.get(1000, TimeUnit.MILLISECONDS));
+		assertEquals("MESSAGE", received.get(10_000, TimeUnit.MILLISECONDS));
 		assertEquals("MESSAGE", result);
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert(ROUTE);
@@ -1059,7 +1059,7 @@ public class RabbitTemplateIntegrationTests {
 				throw new AmqpException("unexpected failure in test", e);
 			}
 		});
-		assertEquals("MESSAGE", received.get(1000, TimeUnit.MILLISECONDS));
+		assertEquals("MESSAGE", received.get(10_000, TimeUnit.MILLISECONDS));
 		assertEquals("MESSAGE", result);
 		// Message was consumed so nothing left on queue
 		result = (String) template.receiveAndConvert(ROUTE);

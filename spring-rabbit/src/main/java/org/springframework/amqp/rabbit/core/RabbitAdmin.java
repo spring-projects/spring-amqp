@@ -78,6 +78,14 @@ import com.rabbitmq.client.Channel;
 public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, ApplicationEventPublisherAware,
 		BeanNameAware, InitializingBean {
 
+	private static final int DECLARE_MAX_ATTEMPTS = 5;
+
+	private static final int DECLARE_INITIAL_RETRY_INTERVAL = 1000;
+
+	private static final int DECLARE_MAX_RETRY_INTERVAL = 5000;
+
+	private static final double DECLARE_RETRY_MULTIPLIER = 2.0;
+
 	/**
 	 * The default exchange name.
 	 */
@@ -478,11 +486,11 @@ public class RabbitAdmin implements AmqpAdmin, ApplicationContextAware, Applicat
 
 			if (this.retryTemplate == null && !this.retryDisabled) {
 				this.retryTemplate = new RetryTemplate();
-				this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(5));
+				this.retryTemplate.setRetryPolicy(new SimpleRetryPolicy(DECLARE_MAX_ATTEMPTS));
 				ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-				backOffPolicy.setInitialInterval(1000);
-				backOffPolicy.setMultiplier(2.0);
-				backOffPolicy.setMaxInterval(5000);
+				backOffPolicy.setInitialInterval(DECLARE_INITIAL_RETRY_INTERVAL);
+				backOffPolicy.setMultiplier(DECLARE_RETRY_MULTIPLIER);
+				backOffPolicy.setMaxInterval(DECLARE_MAX_RETRY_INTERVAL);
 				this.retryTemplate.setBackOffPolicy(backOffPolicy);
 			}
 			if (this.connectionFactory instanceof CachingConnectionFactory &&
