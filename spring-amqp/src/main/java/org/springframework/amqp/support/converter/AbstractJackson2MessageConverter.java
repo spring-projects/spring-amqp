@@ -51,20 +51,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public abstract class AbstractJackson2MessageConverter extends AbstractMessageConverter
 		implements BeanClassLoaderAware, SmartMessageConverter {
 
-	protected final Log log = LogFactory.getLog(getClass());
+	protected final Log log = LogFactory.getLog(getClass()); // NOSONAR protected
 
 	public static final String DEFAULT_CHARSET = "UTF-8";
 
 	private volatile String defaultCharset = DEFAULT_CHARSET;
 
+	/**
+	 * The supported content type; only the subtype is checked, e.g. *&#47;json,
+	 * *&#47;xml.
+	 */
+	private final MimeType supportedContentType;
+
+	protected final ObjectMapper objectMapper; // NOSONAR protected
+
 	@Nullable
 	private ClassMapper classMapper = null;
 
-	protected boolean typeMapperSet;
-
-	private final MimeType contentType;
-
-	protected final ObjectMapper objectMapper;
+	protected boolean typeMapperSet; // NOSONAR - TODO private in 2.2
 
 	private ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 
@@ -73,7 +77,8 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 	/**
 	 * Construct with the provided {@link ObjectMapper} instance.
 	 * @param objectMapper the {@link ObjectMapper} to use.
-	 * @param contentType content type of the message
+	 * @param contentType supported content type when decoding messages, only the subtype
+	 * is checked, e.g. *&#47;json, *&#47;xml.
 	 * @param trustedPackages the trusted Java packages for deserialization
 	 * @see DefaultJackson2JavaTypeMapper#setTrustedPackages(String...)
 	 */
@@ -83,14 +88,13 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		Assert.notNull(objectMapper, "'objectMapper' must not be null");
 		Assert.notNull(contentType, "'contentType' must not be null");
 		this.objectMapper = objectMapper;
-		this.contentType = contentType;
+		this.supportedContentType = contentType;
 		((DefaultJackson2JavaTypeMapper) this.javaTypeMapper).setTrustedPackages(trustedPackages);
 	}
 
 	@Nullable
 	public ClassMapper getClassMapper() {
 		return this.classMapper;
-
 	}
 
 	public void setClassMapper(ClassMapper classMapper) {
@@ -185,7 +189,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		MessageProperties properties = message.getMessageProperties();
 		if (properties != null) {
 			String contentType = properties.getContentType();
-			if (contentType != null && contentType.contains(this.contentType.getSubtype())) {
+			if (contentType != null && contentType.contains(this.supportedContentType.getSubtype())) {
 				String encoding = properties.getContentEncoding();
 				if (encoding == null) {
 					encoding = getDefaultCharset();
@@ -217,7 +221,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 			else {
 				if (this.log.isWarnEnabled()) {
 					this.log.warn("Could not convert incoming message with content-type ["
-							+ contentType + "], '" + this.contentType.getSubtype() + "' keyword missing.");
+							+ contentType + "], '" + this.supportedContentType.getSubtype() + "' keyword missing.");
 				}
 			}
 		}
@@ -258,7 +262,7 @@ public abstract class AbstractJackson2MessageConverter extends AbstractMessageCo
 		catch (IOException e) {
 			throw new MessageConversionException("Failed to convert Message content", e);
 		}
-		messageProperties.setContentType(this.contentType.toString());
+		messageProperties.setContentType(this.supportedContentType.toString());
 		messageProperties.setContentEncoding(getDefaultCharset());
 		messageProperties.setContentLength(bytes.length);
 

@@ -178,12 +178,14 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	 * Converts a header value to a String if the value type is unsupported by AMQP, also handling values
 	 * nested inside Lists or Maps.
 	 * <p> {@code null} values are passed through, although Rabbit client will throw an IllegalArgumentException.
-	 * @param value the value.
+	 * @param valueArg the value.
 	 * @return the converted value.
 	 */
-	@Nullable
-	private Object convertHeaderValueIfNecessary(@Nullable Object value) {
-		boolean valid = (value instanceof String) || (value instanceof byte[]) || (value instanceof Boolean)
+	@Nullable // NOSONAR complexity
+	private Object convertHeaderValueIfNecessary(@Nullable Object valueArg) {
+		Object value = valueArg;
+		boolean valid = (value instanceof String) || (value instanceof byte[]) // NOSONAR boolean complexity
+				|| (value instanceof Boolean)
 				|| (value instanceof LongString) || (value instanceof Integer) || (value instanceof Long)
 				|| (value instanceof Float) || (value instanceof Double) || (value instanceof BigDecimal)
 				|| (value instanceof Short) || (value instanceof Byte) || (value instanceof Date)
@@ -244,11 +246,12 @@ public class DefaultMessagePropertiesConverter implements MessagePropertiesConve
 	/**
 	 * Converts a LongString value using {@link #convertLongString(LongString, String)}, also handling values
 	 * nested in Lists or Maps.
-	 * @param value the value.
+	 * @param valueArg the value.
 	 * @param charset the charset.
 	 * @return the converted string.
 	 */
-	private Object convertLongStringIfNecessary(Object value, String charset) {
+	private Object convertLongStringIfNecessary(Object valueArg, String charset) {
+		Object value = valueArg;
 		if (value instanceof LongString) {
 			value = convertLongString((LongString) value, charset);
 		}

@@ -827,63 +827,76 @@ public class AmqpAppender extends AppenderBase<ILoggingEvent> {
 								"location",
 								String.format("%s.%s()[%s]", location[0], location[1], location[2]));
 					}
-					byte[] msgBody;
 					String routingKey = AmqpAppender.this.routingKeyLayout.doLayout(logEvent);
 					// Set applicationId, if we're using one
 					if (AmqpAppender.this.applicationId != null) {
 						amqpProps.setAppId(AmqpAppender.this.applicationId);
 					}
 
-					if (AmqpAppender.this.encoder != null && AmqpAppender.this.headerWritten.compareAndSet(false, true)) {
-						byte[] header = AmqpAppender.this.encoder.headerBytes();
-						if (header != null && header.length > 0) {
-							rabbitTemplate.convertAndSend(AmqpAppender.this.exchangeName, routingKey, header, m -> {
-								if (AmqpAppender.this.applicationId != null) {
-									m.getMessageProperties().setAppId(AmqpAppender.this.applicationId);
-								}
-								return m;
-							});
-						}
-					}
+					sendOneEncoderPatternMessage(rabbitTemplate, routingKey);
 
-					if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
-						((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
-						msgBody = encodeMessage(logEvent);
-						((LoggingEvent) logEvent).setLoggerName(name);
-					}
-					else {
-						msgBody = encodeMessage(logEvent);
-					}
-
-					// Send a message
-					try {
-						Message message = new Message(msgBody, amqpProps);
-
-						message = postProcessMessageBeforeSend(message, event);
-						rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
-					}
-					catch (AmqpException e) {
-						int retries = event.incrementRetries();
-						if (retries < AmqpAppender.this.maxSenderRetries) {
-							// Schedule a retry based on the number of times I've tried to re-send this
-							AmqpAppender.this.retryTimer.schedule(new TimerTask() {
-
-								@Override
-								public void run() {
-									AmqpAppender.this.events.add(event);
-								}
-
-							}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
-						}
-						else {
-							addError("Could not send log message " + logEvent.getMessage()
-									+ " after " + AmqpAppender.this.maxSenderRetries + " retries", e);
-						}
-					}
+					doSend(rabbitTemplate, event, logEvent, name, amqpProps, routingKey);
 				}
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+			}
+		}
+
+		private void sendOneEncoderPatternMessage(RabbitTemplate rabbitTemplate, String routingKey) {
+			/*
+			 * If the encoder provides its pattern, send it as an additional one-time message.
+			 */
+			if (AmqpAppender.this.encoder != null
+					&& AmqpAppender.this.headerWritten.compareAndSet(false, true)) {
+				byte[] header = AmqpAppender.this.encoder.headerBytes();
+				if (header != null && header.length > 0) {
+					rabbitTemplate.convertAndSend(AmqpAppender.this.exchangeName, routingKey, header, m -> {
+						if (AmqpAppender.this.applicationId != null) {
+							m.getMessageProperties().setAppId(AmqpAppender.this.applicationId);
+						}
+						return m;
+					});
+				}
+			}
+		}
+
+		private void doSend(RabbitTemplate rabbitTemplate, final Event event, ILoggingEvent logEvent, String name,
+				MessageProperties amqpProps, String routingKey) {
+			byte[] msgBody;
+			if (AmqpAppender.this.abbreviator != null && logEvent instanceof LoggingEvent) {
+				((LoggingEvent) logEvent).setLoggerName(AmqpAppender.this.abbreviator.abbreviate(name));
+				msgBody = encodeMessage(logEvent);
+				((LoggingEvent) logEvent).setLoggerName(name);
+			}
+			else {
+				msgBody = encodeMessage(logEvent);
+			}
+
+			// Send a message
+			try {
+				Message message = new Message(msgBody, amqpProps);
+
+				message = postProcessMessageBeforeSend(message, event);
+				rabbitTemplate.send(AmqpAppender.this.exchangeName, routingKey, message);
+			}
+			catch (AmqpException e) {
+				int retries = event.incrementRetries();
+				if (retries < AmqpAppender.this.maxSenderRetries) {
+					// Schedule a retry based on the number of times I've tried to re-send this
+					AmqpAppender.this.retryTimer.schedule(new TimerTask() {
+
+						@Override
+						public void run() {
+							AmqpAppender.this.events.add(event);
+						}
+
+					}, (long) (Math.pow(retries, Math.log(retries)) * 1000));
+				}
+				else {
+					addError("Could not send log message " + logEvent.getMessage()
+							+ " after " + AmqpAppender.this.maxSenderRetries + " retries", e);
+				}
 			}
 		}
 

@@ -27,12 +27,13 @@ import org.springframework.amqp.core.Message;
  * for subsequent requeuing in the listener container.
  *
  * @author Artem Bilan
+ * @author Gary Russell
  *
  * @since 2.1
  */
 public class ImmediateRequeueMessageRecoverer implements MessageRecoverer {
 
-	protected Log logger = LogFactory.getLog(ImmediateRequeueMessageRecoverer.class);
+	protected Log logger = LogFactory.getLog(ImmediateRequeueMessageRecoverer.class); // NOSONAR protected
 
 	@Override
 	public void recover(Message message, Throwable cause) {

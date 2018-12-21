@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.transaction.support.SmartTransactionObject;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.Assert;
 
 import com.rabbitmq.client.Connection;
 
@@ -90,9 +91,8 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	 * @param connectionFactory the ConnectionFactory to use
 	 */
 	public RabbitTransactionManager(ConnectionFactory connectionFactory) {
-		this();
+		Assert.notNull(connectionFactory, "'connectionFactory' cannot be null");
 		this.connectionFactory = connectionFactory;
-		afterPropertiesSet();
 	}
 
 	/**
@@ -114,9 +114,7 @@ public class RabbitTransactionManager extends AbstractPlatformTransactionManager
 	 */
 	@Override
 	public void afterPropertiesSet() {
-		if (getConnectionFactory() == null) {
-			throw new IllegalArgumentException("Property 'connectionFactory' is required");
-		}
+		Assert.state(getConnectionFactory() == null, "Property 'connectionFactory' is required");
 	}
 
 	@Override

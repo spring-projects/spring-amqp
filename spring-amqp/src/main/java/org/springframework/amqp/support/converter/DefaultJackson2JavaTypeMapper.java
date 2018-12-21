@@ -125,21 +125,7 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 		String typeIdHeader = retrieveHeaderAsString(properties, getClassIdFieldName());
 
 		if (typeIdHeader != null) {
-
-			JavaType classType = getClassIdType(typeIdHeader);
-			if (!classType.isContainerType() || classType.isArrayType()) {
-				return classType;
-			}
-
-			JavaType contentClassType = getClassIdType(retrieveHeader(properties, getContentClassIdFieldName()));
-			if (classType.getKeyType() == null) {
-				return TypeFactory.defaultInstance()
-						.constructCollectionLikeType(classType.getRawClass(), contentClassType);
-			}
-
-			JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
-			return TypeFactory.defaultInstance()
-					.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
+			return fromTypeHeader(properties, typeIdHeader);
 		}
 
 		if (hasInferredTypeHeader) {
@@ -147,6 +133,23 @@ public class DefaultJackson2JavaTypeMapper extends AbstractJavaTypeMapper
 		}
 
 		return TypeFactory.defaultInstance().constructType(Object.class);
+	}
+
+	private JavaType fromTypeHeader(MessageProperties properties, String typeIdHeader) {
+		JavaType classType = getClassIdType(typeIdHeader);
+		if (!classType.isContainerType() || classType.isArrayType()) {
+			return classType;
+		}
+
+		JavaType contentClassType = getClassIdType(retrieveHeader(properties, getContentClassIdFieldName()));
+		if (classType.getKeyType() == null) {
+			return TypeFactory.defaultInstance()
+					.constructCollectionLikeType(classType.getRawClass(), contentClassType);
+		}
+
+		JavaType keyClassType = getClassIdType(retrieveHeader(properties, getKeyClassIdFieldName()));
+		return TypeFactory.defaultInstance()
+				.constructMapLikeType(classType.getRawClass(), keyClassType, contentClassType);
 	}
 
 	private JavaType getClassIdType(String classId) {

@@ -28,6 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mockito.Mockito;
 
+import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListenerAnnotationBeanPostProcessor;
@@ -87,7 +88,7 @@ public class RabbitListenerTestHarness extends RabbitListenerAnnotationBeanPostP
 					this.listenerCapture.put(id, advice);
 				}
 				catch (Exception e) {
-					logger.error("Failed to proxy @RabbitListener with id: " + id);
+					throw new AmqpException("Failed to proxy @RabbitListener with id: " + id, e);
 				}
 			}
 		}

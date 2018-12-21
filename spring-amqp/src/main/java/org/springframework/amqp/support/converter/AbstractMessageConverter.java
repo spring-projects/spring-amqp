@@ -59,9 +59,11 @@ public abstract class AbstractMessageConverter implements MessageConverter {
 	}
 
 	@Override
-	public final Message toMessage(Object object, @Nullable MessageProperties messageProperties, @Nullable Type genericType)
+	public final Message toMessage(Object object, @Nullable MessageProperties messagePropertiesArg,
+			@Nullable Type genericType)
 			throws MessageConversionException {
 
+		MessageProperties messageProperties = messagePropertiesArg;
 		if (messageProperties == null) {
 			messageProperties = new MessageProperties();
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,37 +125,45 @@ public class SerializerMessageConverter extends WhiteListDeserializingMessageCon
 		if (properties != null) {
 			String contentType = properties.getContentType();
 			if (contentType != null && contentType.startsWith("text") && !this.ignoreContentType) {
-				String encoding = properties.getContentEncoding();
-				if (encoding == null) {
-					encoding = this.defaultCharset;
-				}
-				try {
-					content = new String(message.getBody(), encoding);
-				}
-				catch (UnsupportedEncodingException e) {
-					throw new MessageConversionException("failed to convert text-based Message content", e);
-				}
+				content = asString(message, properties);
 			}
 			else if (contentType != null && contentType.equals(MessageProperties.CONTENT_TYPE_SERIALIZED_OBJECT)
 					|| this.ignoreContentType) {
-				try {
-					ByteArrayInputStream inputStream = new ByteArrayInputStream(message.getBody());
-					if (this.usingDefaultDeserializer) {
-						content = deserialize(inputStream);
-					}
-					else {
-						content = this.deserializer.deserialize(inputStream);
-					}
-				}
-				catch (IOException e) {
-					throw new MessageConversionException("Could not convert message body", e);
-				}
+				content = deserialize(message);
 			}
 		}
 		if (content == null) {
 			content = message.getBody();
 		}
 		return content;
+	}
+
+	private Object deserialize(Message message) {
+		try {
+			ByteArrayInputStream inputStream = new ByteArrayInputStream(message.getBody());
+			if (this.usingDefaultDeserializer) {
+				return deserialize(inputStream);
+			}
+			else {
+				return this.deserializer.deserialize(inputStream);
+			}
+		}
+		catch (IOException e) {
+			throw new MessageConversionException("Could not convert message body", e);
+		}
+	}
+
+	private Object asString(Message message, MessageProperties properties) {
+		String encoding = properties.getContentEncoding();
+		if (encoding == null) {
+			encoding = this.defaultCharset;
+		}
+		try {
+			return new String(message.getBody(), encoding);
+		}
+		catch (UnsupportedEncodingException e) {
+			throw new MessageConversionException("failed to convert text-based Message content", e);
+		}
 	}
 
 	private Object deserialize(ByteArrayInputStream inputStream) throws IOException {
