@@ -17,7 +17,6 @@
 package org.springframework.amqp.rabbit.transaction;
 
 import org.springframework.amqp.AmqpException;
-import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils;
 import org.springframework.amqp.rabbit.connection.RabbitResourceHolder;
@@ -45,7 +44,8 @@ import org.springframework.util.Assert;
  * <p>
  * Application code is required to retrieve the transactional Rabbit resources via
  * {@link ConnectionFactoryUtils#getTransactionalResourceHolder(ConnectionFactory, boolean)} instead of a standard
- * {@link Connection#createChannel(boolean)} call with subsequent Channel creation. Spring's
+ * {@link org.springframework.amqp.rabbit.connection.Connection#createChannel(boolean)} call with subsequent
+ * Channel creation. Spring's
  * {@link org.springframework.amqp.rabbit.core.RabbitTemplate} will
  * autodetect a thread-bound Channel and automatically participate in it.
  *
