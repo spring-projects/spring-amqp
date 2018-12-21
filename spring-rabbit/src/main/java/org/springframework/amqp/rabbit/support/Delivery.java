@@ -76,7 +76,7 @@ public class Delivery {
 	 * @return the message body.
 	 */
 	public byte[] getBody() {
-		return this.body;
+		return this.body; // NOSONAR
 	}
 
 	/**

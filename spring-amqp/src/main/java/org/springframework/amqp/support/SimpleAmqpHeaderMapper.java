@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ import org.springframework.util.StringUtils;
  */
 public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperties> implements AmqpHeaderMapper {
 
-	@Override
-	public void fromHeaders(MessageHeaders headers, MessageProperties amqpMessageProperties) {
+	@Override // NOSONAR complexity - mostly null/empty tests
+	public void fromHeaders(MessageHeaders headers, MessageProperties amqpMessageProperties) { // NOSONAR NCSS lines
 		String appId = getHeaderIfAvailable(headers, AmqpHeaders.APP_ID, String.class);
 		if (StringUtils.hasText(appId)) {
 			amqpMessageProperties.setAppId(appId);
@@ -158,8 +158,8 @@ public class SimpleAmqpHeaderMapper extends AbstractHeaderMapper<MessageProperti
 		}
 	}
 
-	@Override
-	public MessageHeaders toHeaders(MessageProperties amqpMessageProperties) {
+	@Override  // NOSONAR complexity - mostly null/empty tests
+	public MessageHeaders toHeaders(MessageProperties amqpMessageProperties) { // NOSONAR NCSS lines
 		Map<String, Object> headers = new HashMap<String, Object>();
 		try {
 			String appId = amqpMessageProperties.getAppId();

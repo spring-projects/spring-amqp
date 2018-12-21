@@ -113,12 +113,12 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 	protected void sendToRabbit(Channel channel, String exchange, String routingKey, boolean mandatory,
 			Message message) {
 
-		Listeners listeners = this.listeners.get(routingKey);
-		if (listeners == null) {
+		Listeners listenersForRoute = this.listeners.get(routingKey);
+		if (listenersForRoute == null) {
 			throw new IllegalArgumentException("No listener for " + routingKey);
 		}
 		try {
-			invoke(listeners.next(), message, channel);
+			invoke(listenersForRoute.next(), message, channel);
 		}
 		catch (Exception e) {
 			throw RabbitExceptionTranslator.convertRabbitAccessException(e);
@@ -128,13 +128,14 @@ public class TestRabbitTemplate extends RabbitTemplate implements ApplicationCon
 	@Override
 	protected Message doSendAndReceiveWithFixed(String exchange, String routingKey, Message message,
 			CorrelationData correlationData) {
-		Listeners listeners = this.listeners.get(routingKey);
-		if (listeners == null) {
+
+		Listeners listenersForRoute = this.listeners.get(routingKey);
+		if (listenersForRoute == null) {
 			throw new IllegalArgumentException("No listener for " + routingKey);
 		}
 		Channel channel = mock(Channel.class);
 		final AtomicReference<Message> reply = new AtomicReference<>();
-		Object listener = listeners.next();
+		Object listener = listenersForRoute.next();
 		if (listener instanceof AbstractAdaptableMessageListener) {
 			try {
 				AbstractAdaptableMessageListener adapter = (AbstractAdaptableMessageListener) listener;

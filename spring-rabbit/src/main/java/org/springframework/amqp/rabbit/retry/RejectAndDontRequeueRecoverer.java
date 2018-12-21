@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.springframework.amqp.rabbit.listener.exception.ListenerExecutionFaile
  */
 public class RejectAndDontRequeueRecoverer implements MessageRecoverer {
 
-	protected Log logger = LogFactory.getLog(RejectAndDontRequeueRecoverer.class);
+	protected Log logger = LogFactory.getLog(RejectAndDontRequeueRecoverer.class); // NOSONAR protected
 
 	@Override
 	public void recover(Message message, Throwable cause) {

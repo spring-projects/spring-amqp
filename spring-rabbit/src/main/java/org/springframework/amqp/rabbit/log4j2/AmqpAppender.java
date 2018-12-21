@@ -138,7 +138,7 @@ public class AmqpAppender extends AbstractAppender {
 	}
 
 	@PluginFactory
-	public static AmqpAppender createAppender(
+	public static AmqpAppender createAppender(// NOSONAR NCSS line count
 			@PluginConfiguration final Configuration configuration,
 			@PluginAttribute("name") String name,
 			@PluginElement("Layout") Layout<? extends Serializable> layout,
@@ -317,10 +317,12 @@ public class AmqpAppender extends AbstractAppender {
 							logEvent.getSource().getLineNumber()));
 		}
 
+		doSend(event, logEvent, amqpProps);
+	}
+
+	private void doSend(Event event, LogEvent logEvent, MessageProperties amqpProps) {
 		StringBuilder msgBody;
 		String routingKey;
-
-		// Send a message
 		try {
 			synchronized (this.layoutMutex) {
 				msgBody = new StringBuilder(new String(getLayout().toByteArray(logEvent), "UTF-8"));

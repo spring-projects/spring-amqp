@@ -64,9 +64,9 @@ public class DefaultClassMapper implements ClassMapper, InitializingBean {
 
 	private volatile Map<Class<?>, String> classIdMapping = new HashMap<>();
 
-	private volatile Class<?> defaultMapClass = LinkedHashMap.class;
+	private volatile Class<?> defaultMapClass = LinkedHashMap.class; // NOSONAR concrete type
 
-	private volatile Class<?> defaultType = LinkedHashMap.class;
+	private volatile Class<?> defaultType = LinkedHashMap.class; // NOSONAR concrete type
 
 	/**
 	 * The type returned by {@link #toClass(MessageProperties)} if no type information
